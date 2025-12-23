@@ -1047,7 +1047,7 @@ contamination.
 
 After running the filtering and splitting script (
 `scripts/create_duidelijke_taal_nl.py`), the dataset
-contains 58 / 42 / 91 samples for training, validation and testing, respectively.
+contains 50 / 51 / 90 samples for training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 

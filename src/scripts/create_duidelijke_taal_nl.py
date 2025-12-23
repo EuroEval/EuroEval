@@ -20,7 +20,7 @@ We use the splitted version of this dataset created during the GPT-NL project
 """
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, load_dataset
+from datasets import ClassLabel, Dataset, DatasetDict, load_dataset
 from evaluate import load
 from huggingface_hub import HfApi
 from requests import HTTPError
@@ -29,6 +29,7 @@ from requests import HTTPError
 def main() -> None:
     """Creates Duidelijke Taal simplification dataset and uploads it to the HF Hub."""
     dataset_id = "GPT-NL/DuidelijkeTaal-v1.0-split"
+    dataset_original = load_dataset(dataset_id, token=True)
 
     # rename columns for easier use in filtering
     column_mapping = {
@@ -50,25 +51,33 @@ def main() -> None:
         "Complexiteit (B) Gem.": "complexity_b_avg",
     }
 
-    dataset_original = load_dataset(dataset_id, token=True)
+    dataset_filtered = DatasetDict()
+    for split in ["train", "test"]:
+        df = dataset_original[split].to_pandas().rename(columns=column_mapping)
+        df_filtered = filter_dataset(df)
+        dataset_filtered[split] = Dataset.from_pandas(df_filtered).cast_column(
+            "complexity_text", ClassLabel(num_classes=4)
+        )
 
     # create 50%/50% train/val split
     # original split is 50%/50% train/test, so total split becomes 25%/25%/50%
-    train_val = dataset_original["train"].train_test_split(test_size=0.5, seed=42)
+    train_val = dataset_filtered["train"].train_test_split(
+        test_size=0.5, seed=42, stratify_by_column="complexity_text"
+    )
+
+    drop_columns = [
+        col
+        for col in dataset_filtered["train"].column_names
+        if col not in ["text", "target_text"]
+    ]
 
     dataset = DatasetDict(
         {
-            "train": train_val["train"],
-            "val": train_val["test"],
-            "test": dataset_original["test"],
+            "train": train_val["train"].remove_columns(drop_columns),
+            "val": train_val["test"].remove_columns(drop_columns),
+            "test": dataset_filtered["test"].remove_columns(drop_columns),
         }
     )
-
-    for split in ["train", "val", "test"]:
-        df = dataset[split].to_pandas().rename(columns=column_mapping)
-        df_filtered = filter_dataset(df)[["text", "target_text"]]
-        dataset[split] = Dataset.from_pandas(df_filtered)
-
     processed_dataset_id = "EuroEval/duidelijke-taal-nl"
 
     # Remove the dataset from Hugging Face Hub if it already exists
@@ -91,55 +100,59 @@ def filter_dataset(
     drop_explanations: bool = True,
     verbosity_threshold: int = 2,
 ) -> pd.DataFrame:
-    """Filter Duidelijke Taal dataset.
+    """Filter the Duidelijke Taal dataset.
 
-    Dataset is filtered based on complexity difference between original sentence and
-    synthesized simplification, number of human annotations and average accuracy of
-    the simplification.
+    The dataset is filtered based on the complexity difference between the original
+    sentence and its synthesized simplification, the number of human annotations,
+    and the average accuracy of the simplification.
 
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        The unfiltered Duidelijke Taal dataset.
-    min_complexity_difference : int, default=10
-        The minimum difference in complexity between original and simplification, to
-        create a subset with clearly differentiated examples.
-    min_n_participants : int, default=2
-        Minimum number of participants from the crowd-sourcing experiment that rated
-        the sentence pair to ensure we take a somewhat general opinion.
-    min_acc_avg : int, default=60
-        Minimum average accuracy percentage of the simplification to filter out
-        inaccurate simplifications.
-    min_bertscore: int, default=0.76
-        Minimum BERTScore (F1) similarity between the sentence pairs to filter pairs
-        that vary too much in meaning.
-    drop_explanations: bool, default=True
-        Flag to set to drop pairs where the synthetic example contains explanations
-        that are not in the original sentence (e.g. "Dat betekent dat...")
-    verbosity_threshold: int, default=2
-        Threshold with the intention to drop pairs where the synthetic example contains
-        too verbose and too long explanations that deviate from the original input text.
-        Drops simplifications that contain more than threshold * number of words of the
-        input text. Setting this parameter to 1 will not filter any sentences.
+    Args:
+        df (pandas.DataFrame): The unfiltered Duidelijke Taal dataset.
+        min_complexity_difference (int, optional): The minimum difference in
+            complexity between the original sentence and the simplification to
+            create a subset with clearly differentiated examples. Defaults to 10.
+        min_n_participants (int, optional): The minimum number of participants from
+            the crowd-sourcing experiment who rated the sentence pair, ensuring a
+            somewhat general opinion. Defaults to 2.
+        min_acc_avg (int, optional): The minimum average accuracy percentage of the
+            simplification used to filter out inaccurate simplifications.
+            Defaults to 60.
+        min_bertscore (float, optional): The minimum BERTScore (F1) similarity
+            between the sentence pairs to filter out pairs that vary too much in
+            meaning. Defaults to 0.76.
+        drop_explanations (bool, optional): Whether to drop sentence pairs where the
+            synthetic example contains explanations not present in the original
+            sentence (e.g., "Dat betekent dat..."). Defaults to True.
+        verbosity_threshold (int, optional): Threshold used to drop pairs where the
+            synthetic example contains overly verbose or long explanations that
+            deviate from the original text. Simplifications are dropped if they
+            contain more than `threshold * number_of_words` of the input text.
+            Setting this parameter to 1 disables this filtering. Defaults to 2.
 
     Returns:
-    -------
-    pandas.DataFrame
-        The filtered dataset.
+        pandas.DataFrame: The filtered dataset.
     """
+    # load default model (bert-base-multilingual-cased), which is sufficient as filter
     bert_score = load("bertscore")
-    bert_scores = bert_score.compute(
+    df["bert"] = bert_score.compute(
         references=df["text"].to_list(),
         predictions=df["target_text"].to_list(),
         lang="nl",
     )["f1"]
-    df["bert"] = bert_scores
 
     df["complexity_diff"] = df[df["complexity_a_avg"].astype(str).str.len() > 0][
         "complexity_a_avg"
     ].astype(float) - df[df["complexity_b_avg"].astype(str).str.len() > 0][
         "complexity_b_avg"
     ].astype(float)
+
+    # create binned complexity column of input text for stratified dataset split
+    df["complexity_text"] = pd.qcut(
+        df["complexity_a_avg"],
+        q=4,  # 4 bins
+        labels=False,
+        duplicates="drop",
+    )
 
     df_mask = (
         (
@@ -160,6 +173,7 @@ def filter_dataset(
         & (df["bert"] >= min_bertscore)
     )
 
+    # 'betekent' = 'means' in Dutch
     if drop_explanations:
         df_mask &= ~df["target_text"].str.contains("betekent")
 

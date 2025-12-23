@@ -5,7 +5,7 @@
 Simplification is a task of generating a simpler, easier to understand, version of a
 given text, preserving the original
 meaning but using less complex phrases and linguistic structures.
-While the task is similar to summarization, the goal is different: simplification
+While the task is similar to summarisation, the goal is different: simplification
 specifically rewrites the text to be
 less complex and not necessarily shorter.
 
