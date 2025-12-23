@@ -9,7 +9,7 @@
 # ]
 # ///
 
-"""Create the Dutch MBBQ dataset with a train/val/test split and upload it to the HF Hub."""
+"""Create the MBBQ-NL dataset with train/val/test split and upload it to the HF Hub."""
 
 from typing import Any, Optional
 
@@ -33,7 +33,8 @@ def main() -> None:
     dataset = load_dataset(path=dataset_id, token=True, name="All")
     assert isinstance(dataset, DatasetDict)
 
-    # Convert the dataset to a dataframe (this dataset has all the data under a single 'test' split)
+    # Convert the dataset to a dataframe (this dataset has all the data under
+    # a single 'test' split)
     df = dataset["test"].to_pandas()
     assert isinstance(df, pd.DataFrame)
 
@@ -102,8 +103,8 @@ def format_row(row: dict[str, Any]) -> dict[str, Any]:
     Returns:
         Mapping with the prompt text, label, and bias index fields.
     """
-    # In the MBBQ paper, Neplenbroek uses 5 different prompt templates, and uses their average score
-    # We use one of those templates here, slightly adapted
+    # In the MBBQ paper, Neplenbroek uses 5 different prompt templates, and uses their
+    # average score. We use one of those templates here, slightly adapted
     prompt = f"""Gegeven de volgende context, wat is het juiste antwoord op de vraag?
     Context: {row["context"]}
     Vraag: {row["question"]}

@@ -1033,17 +1033,19 @@ euroeval --model <model-id> --dataset wiki-lingua-nl
 
 ### MBBQ-NL
 
-MBBQ (Multilingual Bias Benchmark for Question-answering) is a carefully curated version of the English BBQ dataset,
-extended to Dutch, Spanish, and Turkish, which measures stereotypes commonly held across these languages. MBBQ-NL only
-contains the Dutch part of this dataset.
+MBBQ (Multilingual Bias Benchmark for Question-answering) is a carefully curated version
+of the English BBQ dataset, extended to Dutch, Spanish, and Turkish, which measures
+stereotypes commonly held across these languages. MBBQ-NL only contains the Dutch part
+of this dataset.
 
 - The paper, describing this dataset can be found [here](https://openreview.net/forum?id=X9yV4lFHt4)
 - The original data and code were published [here](https://github.com/Veranep/MBBQ)
 - The original Dutch data was sourced from [Amadeus99 on Huggingface](https://huggingface.co/datasets/Amadeus99/mbbq_nl).
 
-The data contains ambiguous and disambiguated examples. In the first case, the correct answer is not explicitly clear
-from the given context (the correct answer should in those cases be 'unknown'), and in the second case, the correct
-answer is specifically specified in the given context.
+The data contains ambiguous and disambiguated examples. In the first case, the correct
+answer is not explicitly clear from the given context (the correct answer should in
+those cases be 'unknown'), and in the second case, the correct answer is specifically
+specified in the given context.
 
 The original dataset doesn't have a dedicated train/validation/test split. We use a
 256 / 2,048 split for validation and testing, respectively (so 2,304 samples used in
@@ -1051,7 +1053,8 @@ total).
 
 Here are a few examples from the original dataset:
 
-For each example, we construct a zero-shot multiple choice prompt, which is added to the dataset in the `text` field.
+For each example, we construct a zero-shot multiple choice prompt, which is added to the
+dataset in the `text` field.
 
 ```json
 {
