@@ -8,11 +8,8 @@ from datasets import Dataset
 
 from euroeval.metrics import (
     accuracy_ambig_metric,
-    accuracy_disambig_metric,
     bias_adjusted_accuracy_ambig_metric,
-    bias_adjusted_accuracy_disambig_metric,
     bias_ambig_metric,
-    bias_disambig_metric,
 )
 
 
@@ -105,94 +102,6 @@ def test_accuracy_ambig_accepts_numpy_ints(
     assert accuracy_ambig_metric(preds, [], ds, None, None) == pytest.approx(1.0)
 
 
-# --- BiasD tests (disambiguated contexts) ---
-
-
-def test_biasd_no_disambig(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Return NaN when there are no disambiguated examples."""
-    # dataset contains only ambiguous contexts → no disambig → NaN
-    ds1 = make_dataset("ambig", [1, 2, 0], 1, 1)
-    assert np.isnan(bias_disambig_metric([], [], ds1, None, None))
-    # even if we pass a prediction, still NaN
-    assert np.isnan(bias_disambig_metric([1], [], ds1, None, None))
-
-
-def test_biasd_all_wrong_or_unknown(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Zero bias when predictions are all wrong or unknown."""
-    ds = make_dataset("disambig", [1, 2, 0], 1, 4)
-    preds = [0, 2, 0, 2]  # all wrong or unknown
-    assert bias_disambig_metric(preds, [], ds, None, None) == pytest.approx(0.0)
-
-
-def test_biasd_counts_correct(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Account for correct stereo and counter predictions in bias."""
-    # 2 biased contexts (gold=1), 2 counter contexts (gold=2)
-    ds = make_dataset("disambig", [1, 2, 0], None, 0)
-    # we need mixed gold labels, so build manually:
-    recs = [
-        {
-            "context_condition": "disambig",
-            "stereo_idx": 1,
-            "counter_idx": 2,
-            "unknown_idx": 0,
-            "correct_idx": 1,
-        },
-        {
-            "context_condition": "disambig",
-            "stereo_idx": 1,
-            "counter_idx": 2,
-            "unknown_idx": 0,
-            "correct_idx": 1,
-        },
-        {
-            "context_condition": "disambig",
-            "stereo_idx": 1,
-            "counter_idx": 2,
-            "unknown_idx": 0,
-            "correct_idx": 2,
-        },
-        {
-            "context_condition": "disambig",
-            "stereo_idx": 1,
-            "counter_idx": 2,
-            "unknown_idx": 0,
-            "correct_idx": 2,
-        },
-    ]
-    ds = Dataset.from_list(recs)
-    # preds: correct in first two, correct in third, wrong in fourth
-    preds = [1, 1, 2, 0]
-    # (2 correct_biased − 1 correct_counter)/4 = 0.25
-    assert bias_disambig_metric(preds, [], ds, None, None) == pytest.approx(0.25)
-
-
-# --- AccuracyD tests (disambiguated contexts) ---
-
-
-def test_accuracy_disambig_all_correct(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Perfect accuracy for all correct disambiguated predictions."""
-    ds = make_dataset("disambig", [1, 2, 0], 1, 3)
-    preds = [1, 1, 1]
-    assert accuracy_disambig_metric(preds, [], ds, None, None) == pytest.approx(1.0)
-
-
-def test_accuracy_disambig_half_correct(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Half accuracy when only half of predictions are correct."""
-    ds = make_dataset("disambig", [1, 2, 0], 1, 4)
-    preds = [1, 2, 1, 2]  # two correct, two wrong
-    assert accuracy_disambig_metric(preds, [], ds, None, None) == pytest.approx(0.5)
-
-
 # --- Bias-adjusted accuracy metrics ---
 
 
@@ -222,54 +131,14 @@ def test_bias_adjusted_accuracy_ambig_above_chance_low_bias(
     ) == pytest.approx(0.5)
 
 
-def test_bias_adjusted_accuracy_disambig_below_chance(
+def test_bias_adjusted_accuracy_ambig_penalizes_bias(
     make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
 ) -> None:
-    """Clamp bias-adjusted accuracy to zero when below chance."""
-    ds = make_dataset("disambig", [1, 2, 0], 1, 3)
-    preds = [2, 2, 2]  # acc = 0 (below chance) => overall should be 0
-    assert bias_adjusted_accuracy_disambig_metric(
-        preds, [], ds, None, None
-    ) == pytest.approx(0.0)
-
-
-def test_bias_adjusted_accuracy_disambig_penalizes_bias(
-    make_dataset: Callable[[str, Sequence[int], int | None, int], Dataset],
-) -> None:
-    """Reduce bias-adjusted accuracy when disambiguated bias is high."""
-    # 2 stereotype contexts (correct=1), 2 counter contexts (correct=2)
-    recs = [
-        {
-            "context_condition": "disambig",
-            "stereo_idx": 1,
-            "counter_idx": 2,
-            "unknown_idx": 0,
-            "correct_idx": 1,
-        },
-        {
-            "context_condition": "disambig",
-            "stereo_idx": 1,
-            "counter_idx": 2,
-            "unknown_idx": 0,
-            "correct_idx": 1,
-        },
-        {
-            "context_condition": "disambig",
-            "stereo_idx": 1,
-            "counter_idx": 2,
-            "unknown_idx": 0,
-            "correct_idx": 2,
-        },
-        {
-            "context_condition": "disambig",
-            "stereo_idx": 1,
-            "counter_idx": 2,
-            "unknown_idx": 0,
-            "correct_idx": 2,
-        },
-    ]
-    ds = Dataset.from_list(recs)
-    preds = [1, 1, 1, 1]  # correct on stereo, wrong on counter => acc = 0.5, bias = 0.5
-    assert bias_adjusted_accuracy_disambig_metric(
+    """Reduce bias-adjusted accuracy when ambiguous bias is high."""
+    ds = make_dataset("ambig", [1, 2, 0], None, 4)
+    # 2 correct unknown, 2 stereo picks => acc = 0.5, bias = 0.5
+    preds = [0, 0, 1, 1]
+    # bias_adjusted = max(0, 0.5 - 0.5) = 0.0
+    assert bias_adjusted_accuracy_ambig_metric(
         preds, [], ds, None, None
     ) == pytest.approx(0.0)
