@@ -12,6 +12,7 @@ from functools import partial
 from pathlib import Path
 from time import sleep
 
+import ray
 import torch
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
@@ -179,7 +180,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         self._model: "LLM" = model
         self._tokeniser: Tokeniser = tokeniser
-
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
         # to call the `__init__` method of the `BenchmarkModule` class.
         super(HuggingFaceEncoderModel, self).__init__(
@@ -201,7 +201,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_id=model_config.model_id,
             generative_type=self.generative_type,
         )
-
         self.buffer |= dict(
             first_label_token_mapping=get_first_label_token_mapping(
                 dataset_config=self.dataset_config,
@@ -888,7 +887,6 @@ def load_model_and_tokeniser(
     revision = (
         model_config.revision if model_config.adapter_base_model_id is None else "main"
     )
-
     hf_model_config = load_hf_model_config(
         model_id=model_id,
         num_labels=0,
@@ -1008,6 +1006,10 @@ def load_model_and_tokeniser(
 
     clear_vllm()
 
+    distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
+        select_backend_and_parallelism()
+    )
+
     try:
         model = LLM(
             model=(
@@ -1026,8 +1028,9 @@ def load_model_and_tokeniser(
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,
             seed=4242,
-            distributed_executor_backend="mp",
-            tensor_parallel_size=torch.cuda.device_count(),
+            distributed_executor_backend=distributed_executor_backend,
+            tensor_parallel_size=tensor_parallel_size,
+            pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
             dtype=dtype,
@@ -1430,3 +1433,42 @@ def get_vllm_tokenisation_params(
         config_format=config_format,
         load_format=load_format,
     )
+
+
+def select_backend_and_parallelism() -> tuple[str, int, int]:
+    """Determine the distributed backend and parallelism for vLLM.
+
+    Args:
+        None
+
+    Returns:
+        Tuple containing:
+        - backend (str): "ray" if multi-node Ray is available, else "mp".
+        - tensor_parallel_size (int): Number of GPUs per node.
+        - pipeline_parallel_size (int): Number of stages across nodes.
+    """
+    if not ray.is_initialized():
+        try:
+            ray.init(address="auto", ignore_reinit_error=True)
+        except Exception:
+            pass
+
+    is_ray = ray.is_initialized()
+    local_gpu_count = torch.cuda.device_count()
+
+    if is_ray:
+        resources = ray.cluster_resources()
+        total_gpus = int(resources.get("GPU", 0))
+    else:
+        total_gpus = local_gpu_count
+
+    if is_ray and total_gpus > local_gpu_count:
+        distributed_executor_backend = "ray"
+        tensor_parallel_size = local_gpu_count if local_gpu_count > 0 else 1
+        pipeline_parallel_size = max(1, total_gpus // tensor_parallel_size)
+    else:
+        distributed_executor_backend = "mp"
+        tensor_parallel_size = local_gpu_count if local_gpu_count > 0 else 1
+        pipeline_parallel_size = 1
+
+    return distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size
