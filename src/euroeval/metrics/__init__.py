@@ -1,5 +1,6 @@
 """All the metrics used in EuroEval."""
 
+from .bias import *  # noqa: F403
 from .huggingface import *  # noqa: F403
 from .llm_as_a_judge import *  # noqa: F403
 from .pipeline import *  # noqa: F403

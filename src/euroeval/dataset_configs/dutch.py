@@ -8,6 +8,7 @@ from ..tasks import (
     KNOW,
     LA,
     MCRC,
+    MCSTEREO,
     NER,
     RC,
     SENT,
@@ -160,6 +161,15 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
     _labels=["a", "b"],
     unofficial=True,
+)
+
+MBBQ_NL_CONFIG = DatasetConfig(
+    name="mbbq-nl",
+    pretty_name="MBBQ-nl",
+    source="EuroEval/mbbq-nl",
+    task=MCSTEREO,
+    languages=[DUTCH],
+    splits=["val", "test"],
 )
 
 DUIDELIJKE_TAAL_NL_CONFIG = DatasetConfig(
