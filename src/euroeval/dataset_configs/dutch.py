@@ -12,6 +12,7 @@ from ..tasks import (
     NER,
     RC,
     SENT,
+    SIMPL,
     SUMM,
 )
 
@@ -169,4 +170,13 @@ MBBQ_NL_CONFIG = DatasetConfig(
     task=MCSTEREO,
     languages=[DUTCH],
     splits=["val", "test"],
+)
+
+DUIDELIJKE_TAAL_NL_CONFIG = DatasetConfig(
+    name="duidelijke-taal",
+    pretty_name="Duidelijke Taal",
+    source="EuroEval/duidelijke-taal",
+    task=SIMPL,
+    languages=[DUTCH],
+    unofficial=True,
 )
