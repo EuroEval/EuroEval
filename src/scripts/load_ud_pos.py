@@ -647,6 +647,8 @@ def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
 
     range_start: int = 0
     range_end: int = 0
+    # Track the index where we added the multi-word token so we can update its POS tag
+    mwt_index: int | None = None
 
     # Pattern used to detect merged IDs
     merged_ids_pattern = re.compile(r"(\d+)-(\d+)", re.I)
@@ -659,15 +661,24 @@ def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
             output["pos_tags"].append(data_dict["pos_tags"][i])
             range_start = int(match.group(1))
             range_end = int(match.group(2))
+            # Remember where we added this multi-word token
+            mwt_index = len(output["pos_tags"]) - 1
         else:
             token_id = int(data_dict["ids"][i].split(".")[0])
             if token_id >= range_start and token_id <= range_end:
+                # If this is the first token in the range and we have a multi-word token
+                # to update, copy the POS tag from this token to the multi-word token
+                if mwt_index is not None and token_id == range_start:
+                    output["pos_tags"][mwt_index] = data_dict["pos_tags"][i]
+                    mwt_index = None  # Reset so we only update once per range
                 # Skip token if in range
                 continue
             else:
                 output["ids"].append(data_dict["ids"][i])
                 output["tokens"].append(data_dict["tokens"][i])
                 output["pos_tags"].append(data_dict["pos_tags"][i])
+                # Reset mwt_index when we move past the range
+                mwt_index = None
 
     return output
 
