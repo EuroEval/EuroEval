@@ -106,6 +106,7 @@ dev = [
     "pytest-socket>=0.7.0",
     "pytest-depends>=1.0.1",
     "pyrefly>=0.43.1",
+    "tqdm-stubs>=0.2.1",
 ]
 
 [tool.ruff]

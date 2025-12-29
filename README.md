@@ -504,9 +504,16 @@ A huge thank you to all the contributors who have helped make this project a suc
 </a>
 <a href="https://github.com/simonevanbruggen">
     <img
-        src="https://avatars.githubusercontent.com/u/6168908"
+        src="https://avatars.githubusercontent.com/u/24842609"
         width=50
         alt="Contributor avatar for simonevanbruggen"
+    />
+</a>
+<a href="https://github.com/tvosch">
+    <img
+        src="https://avatars.githubusercontent.com/u/110661769"
+        width=50
+        alt="Contributor avatar for tvosch"
     />
 </a>
 
