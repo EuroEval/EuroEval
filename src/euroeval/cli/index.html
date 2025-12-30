@@ -1283,39 +1283,12 @@
 <span class="s2">    models will be benchmarked on all datasets.&quot;&quot;&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
-    <span class="s2">&quot;--model-language&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;-ml&quot;</span><span class="p">,</span>
-    <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">multiple</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;ISO 639-1 LANGUAGE CODE&quot;</span><span class="p">,</span>
-    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">get_all_languages</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())),</span>
-    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;This option is deprecated - please use --language instead.&quot;&quot;&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
-    <span class="s2">&quot;--dataset-language&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;-dl&quot;</span><span class="p">,</span>
-    <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">multiple</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;ISO 639-1 LANGUAGE CODE&quot;</span><span class="p">,</span>
-    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">get_all_languages</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())),</span>
-    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;This option is deprecated - please use --language instead.&quot;&quot;&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--dataset&quot;</span><span class="p">,</span>
     <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">multiple</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;The name of the benchmark dataset. We recommend to use the `task` and</span>
 <span class="s2">    `language` options instead of this option.&quot;&quot;&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
-    <span class="s2">&quot;--batch-size&quot;</span><span class="p">,</span>
-    <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="s2">&quot;4&quot;</span><span class="p">,</span> <span class="s2">&quot;8&quot;</span><span class="p">,</span> <span class="s2">&quot;16&quot;</span><span class="p">,</span> <span class="s2">&quot;32&quot;</span><span class="p">]),</span>
-    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This option is deprecated - please use --finetuning-batch-size instead.&quot;</span><span class="p">,</span>
-    <span class="n">deprecated</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--finetuning-batch-size&quot;</span><span class="p">,</span>
@@ -1443,14 +1416,6 @@
     <span class="s2">&quot;if you are running out of GPU memory. Only relevant if the model is generative.&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
-    <span class="s2">&quot;--debug/--no-debug&quot;</span><span class="p">,</span>
-    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to run the benchmark in debug mode. This prints out extra &quot;</span>
-    <span class="s2">&quot;information and stores all outputs to the current working directory. Only &quot;</span>
-    <span class="s2">&quot;relevant if the model is generative.&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
     <span class="s2">&quot;--requires-safetensors&quot;</span><span class="p">,</span>
     <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only allow loading models that have safetensors weights available&quot;</span><span class="p">,</span>
@@ -1477,15 +1442,47 @@
     <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Only download the requested model weights and datasets, and exit.&quot;</span><span class="p">,</span>
     <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
+    <span class="s2">&quot;--debug/--no-debug&quot;</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Whether to run the benchmark in debug mode. This prints out extra &quot;</span>
+    <span class="s2">&quot;information and stores all outputs to the current working directory. Only &quot;</span>
+    <span class="s2">&quot;relevant if the model is generative.&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
+    <span class="s2">&quot;--model-language&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;-ml&quot;</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">multiple</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;ISO 639-1 LANGUAGE CODE&quot;</span><span class="p">,</span>
+    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">get_all_languages</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())),</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;This option is deprecated - please use --language instead.&quot;&quot;&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
+    <span class="s2">&quot;--dataset-language&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;-dl&quot;</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">multiple</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">metavar</span><span class="o">=</span><span class="s2">&quot;ISO 639-1 LANGUAGE CODE&quot;</span><span class="p">,</span>
+    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s2">&quot;all&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">get_all_languages</span><span class="p">()</span><span class="o">.</span><span class="n">keys</span><span class="p">())),</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;This option is deprecated - please use --language instead.&quot;&quot;&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span>
+    <span class="s2">&quot;--batch-size&quot;</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="s2">&quot;4&quot;</span><span class="p">,</span> <span class="s2">&quot;8&quot;</span><span class="p">,</span> <span class="s2">&quot;16&quot;</span><span class="p">,</span> <span class="s2">&quot;32&quot;</span><span class="p">]),</span>
+    <span class="n">help</span><span class="o">=</span><span class="s2">&quot;This option is deprecated - please use --finetuning-batch-size instead.&quot;</span><span class="p">,</span>
+    <span class="n">deprecated</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">benchmark</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.cli.benchmark"><a href="../../../api/euroeval/cli/#euroeval.cli.benchmark" title="Go to docs">[docs]</a></div>
     <span class="n">model</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">DatasetConfig</span><span class="p">],</span>
     <span class="n">language</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">model_language</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">raise_errors</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">task</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">finetuning_batch_size</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">save_results</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
@@ -1502,11 +1499,14 @@
     <span class="n">api_base</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">api_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">generative_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">custom_datasets_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
     <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">model_language</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark pretrained language models on language tasks.&quot;&quot;&quot;</span>
     <span class="n">Benchmarker</span><span class="p">(</span>
