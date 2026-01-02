@@ -1017,17 +1017,14 @@ def load_model_and_tokeniser(
     )
 
     try:
+        if Path(model_id).is_dir() or internet_connection_available():
+            model_location = model_id
+        else:
+            model_location = resolve_model_path(download_dir=download_dir)
+        
         model = LLM(
-            model=(
-                model_id
-                if internet_connection_available()
-                else resolve_model_path(download_dir=download_dir)
-            ),
-            tokenizer=(
-                model_id
-                if internet_connection_available()
-                else resolve_model_path(download_dir=download_dir)
-            ),
+            model=model_location,
+            tokenizer=model_location, 
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
             max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,
