@@ -392,10 +392,17 @@ def get_hf_token(api_key: str | None) -> str | bool:
             extract it in other ways.
 
     Returns:
-        The Hugging Face token, or True if no token is set but the user is logged in, or
-        False if no token is set and the user is not logged in.
+        The Hugging Face token, or True if no token is set but the user is logged in.
+        False is returned if no token is set and the user is not logged in, or when
+        running in OFFLINE_MODE.
     """
-    if api_key is not None:
+    if os.getenv("OFFLINE_MODE", "0") == "1":
+        log_once(
+            "OFFLINE_MODE is set to 1, so no Hugging Face token will be used.",
+            level=logging.DEBUG,
+        )
+        return False
+    elif api_key is not None:
         log_once(
             "Using the Hugging Face API key passed to the function.",
             level=logging.DEBUG,
