@@ -1468,7 +1468,7 @@ def select_backend_and_parallelism() -> tuple[str, int, int]:
         pipeline_parallel_size = max(1, total_gpus // tensor_parallel_size)
         log_once(
             f"Detected a multi-node setup with {pipeline_parallel_size:,} nodes, each "
-            "with {tensor_parallel_size:,} GPUs, so using `ray` as the "
+            f"with {tensor_parallel_size:,} GPUs, so using `ray` as the "
             "distributed backend.",
             level=logging.DEBUG,
         )
