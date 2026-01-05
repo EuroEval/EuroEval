@@ -601,8 +601,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             except (ValueError, RuntimeError) as e:
                 # Truncate the prompts if they are too long for the model
                 truncate_error_messages = [
-                    r"prompt \(length [0-9]+\) is longer than the maximum model length"
-                    "Sampled token IDs exceed the max model length"
+                    r"prompt \(length [0-9]+\) is longer than the maximum model length",
+                    "Sampled token IDs exceed the max model length",
                 ]
                 if any(
                     re.search(pattern, str(e), flags=re.IGNORECASE) is not None
