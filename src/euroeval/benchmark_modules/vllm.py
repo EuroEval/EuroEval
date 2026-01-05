@@ -996,6 +996,7 @@ def load_model_and_tokeniser(
         true_max_model_len = min(true_max_model_len_candidates)
     else:
         true_max_model_len = MAX_CONTEXT_LENGTH
+    breakpoint()
 
     tokeniser = load_tokeniser(
         model_id=model_config.model_id,
