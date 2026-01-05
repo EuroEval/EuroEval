@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Quantized models in vLLM now have their dtype inferred automatically, removing
   explicit dtype casting based on GPU compute capability. This was contributed by
   @tvosch ✨
+- When evaluating local generative models, we did not set the model cache directory
+  correctly; we now correctly set it to the local directory specified by the user in the
+  model ID.
 
 ## [v16.10.1] - 2026-01-02
 
