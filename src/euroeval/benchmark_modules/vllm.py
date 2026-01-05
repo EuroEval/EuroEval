@@ -598,10 +598,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                     level=logging.DEBUG,
                 )
                 sleep(1)
-            except ValueError as e:
+            except (ValueError, RuntimeError) as e:
                 # Truncate the prompts if they are too long for the model
                 truncate_error_messages = [
                     r"prompt \(length [0-9]+\) is longer than the maximum model length"
+                    "Sampled token IDs exceed the max model length"
                 ]
                 if any(
                     re.search(pattern, str(e), flags=re.IGNORECASE) is not None
@@ -996,7 +997,6 @@ def load_model_and_tokeniser(
         true_max_model_len = min(true_max_model_len_candidates)
     else:
         true_max_model_len = MAX_CONTEXT_LENGTH
-    breakpoint()
 
     tokeniser = load_tokeniser(
         model_id=model_config.model_id,
