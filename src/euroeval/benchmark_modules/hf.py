@@ -763,7 +763,9 @@ def get_model_repo_info(
             for required_file in LOCAL_MODELS_REQUIRED_FILES
         ):
             log_once(
-                f"Using the local model directory {model_id}.", level=logging.DEBUG
+                f"The local model directory {model_id!r} has all the required model "
+                f"files ({LOCAL_MODELS_REQUIRED_FILES}), so we're skipping looking up "
+                "model information from the Hugging Face Hub."
             )
             model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
         else:
