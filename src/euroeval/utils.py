@@ -59,7 +59,8 @@ def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
     ).as_posix()
     log_once(
         f"Using the model cache directory {model_cache_dir!r} for the model "
-        f"{model_id!r}."
+        f"{model_id!r}.",
+        level=logging.DEBUG,
     )
     return model_cache_dir
 
