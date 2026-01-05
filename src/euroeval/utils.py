@@ -44,7 +44,8 @@ def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
     Returns:
         The path to the cache directory.
     """
-    # to avoid nesting due to models name containing '/'
+    # To avoid nesting due to models name containing '/'
+    breakpoint()
     _model_id = model_id.replace("/", "--")
     cache_dir_path = Path(cache_dir) / "model_cache" / _model_id
     return str(cache_dir_path)
@@ -65,9 +66,12 @@ def resolve_model_path(download_dir: str) -> str:
             If the model path is not valid, or if required files are missing.
     """
     model_path = Path(download_dir)
+
     # Get the 'path safe' version of the model id, which is the last dir in the path
     model_id_path = model_path.name
+
     # Hf hub `cache_dir` puts the files in models--`model_id_path`/snapshots
+    breakpoint()
     model_path = model_path / f"models--{model_id_path}" / "snapshots"
     if not model_path.exists():
         raise InvalidModel(
