@@ -905,19 +905,6 @@ def load_model_and_tokeniser(
         run_with_cli=benchmark_config.run_with_cli,
     )
 
-    quantization = None
-    if hasattr(hf_model_config, "quantization_config"):
-        quantization = hf_model_config.quantization_config.get("quant_method")
-
-    # The quantised models require extra dependencies
-    if quantization == "gptq" and (
-        importlib.util.find_spec("auto_gptq") is None
-        or importlib.util.find_spec("optimum") is None
-    ):
-        raise NeedsExtraInstalled(extra="quantization")
-    if quantization == "awq" and importlib.util.find_spec("awq") is None:
-        raise NeedsExtraInstalled(extra="quantization")
-
     # Start with dtype being the "auto" vLLM dtype
     dtype: str | torch.dtype = "auto"
 
@@ -940,23 +927,6 @@ def load_model_and_tokeniser(
             )
             dtype = torch.float16
 
-    # If the model is a quantized model, we might need to change the dtype
-    if quantization == "mxfp4" and hf_model_config.dtype is None:
-        dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
-        log(
-            "You are loading a quantized model where `dtype` has not been set. "
-            f"Setting dtype to {dtype!r}.",
-            level=logging.DEBUG,
-        )
-    elif quantization is not None and hf_model_config.dtype != torch.float16:
-        log(
-            "You are loading a quantized model with dtype "
-            f"{hf_model_config.dtype}, which vLLM does not support. Setting "
-            "dtype to float16 instead.",
-            level=logging.WARNING,
-        )
-        dtype = torch.float16
-
     # If the model is a bf16 model, we need to check the CUDA compute capability
     if hf_model_config.dtype == torch.bfloat16:
         min_cuda_compute_capability = get_min_cuda_compute_capability()
@@ -973,6 +943,28 @@ def load_model_and_tokeniser(
                     level=logging.WARNING,
                 )
                 dtype = torch.float16
+
+    quantization = None
+    if hasattr(hf_model_config, "quantization_config"):
+        quantization = hf_model_config.quantization_config.get("quant_method")
+
+    # The quantised models require extra dependencies
+    if quantization == "gptq" and (
+        importlib.util.find_spec("auto_gptq") is None
+        or importlib.util.find_spec("optimum") is None
+    ):
+        raise NeedsExtraInstalled(extra="quantization")
+    if quantization == "awq" and importlib.util.find_spec("awq") is None:
+        raise NeedsExtraInstalled(extra="quantization")
+
+    # If the model is a quantized model, let vLLM decide the dtype
+    if quantization:
+        log(
+            f"You are loading a quantized model with quantization {quantization}. "
+            "Forcing the vLLM dtype to 'auto'",
+            level=logging.WARNING,
+        )
+        dtype = "auto"
 
     if model_config.adapter_base_model_id is not None:
         download_dir = str(Path(model_config.model_cache_dir) / "base_model")
