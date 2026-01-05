@@ -569,7 +569,8 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Truncate the prompts if needed
         max_tokens_per_prompt = max(
-            min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH) - max_tokens - 1,
+            min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
+            - self.dataset_config.max_generated_tokens,
             0,
         )
         log_once(
