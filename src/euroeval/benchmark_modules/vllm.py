@@ -567,17 +567,31 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             prompts = [prompt.strip() for prompt in prompts]
 
-        # Truncate the prompts if needed, but only if it's not a reasoning model
-        if self.generative_type != GenerativeType.REASONING:
-            max_tokens_per_prompt = (
-                min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH) - max_tokens
+        # Truncate the prompts if needed
+        max_tokens_per_prompt = min(
+            self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH
+        )
+        max_tokens_per_prompt -= min(
+            self.dataset_config.max_generated_tokens, max_tokens_per_prompt - 1
+        )
+        log_once(
+            f"Truncating prompts for the model {self.model_config.model_id!r} "
+            f"to a maximum of {max_tokens_per_prompt:,} tokens.",
+            level=logging.DEBUG,
+        )
+        tokenized_prompts = self._tokeniser(
+            text=prompts, truncation=True, max_length=max_tokens_per_prompt
+        )
+        if any(
+            len(input_ids) > max_tokens_per_prompt
+            for input_ids in tokenized_prompts.input_ids
+        ):
+            raise InvalidBenchmark(
+                "Truncation of prompts failed, some prompts are still too long."
             )
-            tokenized_prompts = self._tokeniser(
-                text=list(prompts), truncation=True, max_length=max_tokens_per_prompt
-            )
-            prompts = self._tokeniser.batch_decode(
-                sequences=tokenized_prompts.input_ids, skip_special_tokens=True
-            )
+        prompts = self._tokeniser.batch_decode(
+            sequences=tokenized_prompts.input_ids, skip_special_tokens=True
+        )
 
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
@@ -598,10 +612,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                     level=logging.DEBUG,
                 )
                 sleep(1)
-            except ValueError as e:
+            except (ValueError, RuntimeError) as e:
                 # Truncate the prompts if they are too long for the model
                 truncate_error_messages = [
-                    r"prompt \(length [0-9]+\) is longer than the maximum model length"
+                    r"prompt \(length [0-9]+\) is longer than the maximum model length",
+                    "Sampled token IDs exceed the max model length",
                 ]
                 if any(
                     re.search(pattern, str(e), flags=re.IGNORECASE) is not None

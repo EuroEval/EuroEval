@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- More robust detection and handling of errors related to too long inputs for vLLM
+  models.
+
 ## [v16.10.1] - 2026-01-02
 
 ### Changed
