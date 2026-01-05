@@ -85,7 +85,6 @@ def resolve_model_path(download_dir: str) -> str:
     model_id_path = model_path.name
 
     # Hf hub `cache_dir` puts the files in models--`model_id_path`/snapshots
-    breakpoint()
     model_path = model_path / f"models--{model_id_path}" / "snapshots"
     if not model_path.exists():
         raise InvalidModel(
