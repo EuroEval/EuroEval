@@ -7,10 +7,48 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- More robust detection and handling of errors related to too long inputs for vLLM
+  models.
+
+## [v16.10.1] - 2026-01-02
+
+### Changed
+
+- Now set the `duidelijke-taal` dataset as official for Dutch simplification, as it is
+  now included on the leaderboards now. It will thus automatically be run when
+  evaluating any generative model in Dutch.
+
+### Fixed
+
+- Nynorsk datasets were incorrectly not included when evaluating models in Norwegian.
+  This has been fixed now.
+
+## [v16.10.0] - 2025-12-30
+
 ### Added
 
-- Added the Dutch common sense reasoning dataset COPA-NL, which is part of the
-Dutch [DUMB benchmark](https://github.com/wietsedv/dumb)
+- Added support for Albanian 🇦🇱! This includes the sentiment classification dataset
+  MMS-sq, the linguistic acceptability dataset ScaLA-sq, the named entity recognition
+  dataset WikiANN-sq, the reading comprehension dataset MultiWikiQA-sq, the
+  summarisation dataset LR-Sum-sq, the knowledge dataset Global-MMLU-Lite-sq,
+  and the common-sense reasoning dataset Winogrande-sq. This was contributed by
+  @oliverkinch ✨
+- Added the Dutch common sense reasoning dataset COPA-NL, which is part of the Dutch
+  [DUMB benchmark](https://github.com/wietsedv/dumb). This was contributed by @tvosch ✨
+- Added new task for simplification and Dutch simplification dataset [Duidelijke
+  Taal](http://hdl.handle.net/10032/tm-a2-y8). dataset. This was contributed by
+  @simonevanbruggen ✨
+- Added multi-node support with Ray as a backend in this case. This was contributed by
+  @tvosch ✨
+- Added metadata for the Gemini-3 models.
+
+### Fixed
+
+- Fixed an issue with evaluations of LiteLLM models where asyncio event loops weren't
+  closed properly, leading to a buildup of file descriptors and eventually a "too many
+  open files" error.
 
 ## [v16.9.0] - 2025-12-16
 

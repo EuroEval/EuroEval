@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    ALBANIAN,
     BOSNIAN,
     BULGARIAN,
     CATALAN,
@@ -42,6 +43,25 @@ if t.TYPE_CHECKING:
 
 
 NER_TEMPLATES: dict["Language", PromptConfig] = {
+    ALBANIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "person",
+            "i-per": "person",
+            "b-loc": "vendndodhje",
+            "i-loc": "vendndodhje",
+            "b-org": "organizatë",
+            "i-org": "organizatë",
+            "b-misc": "të ndryshme",
+            "i-misc": "të ndryshme",
+        },
+        default_prompt_prefix="Më poshtë janë fjali dhe fjalorë JSON me entitetet e "
+        "emërtuara që shfaqen në fjalinë e dhënë.",
+        default_prompt_template="Fjali: {text}\nEntitete të emërtuara: {label}",
+        default_instruction_prompt="Fjali: {text}\n\nIdentifikoni entitetet e "
+        "emërtuara në fjali. Duhet t’i jepni ato si një fjalor JSON me çelësat "
+        "{labels_str}. Vlerat duhet të jenë lista të entiteteve të emërtuara të atij "
+        "lloji, saktësisht ashtu siç shfaqen në fjali.",
+    ),
     BOSNIAN: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "osoba",

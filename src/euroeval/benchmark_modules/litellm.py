@@ -110,7 +110,7 @@ VOCAB_SIZE_MAPPING = {
     # Anthropic models
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": -1,
     # Gemini models
-    r"(gemini/)?gemini-[1-9]\.[0-9]-(flash|pro).*": 256_128,
+    r"(gemini/)?gemini-[1-9](\.[0-9])?-(flash|pro).*": 256_128,
     # xAI models
     r"(xai/)?grok.*": -1,
 }
@@ -136,7 +136,7 @@ MODEL_MAX_LENGTH_MAPPING = {
     # Gemini models
     r"(gemini/)?gemini-1\.5-flash.*": 1_048_576,
     r"(gemini/)?gemini-1\.5-pro.*": 2_097_152,
-    r"(gemini/)?gemini-2\.(0|5).*": 1_048_576,
+    r"(gemini/)?gemini-[23](\.[05])?.*": 1_048_576,
     # xAI models
     r"(xai/)?grok.*": 131_072,
 }
@@ -152,7 +152,7 @@ NUM_PARAMS_MAPPING = {
     # Gemini models
     r"(gemini/)?gemini-1.5-flash-8b": 8_000_000_000,
     r"(gemini/)?gemini-1.5-flash-[0-9]+": -1,
-    r"(gemini/)?gemini-2.(0|5).*": -1,
+    r"(gemini/)?gemini-[23](.[05])?.*": -1,
     # xAI models
     r"(xai/)?grok.*": -1,
 }
@@ -208,8 +208,8 @@ class LiteLLMModel(BenchmarkModule):
             "thinking",
         ],
         # Gemini models
-        re.compile(r"(gemini/)?gemini-2.5-flash-lite.*"): ["no-thinking", "thinking"],
-        re.compile(r"(gemini/)?gemini-2.5-flash.*"): ["no-thinking", "thinking"],
+        re.compile(r"(gemini/)?gemini-2\.5-flash-lite.*"): ["no-thinking", "thinking"],
+        re.compile(r"(gemini/)?gemini-(2\.5|3)-flash.*"): ["no-thinking", "thinking"],
         # xAI models
         re.compile(r"(xai/)?grok-3-mini(-fast)?(-beta)?"): ["low", "medium", "high"],
     }
@@ -517,6 +517,7 @@ class LiteLLMModel(BenchmarkModule):
         response_format_messages = [
             "got an unexpected keyword argument 'response_format'",
             "the model returned empty outputs",
+            "'maxitems' is not supported",
         ]
 
         if (
@@ -838,14 +839,14 @@ class LiteLLMModel(BenchmarkModule):
         ]
 
         # Close connections
-        for request in requests:
-            if hasattr(request, "close"):
-                try:
-                    request.close()
-                except RuntimeError as e:
-                    log(
-                        f"RuntimeError during request.close(): {e}", level=logging.DEBUG
-                    )
+        semaphore.release()
+        router.reset()
+        try:
+            loop = asyncio.get_event_loop()
+            if not loop.is_closed():
+                loop.close()
+        except RuntimeError:
+            pass  # Already closed
 
         return successes, failures
 

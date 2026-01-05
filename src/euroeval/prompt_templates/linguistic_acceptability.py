@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    ALBANIAN,
     BULGARIAN,
     CATALAN,
     CROATIAN,
@@ -40,6 +41,14 @@ if t.TYPE_CHECKING:
     from ..languages import Language
 
 LA_TEMPLATES: dict["Language", PromptConfig] = {
+    ALBANIAN: PromptConfig(
+        default_prompt_label_mapping=dict(correct="po", incorrect="jo"),
+        default_prompt_prefix="Më poshtë janë fjali dhe nëse janë gramatikisht të "
+        "sakta.",
+        default_prompt_template="Fjali: {text}\nGramatikisht e saktë: {label}",
+        default_instruction_prompt="Fjali: {text}\n\nPërcaktoni nëse fjalia është "
+        "gramatikisht e saktë apo jo. Përgjigjuni me {labels_str}, dhe asgjë tjetër.",
+    ),
     BULGARIAN: PromptConfig(
         default_prompt_label_mapping=dict(correct="да", incorrect="не"),
         default_prompt_prefix="Следват изречения и дали са граматически правилни.",

@@ -1028,3 +1028,75 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset wiki-lingua-nl
 ```
+
+## Simplification
+
+### Duidelijke Taal
+
+The [Duidelijke Taal dataset](http://hdl.handle.net/10032/tm-a2-y8) was created by
+Instituut voor de Nederlandse Taal and published in _Human Evaluation of Automated Text
+Simplification through Crowdsourcing_ [(Vandeghinste et al.,
+2025)](https://scholar.google.com/scholar?oi=bibs&cluster=2894378448414629586&btnI=1&hl=en).
+It consists of crowd-sourced human evaluations of automated simplifications. The
+original dataset contains 1,071 sentence pairs with crowdsourced annotations. A
+[pre-split version](https://huggingface.co/datasets/GPT-NL/DuidelijkeTaal-v1.0-split) of
+the dataset is used to ensure consistency and partially reduce the risk of data
+contamination.
+
+After running the filtering and splitting script (
+`scripts/create_duidelijke_taal_nl.py`), the dataset
+contains 50 / 51 / 90 samples for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Aangeraden wordt steeds flessen met drinkwater aan te schaffen, die u overal kunt krijgen.",
+  "target_text": "Het is een goed idee om altijd flessen drinkwater te kopen die u overal kunt vinden."
+}
+```
+
+```json
+{
+  "text": "Het respect voor de mensenrechten is in de wet verankerd, maar de praktijk laat te wensen over.",
+  "target_text": "De wet beschermt de mensenrechten, maar in werkelijkheid worden deze rechten niet altijd gerespecteerd."
+}
+```
+
+```json
+{
+  "text": "De gezondheidszorg staat op een hoog peil: de levensverwachting in Japan is de hoogste in de wereld.",
+  "target_text": "De gezondheidszorg in Japan is erg goed. Mensen daar leven het langst van iedereen in de wereld."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 3
+- Prefix prompt:
+
+  ```text
+  Hieronder volgen documenten met bijbehorende versimpelingen.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Document: {text}
+  Versimpeling: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Document: {text}
+
+  Versimpel het bovenstaande document.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset duidelijke-taal
+```

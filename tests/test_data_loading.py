@@ -107,16 +107,19 @@ class TestAllDatasets:
         )
 
         for itr_idx in range(10):
-            few_shot_examples = (
-                extract_few_shot_examples(
-                    dataset=dataset,
-                    dataset_config=dataset_config,
-                    benchmark_config=benchmark_config,
-                    itr_idx=itr_idx,
+            if "train" in dataset_config.splits:
+                few_shot_examples = (
+                    extract_few_shot_examples(
+                        dataset=dataset,
+                        dataset_config=dataset_config,
+                        benchmark_config=benchmark_config,
+                        itr_idx=itr_idx,
+                    )
+                    if not dataset_config.task.requires_zero_shot
+                    else []
                 )
-                if not dataset_config.task.requires_zero_shot
-                else []
-            )
+            else:
+                few_shot_examples = []
             for instruction_model in [True, False]:
                 prepared_test = dataset["test"].map(
                     partial(

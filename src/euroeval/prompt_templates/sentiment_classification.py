@@ -4,6 +4,7 @@ import typing as t
 
 from ..data_models import PromptConfig
 from ..languages import (
+    ALBANIAN,
     BOSNIAN,
     BULGARIAN,
     CATALAN,
@@ -41,6 +42,16 @@ if t.TYPE_CHECKING:
     from ..languages import Language
 
 SENT_TEMPLATES: dict["Language", PromptConfig] = {
+    ALBANIAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="pozitive", neutral="neutrale", negative="negative"
+        ),
+        default_prompt_prefix="Më poshtë janë dokumentet dhe ndjenjat e tyre, të cilat "
+        "mund të jenë {labels_str}.",
+        default_prompt_template="Dokument: {text}\nNdjenja: {label}",
+        default_instruction_prompt="Dokument: {text}\n\nKlasifikoni ndjenjën në "
+        "dokument. Përgjigjuni vetëm me {labels_str}, dhe asgjë tjetër.",
+    ),
     BOSNIAN: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="pozitivno", neutral="neutralno", negative="negativno"

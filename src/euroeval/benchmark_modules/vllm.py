@@ -100,6 +100,10 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
         StructuredOutputsParams,
     )
 
+if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
+    import ray  # type: ignore[missing-import]
+
+
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
     from transformers.trainer import Trainer
@@ -563,17 +567,31 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             prompts = [prompt.strip() for prompt in prompts]
 
-        # Truncate the prompts if needed, but only if it's not a reasoning model
-        if self.generative_type != GenerativeType.REASONING:
-            max_tokens_per_prompt = (
-                min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH) - max_tokens
+        # Truncate the prompts if needed
+        max_tokens_per_prompt = min(
+            self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH
+        )
+        max_tokens_per_prompt -= min(
+            self.dataset_config.max_generated_tokens, max_tokens_per_prompt - 1
+        )
+        log_once(
+            f"Truncating prompts for the model {self.model_config.model_id!r} "
+            f"to a maximum of {max_tokens_per_prompt:,} tokens.",
+            level=logging.DEBUG,
+        )
+        tokenized_prompts = self._tokeniser(
+            text=prompts, truncation=True, max_length=max_tokens_per_prompt
+        )
+        if any(
+            len(input_ids) > max_tokens_per_prompt
+            for input_ids in tokenized_prompts.input_ids
+        ):
+            raise InvalidBenchmark(
+                "Truncation of prompts failed, some prompts are still too long."
             )
-            tokenized_prompts = self._tokeniser(
-                text=list(prompts), truncation=True, max_length=max_tokens_per_prompt
-            )
-            prompts = self._tokeniser.batch_decode(
-                sequences=tokenized_prompts.input_ids, skip_special_tokens=True
-            )
+        prompts = self._tokeniser.batch_decode(
+            sequences=tokenized_prompts.input_ids, skip_special_tokens=True
+        )
 
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
@@ -594,10 +612,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                     level=logging.DEBUG,
                 )
                 sleep(1)
-            except ValueError as e:
+            except (ValueError, RuntimeError) as e:
                 # Truncate the prompts if they are too long for the model
                 truncate_error_messages = [
-                    r"prompt \(length [0-9]+\) is longer than the maximum model length"
+                    r"prompt \(length [0-9]+\) is longer than the maximum model length",
+                    "Sampled token IDs exceed the max model length",
                 ]
                 if any(
                     re.search(pattern, str(e), flags=re.IGNORECASE) is not None
@@ -1008,6 +1027,10 @@ def load_model_and_tokeniser(
 
     clear_vllm()
 
+    distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
+        select_backend_and_parallelism()
+    )
+
     try:
         model = LLM(
             model=(
@@ -1026,8 +1049,9 @@ def load_model_and_tokeniser(
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,
             seed=4242,
-            distributed_executor_backend="mp",
-            tensor_parallel_size=torch.cuda.device_count(),
+            distributed_executor_backend=distributed_executor_backend,
+            tensor_parallel_size=tensor_parallel_size,
+            pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
             dtype=dtype,
@@ -1430,3 +1454,55 @@ def get_vllm_tokenisation_params(
         config_format=config_format,
         load_format=load_format,
     )
+
+
+def select_backend_and_parallelism() -> tuple[str, int, int]:
+    """Determine the distributed backend and parallelism for vLLM.
+
+    Returns:
+        Tuple containing:
+        - backend (str): "ray" if multi-node Ray is available, else "mp".
+        - tensor_parallel_size (int): Number of GPUs per node.
+        - pipeline_parallel_size (int): Number of stages across nodes.
+    """
+    if not ray.is_initialized():
+        try:
+            ray.init(address="auto", ignore_reinit_error=True)
+        except Exception as e:
+            if "could not find any running ray instance" not in str(e).lower():
+                log_once(
+                    f"Ray initialisation failed with a {type(e)} exception: {e}",
+                    level=logging.DEBUG,
+                )
+
+    is_ray = ray.is_initialized()
+    local_gpu_count = torch.cuda.device_count()
+
+    if is_ray:
+        resources = ray.cluster_resources()
+        total_gpus = int(resources.get("GPU", 0))
+    else:
+        total_gpus = local_gpu_count
+
+    using_multiple_nodes = total_gpus > local_gpu_count
+    if is_ray and using_multiple_nodes:
+        distributed_executor_backend = "ray"
+        tensor_parallel_size = local_gpu_count if local_gpu_count > 0 else 1
+        pipeline_parallel_size = max(1, total_gpus // tensor_parallel_size)
+        log_once(
+            f"Detected a multi-node setup with {pipeline_parallel_size:,} nodes, each "
+            "with {tensor_parallel_size:,} GPUs, so using `ray` as the "
+            "distributed backend.",
+            level=logging.DEBUG,
+        )
+    else:
+        distributed_executor_backend = "mp"
+        tensor_parallel_size = local_gpu_count if local_gpu_count > 0 else 1
+        pipeline_parallel_size = 1
+        log_once(
+            f"Detected a single-node setup with {tensor_parallel_size:,} GPUs, "
+            "so using the multiprocessing distributed backend.",
+            level=logging.DEBUG,
+        )
+
+    return distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size

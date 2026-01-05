@@ -137,7 +137,6 @@ def test_benchmark_encoder_no_internet(
     )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
-    rmtree(path=benchmarker.benchmark_config.cache_dir, ignore_errors=True)
 
 
 # Allow localhost since vllm uses it for some things
@@ -157,7 +156,6 @@ def test_benchmark_generative_no_internet(
     )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
-    rmtree(path=benchmarker.benchmark_config.cache_dir, ignore_errors=True)
 
 
 # Allow localhost since vllm uses it for some things
@@ -177,7 +175,6 @@ def test_benchmark_generative_adapter_no_internet(
     )
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
-    rmtree(path=benchmarker.benchmark_config.cache_dir, ignore_errors=True)
 
 
 @pytest.mark.parametrize(

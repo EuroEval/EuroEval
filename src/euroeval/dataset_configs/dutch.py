@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import DUTCH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SIMPL,
+    SUMM,
+)
 
 ### Official datasets ###
 
@@ -60,6 +71,14 @@ HELLASWAG_NL_CONFIG = DatasetConfig(
     pretty_name="HellaSwag-nl",
     source="EuroEval/hellaswag-nl-mini",
     task=COMMON_SENSE,
+    languages=[DUTCH],
+)
+
+DUIDELIJKE_TAAL_NL_CONFIG = DatasetConfig(
+    name="duidelijke-taal",
+    pretty_name="Duidelijke Taal",
+    source="EuroEval/duidelijke-taal",
+    task=SIMPL,
     languages=[DUTCH],
 )
 

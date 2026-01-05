@@ -306,14 +306,13 @@ def safe_run(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T:
     Returns:
         The result of the coroutine.
     """
-    loop = asyncio.new_event_loop()
     try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:  # If the current event loop is closed
+        loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        response = loop.run_until_complete(coroutine)
-        return response
-    finally:
-        loop.close()
-        asyncio.set_event_loop(None)
+    response = loop.run_until_complete(coroutine)
+    return response
 
 
 async def add_semaphore_and_catch_exception(

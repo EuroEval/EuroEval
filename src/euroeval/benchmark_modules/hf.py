@@ -758,12 +758,22 @@ def get_model_repo_info(
     # model info object.
     model_info: HfApiModelInfo | None = None
     if Path(model_id).is_dir():
-        log(f"Checking for local model in {model_id}.", level=logging.DEBUG)
         if all(
             (Path(model_id) / required_file).exists()
             for required_file in LOCAL_MODELS_REQUIRED_FILES
         ):
+            log_once(
+                f"Using the local model directory {model_id}.", level=logging.DEBUG
+            )
             model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
+        else:
+            log_once(
+                f"The local model directory {model_id} does not contain all the "
+                f"required files: {LOCAL_MODELS_REQUIRED_FILES}. Skipping this "
+                f"model.",
+                level=logging.WARNING,
+            )
+            return None
 
     # If we have not internet, and the model_id is not a directory for a local model
     # we also just create a dummy model info object.
