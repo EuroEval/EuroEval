@@ -44,11 +44,11 @@ def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
     Returns:
         The path to the cache directory.
     """
-    # To avoid nesting due to models name containing '/'
-    breakpoint()
-    _model_id = model_id.replace("/", "--")
-    cache_dir_path = Path(cache_dir) / "model_cache" / _model_id
-    return str(cache_dir_path)
+    # If the model ID is a path, we just use that as the cache dir
+    if Path(model_id).is_dir():
+        return model_id
+    # Otherwise, we create a cache dir based on the model ID
+    return Path(cache_dir, "model_cache", model_id.replace("/", "--")).as_posix()
 
 
 def resolve_model_path(download_dir: str) -> str:
