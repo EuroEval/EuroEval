@@ -569,7 +569,13 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Truncate the prompts if needed
         max_tokens_per_prompt = max(
-            min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH) - max_tokens, 0
+            min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH) - max_tokens - 1,
+            0,
+        )
+        log_once(
+            f"Truncating prompts for the model {self.model_config.model_id!r} "
+            f"to a maximum of {max_tokens_per_prompt:,} tokens.",
+            level=logging.DEBUG,
         )
         tokenized_prompts = self._tokeniser(
             text=prompts, truncation=True, max_length=max_tokens_per_prompt
