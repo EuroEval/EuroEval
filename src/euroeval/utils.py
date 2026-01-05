@@ -46,9 +46,22 @@ def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
     """
     # If the model ID is a path, we just use that as the cache dir
     if Path(model_id).is_dir():
+        log_once(
+            f"Since the model {model_id!r} is a local model, we will use the model "
+            "directory directly as the model cache directory.",
+            level=logging.DEBUG,
+        )
         return model_id
+
     # Otherwise, we create a cache dir based on the model ID
-    return Path(cache_dir, "model_cache", model_id.replace("/", "--")).as_posix()
+    model_cache_dir = Path(
+        cache_dir, "model_cache", model_id.replace("/", "--")
+    ).as_posix()
+    log_once(
+        f"Using the model cache directory {model_cache_dir!r} for the model "
+        f"{model_id!r}."
+    )
+    return model_cache_dir
 
 
 def resolve_model_path(download_dir: str) -> str:
