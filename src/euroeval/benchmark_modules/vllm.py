@@ -958,7 +958,7 @@ def load_model_and_tokeniser(
         raise NeedsExtraInstalled(extra="quantization")
 
     # If the model is a quantized model, let vLLM decide the dtype
-    if quantization:
+    if quantization is not None:
         log(
             f"You are loading a quantized model with quantization {quantization}. "
             "Forcing the vLLM dtype to 'auto'",

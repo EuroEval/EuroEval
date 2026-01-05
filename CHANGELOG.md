@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Quantized models in vLLM now have their dtype inferred automatically, removing explicit dtype casting based on GPU compute capability.
 - Nynorsk datasets were incorrectly not included when evaluating models in Norwegian.
   This has been fixed now.
 
