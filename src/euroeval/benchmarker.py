@@ -1226,6 +1226,7 @@ def initial_logging(
         f"{dataset_config.logging_string} ({num_finished_benchmarks + 1}/"
         f"{num_total_benchmarks} benchmarks)...",
         prefix=f"\n[{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]",
+        level=logging.INFO,
     )
 
     if dataset_config.unofficial:
