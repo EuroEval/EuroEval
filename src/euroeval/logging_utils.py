@@ -87,7 +87,7 @@ def log(message: str, level: int, colour: str | None = None) -> None:
 
 
 @cache_arguments("message")
-def log_once(message: str, level: int = logging.INFO, prefix: str = "") -> None:
+def log_once(message: str, level: int, prefix: str = "") -> None:
     """Log a message once.
 
     This is ensured by caching the "message" argument and only logging it the first time
