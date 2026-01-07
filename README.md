@@ -47,16 +47,17 @@ The easiest way to benchmark pretrained models is via the command line interface
 having installed the package, you can benchmark your favorite model like so:
 
 ```bash
-euroeval --model <model-id>
+euroeval --model <model-id-or-path>
 ```
 
-Here `model` is the HuggingFace model ID, which can be found on the [HuggingFace
-Hub](https://huggingface.co/models). By default this will benchmark the model on all
-the tasks available. If you want to benchmark on a particular task, then use the
-`--task` argument:
+Here `model` is either the HuggingFace model ID, which can be found on the [HuggingFace
+Hub](https://huggingface.co/models), or a local path to a model directory (containing
+the model files as well as the `config.json` file). By default this will benchmark the
+model on all the tasks available. If you want to benchmark on a particular task, then
+use the `--task` argument:
 
 ```bash
-euroeval --model <model-id> --task sentiment-classification
+euroeval --model <model-id-or-path> --task sentiment-classification
 ```
 
 We can also narrow down which languages we would like to benchmark on. This can be done
@@ -64,20 +65,20 @@ by setting the `--language` argument. Here we thus benchmark the model on the Da
 sentiment classification task:
 
 ```bash
-euroeval --model <model-id> --task sentiment-classification --language da
+euroeval --model <model-id-or-path> --task sentiment-classification --language da
 ```
 
 Multiple models, datasets and/or languages can be specified by just attaching multiple
 arguments. Here is an example with two models:
 
 ```bash
-euroeval --model <model-id1> --model <model-id2>
+euroeval --model <model-id-or-path-1> --model <model-id-or-path-2>
 ```
 
 The specific model version/revision to use can also be added after the suffix '@':
 
 ```bash
-euroeval --model <model-id>@<commit>
+euroeval --model <model-id-or-path>@<commit>
 ```
 
 This can be a branch name, a tag name, or a commit id. It defaults to 'main' for latest.
@@ -97,7 +98,7 @@ model:
 ```python
 >>> from euroeval import Benchmarker
 >>> benchmarker = Benchmarker()
->>> benchmarker.benchmark(model="<model-id>")
+>>> benchmarker.benchmark(model="<model-id-or-path>")
 ```
 
 To benchmark on a specific task and/or language, you simply specify the `task` or
@@ -105,7 +106,7 @@ To benchmark on a specific task and/or language, you simply specify the `task` o
 
 ```python
 >>> benchmarker.benchmark(
-...     model="<model-id>",
+...     model="<model-id-or-path>",
 ...     task="sentiment-classification",
 ...     language="da",
 ... )
@@ -149,7 +150,7 @@ docker run -e args="<euroeval-arguments>" --gpus 1 --name euroeval --rm euroeval
 ```
 
 Here `<euroeval-arguments>` consists of the arguments added to the `euroeval` CLI
-argument. This could for instance be `--model <model-id> --task
+argument. This could for instance be `--model <model-id-or-path> --task
 sentiment-classification`.
 
 ## Benchmarking custom inference APIs
@@ -215,14 +216,14 @@ script. For example to download the model you want and all of the Danish sentime
 classification datasets:
 
 ```bash
-euroeval --model <model-id> --task sentiment-classification --language da --download-only
+euroeval --model <model-id-or-path> --task sentiment-classification --language da --download-only
 ```
 
 Or from a script:
 
 ```python
 >>> benchmarker.benchmark(
-... model="<model-id>",
+... model="<model-id-or-path>",
 ... task="sentiment-classification",
 ... language="da",
 ... download_only=True,
@@ -270,7 +271,7 @@ MY_CONFIG = DatasetConfig(
 You can then benchmark your custom dataset by simply running
 
 ```bash
-euroeval --dataset my-dataset --model <model-id>
+euroeval --dataset my-dataset --model <model-id-or-path>
 ```
 
 You can also run the benchmark from a Python script, by simply providing your custom
@@ -280,7 +281,7 @@ dataset configuration directly into the `benchmark` method:
 from euroeval import Benchmarker
 
 benchmarker = Benchmarker()
-benchmarker.benchmark(model="<model-id>", dataset=MY_CONFIG)
+benchmarker.benchmark(model="<model-id-or-path>", dataset=MY_CONFIG)
 ```
 
 We have included three convenience tasks to make it easier to set up custom datasets:
@@ -360,7 +361,7 @@ MY_SQL_DATASET = DatasetConfig(
 Again, with this you can benchmark your custom dataset by simply running
 
 ```bash
-euroeval --dataset my-sql-dataset --model <model-id>
+euroeval --dataset my-sql-dataset --model <model-id-or-path>
 ```
 
 ## Reproducing the evaluation datasets
