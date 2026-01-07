@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added model metadata for GPT 5.2.
+
+### Changed
+
+- When evaluating datasets with no validation split, we now set the `validation_split`
+  in the resulting JSONL file to `null` rather than `True`, to avoid confusion.
+
 ### Fixed
 
 - More robust detection and handling of errors related to too long inputs for vLLM
@@ -17,6 +26,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - When evaluating local generative models, we did not set the model cache directory
   correctly; we now correctly set it to the local directory specified by the user in the
   model ID.
+- Some API models need the `logprobs` argument to be a Boolean rather than an integer.
+  This has been fixed now.
 
 ## [v16.10.1] - 2026-01-02
 
