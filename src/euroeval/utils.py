@@ -20,7 +20,8 @@ import demjson3
 import huggingface_hub as hf_hub
 import numpy as np
 import torch
-from huggingface_hub.errors import HfHubHTTPError, LocalTokenNotFoundError
+from huggingface_hub.errors import LocalTokenNotFoundError
+from requests.exceptions import RequestException
 
 from .caching_utils import cache_arguments
 from .constants import T
@@ -440,7 +441,7 @@ def get_hf_token(api_key: str | None) -> str | bool:
             level=logging.DEBUG,
         )
         return False
-    except HfHubHTTPError:
+    except RequestException:
         log_once(
             "No Hugging Face API key was set and the connection to Hugging Face "
             "failed, so no token will be used.",
