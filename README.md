@@ -517,6 +517,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for tvosch"
     />
 </a>
+<a href="https://github.com/Touzen">
+    <img
+        src="https://avatars.githubusercontent.com/u/1416265"
+        width=50
+        alt="Contributor avatar for Touzen"
+    />
+</a>
 
 ### Contribute to EuroEval
 
