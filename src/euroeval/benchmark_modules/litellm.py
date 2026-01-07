@@ -99,12 +99,13 @@ if t.TYPE_CHECKING:
 
 VOCAB_SIZE_MAPPING = {
     # OpenAI models
+    r"gpt-5\.2.*": -1,
     r"gpt-5-.*": 100_256,
     r"gpt-4-(32k)?(-[0-9]{4})?": 100_256,
     r"gpt-4-[0-9]{4}-preview": 100_256,
     r"gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 100_256,
     r"gpt-4-(vision|turbo)(-preview)?": 100_256,
-    r"gpt-3.5-turbo-instruct(-[0-9]{4})?": 100_256,
+    r"gpt-3\.5-turbo-instruct(-[0-9]{4})?": 100_256,
     r"gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_019,
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
     # Anthropic models
@@ -118,18 +119,19 @@ VOCAB_SIZE_MAPPING = {
 
 MODEL_MAX_LENGTH_MAPPING = {
     # OpenAI models
+    r"gpt-5\.2.*": 400_000,
     r"gpt-5-.*": 272_000,
     r"gpt-4(-[0-9]{4})?": 8_191,
     r"gpt-4-32k(-[0-9]{4})?": 32_767,
     r"gpt-4-[0-9]{4}-preview": 128_000,
     r"gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
     r"gpt-4-(vision|turbo)(-preview)?": 128_000,
-    r"gpt-3.5-turbo-instruct(-[0-9]{4})?": 4_095,
+    r"gpt-3\.5-turbo-instruct(-[0-9]{4})?": 4_095,
     r"gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
     r"o1-(mini|preview)(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
     r"o1(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
     r"o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
-    r"gpt-4.1.*": 1_047_576,
+    r"gpt-4\.1.*": 1_047_576,
     # Anthropic models
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
     r"(anthropic/)?claude-(opus|sonnet|haiku)-[1-9](-[1-9])?-[0-9]{8}": 200_000,
@@ -144,7 +146,7 @@ MODEL_MAX_LENGTH_MAPPING = {
 
 NUM_PARAMS_MAPPING = {
     # OpenAI models
-    r"gpt-5-.*": -1,
+    r"gpt-5.*": -1,
     r"gpt-4.*": -1,
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
     # Anthropic models
@@ -483,11 +485,13 @@ class LiteLLMModel(BenchmarkModule):
             "you've reached the maximum number of requests with logprobs",
             "logprobs is not supported",
             "logprobs is not enabled",
-            "Invalid value at 'generation_config.response_logprobs' (TYPE_BOOL)",
         ]
         logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'logprobs'.*\]"
         )
+        logprobs_argument_should_be_bool_messages = [
+            "Invalid value at 'generation_config.response_logprobs' (TYPE_BOOL)"
+        ]
         top_logprobs_messages = ["got an unexpected keyword argument 'top_logprobs'"]
         top_logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'top_logprobs'.*\]"
@@ -547,6 +551,17 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs.pop("logprobs", None)
             generation_kwargs.pop("top_logprobs", None)
             generation_kwargs.pop("response_format", None)
+            return generation_kwargs, 0
+        elif any(
+            msg.lower() in error_msg
+            for msg in logprobs_argument_should_be_bool_messages
+        ):
+            log_once(
+                f"The model {model_id!r} requires the `logprobs` argument to be a "
+                "Boolean, so setting it to True.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs["logprobs"] = True
             return generation_kwargs, 0
         elif (
             any(msg.lower() in error_msg for msg in top_logprobs_messages)
