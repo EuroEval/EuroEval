@@ -14,6 +14,7 @@ from transformers.generation.configuration_utils import GenerationConfig
 
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
+from .language_pairs_mt import LanguagePair
 from .languages import (
     ENGLISH,
     EUROPEAN_PORTUGUESE,
@@ -113,7 +114,7 @@ class Task:
 
     name: str
     task_group: TaskGroup
-    template_dict: dict[Language, PromptConfig]
+    template_dict: dict[Language, PromptConfig] | dict[LanguagePair, PromptConfig]
     metrics: c.Sequence[Metric]
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
@@ -160,6 +161,9 @@ class DatasetConfig:
             The task of the dataset.
         languages:
             The ISO 639-1 language codes of the entries in the dataset.
+        language_pair (optional):
+            The language pair of the dataset. Should only be set for machine
+            translation tasks.
         id2label:
             The mapping from ID to label.
         label2id:
@@ -225,6 +229,7 @@ class DatasetConfig:
     source: str | dict[str, str]
     task: Task
     languages: c.Sequence[Language]
+    language_pair: LanguagePair | None = None
     _prompt_prefix: str | None = None
     _prompt_template: str | None = None
     _instruction_prompt: str | None = None
@@ -241,12 +246,15 @@ class DatasetConfig:
     unofficial: bool = False
 
     @property
-    def main_language(self) -> Language:
+    def main_language(self) -> Language | LanguagePair:
         """Get the main language of the dataset.
 
         Returns:
             The main language.
         """
+        if self.language_pair is not None:
+            return self.language_pair
+
         match len(self.languages):
             case 0:
                 raise InvalidBenchmark(
@@ -312,7 +320,7 @@ class DatasetConfig:
     @property
     def prompt_prefix(self) -> str:
         """The prefix to use in the few-shot prompt."""
-        prompt_config = self.task.template_dict[self.main_language]
+        prompt_config = self._prompt_config
         prompt_prefix = (
             prompt_config.default_prompt_prefix
             if self._prompt_prefix is None
@@ -323,7 +331,7 @@ class DatasetConfig:
     @property
     def prompt_template(self) -> str:
         """The template used during few-shot evaluation."""
-        prompt_config = self.task.template_dict[self.main_language]
+        prompt_config = self._prompt_config
         prompt_template = (
             prompt_config.default_prompt_template
             if self._prompt_template is None
@@ -334,13 +342,31 @@ class DatasetConfig:
     @property
     def instruction_prompt(self) -> str:
         """The prompt to use when evaluating instruction-tuned models."""
-        prompt_config = self.task.template_dict[self.main_language]
+        prompt_config = self._prompt_config
         instruction_prompt = (
             prompt_config.default_instruction_prompt
             if self._instruction_prompt is None
             else self._instruction_prompt
         )
         return instruction_prompt
+
+    @property
+    def _prompt_config(self) -> PromptConfig:
+        """Get the task's `PromptConfig` for this dataset.
+
+        Most tasks have a template dictionary keyed by `Language`, but machine
+        translation uses `LanguagePair`. We narrow based on whether this dataset has a
+        `language_pair`.
+        """
+        if self.language_pair is not None:
+            template_dict = t.cast(
+                dict[LanguagePair, PromptConfig], self.task.template_dict
+            )
+            return template_dict[self.language_pair]
+
+        template_dict = t.cast(dict[Language, PromptConfig], self.task.template_dict)
+        main_language = t.cast(Language, self.main_language)
+        return template_dict[main_language]
 
     @property
     def num_few_shot_examples(self) -> int:
@@ -381,7 +407,7 @@ class DatasetConfig:
             return {label: label for label in self.labels}
         elif self._prompt_label_mapping is not None:
             return self._prompt_label_mapping
-        prompt_config = self.task.template_dict[self.main_language]
+        prompt_config = self._prompt_config
         if prompt_config.default_prompt_label_mapping == "auto":
             return {label: label for label in self.labels}
         else:

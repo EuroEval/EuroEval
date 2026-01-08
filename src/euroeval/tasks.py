@@ -7,6 +7,7 @@ from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
     CLASSIFICATION_TEMPLATES,
     LA_TEMPLATES,
+    MT_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
     NER_TEMPLATES,
     RC_TEMPLATES,
@@ -198,4 +199,15 @@ MULTIPLE_CHOICE = Task(
     default_labels=None,
     default_allowed_model_types=[ModelType.GENERATIVE],
     uses_logprobs=True,
+)
+
+MT = Task(
+    name="machine-translation",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=MT_TEMPLATES,
+    metrics=([m.bert_score_metric]),
+    default_num_few_shot_examples=1,
+    default_max_generated_tokens=256,
+    default_labels=[],
+    default_allowed_model_types=[ModelType.GENERATIVE],
 )
