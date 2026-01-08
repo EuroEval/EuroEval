@@ -113,9 +113,7 @@ class Task:
 
     name: str
     task_group: TaskGroup
-    template_dict: (
-        dict[Language, PromptConfig] | dict[tuple[Language, Language], PromptConfig]
-    )
+    template_dict: dict[Language | tuple[Language, Language], PromptConfig]
     metrics: c.Sequence[Metric]
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
