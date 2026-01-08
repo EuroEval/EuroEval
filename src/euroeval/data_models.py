@@ -162,9 +162,6 @@ class DatasetConfig:
             The task of the dataset.
         languages:
             The ISO 639-1 language codes of the entries in the dataset.
-        language_pair (optional):
-            The language pair of the dataset. Should only be set for machine
-            translation tasks.
         id2label:
             The mapping from ID to label.
         label2id:
@@ -355,14 +352,14 @@ class DatasetConfig:
         """Get the task's `PromptConfig` for this dataset.
 
         Most tasks have a template dictionary keyed by `Language`, but machine
-        translation uses `LanguagePair`. We narrow based on whether this dataset has a
-        `language_pair`.
+        translation uses `(source_language, target_language)` tuple.
         """
         if self.task.name == "machine-translation":
             template_dict = t.cast(
                 dict[tuple[Language, Language], PromptConfig], self.task.template_dict
             )
-            return template_dict[self.language_pair]
+            language_pair = t.cast(tuple[Language, Language], self.main_language)
+            return template_dict[language_pair]
 
         template_dict = t.cast(dict[Language, PromptConfig], self.task.template_dict)
         main_language = t.cast(Language, self.main_language)
