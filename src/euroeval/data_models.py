@@ -70,6 +70,8 @@ class Task:
             The task group of the task.
         template_dict:
             The template dictionary for the task, from language to prompt template.
+            For machine translation, the key is a tuple
+            ``(source_language, target_language)``.
         metrics:
             The metrics used to evaluate the task.
         default_num_few_shot_examples:
