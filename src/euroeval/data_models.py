@@ -321,7 +321,7 @@ class DatasetConfig:
     @property
     def prompt_prefix(self) -> str:
         """The prefix to use in the few-shot prompt."""
-        prompt_config = self._prompt_config
+        prompt_config = self.task.template_dict[self.main_language]
         prompt_prefix = (
             prompt_config.default_prompt_prefix
             if self._prompt_prefix is None
@@ -332,7 +332,7 @@ class DatasetConfig:
     @property
     def prompt_template(self) -> str:
         """The template used during few-shot evaluation."""
-        prompt_config = self._prompt_config
+        prompt_config = self.task.template_dict[self.main_language]
         prompt_template = (
             prompt_config.default_prompt_template
             if self._prompt_template is None
@@ -343,34 +343,13 @@ class DatasetConfig:
     @property
     def instruction_prompt(self) -> str:
         """The prompt to use when evaluating instruction-tuned models."""
-        prompt_config = self._prompt_config
+        prompt_config = self.task.template_dict[self.main_language]
         instruction_prompt = (
             prompt_config.default_instruction_prompt
             if self._instruction_prompt is None
             else self._instruction_prompt
         )
         return instruction_prompt
-
-    @property
-    def _prompt_config(self) -> PromptConfig:
-        """Get the task's `PromptConfig` for this dataset.
-
-        Most tasks have a template dictionary keyed by `Language`, but machine
-        translation uses `(source_language, target_language)` tuple.
-        """
-        # Local import to avoid a circular import (`tasks` imports `data_models`).
-        from .tasks import MT
-
-        if self.task == MT:
-            template_dict = t.cast(
-                dict[tuple[Language, Language], PromptConfig], self.task.template_dict
-            )
-            language_pair = t.cast(tuple[Language, Language], self.main_language)
-            return template_dict[language_pair]
-
-        template_dict = t.cast(dict[Language, PromptConfig], self.task.template_dict)
-        main_language = t.cast(Language, self.main_language)
-        return template_dict[main_language]
 
     @property
     def num_few_shot_examples(self) -> int:
@@ -411,7 +390,7 @@ class DatasetConfig:
             return {label: label for label in self.labels}
         elif self._prompt_label_mapping is not None:
             return self._prompt_label_mapping
-        prompt_config = self._prompt_config
+        prompt_config = self.task.template_dict[self.main_language]
         if prompt_config.default_prompt_label_mapping == "auto":
             return {label: label for label in self.labels}
         else:
