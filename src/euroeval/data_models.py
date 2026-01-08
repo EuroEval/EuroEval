@@ -250,7 +250,10 @@ class DatasetConfig:
             The main language. For machine translation, this is a tuple
             ``(source_language, target_language)``.
         """
-        if self.task.name == "machine-translation":
+        # Local import to avoid a circular import (`tasks` imports `data_models`).
+        from .tasks import MT
+
+        if self.task == MT:
             return (self.languages[0], self.languages[1])
 
         match len(self.languages):
@@ -355,7 +358,10 @@ class DatasetConfig:
         Most tasks have a template dictionary keyed by `Language`, but machine
         translation uses `(source_language, target_language)` tuple.
         """
-        if self.task.name == "machine-translation":
+        # Local import to avoid a circular import (`tasks` imports `data_models`).
+        from .tasks import MT
+
+        if self.task == MT:
             template_dict = t.cast(
                 dict[tuple[Language, Language], PromptConfig], self.task.template_dict
             )
