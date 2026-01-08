@@ -14,7 +14,6 @@ from transformers.generation.configuration_utils import GenerationConfig
 
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
-from .language_pairs_mt import LanguagePair
 from .languages import (
     ENGLISH,
     EUROPEAN_PORTUGUESE,
@@ -114,7 +113,9 @@ class Task:
 
     name: str
     task_group: TaskGroup
-    template_dict: dict[Language, PromptConfig] | dict[LanguagePair, PromptConfig]
+    template_dict: (
+        dict[Language, PromptConfig] | dict[tuple[Language, Language], PromptConfig]
+    )
     metrics: c.Sequence[Metric]
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
@@ -229,7 +230,6 @@ class DatasetConfig:
     source: str | dict[str, str]
     task: Task
     languages: c.Sequence[Language]
-    language_pair: LanguagePair | None = None
     _prompt_prefix: str | None = None
     _prompt_template: str | None = None
     _instruction_prompt: str | None = None
@@ -246,14 +246,14 @@ class DatasetConfig:
     unofficial: bool = False
 
     @property
-    def main_language(self) -> Language | LanguagePair:
+    def main_language(self) -> Language | tuple[Language, Language]:
         """Get the main language of the dataset.
 
         Returns:
             The main language.
         """
-        if self.language_pair is not None:
-            return self.language_pair
+        if self.task.name == "machine-translation":
+            return (self.languages[0], self.languages[1])
 
         match len(self.languages):
             case 0:
@@ -358,9 +358,9 @@ class DatasetConfig:
         translation uses `LanguagePair`. We narrow based on whether this dataset has a
         `language_pair`.
         """
-        if self.language_pair is not None:
+        if self.task.name == "machine-translation":
             template_dict = t.cast(
-                dict[LanguagePair, PromptConfig], self.task.template_dict
+                dict[tuple[Language, Language], PromptConfig], self.task.template_dict
             )
             return template_dict[self.language_pair]
 

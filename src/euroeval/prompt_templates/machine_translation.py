@@ -1,9 +1,10 @@
 """Templates for the Summarization task."""
 
 from ..data_models import PromptConfig
-from ..language_pairs_mt import DANISH_TO_UKRAINIAN, LanguagePair
+from ..language_pairs_mt import DANISH_TO_UKRAINIAN
+from ..languages import Language
 
-MT_TEMPLATES: dict[LanguagePair, PromptConfig] = {
+MT_TEMPLATES: dict[tuple[Language, Language], PromptConfig] = {
     DANISH_TO_UKRAINIAN: PromptConfig(
         default_prompt_prefix=(
             "Nedenfor er danske tekster med tilhørende ukrainske oversættelser."
