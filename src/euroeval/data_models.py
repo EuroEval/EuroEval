@@ -245,7 +245,8 @@ class DatasetConfig:
         """Get the main language of the dataset.
 
         Returns:
-            The main language.
+            The main language. For machine translation, this is a tuple
+            ``(source_language, target_language)``.
         """
         if self.task.name == "machine-translation":
             return (self.languages[0], self.languages[1])
