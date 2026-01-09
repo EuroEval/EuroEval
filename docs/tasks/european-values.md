@@ -2,7 +2,7 @@
 
 ## 📚 Overview
 
-This task is an _orthogonal task_, meaning that it does not contribute the overall rank
+This task is an _orthogonal task_, meaning that it does not contribute to the overall rank
 score of the models on the leaderboards, but that it instead provides additional
 insights into model behavior.
 
