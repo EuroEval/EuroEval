@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -2256,7 +2258,14 @@
 <span class="normal">1241</span>
 <span class="normal">1242</span>
 <span class="normal">1243</span>
-<span class="normal">1244</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1244</span>
+<span class="normal">1245</span>
+<span class="normal">1246</span>
+<span class="normal">1247</span>
+<span class="normal">1248</span>
+<span class="normal">1249</span>
+<span class="normal">1250</span>
+<span class="normal">1251</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -3303,8 +3312,16 @@
                         <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">generative_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                         <span class="k">else</span> <span class="kc">None</span>
                     <span class="p">),</span>
-                    <span class="n">few_shot</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span><span class="p">,</span>
-                    <span class="n">validation_split</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span><span class="p">,</span>
+                    <span class="n">few_shot</span><span class="o">=</span><span class="p">(</span>
+                        <span class="kc">None</span>
+                        <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">requires_zero_shot</span>
+                        <span class="k">else</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span>
+                    <span class="p">),</span>
+                    <span class="n">validation_split</span><span class="o">=</span><span class="p">(</span>
+                        <span class="kc">None</span>
+                        <span class="k">if</span> <span class="s2">&quot;val&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
+                        <span class="k">else</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
                 <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Results:</span><span class="se">\n</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">record</span>
@@ -3380,12 +3397,10 @@
         <span class="n">same_revision</span> <span class="o">=</span> <span class="n">model_id_components</span><span class="o">.</span><span class="n">revision</span> <span class="o">==</span> <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span>
         <span class="n">same_param</span> <span class="o">=</span> <span class="n">model_id_components</span><span class="o">.</span><span class="n">param</span> <span class="o">==</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span>
         <span class="n">same_dataset</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">dataset</span> <span class="o">==</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span>
-        <span class="n">same_split</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">record</span><span class="o">.</span><span class="n">validation_split</span> <span class="o">!=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span>
-            <span class="ow">or</span> <span class="s2">&quot;val&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
-        <span class="p">)</span>
+        <span class="n">same_split</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">validation_split</span> <span class="o">!=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span>
         <span class="n">same_num_shots</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">record</span><span class="o">.</span><span class="n">few_shot</span> <span class="o">==</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span>
+            <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">few_shot</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="ow">or</span> <span class="ow">not</span> <span class="n">record</span><span class="o">.</span><span class="n">generative</span>
             <span class="ow">or</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">requires_zero_shot</span>
         <span class="p">)</span>
@@ -3483,6 +3498,7 @@
         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">logging_string</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">num_finished_benchmarks</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">/&quot;</span>
         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_total_benchmarks</span><span class="si">}</span><span class="s2"> benchmarks)...&quot;</span><span class="p">,</span>
         <span class="n">prefix</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[</span><span class="si">{</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1"> %H:%M:%S&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">unofficial</span><span class="p">:</span>

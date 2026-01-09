@@ -565,6 +565,8 @@
       
         
       
+        
+      
     
     
     
@@ -1543,6 +1545,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#european-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        European Values
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="European Values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valeu-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ValEU-is
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2366,6 +2396,34 @@
     <span class="md-ellipsis">
       
         RRN
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#european-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        European Values
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="European Values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valeu-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ValEU-is
       
     </span>
   </a>
@@ -3334,6 +3392,66 @@ Skrifaðu samantekt um ofangreindu grein.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>rrn
+</code></pre></div>
+<h2 id="european-values">European Values</h2>
+<h3 id="valeu-is">ValEU-is</h3>
+<p>This dataset is the official Icelandic version of questions from the <a href="https://europeanvaluesstudy.eu/">European values
+study</a>. The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.</p>
+<p>The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;G063&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fólk upplifir sig á misjafnan hátt og hvernig það tengist heiminum í kringum sig. Með því að nota þetta spjald, getur þú sagt mér hversu sterkum böndum þú tengist...?\nHeiminum\nSvarmöguleikar:\na. Mjög sterkum böndum\nb. Sterkum böndum\nc. Veikum böndum\nd. Mjög veikum böndum&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E265_08&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Að þínu mati, hversu oft á eftirfarandi sér stað í íslenskum kosningum?\nKjósendum er hótað ofbeldi á kjörstað\nSvarmöguleikar:\na. Mjög oft\nb. Nokkuð oft\nc. Ekki oft\nd. Alls ekki oft&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E233&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Þrátt fyrir að margir þættir séu æskilegir, eru ekki allir þeirra nauðsynleg einkenni lýðræðisríkja. Vinsamlegast segðu mér hvaða einkenni þér finnst vera nauðsynleg í lýðræðisríkjum. Miðaðu við mælistikuna hér á spjaldinu þar sem 1 merkir „alls ekki nauðsynlegt í lýðræðisríki“ og 10 merkir að það sé tvímælalaust „nauðsynlegt í lýðræðisríki“. Hvaða tala lýsir best þinni skoðun?\nKonur hafa sömu réttindi og karlar\nSvarmöguleikar:\na. Það er andstætt lýðræði (spontant).\nb. Alls ekki nauðsynlegt einkenni í lýðræðisríki\nc. 2\nd. 3\ne. 4\nf. 5\ng. 6\nh. 7\ni. 8\nj. 9\nk. Nauðsynlegt einkenni í lýðræðisríki&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 0</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
+Svarmöguleikar:
+a. {option_a}
+b. {option_b}
+(...)
+k. {option_k}
+Svara: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
+Svarmöguleikar:
+a. {option_a}
+b. {option_b}
+(...)
+k. {option_k}
+
+Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, &#39;d&#39;, &#39;e&#39;, &#39;f&#39;, &#39;g&#39;, &#39;h&#39;, &#39;i&#39;, &#39;j&#39;,
+eða &#39;k&#39;, og engu öðru.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>valeu-is
 </code></pre></div>
 
 

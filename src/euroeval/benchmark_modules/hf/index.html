@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -2463,7 +2465,20 @@
 <span class="normal">1305</span>
 <span class="normal">1306</span>
 <span class="normal">1307</span>
-<span class="normal">1308</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1308</span>
+<span class="normal">1309</span>
+<span class="normal">1310</span>
+<span class="normal">1311</span>
+<span class="normal">1312</span>
+<span class="normal">1313</span>
+<span class="normal">1314</span>
+<span class="normal">1315</span>
+<span class="normal">1316</span>
+<span class="normal">1317</span>
+<span class="normal">1318</span>
+<span class="normal">1319</span>
+<span class="normal">1320</span>
+<span class="normal">1321</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -3223,12 +3238,25 @@
     <span class="c1"># model info object.</span>
     <span class="n">model_info</span><span class="p">:</span> <span class="n">HfApiModelInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">Path</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
-        <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking for local model in </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">all</span><span class="p">(</span>
             <span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span> <span class="o">/</span> <span class="n">required_file</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">required_file</span> <span class="ow">in</span> <span class="n">LOCAL_MODELS_REQUIRED_FILES</span>
         <span class="p">):</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The local model directory </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> has all the required model &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;files (</span><span class="si">{</span><span class="n">LOCAL_MODELS_REQUIRED_FILES</span><span class="si">}</span><span class="s2">), so we&#39;re skipping looking up &quot;</span>
+                <span class="s2">&quot;model information from the Hugging Face Hub.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="n">model_info</span> <span class="o">=</span> <span class="n">HfApiModelInfo</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pipeline_tag</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The local model directory </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> does not contain all the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;required files: </span><span class="si">{</span><span class="n">LOCAL_MODELS_REQUIRED_FILES</span><span class="si">}</span><span class="s2">. Skipping this &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;model.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
 
     <span class="c1"># If we have not internet, and the model_id is not a directory for a local model</span>
     <span class="c1"># we also just create a dummy model info object.</span>

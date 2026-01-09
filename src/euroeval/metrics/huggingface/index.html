@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -1266,9 +1268,11 @@
 <span class="normal">295</span>
 <span class="normal">296</span>
 <span class="normal">297</span>
-<span class="normal">298</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All the Hugging Face metrics used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">298</span>
+<span class="normal">299</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All the Hugging Face metrics used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
@@ -1398,7 +1402,7 @@
             <span class="s2">&quot;__call__ method.&quot;</span>
         <span class="p">)</span>
 
-        <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">(</span><span class="n">disable</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">(</span><span class="n">disable</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;FULL_LOG&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span><span class="p">):</span>
             <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span>
                 <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="n">references</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">compute_kwargs</span>
             <span class="p">)</span>
@@ -1464,7 +1468,7 @@
                 <span class="sa">f</span><span class="s2">&quot;instead.&quot;</span>
             <span class="p">)</span>
 
-        <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">(</span><span class="n">disable</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">(</span><span class="n">disable</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;FULL_LOG&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span><span class="p">):</span>
             <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span>
                 <span class="n">sources</span><span class="o">=</span><span class="n">sources</span><span class="p">,</span>
                 <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span>

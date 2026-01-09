@@ -567,6 +567,8 @@
       
         
       
+        
+      
     
     
     
@@ -641,6 +643,34 @@
     
   
     Common-sense Reasoning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../european-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    European Values
   
 
     
@@ -1358,30 +1388,24 @@
 <h1 id="simplification">Simplification</h1>
 <h2 id="overview">📚 Overview</h2>
 <p>Simplification is a task of generating a simpler, easier to understand, version of a
-given text, preserving the original
-meaning but using less complex phrases and linguistic structures.
-While the task is similar to summarisation, the goal is different: simplification
-specifically rewrites the text to be
-less complex and not necessarily shorter.</p>
+given text, preserving the original meaning but using less complex phrases and
+linguistic structures. While the task is similar to summarisation, the goal is
+different: simplification specifically rewrites the text to be less complex and not
+necessarily shorter.</p>
 <p>When evaluating generative models, we allow the model to generate 128 tokens on this
 task.</p>
 <h2 id="metrics">📊 Metrics</h2>
 <p>The primary metric used to evaluate the performance of a model on the simplification
-task
-is <a href="https://aclanthology.org/W05-0909.pdf">METEOR</a>, which aligns
-the reference with the generated text based on (chunked) unigrams, matching on exact
-matches, stem matches, synonyms, and paraphrases, and then combining precision and
-recall with a penalty for fragmented matches.
-While originally a machine translation metric, the
-generalized matching makes it effective for evaluating simplifications and is
-shown to correlate well
-with human judgment on grammaticality and meaning preservation.</p>
+task is <a href="https://aclanthology.org/W05-0909.pdf">METEOR</a>, which aligns the reference with
+the generated text based on (chunked) unigrams, matching on exact matches, stem matches,
+synonyms, and paraphrases, and then combining precision and recall with a penalty for
+fragmented matches. While originally a machine translation metric, the generalized
+matching makes it effective for evaluating simplifications and is shown to correlate
+well with human judgment on grammaticality and meaning preservation.</p>
 <p>We also report <a href="https://aclanthology.org/Q16-1029.pdf">SARI</a>, a specific text
-simplification metric which compares the
-generated simplified sentences
-against the reference and the source sentence. It explicitly measures the quality of
-words that are added, deleted and
-kept compared to the source.</p>
+simplification metric which compares the generated simplified sentences against the
+reference and the source sentence. It explicitly measures the quality of words that are
+added, deleted and kept compared to the source.</p>
 <h2 id="how-to-run">🛠️ How to run</h2>
 <p>In the command line interface of the <a href="/python-package.md">EuroEval Python package</a>, you
 can benchmark your favorite model on the simplification task like so:</p>

@@ -565,6 +565,8 @@
       
         
       
+        
+      
     
     
     
@@ -1732,6 +1734,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#european-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        European Values
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="European Values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valeu-no" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ValEU-no
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2520,6 +2550,34 @@
     <span class="md-ellipsis">
       
         Unofficial: Personal Sum
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#european-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        European Values
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="European Values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valeu-no" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ValEU-no
       
     </span>
   </a>
@@ -3939,6 +3997,66 @@ Skriv et sammendrag av den ovennevnte artikkelen.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>personal-sum
+</code></pre></div>
+<h2 id="european-values">European Values</h2>
+<h3 id="valeu-no">ValEU-no</h3>
+<p>This dataset is the official Norwegian version of questions from the <a href="https://europeanvaluesstudy.eu/">European values
+study</a>. The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.</p>
+<p>The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A078&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Her er en liste over frivillige organisasjoner. Kan du fortelle meg om du er medlem i noen av disse?\nForbrukerorganisasjon\nSvaralternativer:\na. Nei\nb. Ja&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;G005&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Er du norsk statsborger?\nSvaralternativer:\na. Nei\nb. Ja&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;F025&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Tilhører du en religion eller et bestemt trossamfunn?\nSvaralternativer:\na. Er ikke tilknyttet et kirkesamfunn.\nb. Romersk-katolsk\nc. Protestantisk\nd. Ortodoks (russisk/gresk/osv.)\ne. Jøde\nf. Muslimer\ng. Hindu\nh. Buddhistisk\ni. Andre kristne (evangeliske/pinsevenner/frikirke/osv.)\nj. Annet&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 0</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er flervalgsspørsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
+Svaralternativer:
+a. {option_a}
+b. {option_b}
+(...)
+k. {option_k}
+Svar: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørsmål: {text}
+Svaralternativer:
+a. {option_a}
+b. {option_b}
+(...)
+k. {option_k}
+
+Besvar følgende spørsmål med &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, &#39;d&#39;, &#39;e&#39;, &#39;f&#39;, &#39;g&#39;, &#39;h&#39;, &#39;i&#39;, &#39;j&#39; eller
+&#39;k&#39; og ikke noe annet.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>valeu-no
 </code></pre></div>
 
 

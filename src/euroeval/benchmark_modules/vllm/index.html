@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -2604,7 +2606,16 @@
 <span class="normal">1490</span>
 <span class="normal">1491</span>
 <span class="normal">1492</span>
-<span class="normal">1493</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1493</span>
+<span class="normal">1494</span>
+<span class="normal">1495</span>
+<span class="normal">1496</span>
+<span class="normal">1497</span>
+<span class="normal">1498</span>
+<span class="normal">1499</span>
+<span class="normal">1500</span>
+<span class="normal">1501</span>
+<span class="normal">1502</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -3106,7 +3117,8 @@
                 <span class="n">log_once</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Using temperature=</span><span class="si">{</span><span class="n">temperature</span><span class="si">}</span><span class="s2"> with the model &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> as specified in its &quot;</span>
-                    <span class="s2">&quot;generation configuration.&quot;</span>
+                    <span class="s2">&quot;generation configuration.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">if</span> <span class="s2">&quot;top_p&quot;</span> <span class="ow">in</span> <span class="n">changed_params</span><span class="p">:</span>
                 <span class="n">top_p</span> <span class="o">=</span> <span class="n">changed_params</span><span class="p">[</span><span class="s2">&quot;top_p&quot;</span><span class="p">]</span>
@@ -3114,7 +3126,8 @@
                 <span class="n">log_once</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Using top_p=</span><span class="si">{</span><span class="n">top_p</span><span class="si">}</span><span class="s2"> with the model &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> as specified in its &quot;</span>
-                    <span class="s2">&quot;generation configuration.&quot;</span>
+                    <span class="s2">&quot;generation configuration.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">if</span> <span class="s2">&quot;top_k&quot;</span> <span class="ow">in</span> <span class="n">changed_params</span><span class="p">:</span>
                 <span class="n">top_k</span> <span class="o">=</span> <span class="n">changed_params</span><span class="p">[</span><span class="s2">&quot;top_k&quot;</span><span class="p">]</span>
@@ -3122,7 +3135,8 @@
                 <span class="n">log_once</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Using top_k=</span><span class="si">{</span><span class="n">top_k</span><span class="si">}</span><span class="s2"> with the model &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> as specified in its &quot;</span>
-                    <span class="s2">&quot;generation configuration.&quot;</span>
+                    <span class="s2">&quot;generation configuration.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">if</span> <span class="s2">&quot;repetition_penalty&quot;</span> <span class="ow">in</span> <span class="n">changed_params</span><span class="p">:</span>
                 <span class="n">repetition_penalty</span> <span class="o">=</span> <span class="n">changed_params</span><span class="p">[</span><span class="s2">&quot;repetition_penalty&quot;</span><span class="p">]</span>
@@ -3130,8 +3144,10 @@
                 <span class="n">log_once</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Using repetition_penalty=</span><span class="si">{</span><span class="n">repetition_penalty</span><span class="si">}</span><span class="s2"> with the model &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> as specified in its &quot;</span>
-                    <span class="s2">&quot;generation configuration.&quot;</span>
+                    <span class="s2">&quot;generation configuration.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
+
         <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">REASONING_MAX_TOKENS</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
@@ -3173,17 +3189,31 @@
             <span class="p">)</span>
             <span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span><span class="n">prompt</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">]</span>
 
-        <span class="c1"># Truncate the prompts if needed, but only if it&#39;s not a reasoning model</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">!=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">:</span>
-            <span class="n">max_tokens_per_prompt</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">model_max_length</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">)</span> <span class="o">-</span> <span class="n">max_tokens</span>
+        <span class="c1"># Truncate the prompts if needed</span>
+        <span class="n">max_tokens_per_prompt</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">model_max_length</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span>
+        <span class="p">)</span>
+        <span class="n">max_tokens_per_prompt</span> <span class="o">-=</span> <span class="nb">min</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">max_generated_tokens</span><span class="p">,</span> <span class="n">max_tokens_per_prompt</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="n">log_once</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Truncating prompts for the model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;to a maximum of </span><span class="si">{</span><span class="n">max_tokens_per_prompt</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> tokens.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">tokenized_prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">max_tokens_per_prompt</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_tokens_per_prompt</span>
+            <span class="k">for</span> <span class="n">input_ids</span> <span class="ow">in</span> <span class="n">tokenized_prompts</span><span class="o">.</span><span class="n">input_ids</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                <span class="s2">&quot;Truncation of prompts failed, some prompts are still too long.&quot;</span>
             <span class="p">)</span>
-            <span class="n">tokenized_prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">(</span>
-                <span class="n">text</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">prompts</span><span class="p">),</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">max_tokens_per_prompt</span>
-            <span class="p">)</span>
-            <span class="n">prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span>
-                <span class="n">sequences</span><span class="o">=</span><span class="n">tokenized_prompts</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span>
-            <span class="p">)</span>
+        <span class="n">prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span>
+            <span class="n">sequences</span><span class="o">=</span><span class="n">tokenized_prompts</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
 
         <span class="c1"># Generate sequences using vLLM</span>
         <span class="n">input_is_a_test</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">prompts</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">==</span> <span class="mi">1</span>
@@ -3204,10 +3234,11 @@
                     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="c1"># Truncate the prompts if they are too long for the model</span>
                 <span class="n">truncate_error_messages</span> <span class="o">=</span> <span class="p">[</span>
-                    <span class="sa">r</span><span class="s2">&quot;prompt \(length [0-9]+\) is longer than the maximum model length&quot;</span>
+                    <span class="sa">r</span><span class="s2">&quot;prompt \(length [0-9]+\) is longer than the maximum model length&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Sampled token IDs exceed the max model length&quot;</span><span class="p">,</span>
                 <span class="p">]</span>
                 <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
                     <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -3511,19 +3542,6 @@
         <span class="n">run_with_cli</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">run_with_cli</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">quantization</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">hf_model_config</span><span class="p">,</span> <span class="s2">&quot;quantization_config&quot;</span><span class="p">):</span>
-        <span class="n">quantization</span> <span class="o">=</span> <span class="n">hf_model_config</span><span class="o">.</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;quant_method&quot;</span><span class="p">)</span>
-
-    <span class="c1"># The quantised models require extra dependencies</span>
-    <span class="k">if</span> <span class="n">quantization</span> <span class="o">==</span> <span class="s2">&quot;gptq&quot;</span> <span class="ow">and</span> <span class="p">(</span>
-        <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;auto_gptq&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;optimum&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
-    <span class="p">):</span>
-        <span class="k">raise</span> <span class="n">NeedsExtraInstalled</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;quantization&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">quantization</span> <span class="o">==</span> <span class="s2">&quot;awq&quot;</span> <span class="ow">and</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;awq&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">NeedsExtraInstalled</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;quantization&quot;</span><span class="p">)</span>
-
     <span class="c1"># Start with dtype being the &quot;auto&quot; vLLM dtype</span>
     <span class="n">dtype</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">torch</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span>
 
@@ -3546,23 +3564,6 @@
             <span class="p">)</span>
             <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
 
-    <span class="c1"># If the model is a quantized model, we might need to change the dtype</span>
-    <span class="k">if</span> <span class="n">quantization</span> <span class="o">==</span> <span class="s2">&quot;mxfp4&quot;</span> <span class="ow">and</span> <span class="n">hf_model_config</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_bf16_supported</span><span class="p">()</span> <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
-        <span class="n">log</span><span class="p">(</span>
-            <span class="s2">&quot;You are loading a quantized model where `dtype` has not been set. &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Setting dtype to </span><span class="si">{</span><span class="n">dtype</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">quantization</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">hf_model_config</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">:</span>
-        <span class="n">log</span><span class="p">(</span>
-            <span class="s2">&quot;You are loading a quantized model with dtype &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">hf_model_config</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2">, which vLLM does not support. Setting &quot;</span>
-            <span class="s2">&quot;dtype to float16 instead.&quot;</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
-
     <span class="c1"># If the model is a bf16 model, we need to check the CUDA compute capability</span>
     <span class="k">if</span> <span class="n">hf_model_config</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">:</span>
         <span class="n">min_cuda_compute_capability</span> <span class="o">=</span> <span class="n">get_min_cuda_compute_capability</span><span class="p">()</span>
@@ -3579,6 +3580,28 @@
                     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float16</span>
+
+    <span class="n">quantization</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">hf_model_config</span><span class="p">,</span> <span class="s2">&quot;quantization_config&quot;</span><span class="p">):</span>
+        <span class="n">quantization</span> <span class="o">=</span> <span class="n">hf_model_config</span><span class="o">.</span><span class="n">quantization_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;quant_method&quot;</span><span class="p">)</span>
+
+    <span class="c1"># The quantised models require extra dependencies</span>
+    <span class="k">if</span> <span class="n">quantization</span> <span class="o">==</span> <span class="s2">&quot;gptq&quot;</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;auto_gptq&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;optimum&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="n">NeedsExtraInstalled</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;quantization&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">quantization</span> <span class="o">==</span> <span class="s2">&quot;awq&quot;</span> <span class="ow">and</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;awq&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NeedsExtraInstalled</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;quantization&quot;</span><span class="p">)</span>
+
+    <span class="c1"># If the model is a quantized model, let vLLM decide the dtype</span>
+    <span class="k">if</span> <span class="n">quantization</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;You are loading a quantized model with quantization </span><span class="si">{</span><span class="n">quantization</span><span class="si">}</span><span class="s2">. &quot;</span>
+            <span class="s2">&quot;Forcing the vLLM dtype to &#39;auto&#39;&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span>
 
     <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">download_dir</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;base_model&quot;</span><span class="p">)</span>
@@ -3623,17 +3646,14 @@
     <span class="p">)</span>
 
     <span class="k">try</span><span class="p">:</span>
+        <span class="n">model_location</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">model_id</span>
+            <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">()</span> <span class="ow">or</span> <span class="n">Path</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
+            <span class="k">else</span> <span class="n">resolve_model_path</span><span class="p">(</span><span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">)</span>
+        <span class="p">)</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">LLM</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="p">(</span>
-                <span class="n">model_id</span>
-                <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">()</span>
-                <span class="k">else</span> <span class="n">resolve_model_path</span><span class="p">(</span><span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">)</span>
-            <span class="p">),</span>
-            <span class="n">tokenizer</span><span class="o">=</span><span class="p">(</span>
-                <span class="n">model_id</span>
-                <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">()</span>
-                <span class="k">else</span> <span class="n">resolve_model_path</span><span class="p">(</span><span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">)</span>
-            <span class="p">),</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model_location</span><span class="p">,</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="n">model_location</span><span class="p">,</span>
             <span class="n">gpu_memory_utilization</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">gpu_memory_utilization</span><span class="p">,</span>
             <span class="n">max_model_len</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">true_max_model_len</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">),</span>
             <span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">,</span>
@@ -4082,7 +4102,7 @@
         <span class="n">pipeline_parallel_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">total_gpus</span> <span class="o">//</span> <span class="n">tensor_parallel_size</span><span class="p">)</span>
         <span class="n">log_once</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Detected a multi-node setup with </span><span class="si">{</span><span class="n">pipeline_parallel_size</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> nodes, each &quot;</span>
-            <span class="s2">&quot;with </span><span class="si">{tensor_parallel_size:,}</span><span class="s2"> GPUs, so using `ray` as the &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;with </span><span class="si">{</span><span class="n">tensor_parallel_size</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> GPUs, so using `ray` as the &quot;</span>
             <span class="s2">&quot;distributed backend.&quot;</span><span class="p">,</span>
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>

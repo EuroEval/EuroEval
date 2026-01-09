@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -1344,9 +1346,7 @@
 <span class="normal">379</span>
 <span class="normal">380</span>
 <span class="normal">381</span>
-<span class="normal">382</span>
-<span class="normal">383</span>
-<span class="normal">384</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
+<span class="normal">382</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1583,9 +1583,7 @@
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_predictions_being_very_off</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">)</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> &quot;</span>
                 <span class="s2">&quot;of the samples. This likely means that the model were completely &quot;</span>
                 <span class="s2">&quot;off in these cases. Since this task does not allow invalid model &quot;</span>
-                <span class="s2">&quot;outputs, we have to abort the evaluation. Please re-run the &quot;</span>
-                <span class="s2">&quot;evaluation with the `--debug` flag (or `debug=True` if you&#39;re using &quot;</span>
-                <span class="s2">&quot;the `Benchmarker` API) to see the precise model outputs.&quot;</span>
+                <span class="s2">&quot;outputs, we have to abort the evaluation.&quot;</span>
             <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">new_predicted_labels</span>

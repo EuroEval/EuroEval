@@ -565,6 +565,8 @@
       
         
       
+        
+      
     
     
     
@@ -1252,6 +1254,34 @@
     <span class="md-ellipsis">
       
         Nordjylland News
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#european-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        European Values
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="European Values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valeu-da" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ValEU-da
       
     </span>
   </a>
@@ -2377,6 +2407,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#european-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        European Values
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="European Values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valeu-da" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ValEU-da
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3315,6 +3373,66 @@ Skriv et resumé af ovenstående artikel.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>nordjylland-news
+</code></pre></div>
+<h2 id="european-values">European Values</h2>
+<h3 id="valeu-da">ValEU-da</h3>
+<p>This dataset is the official Danish version of questions from the <a href="https://europeanvaluesstudy.eu/">European values
+study</a>. The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.</p>
+<p>The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;C039&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvor enig eller uenig er du i følgende udsagn?\nDet er ens pligt over for samfundet at arbejde.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;F122&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fortæl for hver af handlingerne på dette kort, i hvilken grad du billiger handlingen. 1 betyder, at du slet ikke billiger dem, 10 betyder, at du i høj grad billiger dem\nAktiv dødshjælp\nSvarmuligheder:\na. Aldrig\nb. 2\nc. 3\nd. 4\ne. 5\nf. 6\ng. 7\nh. 8\ni. 9\nj. Altid&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;C041&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hvor enig eller uenig er du i følgende udsagn?\nArbejde kommer først, også selv om det betyder mindre fritid.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 0</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er multiple choice spørgsmål (med svar).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+Svarmuligheder:
+a. {option_a}
+b. {option_b}
+(...)
+k. {option_k}
+Svar: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spørgsmål: {text}
+Svarmuligheder:
+a. {option_a}
+b. {option_b}
+(...)
+k. {option_k}
+
+Besvar ovenstående spørgsmål ved at svare med &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, &#39;d&#39;, &#39;e&#39;, &#39;f&#39;, &#39;g&#39;, &#39;h&#39;,
+&#39;i&#39;, &#39;j&#39; eller &#39;k&#39;, og intet andet.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>valeu-da
 </code></pre></div>
 
 

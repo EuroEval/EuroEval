@@ -565,6 +565,8 @@
       
         
       
+        
+      
     
     
     
@@ -1281,6 +1283,34 @@
     <span class="md-ellipsis">
       
         ERRNews
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#european-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        European Values
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="European Values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valeu-et" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ValEU-et
       
     </span>
   </a>
@@ -2267,6 +2297,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#european-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        European Values
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="European Values">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valeu-et" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ValEU-et
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2799,7 +2857,7 @@ b. {option_b}
 c. {option_c}
 d. {option_d}
 
-Võimalikud vastused: &#39;a&#39;, &#39;b&#39;, &#39;c&#39; or &#39;d&#39;. Muud vastused ei ole lubatud.
+Võimalikud vastused: &#39;a&#39;, &#39;b&#39;, &#39;c&#39; või &#39;d&#39;. Muud vastused ei ole lubatud.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-et
@@ -2908,6 +2966,66 @@ Koosta ülaltoodud dokumendi kokkuvõte.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>err-news
+</code></pre></div>
+<h2 id="european-values">European Values</h2>
+<h3 id="valeu-et">ValEU-et</h3>
+<p>This dataset is the official Estonian version of questions from the <a href="https://europeanvaluesstudy.eu/">European values
+study</a>. The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.</p>
+<p>The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;E265_08&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Teie arvates, kui sageli esinevad järgmised asjad selle riigi valimistel?\nValijaid ähvardatakse valimisjaoskondades vägivallaga.\nVastusevariandid:\na. Väga tihti\nb. Üsna tihti\nc. Mitte sageli\nd. Mitte just tihti&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A009&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Üldjoontes, kuidas Te kirjeldaksite oma praegust tervislikku olukorda? Kas Te ütleksite, et see on\nVastusevariandid:\na. Väga hea\nb. Hea\nc. Rahuldav\nd. Halb\ne. Väga halb&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A003&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Palun vaadake seda kaarti ning öelge iga järgneva kategooria kohta, kui tähtis on see Teie elus.\nVaba aeg\nVastusevariandid:\na. Väga oluline\nb. Pigem tähtis\nc. Mitte eriti oluline\nd. Täiesti tähtsusetu&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 0</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Järgnevad on vastusevariantidega küsimused (koos vastustega).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekstülesanne: {text}
+Vastusevariandid:
+a. {option_a}
+b. {option_b}
+(...)
+k. {option_k}
+Vastus: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Tekstülesanne: {text}
+Vastusevariandid:
+a. {option_a}
+b. {option_b}
+(...)
+k. {option_k}
+
+Võimalikud vastused: &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, &#39;d&#39;, &#39;e&#39;, &#39;f&#39;, &#39;g&#39;, &#39;h&#39;, &#39;i&#39;, &#39;j&#39;, või &#39;k&#39;. Muud
+vastused ei ole lubatud.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>valeu-et
 </code></pre></div>
 
 

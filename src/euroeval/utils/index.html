@@ -559,6 +559,8 @@
       
         
       
+        
+      
     
     
     
@@ -1714,7 +1716,32 @@
 <span class="normal">573</span>
 <span class="normal">574</span>
 <span class="normal">575</span>
-<span class="normal">576</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
+<span class="normal">576</span>
+<span class="normal">577</span>
+<span class="normal">578</span>
+<span class="normal">579</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span>
+<span class="normal">583</span>
+<span class="normal">584</span>
+<span class="normal">585</span>
+<span class="normal">586</span>
+<span class="normal">587</span>
+<span class="normal">588</span>
+<span class="normal">589</span>
+<span class="normal">590</span>
+<span class="normal">591</span>
+<span class="normal">592</span>
+<span class="normal">593</span>
+<span class="normal">594</span>
+<span class="normal">595</span>
+<span class="normal">596</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span>
+<span class="normal">600</span>
+<span class="normal">601</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
@@ -1737,6 +1764,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalTokenNotFoundError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">requests.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestException</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.caching_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_arguments</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">T</span>
@@ -1760,10 +1788,25 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The path to the cache directory.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># to avoid nesting due to models name containing &#39;/&#39;</span>
-    <span class="n">_model_id</span> <span class="o">=</span> <span class="n">model_id</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;--&quot;</span><span class="p">)</span>
-    <span class="n">cache_dir_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;model_cache&quot;</span> <span class="o">/</span> <span class="n">_model_id</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">cache_dir_path</span><span class="p">)</span>
+    <span class="c1"># If the model ID is a path, we just use that as the cache dir</span>
+    <span class="k">if</span> <span class="n">Path</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+        <span class="n">log_once</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Since the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is a local model, we will use the model &quot;</span>
+            <span class="s2">&quot;directory directly as the model cache directory.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">model_id</span>
+
+    <span class="c1"># Otherwise, we create a cache dir based on the model ID</span>
+    <span class="n">model_cache_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span>
+        <span class="n">cache_dir</span><span class="p">,</span> <span class="s2">&quot;model_cache&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;--&quot;</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
+    <span class="n">log_once</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Using the model cache directory </span><span class="si">{</span><span class="n">model_cache_dir</span><span class="si">!r}</span><span class="s2"> for the model &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">model_cache_dir</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">resolve_model_path</span><span class="p">(</span><span class="n">download_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.utils.resolve_model_path"><a href="../../../api/euroeval/utils/#euroeval.utils.resolve_model_path" title="Go to docs">[docs]</a></div>
@@ -1781,8 +1824,10 @@
 <span class="sd">            If the model path is not valid, or if required files are missing.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">model_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">download_dir</span><span class="p">)</span>
+
     <span class="c1"># Get the &#39;path safe&#39; version of the model id, which is the last dir in the path</span>
     <span class="n">model_id_path</span> <span class="o">=</span> <span class="n">model_path</span><span class="o">.</span><span class="n">name</span>
+
     <span class="c1"># Hf hub `cache_dir` puts the files in models--`model_id_path`/snapshots</span>
     <span class="n">model_path</span> <span class="o">=</span> <span class="n">model_path</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;models--</span><span class="si">{</span><span class="n">model_id_path</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">/</span> <span class="s2">&quot;snapshots&quot;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">model_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
@@ -2136,6 +2181,13 @@
         <span class="n">log_once</span><span class="p">(</span>
             <span class="s2">&quot;No Hugging Face API key was set and the user is not logged in to Hugging &quot;</span>
             <span class="s2">&quot;Face, so no token will be used.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">except</span> <span class="n">RequestException</span><span class="p">:</span>
+        <span class="n">log_once</span><span class="p">(</span>
+            <span class="s2">&quot;No Hugging Face API key was set and the connection to Hugging Face &quot;</span>
+            <span class="s2">&quot;failed, so no token will be used.&quot;</span><span class="p">,</span>
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">False</span>
