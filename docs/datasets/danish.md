@@ -1134,22 +1134,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    'question_id': 'C039',
-    'text': 'Hvor enig eller uenig er du i følgende udsagn?\nDet er ens pligt over for samfundet at arbejde.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig',
+    "question_id": "C039",
+    "text": "Hvor enig eller uenig er du i følgende udsagn?\nDet er ens pligt over for samfundet at arbejde.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig",
 }
 ```
 
 ```json
 {
-    'question_id': 'F122',
-    'text': 'Fortæl for hver af handlingerne på dette kort, i hvilken grad du billiger handlingen. 1 betyder, at du slet ikke billiger dem, 10 betyder, at du i høj grad billiger dem\nAktiv dødshjælp\nSvarmuligheder:\na. Aldrig\nb. 2\nc. 3\nd. 4\ne. 5\nf. 6\ng. 7\nh. 8\ni. 9\nj. Altid',
+    "question_id": "F122",
+    "text": "Fortæl for hver af handlingerne på dette kort, i hvilken grad du billiger handlingen. 1 betyder, at du slet ikke billiger dem, 10 betyder, at du i høj grad billiger dem\nAktiv dødshjælp\nSvarmuligheder:\na. Aldrig\nb. 2\nc. 3\nd. 4\ne. 5\nf. 6\ng. 7\nh. 8\ni. 9\nj. Altid",
 }
 ```
 
 ```json
 {
-    'question_id': 'C041',
-    'text': 'Hvor enig eller uenig er du i følgende udsagn?\nArbejde kommer først, også selv om det betyder mindre fritid.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig'
+    "question_id": "C041",
+    "text": "Hvor enig eller uenig er du i følgende udsagn?\nArbejde kommer først, også selv om det betyder mindre fritid.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig"
 }
 ```
 
