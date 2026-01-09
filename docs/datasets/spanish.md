@@ -809,28 +809,28 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Følgende er multiple choice spørgsmål (med svar).
+  Las siguientes son preguntas de opción múltiple (con respuestas).
   ```
 
 - Base prompt template:
 
   ```text
-  Spørgsmål: {text}
-  Svarmuligheder:
+  Pregunta: {text}
+  Opciones:
   a. {option_a}
   b. {option_b}
-  Svar: {label}
+  Respuesta: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Spørgsmål: {text}
-  Svarmuligheder:
+  Pregunta: {text}
+  Opciones:
   a. {option_a}
   b. {option_b}
 
-  Besvar ovenstående spørgsmål ved at svare med 'a' eller 'b', og intet andet.
+  Responda la pregunta anterior usando solo 'a' o 'b', y nada más.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -974,4 +974,82 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset dacsa-es
+```
+
+## European Values
+
+### ValEU-es
+
+This dataset is the official Spanish version of questions from the [European values
+study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.
+
+The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "question_id": "A072",
+  "text": "Por favor lea atentamente la siguiente lista de organizaciones de voluntariado y diga a cuál de ellas pertenece, en caso de que pertenezca a alguna\nAsociaciones profesionales\nOpciones:\na. No\nb. Sí"
+}
+```
+
+```json
+{
+  "question_id": "A079",
+  "text": "Por favor lea atentamente la siguiente lista de organizaciones de voluntariado y diga a cuál de ellas pertenece, en caso de que pertenezca a alguna\nOtros grupos/Otras organizaciones\nOpciones:\na. No\nb. Sí"
+}
+```
+
+```json
+{
+  "question_id": "D026_05",
+  "text": "¿Qué es lo que piensa sobre las afirmaciones siguientes? ¿Está Vd. de acuerdo o en desacuerdo con ellas?\nLos hijos adultos tienen el deber de proporcionar cuidados de larga duración a sus padres.\nOpciones:\na. Muy de acuerdo\nb. De acuerdo\nc. Ni de acuerdo ni en desacuerdo\nd. Desacuerdo\ne. Muy en desacuerdo"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- Prefix prompt:
+
+  ```text
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+  Respuesta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+
+  Responda la pregunta anterior usando solo 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+  'j', o 'k', y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset valeu-es
 ```
