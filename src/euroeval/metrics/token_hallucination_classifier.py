@@ -3,9 +3,10 @@
 import collections.abc as c
 import logging
 import typing as t
-from collections import defaultdict
 
+# from collections import defaultdict removed as it is not used
 from datasets import Dataset
+from lettucedetect import HallucinationDetector
 
 from .base import Metric
 
@@ -20,49 +21,59 @@ if t.TYPE_CHECKING:
 def detect_hallucinations(
     dataset: Dataset,
     predictions: c.Sequence,
-    model: str = "KRLabsOrg/tinylettuce-ettin-17m-en",
-) -> dict[str, list]:
+    model: str = "alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-en",
+    device: str = "cpu",
+) -> float | None:
     """Load tinylettuce model and detect hallucinations.
 
     Args:
         dataset: Hallucination dataset, generated with e.g. lettuce.
         model: Path to model.
+        device: Device to run on ('cpu' or 'cuda').
 
     Returns:
-        A dictionary with the predicted answers and ground truth hallucinated parts.
+        A hallucination rate (hallucinated_tokens/total_tokens).
     """
-    # detector = HallucinationDetector(
-    #     method="transformer", model_path=model, device_map="auto", torch_dtype="auto"
-    # )
+    detector = HallucinationDetector(
+        method="transformer", model_path=model, device=device
+    )
 
-    predict_answers = []
-    all_hallucinated_parts = []
-    for context, question, answer in zip(
-        dataset["context"], dataset["question"], predictions
+    predicted_texts = [p["prediction_text"] for p in predictions]
+
+    hallucinated_tokens = 0
+    total_tokens = 0
+
+    for context, question, predicted_text in zip(
+        dataset["context"], dataset["question"], predicted_texts
     ):
-        # Use the detector to predict if the answer is hallucinated
         try:
-            answer["prediction_text"]
+            predict_answer = detector.predict(
+                context=[context], question=question, answer=predicted_text
+            )
 
-            # predict_answer = detector.predict(
-            #     context=context, question=question, answer=answer
-            # )
-            print(question)
-            predict_answer = []
+            for token in predict_answer:
+                hallucinated_tokens += token["pred"]
+                total_tokens += 1
+
         except Exception as e:
             logger.error(f"Error during hallucination detection: {e}. Skipping...")
             continue
-        predict_answers.append(predict_answer)
 
-    if "hallucinated_parts" in dataset.column_names:
-        for hallucinated_part in dataset["hallucinated_parts"]:
-            all_hallucinated_parts.append(hallucinated_part)
+    if total_tokens == 0:
+        logger.warning(
+            "Failed to run hallucination detection task "
+            "(there was no tokens found in predictions), returning None."
+        )
+        return None
 
-    data_dict: dict[str, list] = defaultdict(list)
-    data_dict["predict_answers"] = predict_answers
-    data_dict["ground_truth"] = all_hallucinated_parts
+    hallucination_rate = hallucinated_tokens / total_tokens
 
-    return data_dict
+    logger.info("Results ________________________________________")
+    logger.info(
+        f"Hallucination rate (hallucinated_tokens/total_tokens) : "
+        f"{hallucination_rate:.2f}"
+    )
+    return hallucination_rate
 
 
 class Token_Hallucination_Metric(Metric):
@@ -80,7 +91,7 @@ class Token_Hallucination_Metric(Metric):
         super().__init__(
             name=name,
             pretty_name=pretty_name,
-            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.0f}"),
+            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.2f}"),
         )
 
     def __call__(
@@ -92,12 +103,16 @@ class Token_Hallucination_Metric(Metric):
         benchmark_config: "BenchmarkConfig",
     ) -> float | None:
         """Not used with the hallucination metric, but required for consistency."""
-        detect_hallucinations(
+        hallucination_rate = detect_hallucinations(
             dataset=dataset,
             predictions=predictions,
-            model="alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-da",
+            model="alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-"
+            + benchmark_config.languages[
+                0
+            ].code,  # FIXME: This is not the correct way to get current language code.
+            device="cpu",
         )
-        raise NotImplementedError
+        return hallucination_rate
 
 
 hallucination_metric = Token_Hallucination_Metric(

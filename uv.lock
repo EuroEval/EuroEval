@@ -998,6 +998,15 @@ wheels = [
 ]
 
 [[package]]
+name = "easydict"
+version = "1.13"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/9f/d18d6b5e19244788a6d09c14a8406376b4f4bfcc008e6d17a4f4c15362e8/easydict-1.13.tar.gz", hash = "sha256:b1135dedbc41c8010e2bc1f77ec9744c7faa42bce1a1c87416791449d6c87780", size = 6809, upload-time = "2024-03-04T12:04:41.251Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/05/ec/fa6963f1198172c2b75c9ab6ecefb3045991f92f75f5eb41b6621b198123/easydict-1.13-py3-none-any.whl", hash = "sha256:6b787daf4dcaf6377b4ad9403a5cee5a86adbc0ca9a5bcf5410e9902002aeac2", size = 6804, upload-time = "2024-03-04T12:04:39.508Z" },
+]
+
+[[package]]
 name = "einops"
 version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1032,6 +1041,7 @@ dependencies = [
     { name = "demjson3" },
     { name = "evaluate" },
     { name = "huggingface-hub" },
+    { name = "lettucedetect" },
     { name = "levenshtein" },
     { name = "litellm" },
     { name = "mistral-common", extra = ["soundfile"] },
@@ -1130,6 +1140,7 @@ requires-dist = [
     { name = "fbgemm-gpu", marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=1.0.0" },
     { name = "fbgemm-gpu", marker = "sys_platform == 'linux' and extra == 'generative'", specifier = ">=1.0.0" },
     { name = "huggingface-hub", specifier = ">=0.30.1" },
+    { name = "lettucedetect", specifier = ">=0.1.8" },
     { name = "levenshtein", specifier = ">=0.24.0" },
     { name = "litellm", specifier = ">=1.75.6" },
     { name = "mistral-common", extras = ["soundfile"] },
@@ -2115,6 +2126,25 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/af/60/bc7622aefb2aee1c0b4ba23c1446d3e30225c8770b38d7aedbfb65ca9d5a/lark-1.2.2.tar.gz", hash = "sha256:ca807d0162cd16cef15a8feecb862d7319e7a09bdb13aef927968e45040fed80", size = 252132, upload-time = "2024-08-13T19:49:00.652Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2d/00/d90b10b962b4277f5e64a78b6609968859ff86889f5b898c1a778c06ec00/lark-1.2.2-py3-none-any.whl", hash = "sha256:c2276486b02f0f1b90be155f2c8ba4a8e194d42775786db622faccd652d8e80c", size = 111036, upload-time = "2024-08-13T19:48:58.603Z" },
+]
+
+[[package]]
+name = "lettucedetect"
+version = "0.1.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "openai" },
+    { name = "rag-fact-checker" },
+    { name = "scikit-learn" },
+    { name = "torch", version = "2.8.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
+    { name = "torch", version = "2.9.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'linux'" },
+    { name = "tqdm" },
+    { name = "transformers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b2/4a/81f2650815f487bed2d96ba7071a9a935373a3de7bc826600e596caef9a8/lettucedetect-0.1.8.tar.gz", hash = "sha256:bdc7adb1514c1702c5f1d926bd787bd72d78a1d0ca3150e252681d21e710039c", size = 54845, upload-time = "2025-08-31T16:08:59.35Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ba/a6/c1f335fd7ac7d67d380dbdb4efb78a0637b5c409f7a54939c1c691a02430/lettucedetect-0.1.8-py3-none-any.whl", hash = "sha256:872ff03c69605b261428de76805c8c9e98ae3dd5bfb19a9dea70591965ead94d", size = 65737, upload-time = "2025-08-31T16:08:57.907Z" },
 ]
 
 [[package]]
@@ -4188,11 +4218,11 @@ wheels = [
 
 [[package]]
 name = "python-dotenv"
-version = "1.2.1"
+version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f0/26/19cadc79a718c5edbec86fd4919a6b6d3f681039a2f6d66d14be94e75fb9/python_dotenv-1.2.1.tar.gz", hash = "sha256:42667e897e16ab0d66954af0e60a9caa94f0fd4ecf3aaf6d2d260eec1aa36ad6", size = 44221, upload-time = "2025-10-26T15:12:10.434Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bc/57/e84d88dfe0aec03b7a2d4327012c1627ab5f03652216c63d49846d7a6c58/python-dotenv-1.0.1.tar.gz", hash = "sha256:e324ee90a023d808f1959c46bcbc04446a10ced277783dc6ee09987c37ec10ca", size = 39115, upload-time = "2024-01-23T06:33:00.505Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/14/1b/a298b06749107c305e1fe0f814c6c74aea7b2f1e10989cb30f544a1b3253/python_dotenv-1.2.1-py3-none-any.whl", hash = "sha256:b81ee9561e9ca4004139c6cbba3a238c32b03e4894671e181b671e8cb8425d61", size = 21230, upload-time = "2025-10-26T15:12:09.109Z" },
+    { url = "https://files.pythonhosted.org/packages/6a/3e/b68c118422ec867fa7ab88444e1274aa40681c606d59ac27de5a5588f082/python_dotenv-1.0.1-py3-none-any.whl", hash = "sha256:f7b63ef50f1b690dddf550d03497b66d609393b40b564ed0d674909a68ebf16a", size = 19863, upload-time = "2024-01-23T06:32:58.246Z" },
 ]
 
 [[package]]
@@ -4326,6 +4356,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/c4/2a/404b331f2b7bf3198e9945f75c4c521f0c6a3a23b51f7a4a401b94a13833/pyzmq-27.1.0-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:80d834abee71f65253c91540445d37c4c561e293ba6e741b992f20a105d69146", size = 1650193, upload-time = "2025-09-08T23:08:51.7Z" },
     { url = "https://files.pythonhosted.org/packages/1c/0b/f4107e33f62a5acf60e3ded67ed33d79b4ce18de432625ce2fc5093d6388/pyzmq-27.1.0-cp314-cp314t-musllinux_1_2_i686.whl", hash = "sha256:544b4e3b7198dde4a62b8ff6685e9802a9a1ebf47e77478a5eb88eca2a82f2fd", size = 2024388, upload-time = "2025-09-08T23:08:53.393Z" },
     { url = "https://files.pythonhosted.org/packages/0d/01/add31fe76512642fd6e40e3a3bd21f4b47e242c8ba33efb6809e37076d9b/pyzmq-27.1.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:cedc4c68178e59a4046f97eca31b148ddcf51e88677de1ef4e78cf06c5376c9a", size = 1885316, upload-time = "2025-09-08T23:08:55.702Z" },
+]
+
+[[package]]
+name = "rag-fact-checker"
+version = "0.1.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "easydict" },
+    { name = "openai" },
+    { name = "python-dotenv" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bd/a8/070a4dd49a3d8b919f84d691f5528ce75bd7db2ad57149e58ecf9e2a7913/rag_fact_checker-0.1.5.tar.gz", hash = "sha256:b4c449ef73751b71aec00cfa09141980dad9e7e828fd42429a4d4c51863c8ecf", size = 67405, upload-time = "2025-08-27T13:13:48.906Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/65/f26e6c04b0e90edc6d39ea3cdfaff09c63db0d61126cd62bb70cfef91499/rag_fact_checker-0.1.5-py3-none-any.whl", hash = "sha256:b9ac38616756e009fc4129948c20059db10132fe2632c859434bcdd6731455ed", size = 87439, upload-time = "2025-08-27T13:13:47.968Z" },
 ]
 
 [[package]]
