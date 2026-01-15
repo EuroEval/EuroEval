@@ -843,3 +843,81 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset orange-sum
 ```
+
+## European Values
+
+### ValEU-fr
+
+This dataset is the official French version of questions from the [European values
+study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.
+
+The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "question_id": "C041",
+  "text": "Etes-vous d'accord ou pas avec les phrases suivantes ?\nLe travail devrait toujours passer en premier, même si cela veut dire moins de temps libre\nChoix:\na. Tout à fait d'accord\nb. D'accord\nc. Ni d'accord, ni pas d'accord\nd. Pas d'accord\ne. Pas d'accord du tout"
+}
+```
+
+```json
+{
+  "question_id": "A009",
+  "text": "Dans l'ensemble, comment décririez-vous votre état de santé en ce moment ?\nChoix:\na. ... très bon\nb. ... bon\nc. ... acceptable\nd. ... plutôt mauvais\ne. ... très mauvais"
+}
+```
+
+```json
+{
+  "question_id": "D001_B",
+  "text": "J'aimerais vous demander dans quelle mesure vous faites confiance à différentes catégories de gens. Pouvez-vous me dire pour chacune, si vous lui faites...\nVotre famille\nChoix:\na. ...tout à fait confiance\nb. ...plutôt confiance\nc. ...plutôt pas confiance\nd. ...pas du tout confiance"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- Prefix prompt:
+
+  ```text
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+  Réponse: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+
+  Répondez à la question ci-dessus par 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+  ou 'k', et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset valeu-fr
+```

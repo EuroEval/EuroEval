@@ -403,7 +403,7 @@ class LiteLLMModel(BenchmarkModule):
             http_429_errors = [
                 idx
                 for idx, (_, error) in enumerate(failures)
-                if isinstance(error, RateLimitError) and "Error code: 429" in str(error)
+                if isinstance(error, RateLimitError)
             ]
             if http_429_errors and self.buffer["max_concurrent_calls"] > 1:
                 failures = [
@@ -419,7 +419,6 @@ class LiteLLMModel(BenchmarkModule):
                     f"{self.buffer['max_concurrent_calls']:,} due to rate limiting.",
                     level=logging.DEBUG,
                 )
-                continue
 
             # Attempt to handle the exceptions, to improve the chance of getting
             # successful generations next time around
@@ -718,7 +717,9 @@ class LiteLLMModel(BenchmarkModule):
             isinstance(error, (RateLimitError, BadRequestError))
             and (
                 retry_match := re.search(
-                    pattern=r"\bretry in ([0-9]+(.[0-9]+)?) ?(s|seconds)\b",
+                    pattern=(
+                        r"\b(try( again)?|retry) in ([0-9]+(.[0-9]+)?) ?(s|second)\b"
+                    ),
                     string=error_msg,
                     flags=re.IGNORECASE,
                 )

@@ -1100,3 +1100,81 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset duidelijke-taal
 ```
+
+## European Values
+
+### ValEU-nl
+
+This dataset is the official Dutch version of questions from the [European values
+study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.
+
+The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "question_id": "E069_01",
+  "text": "Wilt u mij voor elk van de instellingen op deze kaart vertellen of u er heel veel, tamelijk veel, niet zo veel of helemaal geen vertrouwen in heeft?\nDe kerk\nAntwoordopties:\na. Heel veel\nb. Tamelijk veel\nc. Niet zo veel\nd. Helemaal geen"
+}
+```
+
+```json
+{
+  "question_id": "E028",
+  "text": "Wilt u nu deze lijst erbij houden? Ik ga u nu een aantal verschillende soorten van politieke actie noemen die men kan voeren. Wilt u mij van elke actie vertellen of u het zelf ooit heeft gedaan, of u het zelf misschien zou doen als u het nodig vond, of dat u het zeker nooit zult doen?\nMeedoen aan een wilde staking\nAntwoordopties:\na. Zelf gedaan\nb. Zou dat misschien doen\nc. Zou dat nooit doen"
+}
+```
+
+```json
+{
+  "question_id": "E265_07",
+  "text": "Hoe vaak gebeuren volgens u de volgende dingen tijdens verkiezingen in dit land?\nRijke mensen kopen de verkiezingsuitslag\nAntwoordopties:\na. Zeer vaak\nb. Tamelijk vaak\nc. Niet zo vaak\nd. Helemaal niet vaak"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+
+  Beantwoord de bovenstaande vraag met 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'
+  of 'k', en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset valeu-nl
+```

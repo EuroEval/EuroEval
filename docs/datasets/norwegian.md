@@ -1725,3 +1725,81 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset personal-sum
 ```
+
+## European Values
+
+### ValEU-no
+
+This dataset is the official Norwegian version of questions from the [European values
+study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.
+
+The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "question_id": "A078",
+  "text": "Her er en liste over frivillige organisasjoner. Kan du fortelle meg om du er medlem i noen av disse?\nForbrukerorganisasjon\nSvaralternativer:\na. Nei\nb. Ja"
+}
+```
+
+```json
+{
+  "question_id": "G005",
+  "text": "Er du norsk statsborger?\nSvaralternativer:\na. Nei\nb. Ja"
+}
+```
+
+```json
+{
+  "question_id": "F025",
+  "text": "Tilhører du en religion eller et bestemt trossamfunn?\nSvaralternativer:\na. Er ikke tilknyttet et kirkesamfunn.\nb. Romersk-katolsk\nc. Protestantisk\nd. Ortodoks (russisk/gresk/osv.)\ne. Jøde\nf. Muslimer\ng. Hindu\nh. Buddhistisk\ni. Andre kristne (evangeliske/pinsevenner/frikirke/osv.)\nj. Annet"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- Prefix prompt:
+
+  ```text
+  Følgende er flervalgsspørsmål (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spørsmål: {text}
+  Svaralternativer:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+
+  Besvar følgende spørsmål med 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j' eller
+  'k' og ikke noe annet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset valeu-no
+```
