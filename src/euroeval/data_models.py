@@ -70,6 +70,8 @@ class Task:
             The task group of the task.
         template_dict:
             The template dictionary for the task, from language to prompt template.
+            For machine translation, the key is a tuple
+            ``(source_language, target_language)``.
         metrics:
             The metrics used to evaluate the task.
         default_num_few_shot_examples:
@@ -113,7 +115,7 @@ class Task:
 
     name: str
     task_group: TaskGroup
-    template_dict: dict[Language, PromptConfig]
+    template_dict: dict[Language | tuple[Language, Language], PromptConfig]
     metrics: c.Sequence[Metric]
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
@@ -241,12 +243,19 @@ class DatasetConfig:
     unofficial: bool = False
 
     @property
-    def main_language(self) -> Language:
+    def main_language(self) -> Language | tuple[Language, Language]:
         """Get the main language of the dataset.
 
         Returns:
-            The main language.
+            The main language. For machine translation, this is a tuple
+            ``(source_language, target_language)``.
         """
+        # Local import to avoid a circular import (`tasks` imports `data_models`).
+        from .tasks import MT
+
+        if self.task == MT:
+            return (self.languages[0], self.languages[1])
+
         match len(self.languages):
             case 0:
                 raise InvalidBenchmark(
