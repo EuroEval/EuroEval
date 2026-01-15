@@ -13,11 +13,11 @@ except ImportError:
         MistralCommonBackend as MistralCommonTokenizer,
     )
 
-from pydantic import BaseModel
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
     from numpy.typing import NDArray
+    from pydantic import BaseModel
 
     from .data_models import BenchmarkConfig, GenerativeModelOutput
 
