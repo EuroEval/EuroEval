@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added model metadata for GPT 5.2.
 - Added better support for unofficial inference providers, allowing model prefixes even
   if they're not in LiteLLM's official list of providers. Currently this only works with
-  the "chatdk/" prefix for models available on chat.dk.
+  the "ordbogen/" prefix for models available on ordbogen.dk.
 
 ### Changed
 

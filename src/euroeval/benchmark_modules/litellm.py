@@ -117,8 +117,8 @@ VOCAB_SIZE_MAPPING = {
     # xAI models
     r"(xai/)?grok.*": -1,
     # Chat.dk models
-    r"(chatdk/)?odin-medium.*": -1,
-    r"(chatdk/)?odin-large.*": -1,
+    r"(ordbogen/)?odin-medium.*": -1,
+    r"(ordbogen/)?odin-large.*": -1,
 }
 
 
@@ -147,8 +147,8 @@ MODEL_MAX_LENGTH_MAPPING = {
     # xAI models
     r"(xai/)?grok.*": 131_072,
     # Chat.dk models
-    r"(chatdk/)?odin-medium.*": 131_072,
-    r"(chatdk/)?odin-large.*": 202_752,
+    r"(ordbogen/)?odin-medium.*": 131_072,
+    r"(ordbogen/)?odin-large.*": 202_752,
 }
 
 
@@ -166,8 +166,8 @@ NUM_PARAMS_MAPPING = {
     # xAI models
     r"(xai/)?grok.*": -1,
     # Chat.dk models
-    r"(chatdk/)?odin-medium.*": -1,
-    r"(chatdk/)?odin-large.*": -1,
+    r"(ordbogen/)?odin-medium.*": -1,
+    r"(ordbogen/)?odin-large.*": -1,
 }
 
 
@@ -177,7 +177,7 @@ REASONING_MODELS = [
     r"(gemini/)?gemini-2.5.*",
     r"(xai/)?grok-3-mini.*",
     r".*gpt-oss.*",
-    r"(chatdk)/?odin-.*",
+    r"(ordbogen)/?odin-.*",
 ]
 
 BASE_DECODER_MODELS = [
@@ -200,7 +200,7 @@ CUSTOM_INFERENCE_API_PREFIXES = [
     "openai/",
 ]
 
-UNOFFICIAL_INFERENCE_API_PREFIXES = ["chatdk/"]
+UNOFFICIAL_INFERENCE_API_PREFIXES = ["ordbogen/"]
 
 
 class LiteLLMModel(BenchmarkModule):
@@ -1660,7 +1660,7 @@ class LiteLLMModel(BenchmarkModule):
 
         # If the model is a Chat.dk model, we make sure reasoning traces are not
         # included in the output
-        if self.model_config.model_id.startswith("chatdk/"):
+        if self.model_config.model_id.startswith("ordbogen/"):
             generation_kwargs["include_reasoning"] = False
 
         # Handle manually set parameters
@@ -1879,6 +1879,6 @@ def set_up_benchmark_config_for_model(
         model_id:
             The model ID.
     """
-    if model_id.startswith("chatdk/"):
-        benchmark_config.api_key = os.getenv("CHATDK_API_KEY")
+    if model_id.startswith("ordbogen/"):
+        benchmark_config.api_key = os.getenv("ORDBOGEN_API_KEY")
         benchmark_config.api_base = "https://api.ordbogen.ai/v1"
