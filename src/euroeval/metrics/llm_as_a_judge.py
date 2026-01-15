@@ -280,12 +280,6 @@ class LLMAsAJudgeMetric(Metric):
                 outputs: list[BaseModel], dataset: "Dataset | None" = None
             ) -> float:
                 _ = dataset
-                if not outputs:
-                    log(
-                        f"No scores were calculated for {self.pretty_name}.",
-                        level=logging.WARNING,
-                    )
-                    return 0.0
                 return sum(scoring_fn_nonnull(output) for output in outputs) / len(
                     outputs
                 )
