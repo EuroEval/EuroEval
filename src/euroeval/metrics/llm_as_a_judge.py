@@ -279,8 +279,6 @@ class LLMAsAJudgeMetric(Metric):
             def batch_fn(
                 outputs: list[BaseModel], dataset: "Dataset | None" = None
             ) -> float:
-                # Kept to satisfy the BatchScoringFunction signature.
-                del dataset
                 return sum(scoring_fn_nonnull(output) for output in outputs) / len(
                     outputs
                 )
