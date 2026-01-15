@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   models.
 - Some API models need the `logprobs` argument to be a Boolean rather than an integer.
   This has been fixed now.
+- Better handling of rate limits when evaluating API models, by backing off more
+  aggressively when hitting rate limits.
 
 ## [v16.10.1] - 2026-01-02
 
