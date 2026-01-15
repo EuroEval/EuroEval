@@ -203,7 +203,7 @@ class LLMAsAJudgeMetric(Metric):
             log(
                 f"Could not parse/validate {num_none:,} of {len(outputs_raw):,} judge "
                 f"outputs for metric {self.pretty_name!r}. These will be ignored.",
-                level=logging.WARNING,
+                level=logging.DEBUG,
             )
 
         outputs: list[BaseModel] = [
