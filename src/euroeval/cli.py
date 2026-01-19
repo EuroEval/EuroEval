@@ -38,39 +38,12 @@ from .languages import get_all_languages
     models will be benchmarked on all datasets.""",
 )
 @click.option(
-    "--model-language",
-    "-ml",
-    default=None,
-    show_default=True,
-    multiple=True,
-    metavar="ISO 639-1 LANGUAGE CODE",
-    type=click.Choice(["all"] + list(get_all_languages().keys())),
-    help="""This option is deprecated - please use --language instead.""",
-)
-@click.option(
-    "--dataset-language",
-    "-dl",
-    default=None,
-    show_default=True,
-    multiple=True,
-    metavar="ISO 639-1 LANGUAGE CODE",
-    type=click.Choice(["all"] + list(get_all_languages().keys())),
-    help="""This option is deprecated - please use --language instead.""",
-)
-@click.option(
     "--dataset",
     default=None,
     show_default=True,
     multiple=True,
     help="""The name of the benchmark dataset. We recommend to use the `task` and
     `language` options instead of this option.""",
-)
-@click.option(
-    "--batch-size",
-    default=None,
-    type=click.Choice(["1", "2", "4", "8", "16", "32"]),
-    help="This option is deprecated - please use --finetuning-batch-size instead.",
-    deprecated=True,
 )
 @click.option(
     "--finetuning-batch-size",
@@ -198,14 +171,6 @@ from .languages import get_all_languages
     "if you are running out of GPU memory. Only relevant if the model is generative.",
 )
 @click.option(
-    "--debug/--no-debug",
-    default=False,
-    show_default=True,
-    help="Whether to run the benchmark in debug mode. This prints out extra "
-    "information and stores all outputs to the current working directory. Only "
-    "relevant if the model is generative.",
-)
-@click.option(
     "--requires-safetensors",
     is_flag=True,
     help="Only allow loading models that have safetensors weights available",
@@ -232,15 +197,47 @@ from .languages import get_all_languages
     help="Only download the requested model weights and datasets, and exit.",
     default=False,
 )
+@click.option(
+    "--debug/--no-debug",
+    default=False,
+    show_default=True,
+    help="Whether to run the benchmark in debug mode. This prints out extra "
+    "information and stores all outputs to the current working directory. Only "
+    "relevant if the model is generative.",
+)
+@click.option(
+    "--model-language",
+    "-ml",
+    default=None,
+    show_default=True,
+    multiple=True,
+    metavar="ISO 639-1 LANGUAGE CODE",
+    type=click.Choice(["all"] + list(get_all_languages().keys())),
+    help="""This option is deprecated - please use --language instead.""",
+)
+@click.option(
+    "--dataset-language",
+    "-dl",
+    default=None,
+    show_default=True,
+    multiple=True,
+    metavar="ISO 639-1 LANGUAGE CODE",
+    type=click.Choice(["all"] + list(get_all_languages().keys())),
+    help="""This option is deprecated - please use --language instead.""",
+)
+@click.option(
+    "--batch-size",
+    default=None,
+    type=click.Choice(["1", "2", "4", "8", "16", "32"]),
+    help="This option is deprecated - please use --finetuning-batch-size instead.",
+    deprecated=True,
+)
 def benchmark(
     model: tuple[str],
     dataset: tuple[str | DatasetConfig],
     language: tuple[str],
-    model_language: tuple[str],
-    dataset_language: tuple[str],
     raise_errors: bool,
     task: tuple[str],
-    batch_size: str | None,
     finetuning_batch_size: str,
     progress_bar: bool,
     save_results: bool,
@@ -257,11 +254,14 @@ def benchmark(
     api_base: str | None,
     api_version: str | None,
     gpu_memory_utilization: float,
-    debug: bool,
     requires_safetensors: bool,
     generative_type: str | None,
     custom_datasets_file: Path,
     download_only: bool,
+    debug: bool,
+    model_language: tuple[str],
+    dataset_language: tuple[str],
+    batch_size: str | None,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
     Benchmarker(

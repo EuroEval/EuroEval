@@ -1116,3 +1116,81 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset nordjylland-news
 ```
+
+## European Values
+
+### ValEU-da
+
+This dataset is the official Danish version of questions from the [European values
+study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.
+
+The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "question_id": "C039",
+    "text": "Hvor enig eller uenig er du i følgende udsagn?\nDet er ens pligt over for samfundet at arbejde.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig",
+}
+```
+
+```json
+{
+    "question_id": "F122",
+    "text": "Fortæl for hver af handlingerne på dette kort, i hvilken grad du billiger handlingen. 1 betyder, at du slet ikke billiger dem, 10 betyder, at du i høj grad billiger dem\nAktiv dødshjælp\nSvarmuligheder:\na. Aldrig\nb. 2\nc. 3\nd. 4\ne. 5\nf. 6\ng. 7\nh. 8\ni. 9\nj. Altid",
+}
+```
+
+```json
+{
+    "question_id": "C041",
+    "text": "Hvor enig eller uenig er du i følgende udsagn?\nArbejde kommer først, også selv om det betyder mindre fritid.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- Prefix prompt:
+
+  ```text
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spørgsmål: {text}
+  Svarmuligheder:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
+  'i', 'j' eller 'k', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset valeu-da
+```

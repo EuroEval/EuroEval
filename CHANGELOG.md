@@ -9,16 +9,67 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added model metadata for GPT 5.2.
+
+### Changed
+
+- LLM-as-a-Judge metrics now support batch scoring across multiple judge outputs.
+- When evaluating datasets with no validation split, we now set the `validation_split`
+  in the resulting JSONL file to `null` rather than `True`, to avoid confusion.
+  Likewise, if a task requires zero-shot evaluation, we set `few_shot` to null rather
+  than a Boolean value.
+
+### Fixed
+
+- Quantized models in vLLM now have their dtype inferred automatically, removing
+  explicit dtype casting based on GPU compute capability. This was contributed by
+  @tvosch ✨
+- Evaluation of local vLLM models when no internet connection was available did not work
+  correctly; this has been fixed now. This was contributed by @Touzen ✨
+- More robust detection and handling of errors related to too long inputs for vLLM
+  models.
+- Some API models need the `logprobs` argument to be a Boolean rather than an integer.
+  This has been fixed now.
+- Better handling of rate limits when evaluating API models, by backing off more
+  aggressively when hitting rate limits.
+
+## [v16.10.1] - 2026-01-02
+
+### Changed
+
+- Now set the `duidelijke-taal` dataset as official for Dutch simplification, as it is
+  now included on the leaderboards now. It will thus automatically be run when
+  evaluating any generative model in Dutch.
+
+### Fixed
+
+- Nynorsk datasets were incorrectly not included when evaluating models in Norwegian.
+  This has been fixed now.
+
+## [v16.10.0] - 2025-12-30
+
+### Added
+
 - Added support for Albanian 🇦🇱! This includes the sentiment classification dataset
   MMS-sq, the linguistic acceptability dataset ScaLA-sq, the named entity recognition
   dataset WikiANN-sq, the reading comprehension dataset MultiWikiQA-sq, the
   summarisation dataset LR-Sum-sq, the knowledge dataset Global-MMLU-Lite-sq,
-  and the common-sense reasoning dataset Winogrande-sq.
-- Added the Dutch common sense reasoning dataset COPA-NL, which is part of the
-Dutch [DUMB benchmark](https://github.com/wietsedv/dumb)
+  and the common-sense reasoning dataset Winogrande-sq. This was contributed by
+  @oliverkinch ✨
+- Added the Dutch common sense reasoning dataset COPA-NL, which is part of the Dutch
+  [DUMB benchmark](https://github.com/wietsedv/dumb). This was contributed by @tvosch ✨
 - Added new task for simplification and Dutch simplification dataset [Duidelijke
   Taal](http://hdl.handle.net/10032/tm-a2-y8). dataset. This was contributed by
   @simonevanbruggen ✨
+- Added multi-node support with Ray as a backend in this case. This was contributed by
+  @tvosch ✨
+- Added metadata for the Gemini-3 models.
+
+### Fixed
+
+- Fixed an issue with evaluations of LiteLLM models where asyncio event loops weren't
+  closed properly, leading to a buildup of file descriptors and eventually a "too many
+  open files" error.
 
 ## [v16.9.0] - 2025-12-16
 

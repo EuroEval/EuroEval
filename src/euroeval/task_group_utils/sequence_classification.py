@@ -235,9 +235,7 @@ def extract_labels_from_generation(
                 f"{num_predictions_being_very_off:,}/{len(model_output.sequences):,} "
                 "of the samples. This likely means that the model were completely "
                 "off in these cases. Since this task does not allow invalid model "
-                "outputs, we have to abort the evaluation. Please re-run the "
-                "evaluation with the `--debug` flag (or `debug=True` if you're using "
-                "the `Benchmarker` API) to see the precise model outputs."
+                "outputs, we have to abort the evaluation."
             )
 
     return new_predicted_labels

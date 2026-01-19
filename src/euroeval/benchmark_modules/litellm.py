@@ -99,18 +99,19 @@ if t.TYPE_CHECKING:
 
 VOCAB_SIZE_MAPPING = {
     # OpenAI models
+    r"gpt-5\.2.*": -1,
     r"gpt-5-.*": 100_256,
     r"gpt-4-(32k)?(-[0-9]{4})?": 100_256,
     r"gpt-4-[0-9]{4}-preview": 100_256,
     r"gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 100_256,
     r"gpt-4-(vision|turbo)(-preview)?": 100_256,
-    r"gpt-3.5-turbo-instruct(-[0-9]{4})?": 100_256,
+    r"gpt-3\.5-turbo-instruct(-[0-9]{4})?": 100_256,
     r"gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_019,
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
     # Anthropic models
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": -1,
     # Gemini models
-    r"(gemini/)?gemini-[1-9]\.[0-9]-(flash|pro).*": 256_128,
+    r"(gemini/)?gemini-[1-9](\.[0-9])?-(flash|pro).*": 256_128,
     # xAI models
     r"(xai/)?grok.*": -1,
 }
@@ -118,25 +119,26 @@ VOCAB_SIZE_MAPPING = {
 
 MODEL_MAX_LENGTH_MAPPING = {
     # OpenAI models
+    r"gpt-5\.2.*": 400_000,
     r"gpt-5-.*": 272_000,
     r"gpt-4(-[0-9]{4})?": 8_191,
     r"gpt-4-32k(-[0-9]{4})?": 32_767,
     r"gpt-4-[0-9]{4}-preview": 128_000,
     r"gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
     r"gpt-4-(vision|turbo)(-preview)?": 128_000,
-    r"gpt-3.5-turbo-instruct(-[0-9]{4})?": 4_095,
+    r"gpt-3\.5-turbo-instruct(-[0-9]{4})?": 4_095,
     r"gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
     r"o1-(mini|preview)(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
     r"o1(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
     r"o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
-    r"gpt-4.1.*": 1_047_576,
+    r"gpt-4\.1.*": 1_047_576,
     # Anthropic models
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
     r"(anthropic/)?claude-(opus|sonnet|haiku)-[1-9](-[1-9])?-[0-9]{8}": 200_000,
     # Gemini models
     r"(gemini/)?gemini-1\.5-flash.*": 1_048_576,
     r"(gemini/)?gemini-1\.5-pro.*": 2_097_152,
-    r"(gemini/)?gemini-2\.(0|5).*": 1_048_576,
+    r"(gemini/)?gemini-[23](\.[05])?.*": 1_048_576,
     # xAI models
     r"(xai/)?grok.*": 131_072,
 }
@@ -144,7 +146,7 @@ MODEL_MAX_LENGTH_MAPPING = {
 
 NUM_PARAMS_MAPPING = {
     # OpenAI models
-    r"gpt-5-.*": -1,
+    r"gpt-5.*": -1,
     r"gpt-4.*": -1,
     r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
     # Anthropic models
@@ -152,7 +154,7 @@ NUM_PARAMS_MAPPING = {
     # Gemini models
     r"(gemini/)?gemini-1.5-flash-8b": 8_000_000_000,
     r"(gemini/)?gemini-1.5-flash-[0-9]+": -1,
-    r"(gemini/)?gemini-2.(0|5).*": -1,
+    r"(gemini/)?gemini-[23](.[05])?.*": -1,
     # xAI models
     r"(xai/)?grok.*": -1,
 }
@@ -208,8 +210,8 @@ class LiteLLMModel(BenchmarkModule):
             "thinking",
         ],
         # Gemini models
-        re.compile(r"(gemini/)?gemini-2.5-flash-lite.*"): ["no-thinking", "thinking"],
-        re.compile(r"(gemini/)?gemini-2.5-flash.*"): ["no-thinking", "thinking"],
+        re.compile(r"(gemini/)?gemini-2\.5-flash-lite.*"): ["no-thinking", "thinking"],
+        re.compile(r"(gemini/)?gemini-(2\.5|3)-flash.*"): ["no-thinking", "thinking"],
         # xAI models
         re.compile(r"(xai/)?grok-3-mini(-fast)?(-beta)?"): ["low", "medium", "high"],
     }
@@ -401,7 +403,7 @@ class LiteLLMModel(BenchmarkModule):
             http_429_errors = [
                 idx
                 for idx, (_, error) in enumerate(failures)
-                if isinstance(error, RateLimitError) and "Error code: 429" in str(error)
+                if isinstance(error, RateLimitError)
             ]
             if http_429_errors and self.buffer["max_concurrent_calls"] > 1:
                 failures = [
@@ -417,7 +419,6 @@ class LiteLLMModel(BenchmarkModule):
                     f"{self.buffer['max_concurrent_calls']:,} due to rate limiting.",
                     level=logging.DEBUG,
                 )
-                continue
 
             # Attempt to handle the exceptions, to improve the chance of getting
             # successful generations next time around
@@ -483,11 +484,13 @@ class LiteLLMModel(BenchmarkModule):
             "you've reached the maximum number of requests with logprobs",
             "logprobs is not supported",
             "logprobs is not enabled",
-            "Invalid value at 'generation_config.response_logprobs' (TYPE_BOOL)",
         ]
         logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'logprobs'.*\]"
         )
+        logprobs_argument_should_be_bool_messages = [
+            "Invalid value at 'generation_config.response_logprobs' (TYPE_BOOL)"
+        ]
         top_logprobs_messages = ["got an unexpected keyword argument 'top_logprobs'"]
         top_logprobs_pattern = re.compile(
             r"does not support parameters: \[.*'top_logprobs'.*\]"
@@ -517,6 +520,7 @@ class LiteLLMModel(BenchmarkModule):
         response_format_messages = [
             "got an unexpected keyword argument 'response_format'",
             "the model returned empty outputs",
+            "'maxitems' is not supported",
         ]
 
         if (
@@ -546,6 +550,17 @@ class LiteLLMModel(BenchmarkModule):
             generation_kwargs.pop("logprobs", None)
             generation_kwargs.pop("top_logprobs", None)
             generation_kwargs.pop("response_format", None)
+            return generation_kwargs, 0
+        elif any(
+            msg.lower() in error_msg
+            for msg in logprobs_argument_should_be_bool_messages
+        ):
+            log_once(
+                f"The model {model_id!r} requires the `logprobs` argument to be a "
+                "Boolean, so setting it to True.",
+                level=logging.DEBUG,
+            )
+            generation_kwargs["logprobs"] = True
             return generation_kwargs, 0
         elif (
             any(msg.lower() in error_msg for msg in top_logprobs_messages)
@@ -702,7 +717,9 @@ class LiteLLMModel(BenchmarkModule):
             isinstance(error, (RateLimitError, BadRequestError))
             and (
                 retry_match := re.search(
-                    pattern=r"\bretry in ([0-9]+(.[0-9]+)?) ?(s|seconds)\b",
+                    pattern=(
+                        r"\b(try( again)?|retry) in ([0-9]+(.[0-9]+)?) ?(s|second)\b"
+                    ),
                     string=error_msg,
                     flags=re.IGNORECASE,
                 )
@@ -838,14 +855,14 @@ class LiteLLMModel(BenchmarkModule):
         ]
 
         # Close connections
-        for request in requests:
-            if hasattr(request, "close"):
-                try:
-                    request.close()
-                except RuntimeError as e:
-                    log(
-                        f"RuntimeError during request.close(): {e}", level=logging.DEBUG
-                    )
+        semaphore.release()
+        router.reset()
+        try:
+            loop = asyncio.get_event_loop()
+            if not loop.is_closed():
+                loop.close()
+        except RuntimeError:
+            pass  # Already closed
 
         return successes, failures
 

@@ -1,6 +1,7 @@
 """All the Hugging Face metrics used in EuroEval."""
 
 import collections.abc as c
+import os
 import typing as t
 from pathlib import Path
 
@@ -130,7 +131,7 @@ class HuggingFaceMetric(Metric):
             "__call__ method."
         )
 
-        with no_terminal_output(disable=benchmark_config.verbose):
+        with no_terminal_output(disable=os.getenv("FULL_LOG", "0") == "1"):
             results = self.metric.compute(
                 predictions=predictions, references=references, **self.compute_kwargs
             )
@@ -196,7 +197,7 @@ class SourceBasedMetric(HuggingFaceMetric):
                 f"instead."
             )
 
-        with no_terminal_output(disable=benchmark_config.verbose):
+        with no_terminal_output(disable=os.getenv("FULL_LOG", "0") == "1"):
             results = self.metric.compute(
                 sources=sources,
                 predictions=predictions,

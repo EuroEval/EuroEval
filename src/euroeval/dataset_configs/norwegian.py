@@ -27,7 +27,7 @@ SCALA_NN_CONFIG = DatasetConfig(
     pretty_name="ScaLA-nn",
     source="EuroEval/scala-nn",
     task=LA,
-    languages=[NORWEGIAN_NYNORSK],
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
 )
 
 NORNE_NB_CONFIG = DatasetConfig(
@@ -43,7 +43,7 @@ NORNE_NN_CONFIG = DatasetConfig(
     pretty_name="NorNE-nn",
     source="EuroEval/norne-nn-mini",
     task=NER,
-    languages=[NORWEGIAN_NYNORSK],
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
 )
 
 NORQUAD_CONFIG = DatasetConfig(
@@ -197,7 +197,7 @@ MULTI_WIKI_QA_NN_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-nn",
     source="EuroEval/multi-wiki-qa-nn-mini",
     task=RC,
-    languages=[NORWEGIAN_NYNORSK],
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
 )
 

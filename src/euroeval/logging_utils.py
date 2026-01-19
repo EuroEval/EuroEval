@@ -87,7 +87,7 @@ def log(message: str, level: int, colour: str | None = None) -> None:
 
 
 @cache_arguments("message")
-def log_once(message: str, level: int = logging.INFO, prefix: str = "") -> None:
+def log_once(message: str, level: int, prefix: str = "") -> None:
     """Log a message once.
 
     This is ensured by caching the "message" argument and only logging it the first time
@@ -140,6 +140,7 @@ def block_terminal_output() -> None:
     logging.getLogger("openai").setLevel(logging.CRITICAL)
     logging.getLogger("httpx").setLevel(logging.CRITICAL)
     litellm.suppress_debug_info = True  # type: ignore[bad-assignment]
+    litellm.turn_off_message_logging = True
 
     # Disable vLLM logging
     logging.getLogger("vllm").setLevel(logging.CRITICAL)
