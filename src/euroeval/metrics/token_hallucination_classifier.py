@@ -1,10 +1,9 @@
-"""Inference speed metric."""
+"""Hallucination metric."""
 
 import collections.abc as c
 import logging
 import typing as t
 
-# from collections import defaultdict removed as it is not used
 from datasets import Dataset
 from lettucedetect import HallucinationDetector
 
@@ -107,9 +106,9 @@ class Token_Hallucination_Metric(Metric):
             dataset=dataset,
             predictions=predictions,
             model="alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-"
-            + benchmark_config.languages[
+            + dataset_config.languages[
                 0
-            ].code,  # FIXME: This is not the correct way to get current language code.
+            ].code,  # FIXME: Perhaps a better way is possible?
             device="cpu",
         )
         return hallucination_rate

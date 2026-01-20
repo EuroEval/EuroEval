@@ -11,7 +11,7 @@ from ..tasks import (
     NER,
     RC,
     SENT,
-    # SIMPL,
+    SIMPL,
     SUMM,
 )
 
@@ -74,13 +74,13 @@ HELLASWAG_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
 )
 
-# DUIDELIJKE_TAAL_NL_CONFIG = DatasetConfig(
-#     name="duidelijke-taal",
-#     pretty_name="Duidelijke Taal",
-#     source="EuroEval/duidelijke-taal",
-#     task=SIMPL,
-#     languages=[DUTCH],
-# )
+DUIDELIJKE_TAAL_NL_CONFIG = DatasetConfig(
+    name="duidelijke-taal",
+    pretty_name="Duidelijke Taal",
+    source="EuroEval/duidelijke-taal",
+    task=SIMPL,
+    languages=[DUTCH],
+)
 
 VALEU_NL_CONFIG = DatasetConfig(
     name="valeu-nl",

@@ -11,6 +11,7 @@ from .prompt_templates import (
     NER_TEMPLATES,
     RC_TEMPLATES,
     SENT_TEMPLATES,
+    SIMPL_TEMPLATES,
     SUMM_TEMPLATES,
     TOKEN_CLASSIFICATION_TEMPLATES,
 )
@@ -71,6 +72,16 @@ SENT = Task(
     uses_logprobs=True,
 )
 
+SIMPL = Task(
+    name="simplification",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=SIMPL_TEMPLATES,
+    metrics=[m.meteor_metric, m.sari_metric],
+    default_num_few_shot_examples=3,
+    default_max_generated_tokens=256,
+    default_labels=[],
+    default_allowed_model_types=[ModelType.GENERATIVE],
+)
 
 SUMM = Task(
     name="summarization",
