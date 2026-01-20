@@ -983,3 +983,81 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset cnn-dailymail
 ```
+
+## European Values
+
+### ValEU-en
+
+This dataset is the official English version of questions from the [European values
+study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.
+
+The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "question_id": "A072",
+  "text": "Please look carefully at the following list of voluntary organisations and say which, if any, do you belong to?\nProfessional associations\nChoices:\na. No\nb. Yes"
+}
+```
+
+```json
+{
+  "question_id": "F025",
+  "text": "Do you belong to a religious denomination? If yes, which one?\nChoices:\na. Do not belong to a denomination\nb. Roman Catholic\nc. Protestant\nd. Orthodox (Russian/Greek/etc.)\ne. Jew\nf. Muslim\ng. Hindu\nh. Buddhist\ni. Other Christian (Evangelical/Pentecostal/Free church/etc.)\nj. Other"
+}
+```
+
+```json
+{
+  "question_id": "F118",
+  "text": "Please tell me for each of the following whether you think it can always be justified, never be justified, or something in between.\nHomosexuality\nChoices:\na. Never justifiable\nb. 2\nc. 3\nd. 4\ne. 5\nf. 6\ng. 7\nh. 8\ni. 9\nj. Always justifiable"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- Prefix prompt:
+
+  ```text
+  The following are multiple choice questions (with answers).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Options:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+  Answer: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+  Options:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+
+  Answer the above question by replying with 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
+  'i', 'j', or 'k', and nothing else.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset valeu-en
+```

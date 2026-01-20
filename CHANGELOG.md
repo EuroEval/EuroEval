@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- LLM-as-a-Judge metrics now support batch scoring across multiple judge outputs.
 - When evaluating datasets with no validation split, we now set the `validation_split`
   in the resulting JSONL file to `null` rather than `True`, to avoid confusion.
   Likewise, if a task requires zero-shot evaluation, we set `few_shot` to null rather
@@ -29,6 +30,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   models.
 - Some API models need the `logprobs` argument to be a Boolean rather than an integer.
   This has been fixed now.
+- Better handling of rate limits when evaluating API models, by backing off more
+  aggressively when hitting rate limits.
 
 ## [v16.10.1] - 2026-01-02
 

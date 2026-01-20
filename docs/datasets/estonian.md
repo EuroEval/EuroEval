@@ -599,7 +599,7 @@ When evaluating generative models, we use the following setup (see the
   c. {option_c}
   d. {option_d}
 
-  Võimalikud vastused: 'a', 'b', 'c' or 'd'. Muud vastused ei ole lubatud.
+  Võimalikud vastused: 'a', 'b', 'c' või 'd'. Muud vastused ei ole lubatud.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -746,4 +746,82 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset err-news
+```
+
+## European Values
+
+### ValEU-et
+
+This dataset is the official Estonian version of questions from the [European values
+study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.
+
+The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "question_id": "E265_08",
+  "text": "Teie arvates, kui sageli esinevad järgmised asjad selle riigi valimistel?\nValijaid ähvardatakse valimisjaoskondades vägivallaga.\nVastusevariandid:\na. Väga tihti\nb. Üsna tihti\nc. Mitte sageli\nd. Mitte just tihti"
+}
+```
+
+```json
+{
+  "question_id": "A009",
+  "text": "Üldjoontes, kuidas Te kirjeldaksite oma praegust tervislikku olukorda? Kas Te ütleksite, et see on\nVastusevariandid:\na. Väga hea\nb. Hea\nc. Rahuldav\nd. Halb\ne. Väga halb"
+}
+```
+
+```json
+{
+  "question_id": "A003",
+  "text": "Palun vaadake seda kaarti ning öelge iga järgneva kategooria kohta, kui tähtis on see Teie elus.\nVaba aeg\nVastusevariandid:\na. Väga oluline\nb. Pigem tähtis\nc. Mitte eriti oluline\nd. Täiesti tähtsusetu"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- Prefix prompt:
+
+  ```text
+  Järgnevad on vastusevariantidega küsimused (koos vastustega).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Tekstülesanne: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+  Vastus: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Tekstülesanne: {text}
+  Vastusevariandid:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+
+  Võimalikud vastused: 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', või 'k'. Muud
+  vastused ei ole lubatud.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset valeu-et
 ```

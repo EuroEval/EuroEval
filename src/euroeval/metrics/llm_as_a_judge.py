@@ -5,7 +5,7 @@ import logging
 import typing as t
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
@@ -16,6 +16,8 @@ if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
 
     from ..data_models import BenchmarkConfig, DatasetConfig
+
+from ..types import BatchScoringFunction, ScoringFunction
 
 
 class LLMAsAJudgeMetric(Metric):
@@ -29,7 +31,8 @@ class LLMAsAJudgeMetric(Metric):
         judge_kwargs: dict[str, t.Any],
         user_prompt: str,
         response_format: t.Type[BaseModel],
-        scoring_fn: t.Callable[[BaseModel | None], float],
+        scoring_fn: ScoringFunction | None = None,
+        batch_scoring_fn: BatchScoringFunction | None = None,
         condition_formatting_fn: t.Callable[[str], str] = lambda x: x,
         system_prompt: str | None = None,
     ) -> None:
@@ -57,6 +60,8 @@ class LLMAsAJudgeMetric(Metric):
                 response.
             scoring_fn:
                 A function that takes the judge's response and returns a score.
+            batch_scoring_fn:
+                A function that takes all judge responses and returns a score.
             condition_formatting_fn (optional):
                 A function to format the condition string before it is included in the
                 user prompt. Defaults to a no-op function that returns the input
@@ -70,7 +75,9 @@ class LLMAsAJudgeMetric(Metric):
         self.judge_kwargs = judge_kwargs
         self.user_prompt = user_prompt
         self.response_format = response_format
-        self.scoring_fn = scoring_fn
+        self.batch_scoring_fn = self._get_batch_scoring_fn(
+            scoring_fn=scoring_fn, batch_scoring_fn=batch_scoring_fn
+        )
         self.condition_formatting_fn = condition_formatting_fn
         self.system_prompt = system_prompt
 
@@ -181,22 +188,36 @@ class LLMAsAJudgeMetric(Metric):
         json_dicts = [
             extract_json_dict_from_string(s=output.sequence) for output in raw_outputs
         ]
-        outputs = [
-            self.response_format.model_validate(obj=json_dict)
-            if json_dict is not None
-            else None
-            for json_dict in json_dicts
-        ]
+        outputs_raw: list[BaseModel | None] = []
+        for json_dict in json_dicts:
+            if json_dict is None:
+                outputs_raw.append(None)
+                continue
+            try:
+                outputs_raw.append(self.response_format.model_validate(obj=json_dict))
+            except ValidationError:
+                outputs_raw.append(None)
 
-        # Calculate the scores using the scoring function
-        scores = [self.scoring_fn(output) for output in outputs]
-        if not scores:
+        num_none: int = sum(output is None for output in outputs_raw)
+        if num_none:
             log(
-                f"No scores were calculated for {self.pretty_name}.",
+                f"Could not parse/validate {num_none:,} of {len(outputs_raw):,} judge "
+                f"outputs for metric {self.pretty_name!r}. These will be ignored.",
+                level=logging.DEBUG,
+            )
+
+        outputs: list[BaseModel] = [
+            output for output in outputs_raw if output is not None
+        ]
+        if not outputs:
+            log(
+                f"No valid judge outputs were produced for metric "
+                f"{self.pretty_name!r}.",
                 level=logging.WARNING,
             )
             return None
-        return sum(scores) / len(scores)
+
+        return self.batch_scoring_fn(outputs=outputs, dataset=dataset)
 
     def _apply_user_prompt(self, prediction: str, condition: str | None = None) -> str:
         """Apply the user prompt to the prediction and condition.
@@ -226,6 +247,49 @@ class LLMAsAJudgeMetric(Metric):
                 prediction=prediction, condition=self.condition_formatting_fn(condition)
             )
         return self.user_prompt.format(prediction=prediction)
+
+    def _get_batch_scoring_fn(
+        self,
+        scoring_fn: ScoringFunction | None,
+        batch_scoring_fn: BatchScoringFunction | None,
+    ) -> BatchScoringFunction:
+        """Get the batch scoring function.
+
+        Args:
+            scoring_fn:
+                The scoring function to use.
+            batch_scoring_fn:
+                The batch scoring function to use.
+
+        Returns:
+            The batch scoring function.
+
+        Raises:
+            InvalidBenchmark:
+                If both or neither of the scoring functions are provided.
+        """
+        if scoring_fn is not None and batch_scoring_fn is not None:
+            raise InvalidBenchmark(
+                "Both `scoring_fn` and `batch_scoring_fn` are provided. Please "
+                "provide only one of them."
+            )
+        if scoring_fn is not None:
+            scoring_fn_nonnull = scoring_fn
+
+            def batch_fn(
+                outputs: list[BaseModel], dataset: "Dataset | None" = None
+            ) -> float:
+                return sum(scoring_fn_nonnull(output) for output in outputs) / len(
+                    outputs
+                )
+
+            return batch_fn
+        if batch_scoring_fn is not None:
+            return batch_scoring_fn
+        raise InvalidBenchmark(
+            "Neither `scoring_fn` nor `batch_scoring_fn` are provided. Please "
+            "provide one of them."
+        )
 
 
 ### Fluency metric ###
@@ -257,5 +321,5 @@ fluency_metric = LLMAsAJudgeMetric(
     "Text: {prediction!r}\n\n"
     "Output your rating as a JSON object with a single key 'fluency'.",
     response_format=Fluency,
-    scoring_fn=lambda output: (output.fluency - 1) / 4.0 if output is not None else 0.0,
+    scoring_fn=lambda output: (output.fluency - 1) / 4.0,
 )

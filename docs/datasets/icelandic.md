@@ -1151,3 +1151,81 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset rrn
 ```
+
+## European Values
+
+### ValEU-is
+
+This dataset is the official Icelandic version of questions from the [European values
+study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.
+
+The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "question_id": "G063",
+  "text": "Fólk upplifir sig á misjafnan hátt og hvernig það tengist heiminum í kringum sig. Með því að nota þetta spjald, getur þú sagt mér hversu sterkum böndum þú tengist...?\nHeiminum\nSvarmöguleikar:\na. Mjög sterkum böndum\nb. Sterkum böndum\nc. Veikum böndum\nd. Mjög veikum böndum"
+}
+```
+
+```json
+{
+  "question_id": "E265_08",
+  "text": "Að þínu mati, hversu oft á eftirfarandi sér stað í íslenskum kosningum?\nKjósendum er hótað ofbeldi á kjörstað\nSvarmöguleikar:\na. Mjög oft\nb. Nokkuð oft\nc. Ekki oft\nd. Alls ekki oft"
+}
+```
+
+```json
+{
+  "question_id": "E233",
+  "text": "Þrátt fyrir að margir þættir séu æskilegir, eru ekki allir þeirra nauðsynleg einkenni lýðræðisríkja. Vinsamlegast segðu mér hvaða einkenni þér finnst vera nauðsynleg í lýðræðisríkjum. Miðaðu við mælistikuna hér á spjaldinu þar sem 1 merkir „alls ekki nauðsynlegt í lýðræðisríki“ og 10 merkir að það sé tvímælalaust „nauðsynlegt í lýðræðisríki“. Hvaða tala lýsir best þinni skoðun?\nKonur hafa sömu réttindi og karlar\nSvarmöguleikar:\na. Það er andstætt lýðræði (spontant).\nb. Alls ekki nauðsynlegt einkenni í lýðræðisríki\nc. 2\nd. 3\ne. 4\nf. 5\ng. 6\nh. 7\ni. 8\nj. 9\nk. Nauðsynlegt einkenni í lýðræðisríki"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- Prefix prompt:
+
+  ```text
+  Eftirfarandi eru fjölvalsspurningar (með svörum).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+  Svara: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+
+  Svaraðu eftirfarandi spurningum með 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+  eða 'k', og engu öðru.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset valeu-is
+```
