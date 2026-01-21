@@ -586,7 +586,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             len(input_ids) > max_tokens_per_prompt
             for input_ids in tokenized_prompts.input_ids
         ):
-            log_once(
+            log(
                 f"Truncating prompts for the model {self.model_config.model_id!r} "
                 f"to a maximum of {max_tokens_per_prompt:,} tokens.",
                 level=logging.DEBUG,
@@ -638,7 +638,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                             "long."
                         )
         else:
-            log_once(
+            log(
                 f"Truncation of prompts for model {self.model_config.model_id!r} is "
                 "not needed, so skipping truncation.",
                 level=logging.DEBUG,
