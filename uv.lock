@@ -980,7 +980,7 @@ wheels = [
 
 [[package]]
 name = "euroeval"
-version = "16.11.0"
+version = "16.11.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
