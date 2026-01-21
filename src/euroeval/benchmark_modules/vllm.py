@@ -690,6 +690,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             sequences=[list(completion_id) for completion_id in completion_ids],
             skip_special_tokens=False,
         )
+        breakpoint()
         if (
             self.end_of_reasoning_token is not None
             and self.generative_type == GenerativeType.REASONING
@@ -1286,7 +1287,6 @@ def get_end_of_reasoning_token(
             )
         )
     ]
-    breakpoint()
     if not bor_reasoning_matches:
         log_once(
             f"The model {model_id!r} did not generate any beginning-of-reasoning "
