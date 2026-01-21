@@ -112,5 +112,5 @@ class Token_Hallucination_Metric(Metric):
 
 
 hallucination_metric = Token_Hallucination_Metric(
-    name="hallucination_token", pretty_name="Tokens per second"
+    name="hallucination_token", pretty_name="Hallucination rate"
 )
