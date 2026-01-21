@@ -90,6 +90,7 @@ class StructuredGenerationMetric(Metric):
         if self._check_full_type(raw_labels, list[dict[str, list[str]]]):
             labels: list[dict[str, list[str]]] = deepcopy(raw_labels)  # type: ignore[arg-type]
         else:
+            labels = []
             for raw_label in raw_labels:
                 if not isinstance(raw_label, str):
                     raise InvalidBenchmark(
