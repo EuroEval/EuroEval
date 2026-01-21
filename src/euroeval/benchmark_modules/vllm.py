@@ -640,7 +640,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         else:
             log_once(
                 f"Truncation of prompts for model {self.model_config.model_id!r} is "
-                "not needed, so skipping truncation."
+                "not needed, so skipping truncation.",
+                level=logging.DEBUG,
             )
 
         # Generate sequences using vLLM
