@@ -604,7 +604,6 @@ class VLLMModel(HuggingFaceEncoderModel):
         truncation_attempts = 1
         for _ in range(num_attempts):
             try:
-                breakpoint()
                 raw_outputs = self._model.generate(
                     prompts=prompts,
                     sampling_params=sampling_params,
@@ -1287,6 +1286,7 @@ def get_end_of_reasoning_token(
             )
         )
     ]
+    breakpoint()
     if not bor_reasoning_matches:
         log_once(
             f"The model {model_id!r} did not generate any beginning-of-reasoning "
