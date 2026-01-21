@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   This has been fixed now.
 - Better handling of rate limits when evaluating API models, by backing off more
   aggressively when hitting rate limits.
+- Now truncates prompts for instruction-following models in a smarter way, by removing
+  few-shot examples one by one until the prompt is short enough, rather than just
+  truncating the prompt to the maximum length. This only affects models whose maximum
+  model length is quite small (roughly 5,000 tokens or less).
 
 ## [v16.10.1] - 2026-01-02
 
