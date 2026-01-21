@@ -1053,7 +1053,7 @@ euroeval --model <model-id> --dataset winogrande-da
 
 ## Logical Reasoning
 
-### Unofficial: zebra-puzzle-da_2x3
+### Unofficial: zebra-puzzle-da-2x3
 
 This dataset consists of logical puzzles and was created with the code in this repo: <https://github.com/alexandrainst/zebra_puzzles>
 
@@ -1126,10 +1126,10 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset zebra-puzzle-da_2x3
+euroeval --model <model-id> --dataset zebra-puzzle-da-2x3
 ```
 
-### Unofficial: zebra-puzzle-da_4x5
+### Unofficial: zebra-puzzle-da-4x5
 
 This dataset consists of logical puzzles and was created with the code in this repo: <https://github.com/alexandrainst/zebra_puzzles>
 
@@ -1168,7 +1168,7 @@ Here are a few examples from the training split:
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-# TODO: Update this
+**TODO**: Update this
 
 - Number of few-shot examples: 5
 - Prefix prompt:
@@ -1210,7 +1210,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset zebra-puzzle-da_4x5
+euroeval --model <model-id> --dataset zebra-puzzle-da-4x5
 ```
 
 ## Summarisation
