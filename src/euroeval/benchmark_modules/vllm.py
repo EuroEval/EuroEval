@@ -660,6 +660,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                 f"Could not generate sequences after {num_attempts} attempts."
             )
 
+        breakpoint()
+
         # When we shorten the prompts then some residual model outputs persist, so we
         # need to filter these out
         num_extra_outputs = len(raw_outputs) - len(prompts)
