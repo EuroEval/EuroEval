@@ -201,6 +201,7 @@ def extract_labels_from_generation(
         best_candidate_label = sample_candidate_labels[idx][
             np.argmin(edit_distances).item()
         ]
+        breakpoint()
 
         # If no candidate labels were found, we either pick the label with the smallest
         # word edit distance to the predicted label (if invalid model outputs are
