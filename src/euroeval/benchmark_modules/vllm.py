@@ -594,6 +594,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             raise InvalidBenchmark(
                 "Truncation of prompts failed, some prompts are still too long."
             )
+        breakpoint()
         prompts = self._tokeniser.batch_decode(
             sequences=tokenized_prompts.input_ids, skip_special_tokens=True
         )
@@ -690,7 +691,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             sequences=[list(completion_id) for completion_id in completion_ids],
             skip_special_tokens=False,
         )
-        breakpoint()
         if (
             self.end_of_reasoning_token is not None
             and self.generative_type == GenerativeType.REASONING
