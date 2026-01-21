@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   in the resulting JSONL file to `null` rather than `True`, to avoid confusion.
   Likewise, if a task requires zero-shot evaluation, we set `few_shot` to null rather
   than a Boolean value.
+- When evaluating a reasoning model on a sequence classification task, if the model
+  outputs an answer that starts with one of candidate labels, we now use that label as
+  the predicted label. Previously, we would have conducted a word edit distance search
+  to find the closest candidate label, which was almost always correct, but not in all
+  cases.
 
 ### Fixed
 
