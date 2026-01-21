@@ -12,18 +12,19 @@
 """Create the MultiWikiQA-mini datasets and upload them to the HF Hub."""
 
 import pandas as pd
-from constants import (
-    MAX_NUM_CHARS_IN_CONTEXT,
-    MAX_NUM_CHARS_IN_QUESTION,
-    MIN_NUM_CHARS_IN_CONTEXT,
-    MIN_NUM_CHARS_IN_QUESTION,
-)
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
+
+from .constants import (
+    MAX_NUM_CHARS_IN_CONTEXT,
+    MAX_NUM_CHARS_IN_QUESTION,
+    MIN_NUM_CHARS_IN_CONTEXT,
+    MIN_NUM_CHARS_IN_QUESTION,
+)
 
 LANGUAGES = [
     "da",
@@ -81,6 +82,7 @@ def main() -> None:
                 MIN_NUM_CHARS_IN_QUESTION, MAX_NUM_CHARS_IN_QUESTION
             )
         ]
+        assert isinstance(df, pd.DataFrame)
 
         # Extract information on which examples contain an answer
         def has_answer_fn(example: dict) -> bool:
@@ -111,9 +113,11 @@ def main() -> None:
 
         # Collect datasets in a dataset dictionary
         dataset = DatasetDict(
-            train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-            val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            test=Dataset.from_pandas(test_df, split=Split.TEST),
+            {
+                "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+                "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(test_df, split=Split.TEST),
+            }
         )
 
         # Create dataset ID

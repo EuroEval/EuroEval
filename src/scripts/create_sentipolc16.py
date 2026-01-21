@@ -11,9 +11,10 @@
 """Create the sentipolc16-mini sentiment dataset and upload it to the HF Hub."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 
 def main() -> None:
@@ -37,7 +38,9 @@ def main() -> None:
     df = pd.concat([train_df, val_df, test_df], ignore_index=True)
 
     # Create the label column
-    df["label"] = df["label"].map({0: "negative", 1: "neutral", 2: "positive"})
+    df["label"] = df["label"].map(
+        lambda x: {0: "negative", 1: "neutral", 2: "positive"}[x]
+    )
 
     # Remove duplicates
     df = df.drop_duplicates().reset_index(drop=True)
@@ -54,6 +57,7 @@ def main() -> None:
     # Create train split
     train_size = 1024
     filtered_df = filtered_df[~filtered_df.index.isin(test_df.index)]
+    assert isinstance(filtered_df, pd.DataFrame)
     train_df = filtered_df.sample(n=train_size, random_state=4242)
 
     # Reset the index
@@ -82,9 +86,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(new_train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(new_val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(new_test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(new_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(new_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(new_test_df, split=Split.TEST),
+        }
     )
 
     # Push the dataset to the Hugging Face Hub

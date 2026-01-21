@@ -14,7 +14,11 @@
 from collections import Counter
 
 import pandas as pd
-from constants import (
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
+
+from .constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -22,9 +26,6 @@ from constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
 
 
 def main() -> None:
@@ -74,9 +75,11 @@ def main() -> None:
 
         # Collect datasets in a dataset dictionary
         dataset = DatasetDict(
-            train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-            val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            test=Dataset.from_pandas(final_test_df, split=Split.TEST),
+            {
+                "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+                "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
+            }
         )
 
         # Create dataset ID
@@ -103,7 +106,7 @@ def process_split(df: pd.DataFrame, language: str) -> pd.DataFrame:
     df = filter_by_length(df=df)
     df = filter_repetitive(df=df)
     df = add_text_column(df=df, language=language)
-    df = df[["text", "label", "category"]]
+    df = df.loc[["text", "label", "category"]]
     df = df.drop_duplicates(inplace=False)
     df = df.reset_index(drop=True)
     return df
@@ -118,7 +121,7 @@ def filter_by_length(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         The filtered DataFrame with only rows of acceptable length.
     """
-    return df[
+    return df.loc[
         (df.question.str.len() >= MIN_NUM_CHARS_IN_INSTRUCTION)
         & (df.question.str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION)
         & (df.option_a.str.len() >= MIN_NUM_CHARS_IN_OPTION)
@@ -154,7 +157,7 @@ def filter_repetitive(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         The filtered DataFrame without overly repetitive texts.
     """
-    return df[
+    return df.loc[
         ~df.question.apply(is_repetitive)
         & ~df.option_a.apply(is_repetitive)
         & ~df.option_b.apply(is_repetitive)

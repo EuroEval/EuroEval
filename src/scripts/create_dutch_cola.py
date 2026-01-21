@@ -11,10 +11,11 @@
 """Create the Dutch CoLA dataset and upload it to the HF Hub."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from requests import HTTPError
+
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 
 def main() -> None:
@@ -125,9 +126,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(new_train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(new_val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(new_test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(new_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(new_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(new_test_df, split=Split.TEST),
+        }
     )
 
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)

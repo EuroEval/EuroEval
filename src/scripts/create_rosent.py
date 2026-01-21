@@ -62,8 +62,11 @@ def main() -> None:
     # Load the dataset
     dataset_id = "dumitrescustefan/ro_sent"
     dataset = load_dataset(dataset_id)
+    assert isinstance(dataset, DatasetDict)
     train_df = dataset["train"].to_pandas()
     test_df = dataset["test"].to_pandas()
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
 
     train_df = process(df=train_df, n_samples=1500)
     test_df = process(df=test_df, n_samples=2500)
@@ -83,11 +86,17 @@ def main() -> None:
     val_df_final = val_df_final.reset_index(drop=True)
     test_df_final = test_df_final.reset_index(drop=True)
 
+    assert isinstance(train_df_final, pd.DataFrame)
+    assert isinstance(val_df_final, pd.DataFrame)
+    assert isinstance(test_df_final, pd.DataFrame)
+
     # Create DatasetDict
     mini_dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df_final),
-        val=Dataset.from_pandas(val_df_final),
-        test=Dataset.from_pandas(test_df_final),
+        {
+            "train": Dataset.from_pandas(train_df_final),
+            "val": Dataset.from_pandas(val_df_final),
+            "test": Dataset.from_pandas(test_df_final),
+        }
     )
 
     # Push to HF Hub
@@ -137,7 +146,7 @@ def process(df: pd.DataFrame, n_samples: int) -> pd.DataFrame:
     return df
 
 
-def _classify_text(text: str) -> int:
+def _classify_text(text: str) -> str:
     """Classify the text using GPT-4o model.
 
     Args:
@@ -161,7 +170,10 @@ def _classify_text(text: str) -> int:
     completion = client.beta.chat.completions.parse(
         model="gpt-4o", messages=messages, response_format=Sentiment
     )
-    label = completion.choices[0].message.parsed.sentiment
+    parsed_response = completion.choices[0].message.parsed
+    if parsed_response is None:
+        raise ValueError("Parsed response is None")
+    label = parsed_response.sentiment
     label_cache[text] = label
     save_cache(cache=label_cache)
     return label

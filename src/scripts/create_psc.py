@@ -11,9 +11,10 @@
 """Create the PSC (Polish Summaries Corpus) summarization dataset."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 
 def main() -> None:
@@ -48,7 +49,7 @@ def main() -> None:
     val_df = val_df.reset_index(drop=True)
 
     # Remove validation samples from train data and reset index
-    remaining_train = train_df.drop(val_df.index).reset_index(drop=True)
+    remaining_train = train_df.drop(val_df.index.tolist()).reset_index(drop=True)
 
     # Create test split from remaining train data
     test_size = 2048
@@ -58,7 +59,9 @@ def main() -> None:
     test_df = test_df.reset_index(drop=True)
 
     # Remove test samples from train data
-    remaining_train = remaining_train.drop(test_df.index).reset_index(drop=True)
+    remaining_train = remaining_train.drop(test_df.index.tolist()).reset_index(
+        drop=True
+    )
 
     # Create final train split
     train_size = 1024
@@ -67,11 +70,17 @@ def main() -> None:
     )
     train_df = train_df.reset_index(drop=True)
 
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     dataset_id = "EuroEval/psc-mini"

@@ -11,9 +11,10 @@
 """Create the LR-Sum summarisation datasets."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 LANGUAGES = {"uk": "ukr", "sr": "srp", "bs": "bos"}
 
@@ -71,11 +72,17 @@ def main() -> None:
             n=train_size, random_state=4242
         ).reset_index(drop=True)
 
+        assert isinstance(final_train_df, pd.DataFrame)
+        assert isinstance(final_val_df, pd.DataFrame)
+        assert isinstance(final_test_df, pd.DataFrame)
+
         # Collect datasets in a dataset dictionary
         mini_dataset = DatasetDict(
-            train=Dataset.from_pandas(final_train_df, split=Split.TRAIN),
-            val=Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
-            test=Dataset.from_pandas(final_test_df, split=Split.TEST),
+            {
+                "train": Dataset.from_pandas(final_train_df, split=Split.TRAIN),
+                "val": Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
+            }
         )
 
         # Create dataset ID
@@ -114,7 +121,7 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     lengths = df.text.str.len()
     lower_bound = MIN_NUM_CHARS_IN_ARTICLE
     upper_bound = MAX_NUM_CHARS_IN_ARTICLE
-    df = df[lengths.between(lower_bound, upper_bound)]
+    df = df.loc[lengths.between(lower_bound, upper_bound)]
 
     keep_columns = ["text", "target_text"]
     df = df[keep_columns]

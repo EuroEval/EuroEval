@@ -11,7 +11,7 @@
 """Create the RoNEC NER dataset and upload it to the HF Hub."""
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split, load_dataset
+from datasets import Dataset, DatasetDict, load_dataset
 from huggingface_hub import HfApi
 
 NER_CONVERSION_DICT = {
@@ -50,9 +50,11 @@ def main() -> None:
 
     # Create dataset dictionary
     mini_dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df_final, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df_final, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df_final, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df_final),
+            "val": Dataset.from_pandas(val_df_final),
+            "test": Dataset.from_pandas(test_df_final),
+        }
     )
 
     # Create dataset ID
@@ -111,7 +113,7 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
 
     # Keep only tokens and labels columns
     keep_columns = ["tokens", "labels"]
-    df = df[keep_columns]
+    df = df.loc[keep_columns]
 
     return df
 
@@ -152,6 +154,10 @@ def make_splits(
     train_df_final = train_df_final.reset_index(drop=True)
     val_df_final = val_df_final.reset_index(drop=True)
     test_df_final = test_df_final.reset_index(drop=True)
+
+    assert isinstance(train_df_final, pd.DataFrame)
+    assert isinstance(val_df_final, pd.DataFrame)
+    assert isinstance(test_df_final, pd.DataFrame)
 
     return train_df_final, val_df_final, test_df_final
 

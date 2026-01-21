@@ -30,6 +30,10 @@ def main() -> None:
     val_df = dataset["validation"].to_pandas()
     test_df = dataset["test"].to_pandas()
 
+    assert isinstance(train_df, pd.DataFrame)
+    assert isinstance(val_df, pd.DataFrame)
+    assert isinstance(test_df, pd.DataFrame)
+
     # Process dataframes
     train_df = process_df(df=train_df)
     val_df = process_df(df=val_df)
@@ -60,11 +64,17 @@ def main() -> None:
     final_val_df.reset_index(drop=True, inplace=True)
     final_test_df.reset_index(drop=True, inplace=True)
 
+    assert isinstance(final_train_df, pd.DataFrame)
+    assert isinstance(final_val_df, pd.DataFrame)
+    assert isinstance(final_test_df, pd.DataFrame)
+
     # Create dataset dictionary
     dataset_dict = DatasetDict(
-        train=Dataset.from_pandas(final_train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(final_test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(final_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(final_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(final_test_df, split=Split.TEST),
+        }
     )
 
     # Push to Hub
@@ -105,7 +115,7 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop_duplicates(subset=["text"]).reset_index(drop=True)
 
     # Keep only tokens and labels columns
-    df = df[["tokens", "labels"]]
+    df = df.loc[["tokens", "labels"]]
     return df
 
 

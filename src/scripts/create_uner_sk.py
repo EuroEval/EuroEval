@@ -55,10 +55,16 @@ def main() -> None:
         n=train_size, random_state=4242
     ).reset_index(drop=True)
 
+    assert isinstance(final_train_df, pd.DataFrame)
+    assert isinstance(final_val_df, pd.DataFrame)
+    assert isinstance(final_test_df, pd.DataFrame)
+
     dataset_dict = DatasetDict(
-        train=Dataset.from_pandas(final_train_df),
-        val=Dataset.from_pandas(final_val_df),
-        test=Dataset.from_pandas(final_test_df),
+        {
+            "train": Dataset.from_pandas(final_train_df),
+            "val": Dataset.from_pandas(final_val_df),
+            "test": Dataset.from_pandas(final_test_df),
+        }
     )
 
     dataset_id = "EuroEval/uner-sk-mini"
@@ -89,7 +95,7 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
         axis=1,
     )
     keep_columns = ["tokens", "labels"]
-    df = df[keep_columns]
+    df = df.loc[keep_columns]
     return df
 
 

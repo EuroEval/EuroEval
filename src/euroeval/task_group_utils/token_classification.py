@@ -59,10 +59,8 @@ def compute_metrics(
         model_outputs = model_outputs[0]
 
     predictions: list[list[str]]
-    if not isinstance(model_outputs[0][0], str):
-        raw_predictions: c.Sequence[c.Sequence[int]] = np.argmax(
-            model_outputs, axis=-1
-        ).tolist()
+    if not isinstance(model_outputs[0][0], str):  #  type: ignore[bad-index]
+        raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()  # type: ignore[no-matching-overload]
 
         # Remove ignored index (special tokens)
         predictions = [
@@ -287,8 +285,8 @@ def tokenize_and_align_labels(
     # tokeniser is of a "fast" variant then this can be accessed through the
     # `word_ids` method. Otherwise, we have to extract it manually.
     all_labels: list[list[int]] = list()
-    labels: c.Sequence[str]
-    word_ids: c.Sequence[int | None]
+    labels: list[str]
+    word_ids: list[int | None]
     for i, labels in enumerate(examples["labels"]):
         # Try to get the word IDs from the tokeniser
         try:
@@ -298,10 +296,10 @@ def tokenize_and_align_labels(
         # IDs manually
         except ValueError:
             # Get the list of words in the document
-            words: c.Sequence[str] = examples["tokens"][i]
+            words: list[str] = examples["tokens"][i]
 
             # Get the list of token IDs in the document
-            tok_ids: c.Sequence[int] = tokenized_inputs.input_ids[i]
+            tok_ids: list[int] = tokenized_inputs.input_ids[i]
 
             # Decode the token IDs
             tokens = tokeniser.convert_ids_to_tokens(tok_ids)

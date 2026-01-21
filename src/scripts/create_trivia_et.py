@@ -10,9 +10,10 @@
 
 from typing import MutableMapping
 
-from constants import CHOICES_MAPPING
-from datasets import DatasetDict, concatenate_datasets, load_dataset
+from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import CHOICES_MAPPING
 
 
 def main() -> None:
@@ -29,16 +30,24 @@ def main() -> None:
 
     doc_examples = ds.filter(lambda row: row["id"] in doc_examples_ids)
     ds = ds.filter(lambda row: row["id"] not in doc_examples_ids)
-
     ds = ds.shuffle(seed=42)
+
+    assert isinstance(doc_examples, Dataset)
+    assert isinstance(ds, Dataset)
 
     train_size = 240 - len(doc_examples)
     val_size = 60
     test_size = 500
 
-    train_ds = concatenate_datasets([ds.select(range(train_size)), doc_examples])
+    train_ds = ds.select(range(train_size))
+    assert isinstance(train_ds, Dataset)
+    train_ds = concatenate_datasets([train_ds, doc_examples])
     val_ds = ds.skip(train_size).select(range(val_size))
     test_ds = ds.skip(train_size + val_size).select(range(test_size))
+
+    assert isinstance(train_ds, Dataset)
+    assert isinstance(val_ds, Dataset)
+    assert isinstance(test_ds, Dataset)
 
     ds = DatasetDict({"train": train_ds, "val": val_ds, "test": test_ds})
 

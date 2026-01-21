@@ -11,9 +11,10 @@
 """Create the SumO-Ro summarisation dataset."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 
 def main() -> None:
@@ -42,9 +43,11 @@ def main() -> None:
 
     # Collect datasets in a dataset dictionary
     mini_dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df_final, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df_final, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df_final, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df_final, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df_final, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df_final, split=Split.TEST),
+        }
     )
 
     # Create dataset ID
@@ -67,7 +70,7 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
         The processed dataframe.
     """
     # Only keep rows where column "input_text" starts with <SUMMARY>
-    df = df[df["input_text"].str.startswith("<SUMMARY>")]
+    df = df.loc[df["input_text"].str.startswith("<SUMMARY>")]
 
     # Make text column which is the input_text column without the <SUMMARY> prefix
     df["text"] = df["input_text"].str.replace("<SUMMARY>", "", regex=False)
@@ -79,11 +82,11 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     lengths = df.text.str.len()
     lower_bound = MIN_NUM_CHARS_IN_ARTICLE
     upper_bound = MAX_NUM_CHARS_IN_ARTICLE
-    df = df[lengths.between(lower_bound, upper_bound)]
+    df = df.loc[lengths.between(lower_bound, upper_bound)]
 
     # Only keep the text and target_text columns
     keep_columns = ["text", "target_text"]
-    df = df[keep_columns]
+    df = df.loc[keep_columns]
     return df
 
 
@@ -123,6 +126,10 @@ def make_splits(
     train_df_final = train_df_final.reset_index(drop=True)
     val_df_final = val_df_final.reset_index(drop=True)
     test_df_final = test_df_final.reset_index(drop=True)
+
+    assert isinstance(train_df_final, pd.DataFrame)
+    assert isinstance(val_df_final, pd.DataFrame)
+    assert isinstance(test_df_final, pd.DataFrame)
 
     return train_df_final, val_df_final, test_df_final
 

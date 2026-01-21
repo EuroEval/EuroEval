@@ -19,6 +19,7 @@ def main() -> None:
 
     # start from the official source
     ds = load_dataset("TalTechNLP/grammar_et")
+    assert isinstance(ds, DatasetDict)
 
     # remove a small number of examples where the origal was correct
     ds = ds.filter(lambda row: row["original"] != row["correct"])
@@ -31,14 +32,15 @@ def main() -> None:
     # rearrange the examples
     train_ds = ds["train"].select(range(train_size))
     val_ds = ds["train"].skip(train_size).select(range(val_size))
-    test_ds = concatenate_datasets(
-        [
-            ds["test"],
-            ds["train"]
-            .skip(train_size + val_size)
-            .select(range(test_size - ds["test"].num_rows)),
-        ]
+    test_ds = (
+        ds["train"]
+        .skip(train_size + val_size)
+        .select(range(test_size - ds["test"].num_rows))
     )
+    assert isinstance(train_ds, Dataset)
+    assert isinstance(val_ds, Dataset)
+    assert isinstance(test_ds, Dataset)
+    test_ds = concatenate_datasets([ds["test"], test_ds])
     ds = DatasetDict({"train": train_ds, "val": val_ds, "test": test_ds})
 
     # separate pairs into individual rows with labels

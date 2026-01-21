@@ -11,9 +11,10 @@
 """Create the DACSA summarization datasets and upload to HF Hub."""
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
+
+from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 
 def main() -> None:
@@ -24,6 +25,7 @@ def main() -> None:
 
     for lang, subset_name in languages.items():
         dataset = load_dataset(dacsa_id, subset_name)
+        assert isinstance(dataset, DatasetDict)
 
         train_df = dataset["train"].to_pandas()
         val_df = dataset["validation"].to_pandas()
@@ -42,9 +44,11 @@ def main() -> None:
 
         # Collect datasets in a dataset dictionary
         mini_dataset = DatasetDict(
-            train=Dataset.from_pandas(train_df_final, split=Split.TRAIN),
-            val=Dataset.from_pandas(val_df_final, split=Split.VALIDATION),
-            test=Dataset.from_pandas(test_df_final, split=Split.TEST),
+            {
+                "train": Dataset.from_pandas(train_df_final, split=Split.TRAIN),
+                "val": Dataset.from_pandas(val_df_final, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(test_df_final, split=Split.TEST),
+            }
         )
 
         mini_dataset_id = f"EuroEval/dacsa-{lang}-mini"
@@ -68,11 +72,11 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     lengths = df.text.str.len()
     lower_bound = MIN_NUM_CHARS_IN_ARTICLE
     upper_bound = MAX_NUM_CHARS_IN_ARTICLE
-    df = df[lengths.between(lower_bound, upper_bound)]
+    df = df.loc[lengths.between(lower_bound, upper_bound)]
 
     # Keep only the necessary columns
     keep_columns = ["text", "target_text"]
-    df = df[keep_columns]
+    df = df.loc[keep_columns]
     return df
 
 

@@ -118,11 +118,11 @@ def main() -> None:
         test_size = TEST_SIZE
 
     # Create splits
-    train_df = df[:train_size].reset_index(drop=True)
-    val_df = df[train_size : train_size + val_size].reset_index(drop=True)
-    test_df = df[train_size + val_size : train_size + val_size + test_size].reset_index(
-        drop=True
-    )
+    train_df = df.iloc[:train_size].reset_index(drop=True)
+    val_df = df.iloc[train_size : train_size + val_size].reset_index(drop=True)
+    test_df = df.iloc[
+        train_size + val_size : train_size + val_size + test_size
+    ].reset_index(drop=True)
 
     logger.info("\nDataset splits:")
     logger.info(f"  Train: {len(train_df)} examples")
@@ -148,9 +148,11 @@ def main() -> None:
 
     # Create dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID
@@ -274,7 +276,7 @@ def _reconstruct_text(tokens: list[str]) -> str:
     if not tokens:
         return ""
 
-    result = []
+    result: list[str] = []
     for i, token in enumerate(tokens):
         if i == 0:
             # First token always gets added as-is

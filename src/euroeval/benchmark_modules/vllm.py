@@ -17,7 +17,6 @@ from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
-from transformers.tokenization_mistral_common import MistralCommonTokenizer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
@@ -80,6 +79,13 @@ from ..utils import (
     split_model_id,
 )
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
+
+try:
+    from transformers.tokenization_mistral_common import MistralCommonTokenizer
+except ImportError:
+    from transformers.tokenization_mistral_common import (
+        MistralCommonBackend as MistralCommonTokenizer,
+    )
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     from vllm import LLM, SamplingParams  # type: ignore[missing-import]

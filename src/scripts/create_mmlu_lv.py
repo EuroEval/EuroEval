@@ -12,11 +12,15 @@
 """Create the MMLU-LV (Latvian) dataset from VTI-Data and upload to HF Hub."""
 
 from collections import Counter
-from typing import Any, Dict, List
+from typing import Any
 
 import pandas as pd
 import requests
-from constants import (
+from datasets import Dataset, DatasetDict, Split
+from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
+
+from .constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -24,9 +28,6 @@ from constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
-from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
 
 
 def main() -> None:
@@ -73,6 +74,7 @@ def main() -> None:
         & ~df.option_c.apply(is_repetitive)
         & ~df.option_d.apply(is_repetitive)
     ]
+    assert isinstance(df, pd.DataFrame)
 
     # Create the text column with choices in Latvian
     choices_word = CHOICES_MAPPING["lv"]
@@ -129,9 +131,11 @@ def main() -> None:
 
     # Create dataset dictionary
     dataset = DatasetDict(
-        train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-        val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-        test=Dataset.from_pandas(test_df, split=Split.TEST),
+        {
+            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+        }
     )
 
     # Create dataset ID
@@ -144,7 +148,7 @@ def main() -> None:
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def get_mmlu_subjects_from_github() -> List[Dict[str, str]]:
+def get_mmlu_subjects_from_github() -> list[dict[str, str]]:
     """Get all MMLU subject files from the VTI-Data repository.
 
     Returns:
@@ -174,7 +178,7 @@ def get_mmlu_subjects_from_github() -> List[Dict[str, str]]:
     return sorted(json_files, key=lambda x: x["name"])
 
 
-def download_subject_data(subject_info: Dict[str, str]) -> List[Dict[str, Any]]:
+def download_subject_data(subject_info: dict[str, str]) -> list[dict[str, Any]]:
     """Download and parse data for a specific MMLU subject.
 
     Args:
@@ -194,7 +198,7 @@ def download_subject_data(subject_info: Dict[str, str]) -> List[Dict[str, Any]]:
     return data
 
 
-def process_mmlu_data(data: List[Dict[str, Any]]) -> pd.DataFrame:
+def process_mmlu_data(data: list[dict[str, Any]]) -> pd.DataFrame:
     """Process raw MMLU data into the expected format.
 
     Args:
@@ -212,6 +216,10 @@ def process_mmlu_data(data: List[Dict[str, Any]]) -> pd.DataFrame:
         choices = item.get("choices", item.get("options", []))
         answer = item.get("answer", item.get("correct_answer", ""))
         category = item.get("category", "unknown")
+
+        assert isinstance(choices, list), (
+            f"Choices should be a list, got {type(choices)}"
+        )
 
         # Ensure we have exactly 4 choices
         if len(choices) != 4:

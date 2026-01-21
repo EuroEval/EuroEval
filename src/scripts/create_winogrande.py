@@ -15,7 +15,10 @@ import re
 from collections import Counter
 
 import pandas as pd
-from constants import (
+from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
+from huggingface_hub import HfApi
+
+from .constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -23,8 +26,6 @@ from constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
-from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
-from huggingface_hub import HfApi
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger("create_winogrande")
@@ -87,9 +88,11 @@ def main() -> None:
 
         # Collect datasets in a dataset dictionary
         dataset = DatasetDict(
-            train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-            val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            test=Dataset.from_pandas(test_df, split=Split.TEST),
+            {
+                "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+                "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(test_df, split=Split.TEST),
+            }
         )
 
         logger.info(
@@ -137,9 +140,10 @@ def prepare_dataframe(df: pd.DataFrame, language: str) -> pd.DataFrame:
         lambda x: re.sub(r"[^ ]+ B: ?", "", x.split("\n")[3]).strip()
     )
     df.instruction = df.instruction.map(lambda x: " ".join(x.split("\n")[:2]).strip())
+    assert isinstance(df, pd.DataFrame)
 
     # Remove the samples with overly short or long texts
-    df = df[
+    df = df.loc[
         (df.instruction.str.len() >= MIN_NUM_CHARS_IN_INSTRUCTION)
         & (df.instruction.str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION)
         & (df.option_a.str.len() >= MIN_NUM_CHARS_IN_OPTION)
@@ -149,7 +153,7 @@ def prepare_dataframe(df: pd.DataFrame, language: str) -> pd.DataFrame:
     ]
 
     # Remove overly repetitive samples
-    df = df[
+    df = df.loc[
         ~df.instruction.apply(is_repetitive)
         & ~df.option_a.apply(is_repetitive)
         & ~df.option_b.apply(is_repetitive)
@@ -168,7 +172,7 @@ def prepare_dataframe(df: pd.DataFrame, language: str) -> pd.DataFrame:
     df.label = df.label.map(lambda x: "a" if x == 0 else "b")
 
     # Only keep the `text` and `label` columns
-    df = df[["text", "label"]]
+    df = df.loc[["text", "label"]]
 
     # Remove duplicates
     df.drop_duplicates(inplace=True)
