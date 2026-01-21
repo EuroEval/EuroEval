@@ -642,6 +642,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                             "Truncation of prompts failed, some prompts are still too "
                             "long."
                         )
+        else:
+            log_once(
+                f"Truncation of prompts for model {self.model_config.model_id!r} is "
+                "not needed, so skipping truncation."
+            )
 
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
