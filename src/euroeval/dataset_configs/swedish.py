@@ -139,3 +139,12 @@ SKOLPROV_CONFIG = DatasetConfig(
     languages=[SWEDISH],
     unofficial=True,
 )
+
+SWEDISH_FACTS_CONFIG = DatasetConfig(
+    name="swedish-facts",
+    pretty_name="Swedish Facts",
+    source="EuroEval/swedish-facts",
+    task=KNOW,
+    languages=[SWEDISH],
+    unofficial=True,
+)

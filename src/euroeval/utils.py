@@ -21,6 +21,7 @@ import huggingface_hub as hf_hub
 import numpy as np
 import torch
 from huggingface_hub.errors import LocalTokenNotFoundError
+from requests.exceptions import RequestException
 
 from .caching_utils import cache_arguments
 from .constants import T
@@ -44,10 +45,25 @@ def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
     Returns:
         The path to the cache directory.
     """
-    # to avoid nesting due to models name containing '/'
-    _model_id = model_id.replace("/", "--")
-    cache_dir_path = Path(cache_dir) / "model_cache" / _model_id
-    return str(cache_dir_path)
+    # If the model ID is a path, we just use that as the cache dir
+    if Path(model_id).is_dir():
+        log_once(
+            f"Since the model {model_id!r} is a local model, we will use the model "
+            "directory directly as the model cache directory.",
+            level=logging.DEBUG,
+        )
+        return model_id
+
+    # Otherwise, we create a cache dir based on the model ID
+    model_cache_dir = Path(
+        cache_dir, "model_cache", model_id.replace("/", "--")
+    ).as_posix()
+    log_once(
+        f"Using the model cache directory {model_cache_dir!r} for the model "
+        f"{model_id!r}.",
+        level=logging.DEBUG,
+    )
+    return model_cache_dir
 
 
 def resolve_model_path(download_dir: str) -> str:
@@ -65,8 +81,10 @@ def resolve_model_path(download_dir: str) -> str:
             If the model path is not valid, or if required files are missing.
     """
     model_path = Path(download_dir)
+
     # Get the 'path safe' version of the model id, which is the last dir in the path
     model_id_path = model_path.name
+
     # Hf hub `cache_dir` puts the files in models--`model_id_path`/snapshots
     model_path = model_path / f"models--{model_id_path}" / "snapshots"
     if not model_path.exists():
@@ -306,14 +324,13 @@ def safe_run(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T:
     Returns:
         The result of the coroutine.
     """
-    loop = asyncio.new_event_loop()
     try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:  # If the current event loop is closed
+        loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        response = loop.run_until_complete(coroutine)
-        return response
-    finally:
-        loop.close()
-        asyncio.set_event_loop(None)
+    response = loop.run_until_complete(coroutine)
+    return response
 
 
 async def add_semaphore_and_catch_exception(
@@ -421,6 +438,13 @@ def get_hf_token(api_key: str | None) -> str | bool:
         log_once(
             "No Hugging Face API key was set and the user is not logged in to Hugging "
             "Face, so no token will be used.",
+            level=logging.DEBUG,
+        )
+        return False
+    except RequestException:
+        log_once(
+            "No Hugging Face API key was set and the connection to Hugging Face "
+            "failed, so no token will be used.",
             level=logging.DEBUG,
         )
         return False

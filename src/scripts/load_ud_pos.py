@@ -578,6 +578,36 @@ def load_cadt_pos() -> dict[str, pd.DataFrame]:
     return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
 
 
+def load_sqdt_pos() -> dict[str, pd.DataFrame]:
+    """Load the part-of-speech part of the Albanian Dependency Treebank.
+
+    Returns:
+        The dataframes, stored in the keys `train`, `val`, and `test`.
+    """
+    # Define download URLs
+    base_url = (
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Albanian-STAF/refs"
+        "/heads/master/sq_staf-ud-{}.conllu"
+    )
+    train_url = base_url.format("train")
+    val_url = base_url.format("dev")
+    test_url = base_url.format("test")
+
+    df_dict = load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
+
+    # Load additional TSA test data and concatenate with the existing test split
+    tsa_test_url = (
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Albanian-TSA/refs"
+        "/heads/master/sq_tsa-ud-test.conllu"
+    )
+    tsa_test_lines = _load_file_or_url(url_or_path=tsa_test_url)
+    tsa_test_df = _load_split(lines=tsa_test_lines)
+
+    df_dict["test"] = pd.concat([df_dict["test"], tsa_test_df], ignore_index=True)
+
+    return df_dict
+
+
 def _load_file_or_url(url_or_path: str) -> list[str]:
     """Load a file from a URL or local path.
 
@@ -617,6 +647,8 @@ def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
 
     range_start: int = 0
     range_end: int = 0
+    # Track the index where we added the multi-word token so we can update its POS tag
+    mwt_index: int | None = None
 
     # Pattern used to detect merged IDs
     merged_ids_pattern = re.compile(r"(\d+)-(\d+)", re.I)
@@ -629,15 +661,24 @@ def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
             output["pos_tags"].append(data_dict["pos_tags"][i])
             range_start = int(match.group(1))
             range_end = int(match.group(2))
+            # Remember where we added this multi-word token
+            mwt_index = len(output["pos_tags"]) - 1
         else:
             token_id = int(data_dict["ids"][i].split(".")[0])
             if token_id >= range_start and token_id <= range_end:
+                # If this is the first token in the range and we have a multi-word token
+                # to update, copy the POS tag from this token to the multi-word token
+                if mwt_index is not None and token_id == range_start:
+                    output["pos_tags"][mwt_index] = data_dict["pos_tags"][i]
+                    mwt_index = None  # Reset so we only update once per range
                 # Skip token if in range
                 continue
             else:
                 output["ids"].append(data_dict["ids"][i])
                 output["tokens"].append(data_dict["tokens"][i])
                 output["pos_tags"].append(data_dict["pos_tags"][i])
+                # Reset mwt_index when we move past the range
+                mwt_index = None
 
     return output
 

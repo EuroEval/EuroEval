@@ -26,7 +26,6 @@ def tokeniser_id() -> Generator[str, None, None]:
     yield "EuroEval/gemma-3-tokenizer"
 
 
-@pytest.mark.flaky(reruns=3, reruns_delay=5)
 class TestLoadData:
     """Tests for the `load_data` function."""
 
@@ -89,7 +88,6 @@ class TestLoadData:
     ],
     ids=lambda dc: dc.name,
 )
-@pytest.mark.flaky(reruns=3, reruns_delay=5)
 class TestAllDatasets:
     """Tests that are run on all datasets."""
 
@@ -109,16 +107,19 @@ class TestAllDatasets:
         )
 
         for itr_idx in range(10):
-            few_shot_examples = (
-                extract_few_shot_examples(
-                    dataset=dataset,
-                    dataset_config=dataset_config,
-                    benchmark_config=benchmark_config,
-                    itr_idx=itr_idx,
+            if "train" in dataset_config.splits:
+                few_shot_examples = (
+                    extract_few_shot_examples(
+                        dataset=dataset,
+                        dataset_config=dataset_config,
+                        benchmark_config=benchmark_config,
+                        itr_idx=itr_idx,
+                    )
+                    if not dataset_config.task.requires_zero_shot
+                    else []
                 )
-                if not dataset_config.task.requires_zero_shot
-                else []
-            )
+            else:
+                few_shot_examples = []
             for instruction_model in [True, False]:
                 prepared_test = dataset["test"].map(
                     partial(

@@ -1,6 +1,7 @@
 """All the Hugging Face metrics used in EuroEval."""
 
 import collections.abc as c
+import os
 import typing as t
 from pathlib import Path
 
@@ -8,6 +9,7 @@ import evaluate
 import numpy as np
 from datasets import DownloadConfig, DownloadMode
 
+from ..exceptions import InvalidBenchmark
 from ..logging_utils import no_terminal_output
 from .base import Metric
 
@@ -129,9 +131,78 @@ class HuggingFaceMetric(Metric):
             "__call__ method."
         )
 
-        with no_terminal_output(disable=benchmark_config.verbose):
+        with no_terminal_output(disable=os.getenv("FULL_LOG", "0") == "1"):
             results = self.metric.compute(
                 predictions=predictions, references=references, **self.compute_kwargs
+            )
+
+        # The metric returns None if we are running on multi-GPU and the current
+        # process is not the main process
+        if results is None:
+            return None
+
+        # Convert the results to a float score
+        score = results[self.results_key]
+        if isinstance(score, list):
+            score = sum(score) / len(score)
+        if isinstance(score, np.floating):
+            score = float(score)
+
+        return score
+
+
+class SourceBasedMetric(HuggingFaceMetric):
+    """Subclass of HuggingfaceMetric for metrics also requiring source text as input."""
+
+    def __call__(
+        self,
+        predictions: c.Sequence,
+        references: c.Sequence,
+        dataset: "Dataset",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> float | None:
+        """Calculate metric score for metrics requiring original source text.
+
+        Passes the source text to the evaluate function via its `sources` param.
+
+        Args:
+            predictions:
+                The model predictions.
+            references:
+                The ground truth references.
+            dataset:
+                The dataset used for evaluation. This is used for collecting the source
+                text and in case any additional metadata is used to compute the metrics.
+            dataset_config:
+                The dataset configuration.
+            benchmark_config:
+                The benchmark configuration.
+
+        Returns:
+            The calculated metric score, or None if the score should be ignored.
+        """
+        if dataset is None:
+            raise InvalidBenchmark("SourceBasedMetric requires `dataset` to be passed.")
+
+        if self.metric is None:
+            self.metric = evaluate.load(path=self.huggingface_id)
+
+        sources = dataset["text"]
+
+        if not len(sources) == len(predictions):
+            raise InvalidBenchmark(
+                f"SourceBasedMetric expects same number of inputs as predictions."
+                f"Got {len(sources)} sources and {len(predictions)} predictions "
+                f"instead."
+            )
+
+        with no_terminal_output(disable=os.getenv("FULL_LOG", "0") == "1"):
+            results = self.metric.compute(
+                sources=sources,
+                predictions=predictions,
+                references=[[r] for r in references],
+                **self.compute_kwargs,
             )
 
         # The metric returns None if we are running on multi-GPU and the current
@@ -213,4 +284,16 @@ accuracy_metric = HuggingFaceMetric(
     pretty_name="Accuracy",
     huggingface_id="accuracy",
     results_key="accuracy",
+)
+
+meteor_metric = HuggingFaceMetric(
+    name="meteor", pretty_name="METEOR", huggingface_id="meteor", results_key="meteor"
+)
+
+sari_metric = SourceBasedMetric(
+    name="sari",
+    pretty_name="SARI",
+    huggingface_id="sari",
+    results_key="sari",
+    postprocessing_fn=lambda x: (x, f"{x:.2f}%"),
 )

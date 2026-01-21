@@ -1045,8 +1045,16 @@ class Benchmarker:
                         if model.generative_type is not None
                         else None
                     ),
-                    few_shot=benchmark_config.few_shot,
-                    validation_split=not benchmark_config.evaluate_test_split,
+                    few_shot=(
+                        None
+                        if dataset_config.task.requires_zero_shot
+                        else benchmark_config.few_shot
+                    ),
+                    validation_split=(
+                        None
+                        if "val" not in dataset_config.splits
+                        else not benchmark_config.evaluate_test_split
+                    ),
                 )
                 log(f"Results:\n{results}", level=logging.DEBUG)
                 return record
@@ -1122,12 +1130,10 @@ def get_record(
         same_revision = model_id_components.revision == model_config.revision
         same_param = model_id_components.param == model_config.param
         same_dataset = record.dataset == dataset_config.name
-        same_split = (
-            record.validation_split != benchmark_config.evaluate_test_split
-            or "val" not in dataset_config.splits
-        )
+        same_split = record.validation_split != benchmark_config.evaluate_test_split
         same_num_shots = (
             record.few_shot == benchmark_config.few_shot
+            or record.few_shot is None
             or not record.generative
             or dataset_config.task.requires_zero_shot
         )
@@ -1225,6 +1231,7 @@ def initial_logging(
         f"{dataset_config.logging_string} ({num_finished_benchmarks + 1}/"
         f"{num_total_benchmarks} benchmarks)...",
         prefix=f"\n[{dt.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]",
+        level=logging.INFO,
     )
 
     if dataset_config.unofficial:

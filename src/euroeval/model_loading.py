@@ -1,5 +1,6 @@
 """Functions related to the loading of models."""
 
+import logging
 import typing as t
 
 from .benchmark_modules import (
@@ -35,7 +36,7 @@ def load_model(
     Returns:
         The model.
     """
-    log_once(f"\nLoading the model {model_config.model_id}...")
+    log_once(f"\nLoading the model {model_config.model_id}...", level=logging.INFO)
 
     # The order matters; the first model type that matches will be used. For this
     # reason, they have been ordered in terms of the most common model types.

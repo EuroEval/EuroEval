@@ -699,6 +699,83 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset skolprov
 ```
 
+### Unofficial: SwedishFacts
+
+This is a benchmark for factual knowledge about Sweden.
+The questions are based on topics related to the hosts of the Swedish radio program
+[Sommar i P1](https://www.sverigesradio.se/sommar-i-p1) as well as Swedish sporting
+events, such as those featured in [En Svensk Klassiker](https://ensvenskklassiker.se).
+In the [dataset card](https://huggingface.co/datasets/liu-nlp/swedish-facts-v1)
+it is mentioned that a paper with more information is coming soon.
+
+Since the dataset does not include candidate answers, we generate them using GPT-4o.
+The original dataset consists of 1,289 samples. We
+use a 128 / 64 / 1,097 split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hur många gånger befodrades Micael Bydén till en högre militär grad under 1990-talet?\nSvarsalternativ:\na. Tre, 3\nb. Fyra\nc. Fem\nd. Två",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Vad heter skivbolaget Titiyo Jah kontrakt med år 1988?\nSvarsalternativ:\na. Virgin Records\nb. Telegram\nc. Sony Music\nd. Warner Music",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "I vilken ort föddes PM Nilsson?\nSvarsalternativ:\na. Göteborg\nb. Lund\nc. Helsingborg\nd. Malmö",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Följande är flervalsfrågor (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset swedish-facts
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-sv
@@ -894,14 +971,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Følgende er multiple choice spørgsmål (med svar).
+  Följande är flervalsfrågor (med svar).
   ```
 
 - Base prompt template:
 
   ```text
-  Spørgsmål: {text}
-  Svarmuligheder:
+  Fråga: {text}
+  Svarsalternativ:
   a. {option_a}
   b. {option_b}
   Svar: {label}
@@ -910,12 +987,12 @@ When evaluating generative models, we use the following setup (see the
 - Instruction-tuned prompt template:
 
   ```text
-  Spørgsmål: {text}
-  Svarmuligheder:
+  Fråga: {text}
+  Svarsalternativ:
   a. {option_a}
   b. {option_b}
 
-  Besvar ovenstående spørgsmål ved at svare med 'a' eller 'b', og intet andet.
+  Besvara följande fråga med 'a' eller 'b', och inget annat.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -1054,4 +1131,82 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset schibsted-sv
+```
+
+## European Values
+
+### ValEU-sv
+
+This dataset is the official Swedish version of questions from the [European values
+study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.
+
+The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "question_id": "E265_01",
+  "text": "Enligt dig hur ofta förekommer följande saker vid val i Sverige?\nAtt röster räknas korrekt\nSvarsalternativ:\na. Väldigt ofta\nb. Ganska ofta\nc. Inte ofta\nd. Inte alls ofta"
+}
+```
+
+```json
+{
+  "question_id": "E114",
+  "text": "Jag skall nu beskriva några olika politiska system för att styra Sverige. Anser du att de är mycket bra, ganska bra, ganska dåliga eller mycket dåliga?\nAtt ha en stark ledare som inte behöver bekymra sig om riksdag och politiska val?\nSvarsalternativ:\na. Mycket bra\nb. Ganska bra\nc. Ganska dåliga\nd. Mycket dåliga"
+}
+```
+
+```json
+{
+  "question_id": "D078",
+  "text": "För vart och ett av de påståenden som jag läser upp, kan du vänligen ange om du instämmer eller tar avstånd från. Instämmer du helt och hållet, instämmer du, tar du avstånd från, eller tar du helt och hållet avstånd från?\nI stort sett är män bättre lämpade att vara företagsledare än kvinnor\nSvarsalternativ:\na. Instämmer helt och hållet\nb. Instämmer\nc. Tar avstånd från\nd. Tar helt och hållet avstånd från"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- Prefix prompt:
+
+  ```text
+  Följande är flervalsfrågor (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+
+  Besvara följande fråga med 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j' eller 'k',
+  och inget annat.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset valeu-sv
 ```

@@ -45,6 +45,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 12
+
 - Prefix prompt:
 
   ```text
@@ -67,6 +68,7 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
+
   - `positive` ➡️ `positief`
   - `negative` ➡️ `negatief`
 
@@ -82,7 +84,7 @@ euroeval --model <model-id> --dataset dbrd
 
 This dataset was published in [this paper](https://aclanthology.org/W02-2024/) and
 consists of named entity recognition annotations of the Belgian newspaper "De Morgen" of
-2000.
+2000\.
 
 The original full dataset consists of 8,324 / 1,916 / 1,518 samples for training,
 validation and testing, respectively (so 11,758 samples used in total). We use a 1,024 /
@@ -116,6 +118,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 8
+
 - Prefix prompt:
 
   ```text
@@ -138,6 +141,7 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
+
   - `B-PER` ➡️ `persoon`
   - `I-PER` ➡️ `persoon`
   - `B-LOC` ➡️ `locatie`
@@ -197,6 +201,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 12
+
 - Prefix prompt:
 
   ```text
@@ -219,6 +224,7 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
+
   - `correct` ➡️ `ja`
   - `incorrect` ➡️ `nee`
 
@@ -318,6 +324,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 4
+
 - Prefix prompt:
 
   ```text
@@ -384,6 +391,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -469,6 +477,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 4
+
 - Prefix prompt:
 
   ```text
@@ -542,6 +551,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -618,6 +628,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -695,6 +706,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -730,6 +742,72 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset hellaswag-nl
+```
+
+### Unofficial: COPA-NL
+
+This dataset was created by Wietse de Vries _et al._ for the
+[Dutch Model Benchmark (DUMB)](https://dumbench.nl) and introduced in the paper
+[DUMB: A Benchmark for Smart Evaluation of Dutch Models](https://aclanthology.org/2023.emnlp-main.447/).
+It is a Causal Reasoning dataset based on the English-language
+[Choice of Plausible Alternatives (COPA)](https://web.archive.org/web/20240402061922/https://people.ict.usc.edu/~gordon/copa.html)
+dataset under the BSD 2-Clause License.
+
+COPA-NL was translated to Dutch using Google Translate and manually corrected by
+native Dutch speakers.
+
+The dataset consists of two different types of challenges. In each case, a premise is
+given together with two choices. For about half of the dataset, the question is
+which of those two choices is a plausible _effect_ of the premise. For the other
+half, the question is which of the two choices is a plausible _cause_ of the premise.
+
+The original dataset consists of 400 / 100 / 500 samples for training, validation and
+testing, respectively. We keep the same splits for EuroEval.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Premisse: Mijn lichaam wierp een schaduw over het gras.\n\nWat is hier de logische oorzaak van?\na. De zon kwam op.\nb. Het gras was gemaaid.",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Premisse: De vrouw tolereerde het lastige gedrag van haar vriendin.\n\nWat is hier de logische oorzaak van?\na. De vrouw wist dat haar vriendin het moeilijk had.\nb. De vrouw had het gevoel dat haar vriendin misbruik maakte van haar vriendelijkheid.",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Premisse: De bejaarde vrouw kreeg een beroerte.\n\nWat is hier het logisch gevolg van?\na. De dochter van de vrouw kwam langs om haar huis schoon te maken.\nb. De dochter van de vrouw trok bij haar in om voor haar te zorgen.",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoord: {label}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset copa-nl
 ```
 
 ### Unofficial: GoldenSwag-nl
@@ -773,6 +851,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -847,6 +926,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 5
+
 - Prefix prompt:
 
   ```text
@@ -921,6 +1001,7 @@ When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
 - Number of few-shot examples: 1
+
 - Prefix prompt:
 
   ```text
@@ -946,4 +1027,154 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset wiki-lingua-nl
+```
+
+## Simplification
+
+### Duidelijke Taal
+
+The [Duidelijke Taal dataset](http://hdl.handle.net/10032/tm-a2-y8) was created by
+Instituut voor de Nederlandse Taal and published in _Human Evaluation of Automated Text
+Simplification through Crowdsourcing_ [(Vandeghinste et al.,
+2025)](https://scholar.google.com/scholar?oi=bibs&cluster=2894378448414629586&btnI=1&hl=en).
+It consists of crowd-sourced human evaluations of automated simplifications. The
+original dataset contains 1,071 sentence pairs with crowdsourced annotations. A
+[pre-split version](https://huggingface.co/datasets/GPT-NL/DuidelijkeTaal-v1.0-split) of
+the dataset is used to ensure consistency and partially reduce the risk of data
+contamination.
+
+After running the filtering and splitting script (
+`scripts/create_duidelijke_taal_nl.py`), the dataset
+contains 50 / 51 / 90 samples for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Aangeraden wordt steeds flessen met drinkwater aan te schaffen, die u overal kunt krijgen.",
+  "target_text": "Het is een goed idee om altijd flessen drinkwater te kopen die u overal kunt vinden."
+}
+```
+
+```json
+{
+  "text": "Het respect voor de mensenrechten is in de wet verankerd, maar de praktijk laat te wensen over.",
+  "target_text": "De wet beschermt de mensenrechten, maar in werkelijkheid worden deze rechten niet altijd gerespecteerd."
+}
+```
+
+```json
+{
+  "text": "De gezondheidszorg staat op een hoog peil: de levensverwachting in Japan is de hoogste in de wereld.",
+  "target_text": "De gezondheidszorg in Japan is erg goed. Mensen daar leven het langst van iedereen in de wereld."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 3
+- Prefix prompt:
+
+  ```text
+  Hieronder volgen documenten met bijbehorende versimpelingen.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Document: {text}
+  Versimpeling: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Document: {text}
+
+  Versimpel het bovenstaande document.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset duidelijke-taal
+```
+
+## European Values
+
+### ValEU-nl
+
+This dataset is the official Dutch version of questions from the [European values
+study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
+questions regarding people's values and beliefs across a variety of topics, such as
+politics, religion and society.
+
+The dataset consists of 52 questions from the 2017-2022 wave of the European values
+study, where the questions were chosen based on optimising against agreement within EU
+countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "question_id": "E069_01",
+  "text": "Wilt u mij voor elk van de instellingen op deze kaart vertellen of u er heel veel, tamelijk veel, niet zo veel of helemaal geen vertrouwen in heeft?\nDe kerk\nAntwoordopties:\na. Heel veel\nb. Tamelijk veel\nc. Niet zo veel\nd. Helemaal geen"
+}
+```
+
+```json
+{
+  "question_id": "E028",
+  "text": "Wilt u nu deze lijst erbij houden? Ik ga u nu een aantal verschillende soorten van politieke actie noemen die men kan voeren. Wilt u mij van elke actie vertellen of u het zelf ooit heeft gedaan, of u het zelf misschien zou doen als u het nodig vond, of dat u het zeker nooit zult doen?\nMeedoen aan een wilde staking\nAntwoordopties:\na. Zelf gedaan\nb. Zou dat misschien doen\nc. Zou dat nooit doen"
+}
+```
+
+```json
+{
+  "question_id": "E265_07",
+  "text": "Hoe vaak gebeuren volgens u de volgende dingen tijdens verkiezingen in dit land?\nRijke mensen kopen de verkiezingsuitslag\nAntwoordopties:\na. Zeer vaak\nb. Tamelijk vaak\nc. Niet zo vaak\nd. Helemaal niet vaak"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  (...)
+  k. {option_k}
+
+  Beantwoord de bovenstaande vraag met 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'
+  of 'k', en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset valeu-nl
 ```

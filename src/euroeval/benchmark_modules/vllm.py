@@ -15,12 +15,14 @@ from time import sleep
 import torch
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
+from transformers.generation.configuration_utils import GenerationConfig
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
     CUSTOM_STOP_TOKENS,
+    GENERATION_KWARGS,
     GENERATIVE_PIPELINE_TAGS,
     MAX_CONTEXT_LENGTH,
     MAX_VLLM_LOGPROBS,
@@ -98,6 +100,10 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
         StructuredOutputsParams,
     )
 
+if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
+    import ray  # type: ignore[missing-import]
+
+
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
     from transformers.trainer import Trainer
@@ -106,10 +112,11 @@ if t.TYPE_CHECKING:
 
 
 MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[re.Pattern, str] = {
-    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): "FLASH_ATTN",
-    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "FLASH_ATTN",
-    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "FLASH_ATTN",
+    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): "TRITON_ATTN",
+    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "TRITON_ATTN",
+    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "TRITON_ATTN",
     re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): "TRITON_ATTN",
+    re.compile(r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE): "TRITON_ATTN",
 }
 
 
@@ -485,6 +492,46 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
 
         # Define the parameters used for vLLM generation
+        generation_kwargs = GENERATION_KWARGS.copy()
+        if (generation_config := self.model_config.generation_config) is not None:
+            changed_params = generation_config.to_diff_dict()
+            if "temperature" in changed_params:
+                temperature = changed_params["temperature"]
+                generation_kwargs["temperature"] = temperature
+                log_once(
+                    f"Using temperature={temperature} with the model "
+                    f"{self.model_config.model_id!r} as specified in its "
+                    "generation configuration.",
+                    level=logging.DEBUG,
+                )
+            if "top_p" in changed_params:
+                top_p = changed_params["top_p"]
+                generation_kwargs["top_p"] = top_p
+                log_once(
+                    f"Using top_p={top_p} with the model "
+                    f"{self.model_config.model_id!r} as specified in its "
+                    "generation configuration.",
+                    level=logging.DEBUG,
+                )
+            if "top_k" in changed_params:
+                top_k = changed_params["top_k"]
+                generation_kwargs["top_k"] = top_k
+                log_once(
+                    f"Using top_k={top_k} with the model "
+                    f"{self.model_config.model_id!r} as specified in its "
+                    "generation configuration.",
+                    level=logging.DEBUG,
+                )
+            if "repetition_penalty" in changed_params:
+                repetition_penalty = changed_params["repetition_penalty"]
+                generation_kwargs["repetition_penalty"] = repetition_penalty
+                log_once(
+                    f"Using repetition_penalty={repetition_penalty} with the model "
+                    f"{self.model_config.model_id!r} as specified in its "
+                    "generation configuration.",
+                    level=logging.DEBUG,
+                )
+
         max_tokens: int = (
             REASONING_MAX_TOKENS
             if self.generative_type == GenerativeType.REASONING
@@ -495,7 +542,10 @@ class VLLMModel(HuggingFaceEncoderModel):
             logprobs=MAX_VLLM_LOGPROBS
             if self.buffer["first_label_token_mapping"]
             else None,
-            temperature=0.0,
+            temperature=generation_kwargs["temperature"],
+            top_p=generation_kwargs["top_p"],
+            top_k=generation_kwargs["top_k"],
+            repetition_penalty=generation_kwargs["repetition_penalty"],
             stop=[stop_token for stop_token in stop_tokens if stop_token],
             structured_outputs=structured_outputs,
         )
@@ -523,17 +573,31 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             prompts = [prompt.strip() for prompt in prompts]
 
-        # Truncate the prompts if needed, but only if it's not a reasoning model
-        if self.generative_type != GenerativeType.REASONING:
-            max_tokens_per_prompt = (
-                min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH) - max_tokens
+        # Truncate the prompts if needed
+        max_tokens_per_prompt = min(
+            self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH
+        )
+        max_tokens_per_prompt -= min(
+            self.dataset_config.max_generated_tokens, max_tokens_per_prompt - 1
+        )
+        log_once(
+            f"Truncating prompts for the model {self.model_config.model_id!r} "
+            f"to a maximum of {max_tokens_per_prompt:,} tokens.",
+            level=logging.DEBUG,
+        )
+        tokenized_prompts = self._tokeniser(
+            text=prompts, truncation=True, max_length=max_tokens_per_prompt
+        )
+        if any(
+            len(input_ids) > max_tokens_per_prompt
+            for input_ids in tokenized_prompts.input_ids
+        ):
+            raise InvalidBenchmark(
+                "Truncation of prompts failed, some prompts are still too long."
             )
-            tokenized_prompts = self._tokeniser(
-                text=list(prompts), truncation=True, max_length=max_tokens_per_prompt
-            )
-            prompts = self._tokeniser.batch_decode(
-                sequences=tokenized_prompts.input_ids, skip_special_tokens=True
-            )
+        prompts = self._tokeniser.batch_decode(
+            sequences=tokenized_prompts.input_ids, skip_special_tokens=True
+        )
 
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
@@ -554,10 +618,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                     level=logging.DEBUG,
                 )
                 sleep(1)
-            except ValueError as e:
+            except (ValueError, RuntimeError) as e:
                 # Truncate the prompts if they are too long for the model
                 truncate_error_messages = [
-                    r"prompt \(length [0-9]+\) is longer than the maximum model length"
+                    r"prompt \(length [0-9]+\) is longer than the maximum model length",
+                    "Sampled token IDs exceed the max model length",
                 ]
                 if any(
                     re.search(pattern, str(e), flags=re.IGNORECASE) is not None
@@ -769,6 +834,16 @@ class VLLMModel(HuggingFaceEncoderModel):
         if model_info is None:
             raise InvalidModel(f"The model {model_id!r} could not be found.")
 
+        try:
+            generation_config = GenerationConfig.from_pretrained(
+                pretrained_model_name=model_id_components.model_id,
+                revision=model_id_components.revision,
+                cache_dir=benchmark_config.cache_dir,
+                token=benchmark_config.api_key,
+            )
+        except OSError:
+            generation_config = None
+
         language_mapping = get_all_languages()
         language_codes = list(language_mapping.keys())
 
@@ -790,6 +865,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 cache_dir=benchmark_config.cache_dir, model_id=model_id
             ),
             adapter_base_model_id=model_info.adapter_base_model_id,
+            generation_config=generation_config,
         )
 
         return model_config
@@ -850,19 +926,6 @@ def load_model_and_tokeniser(
         run_with_cli=benchmark_config.run_with_cli,
     )
 
-    quantization = None
-    if hasattr(hf_model_config, "quantization_config"):
-        quantization = hf_model_config.quantization_config.get("quant_method")
-
-    # The quantised models require extra dependencies
-    if quantization == "gptq" and (
-        importlib.util.find_spec("auto_gptq") is None
-        or importlib.util.find_spec("optimum") is None
-    ):
-        raise NeedsExtraInstalled(extra="quantization")
-    if quantization == "awq" and importlib.util.find_spec("awq") is None:
-        raise NeedsExtraInstalled(extra="quantization")
-
     # Start with dtype being the "auto" vLLM dtype
     dtype: str | torch.dtype = "auto"
 
@@ -885,23 +948,6 @@ def load_model_and_tokeniser(
             )
             dtype = torch.float16
 
-    # If the model is a quantized model, we might need to change the dtype
-    if quantization == "mxfp4" and hf_model_config.dtype is None:
-        dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
-        log(
-            "You are loading a quantized model where `dtype` has not been set. "
-            f"Setting dtype to {dtype!r}.",
-            level=logging.DEBUG,
-        )
-    elif quantization is not None and hf_model_config.dtype != torch.float16:
-        log(
-            "You are loading a quantized model with dtype "
-            f"{hf_model_config.dtype}, which vLLM does not support. Setting "
-            "dtype to float16 instead.",
-            level=logging.WARNING,
-        )
-        dtype = torch.float16
-
     # If the model is a bf16 model, we need to check the CUDA compute capability
     if hf_model_config.dtype == torch.bfloat16:
         min_cuda_compute_capability = get_min_cuda_compute_capability()
@@ -918,6 +964,28 @@ def load_model_and_tokeniser(
                     level=logging.WARNING,
                 )
                 dtype = torch.float16
+
+    quantization = None
+    if hasattr(hf_model_config, "quantization_config"):
+        quantization = hf_model_config.quantization_config.get("quant_method")
+
+    # The quantised models require extra dependencies
+    if quantization == "gptq" and (
+        importlib.util.find_spec("auto_gptq") is None
+        or importlib.util.find_spec("optimum") is None
+    ):
+        raise NeedsExtraInstalled(extra="quantization")
+    if quantization == "awq" and importlib.util.find_spec("awq") is None:
+        raise NeedsExtraInstalled(extra="quantization")
+
+    # If the model is a quantized model, let vLLM decide the dtype
+    if quantization is not None:
+        log(
+            f"You are loading a quantized model with quantization {quantization}. "
+            "Forcing the vLLM dtype to 'auto'",
+            level=logging.WARNING,
+        )
+        dtype = "auto"
 
     if model_config.adapter_base_model_id is not None:
         download_dir = str(Path(model_config.model_cache_dir) / "base_model")
@@ -957,26 +1025,28 @@ def load_model_and_tokeniser(
 
     clear_vllm()
 
+    distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
+        select_backend_and_parallelism()
+    )
+
     try:
+        model_location = (
+            model_id
+            if internet_connection_available() or Path(model_id).is_dir()
+            else resolve_model_path(download_dir=download_dir)
+        )
         model = LLM(
-            model=(
-                model_id
-                if internet_connection_available()
-                else resolve_model_path(download_dir=download_dir)
-            ),
-            tokenizer=(
-                model_id
-                if internet_connection_available()
-                else resolve_model_path(download_dir=download_dir)
-            ),
+            model=model_location,
+            tokenizer=model_location,
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
             max_model_len=min(true_max_model_len, MAX_CONTEXT_LENGTH),
             download_dir=download_dir,
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,
             seed=4242,
-            distributed_executor_backend="mp",
-            tensor_parallel_size=torch.cuda.device_count(),
+            distributed_executor_backend=distributed_executor_backend,
+            tensor_parallel_size=tensor_parallel_size,
+            pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
             dtype=dtype,
@@ -1012,8 +1082,8 @@ def load_model_and_tokeniser(
                     "Since you're running in verbose mode, you might see a descriptive "
                     "error above already. Note however that if the error message urges "
                     "you to set the environment variable `VLLM_ATTENTION_BACKEND` to "
-                    "'FLEX_ATTENTION', please try setting it to 'FLASH_ATTN' first, as "
-                    "that often solves the issue, whereas 'FLEX_ATTENTION' usually "
+                    "'FLEX_ATTENTION', please try setting it to 'TRITON_ATTN' first, "
+                    "as that often solves the issue, whereas 'FLEX_ATTENTION' usually "
                     "doesn't. If you don't see any descriptive error above, then you "
                     "can try "
                 )
@@ -1379,3 +1449,55 @@ def get_vllm_tokenisation_params(
         config_format=config_format,
         load_format=load_format,
     )
+
+
+def select_backend_and_parallelism() -> tuple[str, int, int]:
+    """Determine the distributed backend and parallelism for vLLM.
+
+    Returns:
+        Tuple containing:
+        - backend (str): "ray" if multi-node Ray is available, else "mp".
+        - tensor_parallel_size (int): Number of GPUs per node.
+        - pipeline_parallel_size (int): Number of stages across nodes.
+    """
+    if not ray.is_initialized():
+        try:
+            ray.init(address="auto", ignore_reinit_error=True)
+        except Exception as e:
+            if "could not find any running ray instance" not in str(e).lower():
+                log_once(
+                    f"Ray initialisation failed with a {type(e)} exception: {e}",
+                    level=logging.DEBUG,
+                )
+
+    is_ray = ray.is_initialized()
+    local_gpu_count = torch.cuda.device_count()
+
+    if is_ray:
+        resources = ray.cluster_resources()
+        total_gpus = int(resources.get("GPU", 0))
+    else:
+        total_gpus = local_gpu_count
+
+    using_multiple_nodes = total_gpus > local_gpu_count
+    if is_ray and using_multiple_nodes:
+        distributed_executor_backend = "ray"
+        tensor_parallel_size = local_gpu_count if local_gpu_count > 0 else 1
+        pipeline_parallel_size = max(1, total_gpus // tensor_parallel_size)
+        log_once(
+            f"Detected a multi-node setup with {pipeline_parallel_size:,} nodes, each "
+            f"with {tensor_parallel_size:,} GPUs, so using `ray` as the "
+            "distributed backend.",
+            level=logging.DEBUG,
+        )
+    else:
+        distributed_executor_backend = "mp"
+        tensor_parallel_size = local_gpu_count if local_gpu_count > 0 else 1
+        pipeline_parallel_size = 1
+        log_once(
+            f"Detected a single-node setup with {tensor_parallel_size:,} GPUs, "
+            "so using the multiprocessing distributed backend.",
+            level=logging.DEBUG,
+        )
+
+    return distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size

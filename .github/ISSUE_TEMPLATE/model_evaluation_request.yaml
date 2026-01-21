@@ -24,6 +24,7 @@ body:
       - label: Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)
       - label: Slavic languages (Bulgarian, Bosnian, Croatian, Czech, Polish, Serbian, Slovak, Slovenian, Ukrainian)
       - label: West Germanic languages (Dutch, English, German)
+      - label: Albanian
       - label: Greek
       - label: Hungarian
   validations:

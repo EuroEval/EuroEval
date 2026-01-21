@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pydantic
 import torch
+from transformers.generation.configuration_utils import GenerationConfig
 
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
@@ -622,8 +623,8 @@ class BenchmarkResult(pydantic.BaseModel):
     merge: bool
     generative: bool
     generative_type: str | None
-    few_shot: bool
-    validation_split: bool
+    few_shot: bool | None
+    validation_split: bool | None
     euroeval_version: str | None = get_package_version("euroeval")
     transformers_version: str | None = get_package_version("transformers")
     torch_version: str | None = get_package_version("torch")
@@ -709,6 +710,9 @@ class ModelConfig:
         adapter_base_model_id:
             The model ID of the base model if the model is an adapter model. Can be None
             if the model is not an adapter model.
+        generation_config (optional):
+            The generation configuration for generative models, if specified in the
+            model repository. Defaults to no generation configuration.
     """
 
     model_id: str
@@ -722,6 +726,7 @@ class ModelConfig:
     fresh: bool
     model_cache_dir: str
     adapter_base_model_id: str | None
+    generation_config: GenerationConfig | None = None
 
     def __hash__(self) -> int:
         """Return a hash of the model configuration."""
