@@ -4,6 +4,7 @@ import asyncio
 import collections.abc as c
 import json
 import logging
+import os
 import re
 import typing as t
 from functools import cached_property, partial
@@ -32,9 +33,10 @@ from litellm.exceptions import (
 )
 from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.router import Router
+from litellm.types.router import RouterRateLimitError
 from litellm.types.utils import ChoiceLogprobs, Logprobs
 from litellm.utils import supports_reasoning, supports_response_schema
-from pydantic import conlist, create_model
+from pydantic import ValidationError, conlist, create_model
 from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
 
@@ -114,6 +116,9 @@ VOCAB_SIZE_MAPPING = {
     r"(gemini/)?gemini-[1-9](\.[0-9])?-(flash|pro).*": 256_128,
     # xAI models
     r"(xai/)?grok.*": -1,
+    # Chat.dk models
+    r"(ordbogen/)?odin-medium.*": -1,
+    r"(ordbogen/)?odin-large.*": -1,
 }
 
 
@@ -141,6 +146,9 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"(gemini/)?gemini-[23](\.[05])?.*": 1_048_576,
     # xAI models
     r"(xai/)?grok.*": 131_072,
+    # Chat.dk models
+    r"(ordbogen/)?odin-medium.*": 131_072,
+    r"(ordbogen/)?odin-large.*": 202_752,
 }
 
 
@@ -157,6 +165,9 @@ NUM_PARAMS_MAPPING = {
     r"(gemini/)?gemini-[23](.[05])?.*": -1,
     # xAI models
     r"(xai/)?grok.*": -1,
+    # Chat.dk models
+    r"(ordbogen/)?odin-medium.*": -1,
+    r"(ordbogen/)?odin-large.*": -1,
 }
 
 
@@ -166,6 +177,7 @@ REASONING_MODELS = [
     r"(gemini/)?gemini-2.5.*",
     r"(xai/)?grok-3-mini.*",
     r".*gpt-oss.*",
+    r"(ordbogen/)?odin-.*",
 ]
 
 BASE_DECODER_MODELS = [
@@ -187,6 +199,8 @@ CUSTOM_INFERENCE_API_PREFIXES = [
     "lm_studio/",
     "openai/",
 ]
+
+UNOFFICIAL_INFERENCE_API_PREFIXES = ["ordbogen/"]
 
 
 class LiteLLMModel(BenchmarkModule):
@@ -222,7 +236,7 @@ class LiteLLMModel(BenchmarkModule):
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
         log_metadata: bool = True,
-        **generation_kwargs: dict[str, t.Any],
+        **generation_kwargs,
     ) -> None:
         """Initialise the model.
 
@@ -241,6 +255,10 @@ class LiteLLMModel(BenchmarkModule):
         """
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
+        )
+
+        set_up_benchmark_config_for_model(
+            benchmark_config=benchmark_config, model_id=model_config.model_id
         )
 
         # Detect whether the model is an Ollama model, as we need to extract metadata
@@ -714,11 +732,11 @@ class LiteLLMModel(BenchmarkModule):
             ) from error
 
         if (
-            isinstance(error, (RateLimitError, BadRequestError))
+            isinstance(error, (RateLimitError, RouterRateLimitError, BadRequestError))
             and (
                 retry_match := re.search(
                     pattern=(
-                        r"\b(try( again)?|retry) in ([0-9]+(.[0-9]+)?) ?(s|second)\b"
+                        r"\b(try( again)?|retry) in ([0-9]+(\.[0-9]+)?) ?(s|seconds?)\b"
                     ),
                     string=error_msg,
                     flags=re.IGNORECASE,
@@ -726,13 +744,13 @@ class LiteLLMModel(BenchmarkModule):
             )
             is not None
         ):
-            retry_seconds = float(retry_match.group(1))
+            retry_seconds = float(retry_match.group(3))
             log_once(
                 f"You have encountered your rate limit for model {model_id!r}.",
                 level=logging.DEBUG,
             )
             return generation_kwargs, int(retry_seconds)
-        elif isinstance(error, RateLimitError):
+        elif isinstance(error, (RateLimitError, RouterRateLimitError)):
             log_once(
                 f"You have encountered your rate limit for model {model_id!r}.",
                 level=logging.DEBUG,
@@ -935,12 +953,37 @@ class LiteLLMModel(BenchmarkModule):
                 logprobs_obj = model_response_choices.logprobs
 
                 if not isinstance(logprobs_obj, (Logprobs, ChoiceLogprobs)):
-                    log_once(
-                        "The logprobs object is malformed, so we won't use logprobs to "
-                        "determine the labels.",
-                        level=logging.WARNING,
+                    error_msg = (
+                        "The logprobs object is malformed, so we won't use logprobs "
+                        "to determine the labels."
                     )
-                    continue
+                    if not isinstance(logprobs_obj, list):
+                        log_once(error_msg, level=logging.WARNING)
+                        continue
+
+                    # Some APIs have implemented the logprobs differently, being a list
+                    # of ChoiceLogprobs dictionaries rather than having that list being
+                    # under the 'content' key, so we deal with that here.
+                    # TODO: Maybe remove this in future if all APIs standardise this
+                    try:
+                        choice_logprobs_list = [
+                            ChoiceLogprobs.model_validate(item) for item in logprobs_obj
+                        ]
+                    except ValidationError:
+                        log_once(error_msg, level=logging.WARNING)
+                        continue
+                    if not all(
+                        len(item.content or []) == 1 for item in choice_logprobs_list
+                    ):
+                        log_once(error_msg, level=logging.WARNING)
+                        continue
+                    logprobs_obj = ChoiceLogprobs(
+                        content=[
+                            item.content[0]
+                            for item in choice_logprobs_list
+                            if item.content
+                        ]
+                    )
 
                 logprobs_list: c.Sequence[c.Sequence[tuple[str, float]]]
                 if isinstance(logprobs_obj, ChoiceLogprobs):
@@ -980,10 +1023,9 @@ class LiteLLMModel(BenchmarkModule):
 
         if not sequences:
             log(
-                "No sequences were generated by the model "
-                f"{model_id!r}. This may be due to the "
-                "model running out of tokens or an issue with the input data. "
-                "Returning an empty GenerativeModelOutput.",
+                f"No sequences were generated by the model {model_id!r}. This may be "
+                "due to the model running out of tokens or an issue with the input "
+                "data. Returning an empty GenerativeModelOutput.",
                 level=logging.WARNING,
             )
             return GenerativeModelOutput(sequences=[], scores=None)
@@ -1311,6 +1353,10 @@ class LiteLLMModel(BenchmarkModule):
         if model_id in litellm.model_list:
             return True
 
+        set_up_benchmark_config_for_model(
+            benchmark_config=benchmark_config, model_id=model_id
+        )
+
         # Separate check for Ollama models
         if model_id.startswith("ollama/") or model_id.startswith("ollama_chat/"):
             ollama_model_exists = try_download_ollama_model(
@@ -1612,6 +1658,11 @@ class LiteLLMModel(BenchmarkModule):
                 level=logging.DEBUG,
             )
 
+        # If the model is a Chat.dk model, we make sure reasoning traces are not
+        # included in the output
+        if self.model_config.model_id.startswith("ordbogen/"):
+            generation_kwargs["include_reasoning"] = False
+
         # Handle manually set parameters
         if self.buffer["first_label_token_mapping"]:
             generation_kwargs["logprobs"] = True
@@ -1800,6 +1851,12 @@ def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
     Returns:
         The cleaned model ID.
     """
+    # Remove unofficial prefixes
+    for unofficial_prefix in UNOFFICIAL_INFERENCE_API_PREFIXES:
+        model_id = re.sub(
+            pattern=rf"^{re.escape(unofficial_prefix)}", repl="", string=model_id
+        )
+
     if benchmark_config.api_base is not None and not any(
         model_id.startswith(prefix) for prefix in CUSTOM_INFERENCE_API_PREFIXES
     ):
@@ -1809,3 +1866,19 @@ def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
             prefix = "openai/"
         model_id = prefix + model_id
     return model_id
+
+
+def set_up_benchmark_config_for_model(
+    benchmark_config: BenchmarkConfig, model_id: str
+) -> None:
+    """Set up the benchmark configuration for the model.
+
+    Args:
+        benchmark_config:
+            The benchmark configuration to set up.
+        model_id:
+            The model ID.
+    """
+    if model_id.startswith("ordbogen/"):
+        benchmark_config.api_key = os.getenv("ORDBOGEN_API_KEY")
+        benchmark_config.api_base = "https://api.ordbogen.ai/v1"
