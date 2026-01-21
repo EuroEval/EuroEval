@@ -1346,7 +1346,18 @@
 <span class="normal">379</span>
 <span class="normal">380</span>
 <span class="normal">381</span>
-<span class="normal">382</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1527,6 +1538,17 @@
         <span class="c1"># generation</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">m</span> <span class="o">:=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;boxed\{(.*?)\}&quot;</span><span class="p">,</span> <span class="n">predicted_label</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">predicted_label</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># If the prediction starts with one of the candidate labels (case-insensitive)</span>
+        <span class="c1"># then use that one</span>
+        <span class="n">prefix_candidate_labels</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">candidate_label</span>
+            <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">sample_candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">predicted_label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">candidate_label</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">prefix_candidate_labels</span><span class="p">:</span>
+            <span class="n">new_predicted_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prefix_candidate_labels</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">continue</span>
 
         <span class="c1"># We set the word edit distance weights such that we heavily penalise insertions</span>
         <span class="c1"># and substitutions, so that we don&#39;t just insert the correct label, but that we</span>

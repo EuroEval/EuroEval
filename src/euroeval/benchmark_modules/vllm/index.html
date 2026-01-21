@@ -2615,7 +2615,53 @@
 <span class="normal">1499</span>
 <span class="normal">1500</span>
 <span class="normal">1501</span>
-<span class="normal">1502</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1502</span>
+<span class="normal">1503</span>
+<span class="normal">1504</span>
+<span class="normal">1505</span>
+<span class="normal">1506</span>
+<span class="normal">1507</span>
+<span class="normal">1508</span>
+<span class="normal">1509</span>
+<span class="normal">1510</span>
+<span class="normal">1511</span>
+<span class="normal">1512</span>
+<span class="normal">1513</span>
+<span class="normal">1514</span>
+<span class="normal">1515</span>
+<span class="normal">1516</span>
+<span class="normal">1517</span>
+<span class="normal">1518</span>
+<span class="normal">1519</span>
+<span class="normal">1520</span>
+<span class="normal">1521</span>
+<span class="normal">1522</span>
+<span class="normal">1523</span>
+<span class="normal">1524</span>
+<span class="normal">1525</span>
+<span class="normal">1526</span>
+<span class="normal">1527</span>
+<span class="normal">1528</span>
+<span class="normal">1529</span>
+<span class="normal">1530</span>
+<span class="normal">1531</span>
+<span class="normal">1532</span>
+<span class="normal">1533</span>
+<span class="normal">1534</span>
+<span class="normal">1535</span>
+<span class="normal">1536</span>
+<span class="normal">1537</span>
+<span class="normal">1538</span>
+<span class="normal">1539</span>
+<span class="normal">1540</span>
+<span class="normal">1541</span>
+<span class="normal">1542</span>
+<span class="normal">1543</span>
+<span class="normal">1544</span>
+<span class="normal">1545</span>
+<span class="normal">1546</span>
+<span class="normal">1547</span>
+<span class="normal">1548</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -3196,24 +3242,70 @@
         <span class="n">max_tokens_per_prompt</span> <span class="o">-=</span> <span class="nb">min</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">max_generated_tokens</span><span class="p">,</span> <span class="n">max_tokens_per_prompt</span> <span class="o">-</span> <span class="mi">1</span>
         <span class="p">)</span>
-        <span class="n">log_once</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Truncating prompts for the model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;to a maximum of </span><span class="si">{</span><span class="n">max_tokens_per_prompt</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> tokens.&quot;</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-        <span class="p">)</span>
         <span class="n">tokenized_prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">(</span>
-            <span class="n">text</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">max_tokens_per_prompt</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">max_tokens_per_prompt</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_tokens_per_prompt</span>
             <span class="k">for</span> <span class="n">input_ids</span> <span class="ow">in</span> <span class="n">tokenized_prompts</span><span class="o">.</span><span class="n">input_ids</span>
         <span class="p">):</span>
-            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
-                <span class="s2">&quot;Truncation of prompts failed, some prompts are still too long.&quot;</span>
+            <span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Truncating prompts for the model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;to a maximum of </span><span class="si">{</span><span class="n">max_tokens_per_prompt</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> tokens.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="n">prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span>
-            <span class="n">sequences</span><span class="o">=</span><span class="n">tokenized_prompts</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span>
-        <span class="p">)</span>
+            <span class="k">match</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span><span class="p">:</span>
+                <span class="k">case</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span><span class="p">:</span>
+                    <span class="n">truncated_tokenized_prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">(</span>
+                        <span class="n">text</span><span class="o">=</span><span class="n">prompts</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">max_tokens_per_prompt</span><span class="p">,</span> <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span>
+                    <span class="p">)</span>
+                    <span class="n">prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">batch_decode</span><span class="p">(</span>
+                        <span class="n">sequences</span><span class="o">=</span><span class="n">truncated_tokenized_prompts</span><span class="o">.</span><span class="n">input_ids</span><span class="p">,</span>
+                        <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">case</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span> <span class="o">|</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_chat_token_ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span>
+                        <span class="s2">&quot;The end-of-chat token IDs should be set for instruction-tuned &quot;</span>
+                        <span class="s2">&quot;and reasoning models.&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">end_of_chat_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+                        <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_chat_token_ids</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="n">prompt_segments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="n">prompt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
+                            <span class="n">end_of_chat_token</span>
+                        <span class="p">)</span>
+                        <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span>
+                    <span class="p">]</span>
+                    <span class="k">for</span> <span class="n">num_few_shots_to_remove</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span>
+                        <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">num_few_shot_examples</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="p">):</span>
+                        <span class="n">new_prompts</span> <span class="o">=</span> <span class="p">[</span>
+                            <span class="n">end_of_chat_token</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                                <span class="n">prompt_segment</span><span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">num_few_shots_to_remove</span> <span class="p">:]</span>
+                            <span class="p">)</span>
+                            <span class="k">for</span> <span class="n">prompt_segment</span> <span class="ow">in</span> <span class="n">prompt_segments</span>
+                        <span class="p">]</span>
+                        <span class="n">tokenized_prompts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">(</span>
+                            <span class="n">text</span><span class="o">=</span><span class="n">new_prompts</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="n">max_tokens_per_prompt</span>
+                        <span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span>
+                            <span class="nb">len</span><span class="p">(</span><span class="n">input_ids</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">max_tokens_per_prompt</span>
+                            <span class="k">for</span> <span class="n">input_ids</span> <span class="ow">in</span> <span class="n">tokenized_prompts</span><span class="o">.</span><span class="n">input_ids</span>
+                        <span class="p">):</span>
+                            <span class="n">prompts</span> <span class="o">=</span> <span class="n">new_prompts</span>
+                            <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                            <span class="s2">&quot;Truncation of prompts failed, some prompts are still too &quot;</span>
+                            <span class="s2">&quot;long.&quot;</span>
+                        <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Truncation of prompts for model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is &quot;</span>
+                <span class="s2">&quot;not needed, so skipping truncation.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="c1"># Generate sequences using vLLM</span>
         <span class="n">input_is_a_test</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">prompts</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">==</span> <span class="mi">1</span>
