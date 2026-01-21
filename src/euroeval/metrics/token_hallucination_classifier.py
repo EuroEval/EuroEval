@@ -55,7 +55,7 @@ def detect_hallucinations(
                 total_tokens += 1
 
         except Exception as e:
-            logger.error(f"Error during hallucination detection: {e}. Skipping...")
+            logger.error(f"Error during hallucination detection: {e}. Skipping.")
             continue
 
     if total_tokens == 0:
@@ -67,9 +67,8 @@ def detect_hallucinations(
 
     hallucination_rate = hallucinated_tokens / total_tokens
 
-    logger.info("Results ________________________________________")
-    logger.info(
-        f"Hallucination rate (hallucinated_tokens/total_tokens) : "
+    logger.debug(
+        f"Hallucination rate (hallucinated_tokens/total_tokens): "
         f"{hallucination_rate:.2f}"
     )
     return hallucination_rate
@@ -106,9 +105,7 @@ class Token_Hallucination_Metric(Metric):
             dataset=dataset,
             predictions=predictions,
             model="alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-"
-            + dataset_config.languages[
-                0
-            ].code,  # FIXME: Perhaps a better way is possible?
+            + dataset_config.main_language.code,
             device="cpu",
         )
         return hallucination_rate
