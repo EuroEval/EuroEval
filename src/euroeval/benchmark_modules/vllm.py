@@ -604,6 +604,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         truncation_attempts = 1
         for _ in range(num_attempts):
             try:
+                breakpoint()
                 raw_outputs = self._model.generate(
                     prompts=prompts,
                     sampling_params=sampling_params,
@@ -659,8 +660,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             raise InvalidBenchmark(
                 f"Could not generate sequences after {num_attempts} attempts."
             )
-
-        breakpoint()
 
         # When we shorten the prompts then some residual model outputs persist, so we
         # need to filter these out
