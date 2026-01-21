@@ -1,4 +1,7 @@
-"""Utility functions related to the logical-reasoning task group."""
+"""Utility functions related to the logical-reasoning task group.
+
+TODO: Delete? This should be covered by src/euroeval/metrics/structured_generation.py
+"""
 
 import itertools
 import logging
