@@ -177,7 +177,7 @@ REASONING_MODELS = [
     r"(gemini/)?gemini-2.5.*",
     r"(xai/)?grok-3-mini.*",
     r".*gpt-oss.*",
-    r"(ordbogen)/?odin-.*",
+    r"(ordbogen/)?odin-.*",
 ]
 
 BASE_DECODER_MODELS = [
