@@ -579,11 +579,6 @@ class VLLMModel(HuggingFaceEncoderModel):
         max_tokens_per_prompt -= min(
             self.dataset_config.max_generated_tokens, max_tokens_per_prompt - 1
         )
-        log_once(
-            f"Truncating prompts for the model {self.model_config.model_id!r} "
-            f"to a maximum of {max_tokens_per_prompt:,} tokens.",
-            level=logging.DEBUG,
-        )
         tokenized_prompts = self._tokeniser(
             text=prompts, max_length=max_tokens_per_prompt
         )
@@ -591,6 +586,11 @@ class VLLMModel(HuggingFaceEncoderModel):
             len(input_ids) > max_tokens_per_prompt
             for input_ids in tokenized_prompts.input_ids
         ):
+            log_once(
+                f"Truncating prompts for the model {self.model_config.model_id!r} "
+                f"to a maximum of {max_tokens_per_prompt:,} tokens.",
+                level=logging.DEBUG,
+            )
             match self.generative_type:
                 case GenerativeType.BASE:
                     truncated_tokenized_prompts = self._tokeniser(
@@ -631,11 +631,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                             for input_ids in tokenized_prompts.input_ids
                         ):
                             prompts = new_prompts
-                            log_once(
-                                "Truncated prompts for model "
-                                f"{self.model_config.model_id!r}.",
-                                level=logging.DEBUG,
-                            )
                             break
                     else:
                         raise InvalidBenchmark(
