@@ -180,6 +180,17 @@ def extract_labels_from_generation(
         if (m := re.search(r"boxed\{(.*?)\}", predicted_label)) is not None:
             predicted_label = m.group(1)
 
+        # If the prediction starts with one of the candidate labels (case-insensitive)
+        # then use that one
+        prefix_candidate_labels = [
+            candidate_label
+            for candidate_label in sample_candidate_labels[idx]
+            if predicted_label.lower().startswith(candidate_label.lower())
+        ]
+        if prefix_candidate_labels:
+            new_predicted_labels.append(prefix_candidate_labels[0])
+            continue
+
         # We set the word edit distance weights such that we heavily penalise insertions
         # and substitutions, so that we don't just insert the correct label, but that we
         # want the model to have included the correct label in its output.
