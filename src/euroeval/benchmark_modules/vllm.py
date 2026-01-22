@@ -579,24 +579,70 @@ class VLLMModel(HuggingFaceEncoderModel):
         max_tokens_per_prompt -= min(
             self.dataset_config.max_generated_tokens, max_tokens_per_prompt - 1
         )
-        log_once(
-            f"Truncating prompts for the model {self.model_config.model_id!r} "
-            f"to a maximum of {max_tokens_per_prompt:,} tokens.",
-            level=logging.DEBUG,
-        )
         tokenized_prompts = self._tokeniser(
-            text=prompts, truncation=True, max_length=max_tokens_per_prompt
+            text=prompts, max_length=max_tokens_per_prompt
         )
         if any(
             len(input_ids) > max_tokens_per_prompt
             for input_ids in tokenized_prompts.input_ids
         ):
-            raise InvalidBenchmark(
-                "Truncation of prompts failed, some prompts are still too long."
+            log(
+                f"Truncating prompts for the model {self.model_config.model_id!r} "
+                f"to a maximum of {max_tokens_per_prompt:,} tokens.",
+                level=logging.DEBUG,
             )
-        prompts = self._tokeniser.batch_decode(
-            sequences=tokenized_prompts.input_ids, skip_special_tokens=True
-        )
+            match self.generative_type:
+                case GenerativeType.BASE:
+                    truncated_tokenized_prompts = self._tokeniser(
+                        text=prompts, max_length=max_tokens_per_prompt, truncation=True
+                    )
+                    prompts = self._tokeniser.batch_decode(
+                        sequences=truncated_tokenized_prompts.input_ids,
+                        skip_special_tokens=True,
+                    )
+                case GenerativeType.INSTRUCTION_TUNED | GenerativeType.REASONING:
+                    assert self.end_of_chat_token_ids is not None, (
+                        "The end-of-chat token IDs should be set for instruction-tuned "
+                        "and reasoning models."
+                    )
+                    end_of_chat_token = self._tokeniser.decode(
+                        list(self.end_of_chat_token_ids)
+                    )
+                    prompt_segments: list[list[str]] = [
+                        prompt.replace(self._tokeniser.bos_token, "").split(
+                            end_of_chat_token
+                        )
+                        for prompt in prompts
+                    ]
+                    for num_few_shots_to_remove in range(
+                        0, self.dataset_config.num_few_shot_examples + 1
+                    ):
+                        new_prompts = [
+                            end_of_chat_token.join(
+                                prompt_segment[2 * num_few_shots_to_remove :]
+                            )
+                            for prompt_segment in prompt_segments
+                        ]
+                        tokenized_prompts = self._tokeniser(
+                            text=new_prompts, max_length=max_tokens_per_prompt
+                        )
+                        if all(
+                            len(input_ids) <= max_tokens_per_prompt
+                            for input_ids in tokenized_prompts.input_ids
+                        ):
+                            prompts = new_prompts
+                            break
+                    else:
+                        raise InvalidBenchmark(
+                            "Truncation of prompts failed, some prompts are still too "
+                            "long."
+                        )
+        else:
+            log(
+                f"Truncation of prompts for model {self.model_config.model_id!r} is "
+                "not needed, so skipping truncation.",
+                level=logging.DEBUG,
+            )
 
         # Generate sequences using vLLM
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
