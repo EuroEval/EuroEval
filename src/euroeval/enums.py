@@ -140,8 +140,6 @@ class TaskGroup(AutoStrEnum):
             Text-to-text generation.
         SPEED:
             Speed benchmark.
-        LOGICAL_REASONING:
-            Logical reasoning benchmark.
     """
 
     SEQUENCE_CLASSIFICATION = auto()
@@ -150,4 +148,3 @@ class TaskGroup(AutoStrEnum):
     QUESTION_ANSWERING = auto()
     TEXT_TO_TEXT = auto()
     SPEED = auto()
-    LOGICAL_REASONING = auto()
