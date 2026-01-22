@@ -122,8 +122,10 @@ class TokenHallucinationMetric(Metric):
         hallucination_rate = detect_hallucinations(
             dataset=dataset,
             predictions=predictions,
-            model="alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-"
-            + dataset_config.main_language.code,
+            model=(
+                f"alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-"
+                f"{dataset_config.main_language.code}"
+            ),
             device="cpu",
         )
         return hallucination_rate
