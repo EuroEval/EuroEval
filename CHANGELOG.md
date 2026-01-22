@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v16.11.0] - 2026-01-21
+
 ### Added
 
 - Added the Danish zebra puzzle dataset
@@ -25,6 +27,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   in the resulting JSONL file to `null` rather than `True`, to avoid confusion.
   Likewise, if a task requires zero-shot evaluation, we set `few_shot` to null rather
   than a Boolean value.
+- When evaluating a reasoning model on a sequence classification task, if the model
+  outputs an answer that starts with one of candidate labels, we now use that label as
+  the predicted label. Previously, we would have conducted a word edit distance search
+  to find the closest candidate label, which was almost always correct, but not in all
+  cases.
 
 ### Fixed
 
@@ -39,6 +46,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   This has been fixed now.
 - Better handling of rate limits when evaluating API models, by backing off more
   aggressively when hitting rate limits.
+- Now truncates prompts for instruction-following models in a smarter way, by removing
+  few-shot examples one by one until the prompt is short enough, rather than just
+  truncating the prompt to the maximum length. This only affects models whose maximum
+  model length is quite small (roughly 5,000 tokens or less).
 
 ## [v16.10.1] - 2026-01-02
 
