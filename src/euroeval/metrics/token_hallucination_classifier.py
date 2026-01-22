@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
 
-    from ..data_models import BenchmarkConfig, DatasetConfig
+    from ..data_models import DatasetConfig
 
 
 def detect_hallucinations(
@@ -95,12 +95,28 @@ class TokenHallucinationMetric(Metric):
     def __call__(
         self,
         predictions: c.Sequence,
-        references: c.Sequence,
         dataset: "Dataset",
         dataset_config: "DatasetConfig",
-        benchmark_config: "BenchmarkConfig",
+        **kwargs,
     ) -> float | None:
-        """Not used with the hallucination metric, but required for consistency."""
+        """Compute the token-level hallucination rate for a set of predictions.
+
+        This method wraps :func:`detect_hallucinations` to run a token-level
+        hallucination detector over the provided predictions and dataset contexts,
+        and returns the rate of tokens classified as hallucinated.
+
+        Args:
+            predictions:
+                The model predictions. Each prediction must provide a
+                ``"prediction_text"`` field containing the model's answer text.
+            dataset:
+                The dataset used for evaluation.
+            dataset_config:
+                The dataset configuration.
+            **kwargs:
+                For API consistency, this metric accepts other arguments like
+                `references` and `benchmark_config`, but they are ignored.
+        """
         hallucination_rate = detect_hallucinations(
             dataset=dataset,
             predictions=predictions,
