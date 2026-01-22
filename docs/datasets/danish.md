@@ -1086,7 +1086,7 @@ Here are a few examples from the training split:
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-- Number of few-shot examples: 5
+- Number of few-shot examples: 8
 - Prefix prompt:
 
   ```text
