@@ -13,7 +13,7 @@ from euroeval.metrics import (
 )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def make_dataset() -> Callable[[str, Sequence[int], int | None, int], Dataset]:
     """Build small datasets with the columns needed by bias metrics."""
 

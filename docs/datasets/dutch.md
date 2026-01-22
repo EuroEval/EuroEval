@@ -1091,22 +1091,14 @@ When evaluating generative models, we use the following setup (see the
 - Base prompt template:
 
   ```text
-  Vraag: {text}
-  Antwoordopties:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
+  {text}
   Antwoord: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Vraag: {text}
-  Antwoordopties:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
+  {text}
 
   Beantwoord de bovenstaande vraag met 'a', 'b' of 'c' en niets anders.
   ```

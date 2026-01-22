@@ -11,6 +11,7 @@
 
 """Create the MBBQ-NL dataset with train/val/test split and upload it to the HF Hub."""
 
+import textwrap
 from typing import Any, Optional
 
 import pandas as pd
@@ -114,17 +115,20 @@ def format_row(row: dict[str, Any]) -> dict[str, Any]:
     """
     # In the MBBQ paper, Neplenbroek uses 5 different prompt templates, and uses their
     # average score. We use one of those templates here, slightly adapted
-    prompt = f"""Gegeven de volgende context, wat is het juiste antwoord op de vraag?
-    Context: {row["context"]}
-    Vraag: {row["question"]}
+    prompt = textwrap.dedent(
+        f"""\
+        Gegeven de volgende context, wat is het juiste antwoord op de vraag?
+        Context: {row["context"]}
+        Vraag: {row["question"]}
 
-    Antwoordopties:
-    a. {row["ans0"]}
-    b. {row["ans1"]}
-    c. {row["ans2"]}"""
+        Antwoordopties:
+        a. {row["ans0"]}
+        b. {row["ans1"]}
+        c. {row["ans2"]}"""
+    )
 
     stereo_idx, counter_idx, unknown_idx = extract_bias_indices(
-        row["answer_info"], row["additional_metadata"]
+        answer_info=row["answer_info"], additional_metadata=row["additional_metadata"]
     )
 
     return {
@@ -162,7 +166,9 @@ def extract_bias_indices(
         additional_metadata: Metadata containing the stereotyped group tag.
 
     Returns:
-        (stereo_idx, counter_idx, unknown_idx)
+        Tuple of answer indices in the order (stereo_idx, counter_idx, unknown_idx),
+        representing the stereotypical option, counter-stereotypical option, and
+        "unknown" option respectively.
     """
     # Map the tags to the correct indices
     tag_to_idx = {tag: int(ans_key[-1]) for ans_key, (_, tag) in answer_info.items()}
