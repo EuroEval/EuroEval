@@ -44,6 +44,7 @@ dependencies = [
     "typeguard>=4.4.4",
     "pyrefly>=0.43.1",
     "sacrebleu>=2.5.1",
+]
 
 [project.optional-dependencies]
 generative = [
@@ -202,6 +203,9 @@ pythonpath = [
     "src",
     "src/scripts",
 ]
+
+[tool.pyrefly]
+site-package-path=[".venv/lib/python3.11/site-packages"]
 
 [build-system]
 requires = ["hatchling"]

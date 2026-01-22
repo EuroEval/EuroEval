@@ -12,6 +12,7 @@
 """Create the zebra puzzle datasets and upload them to the HF Hub."""
 
 import json
+
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
@@ -72,7 +73,6 @@ def main() -> None:
         val_df.rename(columns={"solution": "target_text"}, inplace=True)
         test_df.rename(columns={"solution": "target_text"}, inplace=True)
 
-
         # Convert numpy arrays in target_text (the values of each dict) to lists
         train_df["target_text"] = train_df["target_text"].apply(
             lambda sol: {k: v.tolist() for k, v in sol.items()}
@@ -83,13 +83,17 @@ def main() -> None:
         test_df["target_text"] = test_df["target_text"].apply(
             lambda sol: {k: v.tolist() for k, v in sol.items()}
         )
-        
 
         # Convert target_text from dict to string
-        train_df["target_text"] = train_df["target_text"].apply(lambda x: json.dumps(x, ensure_ascii=False))
-        val_df["target_text"] = val_df["target_text"].apply(lambda x: json.dumps(x, ensure_ascii=False))
-        test_df["target_text"] = test_df["target_text"].apply(lambda x: json.dumps(x, ensure_ascii=False))
-
+        train_df["target_text"] = train_df["target_text"].apply(
+            lambda x: json.dumps(x, ensure_ascii=False)
+        )
+        val_df["target_text"] = val_df["target_text"].apply(
+            lambda x: json.dumps(x, ensure_ascii=False)
+        )
+        test_df["target_text"] = test_df["target_text"].apply(
+            lambda x: json.dumps(x, ensure_ascii=False)
+        )
 
         # Collect datasets in a dataset dictionary
         dataset = DatasetDict(

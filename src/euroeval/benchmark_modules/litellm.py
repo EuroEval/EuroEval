@@ -80,7 +80,7 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
-from ..tasks import NER, LOGIC
+from ..tasks import LOGIC, NER
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from ..utils import (
@@ -1706,7 +1706,9 @@ class LiteLLMModel(BenchmarkModule):
             test_input = "Test message json"
         else:
             test_input = [
-                litellm.ChatCompletionUserMessage(role="user", content="Test message json")
+                litellm.ChatCompletionUserMessage(
+                    role="user", content="Test message json"
+                )
             ]
         for _ in range(num_attempts := 10):
             _, failures = safe_run(

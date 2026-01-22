@@ -7,7 +7,7 @@ import typing as t
 from copy import deepcopy
 
 import numpy as np
-from typeguard import check_type, TypeCheckError
+from typeguard import TypeCheckError, check_type
 
 from ..exceptions import InvalidBenchmark
 from ..utils import extract_json_dict_from_string
@@ -240,12 +240,14 @@ class PuzzleLevelAccuracyMetric(StructuredGenerationMetric):
             The puzzle score.
         """
         prediction_sets, label_sets, _, _ = self._prepare_data(prediction, label)
-        
+
         return float(
             self._compute_puzzle_score(prediction=prediction_sets, label=label_sets)
         )
 
-    def _compute_puzzle_score(self, prediction: dict[str, set], label: dict[str, set]) -> int:
+    def _compute_puzzle_score(
+        self, prediction: dict[str, set], label: dict[str, set]
+    ) -> int:
         """Compute the puzzle score.
 
         Args:
@@ -311,7 +313,7 @@ class CellWiseAccuracyMetric(StructuredGenerationMetric):
         )
 
     def _compute_cell_score(
-        self, 
+        self,
         prediction: dict[str, set],
         label: dict[str, set],
         n_keys: int,

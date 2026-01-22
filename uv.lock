@@ -1114,6 +1114,7 @@ requires-dist = [
     { name = "timm", marker = "extra == 'generative'", specifier = ">=1.0.19" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "transformers", extras = ["mistral-common"], specifier = ">=4.56.0" },
+    { name = "typeguard", specifier = ">=4.4.4" },
     { name = "vllm", extras = ["flashinfer"], marker = "sys_platform == 'linux' and extra == 'all'", specifier = "==0.11.0" },
     { name = "vllm", extras = ["flashinfer"], marker = "sys_platform == 'linux' and extra == 'generative'", specifier = "==0.11.0" },
 ]
