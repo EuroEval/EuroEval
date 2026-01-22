@@ -74,7 +74,7 @@ def detect_hallucinations(
     return hallucination_rate
 
 
-class Token_Hallucination_Metric(Metric):
+class TokenHallucinationMetric(Metric):
     """Hallucination metric."""
 
     def __init__(self, name: str, pretty_name: str) -> None:
@@ -111,6 +111,6 @@ class Token_Hallucination_Metric(Metric):
         return hallucination_rate
 
 
-hallucination_metric = Token_Hallucination_Metric(
+hallucination_metric = TokenHallucinationMetric(
     name="hallucination_token", pretty_name="Hallucination rate"
 )
