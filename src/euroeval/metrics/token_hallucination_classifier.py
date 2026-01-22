@@ -27,6 +27,8 @@ def detect_hallucinations(
 
     Args:
         dataset: Hallucination dataset, generated with e.g. lettuce.
+        predictions: Sequence of prediction objects, each containing a
+            ``"prediction_text"`` field with the model's answer text.
         model: Path to model.
         device: Device to run on ('cpu' or 'cuda').
 
