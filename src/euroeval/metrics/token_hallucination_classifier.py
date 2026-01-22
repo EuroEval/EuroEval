@@ -61,7 +61,7 @@ def detect_hallucinations(
     if total_tokens == 0:
         logger.warning(
             "Failed to run hallucination detection task "
-            "(there was no tokens found in predictions), returning None."
+            "(there were no tokens found in predictions), returning None."
         )
         return None
 
