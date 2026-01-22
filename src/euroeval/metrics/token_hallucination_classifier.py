@@ -54,8 +54,8 @@ def detect_hallucinations(
                 hallucinated_tokens += token["pred"]
                 total_tokens += 1
 
-        except Exception as e:
-            logger.error(f"Error during hallucination detection: {e}. Skipping.")
+        except Exception:
+            logger.exception("Error during hallucination detection. Skipping.")
             continue
 
     if total_tokens == 0:
