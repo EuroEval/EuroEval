@@ -448,6 +448,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 level=logging.DEBUG,
             )
         elif self.dataset_config.task.uses_structured_output:
+            # TODO: This only deals with NER right now - should also deal with LOGIC
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types: dict[str, t.Any] = {
                 tag_name: (conlist(str, max_length=5), ...)

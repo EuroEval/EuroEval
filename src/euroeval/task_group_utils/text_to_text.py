@@ -19,6 +19,8 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
 
+logger = logging.getLogger("euroeval")
+
 
 def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
@@ -48,7 +50,7 @@ def compute_metrics(
         InvalidBenchmark:
             If the metric computation fails.
     """
-    model_outputs, labels = model_outputs_and_labels
+    model_outputs, raw_labels = model_outputs_and_labels
 
     # If the model outputs is a pair, then the first element corresponds to the model
     # predictions
@@ -57,6 +59,7 @@ def compute_metrics(
 
     raise_if_model_output_contains_nan_values(model_output=model_outputs)  # type: ignore[bad-argument-type]
 
+    labels = raw_labels
     model_output_dtype = np.asarray(model_outputs).dtype
     output_is_prob = model_output_dtype in [np.float16, np.float32, np.float64]
     if output_is_prob:
@@ -100,8 +103,8 @@ def compute_metrics(
                     metric.compute_kwargs["device"] = "cpu"
                     log(
                         "Out of memory error occurred during the computation of "
-                        f"the metric {metric.pretty_name}. Moving the computation to "
-                        "the CPU.",
+                        f"the metric {metric.pretty_name}. Moving the computation "
+                        "to the CPU.",
                         level=logging.DEBUG,
                     )
                 else:
@@ -135,13 +138,10 @@ def extract_labels_from_generation(
     """Extract the predicted labels from the generated output.
 
     Args:
-        input_batch:
-            The input batch, where the keys are the feature names and the values
-            are lists with the feature values.
-        model_output:
-            The raw generated output of the model.
+        predictions: The model predictions as a list of dictionaries.
+        labels: The true labels as a list of dictionaries.
 
     Returns:
-        The predicted labels.
+        Results for a metric.
     """
     return model_output.sequences

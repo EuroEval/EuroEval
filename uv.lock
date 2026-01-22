@@ -1002,6 +1002,7 @@ dependencies = [
     { name = "protobuf" },
     { name = "pydantic" },
     { name = "pyinfer" },
+    { name = "pyrefly" },
     { name = "python-dotenv" },
     { name = "rouge-score" },
     { name = "sacrebleu" },
@@ -1014,6 +1015,7 @@ dependencies = [
     { name = "termcolor" },
     { name = "torch" },
     { name = "transformers", extra = ["mistral-common"] },
+    { name = "typeguard" },
 ]
 
 [package.optional-dependencies]
@@ -1095,6 +1097,7 @@ requires-dist = [
     { name = "protobuf", specifier = ">=2.0.0" },
     { name = "pydantic", specifier = ">=2.6.0" },
     { name = "pyinfer", specifier = ">=0.0.3" },
+    { name = "pyrefly", specifier = ">=0.43.1" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "ray", marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=2.53.0" },
     { name = "ray", marker = "sys_platform == 'linux' and extra == 'generative'", specifier = ">=2.53.0" },
@@ -1111,6 +1114,7 @@ requires-dist = [
     { name = "timm", marker = "extra == 'generative'", specifier = ">=1.0.19" },
     { name = "torch", specifier = ">=2.6.0" },
     { name = "transformers", extras = ["mistral-common"], specifier = ">=4.56.0" },
+    { name = "typeguard", specifier = ">=4.4.4" },
     { name = "vllm", extras = ["flashinfer"], marker = "sys_platform == 'linux' and extra == 'all'", specifier = "==0.11.0" },
     { name = "vllm", extras = ["flashinfer"], marker = "sys_platform == 'linux' and extra == 'generative'", specifier = "==0.11.0" },
 ]
@@ -5547,6 +5551,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/66/b1eb52839f563623d185f0927eb3530ee4d5ffe9d377cdaf5346b306689e/triton-3.4.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:31c1d84a5c0ec2c0f8e8a072d7fd150cab84a9c239eaddc6706c081bfae4eb04", size = 155560068, upload-time = "2025-07-30T19:58:37.081Z" },
     { url = "https://files.pythonhosted.org/packages/30/7b/0a685684ed5322d2af0bddefed7906674f67974aa88b0fae6e82e3b766f6/triton-3.4.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:00be2964616f4c619193cb0d1b29a99bd4b001d7dc333816073f92cf2a8ccdeb", size = 155569223, upload-time = "2025-07-30T19:58:44.017Z" },
     { url = "https://files.pythonhosted.org/packages/20/63/8cb444ad5cdb25d999b7d647abac25af0ee37d292afc009940c05b82dda0/triton-3.4.0-cp313-cp313t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:7936b18a3499ed62059414d7df563e6c163c5e16c3773678a3ee3d417865035d", size = 155659780, upload-time = "2025-07-30T19:58:51.171Z" },
+]
+
+[[package]]
+name = "typeguard"
+version = "4.4.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c7/68/71c1a15b5f65f40e91b65da23b8224dad41349894535a97f63a52e462196/typeguard-4.4.4.tar.gz", hash = "sha256:3a7fd2dffb705d4d0efaed4306a704c89b9dee850b688f060a8b1615a79e5f74", size = 75203, upload-time = "2025-06-18T09:56:07.624Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1b/a9/e3aee762739c1d7528da1c3e06d518503f8b6c439c35549b53735ba52ead/typeguard-4.4.4-py3-none-any.whl", hash = "sha256:b5f562281b6bfa1f5492470464730ef001646128b180769880468bd84b68b09e", size = 34874, upload-time = "2025-06-18T09:56:05.999Z" },
 ]
 
 [[package]]
