@@ -7,7 +7,7 @@ import typing as t
 from copy import deepcopy
 
 import numpy as np
-from typeguard import check_type
+from typeguard import check_type, TypeCheckError
 
 from ..exceptions import InvalidBenchmark
 from ..utils import extract_json_dict_from_string
@@ -117,7 +117,7 @@ class StructuredGenerationMetric(Metric):
         try:
             check_type(variable, expected_type)
             return True
-        except TypeError:
+        except (TypeError, TypeCheckError):
             return False
 
     def _compare_all_json_predictions_and_labels(
@@ -222,7 +222,7 @@ class PuzzleLevelAccuracyMetric(StructuredGenerationMetric):
         super().__init__(
             name="puzzle_level_accuracy",
             pretty_name="Puzzle-level Accuracy",
-            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.0f}"),
+            postprocessing_fn=None,
         )
 
     def _compare_prediction_and_label(
@@ -240,11 +240,12 @@ class PuzzleLevelAccuracyMetric(StructuredGenerationMetric):
             The puzzle score.
         """
         prediction_sets, label_sets, _, _ = self._prepare_data(prediction, label)
+        
         return float(
             self._compute_puzzle_score(prediction=prediction_sets, label=label_sets)
         )
 
-    def _compute_puzzle_score(prediction: dict[str, set], label: dict[str, set]) -> int:
+    def _compute_puzzle_score(self, prediction: dict[str, set], label: dict[str, set]) -> int:
         """Compute the puzzle score.
 
         Args:
@@ -282,7 +283,7 @@ class CellWiseAccuracyMetric(StructuredGenerationMetric):
         super().__init__(
             name="cell_wise_accuracy",
             pretty_name="Cell-wise Accuracy",
-            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.2f}"),
+            postprocessing_fn=None,
         )
 
     def _compare_prediction_and_label(
@@ -310,6 +311,7 @@ class CellWiseAccuracyMetric(StructuredGenerationMetric):
         )
 
     def _compute_cell_score(
+        self, 
         prediction: dict[str, set],
         label: dict[str, set],
         n_keys: int,
@@ -360,7 +362,7 @@ class BestPermutedCellWiseAccuracyMetric(StructuredGenerationMetric):
         super().__init__(
             name="best_permuted_cell_wise_accuracy",
             pretty_name="Best Permuted Cell-wise Accuracy",
-            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.2f}"),
+            postprocessing_fn=None,
         )
         # Use CellWiseAccuracyMetric's _compute_cell_score method
         self._cell_score_computer = CellWiseAccuracyMetric()

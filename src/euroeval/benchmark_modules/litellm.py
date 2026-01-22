@@ -80,7 +80,7 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
-from ..tasks import NER
+from ..tasks import NER, LOGIC
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from ..utils import (
@@ -1617,19 +1617,26 @@ class LiteLLMModel(BenchmarkModule):
                     pydantic_class = create_model(
                         "AnswerFormat", **keys_and_their_types
                     )
+                    generation_kwargs["response_format"] = pydantic_class
+                    log_once(
+                        "Enabling structured generation for model "
+                        f"{self.model_config.model_id!r} with the JSON schema "
+                        f"{pydantic_class.model_json_schema()}",
+                        level=logging.DEBUG,
+                    )
+                elif dataset_config.task == LOGIC:
+                    generation_kwargs["response_format"] = dict(type="json_object")
+                    log_once(
+                        "Enabling structured generation for model "
+                        f"{self.model_config.model_id!r} with a generic JSON schema ",
+                        level=logging.DEBUG,
+                    )
                 else:
                     raise InvalidBenchmark(
                         "This task requires structured generation, but it has not "
                         "been implemented for this task yet. Please open an issue "
                         "at https://github.com/EuroEval/EuroEval/issues."
                     )
-                generation_kwargs["response_format"] = pydantic_class
-                log_once(
-                    "Enabling structured generation for model "
-                    f"{self.model_config.model_id!r} with the JSON schema "
-                    f"{pydantic_class.model_json_schema()}",
-                    level=logging.DEBUG,
-                )
             else:
                 generation_kwargs["response_format"] = dict(type="json_object")
                 log_once(
@@ -1692,12 +1699,14 @@ class LiteLLMModel(BenchmarkModule):
         # First attempt is a test run with a single conversation to handle errors
         # quickly. We repeat this multiple times to deal with different types of
         # errors, and stop if we get a successful response.
+        # The text message must include the word "json" in case of openai models that
+        # should create json responses
         test_input: c.Sequence[litellm.AllMessageValues] | str
         if self.generative_type == GenerativeType.BASE:
-            test_input = "Test message"
+            test_input = "Test message json"
         else:
             test_input = [
-                litellm.ChatCompletionUserMessage(role="user", content="Test message")
+                litellm.ChatCompletionUserMessage(role="user", content="Test message json")
             ]
         for _ in range(num_attempts := 10):
             _, failures = safe_run(

@@ -26,9 +26,7 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         "\n\nHvem har hvilke egenskaber og bor i hvilket hus?"
         "\n\nAngiv venligst dit svar som et JSON dictionary. Hver key skal være "
         "object_X hvor X er husnummeret. Hver value skal være en liste med de "
-        "egenskaber fra kategorierne ovenfor som tilhører personen i hus nr. X."
-        "\n\nSvar:"
-        "\n\n{target_text}",
+        "egenskaber fra kategorierne ovenfor som tilhører personen i hus nr. X.",
         default_prompt_label_mapping=dict(),
     )
 }
