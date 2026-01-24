@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- We now up the vLLM maximum context length for reasoning models, from 8,192 to
+  16,384, to accomodate for reasoning tokens for some datasets that have long documents.
+
 ## [v16.11.0] - 2026-01-21
 
 ### Added
