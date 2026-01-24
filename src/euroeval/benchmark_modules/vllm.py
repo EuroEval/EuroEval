@@ -615,7 +615,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                         for prompt in prompts
                     ]
                     for num_few_shots_to_remove in range(
-                        0, self.dataset_config.num_few_shot_examples + 1
+                        1, self.dataset_config.num_few_shot_examples + 1
                     ):
                         new_prompts = [
                             end_of_chat_token.join(
@@ -627,7 +627,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                             text=new_prompts, max_length=max_tokens_per_prompt
                         )
                         if all(
-                            len(input_ids) <= max_tokens_per_prompt
+                            len(input_ids) < max_tokens_per_prompt
                             for input_ids in tokenized_prompts.input_ids
                         ):
                             prompts = new_prompts
