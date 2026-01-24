@@ -582,9 +582,8 @@ class VLLMModel(HuggingFaceEncoderModel):
         tokenized_prompts = self._tokeniser(
             text=prompts, max_length=max_tokens_per_prompt
         )
-        breakpoint()
         if any(
-            len(input_ids) > max_tokens_per_prompt
+            len(input_ids) >= max_tokens_per_prompt
             for input_ids in tokenized_prompts.input_ids
         ):
             log(
