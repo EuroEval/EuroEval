@@ -163,6 +163,15 @@ SPEED = Task(
     default_labels=[],
 )
 
+HALLU = Task(
+    name="hallucination",
+    task_group=TaskGroup.QUESTION_ANSWERING,
+    template_dict=RC_TEMPLATES,
+    metrics=[m.hallucination_metric],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=5,
+    default_labels=[],
+)
 
 # Used for custom datasets
 
