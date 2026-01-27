@@ -1122,7 +1122,9 @@ def load_hf_model_config(
         )
 
     # Ensure that the PAD token ID is set
-    if config.eos_token_id is not None and config.pad_token_id is None:
+    if config.eos_token_id is not None and (
+        not hasattr(config, "pad_token_id") or config.pad_token_id is None
+    ):
         if isinstance(config.eos_token_id, list):
             config.pad_token_id = config.eos_token_id[0]
         else:
