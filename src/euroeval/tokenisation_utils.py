@@ -340,7 +340,9 @@ def get_end_of_chat_token_ids(
         if "does not have a chat template" in str(e):
             return None
         raise e
-    assert isinstance(token_ids, list)
+    assert isinstance(token_ids, list), (
+        f"Expected token_ids to be a list, but got {type(token_ids)}.",
+    )
 
     for idx, token in enumerate(tokeniser.convert_ids_to_tokens(token_ids)):
         if "X" in token:
