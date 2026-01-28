@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added the bias detection task (`multiple-choice-stereotype-bias`) with bias,
+  ambiguous accuracy, and bias-adjusted accuracy metrics.
+- Added the `BiasMetric` implementation plus unit tests for MBBQ-style scoring.
+- Added the MBBQ-NL dataset (official) and a creation script for publishing it under the
+  EuroEval organisation on Hugging Face.
+- Added task documentation for bias detection.
+
 ## [v16.11.0] - 2026-01-21
 
 ### Added
