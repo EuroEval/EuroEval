@@ -14,10 +14,7 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
-from src.scripts.constants import (  # noqa
-    MAX_NUM_CHARS_IN_DOCUMENT,
-    MIN_NUM_CHARS_IN_DOCUMENT,
-)
+from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 
 def main() -> None:
