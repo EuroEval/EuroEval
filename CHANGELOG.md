@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added support for Belarusian 🇧🇾! This includes the sentiment classification dataset,
+
 ### Changed
 
 - We now up the vLLM maximum context length for reasoning models, from 8,192 to
