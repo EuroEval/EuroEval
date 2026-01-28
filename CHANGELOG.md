@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Now requires Python >=3.12, as Python 3.11 does not support some dependencies.
 - We now up the vLLM maximum context length for reasoning models, from 8,192 to
   16,384, to accommodate for reasoning tokens for some datasets that have long documents.
 - We opened up the pinned vLLM version now, now set to version `>=0.14.1`.

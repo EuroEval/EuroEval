@@ -51,8 +51,8 @@ install-uv:
 	fi
 
 install-dependencies:
-	@uv python install 3.11
-	@uv sync --all-extras --all-groups --python 3.11
+	@uv python install 3.12
+	@uv sync --all-extras --all-groups --python 3.12
 
 setup-environment-variables:
 	@uv run python src/scripts/fix_dot_env_file.py
