@@ -1091,7 +1091,13 @@ When evaluating generative models, we use the following setup (see the
 - Base prompt template:
 
   ```text
-  {text}
+  Gegeven de volgende context, wat is het juiste antwoord op de vraag?
+  Context: {context}
+  Vraag: {question}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
   Antwoord: {label}
   ```
 
