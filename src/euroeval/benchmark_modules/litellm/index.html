@@ -2997,7 +2997,15 @@
 <span class="normal">1881</span>
 <span class="normal">1882</span>
 <span class="normal">1883</span>
-<span class="normal">1884</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1884</span>
+<span class="normal">1885</span>
+<span class="normal">1886</span>
+<span class="normal">1887</span>
+<span class="normal">1888</span>
+<span class="normal">1889</span>
+<span class="normal">1890</span>
+<span class="normal">1891</span>
+<span class="normal">1892</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
@@ -4864,6 +4872,14 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;openai/&quot;</span>
         <span class="n">model_id</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">model_id</span>
+
+    <span class="c1"># When we want to evaluate an OpenAI model on a custom inference server, such as HF</span>
+    <span class="c1"># inference endpoints, LiteLLM gets confused since it&#39;s already using the `openai/`</span>
+    <span class="c1"># prefix. We thus have to add it twice, and this hack here is to ensure that we</span>
+    <span class="c1"># don&#39;t store the results with model ID `openai/openai/...`.</span>
+    <span class="k">elif</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">model_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;openai/&quot;</span><span class="p">):</span>
+        <span class="n">model_id</span> <span class="o">=</span> <span class="s2">&quot;openai/openai/&quot;</span> <span class="o">+</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(openai/)*&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">)</span>
+
     <span class="k">return</span> <span class="n">model_id</span>
 
 
