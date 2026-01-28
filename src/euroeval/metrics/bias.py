@@ -112,9 +112,6 @@ class BiasMetric(Metric):
             name: Metric identifier.
             pretty_name: Human-readable metric name.
             bias_type: Metric variant to compute.
-
-        Returns:
-            None.
         """  # noqa: E501
         super().__init__(
             name=name,
