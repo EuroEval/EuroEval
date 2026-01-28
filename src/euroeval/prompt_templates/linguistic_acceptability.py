@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     ALBANIAN,
+    BELARUSIAN,
     BULGARIAN,
     CATALAN,
     CROATIAN,
@@ -48,6 +49,14 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Fjali: {text}\nGramatikisht e saktë: {label}",
         default_instruction_prompt="Fjali: {text}\n\nPërcaktoni nëse fjalia është "
         "gramatikisht e saktë apo jo. Përgjigjuni me {labels_str}, dhe asgjë tjetër.",
+    ),
+    BELARUSIAN: PromptConfig(
+        default_prompt_label_mapping=dict(correct="так", incorrect="не"),
+        default_prompt_prefix="Ніжэй прыведзены сказы і ці з'яўляюцца яны "
+        "граматычна правільнымі.",
+        default_prompt_template="Сказ: {text}\nГраматычна правільны: {label}",
+        default_instruction_prompt="Сказ: {text}\n\nВызначце, ці сказ граматычна "
+        "правільны ці не. Адкажыце толькі {labels_str}, і нічога іншага.",
     ),
     BULGARIAN: PromptConfig(
         default_prompt_label_mapping=dict(correct="да", incorrect="не"),

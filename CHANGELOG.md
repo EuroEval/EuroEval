@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added support for Belarusian 🇧🇾! This includes the sentiment classification dataset,
+  the linguistic acceptability dataset ScaLA-be.
+
 ### Changed
 
 - Now requires Python >=3.12, as Python 3.11 does not support some dependencies.

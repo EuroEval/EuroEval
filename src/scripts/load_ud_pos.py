@@ -608,6 +608,24 @@ def load_sqdt_pos() -> dict[str, pd.DataFrame]:
     return df_dict
 
 
+def load_bedt_pos() -> dict[str, pd.DataFrame]:
+    """Load the part-of-speech part of the Belarusian Dependency Treebank.
+
+    Returns:
+        The dataframes, stored in the keys `train`, `val`, and `test`.
+    """
+    # Define download URLs
+    base_url = (
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Belarusian-HSE/refs"
+        "/heads/master/be_hse-ud-{}.conllu"
+    )
+    train_url = base_url.format("train")
+    val_url = base_url.format("dev")
+    test_url = base_url.format("test")
+
+    return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
+
+
 def _load_file_or_url(url_or_path: str) -> list[str]:
     """Load a file from a URL or local path.
 
