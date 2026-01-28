@@ -68,9 +68,6 @@ def _tally_ambig(
         counter_idx: Index of the counter-stereotype answer.
         unknown_idx: Index of the "unknown" answer, if available.
         counts: Mutable counter dictionary updated in-place.
-
-    Returns:
-        None.
     """
     counts["n_ambiguous"] += 1
     if pred_idx is None:
