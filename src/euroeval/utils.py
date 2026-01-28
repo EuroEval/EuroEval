@@ -577,7 +577,7 @@ class attention_backend:
 
     def __enter__(self) -> None:
         """Enter the context manager."""
-        if self.value is not None:
+        if not self.disable and self.value is not None:
             self.previous_value = os.getenv("VLLM_ATTENTION_BACKEND")
             os.environ["VLLM_ATTENTION_BACKEND"] = self.value
 
