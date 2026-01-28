@@ -2271,12 +2271,12 @@
   
 
 
-<h1 id="hungarian">🇭🇺 Hungarian</h1>
+<h1 id="hungarian">🇭🇺 Hungarian<a class="headerlink" href="#hungarian" title="Permanent link">&para;</a></h1>
 <p>This is an overview of all the datasets used in the Hungarian part of EuroEval. The
 datasets are grouped by their task - see the <a href="/tasks">task overview</a> for more
 information about what these constitute.</p>
-<h2 id="sentiment-classification">Sentiment Classification</h2>
-<h3 id="husst">HuSST</h3>
+<h2 id="sentiment-classification">Sentiment Classification<a class="headerlink" href="#sentiment-classification" title="Permanent link">&para;</a></h2>
+<h3 id="husst">HuSST<a class="headerlink" href="#husst" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://acta.bibl.u-szeged.hu/75891/1/msznykonf_018_431-446.pdf">this
 paper</a> and is the
 Hungarian version of the Stanford Sentiment Treebank.</p>
@@ -2331,8 +2331,8 @@ Osztályozza az érzelmet a dokumentumban. Válaszoljon pozitív, semleges, vagy
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>husst
 </code></pre></div>
-<h2 id="named-entity-recognition">Named Entity Recognition</h2>
-<h3 id="szegedner">SzegedNER</h3>
+<h2 id="named-entity-recognition">Named Entity Recognition<a class="headerlink" href="#named-entity-recognition" title="Permanent link">&para;</a></h2>
+<h3 id="szegedner">SzegedNER<a class="headerlink" href="#szegedner" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/L06-1215/">this paper</a>.
 The data is a segment of the Szeged Corpus, consisting of short business news
 articles collected from MTI (Hungarian News Agency, <www.mti.hu>).</p>
@@ -2392,8 +2392,8 @@ Nevezze meg a mondatban szereplő neveket. JSON szótárként adja meg a &#39;sz
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>szeged-ner
 </code></pre></div>
-<h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
-<h3 id="scala-hu">ScaLA-hu</h3>
+<h2 id="linguistic-acceptability">Linguistic Acceptability<a class="headerlink" href="#linguistic-acceptability" title="Permanent link">&para;</a></h2>
+<h3 id="scala-hu">ScaLA-hu<a class="headerlink" href="#scala-hu" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>
 and was automatically created from the <a href="https://github.com/UniversalDependencies/UD_Hungarian-Szeged">Hungarian Universal Dependencies
 treebank</a> by assuming that
@@ -2450,8 +2450,8 @@ Határozza meg, hogy a mondat nyelvtanilag helyes-e vagy sem. Csak &#39;igen&#39
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-hu
 </code></pre></div>
-<h2 id="reading-comprehension">Reading Comprehension</h2>
-<h3 id="multiwikiqa-hu">MultiWikiQA-hu</h3>
+<h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
+<h3 id="multiwikiqa-hu">MultiWikiQA-hu<a class="headerlink" href="#multiwikiqa-hu" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
 languages.</p>
@@ -2512,8 +2512,8 @@ Kérdés: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-hu
 </code></pre></div>
-<h2 id="knowledge">Knowledge</h2>
-<h3 id="mmlu-hu">MMLU-hu</h3>
+<h2 id="knowledge">Knowledge<a class="headerlink" href="#knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="mmlu-hu">MMLU-hu<a class="headerlink" href="#mmlu-hu" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
 dataset</a> and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
@@ -2569,8 +2569,8 @@ Válaszoljon a fenti kérdésre az elérhető lehetőségek közül &#39;a&#39;,
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-hu
 </code></pre></div>
-<h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
-<h3 id="winogrande-hu">Winogrande-hu</h3>
+<h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
+<h3 id="winogrande-hu">Winogrande-hu<a class="headerlink" href="#winogrande-hu" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
 and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
 dataset</a>.</p>
@@ -2623,8 +2623,8 @@ Válaszoljon a fenti kérdésre az elérhető lehetőségek közül &#39;a&#39; 
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-hu
 </code></pre></div>
-<h2 id="summarisation">Summarisation</h2>
-<h3 id="hunsum">HunSum</h3>
+<h2 id="summarisation">Summarisation<a class="headerlink" href="#summarisation" title="Permanent link">&para;</a></h2>
+<h3 id="hunsum">HunSum<a class="headerlink" href="#hunsum" title="Permanent link">&para;</a></h3>
 <p><a href="https://huggingface.co/datasets/ariel-ml/hun-sum-chatml-5k">The dataset</a> consists of samples
 from Hungarian news articles, with the summaries given by the lead paragraphs.</p>
 <p>The original full dataset consists of 5,000 / 200 / 200 samples for training,
@@ -2726,7 +2726,7 @@ Adjon egy rövid összefoglalót a fenti szövegről.
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

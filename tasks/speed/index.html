@@ -1385,8 +1385,8 @@
   
 
 
-<h1 id="speed">Speed</h1>
-<h2 id="overview">📚 Overview</h2>
+<h1 id="speed">Speed<a class="headerlink" href="#speed" title="Permanent link">&para;</a></h1>
+<h2 id="overview">📚 Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>Speed is a task of measuring how quickly a model can process a given input. The model
 receives text passages of varying lengths, and it has to process the documents as
 quickly as possible, which includes tokenisation of the input. We let the model process
@@ -1396,7 +1396,7 @@ the input repeatedly for 3 seconds, and then we measure how quick it was. We use
 fluctuates depending on the number of requests in the queue, so the speed benchmark
 should be taken as only a rough estimate of the model's speed, rather than an exact
 measurement.</p>
-<h2 id="metrics">📊 Metrics</h2>
+<h2 id="metrics">📊 Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h2>
 <p>The primary metric used to evaluate the performance of a model on the speed task is the
 average number of GPT-2 tokens processed per second on GPUs, when the model is
 processing documents with roughly 100, 200, ..., 1,000 tokens. If the model is only
@@ -1405,7 +1405,7 @@ vary, depending on the size of the model - we preferably use an NVIDIA RTX 3090 
 if the model has less than ~8B parameters, and one or more NVIDIA A100 GPUs is larger.</p>
 <p>The secondary metric is the same, but where the documents are shorter, with roughly
 12.5, 15, ..., 125 tokens.</p>
-<h2 id="how-to-run">🛠️ How to run</h2>
+<h2 id="how-to-run">🛠️ How to run<a class="headerlink" href="#how-to-run" title="Permanent link">&para;</a></h2>
 <p>In the command line interface of the <a href="/python-package.md">EuroEval Python package</a>, you
 can benchmark your favorite model on the speed task like so:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--task<span class="w"> </span>speed
@@ -1467,7 +1467,7 @@ can benchmark your favorite model on the speed task like so:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

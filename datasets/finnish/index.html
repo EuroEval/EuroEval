@@ -2359,12 +2359,12 @@
   
 
 
-<h1 id="finnish">🇫🇮 Finnish</h1>
+<h1 id="finnish">🇫🇮 Finnish<a class="headerlink" href="#finnish" title="Permanent link">&para;</a></h1>
 <p>This is an overview of all the datasets used in the Finnish part of EuroEval. The
 datasets are grouped by their task - see the <a href="/tasks">task overview</a> for more
 information about what these constitute.</p>
-<h2 id="sentiment-classification">Sentiment Classification</h2>
-<h3 id="scandisent-fi">ScandiSent-fi</h3>
+<h2 id="sentiment-classification">Sentiment Classification<a class="headerlink" href="#sentiment-classification" title="Permanent link">&para;</a></h2>
+<h3 id="scandisent-fi">ScandiSent-fi<a class="headerlink" href="#scandisent-fi" title="Permanent link">&para;</a></h3>
 <p>This dataset consists of reviews from Trustpilot and was published
 <a href="https://aclanthology.org/2021.nodalida-main.42/">here</a>. It is a binary sentiment
 classification dataset, with labels "positive" and "negative".</p>
@@ -2416,8 +2416,8 @@ Luokittele arvostelun tunnesävy. Vastaa vain &#39;positiivinen&#39; tai &#39;ne
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scandisent-fi
 </code></pre></div>
-<h2 id="named-entity-recognition">Named Entity Recognition</h2>
-<h3 id="turku-ner-fi">Turku-NER-fi</h3>
+<h2 id="named-entity-recognition">Named Entity Recognition<a class="headerlink" href="#named-entity-recognition" title="Permanent link">&para;</a></h2>
+<h3 id="turku-ner-fi">Turku-NER-fi<a class="headerlink" href="#turku-ner-fi" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2020.lrec-1.567/">this paper</a>.
 The dataset is a manually annotated corpus built on the Universal Dependencies Finnish
 corpus. The corpus was created by the Turku NLP group.</p>
@@ -2476,8 +2476,8 @@ Tunnista lauseessa esiintyvät nimetyt entiteetit. Tulosta ne JSON-sanakirjana, 
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>turku-ner-fi
 </code></pre></div>
-<h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
-<h3 id="scala-fi">ScaLA-fi</h3>
+<h2 id="linguistic-acceptability">Linguistic Acceptability<a class="headerlink" href="#linguistic-acceptability" title="Permanent link">&para;</a></h2>
+<h3 id="scala-fi">ScaLA-fi<a class="headerlink" href="#scala-fi" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>
 and was automatically created from the <a href="https://github.com/UniversalDependencies/UD_Finnish-TDT/tree/master">Finnish Universal Dependencies
 treebank</a> by
@@ -2534,8 +2534,8 @@ Määritä onko lause kieliopillisesti oikein vai ei. Vastaa &#39;kyllä&#39;, j
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-fi
 </code></pre></div>
-<h2 id="reading-comprehension">Reading Comprehension</h2>
-<h3 id="tydiqa-fi">TydiQA-fi</h3>
+<h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
+<h3 id="tydiqa-fi">TydiQA-fi<a class="headerlink" href="#tydiqa-fi" title="Permanent link">&para;</a></h3>
 <p>This question-answering dataset was published in <a href="https://aclanthology.org/2020.tacl-1.30/">this
 paper</a>. TydiQA is a multilingual dataset
 covering 11 typologically diverse languages with 204K question-answer pairs collected
@@ -2604,7 +2604,7 @@ Kysymys: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>tydiqa-fi
 </code></pre></div>
-<h3 id="unofficial-belebele-fi">Unofficial: BeleBele-fi</h3>
+<h3 id="unofficial-belebele-fi">Unofficial: BeleBele-fi<a class="headerlink" href="#unofficial-belebele-fi" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
 and features multiple-choice reading comprehension questions across 122 languages.</p>
 <p>The original dataset contains 900 unique multiple-choice reading comprehension passages
@@ -2660,7 +2660,7 @@ Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39;, &#39;b&#39;, &#39;
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-fi
 </code></pre></div>
-<h3 id="unofficial-multiwikiqa-fi">Unofficial: MultiWikiQA-fi</h3>
+<h3 id="unofficial-multiwikiqa-fi">Unofficial: MultiWikiQA-fi<a class="headerlink" href="#unofficial-multiwikiqa-fi" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
 languages.</p>
@@ -2721,8 +2721,8 @@ Kysymys: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-fi
 </code></pre></div>
-<h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
-<h3 id="hellaswag-fi">HellaSwag-fi</h3>
+<h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
+<h3 id="hellaswag-fi">HellaSwag-fi<a class="headerlink" href="#hellaswag-fi" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
 dataset</a>. The
 <a href="https://huggingface.co/datasets/Finnish-NLP/hellaswag-fi-google-translate">dataset</a> was
@@ -2779,7 +2779,7 @@ Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39;, &#39;b&#39;, &#39;
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-fi
 </code></pre></div>
-<h3 id="unofficial-goldenswag-fi">Unofficial: GoldenSwag-fi</h3>
+<h3 id="unofficial-goldenswag-fi">Unofficial: GoldenSwag-fi<a class="headerlink" href="#unofficial-goldenswag-fi" title="Permanent link">&para;</a></h3>
 <p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
 dataset</a>, featuring both video descriptions from
 ActivityNet as well as how-to articles from WikiHow. The machine translated version was
@@ -2840,7 +2840,7 @@ Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39;, &#39;b&#39;, &#39;
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-fi
 </code></pre></div>
-<h3 id="unofficial-winogrande-fi">Unofficial: Winogrande-fi</h3>
+<h3 id="unofficial-winogrande-fi">Unofficial: Winogrande-fi<a class="headerlink" href="#unofficial-winogrande-fi" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
 and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
 dataset</a>.</p>
@@ -2893,8 +2893,8 @@ Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39; tai &#39;b&#39;, ä
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-fi
 </code></pre></div>
-<h2 id="summarisation">Summarisation</h2>
-<h3 id="xlsum-fi">XLSum-fi</h3>
+<h2 id="summarisation">Summarisation<a class="headerlink" href="#summarisation" title="Permanent link">&para;</a></h2>
+<h3 id="xlsum-fi">XLSum-fi<a class="headerlink" href="#xlsum-fi" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translation of the XL-Sum dataset, which was published in
 <a href="https://aclanthology.org/2021.findings-acl.413/">this paper</a>.
 <a href="https://huggingface.co/datasets/TurkuNLP">TurkuNLP</a> has translated the dataset to
@@ -2944,8 +2944,8 @@ Kirjoita tiivistelmä yllä olevasta artikkelista.
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xlsum-fi
 </code></pre></div>
-<h2 id="european-values">European Values</h2>
-<h3 id="valeu-fi">ValEU-fi</h3>
+<h2 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h2>
+<h3 id="valeu-fi">ValEU-fi<a class="headerlink" href="#valeu-fi" title="Permanent link">&para;</a></h3>
 <p>This dataset is the official Finnish version of questions from the <a href="https://europeanvaluesstudy.eu/">European values
 study</a>. The dataset contains multiple-choice
 questions regarding people's values and beliefs across a variety of topics, such as
@@ -3061,7 +3061,7 @@ Vastaa yllä olevaan kysymykseen käyttämällä &#39;a&#39;, &#39;b&#39;, &#39;
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

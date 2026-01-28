@@ -2147,12 +2147,12 @@
   
 
 
-<h1 id="faroese">🇫🇴 Faroese</h1>
+<h1 id="faroese">🇫🇴 Faroese<a class="headerlink" href="#faroese" title="Permanent link">&para;</a></h1>
 <p>This is an overview of all the datasets used in the Faroese part of EuroEval. The
 datasets are grouped by their task - see the <a href="/tasks">task overview</a> for more
 information about what these constitute.</p>
-<h2 id="sentiment-classification">Sentiment Classification</h2>
-<h3 id="fosent">FoSent</h3>
+<h2 id="sentiment-classification">Sentiment Classification<a class="headerlink" href="#sentiment-classification" title="Permanent link">&para;</a></h2>
+<h3 id="fosent">FoSent<a class="headerlink" href="#fosent" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.lrec-main.690/">this paper</a>
 and is based on 170 news articles from the Faroese news sites
 <a href="https://portal.fo">Portalurin</a> and <a href="https://dimma.fo">Dimmalætting</a>. The sentiment
@@ -2208,8 +2208,8 @@ Flokka lyndið í tekstinum. Svara við &#39;positivt&#39;, &#39;neutralt&#39; e
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>fosent
 </code></pre></div>
-<h2 id="named-entity-recognition">Named Entity Recognition</h2>
-<h3 id="fone">FoNE</h3>
+<h2 id="named-entity-recognition">Named Entity Recognition<a class="headerlink" href="#named-entity-recognition" title="Permanent link">&para;</a></h2>
+<h3 id="fone">FoNE<a class="headerlink" href="#fone" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.74/">this paper</a>
 and is based on news articles from <a href="http://www.sosialurin.fo/">Sosialurin</a>. The named
 entities were automatically tagged, but verified manually. They use a superset of the
@@ -2269,7 +2269,7 @@ Greinið nevndu einingarnar í setningunni. Þú ættir að skila þessu sem JSO
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>fone
 </code></pre></div>
-<h3 id="unofficial-wikiann-fo">Unofficial: WikiANN-fo</h3>
+<h3 id="unofficial-wikiann-fo">Unofficial: WikiANN-fo<a class="headerlink" href="#unofficial-wikiann-fo" title="Permanent link">&para;</a></h3>
 <p>This dataset was part of the WikiANN dataset (also known as PAN-X), published in <a href="https://aclanthology.org/P17-1178/">this
 paper</a>. It is based on Wikipedia articles, and the
 labels have been automatically annotated using knowledge base mining. There are no
@@ -2327,8 +2327,8 @@ Greinið nevndu einingarnar í setningunni. Þú ættir að skila þessu sem JSO
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>wikiann-fo
 </code></pre></div>
-<h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
-<h3 id="scala-fo">ScaLA-fo</h3>
+<h2 id="linguistic-acceptability">Linguistic Acceptability<a class="headerlink" href="#linguistic-acceptability" title="Permanent link">&para;</a></h2>
+<h3 id="scala-fo">ScaLA-fo<a class="headerlink" href="#scala-fo" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>
 and was automatically created from the <a href="https://github.com/UniversalDependencies/UD_Faroese-FarPaHC">Faroese Universal Dependencies
 treebank</a> by assuming that
@@ -2385,8 +2385,8 @@ Greinið hvort setningurin er mállæruliga rættur ella ikki. Svarið skal vera
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-fo
 </code></pre></div>
-<h2 id="reading-comprehension">Reading Comprehension</h2>
-<h3 id="foqa">FoQA</h3>
+<h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
+<h3 id="foqa">FoQA<a class="headerlink" href="#foqa" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2502.07642">this paper</a>
 and is based on the Faroese Wikipedia. The questions and answers were automatically
 generated using GPT-4-turbo, which were verified by a native speaker, and some of them
@@ -2448,7 +2448,7 @@ Spurningur: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>foqa
 </code></pre></div>
-<h3 id="unofficial-multiwikiqa-fo">Unofficial: MultiWikiQA-fo</h3>
+<h3 id="unofficial-multiwikiqa-fo">Unofficial: MultiWikiQA-fo<a class="headerlink" href="#unofficial-multiwikiqa-fo" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
 languages.</p>
@@ -2566,7 +2566,7 @@ Spurningur: {question}
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

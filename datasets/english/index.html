@@ -2459,12 +2459,12 @@
   
 
 
-<h1 id="english">🇬🇧 English</h1>
+<h1 id="english">🇬🇧 English<a class="headerlink" href="#english" title="Permanent link">&para;</a></h1>
 <p>This is an overview of all the datasets used in the English part of EuroEval. The
 datasets are grouped by their task - see the <a href="/tasks">task overview</a> for more
 information about what these constitute.</p>
-<h2 id="sentiment-classification">Sentiment Classification</h2>
-<h3 id="sst-5">SST-5</h3>
+<h2 id="sentiment-classification">Sentiment Classification<a class="headerlink" href="#sentiment-classification" title="Permanent link">&para;</a></h2>
+<h3 id="sst-5">SST-5<a class="headerlink" href="#sst-5" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/D13-1170/">this paper</a> and is
 based on movie reviews from rottentomatoes.com, labelled by crowdsourced workers on
 Amazon Mechanical Turk.</p>
@@ -2527,8 +2527,8 @@ Classify the sentiment in the text. Answer with &#39;positive&#39;, &#39;neutral
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>sst5
 </code></pre></div>
-<h2 id="named-entity-recognition">Named Entity Recognition</h2>
-<h3 id="conll-en">CoNLL-en</h3>
+<h2 id="named-entity-recognition">Named Entity Recognition<a class="headerlink" href="#named-entity-recognition" title="Permanent link">&para;</a></h2>
+<h3 id="conll-en">CoNLL-en<a class="headerlink" href="#conll-en" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/W03-0419/">this paper</a> and was
 part of the CoNNL-2003 shared task. The data comes from the <a href="http://www.reuters.com/researchandstandards">Reuters
 Corpus</a> and consists of news articles
@@ -2588,8 +2588,8 @@ Identify the named entities in the sentence. You should output this as a JSON di
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>conll-en
 </code></pre></div>
-<h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
-<h3 id="scala-en">ScaLA-En</h3>
+<h2 id="linguistic-acceptability">Linguistic Acceptability<a class="headerlink" href="#linguistic-acceptability" title="Permanent link">&para;</a></h2>
+<h3 id="scala-en">ScaLA-En<a class="headerlink" href="#scala-en" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>
 and was automatically created from the <a href="https://github.com/UniversalDependencies/UD_English-GUM/">English Universal Dependencies
 treebank</a> by assuming that the
@@ -2646,8 +2646,8 @@ Determine whether the sentence is grammatically correct or not. Reply with &#39;
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-en
 </code></pre></div>
-<h2 id="reading-comprehension">Reading Comprehension</h2>
-<h3 id="squad">SQuAD</h3>
+<h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
+<h3 id="squad">SQuAD<a class="headerlink" href="#squad" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/D16-1264/">this paper</a>, which is
 based on English Wikipedia articles and the questions and answers are written by
 crowdworkers.</p>
@@ -2711,7 +2711,7 @@ Question: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>squad
 </code></pre></div>
-<h3 id="unofficial-xquad-en">Unofficial: XQuAD-en</h3>
+<h3 id="unofficial-xquad-en">Unofficial: XQuAD-en<a class="headerlink" href="#unofficial-xquad-en" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2020.acl-main.421/">this paper</a>
 and contains 1190 question-answer pairs from <a href="https://rajpurkar.github.io/SQuAD-explorer/">SQuAD
 v1.1</a> translated into ten languages by
@@ -2773,7 +2773,7 @@ Question: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xquad-en
 </code></pre></div>
-<h3 id="unofficial-belebele-en">Unofficial: BeleBele-en</h3>
+<h3 id="unofficial-belebele-en">Unofficial: BeleBele-en<a class="headerlink" href="#unofficial-belebele-en" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
 and features reading comprehension questions across 122 languages. The dataset was
 created by professional translators who translated 900 multiple-choice questions from
@@ -2823,7 +2823,7 @@ Question: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-en
 </code></pre></div>
-<h3 id="unofficial-multiwikiqa-en">Unofficial: MultiWikiQA-en</h3>
+<h3 id="unofficial-multiwikiqa-en">Unofficial: MultiWikiQA-en<a class="headerlink" href="#unofficial-multiwikiqa-en" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
 languages.</p>
@@ -2884,8 +2884,8 @@ Question: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-en
 </code></pre></div>
-<h2 id="knowledge">Knowledge</h2>
-<h3 id="life-in-the-uk">Life in the UK</h3>
+<h2 id="knowledge">Knowledge<a class="headerlink" href="#knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="life-in-the-uk">Life in the UK<a class="headerlink" href="#life-in-the-uk" title="Permanent link">&para;</a></h3>
 <p>This dataset was published
 <a href="https://huggingface.co/datasets/oliverkinch/life-in-the-uk-multiple-choice">here</a> was
 scraped from <a href="https://lifeintheuktestweb.co.uk/test-1/">lifeintheuktestweb.co.uk</a> and
@@ -2946,7 +2946,7 @@ Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39;
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>life-in-the-uk
 </code></pre></div>
-<h3 id="unofficial-mmlu">Unofficial: MMLU</h3>
+<h3 id="unofficial-mmlu">Unofficial: MMLU<a class="headerlink" href="#unofficial-mmlu" title="Permanent link">&para;</a></h3>
 <p>This dataset was published <a href="https://doi.org/10.48550/arXiv.2009.03300">in this paper</a>
 and features questions within 57 different topics, such as elementary mathematics, US
 history and law.</p>
@@ -3005,7 +3005,7 @@ Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39;
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu
 </code></pre></div>
-<h3 id="unofficial-arc">Unofficial: ARC</h3>
+<h3 id="unofficial-arc">Unofficial: ARC<a class="headerlink" href="#unofficial-arc" title="Permanent link">&para;</a></h3>
 <p>This dataset was published <a href="https://doi.org/10.48550/arXiv.1803.05457">in this paper</a>
 and features US grade-school science questions.</p>
 <p>The original full dataset consists of 1,110 / 297 / 1,170 samples for training,
@@ -3062,8 +3062,8 @@ Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39;
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc
 </code></pre></div>
-<h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
-<h3 id="hellaswag">HellaSwag</h3>
+<h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
+<h3 id="hellaswag">HellaSwag<a class="headerlink" href="#hellaswag" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/P19-1472/">this paper</a> and is
 based on both video descriptions from ActivityNet as well as how-to articles from
 WikiHow.</p>
@@ -3119,7 +3119,7 @@ Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39;
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag
 </code></pre></div>
-<h3 id="unofficial-winogrande">Unofficial: Winogrande</h3>
+<h3 id="unofficial-winogrande">Unofficial: Winogrande<a class="headerlink" href="#unofficial-winogrande" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.1145/3474381">this paper</a>. The
 original full dataset consists of 47 / 1,210 samples for training and testing, and we
 use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -3170,8 +3170,8 @@ Answer the above question by replying with &#39;a&#39; or &#39;b&#39;, and nothi
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande
 </code></pre></div>
-<h2 id="summarisation">Summarisation</h2>
-<h3 id="cnndailymail">CNN/DailyMail</h3>
+<h2 id="summarisation">Summarisation<a class="headerlink" href="#summarisation" title="Permanent link">&para;</a></h2>
+<h3 id="cnndailymail">CNN/DailyMail<a class="headerlink" href="#cnndailymail" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.1506.03340">this paper</a>
 and is based on news articles from CNN and DailyMail, with the summaries derived from
 bullet points written by the authors of the articles.</p>
@@ -3219,8 +3219,8 @@ Write a summary of the above article.
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>cnn-dailymail
 </code></pre></div>
-<h2 id="european-values">European Values</h2>
-<h3 id="valeu-en">ValEU-en</h3>
+<h2 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h2>
+<h3 id="valeu-en">ValEU-en<a class="headerlink" href="#valeu-en" title="Permanent link">&para;</a></h3>
 <p>This dataset is the official English version of questions from the <a href="https://europeanvaluesstudy.eu/">European values
 study</a>. The dataset contains multiple-choice
 questions regarding people's values and beliefs across a variety of topics, such as
@@ -3336,7 +3336,7 @@ Answer the above question by replying with &#39;a&#39;, &#39;b&#39;, &#39;c&#39;
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

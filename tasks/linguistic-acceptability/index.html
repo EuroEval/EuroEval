@@ -1385,14 +1385,14 @@
   
 
 
-<h1 id="linguistic-acceptability">Linguistic Acceptability</h1>
-<h2 id="overview">📚 Overview</h2>
+<h1 id="linguistic-acceptability">Linguistic Acceptability<a class="headerlink" href="#linguistic-acceptability" title="Permanent link">&para;</a></h1>
+<h2 id="overview">📚 Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>Linguistic acceptability is a task of determining whether a given text is grammatically
 correct or not. It thus tests whether the model is able to understand the detailed
 syntax of a given document, and not just understand the overall gist of it. It roughly
 corresponds to when a native speaker would say "this sentence sounds weird".</p>
 <p>When evaluating generative models, we allow the model to generate 5 tokens on this task.</p>
-<h2 id="metrics">📊 Metrics</h2>
+<h2 id="metrics">📊 Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h2>
 <p>The primary metric we use when evaluating the performance of a model on the linguistic
 acceptability task, we use <a href="https://en.wikipedia.org/wiki/Matthews_correlation_coefficient">Matthews correlation
 coefficient</a> (MCC),
@@ -1401,7 +1401,7 @@ benefit of MCC is that it is balanced even if the classes are imbalanced.</p>
 <p>We also report the macro-average <a href="https://en.wikipedia.org/wiki/F1_score">F1-score</a>,
 being the average of the F1-score for each class, thus again weighing each class
 equally.</p>
-<h2 id="how-to-run">🛠️ How to run</h2>
+<h2 id="how-to-run">🛠️ How to run<a class="headerlink" href="#how-to-run" title="Permanent link">&para;</a></h2>
 <p>In the command line interface of the <a href="/python-package.md">EuroEval Python package</a>, you
 can benchmark your favorite model on the linguistic acceptability task like so:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--task<span class="w"> </span>linguistic-acceptability
@@ -1463,7 +1463,7 @@ can benchmark your favorite model on the linguistic acceptability task like so:<
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

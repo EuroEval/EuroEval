@@ -2537,12 +2537,12 @@
   
 
 
-<h1 id="dutch">🇳🇱 Dutch</h1>
+<h1 id="dutch">🇳🇱 Dutch<a class="headerlink" href="#dutch" title="Permanent link">&para;</a></h1>
 <p>This is an overview of all the datasets used in the Dutch part of EuroEval. The
 datasets are grouped by their task - see the <a href="/tasks">task overview</a> for more
 information about what these constitute.</p>
-<h2 id="sentiment-classification">Sentiment Classification</h2>
-<h3 id="dbrd">DBRD</h3>
+<h2 id="sentiment-classification">Sentiment Classification<a class="headerlink" href="#sentiment-classification" title="Permanent link">&para;</a></h2>
+<h3 id="dbrd">DBRD<a class="headerlink" href="#dbrd" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.1910.00896">this paper</a>
 and features Dutch book reviews from <a href="https://www.hebban.nl">Hebban.nl</a>, annotated with
 sentiment labels, written by the users of the website.</p>
@@ -2604,8 +2604,8 @@ Classificeer het sentiment in de tweet. Antwoord met &#39;positief&#39;, &#39;ne
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>dbrd
 </code></pre></div>
-<h2 id="named-entity-recognition">Named Entity Recognition</h2>
-<h3 id="conll-nl">CoNLL-nl</h3>
+<h2 id="named-entity-recognition">Named Entity Recognition<a class="headerlink" href="#named-entity-recognition" title="Permanent link">&para;</a></h2>
+<h3 id="conll-nl">CoNLL-nl<a class="headerlink" href="#conll-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/W02-2024/">this paper</a> and
 consists of named entity recognition annotations of the Belgian newspaper "De Morgen" of
 2000.</p>
@@ -2672,8 +2672,8 @@ Identificeer de genoemde entiteiten in de zin. Je moet dit uitvoeren als een JSO
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>conll-nl
 </code></pre></div>
-<h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
-<h3 id="scala-nl">ScaLA-nl</h3>
+<h2 id="linguistic-acceptability">Linguistic Acceptability<a class="headerlink" href="#linguistic-acceptability" title="Permanent link">&para;</a></h2>
+<h3 id="scala-nl">ScaLA-nl<a class="headerlink" href="#scala-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>
 and was automatically created from the <a href="https://github.com/UniversalDependencies/UD_Dutch-Alpino/">Dutch Universal Dependencies
 treebank</a> by assuming that
@@ -2738,7 +2738,7 @@ Bepaal of de zin grammaticaal correct is of niet. Antwoord met &#39;ja&#39; als 
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-nl
 </code></pre></div>
-<h3 id="unofficial-dutch-cola">Unofficial: Dutch CoLA</h3>
+<h3 id="unofficial-dutch-cola">Unofficial: Dutch CoLA<a class="headerlink" href="#unofficial-dutch-cola" title="Permanent link">&para;</a></h3>
 <p>This dataset is published <a href="https://huggingface.co/datasets/GroNLP/dutch-cola">here</a> and
 is a manually annotated linguistic acceptability dataset, with documents coming from
 descriptions of Dutch syntax.</p>
@@ -2763,8 +2763,8 @@ new splits. All new splits are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
 </code></pre></div>
-<h2 id="reading-comprehension">Reading Comprehension</h2>
-<h3 id="squad-nl">SQuAD-nl</h3>
+<h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
+<h3 id="squad-nl">SQuAD-nl<a class="headerlink" href="#squad-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset is published
 <a href="https://huggingface.co/datasets/GroNLP/squad-nl-v2.0">here</a> and is a machine translated
 dataset of the English <a href="https://aclanthology.org/D16-1264/">SQuAD</a> and
@@ -2834,7 +2834,7 @@ Vraag: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>squad-nl
 </code></pre></div>
-<h3 id="unofficial-belebele-nl">Unofficial: BeleBele-nl</h3>
+<h3 id="unofficial-belebele-nl">Unofficial: BeleBele-nl<a class="headerlink" href="#unofficial-belebele-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
 and features multiple-choice reading comprehension questions across 122 languages.</p>
 <p>The original dataset contains 900 unique multiple-choice reading comprehension passages
@@ -2894,7 +2894,7 @@ Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-nl
 </code></pre></div>
-<h3 id="unofficial-multiwikiqa-nl">Unofficial: MultiWikiQA-nl</h3>
+<h3 id="unofficial-multiwikiqa-nl">Unofficial: MultiWikiQA-nl<a class="headerlink" href="#unofficial-multiwikiqa-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
 languages.</p>
@@ -2959,8 +2959,8 @@ Vraag: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-nl
 </code></pre></div>
-<h2 id="knowledge">Knowledge</h2>
-<h3 id="mmlu-nl">MMLU-nl</h3>
+<h2 id="knowledge">Knowledge<a class="headerlink" href="#knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="mmlu-nl">MMLU-nl<a class="headerlink" href="#mmlu-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
 dataset</a> and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
@@ -3025,7 +3025,7 @@ Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-nl
 </code></pre></div>
-<h3 id="unofficial-arc-nl">Unofficial: ARC-nl</h3>
+<h3 id="unofficial-arc-nl">Unofficial: ARC-nl<a class="headerlink" href="#unofficial-arc-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translated version of the English <a href="https://doi.org/10.48550/arXiv.1803.05457">ARC
 dataset</a> and features US grade-school science
 questions. The translation to Dutch was done by the University of Oregon as part of
@@ -3088,8 +3088,8 @@ Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-nl
 </code></pre></div>
-<h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
-<h3 id="hellaswag-nl">HellaSwag-nl</h3>
+<h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
+<h3 id="hellaswag-nl">HellaSwag-nl<a class="headerlink" href="#hellaswag-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
 dataset</a>. The original dataset was based on both
 video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
@@ -3151,7 +3151,7 @@ Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-nl
 </code></pre></div>
-<h3 id="unofficial-copa-nl">Unofficial: COPA-NL</h3>
+<h3 id="unofficial-copa-nl">Unofficial: COPA-NL<a class="headerlink" href="#unofficial-copa-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset was created by Wietse de Vries <em>et al.</em> for the
 <a href="https://dumbench.nl">Dutch Model Benchmark (DUMB)</a> and introduced in the paper
 <a href="https://aclanthology.org/2023.emnlp-main.447/">DUMB: A Benchmark for Smart Evaluation of Dutch Models</a>.
@@ -3199,7 +3199,7 @@ Antwoord: {label}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>copa-nl
 </code></pre></div>
-<h3 id="unofficial-goldenswag-nl">Unofficial: GoldenSwag-nl</h3>
+<h3 id="unofficial-goldenswag-nl">Unofficial: GoldenSwag-nl<a class="headerlink" href="#unofficial-goldenswag-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
 dataset</a>, featuring both video descriptions from
 ActivityNet as well as how-to articles from WikiHow. The machine translated version was
@@ -3264,7 +3264,7 @@ Beantwoord de bovenstaande vraag met &#39;a&#39;, &#39;b&#39;, &#39;c&#39; of &#
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-nl
 </code></pre></div>
-<h3 id="unofficial-winogrande-nl">Unofficial: Winogrande-nl</h3>
+<h3 id="unofficial-winogrande-nl">Unofficial: Winogrande-nl<a class="headerlink" href="#unofficial-winogrande-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
 and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
 dataset</a>.</p>
@@ -3321,8 +3321,8 @@ Beantwoord de bovenstaande vraag met &#39;a&#39; of &#39;b&#39;, en niets anders
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-nl
 </code></pre></div>
-<h2 id="summarisation">Summarisation</h2>
-<h3 id="wikilingua-nl">WikiLingua-nl</h3>
+<h2 id="summarisation">Summarisation<a class="headerlink" href="#summarisation" title="Permanent link">&para;</a></h2>
+<h3 id="wikilingua-nl">WikiLingua-nl<a class="headerlink" href="#wikilingua-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset was published <a href="https://aclanthology.org/2020.findings-emnlp.360/">here</a> and
 consists of Dutch WikiHow articles and their summaries, where a summary consists of the
 first sentence of each "how-to" step in the article (and this first sentence is not
@@ -3375,8 +3375,8 @@ Schrijf een samenvatting van het bovenstaande artikel.
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>wiki-lingua-nl
 </code></pre></div>
-<h2 id="simplification">Simplification</h2>
-<h3 id="duidelijke-taal">Duidelijke Taal</h3>
+<h2 id="simplification">Simplification<a class="headerlink" href="#simplification" title="Permanent link">&para;</a></h2>
+<h3 id="duidelijke-taal">Duidelijke Taal<a class="headerlink" href="#duidelijke-taal" title="Permanent link">&para;</a></h3>
 <p>The <a href="http://hdl.handle.net/10032/tm-a2-y8">Duidelijke Taal dataset</a> was created by
 Instituut voor de Nederlandse Taal and published in <em>Human Evaluation of Automated Text
 Simplification through Crowdsourcing</em> <a href="https://scholar.google.com/scholar?oi=bibs&amp;cluster=2894378448414629586&amp;btnI=1&amp;hl=en">(Vandeghinste et al.,
@@ -3429,8 +3429,8 @@ Versimpel het bovenstaande document.
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>duidelijke-taal
 </code></pre></div>
-<h2 id="european-values">European Values</h2>
-<h3 id="valeu-nl">ValEU-nl</h3>
+<h2 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h2>
+<h3 id="valeu-nl">ValEU-nl<a class="headerlink" href="#valeu-nl" title="Permanent link">&para;</a></h3>
 <p>This dataset is the official Dutch version of questions from the <a href="https://europeanvaluesstudy.eu/">European values
 study</a>. The dataset contains multiple-choice
 questions regarding people's values and beliefs across a variety of topics, such as
@@ -3546,7 +3546,7 @@ of &#39;k&#39;, en niets anders.
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

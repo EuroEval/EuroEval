@@ -2503,12 +2503,12 @@
   
 
 
-<h1 id="swedish">🇸🇪 Swedish</h1>
+<h1 id="swedish">🇸🇪 Swedish<a class="headerlink" href="#swedish" title="Permanent link">&para;</a></h1>
 <p>This is an overview of all the datasets used in the Swedish part of EuroEval. The
 datasets are grouped by their task - see the <a href="/tasks">task overview</a> for more
 information about what these constitute.</p>
-<h2 id="sentiment-classification">Sentiment Classification</h2>
-<h3 id="swerec">SweReC</h3>
+<h2 id="sentiment-classification">Sentiment Classification<a class="headerlink" href="#sentiment-classification" title="Permanent link">&para;</a></h2>
+<h3 id="swerec">SweReC<a class="headerlink" href="#swerec" title="Permanent link">&para;</a></h3>
 <p>This dataset was published <a href="https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1105494&amp;dswid=3392">in this B.Sc.
 thesis</a> and
 is a manually annotated dataset of Swedish reviews from both Trustpilot and Reco.se.</p>
@@ -2560,8 +2560,8 @@ Klassificera sentimentet i recensionen. Svara med &#39;positiv&#39;, &#39;neutra
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>swerec
 </code></pre></div>
-<h2 id="named-entity-recognition">Named Entity Recognition</h2>
-<h3 id="suc-30">SUC 3.0</h3>
+<h2 id="named-entity-recognition">Named Entity Recognition<a class="headerlink" href="#named-entity-recognition" title="Permanent link">&para;</a></h2>
+<h3 id="suc-30">SUC 3.0<a class="headerlink" href="#suc-30" title="Permanent link">&para;</a></h3>
 <p>This dataset, also known as the Stockholm-Umeå Corpus 3.0, was published
 <a href="https://doi.org/10.23695%2Fwy84-ar30">here</a> and is a manually NER-annotated dataset,
 based on Swedish texts from the 1990s. The dataset does not follow the CONLL format, so
@@ -2630,8 +2630,8 @@ Identifiera de namngivna enheterna i meningen. Du ska outputta detta som en JSON
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>suc3
 </code></pre></div>
-<h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
-<h3 id="scala-sv">ScaLA-sv</h3>
+<h2 id="linguistic-acceptability">Linguistic Acceptability<a class="headerlink" href="#linguistic-acceptability" title="Permanent link">&para;</a></h2>
+<h3 id="scala-sv">ScaLA-sv<a class="headerlink" href="#scala-sv" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>
 and was automatically created from the <a href="https://github.com/UniversalDependencies/UD_Swedish-Talbanken">Swedish Universal Dependencies
 treebank</a> by assuming
@@ -2688,8 +2688,8 @@ Bestäm om meningen är grammatiskt korrekt eller inte. Svara med &#39;ja&#39; o
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-sv
 </code></pre></div>
-<h2 id="reading-comprehension">Reading Comprehension</h2>
-<h3 id="multiwikiqa-sv">MultiWikiQA-sv</h3>
+<h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
+<h3 id="multiwikiqa-sv">MultiWikiQA-sv<a class="headerlink" href="#multiwikiqa-sv" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
 languages.</p>
@@ -2750,7 +2750,7 @@ Fråga: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-sv
 </code></pre></div>
-<h3 id="unofficial-scandiqa-sv">Unofficial: ScandiQA-sv</h3>
+<h3 id="unofficial-scandiqa-sv">Unofficial: ScandiQA-sv<a class="headerlink" href="#unofficial-scandiqa-sv" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>
 and was automatically created from the Swedish part of the <a href="https://aclanthology.org/2021.tacl-1.82/">MKQA
 dataset</a>. The MKQA dataset is based on the
@@ -2821,7 +2821,7 @@ Fråga: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scandiqa-sv
 </code></pre></div>
-<h3 id="unofficial-belebele-sv">Unofficial: BeleBele-sv</h3>
+<h3 id="unofficial-belebele-sv">Unofficial: BeleBele-sv<a class="headerlink" href="#unofficial-belebele-sv" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
 and features multiple-choice reading comprehension questions across 122 languages.</p>
 <p>The original dataset contains 900 unique multiple-choice reading comprehension passages
@@ -2877,8 +2877,8 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-sv
 </code></pre></div>
-<h2 id="knowledge">Knowledge</h2>
-<h3 id="mmlu-sv">MMLU-sv</h3>
+<h2 id="knowledge">Knowledge<a class="headerlink" href="#knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="mmlu-sv">MMLU-sv<a class="headerlink" href="#mmlu-sv" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
 dataset</a> and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
@@ -2929,7 +2929,7 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-sv
 </code></pre></div>
-<h3 id="unofficial-arc-sv">Unofficial: ARC-sv</h3>
+<h3 id="unofficial-arc-sv">Unofficial: ARC-sv<a class="headerlink" href="#unofficial-arc-sv" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translated version of the English <a href="https://doi.org/10.48550/arXiv.1803.05457">ARC
 dataset</a> and features US grade-school science
 questions. The translation to Swedish was done by the University of Oregon as part of
@@ -2988,7 +2988,7 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-sv
 </code></pre></div>
-<h3 id="unofficial-skolprov">Unofficial: Skolprov</h3>
+<h3 id="unofficial-skolprov">Unofficial: Skolprov<a class="headerlink" href="#unofficial-skolprov" title="Permanent link">&para;</a></h3>
 <p>This dataset contains data from six Swedish knowledge tests and was published at <a href="https://huggingface.co/datasets/Ekgren/swedish_skolprov">this
 HuggingFace repository</a>. The
 dataset features multiple-choice questions from official Swedish examinations including
@@ -3048,7 +3048,7 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>skolprov
 </code></pre></div>
-<h3 id="unofficial-swedishfacts">Unofficial: SwedishFacts</h3>
+<h3 id="unofficial-swedishfacts">Unofficial: SwedishFacts<a class="headerlink" href="#unofficial-swedishfacts" title="Permanent link">&para;</a></h3>
 <p>This is a benchmark for factual knowledge about Sweden.
 The questions are based on topics related to the hosts of the Swedish radio program
 <a href="https://www.sverigesradio.se/sommar-i-p1">Sommar i P1</a> as well as Swedish sporting
@@ -3108,8 +3108,8 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>swedish-facts
 </code></pre></div>
-<h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
-<h3 id="hellaswag-sv">HellaSwag-sv</h3>
+<h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
+<h3 id="hellaswag-sv">HellaSwag-sv<a class="headerlink" href="#hellaswag-sv" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
 dataset</a>. The original dataset was based on both
 video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
@@ -3167,7 +3167,7 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-sv
 </code></pre></div>
-<h3 id="unofficial-goldenswag-sv">Unofficial: GoldenSwag-sv</h3>
+<h3 id="unofficial-goldenswag-sv">Unofficial: GoldenSwag-sv<a class="headerlink" href="#unofficial-goldenswag-sv" title="Permanent link">&para;</a></h3>
 <p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
 dataset</a>, featuring both video descriptions from
 ActivityNet as well as how-to articles from WikiHow. The machine translated version was
@@ -3228,7 +3228,7 @@ Besvara följande fråga med &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eller &#39;d&
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-sv
 </code></pre></div>
-<h3 id="unofficial-winogrande-sv">Unofficial: Winogrande-sv</h3>
+<h3 id="unofficial-winogrande-sv">Unofficial: Winogrande-sv<a class="headerlink" href="#unofficial-winogrande-sv" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
 and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
 dataset</a>.</p>
@@ -3281,8 +3281,8 @@ Besvara följande fråga med &#39;a&#39; eller &#39;b&#39;, och inget annat.
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-sv
 </code></pre></div>
-<h2 id="summarisation">Summarisation</h2>
-<h3 id="swedn">SweDN</h3>
+<h2 id="summarisation">Summarisation<a class="headerlink" href="#summarisation" title="Permanent link">&para;</a></h2>
+<h3 id="swedn">SweDN<a class="headerlink" href="#swedn" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.emnlp-main.506/">this
 paper</a> and are based on news articles
 from the Swedish newspaper Dagens Nyheter, with the summaries being the first paragraph
@@ -3331,7 +3331,7 @@ Skriv en sammanfattning av artikeln ovan.
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>swedn
 </code></pre></div>
-<h3 id="unofficial-schibsted-sv">Unofficial: Schibsted-sv</h3>
+<h3 id="unofficial-schibsted-sv">Unofficial: Schibsted-sv<a class="headerlink" href="#unofficial-schibsted-sv" title="Permanent link">&para;</a></h3>
 <p>This dataset was published
 <a href="https://huggingface.co/datasets/Schibsted/schibsted-article-summaries">here</a> and
 features summaries of news articles from Schibsted Medias Swedish newsroom, from
@@ -3378,8 +3378,8 @@ Skriv en sammanfattning av artikeln ovan.
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>schibsted-sv
 </code></pre></div>
-<h2 id="european-values">European Values</h2>
-<h3 id="valeu-sv">ValEU-sv</h3>
+<h2 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h2>
+<h3 id="valeu-sv">ValEU-sv<a class="headerlink" href="#valeu-sv" title="Permanent link">&para;</a></h3>
 <p>This dataset is the official Swedish version of questions from the <a href="https://europeanvaluesstudy.eu/">European values
 study</a>. The dataset contains multiple-choice
 questions regarding people's values and beliefs across a variety of topics, such as
@@ -3495,7 +3495,7 @@ och inget annat.
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

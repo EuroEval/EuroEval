@@ -1385,8 +1385,8 @@
   
 
 
-<h1 id="european-values">European Values</h1>
-<h2 id="overview">📚 Overview</h2>
+<h1 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h1>
+<h2 id="overview">📚 Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>This task is an <em>orthogonal task</em>, meaning that it does not contribute to the overall rank
 score of the models on the leaderboards, but that it instead provides additional
 insights into model behavior.</p>
@@ -1395,7 +1395,7 @@ Concretely, these are multiple-choice questions taken from the official <a href=
 Study</a>, which is a European cross-national survey
 research program that explores people's values and beliefs, which has been going on
 since the 1980s.</p>
-<h2 id="metrics">📊 Metrics</h2>
+<h2 id="metrics">📊 Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h2>
 <p>A kernel density estimate (KDE) is fitted to the survey responses from EU countries in
 the most recent "wave" of the European Values Study, from 2017-2022. The
 log-probabilities of the human responses under this distribution are computed, and based
@@ -1403,7 +1403,7 @@ on these a parametrised sigmoid transform is fitted to map log-probabilities to 
 between 0 and 1, where 1 corresponds to the highest density of human responses.</p>
 <p>The model responses are then evaluated using the same KDE and sigmoid transform,
 resulting in a score between 0 and 1.</p>
-<h2 id="how-to-run">🛠️ How to run</h2>
+<h2 id="how-to-run">🛠️ How to run<a class="headerlink" href="#how-to-run" title="Permanent link">&para;</a></h2>
 <p>In the command line interface of the <a href="/python-package.md">EuroEval Python package</a>, you
 can benchmark your favorite model on the European values task like so:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--task<span class="w"> </span>european-values
@@ -1465,7 +1465,7 @@ can benchmark your favorite model on the European values task like so:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

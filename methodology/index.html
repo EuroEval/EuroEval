@@ -1073,7 +1073,7 @@
   
 
 
-<h1 id="evaluation-methodology">Evaluation Methodology</h1>
+<h1 id="evaluation-methodology">Evaluation Methodology<a class="headerlink" href="#evaluation-methodology" title="Permanent link">&para;</a></h1>
 <p>The evaluation methodology is different depending on the architecture of the model. For
 encoder models, we use a finetuning approach, where we finetune the model on the
 training data of the task, and evaluate it on the test data. For decoder models, we use
@@ -1082,7 +1082,7 @@ without any finetuning, but where the few-shot examples come from the training d
 the task. It <a href="https://doi.org/10.48550/arXiv.2309.05858">has been shown</a> that the few-shot
 approach corresponds to finetuning in the sense of being equivalent to gradient updates
 on the training data, making the two evaluation methodologies comparable.</p>
-<h2 id="robust-evaluation">Robust Evaluation</h2>
+<h2 id="robust-evaluation">Robust Evaluation<a class="headerlink" href="#robust-evaluation" title="Permanent link">&para;</a></h2>
 <p>For each model and dataset, we evaluate the model as described above 10 times, each time
 on a bootstrapped (i.e., sampling with replacement) version of the training and test
 set. The evaluation score is then the mean of these scores, along with a 95% confidence
@@ -1094,7 +1094,7 @@ divided by the square root of the number of samples.</p>
 <p>The bootstrap theorem means that this mean and associated confidence interval will be
 asymptotically correct, giving us a more reliable estimate of the true performance of
 the model, rather than just the performance on a single test set, which can be noisy.</p>
-<h2 id="formulating-nlu-tasks-as-generative-tasks">Formulating NLU Tasks as Generative Tasks</h2>
+<h2 id="formulating-nlu-tasks-as-generative-tasks">Formulating NLU Tasks as Generative Tasks<a class="headerlink" href="#formulating-nlu-tasks-as-generative-tasks" title="Permanent link">&para;</a></h2>
 <p>In this section we describe how we rephrase the NLU tasks as text-to-text tasks, which
 makes it possible to evaluate generative models on the tasks. We set up the prompts
 differently depending on whether the model is instruction tuned or not, as the
@@ -1138,7 +1138,7 @@ JSON format, we employ structured generation using the
 <a href="https://github.com/mlc-ai/xgrammar">XGrammar</a> package, which modifies the logits
 outputted by the model to ensure that the output is always a valid JSON dictionary in
 the aforementioned format.</p>
-<h2 id="score-aggregation">Score Aggregation</h2>
+<h2 id="score-aggregation">Score Aggregation<a class="headerlink" href="#score-aggregation" title="Permanent link">&para;</a></h2>
 <p>From the raw scores of the 10 evaluations per dataset, we need to aggregate
 the model scores into a single score. We want an aggregation method that satisfies the
 following criteria:</p>
@@ -1196,7 +1196,7 @@ of existing models. Concretely, adding new scores will affect the standard devia
 normalising factor (this effect tends to zero as the number of models grows, however),
 and if the model beats all the other models then all the scores will be affected, due to
 the relative nature of the metric.</p>
-<h2 id="papers">Papers</h2>
+<h2 id="papers">Papers<a class="headerlink" href="#papers" title="Permanent link">&para;</a></h2>
 <p>Check out more in-depth descriptions of the methodology in the associated research
 papers:</p>
 <ul>
@@ -1267,7 +1267,7 @@ papers:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>

@@ -1385,8 +1385,8 @@
   
 
 
-<h1 id="summarization">Summarization</h1>
-<h2 id="overview">📚 Overview</h2>
+<h1 id="summarization">Summarization<a class="headerlink" href="#summarization" title="Permanent link">&para;</a></h1>
+<h2 id="overview">📚 Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>Summarization is a task of generating a shorter version of a given text, while
 preserving the main points of the original text. The model receives a long text and has
 to generate a shorter version of it, typically a handful of sentences long. This is
@@ -1394,7 +1394,7 @@ abstractive summarization, meaning that the summary typically do not appear verb
 the original text, but that the model has to generate new text based on the input.</p>
 <p>When evaluating generative models, we allow the model to generate 256 tokens on this
 task.</p>
-<h2 id="metrics">📊 Metrics</h2>
+<h2 id="metrics">📊 Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h2>
 <p>The primary metric used to evaluate the performance of a model on the summarization task
 is the <a href="https://doi.org/10.48550/arXiv.1904.09675">BERTScore</a>, which uses a pretrained
 encoder model to encode each token in both the reference summary and the generated
@@ -1408,7 +1408,7 @@ measures the longest sequence of words that the generated summary and the refere
 summary have in common. This is a more traditional metric for summarization, which is
 why we report it as well, but it correlates less well with human judgments than
 BERTScore.</p>
-<h2 id="how-to-run">🛠️ How to run</h2>
+<h2 id="how-to-run">🛠️ How to run<a class="headerlink" href="#how-to-run" title="Permanent link">&para;</a></h2>
 <p>In the command line interface of the <a href="/python-package.md">EuroEval Python package</a>, you
 can benchmark your favorite model on the summarization task like so:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--task<span class="w"> </span>summarization
@@ -1470,7 +1470,7 @@ can benchmark your favorite model on the summarization task like so:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

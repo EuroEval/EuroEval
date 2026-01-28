@@ -2371,12 +2371,12 @@
   
 
 
-<h1 id="portuguese">🇵🇹 Portuguese</h1>
+<h1 id="portuguese">🇵🇹 Portuguese<a class="headerlink" href="#portuguese" title="Permanent link">&para;</a></h1>
 <p>This is an overview of all the datasets used in the European Portuguese part of
 EuroEval. The datasets are grouped by their task - see the <a href="/tasks">task overview</a> for
 more information about what these constitute.</p>
-<h2 id="sentiment-classification">Sentiment Classification</h2>
-<h3 id="sst2-pt">SST2-PT</h3>
+<h2 id="sentiment-classification">Sentiment Classification<a class="headerlink" href="#sentiment-classification" title="Permanent link">&para;</a></h2>
+<h3 id="sst2-pt">SST2-PT<a class="headerlink" href="#sst2-pt" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2404.05333">this paper</a>
 and is part of the ExtraGLUE dataset. It is created by taking the original SST-2 dataset
 and using machine translation (DeepL) to translate it.</p>
@@ -2425,8 +2425,8 @@ Clasifica o sentimento do documento. Responde apenas com &#39;positivo&#39; ou &
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>sst2-pt
 </code></pre></div>
-<h2 id="named-entity-recognition">Named Entity Recognition</h2>
-<h3 id="harem">HAREM</h3>
+<h2 id="named-entity-recognition">Named Entity Recognition<a class="headerlink" href="#named-entity-recognition" title="Permanent link">&para;</a></h2>
+<h3 id="harem">HAREM<a class="headerlink" href="#harem" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/L06-1027/">this paper</a> and is
 based on the <a href="https://www.linguateca.pt/harem/">Primeiro HAREM</a> evaluation campaign for
 <strong>Portuguese from Portugal</strong>, using the manually annotated <strong>Colecção Dourada</strong>. The
@@ -2514,8 +2514,8 @@ Identifica as entidades mencionadas na frase. Deves devolver um dicionário JSON
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>harem
 </code></pre></div>
-<h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
-<h3 id="scala-pt">ScaLA-pt</h3>
+<h2 id="linguistic-acceptability">Linguistic Acceptability<a class="headerlink" href="#linguistic-acceptability" title="Permanent link">&para;</a></h2>
+<h3 id="scala-pt">ScaLA-pt<a class="headerlink" href="#scala-pt" title="Permanent link">&para;</a></h3>
 <p>This dataset is a Portuguese version of ScaLA, which was originally published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this
 paper</a>, created by corrupting
 grammatically correct sentences from the <a href="https://github.com/UniversalDependencies/UD_Portuguese-Bosque">Universal Dependencies Portuguese-Bosque
@@ -2578,8 +2578,8 @@ these corruptions lead to grammatical errors.</p>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-pt
 </code></pre></div>
-<h2 id="reading-comprehension">Reading Comprehension</h2>
-<h3 id="multiwikiqa-pt">MultiWikiQA-pt</h3>
+<h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
+<h3 id="multiwikiqa-pt">MultiWikiQA-pt<a class="headerlink" href="#multiwikiqa-pt" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
 languages.</p>
@@ -2645,7 +2645,7 @@ Pergunta: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-pt
 </code></pre></div>
-<h3 id="unofficial-boolq-pt">Unofficial: BoolQ-PT</h3>
+<h3 id="unofficial-boolq-pt">Unofficial: BoolQ-PT<a class="headerlink" href="#unofficial-boolq-pt" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2404.05333">this paper</a>
 and is part of the ExtraGLUE dataset. It is created by taking the original BoolQ dataset
 and using machine translation (DeepL) to translate it.</p>
@@ -2702,8 +2702,8 @@ Responde à pergunta acima usando só &#39;a&#39; ou &#39;b&#39;, e nada mais.
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>boolq-pt
 </code></pre></div>
-<h2 id="knowledge">Knowledge</h2>
-<h3 id="mmlu-pt">MMLU-pt</h3>
+<h2 id="knowledge">Knowledge<a class="headerlink" href="#knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="mmlu-pt">MMLU-pt<a class="headerlink" href="#mmlu-pt" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2410.08928">this paper</a>
 and is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
 dataset</a> and features questions within 57
@@ -2763,8 +2763,8 @@ Responde à pergunta acima usando só &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ou &
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-pt
 </code></pre></div>
-<h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
-<h3 id="goldenswag-pt">GoldenSwag-pt</h3>
+<h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
+<h3 id="goldenswag-pt">GoldenSwag-pt<a class="headerlink" href="#goldenswag-pt" title="Permanent link">&para;</a></h3>
 <p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
 dataset</a>, featuring both video descriptions from
 ActivityNet as well as how-to articles from WikiHow. The machine translated version was
@@ -2825,7 +2825,7 @@ Responde à pergunta acima usando só &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ou &
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-pt
 </code></pre></div>
-<h3 id="unofficial-winogrande-pt">Unofficial: Winogrande-pt</h3>
+<h3 id="unofficial-winogrande-pt">Unofficial: Winogrande-pt<a class="headerlink" href="#unofficial-winogrande-pt" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
 and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
 dataset</a>.</p>
@@ -2878,8 +2878,8 @@ Responde à pergunta acima usando só &#39;a&#39; ou &#39;b&#39;, e nada mais.
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-pt
 </code></pre></div>
-<h2 id="summarisation">Summarisation</h2>
-<h3 id="publico">Publico</h3>
+<h2 id="summarisation">Summarisation<a class="headerlink" href="#summarisation" title="Permanent link">&para;</a></h2>
+<h3 id="publico">Publico<a class="headerlink" href="#publico" title="Permanent link">&para;</a></h3>
 <p>This dataset contains 3,304 news articles from the Portuguese newspaper <em>Público</em> paired
 with extractive-style summaries. The samples all come from the <a href="https://commoncrawl.org/blog/news-dataset-available">CCNews
 corpus</a>.</p>
@@ -2933,8 +2933,8 @@ Escreve um resumo do documento anterior.
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>publico
 </code></pre></div>
-<h2 id="european-values">European Values</h2>
-<h3 id="valeu-pt">ValEU-pt</h3>
+<h2 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h2>
+<h3 id="valeu-pt">ValEU-pt<a class="headerlink" href="#valeu-pt" title="Permanent link">&para;</a></h3>
 <p>This dataset is the official Portuguese version of questions from the <a href="https://europeanvaluesstudy.eu/">European values
 study</a>. The dataset contains multiple-choice
 questions regarding people's values and beliefs across a variety of topics, such as
@@ -3050,7 +3050,7 @@ Responde à pergunta acima usando só &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, &#3
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

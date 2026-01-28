@@ -2293,12 +2293,12 @@
   
 
 
-<h1 id="lithuanian">🇱🇹 Lithuanian</h1>
+<h1 id="lithuanian">🇱🇹 Lithuanian<a class="headerlink" href="#lithuanian" title="Permanent link">&para;</a></h1>
 <p>This is an overview of all the datasets used in the Lithuanian part of EuroEval. The
 datasets are grouped by their task - see the <a href="/tasks">task overview</a> for more
 information about what these constitute.</p>
-<h2 id="sentiment-classification">Sentiment Classification</h2>
-<h3 id="atsiliepimai">Atsiliepimai</h3>
+<h2 id="sentiment-classification">Sentiment Classification<a class="headerlink" href="#sentiment-classification" title="Permanent link">&para;</a></h2>
+<h3 id="atsiliepimai">Atsiliepimai<a class="headerlink" href="#atsiliepimai" title="Permanent link">&para;</a></h3>
 <p>This dataset was published
 <a href="https://huggingface.co/datasets/alexandrainst/lithuanian-sentiment-analysis">here</a>. It
 was scraped from <a href="https://atsiliepimai.lt/">atsiliepimai.lt</a> and contains reviews
@@ -2372,7 +2372,7 @@ Klasifikuokite nuotaiką dokumente. Atsakykite su &#39;teigiamas&#39;, &#39;neut
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>atsiliepimai
 </code></pre></div>
-<h3 id="unofficial-lithuanian-emotions">Unofficial: Lithuanian Emotions</h3>
+<h3 id="unofficial-lithuanian-emotions">Unofficial: Lithuanian Emotions<a class="headerlink" href="#unofficial-lithuanian-emotions" title="Permanent link">&para;</a></h3>
 <p>This dataset is a combination of machine translated versions of the <a href="https://doi.org/10.48550/arXiv.2005.00547">GoEmotions
 dataset</a> and the <a href="https://www.kaggle.com/datasets/nelgiriyewithana/emotions">Kaggle emotions
 dataset</a>. GoEmotions consists
@@ -2429,8 +2429,8 @@ Klasifikuokite nuotaiką dokumente. Atsakykite su &#39;teigiamas&#39;, &#39;neut
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>lithuanian-emotions
 </code></pre></div>
-<h2 id="named-entity-recognition">Named Entity Recognition</h2>
-<h3 id="wikiann-lt">WikiANN-lt</h3>
+<h2 id="named-entity-recognition">Named Entity Recognition<a class="headerlink" href="#named-entity-recognition" title="Permanent link">&para;</a></h2>
+<h3 id="wikiann-lt">WikiANN-lt<a class="headerlink" href="#wikiann-lt" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.18653/v1/P17-1178">this paper</a> and is
 part of a cross-lingual named entity recognition framework for 282 languages from
 Wikipedia. It uses silver-standard annotations transferred from English through
@@ -2492,8 +2492,8 @@ Identifikuokite vardinius vienetus sakinyje. Turėtumėte pateikti tai kaip JSON
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>wikiann-lt
 </code></pre></div>
-<h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
-<h3 id="scala-lt">ScaLA-lt</h3>
+<h2 id="linguistic-acceptability">Linguistic Acceptability<a class="headerlink" href="#linguistic-acceptability" title="Permanent link">&para;</a></h2>
+<h3 id="scala-lt">ScaLA-lt<a class="headerlink" href="#scala-lt" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>
 and was automatically created from the <a href="https://github.com/UniversalDependencies/UD_Lithuanian-ALKSNIS">Lithuanian Universal Dependencies
 treebank</a> by assuming
@@ -2550,8 +2550,8 @@ Nustatykite, ar sakinys yra gramatiškai teisingas, ar ne. Atsakykite su &#39;ta
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-lt
 </code></pre></div>
-<h2 id="reading-comprehension">Reading Comprehension</h2>
-<h3 id="multiwikiqa-lt">MultiWikiQA-lt</h3>
+<h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
+<h3 id="multiwikiqa-lt">MultiWikiQA-lt<a class="headerlink" href="#multiwikiqa-lt" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
 languages.</p>
@@ -2603,8 +2603,8 @@ Klausimas: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-lt
 </code></pre></div>
-<h2 id="knowledge">Knowledge</h2>
-<h3 id="lt-history">LT-History</h3>
+<h2 id="knowledge">Knowledge<a class="headerlink" href="#knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="lt-history">LT-History<a class="headerlink" href="#lt-history" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2025.nbreal-1.1/">this paper</a>,
 and consists of Lithuanian national and general history questions and answers.</p>
 <p>The dataset originally contains 593 samples, which are reduced to 559 after filtering.
@@ -2659,8 +2659,8 @@ Atsakykite į aukščiau pateiktą klausimą atsakydami &#39;a&#39;, &#39;b&#39;
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>lt-history
 </code></pre></div>
-<h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
-<h3 id="winogrande-lt">Winogrande-lt</h3>
+<h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
+<h3 id="winogrande-lt">Winogrande-lt<a class="headerlink" href="#winogrande-lt" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
 and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
 dataset</a>.</p>
@@ -2713,8 +2713,8 @@ Atsakykite į aukščiau pateiktą klausimą atsakydami &#39;a&#39; arba &#39;b&
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-lt
 </code></pre></div>
-<h2 id="summarisation">Summarisation</h2>
-<h3 id="lrytas">Lrytas</h3>
+<h2 id="summarisation">Summarisation<a class="headerlink" href="#summarisation" title="Permanent link">&para;</a></h2>
+<h3 id="lrytas">Lrytas<a class="headerlink" href="#lrytas" title="Permanent link">&para;</a></h3>
 <p>This dataset contains news articles and their corresponding summaries from the Lithuanian
 public media news portal <a href="https://www.lrytas.lt/">Lrytas.lt</a>.</p>
 <p>Samples were collected using the
@@ -2817,7 +2817,7 @@ Parašykite aukščiau pateikto dokumento santrauką.
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>

@@ -2459,12 +2459,12 @@
   
 
 
-<h1 id="german">🇩🇪 German</h1>
+<h1 id="german">🇩🇪 German<a class="headerlink" href="#german" title="Permanent link">&para;</a></h1>
 <p>This is an overview of all the datasets used in the German part of EuroEval. The
 datasets are grouped by their task - see the <a href="/tasks">task overview</a> for more
 information about what these constitute.</p>
-<h2 id="sentiment-classification">Sentiment Classification</h2>
-<h3 id="sb10k">SB10k</h3>
+<h2 id="sentiment-classification">Sentiment Classification<a class="headerlink" href="#sentiment-classification" title="Permanent link">&para;</a></h2>
+<h3 id="sb10k">SB10k<a class="headerlink" href="#sb10k" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/W17-1106/">this paper</a> and is
 based on German tweets, which were manually annotated by three annotators.</p>
 <p>The original full dataset consists of 1,840 / 324 / 870 samples, and we use a 1,024 /
@@ -2517,8 +2517,8 @@ Klassifizieren Sie die Stimmung im Tweet. Antworten Sie mit &#39;positiv&#39;, &
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>sb10k
 </code></pre></div>
-<h2 id="named-entity-recognition">Named Entity Recognition</h2>
-<h3 id="germeval">GermEval</h3>
+<h2 id="named-entity-recognition">Named Entity Recognition<a class="headerlink" href="#named-entity-recognition" title="Permanent link">&para;</a></h2>
+<h3 id="germeval">GermEval<a class="headerlink" href="#germeval" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/L14-1251/">this paper</a> and is
 based on German Wikipedia as well as news articles, and was manually annotated. It
 roughly follows the CoNLL-2003 format, but also allows overlapping entities and derived
@@ -2578,8 +2578,8 @@ Identifizieren Sie die benannten Entitäten im Satz. Sie sollten dies als JSON-W
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>germeval
 </code></pre></div>
-<h2 id="linguistic-acceptability">Linguistic Acceptability</h2>
-<h3 id="scala-de">ScaLA-de</h3>
+<h2 id="linguistic-acceptability">Linguistic Acceptability<a class="headerlink" href="#linguistic-acceptability" title="Permanent link">&para;</a></h2>
+<h3 id="scala-de">ScaLA-de<a class="headerlink" href="#scala-de" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2023.nodalida-1.20/">this paper</a>
 and was automatically created from the <a href="https://raw.githubusercontent.com/UniversalDependencies/UD_German-GSD">German Universal Dependencies
 treebank</a> by
@@ -2636,8 +2636,8 @@ Bestimmen Sie, ob der Satz grammatikalisch korrekt ist oder nicht. Antworten Sie
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-de
 </code></pre></div>
-<h2 id="reading-comprehension">Reading Comprehension</h2>
-<h3 id="germanquad">GermanQuAD</h3>
+<h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
+<h3 id="germanquad">GermanQuAD<a class="headerlink" href="#germanquad" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2021.mrqa-1.4/">this paper</a> and
 is based on German Wikipedia articles, and was manually annotated.</p>
 <p>The original full dataset consists of 11,518 / 2,204 samples for training and testing,
@@ -2700,7 +2700,7 @@ Frage: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>germanquad
 </code></pre></div>
-<h3 id="unofficial-xquad-de">Unofficial: XQuAD-de</h3>
+<h3 id="unofficial-xquad-de">Unofficial: XQuAD-de<a class="headerlink" href="#unofficial-xquad-de" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2020.acl-main.421/">this paper</a>
 and contains 1190 question-answer pairs from <a href="https://rajpurkar.github.io/SQuAD-explorer/">SQuAD
 v1.1</a> translated into ten languages by
@@ -2762,7 +2762,7 @@ Frage: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>xquad-de
 </code></pre></div>
-<h3 id="unofficial-belebele-de">Unofficial: BeleBele-de</h3>
+<h3 id="unofficial-belebele-de">Unofficial: BeleBele-de<a class="headerlink" href="#unofficial-belebele-de" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2024.acl-long.44/">this paper</a>
 and features multiple-choice reading comprehension questions across 122 languages.</p>
 <p>The original dataset contains 900 unique multiple-choice reading comprehension passages
@@ -2813,7 +2813,7 @@ Beantworten Sie die obige Frage mit &#39;a&#39;, &#39;b&#39;, &#39;c&#39; oder &
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>belebele-de
 </code></pre></div>
-<h3 id="unofficial-multiwikiqa-de">Unofficial: MultiWikiQA-de</h3>
+<h3 id="unofficial-multiwikiqa-de">Unofficial: MultiWikiQA-de<a class="headerlink" href="#unofficial-multiwikiqa-de" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2509.04111">this paper</a>
 and contains Wikipedia articles with LLM-generated questions and answers in 300+
 languages.</p>
@@ -2874,8 +2874,8 @@ Frage: {question}
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-de
 </code></pre></div>
-<h2 id="knowledge">Knowledge</h2>
-<h3 id="mmlu-de">MMLU-de</h3>
+<h2 id="knowledge">Knowledge<a class="headerlink" href="#knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="mmlu-de">MMLU-de<a class="headerlink" href="#mmlu-de" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translated version of the English <a href="https://openreview.net/forum?id=d7KBjmI3GmQ">MMLU
 dataset</a> and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
@@ -2936,7 +2936,7 @@ Beantworten Sie die obige Frage mit &#39;a&#39;, &#39;b&#39;, &#39;c&#39; oder &
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-de
 </code></pre></div>
-<h3 id="unofficial-arc-de">Unofficial: ARC-de</h3>
+<h3 id="unofficial-arc-de">Unofficial: ARC-de<a class="headerlink" href="#unofficial-arc-de" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translated version of the English <a href="https://doi.org/10.48550/arXiv.1803.05457">ARC
 dataset</a> and features US grade-school science
 questions. The translation to German was done by the University of Oregon as part of
@@ -2994,8 +2994,8 @@ Beantworten Sie die obige Frage mit &#39;a&#39;, &#39;b&#39;, &#39;c&#39; oder &
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>arc-de
 </code></pre></div>
-<h2 id="common-sense-reasoning">Common-sense Reasoning</h2>
-<h3 id="hellaswag-de">HellaSwag-de</h3>
+<h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
+<h3 id="hellaswag-de">HellaSwag-de<a class="headerlink" href="#hellaswag-de" title="Permanent link">&para;</a></h3>
 <p>This dataset is a machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
 dataset</a>. The original dataset was based on both
 video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
@@ -3053,7 +3053,7 @@ Beantworten Sie die obige Frage mit &#39;a&#39;, &#39;b&#39;, &#39;c&#39; oder &
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>hellaswag-de
 </code></pre></div>
-<h3 id="unofficial-goldenswag-de">Unofficial: GoldenSwag-de</h3>
+<h3 id="unofficial-goldenswag-de">Unofficial: GoldenSwag-de<a class="headerlink" href="#unofficial-goldenswag-de" title="Permanent link">&para;</a></h3>
 <p>This dataset is a filtered and machine translated version of the English <a href="https://aclanthology.org/P19-1472/">HellaSwag
 dataset</a>, featuring both video descriptions from
 ActivityNet as well as how-to articles from WikiHow. The machine translated version was
@@ -3114,7 +3114,7 @@ Beantworten Sie die obige Frage mit &#39;a&#39;, &#39;b&#39;, &#39;c&#39; oder &
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>goldenswag-de
 </code></pre></div>
-<h3 id="unofficial-winogrande-de">Unofficial: Winogrande-de</h3>
+<h3 id="unofficial-winogrande-de">Unofficial: Winogrande-de<a class="headerlink" href="#unofficial-winogrande-de" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2506.19468">this paper</a>
 and is a translated and filtered version of the English <a href="https://doi.org/10.1145/3474381">Winogrande
 dataset</a>.</p>
@@ -3167,8 +3167,8 @@ Beantworten Sie die obige Frage mit &#39;a&#39; oder &#39;b&#39;, und nichts and
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>winogrande-de
 </code></pre></div>
-<h2 id="summarisation">Summarisation</h2>
-<h3 id="mlsum-de">MLSum-de</h3>
+<h2 id="summarisation">Summarisation<a class="headerlink" href="#summarisation" title="Permanent link">&para;</a></h2>
+<h3 id="mlsum-de">MLSum-de<a class="headerlink" href="#mlsum-de" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2020.emnlp-main.647/">this
 paper</a> and features news articles and
 their summaries in five languages, including German. The German part of the dataset is
@@ -3217,8 +3217,8 @@ Schreiben Sie eine Zusammenfassung des obigen Artikels.
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mlsum-de
 </code></pre></div>
-<h2 id="european-values">European Values</h2>
-<h3 id="valeu-de">ValEU-de</h3>
+<h2 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h2>
+<h3 id="valeu-de">ValEU-de<a class="headerlink" href="#valeu-de" title="Permanent link">&para;</a></h3>
 <p>This dataset is the official German version of questions from the <a href="https://europeanvaluesstudy.eu/">European values
 study</a>. The dataset contains multiple-choice
 questions regarding people's values and beliefs across a variety of topics, such as
@@ -3334,7 +3334,7 @@ oder &#39;k&#39;, und nichts anderes.
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.top", "navigation.path", "navigation.prune", "navigation.indexes", "navigation.tabs", "navigation.tabs.sticky", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.progress", "navigation.tracking", "navigation.sections", "content.code.copy", "content.tooltips", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
