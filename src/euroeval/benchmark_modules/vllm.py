@@ -153,7 +153,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
 
-        if shutil.which("nvcc") is None:
+        if torch.cuda.is_available() and shutil.which("nvcc") is None:
             raise NeedsSystemDependency(
                 dependency="nvcc",
                 instructions=(
@@ -176,7 +176,10 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         with (
             no_terminal_output(disable=benchmark_config.verbose),
-            attention_backend(value=default_flash_attention_backend),
+            attention_backend(
+                value=default_flash_attention_backend,
+                disable=not torch.cuda.is_available(),
+            ),
         ):
             model, tokeniser = load_model_and_tokeniser(
                 model_config=model_config, benchmark_config=benchmark_config

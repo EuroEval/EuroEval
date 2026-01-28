@@ -555,7 +555,7 @@ class attention_backend:
     for the duration of the context manager, and restores the previous value afterwards.
     """
 
-    def __init__(self, value: str | None) -> None:
+    def __init__(self, value: str | None, disable: bool) -> None:
         """Initialise the context manager.
 
         Args:
@@ -563,19 +563,23 @@ class attention_backend:
                 The name of the attention backend to set. If None then no change is
                 made. Also, if the user has already set the `VLLM_ATTENTION_BACKEND` env
                 var, then no change is made.
+            disable:
+                Whether to disable the attention backend.
         """
         user_has_set_backend = (
             os.environ.get("USER_HAS_SET_VLLM_ATTENTION_BACKEND", "0") == "1"
         )
         self.value = None if user_has_set_backend else value
         self.previous_value: str | None = None
+        self.disable = disable
+        if self.disable:
+            os.environ.pop("VLLM_ATTENTION_BACKEND", None)
 
     def __enter__(self) -> None:
         """Enter the context manager."""
-        if self.value is None:
-            return
-        self.previous_value = os.getenv("VLLM_ATTENTION_BACKEND")
-        os.environ["VLLM_ATTENTION_BACKEND"] = self.value
+        if not self.disable and self.value is not None:
+            self.previous_value = os.getenv("VLLM_ATTENTION_BACKEND")
+            os.environ["VLLM_ATTENTION_BACKEND"] = self.value
 
     def __exit__(
         self,
