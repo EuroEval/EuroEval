@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added support for vLLM Metal, so that generative models can now be evaluated on Apple
+  Silicon.
+
 ### Changed
 
 - Now requires Python >=3.12, as Python 3.11 does not support some dependencies.
