@@ -77,6 +77,85 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset besls
 ```
 
+## Named Entity Recognition
+
+### WikiANN-be
+
+This dataset was published in [this paper](https://aclanthology.org/P17-1178/) and is
+part of a cross-lingual named entity recognition framework for 282 languages from
+Wikipedia. It uses silver-standard annotations transferred from English through
+cross-lingual links and performs both name tagging and linking to an english Knowledge
+Base.
+
+The original full dataset consists of 15,000 / 1,000 / 1,000 samples for the training,
+validation and test splits, respectively. We use 1,024 / 256 / 1,000 samples for our
+training, validation and test splits, respectively. All the new splits are subsets of
+the original splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "tokens": ["Сцюарт", "Бінэм", "(", "4", ")"],
+  "labels": ["B-PER", "I-PER", "O", "O", "O"],
+}
+```
+
+```json
+{
+  "tokens": ["Пасля", "гуляў", "таксама", "за", "моладзевую", "зборную", "Беларусі", "."],
+  "labels": ["O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "O"],
+}
+```
+
+```json
+{
+  "tokens": ["Горад", "Кампен", ",", "Нідэрланды"],
+  "labels": ["B-LOC", "I-LOC", "I-LOC", "I-LOC"],
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Ніжэй прыведзены сказы і JSON-слоўнікі з іменаванымі сутнасцямі, якія прысутнічаюць у дадзеным сказе.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Сказ: {text}
+  Іменаваныя сутнасці: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Сказ: {text}
+
+  Ідэнтыфікуйце іменаваныя сутнасці ў сказе. Вы павінны вывесці гэта як JSON-слоўнік з ключамі 'асоба', 'месца', 'арганізацыя' і 'рознае'. Значэнні павінны быць спісамі іменаваных сутнасцей гэтага тыпу, дакладна такімі, як яны з'яўляюцца ў сказе.
+  ```
+
+- Label mapping:
+  - `B-PER` ➡️ `асоба`
+  - `I-PER` ➡️ `асоба`
+  - `B-LOC` ➡️ `месца`
+  - `I-LOC` ➡️ `месца`
+  - `B-ORG` ➡️ `арганізацыя`
+  - `I-ORG` ➡️ `арганізацыя`
+  - `B-MISC` ➡️ `рознае`
+  - `I-MISC` ➡️ `рознае`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wikiann-be
+```
+
 ## Linguistic Acceptability
 
 ### ScaLA-be

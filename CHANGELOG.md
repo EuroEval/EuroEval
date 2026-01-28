@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Added support for Belarusian 🇧🇾! This includes the sentiment classification dataset,
-  the linguistic acceptability dataset ScaLA-be.
+  the linguistic acceptability dataset ScaLA-be, the named entity recognition dataset
+  WikiANN-be.
 
 ### Changed
 

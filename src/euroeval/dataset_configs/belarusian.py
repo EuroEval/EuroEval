@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BELARUSIAN
-from ..tasks import LA, SENT
+from ..tasks import LA, NER, SENT
 
 ### Official datasets ###
 
@@ -19,5 +19,13 @@ SCALA_BE_CONFIG = DatasetConfig(
     pretty_name="ScaLA-be",
     source="EuroEval/scala-be",
     task=LA,
+    languages=[BELARUSIAN],
+)
+
+WIKIANN_BE_CONFIG = DatasetConfig(
+    name="wikiann-be",
+    pretty_name="WikiANN-be",
+    source="EuroEval/wikiann-be-mini",
+    task=NER,
     languages=[BELARUSIAN],
 )
