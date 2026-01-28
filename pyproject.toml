@@ -9,12 +9,12 @@ authors = [
 maintainers = [
     {name = "Dan Saattrup Smart", email = "dan.smart@alexandra.dk"},
 ]
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "torch>=2.6.0",
     "pandas>=2.2.0",
     "numpy>=2.0.0",
-    "transformers[mistral-common]>=4.56.0",
+    "transformers[mistral-common]>=4.56.0,<5.0.0",
     "mistral-common[soundfile]",
     "accelerate>=1.9.0",
     "evaluate>=0.4.1",
@@ -47,14 +47,14 @@ dependencies = [
 [project.optional-dependencies]
 generative = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm[flashinfer]==0.11.0; platform_system == 'Linux'",
+    "vllm[flashinfer]>=0.14.1; platform_system == 'Linux'",
     "ray>=2.53.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
     "timm>=1.0.19",
 ]
 all = [
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm[flashinfer]==0.11.0; platform_system == 'Linux'",
+    "vllm[flashinfer]>=0.14.1; platform_system == 'Linux'",
     "ray>=2.53.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
     "timm>=1.0.19",
@@ -110,7 +110,7 @@ dev = [
 ]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 88
 exclude = [
     ".git",

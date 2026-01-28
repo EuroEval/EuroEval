@@ -1865,6 +1865,14 @@ def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
         else:
             prefix = "openai/"
         model_id = prefix + model_id
+
+    # When we want to evaluate an OpenAI model on a custom inference server, such as HF
+    # inference endpoints, LiteLLM gets confused since it's already using the `openai/`
+    # prefix. We thus have to add it twice, and this hack here is to ensure that we
+    # don't store the results with model ID `openai/openai/...`.
+    elif benchmark_config.api_base is not None and model_id.startswith("openai/"):
+        model_id = "openai/openai/" + re.sub(r"(openai/)*", "", model_id)
+
     return model_id
 
 

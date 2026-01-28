@@ -22,7 +22,11 @@ when an evaluation requires a certain extra dependency, and how you install it.
 
 ## Quickstart
 
-### Benchmarking from the Command Line
+### Benchmarking
+
+`euroeval` allows for benchmarking both via. script and using the command line. 
+
+/// tab | Using the command line
 
 The easiest way to benchmark pretrained models is via the command line interface. After
 having installed the package, you can benchmark your favorite model like so:
@@ -68,57 +72,9 @@ See all the arguments and options available for the `euroeval` command by typing
 ```bash
 euroeval --help
 ```
+///
 
-## Quickstart
-
-### Benchmarking from the command line
-
-The easiest way to benchmark pretrained models is via the command line interface. After
-having installed the package, you can benchmark your favorite model like so:
-
-```bash
-euroeval --model <model-id>
-```
-
-Here `model` is the HuggingFace model ID, which can be found on the [HuggingFace
-Hub](https://huggingface.co/models). By default this will benchmark the model on all
-the tasks available. If you want to benchmark on a particular task, then use the
-`--task` argument:
-
-```bash
-euroeval --model <model-id> --task sentiment-classification
-```
-
-We can also narrow down which languages we would like to benchmark on. This can be done
-by setting the `--language` argument. Here we thus benchmark the model on the Danish
-sentiment classification task:
-
-```bash
-euroeval --model <model-id> --task sentiment-classification --language da
-```
-
-Multiple models, datasets and/or languages can be specified by just attaching multiple
-arguments. Here is an example with two models:
-
-```bash
-euroeval --model <model-id1> --model <model-id2>
-```
-
-The specific model version/revision to use can also be added after the suffix '@':
-
-```bash
-euroeval --model <model-id>@<commit>
-```
-
-This can be a branch name, a tag name, or a commit id. It defaults to 'main' for latest.
-
-See all the arguments and options available for the `euroeval` command by typing
-
-```bash
-euroeval --help
-```
-
-### Benchmarking from a script
+/// tab | Using a script
 
 In a script, the syntax is similar to the command line interface. You simply initialise
 an object of the `Benchmarker` class, and call this benchmark object with your favorite
@@ -148,8 +104,9 @@ models on the Danish sentiment classification task:
 ```python
 >>> benchmarker.benchmark(task="sentiment-classification", language="da")
 ```
+///
 
-### Benchmarking from Docker
+/// tab | Using Docker
 
 A Dockerfile is provided in the repo, which can be downloaded and run, without needing
 to clone the repo and installing from source. This can be fetched programmatically by
@@ -181,6 +138,7 @@ docker run -e args="<euroeval-arguments>" --gpus 1 --name euroeval --rm euroeval
 Here `<euroeval-arguments>` consists of the arguments added to the `euroeval` CLI
 argument. This could for instance be `--model <model-id> --task
 sentiment-classification`.
+///
 
 ## Benchmarking custom inference APIs
 
@@ -239,30 +197,35 @@ an Ollama model hosted locally:
 ## Benchmarking in an offline environment
 
 If you need to benchmark in an offline environment, you need to download the models,
-datasets and metrics beforehand. This can be done by adding the `--download-only`
-argument, from the command line, or the `download_only` argument, if benchmarking from a
-script. For example to download the model you want and all of the Danish sentiment
+datasets and metrics beforehand. For example to download the model you want and all of the Danish sentiment
 classification datasets:
+
+/// tab | Using the command line
+This can be done by adding the `--download-only` argument, from the command line:
 
 ```bash
 euroeval --model <model-id> --task sentiment-classification --language da --download-only
 ```
-
-Or from a script:
+///
+/// tab | Using a script
+This can be done using the `download_only` argument, if benchmarking from a script:
 
 ```python
->>> benchmarker.benchmark(
-... model="<model-id>",
-... task="sentiment-classification",
-... language="da",
-... download_only=True,
-... )
+benchmarker.benchmark(
+  model="<model-id>",
+  task="sentiment-classification",
+  language="da",
+  download_only=True,
+)
 ```
+///
 
-Please note: Offline benchmarking of adapter models is not currently supported, meaning
-that we still require an internet connection during the evaluation of these. If offline
-support of adapters is important to you, please consider [opening an
-issue](https://github.com/EuroEval/EuroEval/issues).
+
+!!! note
+    Offline benchmarking of adapter models is not currently supported, meaning
+    that we still require an internet connection during the evaluation of these. If offline
+    support of adapters is important to you, please consider [opening an
+    issue](https://github.com/EuroEval/EuroEval/issues).
 
 ## Benchmarking custom datasets
 
@@ -283,7 +246,7 @@ columns. Finally, you create a file called `custom_datasets.py` script in which 
 define the associated `DatasetConfig` objects for your dataset. Here is an example of a
 simple text classification dataset with two classes:
 
-```python
+```python title="custom_datasets.py"
 from euroeval import DatasetConfig, TEXT_CLASSIFICATION
 from euroeval.languages import ENGLISH
 
@@ -351,7 +314,7 @@ customise the prompts used when evaluating generative models, for instance. Here
 example of a custom free-form text generation task, where the goal for the model is to
 generate a SQL query based on a natural language input:
 
-```python
+```python title="custom_datasets.py"
 from euroeval import DatasetConfig
 from euroeval.data_models import Task, PromptConfig
 from euroeval.enums import TaskGroup, ModelType

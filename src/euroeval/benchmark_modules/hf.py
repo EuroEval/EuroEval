@@ -876,8 +876,9 @@ def get_model_repo_info(
             for tag in GENERATIVE_PIPELINE_TAGS
             for class_name in TASK_MAPPING.get(tag, dict()).values()  # type: ignore[attr-defined]
         ]
-        if class_names is not None and any(
-            class_name in generative_class_names for class_name in class_names
+        if class_names is not None and (
+            any(class_name in generative_class_names for class_name in class_names)
+            or any("ForCausalLM" in class_name for class_name in class_names)
         ):
             pipeline_tag = "text-generation"
         else:
@@ -1121,7 +1122,11 @@ def load_hf_model_config(
         )
 
     # Ensure that the PAD token ID is set
-    if config.eos_token_id is not None and config.pad_token_id is None:
+    if (
+        hasattr(config, "eos_token_id")
+        and config.eos_token_id is not None
+        and (not hasattr(config, "pad_token_id") or config.pad_token_id is None)
+    ):
         if isinstance(config.eos_token_id, list):
             config.pad_token_id = config.eos_token_id[0]
         else:
