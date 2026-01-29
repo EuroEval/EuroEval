@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     ALBANIAN,
+    BELARUSIAN,
     BOSNIAN,
     BULGARIAN,
     CATALAN,
@@ -48,6 +49,15 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "maksimum 3 fjalë: {label}",
         default_instruction_prompt="Tekst: {text}\n\nPërgjigjuni pyetjes së mëposhtme "
         "rreth tekstit të mësipërm me maksimum 3 fjalë.\n\nPyetje: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    BELARUSIAN: PromptConfig(
+        default_prompt_prefix="Ніжэй прыведзены тэксты з адпаведнымі пытаннямі і "
+        "адказамі.",
+        default_prompt_template="Тэкст: {text}\nПытанне: {question}\nАдказ "
+        "максімум 3 словамі: {label}",
+        default_instruction_prompt="Тэкст: {text}\n\nАдкажыце на наступнае пытанне "
+        "пра тэкст вышэй максімум 3 словамі.\n\nПытанне: {question}",
         default_prompt_label_mapping=dict(),
     ),
     BOSNIAN: PromptConfig(

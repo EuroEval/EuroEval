@@ -56,6 +56,7 @@ LANGUAGES = [
     "ro",
     "ca",
     "sq",
+    "be",
 ]
 
 

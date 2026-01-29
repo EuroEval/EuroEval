@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BELARUSIAN
-from ..tasks import LA, NER, SENT
+from ..tasks import LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -27,5 +27,13 @@ WIKIANN_BE_CONFIG = DatasetConfig(
     pretty_name="WikiANN-be",
     source="EuroEval/wikiann-be-mini",
     task=NER,
+    languages=[BELARUSIAN],
+)
+
+MULTI_WIKI_QA_BE_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-be",
+    pretty_name="MultiWikiQA-be",
+    source="EuroEval/multi-wiki-qa-be-mini",
+    task=RC,
     languages=[BELARUSIAN],
 )
