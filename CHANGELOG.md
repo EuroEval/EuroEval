@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added support for vLLM Metal, so that generative models can now be evaluated on Apple
+  Silicon. Note that this currently does not support structured generation, which means
+  that classification and named entity recognitions tasks unfortunately won't work yet.
+  This is due to [this xgrammar
+  issue](https://github.com/vllm-project/vllm/issues/31901).
+
 ### Changed
 
 - Now requires Python >=3.12, as Python 3.11 does not support some dependencies.
