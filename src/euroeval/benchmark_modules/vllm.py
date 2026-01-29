@@ -90,18 +90,16 @@ except ImportError:
     )
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
-    from vllm import LLM, SamplingParams  # type: ignore[missing-import]
-    from vllm.distributed.parallel_state import (  # type: ignore[missing-import]
+    from vllm import LLM, SamplingParams
+    from vllm.distributed.parallel_state import (
         destroy_distributed_environment,
         destroy_model_parallel,
     )
-    from vllm.lora.request import LoRARequest  # type: ignore[missing-import]
-    from vllm.sampling_params import (  #  type: ignore[missing-import]
-        StructuredOutputsParams,
-    )
+    from vllm.lora.request import LoRARequest
+    from vllm.sampling_params import StructuredOutputsParams
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
-    import ray  # type: ignore[missing-import]
+    import ray
 
 
 if t.TYPE_CHECKING:
