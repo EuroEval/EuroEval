@@ -9,7 +9,7 @@ authors = [
 maintainers = [
     {name = "Dan Saattrup Smart", email = "dan.smart@alexandra.dk"},
 ]
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "torch>=2.6.0",
     "pandas>=2.2.0",
@@ -110,7 +110,7 @@ dev = [
 ]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 88
 exclude = [
     ".git",
