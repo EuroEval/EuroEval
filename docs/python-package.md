@@ -225,9 +225,9 @@ benchmarker.benchmark(
 ///
 
 !!! note
-    Offline benchmarking of adapter models is not currently supported, meaning
-    that we still require an internet connection during the evaluation of these. If
-    offline support of adapters is important to you, please consider [opening an
+    Offline benchmarking of adapter models is not currently supported, meaning that we
+    still require an internet connection during the evaluation of these. If offline
+    support of adapters is important to you, please consider [opening an
     issue](https://github.com/EuroEval/EuroEval/issues).
 
 ## Benchmarking custom datasets
