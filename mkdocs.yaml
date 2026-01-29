@@ -15,6 +15,9 @@ theme:
     - navigation.instant.progress
     - navigation.tracking
     - navigation.sections
+    - content.code.copy
+    - content.tooltips
+    - toc.follow
   palette:
     - media: "(prefers-color-scheme: light)"
       primary: blue grey
@@ -33,8 +36,12 @@ theme:
     repo: fontawesome/brands/github
     logo: material/chart-bar
 markdown_extensions:
+  - admonition
+  - pymdownx.superfences
   - pymdownx.blocks.tab:
       alternate_style: true
+  - toc:
+      permalink: true
 plugins:
   - include-markdown
   - search
