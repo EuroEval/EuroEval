@@ -758,20 +758,20 @@ def get_model_repo_info(
     # model info object.
     model_info: HfApiModelInfo | None = None
     if Path(model_id).is_dir():
-        if all(
+        if any(
             (Path(model_id) / required_file).exists()
             for required_file in LOCAL_MODELS_REQUIRED_FILES
         ):
             log_once(
-                f"The local model directory {model_id!r} has all the required model "
-                f"files ({LOCAL_MODELS_REQUIRED_FILES}), so we're skipping looking up "
-                "model information from the Hugging Face Hub.",
+                f"The local model directory {model_id!r} has at least one of the "
+                f"required model files ({LOCAL_MODELS_REQUIRED_FILES}), so we're "
+                "skipping looking up model information from the Hugging Face Hub.",
                 level=logging.DEBUG,
             )
             model_info = HfApiModelInfo(id=model_id, tags=None, pipeline_tag=None)
         else:
             log_once(
-                f"The local model directory {model_id} does not contain all the "
+                f"The local model directory {model_id} does not contain any of the "
                 f"required files: {LOCAL_MODELS_REQUIRED_FILES}. Skipping this "
                 f"model.",
                 level=logging.WARNING,
