@@ -58,7 +58,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
-        run: uv sync --no-dev
+        run: uv sync --no-dev --all-extras
 
       - name: Start Ollama server
         run: curl -fsSL https://ollama.com/install.sh | sh && ollama serve &
@@ -95,7 +95,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
-        run: uv sync --no-dev
+        run: uv sync --no-dev --all-extras
 
       - name: Start Ollama server
         run: curl -fsSL https://ollama.com/install.sh | sh && ollama serve &
