@@ -217,11 +217,14 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         )
         if self.model_config.adapter_base_model_id is not None:
-            adapter_path = snapshot_download(
-                repo_id=self.model_config.model_id,
-                revision=self.model_config.revision,
-                cache_dir=Path(self.model_config.model_cache_dir),
-            )
+            if Path(self.model_config.model_id).exists():
+                adapter_path = self.model_config.model_id
+            else:
+                adapter_path = snapshot_download(
+                    repo_id=self.model_config.model_id,
+                    revision=self.model_config.revision,
+                    cache_dir=Path(self.model_config.model_cache_dir),
+                )
             self.buffer["lora_request"] = LoRARequest(
                 lora_name="adapter", lora_int_id=1, lora_path=adapter_path
             )
