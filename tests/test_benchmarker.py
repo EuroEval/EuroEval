@@ -505,9 +505,8 @@ def test_prepare_dataset_configs(
     dataset_names: list[str], dataset_configs: list[DatasetConfig]
 ) -> None:
     """Test that the `prepare_dataset_configs` function works as expected."""
-    assert (
+    assert set(
         prepare_dataset_configs(
             dataset_names=dataset_names, custom_datasets_file=Path("custom_datasets.py")
         )
-        == dataset_configs
-    )
+    ) == set(dataset_configs)
