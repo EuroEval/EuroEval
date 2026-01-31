@@ -478,19 +478,19 @@ class TestClearCacheFn:
     argvalues=[
         ([], []),
         (
-            ["angry-tweets"],
+            ["multi-wiki-qa-da"],
             [
                 get_dataset_config(
-                    dataset_name="angry-tweets",
+                    dataset_name="multi-wiki-qa-da",
                     custom_datasets_file=Path("custom_datasets.py"),
                 )
             ],
         ),
         (
-            ["angry-tweets", "dansk"],
+            ["multi-wiki-qa-da", "dansk"],
             [
                 get_dataset_config(
-                    dataset_name="angry-tweets",
+                    dataset_name="multi-wiki-qa-da",
                     custom_datasets_file=Path("custom_datasets.py"),
                 ),
                 get_dataset_config(

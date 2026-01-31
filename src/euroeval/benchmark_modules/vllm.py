@@ -162,6 +162,21 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ),
             )
 
+        if not torch.cuda.is_available() and (
+            dataset_config.task.task_group
+            in [
+                TaskGroup.SEQUENCE_CLASSIFICATION,
+                TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            ]
+            or dataset_config.task.uses_structured_output
+        ):
+            raise InvalidBenchmark(
+                "We currently require CUDA to benchmark generative models on tasks "
+                "that uses structured generation, which includes the current task "
+                f"{dataset_config.task.name}. This is due to an xgrammar issue, which "
+                "will hopefully be fixed soon."
+            )
+
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
         )

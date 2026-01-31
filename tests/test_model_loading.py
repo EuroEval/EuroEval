@@ -22,12 +22,13 @@ def test_load_non_generative_model(
     model = load_model(
         model_config=model_config,
         dataset_config=get_dataset_config(
-            dataset_name="angry-tweets", custom_datasets_file=Path("custom_datasets.py")
+            dataset_name="multi-wiki-qa-da",
+            custom_datasets_file=Path("custom_datasets.py"),
         ),
         benchmark_config=benchmark_config,
     )
     assert model is not None
-    rmtree(path=benchmark_config.cache_dir, ignore_errors=True)
+    rmtree(path=Path(benchmark_config.cache_dir, "model_cache"), ignore_errors=True)
 
 
 def test_load_generative_model(
@@ -40,12 +41,13 @@ def test_load_generative_model(
     model = load_model(
         model_config=model_config,
         dataset_config=get_dataset_config(
-            dataset_name="angry-tweets", custom_datasets_file=Path("custom_datasets.py")
+            dataset_name="multi-wiki-qa-da",
+            custom_datasets_file=Path("custom_datasets.py"),
         ),
         benchmark_config=benchmark_config,
     )
     assert model is not None
-    rmtree(path=benchmark_config.cache_dir, ignore_errors=True)
+    rmtree(path=Path(benchmark_config.cache_dir, "model_cache"), ignore_errors=True)
 
 
 def test_load_non_generative_model_with_generative_data(
@@ -64,4 +66,4 @@ def test_load_non_generative_model_with_generative_data(
             ),
             benchmark_config=benchmark_config,
         )
-    rmtree(path=benchmark_config.cache_dir, ignore_errors=True)
+    rmtree(path=Path(benchmark_config.cache_dir, "model_cache"), ignore_errors=True)

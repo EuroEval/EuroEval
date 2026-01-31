@@ -140,7 +140,7 @@ def test_prepare_languages(
         (None, "scala-da", list(get_all_languages().values()), [SCALA_DA_CONFIG]),
         (
             "linguistic-acceptability",
-            ["scala-da", "angry-tweets"],
+            ["scala-da", "multi-wiki-qa-da"],
             list(get_all_languages().values()),
             [SCALA_DA_CONFIG],
         ),
@@ -152,13 +152,13 @@ def test_prepare_languages(
         ),
         (
             ["linguistic-acceptability", "sentiment-classification"],
-            ["scala-da", "angry-tweets", "scandiqa-da"],
+            ["scala-da", "multi-wiki-qa-da", "scandiqa-da"],
             list(get_all_languages().values()),
             [SCALA_DA_CONFIG, ANGRY_TWEETS_CONFIG],
         ),
         (
             ["linguistic-acceptability", "sentiment-classification"],
-            ["scala-da", "angry-tweets", "scandiqa-sv"],
+            ["scala-da", "multi-wiki-qa-da", "scandiqa-sv"],
             [DANISH],
             [SCALA_DA_CONFIG, ANGRY_TWEETS_CONFIG],
         ),
