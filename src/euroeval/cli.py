@@ -172,14 +172,14 @@ from .languages import get_all_languages
 )
 @click.option(
     "--attention-backend",
-    default=None,
+    default="FLASHINFER",
     show_default=True,
     type=click.Choice(
         ["FLASHINFER", "FLASH_ATTN", "TRITON_ATTN", "FLEX_ATTENTION"],
         case_sensitive=True,
     ),
-    help="The attention backend to use for vLLM. If not specified then FLASHINFER "
-    "will be used. Only relevant if the model is generative.",
+    help="The attention backend to use for vLLM. Only relevant if the model is "
+    "generative.",
 )
 @click.option(
     "--requires-safetensors",
@@ -265,7 +265,7 @@ def benchmark(
     api_base: str | None,
     api_version: str | None,
     gpu_memory_utilization: float,
-    attention_backend: str | None,
+    attention_backend: str,
     requires_safetensors: bool,
     generative_type: str | None,
     custom_datasets_file: Path,

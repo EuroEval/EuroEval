@@ -168,20 +168,14 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
 
         # Determine the attention backend to use:
-        # 1. Use user-specified backend from CLI if provided
-        # 2. Otherwise, check if model requires a specific backend
-        # 3. If neither, default to FLASHINFER (same as previous env var behavior)
-        attention_backend: AttentionBackendEnum
-        if benchmark_config.attention_backend:
-            attention_backend = benchmark_config.attention_backend
+        # Override for models that require a specific backend, otherwise use user's
+        # choice from CLI (defaults to FLASHINFER)
+        for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
+            if re.search(pattern=pattern, string=model_config.model_id):
+                attention_backend = backend
+                break
         else:
-            for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
-                if re.search(pattern=pattern, string=model_config.model_id):
-                    attention_backend = backend
-                    break
-            else:
-                # Default to FLASHINFER if no specific backend required
-                attention_backend = AttentionBackendEnum.FLASHINFER
+            attention_backend = benchmark_config.attention_backend
 
         with no_terminal_output(disable=benchmark_config.verbose):
             model, tokeniser = load_model_and_tokeniser(

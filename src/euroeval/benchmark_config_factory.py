@@ -259,20 +259,17 @@ def prepare_device(device: Device | None) -> torch.device:
 
 
 def prepare_attention_backend(
-    attention_backend: str | None,
-) -> "AttentionBackendEnum | None":
+    attention_backend: str,
+) -> "AttentionBackendEnum":
     """Prepare the attention backend.
 
     Args:
         attention_backend:
-            The attention backend string from CLI, or None.
+            The attention backend string from CLI.
 
     Returns:
-        The attention backend enum, or None if not specified.
+        The attention backend enum.
     """
-    if attention_backend is None:
-        return None
-
     from vllm.v1.attention.backends.registry import AttentionBackendEnum
 
     return AttentionBackendEnum[attention_backend]

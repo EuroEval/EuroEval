@@ -520,8 +520,8 @@ class BenchmarkConfig:
             this if you are running out of GPU memory. Only relevant if the model is
             generative.
         attention_backend:
-            The attention backend to use for vLLM. If not specified then FLASHINFER
-            will be used. Only relevant if the model is generative.
+            The attention backend to use for vLLM. Defaults to FLASHINFER. Only
+            relevant if the model is generative.
         requires_safetensors:
             Whether to only allow models that use the safetensors format.
         generative_type:
@@ -607,7 +607,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     requires_safetensors: bool
     download_only: bool
     gpu_memory_utilization: float
-    attention_backend: str | None
+    attention_backend: str
     generative_type: GenerativeType | None
     custom_datasets_file: Path
     force: bool
