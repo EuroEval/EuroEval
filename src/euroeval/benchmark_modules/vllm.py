@@ -217,6 +217,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         )
         if self.model_config.adapter_base_model_id is not None:
+            breakpoint()
             if Path(self.model_config.adapter_base_model_id).exists():
                 adapter_path = self.model_config.adapter_base_model_id
             else:
