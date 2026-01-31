@@ -33,8 +33,8 @@ GENERATIVE_PIPELINE_TAGS = [
 # Used to disallow non-generative models to be evaluated on these task groups
 GENERATIVE_DATASET_TASK_GROUPS = [TaskGroup.TEXT_TO_TEXT]
 
-# Local models are required to have these files in their directory
-LOCAL_MODELS_REQUIRED_FILES = ["config.json"]
+# Local models are required to have one of these files in their directory
+LOCAL_MODELS_REQUIRED_FILES = ["config.json", "adapter_config.json"]
 
 # The number of top log probabilities to return for generative models. For several APIs
 # this is the maximum number of log probabilities that can be returned

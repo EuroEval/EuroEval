@@ -6,6 +6,7 @@ import re
 import typing as t
 
 import torch
+from transformers import BatchEncoding
 
 from .constants import BOS_TOKENS, EOS_TOKENS, PAD_TOKENS
 from .enums import GenerativeType
@@ -340,6 +341,14 @@ def get_end_of_chat_token_ids(
         if "does not have a chat template" in str(e):
             return None
         raise e
+
+    assert isinstance(token_ids, (BatchEncoding, list)), (
+        f"Expected token_ids to be a BatchEncoding or list, but got {type(token_ids)}.",
+    )
+
+    if isinstance(token_ids, BatchEncoding):
+        token_ids = token_ids.input_ids
+
     assert isinstance(token_ids, list), (
         f"Expected token_ids to be a list, but got {type(token_ids)}.",
     )

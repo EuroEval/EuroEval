@@ -186,7 +186,7 @@ class SourceBasedMetric(HuggingFaceMetric):
             raise InvalidBenchmark("SourceBasedMetric requires `dataset` to be passed.")
 
         if self.metric is None:
-            self.metric = evaluate.load(path=self.huggingface_id)
+            self.download(cache_dir=benchmark_config.cache_dir)
 
         sources = dataset["text"]
 

@@ -90,13 +90,15 @@ except ImportError:
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     from vllm import LLM, SamplingParams
-    from vllm.attention import AttentionConfig
+    from vllm.config.attention import AttentionConfig
+    from vllm.v1.attention.backends.registry import AttentionBackendEnum
     from vllm.distributed.parallel_state import (
         destroy_distributed_environment,
         destroy_model_parallel,
     )
     from vllm.lora.request import LoRARequest
     from vllm.sampling_params import StructuredOutputsParams
+    from vllm.utils import DEFAULT_MAX_NUM_BATCHED_TOKENS
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
@@ -109,12 +111,12 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
 
-MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[re.Pattern, str] = {
-    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE): "TRITON_ATTN",
+MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[re.Pattern, "AttentionBackendEnum"] = {
+    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): AttentionBackendEnum.TRITON_ATTN,
+    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): AttentionBackendEnum.TRITON_ATTN,
+    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): AttentionBackendEnum.TRITON_ATTN,
+    re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): AttentionBackendEnum.TRITON_ATTN,
+    re.compile(r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE): AttentionBackendEnum.TRITON_ATTN,
 }
 
 
@@ -169,15 +171,17 @@ class VLLMModel(HuggingFaceEncoderModel):
         # 1. Use user-specified backend from CLI if provided
         # 2. Otherwise, check if model requires a specific backend
         # 3. If neither, default to FLASHINFER (same as previous env var behavior)
-        attention_backend = benchmark_config.attention_backend
-        if attention_backend is None:
+        attention_backend: AttentionBackendEnum
+        if benchmark_config.attention_backend:
+            attention_backend = benchmark_config.attention_backend
+        else:
             for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
                 if re.search(pattern=pattern, string=model_config.model_id):
                     attention_backend = backend
                     break
-            # Default to FLASHINFER if no specific backend required
-            if attention_backend is None:
-                attention_backend = "FLASHINFER"
+            else:
+                # Default to FLASHINFER if no specific backend required
+                attention_backend = AttentionBackendEnum.FLASHINFER
 
         with no_terminal_output(disable=benchmark_config.verbose):
             model, tokeniser = load_model_and_tokeniser(
@@ -220,11 +224,14 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         )
         if self.model_config.adapter_base_model_id is not None:
-            adapter_path = snapshot_download(
-                repo_id=self.model_config.model_id,
-                revision=self.model_config.revision,
-                cache_dir=Path(self.model_config.model_cache_dir),
-            )
+            if Path(self.model_config.model_id).exists():
+                adapter_path = self.model_config.model_id
+            else:
+                adapter_path = snapshot_download(
+                    repo_id=self.model_config.model_id,
+                    revision=self.model_config.revision,
+                    cache_dir=Path(self.model_config.model_cache_dir),
+                )
             self.buffer["lora_request"] = LoRARequest(
                 lora_name="adapter", lora_int_id=1, lora_path=adapter_path
             )
@@ -949,7 +956,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 def load_model_and_tokeniser(
     model_config: "ModelConfig",
     benchmark_config: "BenchmarkConfig",
-    attention_backend: str | None,
+    attention_backend: "AttentionBackendEnum",
 ) -> tuple["LLM", Tokeniser]:
     """Load the model and tokeniser.
 
@@ -959,7 +966,7 @@ def load_model_and_tokeniser(
         benchmark_config:
             The benchmark configuration.
         attention_backend:
-            The attention backend to use. If None, the default backend will be used.
+            The attention backend to use.
 
     Returns:
         A pair (model, tokeniser), with the loaded model and tokeniser
@@ -1092,19 +1099,17 @@ def load_model_and_tokeniser(
             if internet_connection_available() or Path(model_id).is_dir()
             else resolve_model_path(download_dir=download_dir)
         )
+        attention_config = AttentionConfig(backend=attention_backend)
 
-        # Build attention config if attention backend is specified
-        attention_config = None
-        if attention_backend is not None:
-            attention_config = AttentionConfig(backend=attention_backend)
-
+        max_model_len = min(
+            true_max_model_len, MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
+        )
         model = LLM(
             model=model_location,
             tokenizer=model_location,
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
-            max_model_len=min(
-                true_max_model_len, MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
-            ),
+            max_model_len=max_model_len,
+            max_num_batched_tokens=max(max_model_len, DEFAULT_MAX_NUM_BATCHED_TOKENS),
             download_dir=download_dir,
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,

@@ -28,6 +28,8 @@ from .types import ScoreDict
 from .utils import get_package_version
 
 if t.TYPE_CHECKING:
+    from vllm.v1.attention.backends.registry import AttentionBackendEnum
+
     from .enums import InferenceBackend
 
 
@@ -556,7 +558,7 @@ class BenchmarkConfig:
     few_shot: bool
     num_iterations: int
     gpu_memory_utilization: float
-    attention_backend: str | None
+    attention_backend: "AttentionBackendEnum"
     requires_safetensors: bool
     generative_type: GenerativeType | None
     download_only: bool

@@ -524,6 +524,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for Touzen"
     />
 </a>
+<a href="https://github.com/caldaibis">
+    <img
+        src="https://avatars.githubusercontent.com/u/16032437"
+        width=50
+        alt="Contributor avatar for caldaibis"
+    />
+</a>
 
 ### Contribute to EuroEval
 

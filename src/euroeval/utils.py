@@ -24,7 +24,7 @@ from huggingface_hub.errors import LocalTokenNotFoundError
 from requests.exceptions import RequestException
 
 from .caching_utils import cache_arguments
-from .constants import T
+from .constants import LOCAL_MODELS_REQUIRED_FILES, T
 from .exceptions import InvalidBenchmark, InvalidModel, NaNValueInModelOutput
 from .logging_utils import log, log_once
 
@@ -107,16 +107,16 @@ def resolve_model_path(download_dir: str) -> str:
             f"at {model_path}"
         )
 
-    # Check that found_files contains at least a 'config.json'
-    config_file = next(
-        (file for file in found_files if file.name == "config.json"), None
+    # Check that found_files contains at least one of the required files
+    found_required_file = next(
+        (file for file in found_files if file.name in LOCAL_MODELS_REQUIRED_FILES), None
     )
-    if config_file is None:
+    if found_required_file is None:
         raise InvalidModel(
-            f"Missing required file 'config.json' for {model_id_path.strip('models--')}"
-            f"at {model_path}"
+            f"At least one of the files {LOCAL_MODELS_REQUIRED_FILES} must be present "
+            f"for {model_id_path.strip('models--')} at {model_path}"
         )
-    model_path = config_file.parent
+    model_path = found_required_file.parent
 
     # As a precaution we also check that all of the files are in the same directory
     # if not we create a new dir with symlinks to all of the files from all snapshots

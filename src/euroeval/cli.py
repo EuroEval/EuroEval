@@ -174,6 +174,10 @@ from .languages import get_all_languages
     "--attention-backend",
     default=None,
     show_default=True,
+    type=click.Choice(
+        ["FLASHINFER", "FLASH_ATTN", "TRITON_ATTN", "FLEX_ATTENTION"],
+        case_sensitive=True,
+    ),
     help="The attention backend to use for vLLM. If not specified then FLASHINFER "
     "will be used. Only relevant if the model is generative.",
 )
