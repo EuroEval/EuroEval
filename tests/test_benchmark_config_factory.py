@@ -14,7 +14,7 @@ from euroeval.benchmark_config_factory import (
 )
 from euroeval.data_models import DatasetConfig, Language
 from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.dataset_configs.danish import ANGRY_TWEETS_CONFIG, SCALA_DA_CONFIG
+from euroeval.dataset_configs.danish import MULTI_WIKI_QA_DA_CONFIG, SCALA_DA_CONFIG
 from euroeval.enums import Device
 from euroeval.exceptions import InvalidBenchmark
 from euroeval.languages import (
@@ -151,22 +151,22 @@ def test_prepare_languages(
             [SCALA_DA_CONFIG],
         ),
         (
-            ["linguistic-acceptability", "sentiment-classification"],
-            ["scala-da", "multi-wiki-qa-da", "scandiqa-da"],
+            ["linguistic-acceptability", "reading-comprehension"],
+            ["scala-da", "multi-wiki-qa-da", "nordjylland-news"],
             list(get_all_languages().values()),
-            [SCALA_DA_CONFIG, ANGRY_TWEETS_CONFIG],
+            [SCALA_DA_CONFIG, MULTI_WIKI_QA_DA_CONFIG],
         ),
         (
-            ["linguistic-acceptability", "sentiment-classification"],
-            ["scala-da", "multi-wiki-qa-da", "scandiqa-sv"],
+            ["linguistic-acceptability", "reading-comprehension"],
+            ["scala-da", "multi-wiki-qa-da", "multi-wiki-qa-sv"],
             [DANISH],
-            [SCALA_DA_CONFIG, ANGRY_TWEETS_CONFIG],
+            [SCALA_DA_CONFIG, MULTI_WIKI_QA_DA_CONFIG],
         ),
         (
-            ["linguistic-acceptability", "sentiment-classification"],
+            ["linguistic-acceptability", "reading-comprehension"],
             None,
             [DANISH],
-            [SCALA_DA_CONFIG, ANGRY_TWEETS_CONFIG],
+            [SCALA_DA_CONFIG, MULTI_WIKI_QA_DA_CONFIG],
         ),
         (
             None,
