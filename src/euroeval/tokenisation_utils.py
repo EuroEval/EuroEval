@@ -347,8 +347,11 @@ def get_end_of_chat_token_ids(
     )
 
     if isinstance(token_ids, BatchEncoding):
-        breakpoint()
-        token_ids = token_ids.data["input_ids"]
+        token_ids = token_ids.input_ids
+
+    assert isinstance(token_ids, list), (
+        f"Expected token_ids to be a list, but got {type(token_ids)}.",
+    )
 
     for idx, token in enumerate(tokeniser.convert_ids_to_tokens(token_ids)):
         if "X" in token:
