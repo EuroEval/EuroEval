@@ -98,7 +98,6 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     )
     from vllm.lora.request import LoRARequest
     from vllm.sampling_params import StructuredOutputsParams
-    from vllm.utils import DEFAULT_MAX_NUM_BATCHED_TOKENS
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
@@ -1103,7 +1102,7 @@ def load_model_and_tokeniser(
             tokenizer=model_location,
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
             max_model_len=max_model_len,
-            max_num_batched_tokens=max(max_model_len, DEFAULT_MAX_NUM_BATCHED_TOKENS),
+            max_num_batched_tokens=max_model_len,
             download_dir=download_dir,
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,

@@ -88,6 +88,7 @@ class HuggingFaceMetric(Metric):
             The metric object itself.
         """
         metric_cache_dir = Path(cache_dir) / "metrics"
+        metric_cache_dir.mkdir(parents=True, exist_ok=True)
         download_config = DownloadConfig(cache_dir=metric_cache_dir)
         self.metric = evaluate.load(
             path=self.huggingface_id,
