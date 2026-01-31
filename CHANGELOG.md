@@ -19,9 +19,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Replaced deprecated `VLLM_ATTENTION_BACKEND` environment variable with vLLM's
-  `AttentionConfig` API. Added `--attention-backend` CLI option to configure the
-  attention backend. Defaults to FLASHINFER.
+- Replaced deprecated `VLLM_ATTENTION_BACKEND` environment variable with vLLM's `AttentionConfig` API. Added `--attention-backend` CLI option to configure the attention backend. Defaults to FLASHINFER. This was added by @SwekeR-463 
 - Now requires Python >=3.12, as Python 3.11 does not support some dependencies.
 - We now up the vLLM maximum context length for reasoning models, from 8,192 to
   16,384, to accommodate for reasoning tokens for some datasets that have long documents.
