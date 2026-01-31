@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added the MBBQ-NL dataset (official) and a creation script for publishing it under the
   EuroEval organisation on Hugging Face.
 - Added task documentation for bias detection.
+- Added support for vLLM Metal, so that generative models can now be evaluated on Apple
+  Silicon. Note that this currently does not support structured generation, which means
+  that classification and named entity recognitions tasks unfortunately won't work yet.
+  This is due to [this xgrammar
+  issue](https://github.com/vllm-project/vllm/issues/31901).
 
 ### Changed
 
@@ -22,6 +27,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - We now up the vLLM maximum context length for reasoning models, from 8,192 to
   16,384, to accommodate for reasoning tokens for some datasets that have long documents.
 - We opened up the pinned vLLM version now, now set to version `>=0.14.1`.
+- Made changes to the codebase that makes it compatible with Transformers 5.0, for when
+  vLLM starts supporting it.
 
 ### Fixed
 
@@ -29,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   no pipeline tag on the Hugging Face Hub and it relied on a custom implementation that
   isn't integrated into the `transformers` library.
 - Fixed an issue when a model config had no `pad_token_id` and/or `eos_token_id`.
+- There was an error when evaluating local adapter models, which has been fixed now.
 
 ## [v16.11.0] - 2026-01-21
 

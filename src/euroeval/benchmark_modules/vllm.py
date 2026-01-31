@@ -90,18 +90,16 @@ except ImportError:
     )
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
-    from vllm import LLM, SamplingParams  # type: ignore[missing-import]
-    from vllm.distributed.parallel_state import (  # type: ignore[missing-import]
+    from vllm import LLM, SamplingParams
+    from vllm.distributed.parallel_state import (
         destroy_distributed_environment,
         destroy_model_parallel,
     )
-    from vllm.lora.request import LoRARequest  # type: ignore[missing-import]
-    from vllm.sampling_params import (  #  type: ignore[missing-import]
-        StructuredOutputsParams,
-    )
+    from vllm.lora.request import LoRARequest
+    from vllm.sampling_params import StructuredOutputsParams
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
-    import ray  # type: ignore[missing-import]
+    import ray
 
 
 if t.TYPE_CHECKING:
@@ -153,7 +151,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
 
-        if shutil.which("nvcc") is None:
+        if torch.cuda.is_available() and shutil.which("nvcc") is None:
             raise NeedsSystemDependency(
                 dependency="nvcc",
                 instructions=(
@@ -176,7 +174,10 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         with (
             no_terminal_output(disable=benchmark_config.verbose),
-            attention_backend(value=default_flash_attention_backend),
+            attention_backend(
+                value=default_flash_attention_backend,
+                disable=not torch.cuda.is_available(),
+            ),
         ):
             model, tokeniser = load_model_and_tokeniser(
                 model_config=model_config, benchmark_config=benchmark_config
@@ -216,11 +217,14 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         )
         if self.model_config.adapter_base_model_id is not None:
-            adapter_path = snapshot_download(
-                repo_id=self.model_config.model_id,
-                revision=self.model_config.revision,
-                cache_dir=Path(self.model_config.model_cache_dir),
-            )
+            if Path(self.model_config.model_id).exists():
+                adapter_path = self.model_config.model_id
+            else:
+                adapter_path = snapshot_download(
+                    repo_id=self.model_config.model_id,
+                    revision=self.model_config.revision,
+                    cache_dir=Path(self.model_config.model_cache_dir),
+                )
             self.buffer["lora_request"] = LoRARequest(
                 lora_name="adapter", lora_int_id=1, lora_path=adapter_path
             )
@@ -543,7 +547,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             else None,
             temperature=generation_kwargs["temperature"],
             top_p=generation_kwargs["top_p"],
-            top_k=generation_kwargs["top_k"],
+            top_k=int(generation_kwargs["top_k"]),
             repetition_penalty=generation_kwargs["repetition_penalty"],
             stop=[stop_token for stop_token in stop_tokens if stop_token],
             structured_outputs=structured_outputs,
@@ -552,10 +556,12 @@ class VLLMModel(HuggingFaceEncoderModel):
         # If any of the prompts are empty then we need to replace them with a BOS token
         # so that the vLLM model can generate from them
         prompts: c.Sequence[str] = inputs["text"]
-        if any(len(prompt) == 0 for prompt in prompts):
+        if any(len(prompt.strip()) == 0 for prompt in prompts):
             log("Found empty prompts, replacing with BOS token.", level=logging.DEBUG)
             prompts = [
-                prompt if len(prompt) > 0 else str(self._tokeniser.bos_token)
+                prompt
+                if len(prompt.strip()) > 0
+                else str(self._tokeniser.bos_token or "x")
                 for prompt in prompts
             ]
 
@@ -637,6 +643,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                             "Truncation of prompts failed, some prompts are still too "
                             "long."
                         )
+                case _:
+                    raise InvalidBenchmark("The model type is not set!")
         else:
             log(
                 f"Truncation of prompts for model {self.model_config.model_id!r} is "

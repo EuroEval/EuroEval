@@ -46,18 +46,26 @@ dependencies = [
 
 [project.optional-dependencies]
 generative = [
+    "timm>=1.0.19",
+    # vLLM setup for MacOS
+    "vllm==0.11.0; platform_system == 'Darwin'",
+    "vllm-metal>=0.1.0; platform_system == 'Darwin'",
+    # vLLM setup for Linux (assuming CUDA is available here)
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm[flashinfer]>=0.14.1; platform_system == 'Linux'",
     "ray>=2.53.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
-    "timm>=1.0.19",
 ]
 all = [
+    "timm>=1.0.19",
+    # vLLM setup for MacOS
+    "vllm==0.11.0; platform_system == 'Darwin'",
+    "vllm-metal>=0.1.0; platform_system == 'Darwin'",
+    # vLLM setup for Linux (assuming CUDA is available here)
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm[flashinfer]>=0.14.1; platform_system == 'Linux'",
     "ray>=2.53.0; platform_system == 'Linux'",
     "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
-    "timm>=1.0.19",
 ]
 
 [project.urls]
