@@ -37,7 +37,7 @@ class TestLoadData:
         yield load_data(
             rng=default_rng(seed=4242),
             dataset_config=get_dataset_config(
-                dataset_name="angry-tweets",
+                dataset_name="multi-wiki-qa-da",
                 custom_datasets_file=Path("custom_datasets.py"),
             ),
             benchmark_config=benchmark_config,

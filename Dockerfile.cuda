@@ -3,7 +3,7 @@ FROM nvidia/cuda:12.2.0-base-ubuntu22.04
 # Install dependencies
 RUN apt-get -y update && \
     apt-get -y upgrade && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc python3.11 python3-pip python3-dev git-all && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends gcc python3.12 python3-pip python3-dev git-all && \
     python3 -m pip install --upgrade pip wheel && \
     python3 -m pip install euroeval[all]
 

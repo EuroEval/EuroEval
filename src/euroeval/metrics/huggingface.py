@@ -88,6 +88,7 @@ class HuggingFaceMetric(Metric):
             The metric object itself.
         """
         metric_cache_dir = Path(cache_dir) / "metrics"
+        metric_cache_dir.mkdir(parents=True, exist_ok=True)
         download_config = DownloadConfig(cache_dir=metric_cache_dir)
         self.metric = evaluate.load(
             path=self.huggingface_id,
@@ -186,7 +187,7 @@ class SourceBasedMetric(HuggingFaceMetric):
             raise InvalidBenchmark("SourceBasedMetric requires `dataset` to be passed.")
 
         if self.metric is None:
-            self.metric = evaluate.load(path=self.huggingface_id)
+            self.download(cache_dir=benchmark_config.cache_dir)
 
         sources = dataset["text"]
 

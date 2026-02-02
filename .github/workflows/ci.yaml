@@ -31,7 +31,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: false
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Run pre-commit hooks
         uses: pre-commit/action@v3.0.1
@@ -43,7 +43,7 @@ jobs:
       pull-requests: write
     strategy:
         matrix:
-            python-version: ["3.11", "3.12", "3.13"]
+            python-version: ["3.12", "3.13"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -58,7 +58,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
-        run: uv sync --no-dev
+        run: uv sync --no-dev --all-extras
 
       - name: Start Ollama server
         run: curl -fsSL https://ollama.com/install.sh | sh && ollama serve &
@@ -95,7 +95,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install Dependencies
-        run: uv sync --no-dev
+        run: uv sync --no-dev --all-extras
 
       - name: Start Ollama server
         run: curl -fsSL https://ollama.com/install.sh | sh && ollama serve &

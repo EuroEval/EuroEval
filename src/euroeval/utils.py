@@ -14,7 +14,7 @@ import socket
 import sys
 import typing as t
 from pathlib import Path
-from types import ModuleType, TracebackType
+from types import ModuleType
 
 import demjson3
 import huggingface_hub as hf_hub
@@ -24,7 +24,7 @@ from huggingface_hub.errors import LocalTokenNotFoundError
 from requests.exceptions import RequestException
 
 from .caching_utils import cache_arguments
-from .constants import T
+from .constants import LOCAL_MODELS_REQUIRED_FILES, T
 from .exceptions import InvalidBenchmark, InvalidModel, NaNValueInModelOutput
 from .logging_utils import log, log_once
 
@@ -107,16 +107,16 @@ def resolve_model_path(download_dir: str) -> str:
             f"at {model_path}"
         )
 
-    # Check that found_files contains at least a 'config.json'
-    config_file = next(
-        (file for file in found_files if file.name == "config.json"), None
+    # Check that found_files contains at least one of the required files
+    found_required_file = next(
+        (file for file in found_files if file.name in LOCAL_MODELS_REQUIRED_FILES), None
     )
-    if config_file is None:
+    if found_required_file is None:
         raise InvalidModel(
-            f"Missing required file 'config.json' for {model_id_path.strip('models--')}"
-            f"at {model_path}"
+            f"At least one of the files {LOCAL_MODELS_REQUIRED_FILES} must be present "
+            f"for {model_id_path.strip('models--')} at {model_path}"
         )
-    model_path = config_file.parent
+    model_path = found_required_file.parent
 
     # As a precaution we also check that all of the files are in the same directory
     # if not we create a new dir with symlinks to all of the files from all snapshots
@@ -546,56 +546,3 @@ def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None
         spec.loader.exec_module(module)
         return module
     return None
-
-
-class attention_backend:
-    """Context manager to temporarily set the attention backend.
-
-    This sets the `VLLM_ATTENTION_BACKEND` environment variable to the desired value
-    for the duration of the context manager, and restores the previous value afterwards.
-    """
-
-    def __init__(self, value: str | None) -> None:
-        """Initialise the context manager.
-
-        Args:
-            value:
-                The name of the attention backend to set. If None then no change is
-                made. Also, if the user has already set the `VLLM_ATTENTION_BACKEND` env
-                var, then no change is made.
-        """
-        user_has_set_backend = (
-            os.environ.get("USER_HAS_SET_VLLM_ATTENTION_BACKEND", "0") == "1"
-        )
-        self.value = None if user_has_set_backend else value
-        self.previous_value: str | None = None
-
-    def __enter__(self) -> None:
-        """Enter the context manager."""
-        if self.value is None:
-            return
-        self.previous_value = os.getenv("VLLM_ATTENTION_BACKEND")
-        os.environ["VLLM_ATTENTION_BACKEND"] = self.value
-
-    def __exit__(
-        self,
-        exc_type: t.Type[BaseException] | None,
-        exc_value: BaseException | None,
-        exc_tb: TracebackType | None,
-    ) -> None:
-        """Exit the context manager.
-
-        Args:
-            exc_type:
-                The type of the exception.
-            exc_value:
-                The value of the exception.
-            exc_tb:
-                The traceback of the exception.
-        """
-        if self.value is None:
-            return
-        if self.previous_value is None:
-            os.environ.pop("VLLM_ATTENTION_BACKEND", None)
-        else:
-            os.environ["VLLM_ATTENTION_BACKEND"] = self.previous_value

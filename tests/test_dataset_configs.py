@@ -39,9 +39,10 @@ class TestGetDatasetConfig:
     def test_get_angry_tweets_config(self) -> None:
         """Test that the angry tweets dataset config can be retrieved."""
         dataset_config = get_dataset_config(
-            dataset_name="angry-tweets", custom_datasets_file=Path("custom_datasets.py")
+            dataset_name="multi-wiki-qa-da",
+            custom_datasets_file=Path("custom_datasets.py"),
         )
-        assert dataset_config.name == "angry-tweets"
+        assert dataset_config.name == "multi-wiki-qa-da"
 
     def test_error_when_dataset_does_not_exist(self) -> None:
         """Test that an error is raised when the dataset does not exist."""

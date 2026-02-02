@@ -72,7 +72,7 @@ guide](https://github.com/atom/atom/blob/master/CONTRIBUTING.md#git-commit-messa
 know how to use emoji for commit messages.
 
 Once your changes are ready, don't forget to
-[self-review](/contributing/self-review.md) to speed up the review process:zap:.
+self-review to speed up the review process:zap:.
 
 ### Pull Request
 
