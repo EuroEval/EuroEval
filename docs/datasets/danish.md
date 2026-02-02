@@ -1002,7 +1002,7 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Natalie synes, at smaragder er smukke ædelstene, men Betty gør ikke. _ købte en halskæde med en stor smaragd. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. Natalie\nb. Betty",
+  "text": "Jeg kunne ikke kontrollere fugten, som jeg kontrollerede regnen, fordi _ kom ind overalt. Hvad refererer det tomme _ til?\nSvarmuligheder:\na. fugt\nb. regn",
   "label": "a"
 }
 ```
