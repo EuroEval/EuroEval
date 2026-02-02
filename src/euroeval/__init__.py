@@ -110,15 +110,6 @@ os.environ["DISABLE_AIOHTTP_TRANSPORT"] = "True"
 os.environ["VLLM_USE_V1"] = "1"
 
 
-# Use the FlashInfer flash-attention backend for vLLM, unless the user has already
-# specified a different backend.
-if os.getenv("VLLM_ATTENTION_BACKEND") is None:
-    os.environ["VLLM_ATTENTION_BACKEND"] = "FLASHINFER"
-    os.environ["USER_HAS_SET_VLLM_ATTENTION_BACKEND"] = "0"
-else:
-    os.environ["USER_HAS_SET_VLLM_ATTENTION_BACKEND"] = "1"
-
-
 # Set the HF_TOKEN env var to copy the HUGGINGFACE_API_KEY env var, as vLLM uses the
 # former and LiteLLM uses the latter
 if os.getenv("HUGGINGFACE_API_KEY"):

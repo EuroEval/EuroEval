@@ -79,6 +79,7 @@ class Benchmarker:
         api_base: str | None = None,
         api_version: str | None = None,
         gpu_memory_utilization: float = 0.8,
+        attention_backend: str = "FLASHINFER",
         generative_type: GenerativeType | None = None,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
@@ -149,6 +150,9 @@ class Benchmarker:
                 is generative. A larger value will result in faster evaluation, but at
                 the risk of running out of GPU memory. Only reduce this if you are
                 running out of GPU memory. Defaults to 0.9.
+            attention_backend:
+                The attention backend to use for vLLM. Defaults to FLASHINFER. Only
+                relevant if the model is generative.
             generative_type:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
@@ -264,6 +268,7 @@ class Benchmarker:
             requires_safetensors=requires_safetensors,
             download_only=download_only,
             gpu_memory_utilization=gpu_memory_utilization,
+            attention_backend=attention_backend,
             generative_type=generative_type,
             custom_datasets_file=Path(custom_datasets_file),
             verbose=verbose,

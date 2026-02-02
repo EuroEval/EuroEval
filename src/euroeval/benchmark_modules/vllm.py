@@ -71,7 +71,6 @@ from ..tokenisation_utils import (
 )
 from ..types import ExtractLabelsFunction, Tokeniser
 from ..utils import (
-    attention_backend,
     clear_memory,
     create_model_cache_dir,
     get_hf_token,
@@ -90,18 +89,18 @@ except ImportError:
     )
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
-    from vllm import LLM, SamplingParams  # type: ignore[missing-import]
-    from vllm.distributed.parallel_state import (  # type: ignore[missing-import]
+    from vllm import LLM, SamplingParams
+    from vllm.config.attention import AttentionConfig
+    from vllm.distributed.parallel_state import (
         destroy_distributed_environment,
         destroy_model_parallel,
     )
-    from vllm.lora.request import LoRARequest  # type: ignore[missing-import]
-    from vllm.sampling_params import (  #  type: ignore[missing-import]
-        StructuredOutputsParams,
-    )
+    from vllm.lora.request import LoRARequest
+    from vllm.sampling_params import StructuredOutputsParams
+    from vllm.v1.attention.backends.registry import AttentionBackendEnum
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
-    import ray  # type: ignore[missing-import]
+    import ray
 
 
 if t.TYPE_CHECKING:
@@ -111,12 +110,20 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
 
-MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[re.Pattern, str] = {
-    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE): "TRITON_ATTN",
+MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[re.Pattern, "AttentionBackendEnum"] = {
+    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): AttentionBackendEnum.TRITON_ATTN,
+    re.compile(
+        r"google/gemma-3-1b.*", flags=re.IGNORECASE
+    ): AttentionBackendEnum.TRITON_ATTN,
+    re.compile(
+        r"google/gemma-3n.*", flags=re.IGNORECASE
+    ): AttentionBackendEnum.TRITON_ATTN,
+    re.compile(
+        r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE
+    ): AttentionBackendEnum.TRITON_ATTN,
+    re.compile(
+        r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE
+    ): AttentionBackendEnum.TRITON_ATTN,
 }
 
 
@@ -153,7 +160,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
 
-        if shutil.which("nvcc") is None:
+        if torch.cuda.is_available() and shutil.which("nvcc") is None:
             raise NeedsSystemDependency(
                 dependency="nvcc",
                 instructions=(
@@ -163,23 +170,40 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ),
             )
 
+        if not torch.cuda.is_available() and (
+            dataset_config.task.task_group
+            in [
+                TaskGroup.SEQUENCE_CLASSIFICATION,
+                TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+            ]
+            or dataset_config.task.uses_structured_output
+        ):
+            raise InvalidBenchmark(
+                "We currently require CUDA to benchmark generative models on tasks "
+                "that uses structured generation, which includes the current task "
+                f"{dataset_config.task.name}. This is due to an xgrammar issue, which "
+                "will hopefully be fixed soon."
+            )
+
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        # See if the model requires a particular attention backend
-        default_flash_attention_backend = None
+        # Determine the attention backend to use:
+        # Override for models that require a specific backend, otherwise use user's
+        # choice from CLI (defaults to FLASHINFER)
         for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
             if re.search(pattern=pattern, string=model_config.model_id):
-                default_flash_attention_backend = backend
+                attention_backend = backend
                 break
+        else:
+            attention_backend = benchmark_config.attention_backend
 
-        with (
-            no_terminal_output(disable=benchmark_config.verbose),
-            attention_backend(value=default_flash_attention_backend),
-        ):
+        with no_terminal_output(disable=benchmark_config.verbose):
             model, tokeniser = load_model_and_tokeniser(
-                model_config=model_config, benchmark_config=benchmark_config
+                model_config=model_config,
+                benchmark_config=benchmark_config,
+                attention_backend=attention_backend,
             )
         self._model: "LLM" = model
         self._tokeniser: Tokeniser = tokeniser
@@ -216,11 +240,14 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         )
         if self.model_config.adapter_base_model_id is not None:
-            adapter_path = snapshot_download(
-                repo_id=self.model_config.model_id,
-                revision=self.model_config.revision,
-                cache_dir=Path(self.model_config.model_cache_dir),
-            )
+            if Path(self.model_config.model_id).exists():
+                adapter_path = self.model_config.model_id
+            else:
+                adapter_path = snapshot_download(
+                    repo_id=self.model_config.model_id,
+                    revision=self.model_config.revision,
+                    cache_dir=Path(self.model_config.model_cache_dir),
+                )
             self.buffer["lora_request"] = LoRARequest(
                 lora_name="adapter", lora_int_id=1, lora_path=adapter_path
             )
@@ -543,7 +570,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             else None,
             temperature=generation_kwargs["temperature"],
             top_p=generation_kwargs["top_p"],
-            top_k=generation_kwargs["top_k"],
+            top_k=int(generation_kwargs["top_k"]),
             repetition_penalty=generation_kwargs["repetition_penalty"],
             stop=[stop_token for stop_token in stop_tokens if stop_token],
             structured_outputs=structured_outputs,
@@ -552,10 +579,12 @@ class VLLMModel(HuggingFaceEncoderModel):
         # If any of the prompts are empty then we need to replace them with a BOS token
         # so that the vLLM model can generate from them
         prompts: c.Sequence[str] = inputs["text"]
-        if any(len(prompt) == 0 for prompt in prompts):
+        if any(len(prompt.strip()) == 0 for prompt in prompts):
             log("Found empty prompts, replacing with BOS token.", level=logging.DEBUG)
             prompts = [
-                prompt if len(prompt) > 0 else str(self._tokeniser.bos_token)
+                prompt
+                if len(prompt.strip()) > 0
+                else str(self._tokeniser.bos_token or "x")
                 for prompt in prompts
             ]
 
@@ -637,6 +666,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                             "Truncation of prompts failed, some prompts are still too "
                             "long."
                         )
+                case _:
+                    raise InvalidBenchmark("The model type is not set!")
         else:
             log(
                 f"Truncation of prompts for model {self.model_config.model_id!r} is "
@@ -939,7 +970,9 @@ class VLLMModel(HuggingFaceEncoderModel):
 
 
 def load_model_and_tokeniser(
-    model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
+    model_config: "ModelConfig",
+    benchmark_config: "BenchmarkConfig",
+    attention_backend: "AttentionBackendEnum",
 ) -> tuple["LLM", Tokeniser]:
     """Load the model and tokeniser.
 
@@ -948,6 +981,8 @@ def load_model_and_tokeniser(
             The model configuration.
         benchmark_config:
             The benchmark configuration.
+        attention_backend:
+            The attention backend to use.
 
     Returns:
         A pair (model, tokeniser), with the loaded model and tokeniser
@@ -1080,13 +1115,17 @@ def load_model_and_tokeniser(
             if internet_connection_available() or Path(model_id).is_dir()
             else resolve_model_path(download_dir=download_dir)
         )
+        attention_config = AttentionConfig(backend=attention_backend)
+
+        max_model_len = min(
+            true_max_model_len, MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
+        )
         model = LLM(
             model=model_location,
             tokenizer=model_location,
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
-            max_model_len=min(
-                true_max_model_len, MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
-            ),
+            max_model_len=max_model_len,
+            max_num_batched_tokens=max_model_len,
             download_dir=download_dir,
             trust_remote_code=benchmark_config.trust_remote_code,
             revision=revision,
@@ -1103,6 +1142,7 @@ def load_model_and_tokeniser(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
+            attention_config=attention_config,
             **vllm_tokenisation_params,
         )
     except (RuntimeError, ValueError, OSError) as e:
@@ -1128,11 +1168,11 @@ def load_model_and_tokeniser(
                 (
                     "Since you're running in verbose mode, you might see a descriptive "
                     "error above already. Note however that if the error message urges "
-                    "you to set the environment variable `VLLM_ATTENTION_BACKEND` to "
-                    "'FLEX_ATTENTION', please try setting it to 'TRITON_ATTN' first, "
-                    "as that often solves the issue, whereas 'FLEX_ATTENTION' usually "
-                    "doesn't. If you don't see any descriptive error above, then you "
-                    "can try "
+                    "you to use the attention backend 'FLEX_ATTENTION', please try "
+                    "setting it to 'TRITON_ATTN' instead using the "
+                    "`--attention-backend` CLI argument, as that often solves the "
+                    "issue, whereas 'FLEX_ATTENTION' usually doesn't. If you don't "
+                    "see any descriptive error above, then you can try "
                 )
                 if benchmark_config.verbose
                 else "Try "
@@ -1507,6 +1547,9 @@ def select_backend_and_parallelism() -> tuple[str, int, int]:
         - tensor_parallel_size (int): Number of GPUs per node.
         - pipeline_parallel_size (int): Number of stages across nodes.
     """
+    if not torch.cuda.is_available():
+        return "mp", 1, 1
+
     if not ray.is_initialized():
         try:
             ray.init(address="auto", ignore_reinit_error=True)

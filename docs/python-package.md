@@ -24,7 +24,7 @@ when an evaluation requires a certain extra dependency, and how you install it.
 
 ### Benchmarking
 
-`euroeval` allows for benchmarking both via. script and using the command line. 
+`euroeval` allows for benchmarking both via. script and using the command line.
 
 /// tab | Using the command line
 
@@ -72,6 +72,7 @@ See all the arguments and options available for the `euroeval` command by typing
 ```bash
 euroeval --help
 ```
+
 ///
 
 /// tab | Using a script
@@ -104,6 +105,7 @@ models on the Danish sentiment classification task:
 ```python
 >>> benchmarker.benchmark(task="sentiment-classification", language="da")
 ```
+
 ///
 
 /// tab | Using Docker
@@ -197,8 +199,8 @@ an Ollama model hosted locally:
 ## Benchmarking in an offline environment
 
 If you need to benchmark in an offline environment, you need to download the models,
-datasets and metrics beforehand. For example to download the model you want and all of the Danish sentiment
-classification datasets:
+datasets and metrics beforehand. For example to download the model you want and all of
+the Danish sentiment classification datasets:
 
 /// tab | Using the command line
 This can be done by adding the `--download-only` argument, from the command line:
@@ -206,6 +208,7 @@ This can be done by adding the `--download-only` argument, from the command line
 ```bash
 euroeval --model <model-id> --task sentiment-classification --language da --download-only
 ```
+
 ///
 /// tab | Using a script
 This can be done using the `download_only` argument, if benchmarking from a script:
@@ -218,12 +221,12 @@ benchmarker.benchmark(
   download_only=True,
 )
 ```
+
 ///
 
-
 !!! note
-    Offline benchmarking of adapter models is not currently supported, meaning
-    that we still require an internet connection during the evaluation of these. If offline
+    Offline benchmarking of adapter models is not currently supported, meaning that we
+    still require an internet connection during the evaluation of these. If offline
     support of adapters is important to you, please consider [opening an
     issue](https://github.com/EuroEval/EuroEval/issues).
 

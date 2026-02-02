@@ -27,6 +27,7 @@ def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
         "api_base",
         "api_version",
         "gpu_memory_utilization",
+        "attention_backend",
         "requires_safetensors",
         "generative_type",
         "custom_datasets_file",

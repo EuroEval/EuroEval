@@ -171,6 +171,17 @@ from .languages import get_all_languages
     "if you are running out of GPU memory. Only relevant if the model is generative.",
 )
 @click.option(
+    "--attention-backend",
+    default="FLASHINFER",
+    show_default=True,
+    type=click.Choice(
+        ["FLASHINFER", "FLASH_ATTN", "TRITON_ATTN", "FLEX_ATTENTION"],
+        case_sensitive=True,
+    ),
+    help="The attention backend to use for vLLM. Only relevant if the model is "
+    "generative.",
+)
+@click.option(
     "--requires-safetensors",
     is_flag=True,
     help="Only allow loading models that have safetensors weights available",
@@ -254,6 +265,7 @@ def benchmark(
     api_base: str | None,
     api_version: str | None,
     gpu_memory_utilization: float,
+    attention_backend: str,
     requires_safetensors: bool,
     generative_type: str | None,
     custom_datasets_file: Path,
@@ -285,6 +297,7 @@ def benchmark(
         api_base=api_base,
         api_version=api_version,
         gpu_memory_utilization=gpu_memory_utilization,
+        attention_backend=attention_backend,
         generative_type=GenerativeType[generative_type.upper()]
         if generative_type
         else None,

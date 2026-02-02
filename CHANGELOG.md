@@ -9,16 +9,49 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+<<<<<<< HEAD
+
+- Added support for Belarusian 🇧🇾! This includes the sentiment classification dataset,
+  the linguistic acceptability dataset ScaLA-be, the named entity recognition dataset
+  WikiANN-be, the reading comprehension dataset MultiWikiQA-be.
+=======
+- Added the bias detection task (`multiple-choice-stereotype-bias`) along with the Dutch
+  dataset MBBQ-NL. This was added by @caldaibis ✨
+- Added support for vLLM Metal, so that generative models can now be evaluated on Apple
+  Silicon. Note that this currently does not support structured generation, which means
+  that classification and named entity recognitions tasks unfortunately won't work yet.
+  This is due to [this xgrammar
+  issue](https://github.com/vllm-project/vllm/issues/31901).
+
+>>>>>>> 745184cd92cbad7ed6a33093bae397c3ad01f9ea
+
+### Added
+
 - Added support for Belarusian 🇧🇾! This includes the sentiment classification dataset,
   the linguistic acceptability dataset ScaLA-be, the named entity recognition dataset
   WikiANN-be, the reading comprehension dataset MultiWikiQA-be.
 
+### Added
+
+- Added the bias detection task (`multiple-choice-stereotype-bias`) along with the Dutch
+  dataset MBBQ-NL. This was added by @caldaibis ✨
+- Added support for vLLM Metal, so that generative models can now be evaluated on Apple
+  Silicon. Note that this currently does not support structured generation, which means
+  that classification and named entity recognitions tasks unfortunately won't work yet.
+  This is due to [this xgrammar
+  issue](https://github.com/vllm-project/vllm/issues/31901).
+
 ### Changed
 
+- Replaced deprecated `VLLM_ATTENTION_BACKEND` environment variable with vLLM's
+  `AttentionConfig` API. Added `--attention-backend` CLI option to configure the
+  attention backend. Defaults to FLASHINFER. This was added by @SwekeR-463 ✨
 - Now requires Python >=3.12, as Python 3.11 does not support some dependencies.
 - We now up the vLLM maximum context length for reasoning models, from 8,192 to
   16,384, to accommodate for reasoning tokens for some datasets that have long documents.
 - We opened up the pinned vLLM version now, now set to version `>=0.14.1`.
+- Made changes to the codebase that makes it compatible with Transformers 5.0, for when
+  vLLM starts supporting it.
 
 ### Fixed
 
@@ -26,6 +59,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   no pipeline tag on the Hugging Face Hub and it relied on a custom implementation that
   isn't integrated into the `transformers` library.
 - Fixed an issue when a model config had no `pad_token_id` and/or `eos_token_id`.
+- There was an error when evaluating local adapter models, which has been fixed now.
+- Now ensures that the vLLM argument `max_num_batched_tokens` is at least as large as the
+  maximum context length of the model, which gave errors with models that had a maximum
+  context length of less than 8,192.
 
 ## [v16.11.0] - 2026-01-21
 
