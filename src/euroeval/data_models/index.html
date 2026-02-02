@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -2133,7 +2135,17 @@
 <span class="normal">829</span>
 <span class="normal">830</span>
 <span class="normal">831</span>
-<span class="normal">832</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">832</span>
+<span class="normal">833</span>
+<span class="normal">834</span>
+<span class="normal">835</span>
+<span class="normal">836</span>
+<span class="normal">837</span>
+<span class="normal">838</span>
+<span class="normal">839</span>
+<span class="normal">840</span>
+<span class="normal">841</span>
+<span class="normal">842</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -2147,6 +2159,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.generation.configuration_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationConfig</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">ATTENTION_BACKENDS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">ModelType</span><span class="p">,</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -2652,6 +2665,9 @@
 <span class="sd">            faster evaluation, but at the risk of running out of GPU memory. Only reduce</span>
 <span class="sd">            this if you are running out of GPU memory. Only relevant if the model is</span>
 <span class="sd">            generative.</span>
+<span class="sd">        attention_backend:</span>
+<span class="sd">            The attention backend to use for vLLM. Defaults to FLASHINFER. Only</span>
+<span class="sd">            relevant if the model is generative.</span>
 <span class="sd">        requires_safetensors:</span>
 <span class="sd">            Whether to only allow models that use the safetensors format.</span>
 <span class="sd">        generative_type:</span>
@@ -2688,6 +2704,9 @@
     <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">num_iterations</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">attention_backend</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span>
+        <span class="o">*</span><span class="n">ATTENTION_BACKENDS</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
+    <span class="p">]</span>
     <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">generative_type</span><span class="p">:</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span>
@@ -2736,6 +2755,9 @@
     <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">attention_backend</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span>
+        <span class="o">*</span><span class="n">ATTENTION_BACKENDS</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
+    <span class="p">]</span>
     <span class="n">generative_type</span><span class="p">:</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">custom_datasets_file</span><span class="p">:</span> <span class="n">Path</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span>

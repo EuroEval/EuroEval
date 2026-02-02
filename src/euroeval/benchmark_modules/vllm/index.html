@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -2663,7 +2665,58 @@
 <span class="normal">1547</span>
 <span class="normal">1548</span>
 <span class="normal">1549</span>
-<span class="normal">1550</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1550</span>
+<span class="normal">1551</span>
+<span class="normal">1552</span>
+<span class="normal">1553</span>
+<span class="normal">1554</span>
+<span class="normal">1555</span>
+<span class="normal">1556</span>
+<span class="normal">1557</span>
+<span class="normal">1558</span>
+<span class="normal">1559</span>
+<span class="normal">1560</span>
+<span class="normal">1561</span>
+<span class="normal">1562</span>
+<span class="normal">1563</span>
+<span class="normal">1564</span>
+<span class="normal">1565</span>
+<span class="normal">1566</span>
+<span class="normal">1567</span>
+<span class="normal">1568</span>
+<span class="normal">1569</span>
+<span class="normal">1570</span>
+<span class="normal">1571</span>
+<span class="normal">1572</span>
+<span class="normal">1573</span>
+<span class="normal">1574</span>
+<span class="normal">1575</span>
+<span class="normal">1576</span>
+<span class="normal">1577</span>
+<span class="normal">1578</span>
+<span class="normal">1579</span>
+<span class="normal">1580</span>
+<span class="normal">1581</span>
+<span class="normal">1582</span>
+<span class="normal">1583</span>
+<span class="normal">1584</span>
+<span class="normal">1585</span>
+<span class="normal">1586</span>
+<span class="normal">1587</span>
+<span class="normal">1588</span>
+<span class="normal">1589</span>
+<span class="normal">1590</span>
+<span class="normal">1591</span>
+<span class="normal">1592</span>
+<span class="normal">1593</span>
+<span class="normal">1594</span>
+<span class="normal">1595</span>
+<span class="normal">1596</span>
+<span class="normal">1597</span>
+<span class="normal">1598</span>
+<span class="normal">1599</span>
+<span class="normal">1600</span>
+<span class="normal">1601</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2686,6 +2739,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib3.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestError</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ATTENTION_BACKENDS</span><span class="p">,</span>
     <span class="n">CUSTOM_STOP_TOKENS</span><span class="p">,</span>
     <span class="n">GENERATION_KWARGS</span><span class="p">,</span>
     <span class="n">GENERATIVE_PIPELINE_TAGS</span><span class="p">,</span>
@@ -2736,7 +2790,6 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractLabelsFunction</span><span class="p">,</span> <span class="n">Tokeniser</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">attention_backend</span><span class="p">,</span>
     <span class="n">clear_memory</span><span class="p">,</span>
     <span class="n">create_model_cache_dir</span><span class="p">,</span>
     <span class="n">get_hf_token</span><span class="p">,</span>
@@ -2755,18 +2808,23 @@
     <span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span> <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLM</span><span class="p">,</span> <span class="n">SamplingParams</span>  <span class="c1"># type: ignore[missing-import]</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.distributed.parallel_state</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># type: ignore[missing-import]</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">vllm.config</span>
+
+    <span class="c1"># MacOS/CPU installs an older version of vLLM, which doesn&#39;t have the attention</span>
+    <span class="c1"># config</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">vllm</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;attention&quot;</span><span class="p">):</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.config.attention</span><span class="w"> </span><span class="kn">import</span> <span class="n">AttentionConfig</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLM</span><span class="p">,</span> <span class="n">SamplingParams</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.distributed.parallel_state</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">destroy_distributed_environment</span><span class="p">,</span>
         <span class="n">destroy_model_parallel</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.lora.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoRARequest</span>  <span class="c1"># type: ignore[missing-import]</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.sampling_params</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1">#  type: ignore[missing-import]</span>
-        <span class="n">StructuredOutputsParams</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.lora.request</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoRARequest</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.sampling_params</span><span class="w"> </span><span class="kn">import</span> <span class="n">StructuredOutputsParams</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span> <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;ray&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">ray</span>  <span class="c1"># type: ignore[missing-import]</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">ray</span>
 
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
@@ -2776,7 +2834,9 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">Task</span>
 
 
-<span class="n">MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+<span class="n">MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="o">*</span><span class="n">ATTENTION_BACKENDS</span><span class="p">]</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
+<span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
     <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;.*gpt-oss.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
     <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;google/gemma-3-1b.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
     <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;google/gemma-3n.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
@@ -2818,7 +2878,7 @@
         <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NeedsExtraInstalled</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;generative&quot;</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">&quot;nvcc&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="ow">and</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">&quot;nvcc&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NeedsSystemDependency</span><span class="p">(</span>
                 <span class="n">dependency</span><span class="o">=</span><span class="s2">&quot;nvcc&quot;</span><span class="p">,</span>
                 <span class="n">instructions</span><span class="o">=</span><span class="p">(</span>
@@ -2828,23 +2888,43 @@
                 <span class="p">),</span>
             <span class="p">)</span>
 
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span>
+            <span class="ow">in</span> <span class="p">[</span>
+                <span class="n">TaskGroup</span><span class="o">.</span><span class="n">SEQUENCE_CLASSIFICATION</span><span class="p">,</span>
+                <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">,</span>
+            <span class="p">]</span>
+            <span class="ow">or</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_structured_output</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                <span class="s2">&quot;We currently require CUDA to benchmark generative models on tasks &quot;</span>
+                <span class="s2">&quot;that uses structured generation, which includes the current task &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">. This is due to an xgrammar issue, which &quot;</span>
+                <span class="s2">&quot;will hopefully be fixed soon.&quot;</span>
+            <span class="p">)</span>
+
         <span class="n">raise_if_wrong_params</span><span class="p">(</span>
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">allowed_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allowed_params</span>
         <span class="p">)</span>
 
-        <span class="c1"># See if the model requires a particular attention backend</span>
-        <span class="n">default_flash_attention_backend</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">backend</span> <span class="ow">in</span> <span class="n">MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">pattern</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">):</span>
-                <span class="n">default_flash_attention_backend</span> <span class="o">=</span> <span class="n">backend</span>
-                <span class="k">break</span>
+        <span class="c1"># Determine the attention backend to use:</span>
+        <span class="c1"># Override for models that require a specific backend, otherwise use user&#39;s</span>
+        <span class="c1"># choice from CLI (defaults to FLASHINFER)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">vllm</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;attention&quot;</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">backend</span> <span class="ow">in</span> <span class="n">MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">pattern</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">):</span>
+                    <span class="n">attention_backend</span> <span class="o">=</span> <span class="n">backend</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">attention_backend</span> <span class="o">=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">attention_backend</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">attention_backend</span> <span class="o">=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">attention_backend</span>
 
-        <span class="k">with</span> <span class="p">(</span>
-            <span class="n">no_terminal_output</span><span class="p">(</span><span class="n">disable</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">),</span>
-            <span class="n">attention_backend</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">default_flash_attention_backend</span><span class="p">),</span>
-        <span class="p">):</span>
+        <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">(</span><span class="n">disable</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
             <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_model_and_tokeniser</span><span class="p">(</span>
-                <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span>
+                <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
+                <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
+                <span class="n">attention_backend</span><span class="o">=</span><span class="n">attention_backend</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">:</span> <span class="n">Tokeniser</span> <span class="o">=</span> <span class="n">tokeniser</span>
@@ -2881,11 +2961,14 @@
             <span class="p">)</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">adapter_path</span> <span class="o">=</span> <span class="n">snapshot_download</span><span class="p">(</span>
-                <span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-                <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
-                <span class="n">cache_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">),</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">adapter_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">adapter_path</span> <span class="o">=</span> <span class="n">snapshot_download</span><span class="p">(</span>
+                    <span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+                    <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+                    <span class="n">cache_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">),</span>
+                <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;lora_request&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">LoRARequest</span><span class="p">(</span>
                 <span class="n">lora_name</span><span class="o">=</span><span class="s2">&quot;adapter&quot;</span><span class="p">,</span> <span class="n">lora_int_id</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">lora_path</span><span class="o">=</span><span class="n">adapter_path</span>
             <span class="p">)</span>
@@ -3208,7 +3291,7 @@
             <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">temperature</span><span class="o">=</span><span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;temperature&quot;</span><span class="p">],</span>
             <span class="n">top_p</span><span class="o">=</span><span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;top_p&quot;</span><span class="p">],</span>
-            <span class="n">top_k</span><span class="o">=</span><span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;top_k&quot;</span><span class="p">],</span>
+            <span class="n">top_k</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;top_k&quot;</span><span class="p">]),</span>
             <span class="n">repetition_penalty</span><span class="o">=</span><span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;repetition_penalty&quot;</span><span class="p">],</span>
             <span class="n">stop</span><span class="o">=</span><span class="p">[</span><span class="n">stop_token</span> <span class="k">for</span> <span class="n">stop_token</span> <span class="ow">in</span> <span class="n">stop_tokens</span> <span class="k">if</span> <span class="n">stop_token</span><span class="p">],</span>
             <span class="n">structured_outputs</span><span class="o">=</span><span class="n">structured_outputs</span><span class="p">,</span>
@@ -3217,10 +3300,12 @@
         <span class="c1"># If any of the prompts are empty then we need to replace them with a BOS token</span>
         <span class="c1"># so that the vLLM model can generate from them</span>
         <span class="n">prompts</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span><span class="p">):</span>
             <span class="n">log</span><span class="p">(</span><span class="s2">&quot;Found empty prompts, replacing with BOS token.&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
             <span class="n">prompts</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">prompt</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">bos_token</span><span class="p">)</span>
+                <span class="n">prompt</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prompt</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">bos_token</span> <span class="ow">or</span> <span class="s2">&quot;x&quot;</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span>
             <span class="p">]</span>
 
@@ -3302,6 +3387,8 @@
                             <span class="s2">&quot;Truncation of prompts failed, some prompts are still too &quot;</span>
                             <span class="s2">&quot;long.&quot;</span>
                         <span class="p">)</span>
+                <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span><span class="s2">&quot;The model type is not set!&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">log</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Truncation of prompts for model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is &quot;</span>
@@ -3604,7 +3691,11 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">load_model_and_tokeniser</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.load_model_and_tokeniser"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.load_model_and_tokeniser" title="Go to docs">[docs]</a></div>
-    <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span>
+    <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
+    <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
+    <span class="n">attention_backend</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span>
+        <span class="o">*</span><span class="n">ATTENTION_BACKENDS</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
+    <span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="s2">&quot;LLM&quot;</span><span class="p">,</span> <span class="n">Tokeniser</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the model and tokeniser.</span>
 
@@ -3613,6 +3704,8 @@
 <span class="sd">            The model configuration.</span>
 <span class="sd">        benchmark_config:</span>
 <span class="sd">            The benchmark configuration.</span>
+<span class="sd">        attention_backend:</span>
+<span class="sd">            The attention backend to use.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A pair (model, tokeniser), with the loaded model and tokeniser</span>
@@ -3729,9 +3822,14 @@
         <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
         <span class="n">token</span><span class="o">=</span><span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">),</span>
     <span class="p">)</span>
-    <span class="n">vllm_tokenisation_params</span> <span class="o">=</span> <span class="n">get_vllm_tokenisation_params</span><span class="p">(</span>
+    <span class="n">vllm_params</span> <span class="o">=</span> <span class="n">get_vllm_tokenisation_params</span><span class="p">(</span>
         <span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">,</span> <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span>
     <span class="p">)</span>
+
+    <span class="c1"># MacOS/CPU installs an older version of vLLM, which doesn&#39;t have the attention</span>
+    <span class="c1"># config</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">vllm</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;attention&quot;</span><span class="p">):</span>
+        <span class="n">vllm_params</span><span class="p">[</span><span class="s2">&quot;attention_config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">AttentionConfig</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">attention_backend</span><span class="p">)</span>
 
     <span class="n">clear_vllm</span><span class="p">()</span>
 
@@ -3745,13 +3843,16 @@
             <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">()</span> <span class="ow">or</span> <span class="n">Path</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()</span>
             <span class="k">else</span> <span class="n">resolve_model_path</span><span class="p">(</span><span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">)</span>
         <span class="p">)</span>
+
+        <span class="n">max_model_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+            <span class="n">true_max_model_len</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span> <span class="o">+</span> <span class="n">REASONING_MAX_TOKENS</span>
+        <span class="p">)</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">LLM</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model_location</span><span class="p">,</span>
             <span class="n">tokenizer</span><span class="o">=</span><span class="n">model_location</span><span class="p">,</span>
             <span class="n">gpu_memory_utilization</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">gpu_memory_utilization</span><span class="p">,</span>
-            <span class="n">max_model_len</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span>
-                <span class="n">true_max_model_len</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span> <span class="o">+</span> <span class="n">REASONING_MAX_TOKENS</span>
-            <span class="p">),</span>
+            <span class="n">max_model_len</span><span class="o">=</span><span class="n">max_model_len</span><span class="p">,</span>
+            <span class="n">max_num_batched_tokens</span><span class="o">=</span><span class="n">max_model_len</span><span class="p">,</span>
             <span class="n">download_dir</span><span class="o">=</span><span class="n">download_dir</span><span class="p">,</span>
             <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
             <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span>
@@ -3768,7 +3869,7 @@
             <span class="n">enable_prefix_caching</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">enable_lora</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">max_lora_rank</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">vllm_tokenisation_params</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">vllm_params</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">if</span> <span class="s2">&quot;awaiting a review from the repo authors&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
@@ -3793,11 +3894,11 @@
                 <span class="p">(</span>
                     <span class="s2">&quot;Since you&#39;re running in verbose mode, you might see a descriptive &quot;</span>
                     <span class="s2">&quot;error above already. Note however that if the error message urges &quot;</span>
-                    <span class="s2">&quot;you to set the environment variable `VLLM_ATTENTION_BACKEND` to &quot;</span>
-                    <span class="s2">&quot;&#39;FLEX_ATTENTION&#39;, please try setting it to &#39;TRITON_ATTN&#39; first, &quot;</span>
-                    <span class="s2">&quot;as that often solves the issue, whereas &#39;FLEX_ATTENTION&#39; usually &quot;</span>
-                    <span class="s2">&quot;doesn&#39;t. If you don&#39;t see any descriptive error above, then you &quot;</span>
-                    <span class="s2">&quot;can try &quot;</span>
+                    <span class="s2">&quot;you to use the attention backend &#39;FLEX_ATTENTION&#39;, please try &quot;</span>
+                    <span class="s2">&quot;setting it to &#39;TRITON_ATTN&#39; instead using the &quot;</span>
+                    <span class="s2">&quot;`--attention-backend` CLI argument, as that often solves the &quot;</span>
+                    <span class="s2">&quot;issue, whereas &#39;FLEX_ATTENTION&#39; usually doesn&#39;t. If you don&#39;t &quot;</span>
+                    <span class="s2">&quot;see any descriptive error above, then you can try &quot;</span>
                 <span class="p">)</span>
                 <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span>
                 <span class="k">else</span> <span class="s2">&quot;Try &quot;</span>
@@ -4172,6 +4273,9 @@
 <span class="sd">        - tensor_parallel_size (int): Number of GPUs per node.</span>
 <span class="sd">        - pipeline_parallel_size (int): Number of stages across nodes.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
+        <span class="k">return</span> <span class="s2">&quot;mp&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ray</span><span class="o">.</span><span class="n">is_initialized</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">ray</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">ignore_reinit_error</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>

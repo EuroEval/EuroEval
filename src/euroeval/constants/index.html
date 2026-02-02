@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -1030,7 +1032,36 @@
 <span class="normal">104</span>
 <span class="normal">105</span>
 <span class="normal">106</span>
-<span class="normal">107</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeVar</span>
@@ -1065,8 +1096,8 @@
 <span class="c1"># Used to disallow non-generative models to be evaluated on these task groups</span>
 <span class="n">GENERATIVE_DATASET_TASK_GROUPS</span> <span class="o">=</span> <span class="p">[</span><span class="n">TaskGroup</span><span class="o">.</span><span class="n">TEXT_TO_TEXT</span><span class="p">]</span>
 
-<span class="c1"># Local models are required to have these files in their directory</span>
-<span class="n">LOCAL_MODELS_REQUIRED_FILES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;config.json&quot;</span><span class="p">]</span>
+<span class="c1"># Local models are required to have one of these files in their directory</span>
+<span class="n">LOCAL_MODELS_REQUIRED_FILES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;config.json&quot;</span><span class="p">,</span> <span class="s2">&quot;adapter_config.json&quot;</span><span class="p">]</span>
 
 <span class="c1"># The number of top log probabilities to return for generative models. For several APIs</span>
 <span class="c1"># this is the maximum number of log probabilities that can be returned</span>
@@ -1137,6 +1168,35 @@
     <span class="s2">&quot;top_k&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
     <span class="s2">&quot;repetition_penalty&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
 <span class="p">}</span>
+
+<span class="c1"># This is a mirror of `AttentionBackendEnum` in vLLM, but since we don&#39;t have access to</span>
+<span class="c1"># this when running on CPU/MacOS (as we can only run an old vLLM version), we have to</span>
+<span class="c1"># define it here</span>
+<span class="n">ATTENTION_BACKENDS</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;FLASH_ATTN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FLASH_ATTN_DIFFKV&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ROCM_ATTN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ROCM_AITER_MLA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ROCM_AITER_TRITON_MLA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ROCM_AITER_FA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ROCM_AITER_MLA_SPARSE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;TORCH_SDPA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FLASHINFER&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FLASHINFER_MLA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;TRITON_MLA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CUTLASS_MLA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FLASHMLA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FLASHMLA_SPARSE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FLASH_ATTN_MLA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;IPEX&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NO_ATTENTION&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FLEX_ATTENTION&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;TREE_ATTN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ROCM_AITER_UNIFIED_ATTN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CPU_ATTN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CUSTOM&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 </code></pre></div></td></tr></table></div>
 
 

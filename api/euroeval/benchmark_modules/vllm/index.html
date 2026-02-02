@@ -569,6 +569,8 @@
       
         
       
+        
+      
     
     
     
@@ -1599,6 +1601,8 @@
       
         
           
+        
+      
         
       
         
@@ -3417,7 +3421,7 @@ The Trainer class.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.vllm.load_model_and_tokeniser" title="euroeval.benchmark_modules.vllm.load_model_and_tokeniser">load_model_and_tokeniser</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">benchmark_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple['LLM', <span class="mkapi-tooltip" title="euroeval.types.Tokeniser">Tokeniser</span>]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.benchmark_modules.vllm.load_model_and_tokeniser" title="euroeval.benchmark_modules.vllm.load_model_and_tokeniser">load_model_and_tokeniser</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">benchmark_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">attention_backend</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Literal">Literal</span>[*<span class="mkapi-tooltip" title="euroeval.constants.ATTENTION_BACKENDS">ATTENTION_BACKENDS</span>,]</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return">tuple['LLM', <span class="mkapi-tooltip" title="euroeval.types.Tokeniser">Tokeniser</span>]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Load the model and tokeniser.</p>
@@ -3440,6 +3444,11 @@ The model configuration.</p>
 <p><span class="mkapi-item-name">benchmark_config</span> : 
 <span class="mkapi-item-type"><a href="../../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span> <span class="mkapi-dash">&mdash;</span>
 The benchmark configuration.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">attention_backend</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Literal">Literal</span>[*<span class="mkapi-tooltip" title="euroeval.constants.ATTENTION_BACKENDS">ATTENTION_BACKENDS</span>,]</span> <span class="mkapi-dash">&mdash;</span>
+The attention backend to use.</p>
 </li>
 </ul>
 </div>

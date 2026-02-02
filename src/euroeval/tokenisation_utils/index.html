@@ -561,6 +561,8 @@
       
         
       
+        
+      
     
     
     
@@ -1646,7 +1648,16 @@
 <span class="normal">602</span>
 <span class="normal">603</span>
 <span class="normal">604</span>
-<span class="normal">605</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
+<span class="normal">605</span>
+<span class="normal">606</span>
+<span class="normal">607</span>
+<span class="normal">608</span>
+<span class="normal">609</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span>
+<span class="normal">613</span>
+<span class="normal">614</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1654,6 +1665,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchEncoding</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">BOS_TOKENS</span><span class="p">,</span> <span class="n">EOS_TOKENS</span><span class="p">,</span> <span class="n">PAD_TOKENS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeType</span>
@@ -1988,6 +2000,14 @@
         <span class="k">if</span> <span class="s2">&quot;does not have a chat template&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">raise</span> <span class="n">e</span>
+
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">token_ids</span><span class="p">,</span> <span class="p">(</span><span class="n">BatchEncoding</span><span class="p">,</span> <span class="nb">list</span><span class="p">)),</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Expected token_ids to be a BatchEncoding or list, but got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">token_ids</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">token_ids</span><span class="p">,</span> <span class="n">BatchEncoding</span><span class="p">):</span>
+        <span class="n">token_ids</span> <span class="o">=</span> <span class="n">token_ids</span><span class="o">.</span><span class="n">input_ids</span>
+
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">token_ids</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span> <span class="p">(</span>
         <span class="sa">f</span><span class="s2">&quot;Expected token_ids to be a list, but got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">token_ids</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
     <span class="p">)</span>

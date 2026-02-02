@@ -567,6 +567,8 @@
       
         
       
+        
+      
     
     
     
@@ -1209,6 +1211,8 @@
       
         
           
+        
+      
         
       
         
@@ -2324,17 +2328,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#euroeval.utils.attention_backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        attention_backend
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -2583,17 +2576,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#euroeval.utils.attention_backend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        attention_backend
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -2698,23 +2680,6 @@
 </p>
 <div class="mkapi-document">
 <p>Utility functions to be used in other scripts.</p>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle classes">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Classes</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-name"><a href="./#euroeval.utils.attention_backend" title="euroeval.utils.attention_backend">attention_backend</a></span>
- <span class="mkapi-dash">&mdash;</span>
-Context manager to temporarily set the attention backend.</p>
-</li>
-</ul>
-</div>
 <p class="mkapi-section">
 <span class="mkapi-object-link">
 <span class="mkapi-section-toggle" title="Toggle functions">
@@ -3670,42 +3635,6 @@ The path to the custom datasets module.</p>
 <p><span class="mkapi-item-name">RuntimeError</span>
  <span class="mkapi-dash">&mdash;</span>
 If the custom datasets module cannot be loaded.</p>
-</li>
-</ul>
-</div>
-</div>
-<p class="mkapi-object mkapi-page-source" id="euroeval.utils.attention_backend">
-<span class="mkapi-object-link">
-
-
-<a href="../../../src/euroeval/utils/#euroeval.utils.attention_backend" title="Go to source">source</a>
-<span class="mkapi-document-toggle" title="Toggle all docs">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span><span class="mkapi-object-kind">class</span>
-<span class="mkapi-object-name"><a href="./#euroeval.utils.attention_backend" title="euroeval.utils.attention_backend">attention_backend</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">value</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-paren">)</span></span>
-</p>
-<div class="mkapi-document">
-<p>Context manager to temporarily set the attention backend.</p>
-<p>This sets the <code>VLLM_ATTENTION_BACKEND</code> environment variable to the desired value
-for the duration of the context manager, and restores the previous value afterwards.</p>
-<p>Initialise the context manager.</p>
-<p class="mkapi-section">
-<span class="mkapi-object-link">
-<span class="mkapi-section-toggle" title="Toggle parameters">
-<i class="fa-regular fa-square-minus"></i>
-</span>
-</span>
-<span class="mkapi-section-name">Parameters</span>
-</p>
-<div class="mkapi-section-content">
-<ul class="mkapi-item-list">
-<li>
-<p><span class="mkapi-item-name">value</span> : 
-<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
-The name of the attention backend to set. If None then no change is
-made. Also, if the user has already set the <code>VLLM_ATTENTION_BACKEND</code> env
-var, then no change is made.</p>
 </li>
 </ul>
 </div>
