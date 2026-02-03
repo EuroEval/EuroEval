@@ -27,6 +27,7 @@ MAX_REPETITIONS = 50
 
 CHOICES_MAPPING = {
     "bg": "Възможности",
+    "be": "Варыянты",
     "ca": "Opcions",
     "cs": "Výběr",
     "da": "Svarmuligheder",

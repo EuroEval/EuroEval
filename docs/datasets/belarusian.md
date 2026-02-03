@@ -311,3 +311,76 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-wiki-qa-be
 ```
+
+## Common-sense Reasoning
+
+### BE-WSC
+
+This dataset was published in
+[this paper](https://aclanthology.org/2025.acl-long.25/) and is a Belarusian
+version of the Winograd schema challenge (WSC).
+
+The original full dataset consists of 570 / 200 / 200 samples for training,
+validation, and testing.
+We use 128 of the test samples for validation, resulting in a 128 / 64 / 720
+split for training, validation and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Хаця абедзве яны беглі прыблізна аднолькава хутка, Зоя апярэдзіла Свету, бо _ дрэнна стартавала. What does the blank _ refer to?\nВарыянты:\na. Зоя\nb. Свету",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Зміцер папрасіў Рамана дапамагчы, але _ атрымаў адмову. What does the blank _ refer to?\nВарыянты:\na. Рамана\nb. Зміцер",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Арцём падвёз Рыгора у школу, каб _ не прыйшлося ісці пешшу. What does the blank _ refer to?\nВарыянты:\na. Арцём\nb. Рыгора",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Ніжэй прыведзены пытанні з некалькімі варыянтамі адказу (з адказамі).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Пытанне: {text}
+  Варыянты:
+  a. {option_a}
+  b. {option_b}
+  Адказ: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Пытанне: {text}
+  Варыянты:
+  a. {option_a}
+  b. {option_b}
+
+  Адкажыце на пытанне вышэй, адказаўшы 'a' або 'b', і нічога іншага.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset be-wsc
+```

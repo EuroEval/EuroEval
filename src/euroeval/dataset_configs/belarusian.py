@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BELARUSIAN
-from ..tasks import LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, LA, NER, RC, SENT
 
 ### Official datasets ###
 
@@ -35,5 +35,13 @@ MULTI_WIKI_QA_BE_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-be",
     source="EuroEval/multi-wiki-qa-be-mini",
     task=RC,
+    languages=[BELARUSIAN],
+)
+
+BE_WSC_CONFIG = DatasetConfig(
+    name="be-wsc",
+    pretty_name="BE-WSC",
+    source="EuroEval/be-wsc",
+    task=COMMON_SENSE,
     languages=[BELARUSIAN],
 )
