@@ -7,14 +7,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [v16.12.0] - 2026-02-02
-
 ### Added
 
 - Added support for Belarusian 🇧🇾! This includes the sentiment classification dataset,
   the linguistic acceptability dataset ScaLA-be, the named entity recognition dataset
   WikiANN-be, the reading comprehension dataset MultiWikiQA-be, and the common-sense
   reasoning dataset BE-WSC.
+
+## [v16.12.0] - 2026-02-02
+
+### Added
+
 - Added the bias detection task (`multiple-choice-stereotype-bias`) along with the Dutch
   dataset MBBQ-NL. This was added by @caldaibis ✨
 - Added support for vLLM Metal, so that generative models can now be evaluated on Apple
