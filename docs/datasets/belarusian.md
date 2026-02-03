@@ -225,7 +225,6 @@ When evaluating generative models, we use the following setup (see the
   - `correct` ➡️ `так`
   - `incorrect` ➡️ `не`
 
-****
 You can evaluate this dataset directly as follows:
 
 ```bash
