@@ -58,7 +58,11 @@ class SecondCandidate(BaseModel):
 
 
 def load_cache() -> dict[str, str]:
-    """Load cache from CACHE_FILE if it exists."""
+    """Load cache from CACHE_FILE if it exists.
+
+    Returns:
+        The cache.
+    """
     try:
         with open(CACHE_FILE, "r") as cache_file:
             return json.load(cache_file)
