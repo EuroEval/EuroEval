@@ -21,6 +21,7 @@ from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
+    ATTENTION_BACKENDS,
     CUSTOM_STOP_TOKENS,
     GENERATION_KWARGS,
     GENERATIVE_PIPELINE_TAGS,
@@ -89,15 +90,20 @@ except ImportError:
     )
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
+    import vllm.config
+
+    # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
+    # config
+    if hasattr(vllm.config, "attention"):
+        from vllm.config.attention import AttentionConfig
+
     from vllm import LLM, SamplingParams
-    from vllm.config.attention import AttentionConfig
     from vllm.distributed.parallel_state import (
         destroy_distributed_environment,
         destroy_model_parallel,
     )
     from vllm.lora.request import LoRARequest
     from vllm.sampling_params import StructuredOutputsParams
-    from vllm.v1.attention.backends.registry import AttentionBackendEnum
 
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
@@ -110,20 +116,14 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
 
-MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[re.Pattern, "AttentionBackendEnum"] = {
-    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): AttentionBackendEnum.TRITON_ATTN,
-    re.compile(
-        r"google/gemma-3-1b.*", flags=re.IGNORECASE
-    ): AttentionBackendEnum.TRITON_ATTN,
-    re.compile(
-        r"google/gemma-3n.*", flags=re.IGNORECASE
-    ): AttentionBackendEnum.TRITON_ATTN,
-    re.compile(
-        r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE
-    ): AttentionBackendEnum.TRITON_ATTN,
-    re.compile(
-        r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE
-    ): AttentionBackendEnum.TRITON_ATTN,
+MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[
+    re.Pattern, t.Literal[*ATTENTION_BACKENDS]  # pyrefly: ignore[invalid-literal]
+] = {
+    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): "TRITON_ATTN",
+    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "TRITON_ATTN",
+    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "TRITON_ATTN",
+    re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): "TRITON_ATTN",
+    re.compile(r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE): "TRITON_ATTN",
 }
 
 
@@ -192,10 +192,13 @@ class VLLMModel(HuggingFaceEncoderModel):
         # Determine the attention backend to use:
         # Override for models that require a specific backend, otherwise use user's
         # choice from CLI (defaults to FLASHINFER)
-        for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
-            if re.search(pattern=pattern, string=model_config.model_id):
-                attention_backend = backend
-                break
+        if hasattr(vllm.config, "attention"):
+            for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
+                if re.search(pattern=pattern, string=model_config.model_id):
+                    attention_backend = backend
+                    break
+            else:
+                attention_backend = benchmark_config.attention_backend
         else:
             attention_backend = benchmark_config.attention_backend
 
@@ -972,7 +975,9 @@ class VLLMModel(HuggingFaceEncoderModel):
 def load_model_and_tokeniser(
     model_config: "ModelConfig",
     benchmark_config: "BenchmarkConfig",
-    attention_backend: "AttentionBackendEnum",
+    attention_backend: t.Literal[
+        *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+    ],
 ) -> tuple["LLM", Tokeniser]:
     """Load the model and tokeniser.
 
@@ -1099,9 +1104,14 @@ def load_model_and_tokeniser(
         model_config=model_config,
         token=get_hf_token(api_key=benchmark_config.api_key),
     )
-    vllm_tokenisation_params = get_vllm_tokenisation_params(
+    vllm_params = get_vllm_tokenisation_params(
         tokeniser=tokeniser, model_config=model_config
     )
+
+    # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
+    # config
+    if hasattr(vllm.config, "attention"):
+        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)
 
     clear_vllm()
 
@@ -1115,7 +1125,6 @@ def load_model_and_tokeniser(
             if internet_connection_available() or Path(model_id).is_dir()
             else resolve_model_path(download_dir=download_dir)
         )
-        attention_config = AttentionConfig(backend=attention_backend)
 
         max_model_len = min(
             true_max_model_len, MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
@@ -1142,8 +1151,7 @@ def load_model_and_tokeniser(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
-            attention_config=attention_config,
-            **vllm_tokenisation_params,
+            **vllm_params,
         )
     except (RuntimeError, ValueError, OSError) as e:
         if "awaiting a review from the repo authors" in str(e):

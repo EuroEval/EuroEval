@@ -12,6 +12,7 @@ import pydantic
 import torch
 from transformers.generation.configuration_utils import GenerationConfig
 
+from .constants import ATTENTION_BACKENDS
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
 from .languages import (
@@ -28,8 +29,6 @@ from .types import ScoreDict
 from .utils import get_package_version
 
 if t.TYPE_CHECKING:
-    from vllm.v1.attention.backends.registry import AttentionBackendEnum
-
     from .enums import InferenceBackend
 
 
@@ -558,7 +557,9 @@ class BenchmarkConfig:
     few_shot: bool
     num_iterations: int
     gpu_memory_utilization: float
-    attention_backend: "AttentionBackendEnum"
+    attention_backend: t.Literal[
+        *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+    ]
     requires_safetensors: bool
     generative_type: GenerativeType | None
     download_only: bool
@@ -607,7 +608,9 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     requires_safetensors: bool
     download_only: bool
     gpu_memory_utilization: float
-    attention_backend: str
+    attention_backend: t.Literal[
+        *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+    ]
     generative_type: GenerativeType | None
     custom_datasets_file: Path
     force: bool

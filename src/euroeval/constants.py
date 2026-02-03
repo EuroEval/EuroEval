@@ -105,3 +105,32 @@ GENERATION_KWARGS = {
     "top_k": 0,
     "repetition_penalty": 1.0,
 }
+
+# This is a mirror of `AttentionBackendEnum` in vLLM, but since we don't have access to
+# this when running on CPU/MacOS (as we can only run an old vLLM version), we have to
+# define it here
+ATTENTION_BACKENDS: list[str] = [
+    "FLASH_ATTN",
+    "FLASH_ATTN_DIFFKV",
+    "TRITON_ATTN",
+    "ROCM_ATTN",
+    "ROCM_AITER_MLA",
+    "ROCM_AITER_TRITON_MLA",
+    "ROCM_AITER_FA",
+    "ROCM_AITER_MLA_SPARSE",
+    "TORCH_SDPA",
+    "FLASHINFER",
+    "FLASHINFER_MLA",
+    "TRITON_MLA",
+    "CUTLASS_MLA",
+    "FLASHMLA",
+    "FLASHMLA_SPARSE",
+    "FLASH_ATTN_MLA",
+    "IPEX",
+    "NO_ATTENTION",
+    "FLEX_ATTENTION",
+    "TREE_ATTN",
+    "ROCM_AITER_UNIFIED_ATTN",
+    "CPU_ATTN",
+    "CUSTOM",
+]

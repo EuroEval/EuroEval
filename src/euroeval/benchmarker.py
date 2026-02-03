@@ -15,7 +15,7 @@ from time import sleep
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
-from .constants import GENERATIVE_PIPELINE_TAGS
+from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
 from .dataset_configs import get_all_dataset_configs
@@ -390,6 +390,10 @@ class Benchmarker:
         download_only: bool | None = None,
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
+        attention_backend: t.Literal[
+            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+        ]
+        | None = None,
         custom_datasets_file: Path | str | None = None,
         force: bool | None = None,
         verbose: bool | None = None,
@@ -642,6 +646,11 @@ class Benchmarker:
                 generative_type
                 if generative_type is not None
                 else self.benchmark_config_default_params.generative_type
+            ),
+            attention_backend=(
+                attention_backend
+                if attention_backend is not None
+                else self.benchmark_config_default_params.attention_backend
             ),
             custom_datasets_file=(
                 Path(custom_datasets_file)

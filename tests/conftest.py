@@ -83,8 +83,6 @@ def benchmark_config(
     auth: str, device: torch.device
 ) -> Generator[BenchmarkConfig, None, None]:
     """Yields a benchmark configuration used in tests."""
-    from vllm.v1.attention.backends.registry import AttentionBackendEnum
-
     yield BenchmarkConfig(
         languages=[DANISH],
         datasets=list(
@@ -109,7 +107,7 @@ def benchmark_config(
         api_base=None,
         api_version=None,
         gpu_memory_utilization=0.8,
-        attention_backend=AttentionBackendEnum.FLASHINFER,
+        attention_backend=None,
         generative_type=None,
         debug=False,
         run_with_cli=True,

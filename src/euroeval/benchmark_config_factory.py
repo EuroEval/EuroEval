@@ -1,6 +1,7 @@
 """Factory class for creating dataset configurations."""
 
 import collections.abc as c
+import importlib.util
 import sys
 import typing as t
 from pathlib import Path
@@ -13,9 +14,10 @@ from .enums import Device
 from .exceptions import InvalidBenchmark
 from .languages import get_all_languages
 
-if t.TYPE_CHECKING:
-    from vllm.v1.attention.backends.registry import AttentionBackendEnum
+if importlib.util.find_spec("vllm") is not None:
+    pass
 
+if t.TYPE_CHECKING:
     from .data_models import Language
 
 
@@ -70,9 +72,7 @@ def build_benchmark_config(
         api_base=benchmark_config_params.api_base,
         api_version=benchmark_config_params.api_version,
         gpu_memory_utilization=benchmark_config_params.gpu_memory_utilization,
-        attention_backend=prepare_attention_backend(
-            attention_backend=benchmark_config_params.attention_backend
-        ),
+        attention_backend=benchmark_config_params.attention_backend,
         generative_type=benchmark_config_params.generative_type,
         debug=benchmark_config_params.debug,
         run_with_cli=benchmark_config_params.run_with_cli,
@@ -256,18 +256,3 @@ def prepare_device(device: Device | None) -> torch.device:
         return torch.device("mps")
     else:
         return torch.device("cpu")
-
-
-def prepare_attention_backend(attention_backend: str) -> "AttentionBackendEnum":
-    """Prepare the attention backend.
-
-    Args:
-        attention_backend:
-            The attention backend string from CLI.
-
-    Returns:
-        The attention backend enum.
-    """
-    from vllm.v1.attention.backends.registry import AttentionBackendEnum
-
-    return AttentionBackendEnum[attention_backend]
