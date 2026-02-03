@@ -66,13 +66,13 @@ def load_cache() -> dict[str, str]:
 
 
 def save_cache(cache: dict) -> None:
-    """Save cache to CACHE_FILE."""
+    """Save cache to CACHE_FILE.
+
+    Args:
+        cache: The cache to save.
+    """
     with open(CACHE_FILE, "w") as cache_file:
         json.dump(cache, cache_file, indent=4)
-
-
-candidate_cache = load_cache()
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
 def main() -> None:
@@ -427,7 +427,16 @@ def _extract_second_candidate(row: pd.Series) -> str:
 
 
 def _mask_pronoun(text: str, pronoun: str, word_index: int) -> str:
-    """Replace the pronoun token (by word index) with '_'."""
+    """Replace the pronoun token (by word index) with '_'.
+
+    Args:
+        text: The text to mask the pronoun in.
+        pronoun: The pronoun to mask.
+        word_index: The index of the pronoun in the text.
+
+    Returns:
+        The text with the pronoun masked.
+    """
     words = text.split()
     assert 0 <= word_index < len(words), "Word index is out of range"
 
@@ -444,7 +453,14 @@ def _mask_pronoun(text: str, pronoun: str, word_index: int) -> str:
 
 
 def _make_instruction(row: pd.Series) -> str:
-    """Create the instruction string in Winogrande-like format."""
+    """Create the instruction string in Winogrande-like format.
+
+    Args:
+        row: The row of the dataframe.
+
+    Returns:
+        The instruction string.
+    """
     text = str(row["text"]).replace("\n", " ").strip()
     pronoun = str(row["span2_text"]).strip()
     pronoun_idx = int(row["span2_index"])
