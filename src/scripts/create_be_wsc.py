@@ -304,6 +304,11 @@ def _extract_second_candidate(row: pd.Series) -> str:
             "You are helping build a Winogrande-style multiple choice dataset "
             "in Belarusian."
         ),
+        (
+            "Return your response as a JSON object with exactly this schema: "
+            '{"distractor": string}. '
+            "Do not include any other keys, text, markdown, or explanation."
+        ),
         "You are given:",
         "- A Belarusian sentence.",
         "- A pronoun (or pronominal adverb) that appears in the sentence.",
@@ -354,14 +359,14 @@ def _extract_second_candidate(row: pd.Series) -> str:
         "Pronoun: яна",
         "Candidate: Надзю",
         "label: 1",
-        "Answer: Аліса",
+        'Answer: {"distractor": "Аліса"}',
         "",
         "Example (label=1, need a distractor / wrong option)",
         "Sentence: Дзяніс растлумачыў сваю тэорыю Марку, але ён не пераканаў яго.",
         "Pronoun: ён",
         "Candidate: Дзяніс",
         "label: 1",
-        "Answer: Марку",
+        'Answer: {"distractor": "Марку"}',
         "",
         "Example (label=0, need the TRUE referent)",
         (
@@ -371,7 +376,7 @@ def _extract_second_candidate(row: pd.Series) -> str:
         "Pronoun: Яго",
         "Candidate: заплаканага хлопчыка",
         "label: 0",
-        "Answer: Мужчына",
+        'Answer: {"distractor": "Мужчына"}',
         "",
         "Example (label=0, need the TRUE referent)",
         (
@@ -381,7 +386,7 @@ def _extract_second_candidate(row: pd.Series) -> str:
         "Pronoun: яна",
         "Candidate: Кацярыне",
         "label: 0",
-        "Answer: Доктарка",
+        'Answer: {"distractor": "Доктарка"}',
         "",
         "Example (label=1, pronominal adverb)",
         (
@@ -391,9 +396,10 @@ def _extract_second_candidate(row: pd.Series) -> str:
         "Pronoun: там",
         "Candidate: на ўзбярэжжы акіяна",
         "label: 1",
-        "Answer: на возеры",
+        'Answer: {"distractor": "на возеры"}',
         "",
-        "Now do the same for this input:",
+        "Now do the same for this input. Remember: output ONLY valid JSON like "
+        '{"distractor": "..."}:',
         f"Sentence: <text>{text}</text>",
         f"Pronoun: <pronoun>{pronoun}</pronoun>",
         f"Candidate: <candidate>{candidate}</candidate>",
