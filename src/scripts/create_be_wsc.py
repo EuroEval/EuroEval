@@ -46,6 +46,9 @@ load_dotenv()
 
 CACHE_FILE: str = "be_wsc_cache.json"
 
+candidate_cache: dict[str, str] = {}
+client: OpenAI | None = None
+
 
 class SecondCandidate(BaseModel):
     """Structured output: extracted second candidate span from the sentence."""
@@ -75,6 +78,11 @@ client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 def main() -> None:
     """Create the BE-WSC dataset and upload it to the HF Hub."""
     disable_progress_bars()
+
+    global candidate_cache, client
+    candidate_cache = load_cache()
+    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
     repo_id = "maaxap/BelarusianGLUE"
 
     # Download the dataset
