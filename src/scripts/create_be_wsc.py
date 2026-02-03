@@ -23,6 +23,7 @@ extract a second candidate antecedent from the sentence to form a 2-way choice.
 
 import json
 import os
+import textwrap
 from collections import Counter
 
 import pandas as pd
@@ -299,115 +300,95 @@ def _extract_second_candidate(row: pd.Series) -> str:
     candidate = str(row["span1_text"])
     label = int(row["label"])
 
-    prompt_lines: list[str] = [
-        (
-            "You are helping build a Winogrande-style multiple choice dataset "
-            "in Belarusian."
-        ),
-        (
-            "Return your response as a JSON object with exactly this schema: "
-            '{"distractor": string}. '
-            "Do not include any other keys, text, markdown, or explanation."
-        ),
-        "You are given:",
-        "- A Belarusian sentence.",
-        "- A pronoun (or pronominal adverb) that appears in the sentence.",
-        "- A candidate antecedent span from the same sentence.",
-        (
-            "- A label: 1 means the pronoun DOES refer to the candidate; 0 means "
-            "it DOES NOT."
-        ),
-        "",
-        "Your task depends on the label:",
-        (
-            "- If label = 1: the candidate is the TRUE referent. Extract EXACTLY "
-            "ONE OTHER span from the sentence"
-        ),
-        "  that could plausibly be a referent (a distractor / wrong option).",
-        (
-            "- If label = 0: the candidate is a FALSE option. Extract the TRUE "
-            "referent span from the sentence"
-        ),
-        "  (the thing the pronoun actually refers to).",
-        "",
-        "Rules (must follow):",
-        "- Return EXACTLY a substring that appears in the sentence (copy-paste).",
-        (
-            "- Return a content span (noun phrase / named entity / location phrase), "
-            "not a pronoun."
-        ),
-        "- It must NOT be identical to the candidate span.",
-        "- It must NOT be the pronoun itself.",
-        "- Prefer an earlier mention in the sentence when possible.",
-        (
-            "- Keep the span short and option-like when possible. In this dataset, "
-            "candidate spans are"
-        ),
-        (
-            "  usually 1 word (~81%) or 2 words (~15%), sometimes 3 (~3%), "
-            "and 4+ words < 1%."
-        ),
-        "  Use a longer span only if needed for a natural referent.",
-        "- If there is no reasonable alternative candidate, return an empty string.",
-        "",
-        "Few-shot examples (Belarusian):",
-        "Example (label=1, need a distractor / wrong option)",
-        (
-            "Sentence: Аліса шукала ў натоўпе сваю сяброўку Надзю. З-за таго, што яна "
-            "заўсёды носіць чырвоны каптур, Аліса хутка заўважыла яе."
-        ),
-        "Pronoun: яна",
-        "Candidate: Надзю",
-        "label: 1",
-        'Answer: {"distractor": "Аліса"}',
-        "",
-        "Example (label=1, need a distractor / wrong option)",
-        "Sentence: Дзяніс растлумачыў сваю тэорыю Марку, але ён не пераканаў яго.",
-        "Pronoun: ён",
-        "Candidate: Дзяніс",
-        "label: 1",
-        'Answer: {"distractor": "Марку"}',
-        "",
-        "Example (label=0, need the TRUE referent)",
-        (
-            "Sentence: Мужчына ўзяў заплаканага хлопчыка за руку. Яго далонь была "
-            "вялікай і цёплай."
-        ),
-        "Pronoun: Яго",
-        "Candidate: заплаканага хлопчыка",
-        "label: 0",
-        'Answer: {"distractor": "Мужчына"}',
-        "",
-        "Example (label=0, need the TRUE referent)",
-        (
-            "Sentence: Доктарка паведаміла Кацярыне, што яна сыходзіць на пенсію, і "
-            "прапанавала некалькі варыянтаў працягу лячэння."
-        ),
-        "Pronoun: яна",
-        "Candidate: Кацярыне",
-        "label: 0",
-        'Answer: {"distractor": "Доктарка"}',
-        "",
-        "Example (label=1, pronominal adverb)",
-        (
-            "Sentence: Мы вырашылі правесці дзень на возеры, бо на ўзбярэжжы акіяна "
-            "бачылі акулу, так што плаваць там было небяспечна."
-        ),
-        "Pronoun: там",
-        "Candidate: на ўзбярэжжы акіяна",
-        "label: 1",
-        'Answer: {"distractor": "на возеры"}',
-        "",
-        "Now do the same for this input. Remember: output ONLY valid JSON like "
-        '{"distractor": "..."}:',
-        f"Sentence: <text>{text}</text>",
-        f"Pronoun: <pronoun>{pronoun}</pronoun>",
-        f"Candidate: <candidate>{candidate}</candidate>",
-        f"label: <label>{label}</label>",
-    ]
+    prompt = textwrap.dedent(
+        f"""
+        You are helping build a Winogrande-style multiple choice dataset in Belarusian.
+
+        Return your response as a JSON object with exactly this schema:
+        {{"distractor": string}}.
+        Do not include any other keys, text, markdown, or explanation.
+
+        You are given:
+        - A Belarusian sentence.
+        - A pronoun (or pronominal adverb) that appears in the sentence.
+        - A candidate antecedent span from the same sentence.
+        - A label: 1 means the pronoun DOES refer to the candidate; 0 means it DOES
+          NOT.
+
+        Your task depends on the label:
+        - If label = 1: the candidate is the TRUE referent. Extract EXACTLY ONE
+          OTHER span from the sentence that could plausibly be a referent (a
+          distractor / wrong option).
+        - If label = 0: the candidate is a FALSE option. Extract the TRUE referent
+          span from the sentence (the thing the pronoun actually refers to).
+
+        Rules (must follow):
+        - Return EXACTLY a substring that appears in the sentence (copy-paste).
+        - Return a content span (noun phrase / named entity / location phrase), not
+          a pronoun.
+        - It must NOT be identical to the candidate span.
+        - It must NOT be the pronoun itself.
+        - Prefer an earlier mention in the sentence when possible.
+        - Keep the span short and option-like when possible. In this dataset,
+          candidate spans are usually 1 word (~81%) or 2 words (~15%), sometimes 3
+          (~3%), and 4+ words < 1%.
+          Use a longer span only if needed for a natural referent.
+        - If there is no reasonable alternative candidate, return an empty string.
+
+        Few-shot examples (Belarusian):
+        Example (label=1, need a distractor / wrong option)
+        Sentence: Аліса шукала ў натоўпе сваю сяброўку Надзю. З-за таго, што яна заўсёды
+        носіць чырвоны каптур, Аліса хутка заўважыла яе.
+        Pronoun: яна
+        Candidate: Надзю
+        label: 1
+        Answer: {{"distractor": "Аліса"}}
+
+        Example (label=1, need a distractor / wrong option)
+        Sentence: Дзяніс растлумачыў сваю тэорыю Марку, але ён не пераканаў яго.
+        Pronoun: ён
+        Candidate: Дзяніс
+        label: 1
+        Answer: {{"distractor": "Марку"}}
+
+        Example (label=0, need the TRUE referent)
+        Sentence: Мужчына ўзяў заплаканага хлопчыка за руку. Яго далонь была
+        вялікай і цёплай.
+        Pronoun: Яго
+        Candidate: заплаканага хлопчыка
+        label: 0
+        Answer: {{"distractor": "Мужчына"}}
+
+        Example (label=0, need the TRUE referent)
+        Sentence: Доктарка паведаміла Кацярыне, што яна сыходзіць на пенсію, і
+        прапанавала
+        некалькі варыянтаў працягу лячэння.
+        Pronoun: яна
+        Candidate: Кацярыне
+        label: 0
+        Answer: {{"distractor": "Доктарка"}}
+
+        Example (label=1, pronominal adverb)
+        Sentence: Мы вырашылі правесці дзень на возеры, бо на ўзбярэжжы акіяна
+        бачылі акулу,
+        так што плаваць там было небяспечна.
+        Pronoun: там
+        Candidate: на ўзбярэжжы акіяна
+        label: 1
+        Answer: {{"distractor": "на возеры"}}
+
+        Now do the same for this input. Remember: output ONLY valid JSON like
+        {{"distractor": "..."}}
+
+        Sentence: <text>{text}</text>
+        Pronoun: <pronoun>{pronoun}</pronoun>
+        Candidate: <candidate>{candidate}</candidate>
+        label: <label>{label}</label>
+        """
+    ).strip()
 
     messages: list[ChatCompletionUserMessageParam] = [
-        ChatCompletionUserMessageParam(role="user", content="\n".join(prompt_lines))
+        ChatCompletionUserMessageParam(role="user", content=prompt)
     ]
 
     completion = client.beta.chat.completions.parse(
