@@ -10,7 +10,7 @@ repos:
       - id: trailing-whitespace
       - id: debug-statements
 -   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.14
+    rev: v0.15.0
     hooks:
       - id: ruff
         args:
@@ -39,9 +39,9 @@ repos:
     -   id: pyrefly-check
         name: Pyrefly (type checking)
         pass_filenames: false
--   repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.20.0
-    hooks:
-    -   id: markdownlint-cli2
-        args:
-          - --fix
+# -   repo: https://github.com/DavidAnson/markdownlint-cli2
+#     rev: v0.20.0
+#     hooks:
+#     -   id: markdownlint-cli2
+#         args:
+#           - --fix

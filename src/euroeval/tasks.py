@@ -1,5 +1,7 @@
 """All benchmarks tasks used in EuroEval."""
 
+from euroeval.prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES
+
 from . import metrics as m
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import Task
@@ -150,6 +152,16 @@ EUROPEAN_VALUES = Task(
     requires_zero_shot=True,
     uses_logprobs=True,
     default_allow_invalid_model_outputs=False,
+)
+
+BFCL_V1 = Task(
+    name="bfcl-v1",
+    task_group=TaskGroup.TOOL_CALLING,
+    template_dict=TOOL_CALLING_TEMPLATES,
+    metrics=[],  # TODO
+    default_num_few_shot_examples=1,  # TODO
+    default_max_generated_tokens=200,  # TODO
+    default_labels=["a"],  # TODO
 )
 
 
