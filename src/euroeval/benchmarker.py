@@ -79,7 +79,9 @@ class Benchmarker:
         api_base: str | None = None,
         api_version: str | None = None,
         gpu_memory_utilization: float = 0.8,
-        attention_backend: str = "FLASHINFER",
+        attention_backend: t.Literal[
+            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+        ] = "FLASHINFER",
         generative_type: GenerativeType | None = None,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,

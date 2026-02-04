@@ -5,6 +5,7 @@ from pathlib import Path
 import click
 
 from .benchmarker import Benchmarker
+from .constants import ATTENTION_BACKENDS
 from .data_models import DatasetConfig
 from .enums import Device, GenerativeType
 from .languages import get_all_languages
@@ -174,10 +175,7 @@ from .languages import get_all_languages
     "--attention-backend",
     default="FLASHINFER",
     show_default=True,
-    type=click.Choice(
-        ["FLASHINFER", "FLASH_ATTN", "TRITON_ATTN", "FLEX_ATTENTION"],
-        case_sensitive=True,
-    ),
+    type=click.Choice(ATTENTION_BACKENDS, case_sensitive=True),
     help="The attention backend to use for vLLM. Only relevant if the model is "
     "generative.",
 )
