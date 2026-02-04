@@ -487,21 +487,29 @@ class VLLMModel(HuggingFaceEncoderModel):
                 level=logging.DEBUG,
             )
         elif self.dataset_config.task.uses_structured_output:
-            ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
-            keys_and_their_types: dict[str, t.Any] = {
-                tag_name: (conlist(str, max_length=5), ...)
-                for tag_name in ner_tag_names
-            }
-            answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
-            structured_generation_schema = answer_format_class.model_json_schema()
-            log_once(
-                "Using structured generation with the JSON schema: "
-                f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
-                level=logging.DEBUG,
-            )
-            structured_outputs = StructuredOutputsParams(
-                json=structured_generation_schema
-            )
+            if self.dataset_config.task.structured_output_format is not None:
+                structured_outputs = StructuredOutputsParams(
+                    json=self.dataset_config.task.structured_output_format.model_json_schema(),
+                    disable_fallback=True,
+                )
+            else:
+                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+                keys_and_their_types: dict[str, t.Any] = {
+                    tag_name: (conlist(str, max_length=5), ...)
+                    for tag_name in ner_tag_names
+                }
+                answer_format_class = create_model(
+                    "AnswerFormat", **keys_and_their_types
+                )
+                structured_generation_schema = answer_format_class.model_json_schema()
+                log_once(
+                    "Using structured generation with the JSON schema: "
+                    f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
+                    level=logging.DEBUG,
+                )
+                structured_outputs = StructuredOutputsParams(
+                    json=structured_generation_schema
+                )
         elif (
             self.dataset_config.task.uses_logprobs
             and self.dataset_config.labels

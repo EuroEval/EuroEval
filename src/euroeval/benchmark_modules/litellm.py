@@ -68,6 +68,7 @@ from ..generation_utils import (
 )
 from ..logging_utils import get_pbar, log, log_once
 from ..model_cache import create_model_cache_dir
+from ..prompt_templates.tool_calling import TOOL_CALLING_KEYS
 from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import split_model_id
 from ..task_group_utils import (
@@ -949,8 +950,11 @@ class LiteLLMModel(BenchmarkModule):
             # In the case where we're dealing with a classification task, the model is
             # outputting a JSON dictionary, so we will extract the generated text from
             # within the dictionary
+            # This is not relevant for tooling and may cause problems there
             generation_dct: dict[str, t.Any] | None = None
-            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output:
+            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output and not all(
+                [k in generation_output for k in TOOL_CALLING_KEYS]
+            ):
                 try:
                     generation_dct = json.loads(generation_output)
                     assert isinstance(generation_dct, dict)
@@ -1617,7 +1621,16 @@ class LiteLLMModel(BenchmarkModule):
         # Set up the `response_format` generation argument if we are dealing with a task
         # using structured generation
         if dataset_config.task.uses_structured_output:
-            if self.generative_type == GenerativeType.REASONING:
+            if dataset_config.task.structured_output_format is not None:
+                pydantic_class = dataset_config.task.structured_output_format
+                generation_kwargs["response_format"] = pydantic_class
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with response_format "
+                    f"{pydantic_class.model_json_schema()}.",
+                    level=logging.DEBUG,
+                )
+            elif self.generative_type == GenerativeType.REASONING:
                 log_once(
                     f"The model {self.model_config.model_id!r} is a reasoning model "
                     "and thus does not support structured generation, so we do not "
@@ -1661,6 +1674,7 @@ class LiteLLMModel(BenchmarkModule):
                     "the model does not support schemas.",
                     level=logging.DEBUG,
                 )
+
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             localised_labels = [
                 self.dataset_config.prompt_label_mapping[label]
@@ -1893,8 +1907,10 @@ def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
     # inference endpoints, LiteLLM gets confused since it's already using the `openai/`
     # prefix. We thus have to add it twice, and this hack here is to ensure that we
     # don't store the results with model ID `openai/openai/...`.
-    elif benchmark_config.api_base is not None and model_id.startswith("openai/"):
-        model_id = "openai/openai/" + re.sub(r"(openai/)*", "", model_id)
+    # This is where the "openai/openai/..." bug arose. I'm guessing we keep it,
+    # though it doesn't seem to work for me when using VLLM locally for inference.
+    # elif benchmark_config.api_base is not None and model_id.startswith("openai/"):
+    #     model_id = "openai/openai/" + re.sub(r"(openai/)*", "", model_id)
 
     return model_id
 

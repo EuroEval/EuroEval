@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- A task *Tool Calling* and a dataset under this task *bfcl* a subset of the
+Berkeley Function Calling Leaderboard benchmark (v4).
+Currently only supported for English.
+
+### Added
+
 - We now add all metadata (including ground truth labels, if applicable) to the model
   cache when debug mode is enabled (with `--debug` or `debug=True`). We have added a
   [section in the
@@ -690,12 +696,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Enable support to evaluate Mistral models with their custom `mistral-common`
   tokeniser, which includes all recent Mistral models. Note that we currently assume
-  that all of these models are instruction-tuned decoder models (which _is_ true
+  that all of these models are instruction-tuned decoder models (which *is* true
   currently), which can lead to errors in case they publish different types of models in
   the future.
 - Now disables the `seed` parameter if the API inference model does not support it,
   which prevented evaluating some models.
-- Now correctly detects an API inference model as non-existing, even if LiteLLM _does_
+- Now correctly detects an API inference model as non-existing, even if LiteLLM *does*
   see it as existing. We have an additional check during evaluation to ensure this now.
 - Catch an `ImportError` error that sometimes happens when finishing the evaluation of a
   vLLM model, during shutdown.
@@ -871,7 +877,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   parameter whenever a reasoning model is detected.
 - Added a cap on the number of concurrent connections when evaluating API models, to
   avoid running into errors related to too many open file descriptors. In case this
-  error _still_ occurs, we now give the user an informative error message on how to
+  error *still* occurs, we now give the user an informative error message on how to
   increase the maximum number of open file descriptors on their system.
 - Catch requests.ConnectionError when loading datasets.
 - When benchmarking encoder models on reading comprehension tasks, we allow the model
@@ -1130,7 +1136,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Previously, if there were multiple labels whose first tokens were identical and that
   the (generative) model did not output the label as the first output token, we would
   randomly choose one of the labels, resulting in an evaluation error. This is very
-  rare, but _does_ happen for very particular (model, dataset) pairs. If we are in this
+  rare, but *does* happen for very particular (model, dataset) pairs. If we are in this
   case, we now resort to choosing the label with closest word edit distance instead of
   relying on logprobs of the first token.
 - Now defaults to BF16 if the model is registered as using FP32, assuming that BF16 is
@@ -1477,7 +1483,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - If the model cache is corrupted, we now log this and re-initialise it, rather than
   raising an error.
 - Some models were detected as API models when they were not, due to the fact that they
-  _were_ available in LiteLLM. We now default to using vLLM for these models, as this
+  *were* available in LiteLLM. We now default to using vLLM for these models, as this
   is the default backend for ScandEval.
 - Now correctly displays a message to the user when access to a model is contingent on
   approval from the repository authors, rather than raising an error.
@@ -2294,7 +2300,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   on, rather than remembering all the names of the datasets. E.g., to benchmark a model
   on all Danish question-answering datasets, we call `scandeval -m <model_id> -l da -t
   question-answering`. All the names of the tasks is shown in `scandeval --help`.
-- Renamed the `--no-ignore-duplicates` to `--force` (shorthand: `-f`), which _forces_
+- Renamed the `--no-ignore-duplicates` to `--force` (shorthand: `-f`), which *forces*
   the evaluation, meaning that it evaluates the model even if it has previously been
   evaluated.
 - Renamed the `--model-id` to `--model`.
@@ -2354,7 +2360,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   handles class imbalance better.
 - Number of generated tokens for sequence classification tasks has been changed back to
   3 (from 1). This makes no difference to open source models, as we only use the
-  logprobs from the first token anyway, but it _does_ make a difference to closed
+  logprobs from the first token anyway, but it *does* make a difference to closed
   source models where the logprobs are not available (like OpenAI's chat models), as
   we're instead calculating word edit distance to the labels.
 
@@ -2843,7 +2849,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Previously, if a model's context length was greater than 1,000 it would be reduced to
   512, since an unset context length results in a very large `model_max_length` value
   of the tokenizer. This conflicted with longformer-style models whose context length
-  _actually_ was greater than 1,000, so now this upper bound has been increased to
+  *actually* was greater than 1,000, so now this upper bound has been increased to
   100,000.
 - Now includes `sacremoses` as a dependency, as this is required by some tokenizers.
 - Converted the `id` column in ScandiQA to a string, to avoid integer overflow errors
@@ -3085,7 +3091,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Now catching _all_ `CUDA error` exceptions and treating them as running out
+- Now catching *all* `CUDA error` exceptions and treating them as running out
   of memory. No harm done if this is not the case, however, as the script will
   simply decrease the batch size until it reaches 1, and if CUDA errors persist
   then it will skip that benchmark.

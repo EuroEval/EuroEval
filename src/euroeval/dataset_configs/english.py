@@ -13,9 +13,18 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TOOL_CALLING,
 )
 
 # Official datasets ###
+
+BFCL_CONFIG = DatasetConfig(
+    name="bfcl",
+    pretty_name="BFCL-v4",
+    source="EuroEval/bfcl-en",
+    task=TOOL_CALLING,
+    languages=[ENGLISH],
+)
 
 SST5_CONFIG = DatasetConfig(
     name="sst5",

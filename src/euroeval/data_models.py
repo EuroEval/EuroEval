@@ -108,6 +108,12 @@ class Task:
         uses_structured_output (optional):
             Whether the task uses structured output. If True, the task will return
             structured output (e.g., BIO tags for NER). Defaults to False.
+        structured_output_format (optional):
+            Schema to use for structured output as a (deserializable) JSON string.
+            Only used if `uses_structured_output` is True.
+            If None output structure will be determined by a default behavior
+            based on the task.
+            Defaults to None.
         uses_logprobs (optional):
             Whether the task uses log probabilities. If True, the task will return
             log probabilities for the generated tokens. Defaults to False.
@@ -143,6 +149,7 @@ class Task:
     default_labels: c.Sequence[str] | None = tuple()
     requires_zero_shot: bool = False
     uses_structured_output: bool = False
+    structured_output_format: pydantic.BaseModel | None = None
     uses_logprobs: bool = False
     requires_logprobs: bool = False
     default_allowed_model_types: c.Sequence[ModelType] = field(

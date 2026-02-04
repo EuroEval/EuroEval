@@ -134,13 +134,14 @@ class ModelCache:
             dumpable_cache[key] = value_dict
 
         try:
-            with self.cache_path.open("w") as f:
-                json.dump(
+            self.cache_path.parent.mkdir(exist_ok=True, parents=True)
+            self.cache_path.write_text(
+                json.dumps(
                     dumpable_cache,
-                    f,
                     indent=2 if self.indent_json_when_saving else None,
                     ensure_ascii=False,
                 )
+            )
 
         except KeyError:
             log(
