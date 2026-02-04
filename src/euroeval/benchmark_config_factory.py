@@ -77,6 +77,7 @@ def build_benchmark_config(
             benchmark_config_params.judge_vllm_pipeline_parallel_size
         ),
         generative_type=benchmark_config_params.generative_type,
+        stage_metrics=benchmark_config_params.stage_metrics,
         debug=benchmark_config_params.debug,
         run_with_cli=benchmark_config_params.run_with_cli,
         requires_safetensors=benchmark_config_params.requires_safetensors,

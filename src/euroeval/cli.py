@@ -230,6 +230,12 @@ from .languages import get_all_languages
     default=False,
 )
 @click.option(
+    "--stage-metrics/--no-stage-metrics",
+    default=False,
+    show_default=True,
+    help="Stage text-to-text metrics by generating outputs first and scoring later.",
+)
+@click.option(
     "--debug/--no-debug",
     default=False,
     show_default=True,
@@ -294,6 +300,7 @@ def benchmark(
     generative_type: str | None,
     custom_datasets_file: Path,
     download_only: bool,
+    stage_metrics: bool,
     debug: bool,
     model_language: tuple[str],
     dataset_language: tuple[str],
@@ -333,6 +340,7 @@ def benchmark(
         run_with_cli=True,
         requires_safetensors=requires_safetensors,
         download_only=download_only,
+        stage_metrics=stage_metrics,
         model_language=None if len(model_language) == 0 else list(model_language),
         dataset_language=None if len(dataset_language) == 0 else list(dataset_language),
         batch_size=int(batch_size) if batch_size is not None else None,

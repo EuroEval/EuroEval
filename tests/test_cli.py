@@ -35,6 +35,7 @@ def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
         "generative_type",
         "custom_datasets_file",
         "download_only",
+        "stage_metrics",
         "debug",
         "model_language",
         "dataset_language",

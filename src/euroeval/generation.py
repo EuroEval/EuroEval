@@ -1,6 +1,7 @@
 """Functions related to text generation of models."""
 
 import collections.abc as c
+import contextlib
 import logging
 import sys
 import typing as t
@@ -95,7 +96,7 @@ def generate(
         scores.append(test_scores)
         clear_memory()
 
-    if not benchmark_config.debug:
+    if not benchmark_config.debug and not benchmark_config.stage_metrics:
         cache.remove()
 
     return scores
@@ -255,6 +256,12 @@ def generate_single_iteration(
         )
         ground_truth = []
 
+    if (
+        benchmark_config.stage_metrics
+        and dataset_config.task.task_group == TaskGroup.TEXT_TO_TEXT
+    ):
+        return dict()
+
     itr_scores: dict[str, float] = model.compute_metrics(
         model_outputs_and_labels=(all_preds, ground_truth),
         dataset=dataset,
@@ -262,6 +269,160 @@ def generate_single_iteration(
     )
 
     return itr_scores
+
+
+def score_text_to_text_from_cache(
+    datasets: c.Sequence["DatasetDict"],
+    model_config: "ModelConfig",
+    dataset_config: "DatasetConfig",
+    benchmark_config: "BenchmarkConfig",
+) -> c.Sequence[dict[str, float]]:
+    """Score text-to-text outputs from the model cache."""
+    from .constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
+    from .metrics import HuggingFaceMetric
+    from .metrics.llm_as_a_judge import LLMAsAJudgeMetric
+    from .utils import raise_if_model_output_contains_nan_values
+
+    if benchmark_config.debug:
+        model_cache_dir = Path.cwd()
+    else:
+        model_cache_dir = Path(model_config.model_cache_dir)
+    if benchmark_config.debug:
+        cache_name = f"{model_config.model_id}-{dataset_config.name}-model-outputs.json"
+    else:
+        cache_name = f"{dataset_config.name}-model-outputs.json"
+
+    cache = ModelCache(
+        model_cache_dir=model_cache_dir,
+        cache_name=cache_name,
+        max_generated_tokens=dataset_config.max_generated_tokens,
+        progress_bar=benchmark_config.progress_bar,
+        hash_inputs=not benchmark_config.debug,
+    )
+    cache.load()
+
+    scores: list[dict[str, float]] = []
+    for idx in get_pbar(
+        iterable=range(len(datasets)),
+        desc="Scoring",
+        disable=not benchmark_config.progress_bar,
+    ):
+        dataset = datasets[idx]["test"]
+        model_output = load_cached_model_outputs(
+            cached_dataset=dataset, cache=cache
+        )
+        predictions = model_output.sequences
+        raise_if_model_output_contains_nan_values(model_output=predictions)
+
+        if "label" in dataset.column_names:
+            ground_truth = dataset["label"]
+        elif "labels" in dataset.column_names:
+            ground_truth = dataset["labels"]
+        elif "target_text" in dataset.column_names:
+            ground_truth = dataset["target_text"]
+        else:
+            ground_truth = []
+
+        # Compute judge metrics first, then clear judge cache before other metrics.
+        def compute_metric(metric: t.Any) -> float | None:
+            if (
+                isinstance(metric, HuggingFaceMetric)
+                and metric.compute_kwargs.get("device", None) == "auto"
+            ):
+                metric.compute_kwargs["device"] = benchmark_config.device.type
+
+            for _ in range(num_attempts := 5):
+                try:
+                    score = metric(
+                        predictions=predictions,
+                        references=ground_truth,
+                        dataset=dataset,
+                        dataset_config=dataset_config,
+                        benchmark_config=benchmark_config,
+                    )
+                    break
+                except Exception as e:
+                    oom_error = [
+                        "CUDA out of memory",
+                        "CUDA error",
+                        "MPS backend out of memory",
+                    ]
+                    if not any(error in str(e) for error in oom_error):
+                        raise InvalidBenchmark(str(e)) from e
+
+                    if (
+                        isinstance(metric, HuggingFaceMetric)
+                        and metric.compute_kwargs.get("device", "cpu") != "cpu"
+                    ):
+                        metric.compute_kwargs["device"] = "cpu"
+                        log(
+                            "Out of memory error occurred during the computation of "
+                            f"the metric {metric.pretty_name}. Moving the computation "
+                            "to the CPU.",
+                            level=logging.DEBUG,
+                        )
+                    else:
+                        raise InvalidBenchmark(str(e)) from e
+                finally:
+                    for attribute in METRIC_ATTRIBUTES_TAKING_UP_MEMORY:
+                        if hasattr(metric, attribute):
+                            log(
+                                f"Deleting the {attribute!r} attribute of the metric "
+                                f"{metric.pretty_name} to free up memory.",
+                                level=logging.DEBUG,
+                            )
+                            delattr(metric, attribute)
+            else:
+                raise InvalidBenchmark(
+                    f"Could not compute the metric {metric.pretty_name} after "
+                    f"{num_attempts} attempts due to out of memory errors."
+                )
+            return score
+
+        itr_scores: dict[str, float] = dict()
+        judge_metrics = [
+            m for m in dataset_config.task.metrics if isinstance(m, LLMAsAJudgeMetric)
+        ]
+        other_metrics = [
+            m
+            for m in dataset_config.task.metrics
+            if not isinstance(m, LLMAsAJudgeMetric)
+        ]
+
+        prev_judge_key: t.Any = None
+        for metric in judge_metrics:
+            max_tokens = int(dataset_config.max_generated_tokens)
+            judge_key = metric._build_cache_key(  # type: ignore[attr-defined]
+                backend=metric.judge_backend,
+                benchmark_config=benchmark_config,
+                max_tokens=max_tokens,
+            )
+            if prev_judge_key is not None and judge_key != prev_judge_key:
+                with contextlib.suppress(Exception):
+                    LLMAsAJudgeMetric.clear_judge_cache()
+                clear_memory()
+            score = compute_metric(metric=metric)
+            if score is not None:
+                itr_scores[metric.name] = score
+            prev_judge_key = judge_key
+
+        if judge_metrics:
+            with contextlib.suppress(Exception):
+                LLMAsAJudgeMetric.clear_judge_cache()
+            clear_memory()
+
+        for metric in other_metrics:
+            score = compute_metric(metric=metric)
+            if score is not None:
+                itr_scores[metric.name] = score
+
+        scores.append(itr_scores)
+        clear_memory()
+
+    if not benchmark_config.debug:
+        cache.remove()
+
+    return scores
 
 
 def debug_log(

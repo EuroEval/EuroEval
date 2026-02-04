@@ -19,7 +19,7 @@ from .constants import GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult
 from .dataset_configs import get_all_dataset_configs
-from .enums import Device, GenerativeType, ModelType
+from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
@@ -30,6 +30,7 @@ from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .tasks import SPEED
 from .utils import (
+    clear_memory,
     enforce_reproducibility,
     internet_connection_available,
     split_model_id,
@@ -84,6 +85,7 @@ class Benchmarker:
         judge_vllm_tensor_parallel_size: int | None = None,
         judge_vllm_pipeline_parallel_size: int | None = None,
         generative_type: GenerativeType | None = None,
+        stage_metrics: bool = False,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
         run_with_cli: bool = False,
@@ -165,6 +167,9 @@ class Benchmarker:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to None.
+            stage_metrics:
+                Whether to stage metrics for text-to-text tasks by generating outputs
+                first and scoring in a separate pass.
             custom_datasets_file:
                 Path to a Python file defining custom datasets. Defaults to
                 'custom_datasets.py'.
@@ -281,6 +286,7 @@ class Benchmarker:
             judge_vllm_tensor_parallel_size=judge_vllm_tensor_parallel_size,
             judge_vllm_pipeline_parallel_size=judge_vllm_pipeline_parallel_size,
             generative_type=generative_type,
+            stage_metrics=stage_metrics,
             custom_datasets_file=Path(custom_datasets_file),
             verbose=verbose,
             force=force,
@@ -405,6 +411,7 @@ class Benchmarker:
         judge_vllm_tensor_parallel_size: int | None = None,
         judge_vllm_pipeline_parallel_size: int | None = None,
         generative_type: GenerativeType | None = None,
+        stage_metrics: bool | None = None,
         custom_datasets_file: Path | str | None = None,
         force: bool | None = None,
         verbose: bool | None = None,
@@ -678,6 +685,11 @@ class Benchmarker:
                 if generative_type is not None
                 else self.benchmark_config_default_params.generative_type
             ),
+            stage_metrics=(
+                stage_metrics
+                if stage_metrics is not None
+                else self.benchmark_config_default_params.stage_metrics
+            ),
             custom_datasets_file=(
                 Path(custom_datasets_file)
                 if custom_datasets_file is not None
@@ -702,6 +714,10 @@ class Benchmarker:
         )
         benchmark_config = build_benchmark_config(
             benchmark_config_params=benchmark_config_params
+        )
+        log(
+            f"Benchmark config: stage_metrics={benchmark_config.stage_metrics}",
+            level=logging.INFO,
         )
 
         adjust_logging_level(verbose=benchmark_config.verbose)
@@ -918,6 +934,26 @@ class Benchmarker:
                     if benchmark_config.save_results:
                         record.append_to_results(results_path=self.results_path)
 
+                    if (
+                        benchmark_config.stage_metrics
+                        and model_config.model_type == ModelType.GENERATIVE
+                        and dataset_config.task.task_group == TaskGroup.TEXT_TO_TEXT
+                    ):
+                        log(
+                            "Staged metrics: dropping cached main model reference.",
+                            level=logging.INFO,
+                        )
+                        if loaded_model is not None and hasattr(loaded_model, "unload"):
+                            with contextlib.suppress(Exception):
+                                loaded_model.unload()  # type: ignore[attr-defined]
+                        del loaded_model
+                        loaded_model = None
+                        clear_memory()
+                        with contextlib.suppress(Exception):
+                            from .benchmark_modules.vllm import clear_vllm
+
+                            clear_vllm()
+
                 num_finished_benchmarks += 1
 
             del loaded_model
@@ -1015,6 +1051,10 @@ class Benchmarker:
                     )
                 assert model is not None
 
+                model_num_params = model.num_params
+                model_max_length = model.model_max_length
+                model_vocab_size = model.vocab_size
+
                 initial_logging(
                     model_config=model_config,
                     dataset_config=dataset_config,
@@ -1038,13 +1078,61 @@ class Benchmarker:
                         datasets=bootstrapped_datasets, task=dataset_config.task
                     )
                     if model_config.model_type == ModelType.GENERATIVE:
-                        scores = generate(
-                            model=model,
-                            datasets=prepared_datasets,
-                            model_config=model_config,
-                            dataset_config=dataset_config,
-                            benchmark_config=benchmark_config,
-                        )
+                        if (
+                            benchmark_config.stage_metrics
+                            and dataset_config.task.task_group == TaskGroup.TEXT_TO_TEXT
+                        ):
+                            log(
+                                "Staged metrics enabled: running generation phase.",
+                                level=logging.INFO,
+                            )
+                            _ = generate(
+                                model=model,
+                                datasets=prepared_datasets,
+                                model_config=model_config,
+                                dataset_config=dataset_config,
+                                benchmark_config=benchmark_config,
+                            )
+                            log(
+                                "Staged metrics: unloading main model before scoring.",
+                                level=logging.INFO,
+                            )
+                            if hasattr(model, "unload"):
+                                with contextlib.suppress(Exception):
+                                    model.unload()  # type: ignore[attr-defined]
+                            del model
+                            clear_memory()
+                            try:
+                                from .benchmark_modules.vllm import clear_vllm
+                            except Exception:
+                                clear_vllm = None  # type: ignore[assignment]
+                            if clear_vllm is not None:
+                                clear_vllm()
+                            from .generation import score_text_to_text_from_cache
+
+                            scores = score_text_to_text_from_cache(
+                                datasets=prepared_datasets,
+                                model_config=model_config,
+                                dataset_config=dataset_config,
+                                benchmark_config=benchmark_config,
+                            )
+                            with contextlib.suppress(Exception):
+                                from .metrics.llm_as_a_judge import LLMAsAJudgeMetric
+
+                                LLMAsAJudgeMetric.clear_judge_cache()
+                            log(
+                                "Staged metrics: scoring phase complete.",
+                                level=logging.INFO,
+                            )
+                            model = None
+                        else:
+                            scores = generate(
+                                model=model,
+                                datasets=prepared_datasets,
+                                model_config=model_config,
+                                dataset_config=dataset_config,
+                                benchmark_config=benchmark_config,
+                            )
                     else:
                         scores = finetune(
                             model=model,
@@ -1075,14 +1163,32 @@ class Benchmarker:
                     languages=[language.code for language in dataset_config.languages],
                     model=model_id_to_be_stored,
                     results=results,
-                    num_model_parameters=model.num_params,
-                    max_sequence_length=model.model_max_length,
-                    vocabulary_size=model.vocab_size,
+                    num_model_parameters=(
+                        model_num_params
+                        if benchmark_config.stage_metrics
+                        and model_config.model_type == ModelType.GENERATIVE
+                        and dataset_config.task.task_group == TaskGroup.TEXT_TO_TEXT
+                        else model.num_params
+                    ),
+                    max_sequence_length=(
+                        model_max_length
+                        if benchmark_config.stage_metrics
+                        and model_config.model_type == ModelType.GENERATIVE
+                        and dataset_config.task.task_group == TaskGroup.TEXT_TO_TEXT
+                        else model.model_max_length
+                    ),
+                    vocabulary_size=(
+                        model_vocab_size
+                        if benchmark_config.stage_metrics
+                        and model_config.model_type == ModelType.GENERATIVE
+                        and dataset_config.task.task_group == TaskGroup.TEXT_TO_TEXT
+                        else model.vocab_size
+                    ),
                     merge=model_config.merge,
                     generative=model_config.model_type == ModelType.GENERATIVE,
                     generative_type=(
                         model.generative_type.value
-                        if model.generative_type is not None
+                        if model is not None and model.generative_type is not None
                         else None
                     ),
                     few_shot=(
