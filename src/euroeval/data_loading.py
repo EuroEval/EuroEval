@@ -183,6 +183,17 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
             )
 
     assert isinstance(dataset, DatasetDict)  # type: ignore[used-before-def]
+
+    if dataset_config.preprocess_fn is not None:
+        dataset = dataset_config.preprocess_fn(dataset)
+        if not isinstance(dataset, DatasetDict):
+            raise InvalidBenchmark(
+                "Dataset preprocessing must return a DatasetDict, but got "
+                f"{type(dataset)}."
+            )
+
+    dataset = _split_dataset_if_needed(dataset=dataset, dataset_config=dataset_config)
+
     missing_keys = [key for key in dataset_config.splits if key not in dataset]
     if missing_keys:
         raise InvalidBenchmark(
@@ -190,3 +201,61 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
             f"{', '.join(missing_keys)}"
         )
     return DatasetDict({key: dataset[key] for key in dataset_config.splits})  # type: ignore[no-matching-overload]
+
+
+def _split_dataset_if_needed(
+    dataset: DatasetDict, dataset_config: "DatasetConfig"
+) -> DatasetDict:
+    """Split a dataset from its train split if required splits are missing."""
+    missing_keys = [key for key in dataset_config.splits if key not in dataset]
+    if not missing_keys:
+        return dataset
+
+    if dataset_config.split_sizes is None:
+        return dataset
+
+    if "train" not in dataset:
+        raise InvalidBenchmark(
+            "Cannot create missing splits without a 'train' split."
+        )
+
+    split_sizes = dataset_config.split_sizes
+    if any(split not in split_sizes for split in dataset_config.splits):
+        raise InvalidBenchmark(
+            "Split sizes must be provided for all requested splits."
+        )
+
+    sizes: list[int | None] = [split_sizes[split] for split in dataset_config.splits]
+    none_count = sum(1 for size in sizes if size is None)
+    if none_count > 1:
+        raise InvalidBenchmark(
+            "At most one split size can be None to absorb the remainder."
+        )
+
+    base = dataset["train"].shuffle(seed=dataset_config.split_seed or 42)
+    total_specified = sum(size for size in sizes if size is not None)
+    remainder = len(base) - total_specified
+    if remainder < 0:
+        raise InvalidBenchmark(
+            "Split sizes exceed the available number of samples."
+        )
+
+    if none_count == 1:
+        none_index = sizes.index(None)
+        sizes[none_index] = remainder
+    elif total_specified != len(base):
+        raise InvalidBenchmark(
+            "Split sizes must sum to the dataset size when no remainder is specified."
+        )
+
+    start = 0
+    split_datasets: dict[str, c.Sequence] = dict()
+    for split_name, size in zip(dataset_config.splits, sizes):
+        assert size is not None
+        if size < 0:
+            raise InvalidBenchmark("Split sizes must be non-negative.")
+        end = start + size
+        split_datasets[split_name] = base.select(range(start, end))
+        start = end
+
+    return DatasetDict(split_datasets)  # type: ignore[no-matching-overload]

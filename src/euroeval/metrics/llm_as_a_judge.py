@@ -666,6 +666,44 @@ class LLMAsAJudgeMetric(Metric):
         )
 
 
+class SourceReferenceLLMAsAJudgeMetric(LLMAsAJudgeMetric):
+    """Judge metric that combines source and reference into the condition."""
+
+    def __call__(
+        self,
+        predictions: c.Sequence,
+        references: c.Sequence,
+        dataset: "Dataset",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> float | None:
+        if dataset is None:
+            raise InvalidBenchmark(
+                "SourceReferenceLLMAsAJudgeMetric requires `dataset` to be passed."
+            )
+
+        sources = dataset["text"]
+        if not len(sources) == len(predictions) == len(references):
+            raise InvalidBenchmark(
+                "SourceReferenceLLMAsAJudgeMetric expects sources, predictions, and "
+                f"references to be the same length, got {len(sources)}, "
+                f"{len(predictions)}, and {len(references)}."
+            )
+
+        conditions = [
+            f"Source: {source}\nReference: {reference}"
+            for source, reference in zip(sources, references)
+        ]
+
+        return super().__call__(
+            predictions=predictions,
+            references=conditions,
+            dataset=dataset,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+        )
+
+
 ### Fluency metric ###
 
 
@@ -698,4 +736,42 @@ fluency_metric = LLMAsAJudgeMetric(
     "Output your rating as a JSON object with a single key 'fluency'.",
     response_format=Fluency,
     scoring_fn=lambda output: (output.fluency - 1) / 4.0,
+)
+
+
+### Translation metric ###
+
+
+class TranslationQuality(BaseModel):
+    """Response format for the translation quality metric.
+
+    Attributes:
+        score:
+            The translation quality rating, an integer between 1 and 5.
+    """
+
+    score: t.Annotated[int, Field(ge=1, le=5)]
+
+
+translation_quality_metric = SourceReferenceLLMAsAJudgeMetric(
+    name="translation_quality",
+    pretty_name="Translation Quality",
+    judge_id="google/gemma-3-12b-it",
+    judge_kwargs=dict(temperature=0.0),
+    judge_backend="vllm",
+    judge_gpu_memory_gb=30.0,
+    user_prompt=(
+        "You will be given a source sentence, a reference translation, and a system "
+        "translation. Rate the system translation for adequacy and fluency using "
+        "the following scale:\n"
+        "- 1: Incorrect or gibberish\n"
+        "- 2: Major errors, meaning mostly wrong\n"
+        "- 3: Understandable but noticeable errors\n"
+        "- 4: Good, minor errors\n"
+        "- 5: Excellent, accurate and fluent\n\n"
+        "{condition}\nSystem translation: {prediction!r}\n\n"
+        "Output your rating as a JSON object with a single key 'score'."
+    ),
+    response_format=TranslationQuality,
+    scoring_fn=lambda output: (output.score - 1) / 4.0,
 )

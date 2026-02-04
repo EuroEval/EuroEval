@@ -214,6 +214,14 @@ class DatasetConfig:
         splits (optional):
             The names of the splits in the dataset. If not provided, defaults to
             ["train", "val", "test"].
+        preprocess_fn (optional):
+            A function to preprocess the raw dataset after loading, but before any
+            split validation. It must return a DatasetDict.
+        split_seed (optional):
+            Random seed used when creating splits from a single split (e.g. train).
+        split_sizes (optional):
+            Explicit sizes for each split when creating splits from a single split.
+            Use None for at most one split to assign the remainder.
         bootstrap_samples (optional):
             Whether to bootstrap the dataset samples. Defaults to True.
         unofficial (optional):
@@ -237,6 +245,9 @@ class DatasetConfig:
     _allow_invalid_model_outputs: bool | None = None
     _logging_string: str | None = None
     splits: c.Sequence[str] = field(default_factory=lambda: ["train", "val", "test"])
+    preprocess_fn: t.Callable | None = None
+    split_seed: int | None = None
+    split_sizes: dict[str, int | None] | None = None
     bootstrap_samples: bool = True
     unofficial: bool = False
 
