@@ -517,6 +517,14 @@ class BenchmarkConfig:
             faster evaluation, but at the risk of running out of GPU memory. Only reduce
             this if you are running out of GPU memory. Only relevant if the model is
             generative.
+        vllm_tensor_parallel_size:
+            Optional override for vLLM tensor parallel size for the main model.
+        vllm_pipeline_parallel_size:
+            Optional override for vLLM pipeline parallel size for the main model.
+        judge_vllm_tensor_parallel_size:
+            Optional override for vLLM tensor parallel size for judge models.
+        judge_vllm_pipeline_parallel_size:
+            Optional override for vLLM pipeline parallel size for judge models.
         requires_safetensors:
             Whether to only allow models that use the safetensors format.
         generative_type:
@@ -553,6 +561,10 @@ class BenchmarkConfig:
     few_shot: bool
     num_iterations: int
     gpu_memory_utilization: float
+    vllm_tensor_parallel_size: int | None
+    vllm_pipeline_parallel_size: int | None
+    judge_vllm_tensor_parallel_size: int | None
+    judge_vllm_pipeline_parallel_size: int | None
     requires_safetensors: bool
     generative_type: GenerativeType | None
     download_only: bool
@@ -601,6 +613,10 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     requires_safetensors: bool
     download_only: bool
     gpu_memory_utilization: float
+    vllm_tensor_parallel_size: int | None
+    vllm_pipeline_parallel_size: int | None
+    judge_vllm_tensor_parallel_size: int | None
+    judge_vllm_pipeline_parallel_size: int | None
     generative_type: GenerativeType | None
     custom_datasets_file: Path
     force: bool

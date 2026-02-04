@@ -68,6 +68,14 @@ def build_benchmark_config(
         api_base=benchmark_config_params.api_base,
         api_version=benchmark_config_params.api_version,
         gpu_memory_utilization=benchmark_config_params.gpu_memory_utilization,
+        vllm_tensor_parallel_size=benchmark_config_params.vllm_tensor_parallel_size,
+        vllm_pipeline_parallel_size=benchmark_config_params.vllm_pipeline_parallel_size,
+        judge_vllm_tensor_parallel_size=(
+            benchmark_config_params.judge_vllm_tensor_parallel_size
+        ),
+        judge_vllm_pipeline_parallel_size=(
+            benchmark_config_params.judge_vllm_pipeline_parallel_size
+        ),
         generative_type=benchmark_config_params.generative_type,
         debug=benchmark_config_params.debug,
         run_with_cli=benchmark_config_params.run_with_cli,

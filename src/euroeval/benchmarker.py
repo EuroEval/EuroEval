@@ -79,6 +79,10 @@ class Benchmarker:
         api_base: str | None = None,
         api_version: str | None = None,
         gpu_memory_utilization: float = 0.8,
+        vllm_tensor_parallel_size: int | None = None,
+        vllm_pipeline_parallel_size: int | None = None,
+        judge_vllm_tensor_parallel_size: int | None = None,
+        judge_vllm_pipeline_parallel_size: int | None = None,
         generative_type: GenerativeType | None = None,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
@@ -149,6 +153,14 @@ class Benchmarker:
                 is generative. A larger value will result in faster evaluation, but at
                 the risk of running out of GPU memory. Only reduce this if you are
                 running out of GPU memory. Defaults to 0.9.
+            vllm_tensor_parallel_size:
+                Optional override for vLLM tensor parallel size for the main model.
+            vllm_pipeline_parallel_size:
+                Optional override for vLLM pipeline parallel size for the main model.
+            judge_vllm_tensor_parallel_size:
+                Optional override for vLLM tensor parallel size for judge models.
+            judge_vllm_pipeline_parallel_size:
+                Optional override for vLLM pipeline parallel size for judge models.
             generative_type:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
@@ -264,6 +276,10 @@ class Benchmarker:
             requires_safetensors=requires_safetensors,
             download_only=download_only,
             gpu_memory_utilization=gpu_memory_utilization,
+            vllm_tensor_parallel_size=vllm_tensor_parallel_size,
+            vllm_pipeline_parallel_size=vllm_pipeline_parallel_size,
+            judge_vllm_tensor_parallel_size=judge_vllm_tensor_parallel_size,
+            judge_vllm_pipeline_parallel_size=judge_vllm_pipeline_parallel_size,
             generative_type=generative_type,
             custom_datasets_file=Path(custom_datasets_file),
             verbose=verbose,
@@ -384,6 +400,10 @@ class Benchmarker:
         requires_safetensors: bool | None = None,
         download_only: bool | None = None,
         gpu_memory_utilization: float | None = None,
+        vllm_tensor_parallel_size: int | None = None,
+        vllm_pipeline_parallel_size: int | None = None,
+        judge_vllm_tensor_parallel_size: int | None = None,
+        judge_vllm_pipeline_parallel_size: int | None = None,
         generative_type: GenerativeType | None = None,
         custom_datasets_file: Path | str | None = None,
         force: bool | None = None,
@@ -632,6 +652,26 @@ class Benchmarker:
                 gpu_memory_utilization
                 if gpu_memory_utilization is not None
                 else self.benchmark_config_default_params.gpu_memory_utilization
+            ),
+            vllm_tensor_parallel_size=(
+                vllm_tensor_parallel_size
+                if vllm_tensor_parallel_size is not None
+                else self.benchmark_config_default_params.vllm_tensor_parallel_size
+            ),
+            vllm_pipeline_parallel_size=(
+                vllm_pipeline_parallel_size
+                if vllm_pipeline_parallel_size is not None
+                else self.benchmark_config_default_params.vllm_pipeline_parallel_size
+            ),
+            judge_vllm_tensor_parallel_size=(
+                judge_vllm_tensor_parallel_size
+                if judge_vllm_tensor_parallel_size is not None
+                else self.benchmark_config_default_params.judge_vllm_tensor_parallel_size
+            ),
+            judge_vllm_pipeline_parallel_size=(
+                judge_vllm_pipeline_parallel_size
+                if judge_vllm_pipeline_parallel_size is not None
+                else self.benchmark_config_default_params.judge_vllm_pipeline_parallel_size
             ),
             generative_type=(
                 generative_type
