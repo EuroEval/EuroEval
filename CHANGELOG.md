@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   the linguistic acceptability dataset ScaLA-be, the named entity recognition dataset
   WikiANN-be, the reading comprehension dataset MultiWikiQA-be, and the common-sense
   reasoning dataset BE-WSC. This was added by @oliverkinch ✨
+- Added support for evaluating Hugging Face dataset repos directly, if they have a
+  `euroeval_config.py` file. We plan to allow support for a JSON/YAML config file in the
+  future, for simpler datasets.
 
 ### Fixed
 
