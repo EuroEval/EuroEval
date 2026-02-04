@@ -1,5 +1,9 @@
 """All benchmarks tasks used in EuroEval."""
 
+import json
+
+from euroeval.prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES
+
 from . import metrics as m
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import Task
@@ -166,6 +170,40 @@ EUROPEAN_VALUES = Task(
     requires_zero_shot=True,
     uses_logprobs=True,
     default_allow_invalid_model_outputs=False,
+)
+
+BFCL_OUTPUT_STRUCTURE = {
+    "name": "FunctionInvocations",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "invocations": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "function": {"type": "string"},
+                        "arguments": {"type": "object"},
+                    },
+                    "required": ["function", "arguments"],
+                },
+            }
+        },
+        "required": ["invocations"],
+    },
+}
+
+BFCL = Task(
+    name="bfcl",
+    task_group=TaskGroup.TOOL_CALLING,
+    template_dict=TOOL_CALLING_TEMPLATES,
+    metrics=[m.tool_calling_metric],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=1000,
+    default_labels=[],
+    requires_zero_shot=True,
+    uses_structured_output=True,
+    structured_output_schema=json.dumps(BFCL_OUTPUT_STRUCTURE),
 )
 
 

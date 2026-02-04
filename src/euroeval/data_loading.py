@@ -9,6 +9,7 @@ import typing as t
 import requests
 from datasets import DatasetDict, load_dataset
 from datasets.exceptions import DatasetsError
+from dotenv import load_dotenv
 from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from numpy.random import Generator
 
@@ -135,6 +136,7 @@ def load_raw_data(
         for _ in range(num_attempts):
             try:
                 with no_terminal_output():
+                    load_dotenv()
                     dataset = load_dataset(
                         path=dataset_config.source.split("::")[0],
                         name=(

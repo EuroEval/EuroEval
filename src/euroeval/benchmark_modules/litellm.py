@@ -75,6 +75,7 @@ from ..task_group_utils import (
     sequence_classification,
     text_to_text,
     token_classification,
+    tool_calling,
 )
 from ..tasks import NER
 from ..tokenisation_utils import get_first_label_token_mapping
@@ -1323,6 +1324,8 @@ class LiteLLMModel(BenchmarkModule):
                 )
             case TaskGroup.QUESTION_ANSWERING:
                 return question_answering.extract_labels_from_generation
+            case TaskGroup.TOOL_CALLING:
+                return tool_calling.extract_labels_from_generation
             case _:
                 raise NotImplementedError(
                     f"Unsupported task group: {self.dataset_config.task.task_group}."
@@ -1633,6 +1636,11 @@ class LiteLLMModel(BenchmarkModule):
                     }
                     pydantic_class = create_model(
                         "AnswerFormat", **keys_and_their_types
+                    )
+                elif dataset_config.task.structured_output_schema:
+                    pydantic_class = create_model(
+                        "AnswerFormat",
+                        **json.loads(dataset_config.task.structured_output_schema),
                     )
                 else:
                     raise InvalidBenchmark(

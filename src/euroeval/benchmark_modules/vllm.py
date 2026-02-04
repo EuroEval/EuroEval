@@ -61,6 +61,7 @@ from ..task_group_utils import (
     sequence_classification,
     text_to_text,
     token_classification,
+    tool_calling,
 )
 from ..tokenisation_utils import (
     apply_chat_template,
@@ -342,6 +343,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                 )
             case TaskGroup.QUESTION_ANSWERING:
                 return question_answering.extract_labels_from_generation
+            case TaskGroup.TOOL_CALLING:
+                return tool_calling.extract_labels_from_generation
             case _:
                 raise NotImplementedError(
                     f"Unsupported task group: {self.dataset_config.task.task_group}."
@@ -485,6 +488,13 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "The dataset uses structured output, but we are not using it as the "
                 f"model {self.model_config.model_id!r} is a reasoning model.",
                 level=logging.DEBUG,
+            )
+        elif (
+            self.dataset_config.task.uses_structured_output
+            and self.dataset_config.task.structured_output_schema is not None
+        ):
+            structured_outputs = StructuredOutputsParams(
+                json=self.dataset_config.task.structured_output_schema
             )
         elif self.dataset_config.task.uses_structured_output:
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())

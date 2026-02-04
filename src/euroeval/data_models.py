@@ -108,6 +108,8 @@ class Task:
         uses_structured_output (optional):
             Whether the task uses structured output. If True, the task will return
             structured output (e.g., BIO tags for NER). Defaults to False.
+        structured_output_schema (optional):
+            Schema to use for structured output as a (deserializable) JSON string.
         uses_logprobs (optional):
             Whether the task uses log probabilities. If True, the task will return
             log probabilities for the generated tokens. Defaults to False.
@@ -143,6 +145,7 @@ class Task:
     default_labels: c.Sequence[str] | None = tuple()
     requires_zero_shot: bool = False
     uses_structured_output: bool = False
+    structured_output_schema: str | None = None
     uses_logprobs: bool = False
     requires_logprobs: bool = False
     default_allowed_model_types: c.Sequence[ModelType] = field(
