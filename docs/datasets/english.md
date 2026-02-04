@@ -1252,7 +1252,7 @@ euroeval --model <model-id> --dataset valeu-en
 ### BFCL
 
 This dataset is an excerpt from the
-[Berkeley Function Calling Leaderboard (v4) dataset](https://openreview.net/forum?id=2GmDdhBdDk),
+[Berkeley Function Calling Leaderboard (v2) dataset](https://openreview.net/forum?id=2GmDdhBdDk),
 containing the following subsets (n.o. samples in the parentheses):
 
 - live_multiple (1053)

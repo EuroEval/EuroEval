@@ -86,7 +86,7 @@ IFEVAL_CONFIG = DatasetConfig(
 
 BFCL_CONFIG = DatasetConfig(
     name="bfcl",
-    pretty_name="BFCL-v4",
+    pretty_name="BFCL-v2",
     source="EuroEval/bfcl-en",
     task=TOOL_CALLING,
     languages=[ENGLISH],
