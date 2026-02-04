@@ -10,20 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - A task _Tool Calling_ and a dataset under this task _bfcl-v2 a subset of the
-Berkeley Function Calling Leaderboard benchmark (v2).
-Currently only supported for English.
-- Added the new Danish linguistic acceptability dataset DaLA. It's marked as
-  unofficial for now. This was added by @N-essuno ✨
-- Added `--max-context-length` and `--vocabulary-size` CLI options (and corresponding
-  `max_context_length` and `vocabulary_size` arguments to `Benchmarker.__init__` and
-  `Benchmarker.benchmark`) to allow overriding the model metadata values that are
-  inferred automatically from the model. This is useful when the model does not have
-  the metadata specified, or has it specified incorrectly.
-
-## [v16.16.1] - 2026-02-25
-
-### Added
-
+  Berkeley Function Calling Leaderboard benchmark (v2).
+  Currently only supported for English.
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
 - Added `--max-context-length` and `--vocabulary-size` CLI options (and corresponding
@@ -39,6 +27,8 @@ Currently only supported for English.
   specifies a column (or list of columns) containing answer choices for
   multiple-choice tasks, and `preprocessing_func` is a fully custom preprocessing
   function that takes precedence over the column arguments if both are provided.
+
+## [v16.16.1] - 2026-02-25
 
 ### Fixed
 
