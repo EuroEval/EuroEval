@@ -6,7 +6,7 @@ information about what these constitute.
 
 ## Sentiment Classification
 
-### Angry Tweeets
+### Angry Tweets
 
 This dataset was published in [this
 paper](https://aclanthology.org/2021.nodalida-main.53/) and was a crowd-sourcing effort
@@ -75,7 +75,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset angry-tweeets
+euroeval --model <model-id> --dataset angry-tweets
 ```
 
 ## Named Entity Recognition
