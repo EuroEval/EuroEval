@@ -299,59 +299,69 @@ class DatasetConfig:
                 "`prompt_prefix` instead.",
                 level=logging.WARNING,
             )
+            prompt_prefix = _prompt_prefix
         if _prompt_template is not None:
             log_once(
                 "The `_prompt_template` argument is deprecated. Please use "
                 "`prompt_template` instead.",
                 level=logging.WARNING,
             )
+            prompt_template = _prompt_template
         if _instruction_prompt is not None:
             log_once(
                 "The `_instruction_prompt` argument is deprecated. Please use "
                 "`instruction_prompt` instead.",
                 level=logging.WARNING,
             )
+            instruction_prompt = _instruction_prompt
         if _num_few_shot_examples is not None:
             log_once(
                 "The `_num_few_shot_examples` argument is deprecated. Please use "
                 "`num_few_shot_examples` instead.",
                 level=logging.WARNING,
             )
+            num_few_shot_examples = _num_few_shot_examples
         if _max_generated_tokens is not None:
             log_once(
                 "The `_max_generated_tokens` argument is deprecated. Please use "
                 "`max_generated_tokens` instead.",
                 level=logging.WARNING,
             )
+            max_generated_tokens = _max_generated_tokens
         if _labels is not None:
             log_once(
                 "The `_labels` argument is deprecated. Please use `labels` instead.",
                 level=logging.WARNING,
             )
+            labels = _labels
         if _prompt_label_mapping is not None:
             log_once(
                 "The `_prompt_label_mapping` argument is deprecated. Please use "
                 "`prompt_label_mapping` instead.",
                 level=logging.WARNING,
             )
+            prompt_label_mapping = _prompt_label_mapping
         if _allowed_model_types is not None:
             log_once(
                 "The `_allowed_model_types` argument is deprecated. Please use "
                 "`allowed_model_types` instead.",
                 level=logging.WARNING,
             )
+            allowed_model_types = _allowed_model_types
         if _allowed_generative_types is not None:
             log_once(
                 "The `_allowed_generative_types` argument is deprecated. Please use "
                 "`allowed_generative_types` instead.",
                 level=logging.WARNING,
             )
+            allowed_generative_types = _allowed_generative_types
         if _allow_invalid_model_outputs is not None:
             log_once(
                 "The `_allow_invalid_model_outputs` argument is deprecated. Please use "
                 "`allow_invalid_model_outputs` instead.",
                 level=logging.WARNING,
             )
+            allow_invalid_model_outputs = _allow_invalid_model_outputs
         if _logging_string is not None:
             log_once(
                 "The `_logging_string` argument is deprecated and is not used anymore. "
