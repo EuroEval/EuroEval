@@ -27,12 +27,9 @@ from .model_config import get_model_config
 from .model_loading import load_model
 from .scores import log_scores
 from .speed_benchmark import benchmark_speed
+from .string_utils import split_model_id
 from .tasks import SPEED
-from .utils import (
-    enforce_reproducibility,
-    internet_connection_available,
-    split_model_id,
-)
+from .utils import enforce_reproducibility, internet_connection_available
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule

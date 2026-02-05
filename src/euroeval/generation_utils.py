@@ -13,8 +13,8 @@ from datasets import Dataset
 from .enums import GenerativeType, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import log_once
+from .string_utils import extract_multiple_choice_labels
 from .tokenisation_utils import apply_chat_template
-from .utils import extract_multiple_choice_labels
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict

@@ -1,22 +1,14 @@
 """Utility functions to be used in other scripts."""
 
-import asyncio
-import collections.abc as c
 import gc
-import importlib
-import importlib.metadata
-import importlib.util
 import logging
 import os
 import random
-import re
 import socket
 import sys
 import typing as t
 from pathlib import Path
-from types import ModuleType
 
-import demjson3
 import huggingface_hub as hf_hub
 import numpy as np
 import torch
@@ -24,46 +16,12 @@ from huggingface_hub.errors import LocalTokenNotFoundError
 from requests.exceptions import RequestException
 
 from .caching_utils import cache_arguments
-from .constants import LOCAL_MODELS_REQUIRED_FILES, T
-from .exceptions import InvalidBenchmark, InvalidModel, NaNValueInModelOutput
-from .logging_utils import log, log_once
+from .constants import LOCAL_MODELS_REQUIRED_FILES
+from .exceptions import InvalidModel, NaNValueInModelOutput
+from .logging_utils import log_once
 
 if t.TYPE_CHECKING:
-    from .data_models import ModelIdComponents
     from .types import Predictions
-
-
-def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
-    """Create cache directory for a model.
-
-    Args:
-        cache_dir:
-            The cache directory.
-        model_id:
-            The model ID.
-
-    Returns:
-        The path to the cache directory.
-    """
-    # If the model ID is a path, we just use that as the cache dir
-    if Path(model_id).is_dir():
-        log_once(
-            f"Since the model {model_id!r} is a local model, we will use the model "
-            "directory directly as the model cache directory.",
-            level=logging.DEBUG,
-        )
-        return model_id
-
-    # Otherwise, we create a cache dir based on the model ID
-    model_cache_dir = Path(
-        cache_dir, "model_cache", model_id.replace("/", "--")
-    ).as_posix()
-    log_once(
-        f"Using the model cache directory {model_cache_dir!r} for the model "
-        f"{model_id!r}.",
-        level=logging.DEBUG,
-    )
-    return model_cache_dir
 
 
 def resolve_model_path(download_dir: str) -> str:
@@ -164,47 +122,6 @@ def enforce_reproducibility(seed: int = 4242) -> np.random.Generator:
     return rng
 
 
-def get_class_by_name(
-    class_name: str | c.Sequence[str], module_name: str
-) -> t.Type | None:
-    """Get a class by its name.
-
-    Args:
-        class_name:
-            The name of the class, written in kebab-case. The corresponding class name
-            must be the same, but written in PascalCase, and lying in a module with the
-            same name, but written in snake_case. If a list of strings is passed, the
-            first class that is found is returned.
-        module_name:
-            The name of the module where the class is located.
-
-    Returns:
-        The class. If the class is not found, None is returned.
-    """
-    if isinstance(class_name, str):
-        class_name = [class_name]
-
-    error_messages = list()
-    for name in class_name:
-        try:
-            module = importlib.import_module(name=module_name)
-            class_: t.Type = getattr(module, name)
-            return class_
-        except (ModuleNotFoundError, AttributeError) as e:
-            error_messages.append(str(e))
-
-    if error_messages:
-        errors = "\n- " + "\n- ".join(error_messages)
-        log(
-            f"Could not find the class with the name(s) {', '.join(class_name)}. The "
-            f"following error messages were raised: {errors}",
-            level=logging.DEBUG,
-        )
-
-    # If the class could not be found, return None
-    return None
-
-
 def get_min_cuda_compute_capability() -> float | None:
     """Gets the lowest cuda capability.
 
@@ -222,7 +139,7 @@ def get_min_cuda_compute_capability() -> float | None:
 
 @cache_arguments(disable_condition=lambda: hasattr(sys, "_called_from_test"))
 def internet_connection_available() -> bool:
-    """Checks if internet connection is available by pinging google.com.
+    """Checks if internet connection is available.
 
     Returns:
         Whether or not internet connection is available.
@@ -263,141 +180,6 @@ def raise_if_model_output_contains_nan_values(model_output: "Predictions") -> No
         elif len(model_output[0]) > 0:
             if any(x != x for sublist in model_output for x in sublist):
                 raise NaNValueInModelOutput()
-
-
-def scramble(text: str) -> str:
-    """Scramble a string in a bijective manner.
-
-    Args:
-        text:
-            The string to scramble.
-
-    Returns:
-        The scrambled string.
-    """
-    rng = np.random.default_rng(seed=4242)
-    permutation = rng.permutation(x=len(text))
-    scrambled = "".join(text[i] for i in permutation)
-    return scrambled
-
-
-def unscramble(scrambled_text: str) -> str:
-    """Unscramble a string in a bijective manner.
-
-    Args:
-        scrambled_text:
-            The scrambled string to unscramble.
-
-    Returns:
-        The unscrambled string.
-    """
-    rng = np.random.default_rng(seed=4242)
-    permutation = rng.permutation(x=len(scrambled_text))
-    inverse_permutation = np.argsort(permutation)
-    unscrambled = "".join(scrambled_text[i] for i in inverse_permutation)
-    return unscrambled
-
-
-def get_package_version(package_name: str) -> str | None:
-    """Get the version of a package.
-
-    Args:
-        package_name:
-            The name of the package.
-
-    Returns:
-        The version of the package, or None if the package is not installed.
-    """
-    try:
-        return importlib.metadata.version(package_name)
-    except importlib.metadata.PackageNotFoundError:
-        return None
-
-
-def safe_run(coroutine: t.Coroutine[t.Any, t.Any, T]) -> T:
-    """Run a coroutine, ensuring that the event loop is always closed when we're done.
-
-    Args:
-        coroutine:
-            The coroutine to run.
-
-    Returns:
-        The result of the coroutine.
-    """
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:  # If the current event loop is closed
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    response = loop.run_until_complete(coroutine)
-    return response
-
-
-async def add_semaphore_and_catch_exception(
-    coroutine: t.Coroutine[t.Any, t.Any, T], semaphore: asyncio.Semaphore
-) -> T | Exception:
-    """Run a coroutine with a semaphore.
-
-    Args:
-        coroutine:
-            The coroutine to run.
-        semaphore:
-            The semaphore to use.
-
-    Returns:
-        The result of the coroutine.
-    """
-    async with semaphore:
-        try:
-            return await coroutine
-        except Exception as exc:
-            return exc
-
-
-def extract_json_dict_from_string(s: str) -> dict | None:
-    """Extract a JSON dictionary from a string.
-
-    Args:
-        s:
-            The string to extract the JSON dictionary from.
-
-    Returns:
-        The extracted JSON dictionary, or None if no JSON dictionary could be found.
-    """
-    json_regex = r"\{[^{}]*?\}"
-    if (json_match := re.search(pattern=json_regex, string=s, flags=re.DOTALL)) is None:
-        log(
-            "The model output does not contain any JSON dictionary, so cannot parse "
-            f"it. Skipping. Here is the output: {s!r}",
-            level=logging.DEBUG,
-        )
-        return None
-    json_string = json_match.group()
-    try:
-        json_output = demjson3.decode(txt=json_string)
-    except demjson3.JSONDecodeError:
-        log(
-            "The model output is not valid JSON, so cannot parse it. Skipping. "
-            f"Here is the output: {json_string!r}",
-            level=logging.DEBUG,
-        )
-        return None
-    if not isinstance(json_output, dict):
-        log(
-            "The model output is not a JSON dictionary, so cannot parse "
-            f"it. Skipping. Here is the output: {json_string!r}",
-            level=logging.DEBUG,
-        )
-        return None
-    elif not all(isinstance(key, str) for key in json_output.keys()):
-        log(
-            "The model output is not a JSON dictionary with string keys, "
-            "so cannot parse it. Skipping. Here is the output: "
-            f"{json_string!r}",
-            level=logging.DEBUG,
-        )
-        return None
-    return json_output
 
 
 @cache_arguments()
@@ -447,101 +229,3 @@ def get_hf_token(api_key: str | None) -> str | bool:
             level=logging.DEBUG,
         )
         return False
-
-
-def extract_multiple_choice_labels(
-    prompt: str, candidate_labels: c.Sequence[str]
-) -> c.Sequence[str]:
-    """Extract multiple choice labels from a prompt.
-
-    Args:
-        prompt:
-            The prompt to extract the labels from.
-        candidate_labels:
-            The candidate labels to look for in the prompt.
-
-    Returns:
-        The extracted labels.
-    """
-    sample_candidate_labels: list[str] = list()
-    for candidate_label in candidate_labels:
-        candidate_label_match = re.search(
-            pattern=rf"\b{candidate_label}\. ", string=prompt, flags=re.IGNORECASE
-        )
-        if candidate_label_match is not None:
-            sample_candidate_labels.append(candidate_label)
-    if not sample_candidate_labels:
-        raise InvalidBenchmark(
-            "Could not extract any candidate labels from the prompt. Please ensure "
-            "that the candidate labels are present in the prompt, each followed by a "
-            "dot and a space (e.g., 'a. '). The candidate labels are: "
-            f"{', '.join(candidate_labels)}. Here is the prompt: {prompt!r}"
-        )
-    return sample_candidate_labels
-
-
-def split_model_id(model_id: str) -> "ModelIdComponents":
-    """Split a model ID into its components.
-
-    Args:
-        model_id:
-            The model ID to split.
-
-    Returns:
-        The split model ID.
-
-    Raises:
-        If the model ID is not valid.
-    """
-    # Importing here to avoid circular imports
-    from .data_models import ModelIdComponents
-
-    # Attempt to extract the model ID, revision, and param using regex
-    model_id_match = re.match(pattern=r"^[^@#]+", string=model_id)
-    revision_match = re.search(pattern=r"@([^@#]+)", string=model_id)
-    param_match = re.search(pattern=r"#([^@#]+)", string=model_id)
-
-    # If we cannot extract the model ID, raise an error
-    if model_id_match is None:
-        raise InvalidModel(f"The model ID {model_id!r} is not valid.")
-    model_id = model_id_match.group()
-
-    # Extract the revision and param and return the result
-    revision = revision_match.group(1) if revision_match is not None else "main"
-    param = param_match.group(1) if param_match is not None else None
-    return ModelIdComponents(model_id=model_id, revision=revision, param=param)
-
-
-def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None:
-    """Load the custom datasets module if it exists.
-
-    Args:
-        custom_datasets_file:
-            The path to the custom datasets module.
-
-    Raises:
-        RuntimeError:
-            If the custom datasets module cannot be loaded.
-    """
-    if custom_datasets_file.exists():
-        spec = importlib.util.spec_from_file_location(
-            name="custom_datasets_module", location=str(custom_datasets_file.resolve())
-        )
-        if spec is None:
-            log_once(
-                "Could not load the spec for the custom datasets file from "
-                f"{custom_datasets_file.resolve()}.",
-                level=logging.ERROR,
-            )
-            return None
-        module = importlib.util.module_from_spec(spec=spec)
-        if spec.loader is None:
-            log_once(
-                "Could not load the module for the custom datasets file from "
-                f"{custom_datasets_file.resolve()}.",
-                level=logging.ERROR,
-            )
-            return None
-        spec.loader.exec_module(module)
-        return module
-    return None

@@ -10,12 +10,9 @@ import numpy as np
 
 from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark
+from ..string_utils import extract_multiple_choice_labels
 from ..types import Predictions
-from ..utils import (
-    extract_multiple_choice_labels,
-    log_once,
-    raise_if_model_output_contains_nan_values,
-)
+from ..utils import log_once, raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset

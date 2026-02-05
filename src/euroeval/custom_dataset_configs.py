@@ -1,0 +1,119 @@
+"""Load custom dataset configs."""
+
+import importlib.util
+import logging
+from pathlib import Path
+from types import ModuleType
+
+from huggingface_hub import HfApi
+
+from .data_models import DatasetConfig
+from .logging_utils import log_once
+from .utils import get_hf_token
+
+
+def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None:
+    """Load the custom datasets module if it exists.
+
+    Args:
+        custom_datasets_file:
+            The path to the custom datasets module.
+
+    Raises:
+        RuntimeError:
+            If the custom datasets module cannot be loaded.
+    """
+    if custom_datasets_file.exists():
+        spec = importlib.util.spec_from_file_location(
+            name="custom_datasets_module", location=str(custom_datasets_file.resolve())
+        )
+        if spec is None:
+            log_once(
+                "Could not load the spec for the custom datasets file from "
+                f"{custom_datasets_file.resolve()}.",
+                level=logging.ERROR,
+            )
+            return None
+        module = importlib.util.module_from_spec(spec=spec)
+        if spec.loader is None:
+            log_once(
+                "Could not load the module for the custom datasets file from "
+                f"{custom_datasets_file.resolve()}.",
+                level=logging.ERROR,
+            )
+            return None
+        spec.loader.exec_module(module)
+        return module
+    return None
+
+
+def try_get_dataset_config_from_repo(
+    dataset_id: str, api_key: str | None, cache_dir: Path
+) -> DatasetConfig | None:
+    """Try to get a dataset config from a Hugging Face dataset repository.
+
+    Args:
+        dataset_id:
+            The ID of the dataset to get the config for.
+        api_key:
+            The Hugging Face API key to use to check if the repositories have custom
+            dataset configs.
+        cache_dir:
+            The directory to store the cache in.
+
+    Returns:
+        The dataset config if it exists, otherwise None.
+    """
+    # Check if the dataset ID is a Hugging Face dataset ID, abort if it isn't
+    token = get_hf_token(api_key=api_key)
+    hf_api = HfApi(token=token)
+    if not hf_api.repo_exists(repo_id=dataset_id, repo_type="dataset"):
+        return None
+
+    # Check if the repository has a euroeval_config.py file, abort if it doesn't
+    repo_files = hf_api.list_repo_files(
+        repo_id=dataset_id, repo_type="dataset", revision="main"
+    )
+    if "euroeval_config.py" not in repo_files:
+        log_once(
+            f"Dataset {dataset_id} does not have a euroeval_config.py file, so we "
+            "cannot load it. Skipping.",
+            level=logging.WARNING,
+        )
+        return None
+
+    # Fetch the euroeval_config.py file, abort if loading failed
+    external_config_path = cache_dir / "external_dataset_configs" / dataset_id
+    external_config_path.mkdir(parents=True, exist_ok=True)
+    hf_api.hf_hub_download(
+        repo_id=dataset_id,
+        repo_type="dataset",
+        filename="euroeval_config.py",
+        local_dir=external_config_path,
+        local_dir_use_symlinks=False,
+    )
+    module = load_custom_datasets_module(custom_datasets_file=external_config_path)
+    if module is None:
+        return None
+
+    # Check that there is exactly one dataset config, abort if there isn't
+    repo_dataset_configs = [
+        cfg for cfg in vars(module).values() if isinstance(cfg, DatasetConfig)
+    ]
+    if not repo_dataset_configs:
+        return None  # Already warned the user in this case, so we just skip
+    elif len(repo_dataset_configs) > 1:
+        log_once(
+            f"Dataset {dataset_id} has multiple dataset configurations. Please ensure "
+            "that only a single DatasetConfig is defined in the `euroeval_config.py` "
+            "file.",
+            level=logging.WARNING,
+        )
+        return None
+
+    # Return the dataset config
+    repo_dataset_config = repo_dataset_configs[0]
+    repo_dataset_config.name = dataset_id
+    repo_dataset_config.pretty_name = dataset_id
+    repo_dataset_config.source = dataset_id
+    return repo_dataset_config

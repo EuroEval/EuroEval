@@ -5,18 +5,15 @@ import hashlib
 import json
 import logging
 import sys
-import typing as t
 from collections import defaultdict
 from dataclasses import asdict
+from pathlib import Path
 
 from datasets import Dataset
 
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import GenerativeModelOutput, SingleGenerativeModelOutput
 from .logging_utils import get_pbar, log, log_once
-
-if t.TYPE_CHECKING:
-    from pathlib import Path
 
 
 class ModelCache:
@@ -295,3 +292,36 @@ def load_cached_model_outputs(
 
     cached_scores = [model_output.scores or [] for model_output in cached_model_outputs]
     return GenerativeModelOutput(sequences=cached_sequences, scores=cached_scores)
+
+
+def create_model_cache_dir(cache_dir: str, model_id: str) -> str:
+    """Create cache directory for a model.
+
+    Args:
+        cache_dir:
+            The cache directory.
+        model_id:
+            The model ID.
+
+    Returns:
+        The path to the cache directory.
+    """
+    # If the model ID is a path, we just use that as the cache dir
+    if Path(model_id).is_dir():
+        log_once(
+            f"Since the model {model_id!r} is a local model, we will use the model "
+            "directory directly as the model cache directory.",
+            level=logging.DEBUG,
+        )
+        return model_id
+
+    # Otherwise, we create a cache dir based on the model ID
+    model_cache_dir = Path(
+        cache_dir, "model_cache", model_id.replace("/", "--")
+    ).as_posix()
+    log_once(
+        f"Using the model cache directory {model_cache_dir!r} for the model "
+        f"{model_id!r}.",
+        level=logging.DEBUG,
+    )
+    return model_cache_dir

@@ -12,7 +12,7 @@ from scipy.special import expit as sigmoid
 
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log, no_terminal_output
-from ..utils import unscramble
+from ..string_utils import unscramble
 from .base import Metric
 
 if t.TYPE_CHECKING:

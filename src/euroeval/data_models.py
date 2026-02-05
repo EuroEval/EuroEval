@@ -1,6 +1,8 @@
 """Data models used in EuroEval."""
 
 import collections.abc as c
+import importlib.metadata
+import importlib.util
 import json
 import logging
 import re
@@ -28,10 +30,25 @@ from .languages import (
 from .logging_utils import log_once
 from .metrics.base import Metric
 from .types import ScoreDict
-from .utils import get_package_version
 
 if t.TYPE_CHECKING:
     from .enums import InferenceBackend
+
+
+def get_package_version(package_name: str) -> str | None:
+    """Get the version of a package.
+
+    Args:
+        package_name:
+            The name of the package.
+
+    Returns:
+        The version of the package, or None if the package is not installed.
+    """
+    try:
+        return importlib.metadata.version(package_name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
 
 
 @dataclass

@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
-from ..utils import extract_json_dict_from_string
+from ..string_utils import extract_json_dict_from_string
 from .base import Metric
 
 if t.TYPE_CHECKING:

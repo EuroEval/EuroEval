@@ -54,6 +54,8 @@ from ..generation_utils import (
 )
 from ..languages import get_all_languages
 from ..logging_utils import get_pbar, log, log_once, no_terminal_output
+from ..model_cache import create_model_cache_dir
+from ..string_utils import split_model_id
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
@@ -73,12 +75,10 @@ from ..tokenisation_utils import (
 from ..types import ExtractLabelsFunction, Tokeniser
 from ..utils import (
     clear_memory,
-    create_model_cache_dir,
     get_hf_token,
     get_min_cuda_compute_capability,
     internet_connection_available,
     resolve_model_path,
-    split_model_id,
 )
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 

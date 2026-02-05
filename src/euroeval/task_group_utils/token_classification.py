@@ -9,10 +9,8 @@ import numpy as np
 
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
-from ..utils import (
-    extract_json_dict_from_string,
-    raise_if_model_output_contains_nan_values,
-)
+from ..string_utils import extract_json_dict_from_string
+from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset

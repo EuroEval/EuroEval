@@ -125,3 +125,6 @@ gfx/different-poses/*
 
 # Contracts
 generated_contracts/
+
+# Test config
+euroeval_config.py

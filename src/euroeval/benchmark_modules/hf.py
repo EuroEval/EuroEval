@@ -1,6 +1,7 @@
 """Encoder models from the Hugging Face Hub."""
 
 import collections.abc as c
+import importlib
 import logging
 import re
 import typing as t
@@ -63,6 +64,8 @@ from ..exceptions import (
 from ..generation_utils import raise_if_wrong_params
 from ..languages import get_all_languages
 from ..logging_utils import block_terminal_output, log, log_once
+from ..model_cache import create_model_cache_dir
+from ..string_utils import split_model_id
 from ..task_group_utils import (
     multiple_choice_classification,
     question_answering,
@@ -70,13 +73,7 @@ from ..task_group_utils import (
 )
 from ..tokenisation_utils import get_bos_token, get_eos_token
 from ..types import Tokeniser
-from ..utils import (
-    create_model_cache_dir,
-    get_class_by_name,
-    get_hf_token,
-    internet_connection_available,
-    split_model_id,
-)
+from ..utils import get_hf_token, internet_connection_available
 from .base import BenchmarkModule
 
 try:
@@ -1334,3 +1331,44 @@ def task_group_to_class_name(task_group: TaskGroup) -> str:
     )
     pascal_case = special_case_mapping.get(pascal_case, pascal_case)
     return f"AutoModelFor{pascal_case}"
+
+
+def get_class_by_name(
+    class_name: str | c.Sequence[str], module_name: str
+) -> t.Type | None:
+    """Get a class by its name.
+
+    Args:
+        class_name:
+            The name of the class, written in kebab-case. The corresponding class name
+            must be the same, but written in PascalCase, and lying in a module with the
+            same name, but written in snake_case. If a list of strings is passed, the
+            first class that is found is returned.
+        module_name:
+            The name of the module where the class is located.
+
+    Returns:
+        The class. If the class is not found, None is returned.
+    """
+    if isinstance(class_name, str):
+        class_name = [class_name]
+
+    error_messages = list()
+    for name in class_name:
+        try:
+            module = importlib.import_module(name=module_name)
+            class_: t.Type = getattr(module, name)
+            return class_
+        except (ModuleNotFoundError, AttributeError) as e:
+            error_messages.append(str(e))
+
+    if error_messages:
+        errors = "\n- " + "\n- ".join(error_messages)
+        log(
+            f"Could not find the class with the name(s) {', '.join(class_name)}. The "
+            f"following error messages were raised: {errors}",
+            level=logging.DEBUG,
+        )
+
+    # If the class could not be found, return None
+    return None

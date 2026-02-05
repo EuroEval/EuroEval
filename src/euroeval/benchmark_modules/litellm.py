@@ -40,6 +40,7 @@ from pydantic import ValidationError, conlist, create_model
 from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
 
+from ..async_utils import add_semaphore_and_catch_exception, safe_run
 from ..caching_utils import cache_arguments
 from ..constants import (
     JSON_STRIP_CHARACTERS,
@@ -74,6 +75,8 @@ from ..generation_utils import (
     raise_if_wrong_params,
 )
 from ..logging_utils import get_pbar, log, log_once
+from ..model_cache import create_model_cache_dir
+from ..string_utils import split_model_id
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
@@ -83,13 +86,7 @@ from ..task_group_utils import (
 from ..tasks import NER
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
-from ..utils import (
-    add_semaphore_and_catch_exception,
-    create_model_cache_dir,
-    get_hf_token,
-    safe_run,
-    split_model_id,
-)
+from ..utils import get_hf_token
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokeniser
 

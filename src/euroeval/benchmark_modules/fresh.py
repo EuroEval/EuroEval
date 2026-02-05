@@ -28,8 +28,9 @@ from ..exceptions import (
 )
 from ..generation_utils import raise_if_wrong_params
 from ..logging_utils import block_terminal_output
+from ..model_cache import create_model_cache_dir
 from ..types import Tokeniser
-from ..utils import create_model_cache_dir, get_hf_token
+from ..utils import get_hf_token
 from .hf import (
     HuggingFaceEncoderModel,
     align_model_and_tokeniser,

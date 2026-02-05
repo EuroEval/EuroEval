@@ -17,8 +17,8 @@ from euroeval.utils import get_hf_token
 from .constants import SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark
 from .logging_utils import log, no_terminal_output
+from .string_utils import unscramble
 from .tasks import EUROPEAN_VALUES
-from .utils import unscramble
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
