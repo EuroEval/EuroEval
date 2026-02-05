@@ -60,7 +60,7 @@ WINOGRANDE_LT_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-lt",
     task=COMMON_SENSE,
     languages=[LITHUANIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )
 
 ### Unofficial datasets ###

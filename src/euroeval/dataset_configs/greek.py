@@ -12,7 +12,7 @@ GREEK_SA_CONFIG = DatasetConfig(
     source="EuroEval/greek-sa-mini",
     task=SENT,
     languages=[GREEK],
-    _labels=["negative", "positive"],
+    labels=["negative", "positive"],
 )
 
 SCALA_EL_CONFIG = DatasetConfig(

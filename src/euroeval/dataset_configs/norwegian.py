@@ -52,7 +52,7 @@ NORQUAD_CONFIG = DatasetConfig(
     source="EuroEval/norquad-mini",
     task=RC,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
-    _num_few_shot_examples=2,
+    num_few_shot_examples=2,
 )
 
 NO_SAMMENDRAG_CONFIG = DatasetConfig(
@@ -85,7 +85,7 @@ NOR_COMMON_SENSE_QA_CONFIG = DatasetConfig(
     source="EuroEval/nor-common-sense-qa",
     task=COMMON_SENSE,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
-    _labels=["a", "b", "c", "d", "e"],
+    labels=["a", "b", "c", "d", "e"],
 )
 
 VALEU_NO_CONFIG = DatasetConfig(
@@ -96,7 +96,7 @@ VALEU_NO_CONFIG = DatasetConfig(
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     splits=["test"],
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
@@ -207,6 +207,6 @@ WINOGRANDE_NO_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-no",
     task=COMMON_SENSE,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
     unofficial=True,
 )

@@ -70,7 +70,7 @@ VALEU_IT_CONFIG = DatasetConfig(
     languages=[ITALIAN],
     splits=["test"],
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
@@ -118,6 +118,6 @@ WINOGRANDE_IT_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-it",
     task=COMMON_SENSE,
     languages=[ITALIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
     unofficial=True,
 )

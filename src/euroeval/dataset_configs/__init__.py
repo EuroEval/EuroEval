@@ -93,5 +93,5 @@ SPEED_CONFIG = DatasetConfig(
     source="",
     task=SPEED,
     languages=list(get_all_languages().values()),
-    _logging_string="the speed estimation benchmark",
+    logging_string="the speed estimation benchmark",
 )

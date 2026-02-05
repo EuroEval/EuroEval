@@ -60,5 +60,5 @@ WINOGRANDE_CA_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-ca",
     task=COMMON_SENSE,
     languages=[CATALAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )

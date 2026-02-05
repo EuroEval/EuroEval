@@ -52,5 +52,5 @@ WINOGRANDE_HR_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-hr",
     task=COMMON_SENSE,
     languages=[CROATIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )

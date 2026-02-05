@@ -60,13 +60,13 @@ WINOGRANDE_ET_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-et",
     task=COMMON_SENSE,
     languages=[ESTONIAN],
-    _prompt_prefix="Sulle esitatakse lüngaga (_) tekstülesanded, "
+    prompt_prefix="Sulle esitatakse lüngaga (_) tekstülesanded, "
     "igal ülesandel on kaks vastusevarianti (a ja b).",
-    _prompt_template="Tekstülesanne: {text}\nVastus: {label}",
-    _instruction_prompt="Tekstülesanne: {text}\n\n"
+    prompt_template="Tekstülesanne: {text}\nVastus: {label}",
+    instruction_prompt="Tekstülesanne: {text}\n\n"
     "Sinu ülesanne on valida lünka sobiv vastusevariant. "
     "Vasta ainult {labels_str}. Muud vastused ei ole lubatud.",
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )
 
 VALEU_ET_CONFIG = DatasetConfig(
@@ -77,7 +77,7 @@ VALEU_ET_CONFIG = DatasetConfig(
     languages=[ESTONIAN],
     splits=["test"],
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 ### Unofficial datasets ###
@@ -97,7 +97,7 @@ EXAM_ET_CONFIG = DatasetConfig(
     source="EuroEval/exam-et",
     task=KNOW,
     languages=[ESTONIAN],
-    _labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"],
+    labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"],
     unofficial=True,
 )
 

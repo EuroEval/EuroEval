@@ -60,7 +60,7 @@ WINOGRANDE_PL_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-pl",
     task=COMMON_SENSE,
     languages=[POLISH],
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )
 
 VALEU_PL_CONFIG = DatasetConfig(
@@ -71,7 +71,7 @@ VALEU_PL_CONFIG = DatasetConfig(
     languages=[POLISH],
     splits=["test"],
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 

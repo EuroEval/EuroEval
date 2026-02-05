@@ -61,7 +61,7 @@ COPA_LV_CONFIG = DatasetConfig(
     source="EuroEval/copa-lv",
     task=COMMON_SENSE,
     languages=[LATVIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )
 
 
@@ -82,6 +82,6 @@ WINOGRANDE_LV_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-lv",
     task=COMMON_SENSE,
     languages=[LATVIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
     unofficial=True,
 )

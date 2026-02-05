@@ -259,7 +259,7 @@ MY_CONFIG = DatasetConfig(
     source=dict(train="train.csv", val="val.csv", test="test.csv"),
     task=TEXT_CLASSIFICATION,
     languages=[ENGLISH],
-    _labels=["positive", "negative"],
+    labels=["positive", "negative"],
 )
 ```
 
@@ -282,15 +282,15 @@ benchmarker.benchmark(model="<model-id>", dataset=MY_CONFIG)
 We have included three convenience tasks to make it easier to set up custom datasets:
 
 - `TEXT_CLASSIFICATION`, which is used for text classification tasks. This requires you
-  to set the `_labels` argument in the `DatasetConfig`, and requires the columns `text`
+  to set the `labels` argument in the `DatasetConfig`, and requires the columns `text`
   and `label` to be present in the dataset.
 - `MULTIPLE_CHOICE`, which is used for multiple-choice classification tasks. This
-  also requires you to set the `_labels` argument in the `DatasetConfig`. Note that for
+  also requires you to set the `labels` argument in the `DatasetConfig`. Note that for
   multiple choice tasks, you need to set up your `text` column to also list all the
   choices, and all the samples should have the same number of choices. This requires the
   columns `text` and `label` to be present in the dataset.
 - `TOKEN_CLASSIFICATION`, which is used when classifying individual tokens in a text.
-  This also require you to set the `_labels` argument in the `DatasetConfig`. This
+  This also require you to set the `labels` argument in the `DatasetConfig`. This
   requires the columns `tokens` and `labels` to be present in the dataset, where
   `tokens` is a list of tokens/words in the text, and `labels` is a list of the
   corresponding labels for each token (so the two lists have the same length).

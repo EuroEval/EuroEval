@@ -12,7 +12,7 @@ SCANDISENT_FI_CONFIG = DatasetConfig(
     source="EuroEval/scandisent-fi-mini",
     task=SENT,
     languages=[FINNISH],
-    _labels=["negative", "positive"],
+    labels=["negative", "positive"],
 )
 
 TURKU_NER_FI_CONFIG = DatasetConfig(
@@ -63,7 +63,7 @@ VALEU_FI_CONFIG = DatasetConfig(
     languages=[FINNISH],
     splits=["test"],
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
@@ -102,6 +102,6 @@ WINOGRANDE_FI_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-fi",
     task=COMMON_SENSE,
     languages=[FINNISH],
-    _labels=["a", "b"],
+    labels=["a", "b"],
     unofficial=True,
 )

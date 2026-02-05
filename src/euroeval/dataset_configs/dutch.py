@@ -24,7 +24,7 @@ DBRD_CONFIG = DatasetConfig(
     source="EuroEval/dbrd-mini",
     task=SENT,
     languages=[DUTCH],
-    _labels=["negative", "positive"],
+    labels=["negative", "positive"],
 )
 
 SCALA_NL_CONFIG = DatasetConfig(
@@ -91,7 +91,7 @@ VALEU_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
     splits=["test"],
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 MBBQ_NL_CONFIG = DatasetConfig(
@@ -158,7 +158,7 @@ COPA_NL_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DUTCH],
     unofficial=True,
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )
 
 GOLDENSWAG_NL_CONFIG = DatasetConfig(
@@ -176,6 +176,6 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-nl",
     task=COMMON_SENSE,
     languages=[DUTCH],
-    _labels=["a", "b"],
+    labels=["a", "b"],
     unofficial=True,
 )

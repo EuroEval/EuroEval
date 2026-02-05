@@ -60,5 +60,5 @@ WINOGRANDE_SQ_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-sq",
     task=COMMON_SENSE,
     languages=[ALBANIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )

@@ -143,6 +143,6 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-da",
     task=COMMON_SENSE,
     languages=[DANISH],
-    _labels=["a", "b"],
+    labels=["a", "b"],
     unofficial=True,
 )

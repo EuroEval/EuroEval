@@ -12,7 +12,7 @@ FOSENT_CONFIG = DatasetConfig(
     source="EuroEval/fosent",
     task=SENT,
     languages=[FAROESE],
-    _num_few_shot_examples=5,
+    num_few_shot_examples=5,
 )
 
 SCALA_FO_CONFIG = DatasetConfig(

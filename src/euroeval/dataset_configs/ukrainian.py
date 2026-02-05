@@ -60,5 +60,5 @@ WINOGRANDE_UK_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-uk",
     task=COMMON_SENSE,
     languages=[UKRAINIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )
