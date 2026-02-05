@@ -134,3 +134,8 @@ ATTENTION_BACKENDS: list[str] = [
     "CPU_ATTN",
     "CUSTOM",
 ]
+
+# If a dataset configuration has more than this number of languages, we won't log any of
+# the languages. This is for instance the case for the speed benchmark, which has all
+# the languages. The threshold of 5 is somewhat arbitrary.
+MAX_NUMBER_OF_LOGGING_LANGUAGES = 5

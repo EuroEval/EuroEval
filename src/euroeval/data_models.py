@@ -15,7 +15,7 @@ import pydantic
 import torch
 from transformers.generation.configuration_utils import GenerationConfig
 
-from .constants import ATTENTION_BACKENDS
+from .constants import ATTENTION_BACKENDS, MAX_NUMBER_OF_LOGGING_LANGUAGES
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
 from .languages import (
@@ -533,7 +533,7 @@ class DatasetConfig:
             if PORTUGUESE in self.languages and EUROPEAN_PORTUGUESE in self.languages:
                 logging_languages.remove(EUROPEAN_PORTUGUESE)
 
-        if len(logging_languages) > 5:  # Do not log too many languages
+        if len(logging_languages) > MAX_NUMBER_OF_LOGGING_LANGUAGES:
             languages_str = ""
         elif len(logging_languages) > 1:
             languages_str = (
