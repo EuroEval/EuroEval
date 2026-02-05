@@ -419,10 +419,9 @@ def get_hf_token(api_key: str | None) -> str | bool:
             level=logging.DEBUG,
         )
         return api_key
-    elif (token := os.getenv("HUGGINGFACE_API_KEY")) is not None:
+    elif (token := os.getenv("HF_TOKEN")) is not None:
         log_once(
-            "Using the Hugging Face API key from the environment variable "
-            "`HUGGINGFACE_API_KEY`.",
+            "Using the Hugging Face API key from the environment variable `HF_TOKEN`.",
             level=logging.DEBUG,
         )
         return token

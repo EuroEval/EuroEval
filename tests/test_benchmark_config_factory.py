@@ -1,5 +1,6 @@
 """Tests for the `benchmark_config_factory` module."""
 
+import os
 from pathlib import Path
 from typing import Generator
 
@@ -34,7 +35,10 @@ def all_official_dataset_configs() -> Generator[list[DatasetConfig], None, None]
     yield [
         cfg
         for cfg in get_all_dataset_configs(
-            custom_datasets_file=Path("custom_datasets.py")
+            custom_datasets_file=Path("custom_datasets.py"),
+            dataset_ids=[],
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
         ).values()
         if not cfg.unofficial
     ]
@@ -46,7 +50,10 @@ def all_official_la_dataset_configs() -> Generator[list[DatasetConfig], None, No
     yield [
         cfg
         for cfg in get_all_dataset_configs(
-            custom_datasets_file=Path("custom_datasets.py")
+            custom_datasets_file=Path("custom_datasets.py"),
+            dataset_ids=[],
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
         ).values()
         if LA == cfg.task and not cfg.unofficial
     ]
@@ -210,6 +217,8 @@ def test_prepare_dataset_configs(
         dataset=input_dataset,
         languages=input_languages,
         custom_datasets_file=Path("custom_datasets.py"),
+        api_key=os.getenv("HF_TOKEN"),
+        cache_dir=Path(".euroeval_cache"),
     )
     assert set(prepared_dataset_configs) == set(expected_dataset_configs)
 
@@ -222,6 +231,8 @@ def test_prepare_dataset_configs_invalid_task() -> None:
             dataset=None,
             languages=[DANISH],
             custom_datasets_file=Path("custom_datasets.py"),
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
         )
 
 
@@ -233,6 +244,8 @@ def test_prepare_dataset_configs_invalid_dataset() -> None:
             dataset="invalid-dataset",
             languages=[DANISH],
             custom_datasets_file=Path("custom_datasets.py"),
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
         )
 
 

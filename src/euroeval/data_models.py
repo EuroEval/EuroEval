@@ -151,11 +151,11 @@ class DatasetConfig:
 
     def __init__(
         self,
-        name: str,
-        pretty_name: str,
-        source: str | dict[str, str],
         task: Task,
         languages: c.Sequence[Language],
+        name: str | None = None,
+        pretty_name: str | None = None,
+        source: str | dict[str, str] | None = None,
         prompt_prefix: str | None = None,
         prompt_template: str | None = None,
         instruction_prompt: str | None = None,
@@ -166,10 +166,7 @@ class DatasetConfig:
         allowed_model_types: c.Sequence[ModelType] | None = None,
         allowed_generative_types: c.Sequence[GenerativeType] | None = None,
         allow_invalid_model_outputs: bool | None = None,
-        logging_string: str | None = None,
-        splits: c.Sequence[str] = field(
-            default_factory=lambda: ["train", "val", "test"]
-        ),
+        splits: c.Sequence[str] = ("train", "val", "test"),
         bootstrap_samples: bool = True,
         unofficial: bool = False,
         _prompt_prefix: str | None = None,
@@ -187,27 +184,23 @@ class DatasetConfig:
         """Initialise a DatasetConfig object.
 
         Args:
-            name:
-                The name of the dataset. Must be lower case with no spaces.
-            pretty_name:
-                A longer prettier name for the dataset, which allows cases and spaces.
-                Used for logging.
-            source:
-                The source of the dataset, which can be a Hugging Face ID or a
-                dictionary with keys "train", "val" and "test" mapping to local CSV file
-                paths. Can also be None if the dataset config is included directly in
-                the Hugging Face dataset repo, in which case the source is the dataset
-                ID.
             task:
                 The task of the dataset.
             languages:
                 The ISO 639-1 language codes of the entries in the dataset.
-            id2label:
-                The mapping from ID to label.
-            label2id:
-                The mapping from label to ID.
-            num_labels:
-                The number of labels in the dataset.
+            name (optional):
+                The name of the dataset. Must be lower case with no spaces. Can be None
+                if and only if the dataset config resides directly in the Hugging Face
+                dataset repo. Defaults to None.
+            pretty_name (optional):
+                A longer prettier name for the dataset, which allows cases and spaces.
+                Used for logging. Can be None if and only if the dataset config resides
+                directly in the Hugging Face dataset repo. Defaults to None.
+            source (optional):
+                The source of the dataset, which can be a Hugging Face ID or a
+                dictionary with keys "train", "val" and "test" mapping to local CSV file
+                paths. Can be None if and only if the dataset config resides directly in
+                the Hugging Face dataset repo. Defaults to None.
             prompt_prefix (optional):
                 The prefix to use in the few-shot prompt. Defaults to the template for
                 the task and language.
@@ -250,10 +243,6 @@ class DatasetConfig:
                 output will be mapped to the closest valid label. If False, the model
                 output will be considered incorrect and the evaluation will be aborted.
                 Defaults to the one for the task.
-            logging_string (optional):
-                The string used to describe evaluation on the dataset in logging. If not
-                provided, a default string will be generated, based on the pretty name.
-                Only use this if the default string is not suitable.
             splits (optional):
                 The names of the splits in the dataset. If not provided, defaults to
                 ["train", "val", "test"].
@@ -348,30 +337,38 @@ class DatasetConfig:
             )
         if _logging_string is not None:
             log_once(
-                "The `_logging_string` argument is deprecated. Please use "
-                "`logging_string` instead.",
+                "The `_logging_string` argument is deprecated and is not used anymore. "
+                "Using it will have no effect.",
                 level=logging.WARNING,
             )
 
-        self.name = name
-        self.pretty_name = pretty_name
-        self.source = source
+        self._name = name
+        self._pretty_name = pretty_name
+        self._source = source
         self.task = task
         self.languages = languages
+
+        template = self.task.template_dict.get(self.main_language)
         self.prompt_prefix = (
             prompt_prefix
             if prompt_prefix is not None
-            else self.task.template_dict[self.main_language].default_prompt_prefix
+            else template.default_prompt_prefix
+            if template is not None
+            else ""
         )
         self.prompt_template = (
             prompt_template
             if prompt_template is not None
-            else self.task.template_dict[self.main_language].default_prompt_template
+            else template.default_prompt_template
+            if template is not None
+            else ""
         )
         self.instruction_prompt = (
             instruction_prompt
             if instruction_prompt is not None
-            else self.task.template_dict[self.main_language].default_instruction_prompt
+            else template.default_instruction_prompt
+            if template is not None
+            else ""
         )
         self.num_few_shot_examples = (
             num_few_shot_examples
@@ -387,9 +384,11 @@ class DatasetConfig:
             labels if labels is not None else self.task.default_labels or list()
         )
         if prompt_label_mapping is None:
-            prompt_label_mapping = self.task.template_dict[
-                self.main_language
-            ].default_prompt_label_mapping
+            prompt_label_mapping = (
+                template.default_prompt_label_mapping
+                if template is not None
+                else dict()
+            )
         self.prompt_label_mapping = (
             {label: label for label in self.labels}
             if prompt_label_mapping == "auto"
@@ -410,54 +409,121 @@ class DatasetConfig:
             if allow_invalid_model_outputs is not None
             else self.task.default_allow_invalid_model_outputs
         )
-        if logging_string is None:
-            truncated_str = (
-                "truncated version of the "
-                if isinstance(self.source, str) and self.source.endswith("-mini")
-                else ""
-            )
-
-            logging_languages = list(deepcopy(self.languages))
-            if len(self.languages) > 1:
-                if (
-                    NORWEGIAN_BOKMÅL in self.languages
-                    and NORWEGIAN_NYNORSK in self.languages
-                    and NORWEGIAN in self.languages
-                ):
-                    logging_languages.remove(NORWEGIAN_BOKMÅL)
-                    logging_languages.remove(NORWEGIAN_NYNORSK)
-                elif (
-                    NORWEGIAN_BOKMÅL in self.languages
-                    or NORWEGIAN_NYNORSK in self.languages
-                ) and NORWEGIAN in self.languages:
-                    logging_languages.remove(NORWEGIAN)
-                if (
-                    PORTUGUESE in self.languages
-                    and EUROPEAN_PORTUGUESE in self.languages
-                ):
-                    logging_languages.remove(EUROPEAN_PORTUGUESE)
-
-            if len(logging_languages) > 1:
-                languages_str = (
-                    ", ".join([lang.name for lang in logging_languages[:-1]])
-                    + f" and {logging_languages[-1].name}"
-                )
-            else:
-                languages_str = logging_languages[0].name
-
-            task_str = self.task.name.replace("-", " ")
-            dataset_name_str = (
-                self.pretty_name
-                or self.name.replace("-", " ").replace("_", " ").title()
-            )
-            logging_string = (
-                f"the {truncated_str}{languages_str} {task_str} dataset "
-                f"{dataset_name_str}"
-            )
-        self.logging_string = logging_string
         self.splits = splits
         self.bootstrap_samples = bootstrap_samples
         self.unofficial = unofficial
+
+    @property
+    def name(self) -> str:
+        """The name of the dataset.
+
+        Returns:
+            The name of the dataset.
+        """
+        if self._name is None:
+            raise ValueError("The name of the dataset is not set!")
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        """Set the name of the dataset.
+
+        Args:
+            value:
+                The new name of the dataset.
+        """
+        self._name = value
+
+    @property
+    def pretty_name(self) -> str:
+        """The pretty name of the dataset.
+
+        Returns:
+            The pretty name of the dataset.
+        """
+        if self._pretty_name is None:
+            raise ValueError("The pretty name of the dataset is not set!")
+        return self._pretty_name
+
+    @pretty_name.setter
+    def pretty_name(self, value: str) -> None:
+        """Set the pretty name of the dataset.
+
+        Args:
+            value:
+                The new pretty name of the dataset.
+        """
+        self._pretty_name = value
+
+    @property
+    def source(self) -> str | dict[str, str]:
+        """The source of the dataset.
+
+        Returns:
+            The source of the dataset.
+        """
+        if self._source is None:
+            raise ValueError("The source of the dataset is not set!")
+        return self._source
+
+    @source.setter
+    def source(self, value: str | dict[str, str]) -> None:
+        """Set the source of the dataset.
+
+        Args:
+            value:
+                The new source of the dataset.
+        """
+        self._source = value
+
+    @property
+    def logging_string(self) -> str:
+        """The string used to describe evaluation on the dataset in logging.
+
+        Returns:
+            The logging string.
+        """
+        truncated_str = (
+            "truncated version of the "
+            if isinstance(self.source, str) and self.source.endswith("-mini")
+            else ""
+        )
+
+        logging_languages = list(deepcopy(self.languages))
+        if len(self.languages) > 1:
+            if (
+                NORWEGIAN_BOKMÅL in self.languages
+                and NORWEGIAN_NYNORSK in self.languages
+                and NORWEGIAN in self.languages
+            ):
+                logging_languages.remove(NORWEGIAN_BOKMÅL)
+                logging_languages.remove(NORWEGIAN_NYNORSK)
+            elif (
+                NORWEGIAN_BOKMÅL in self.languages
+                or NORWEGIAN_NYNORSK in self.languages
+            ) and NORWEGIAN in self.languages:
+                logging_languages.remove(NORWEGIAN)
+            if PORTUGUESE in self.languages and EUROPEAN_PORTUGUESE in self.languages:
+                logging_languages.remove(EUROPEAN_PORTUGUESE)
+
+        if len(logging_languages) > 5:  # Do not log too many languages
+            languages_str = ""
+        elif len(logging_languages) > 1:
+            languages_str = (
+                ", ".join([lang.name for lang in logging_languages[:-1]])
+                + f" and {logging_languages[-1].name}"
+                + " "
+            )
+        else:
+            languages_str = logging_languages[0].name + " "
+
+        task_str = self.task.name.replace("-", " ")
+        dataset_name_str = (
+            self.pretty_name or self.name.replace("-", " ").replace("_", " ").title()
+        )
+        return (
+            f"the {truncated_str}{languages_str}{task_str} dataset {dataset_name_str}"
+        )
 
     @property
     def main_language(self) -> Language:

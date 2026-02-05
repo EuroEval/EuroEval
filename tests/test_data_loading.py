@@ -14,7 +14,7 @@ from euroeval.benchmark_modules.litellm import LiteLLMModel
 from euroeval.constants import MAX_CONTEXT_LENGTH
 from euroeval.data_loading import load_data, load_raw_data
 from euroeval.data_models import BenchmarkConfig, DatasetConfig
-from euroeval.dataset_configs import get_all_dataset_configs, get_dataset_config
+from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import GenerativeType
 from euroeval.generation_utils import apply_prompt, extract_few_shot_examples
 from euroeval.tasks import RC
@@ -36,10 +36,12 @@ class TestLoadData:
         """A loaded dataset."""
         yield load_data(
             rng=default_rng(seed=4242),
-            dataset_config=get_dataset_config(
-                dataset_name="multi-wiki-qa-da",
+            dataset_config=get_all_dataset_configs(
                 custom_datasets_file=Path("custom_datasets.py"),
-            ),
+                dataset_ids=[],
+                api_key=os.getenv("HF_TOKEN"),
+                cache_dir=Path(".euroeval_cache"),
+            )["multi-wiki-qa-da"],
             benchmark_config=benchmark_config,
         )
 
@@ -74,7 +76,10 @@ class TestLoadData:
     argvalues=[
         dataset_config
         for dataset_config in get_all_dataset_configs(
-            custom_datasets_file=Path("custom_datasets.py")
+            custom_datasets_file=Path("custom_datasets.py"),
+            dataset_ids=[],
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
         ).values()
         if os.getenv("CHECK_DATASET") is not None
         and (
@@ -103,7 +108,9 @@ class TestAllDatasets:
         )
         tokeniser = AutoTokenizer.from_pretrained(tokeniser_id)
         dataset = load_raw_data(
-            dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
+            dataset_config=dataset_config,
+            cache_dir=benchmark_config.cache_dir,
+            api_key=benchmark_config.api_key,
         )
 
         for itr_idx in range(10):
@@ -163,7 +170,9 @@ class TestAllDatasets:
             pytest.skip(reason="Skipping test for non-reading comprehension dataset.")
 
         dataset = load_raw_data(
-            dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
+            dataset_config=dataset_config,
+            cache_dir=benchmark_config.cache_dir,
+            api_key=benchmark_config.api_key,
         )
         for split in dataset_config.splits:
             assert "id" in dataset[split].features, (

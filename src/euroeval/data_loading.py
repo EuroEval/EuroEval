@@ -9,8 +9,10 @@ import typing as t
 import requests
 from datasets import DatasetDict, load_dataset
 from datasets.exceptions import DatasetsError
-from huggingface_hub.errors import HfHubHTTPError
+from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from numpy.random import Generator
+
+from euroeval.utils import get_hf_token
 
 from .constants import SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark
@@ -47,7 +49,9 @@ def load_data(
             If the Hugging Face Hub is down.
     """
     dataset = load_raw_data(
-        dataset_config=dataset_config, cache_dir=benchmark_config.cache_dir
+        dataset_config=dataset_config,
+        cache_dir=benchmark_config.cache_dir,
+        api_key=benchmark_config.api_key,
     )
 
     if not benchmark_config.evaluate_test_split and "val" in dataset:
@@ -92,7 +96,9 @@ def load_data(
     return datasets
 
 
-def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDict":
+def load_raw_data(
+    dataset_config: "DatasetConfig", cache_dir: str, api_key: str | None
+) -> "DatasetDict":
     """Load the raw dataset.
 
     Args:
@@ -100,6 +106,8 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
             The configuration for the dataset.
         cache_dir:
             The directory to cache the dataset.
+        api_key:
+            The API key to use as the Hugging Face token.
 
     Returns:
         The dataset.
@@ -125,16 +133,38 @@ def load_raw_data(dataset_config: "DatasetConfig", cache_dir: str) -> "DatasetDi
                 FileNotFoundError,
                 ConnectionError,
                 DatasetsError,
+                RepositoryNotFoundError,
                 requests.ConnectionError,
                 requests.ReadTimeout,
-            ) as e:
-                log(
-                    f"Failed to load dataset {dataset_config.source!r}, due to "
-                    f"the following error: {e}. Retrying...",
-                    level=logging.DEBUG,
-                )
-                time.sleep(1)
-                continue
+            ):
+                try:
+                    with no_terminal_output():
+                        dataset = load_dataset(
+                            path=dataset_config.source.split("::")[0],
+                            name=(
+                                dataset_config.source.split("::")[1]
+                                if "::" in dataset_config.source
+                                else None
+                            ),
+                            cache_dir=cache_dir,
+                            token=get_hf_token(api_key=api_key),
+                        )
+                    break
+                except (
+                    FileNotFoundError,
+                    ConnectionError,
+                    DatasetsError,
+                    RepositoryNotFoundError,
+                    requests.ConnectionError,
+                    requests.ReadTimeout,
+                ) as e:
+                    log(
+                        f"Failed to load dataset {dataset_config.source!r}, due to "
+                        f"the following error: {e}. Retrying...",
+                        level=logging.DEBUG,
+                    )
+                    time.sleep(1)
+                    continue
             except HfHubHTTPError:
                 raise HuggingFaceHubDown()
         else:

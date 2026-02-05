@@ -1,5 +1,6 @@
 """Tests for the `model_loading` module."""
 
+import os
 import sys
 from pathlib import Path
 from shutil import rmtree
@@ -8,7 +9,7 @@ import pytest
 import torch
 
 from euroeval.data_models import BenchmarkConfig
-from euroeval.dataset_configs import get_dataset_config
+from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.exceptions import InvalidBenchmark
 from euroeval.model_config import get_model_config
 from euroeval.model_loading import load_model
@@ -23,10 +24,12 @@ def test_load_non_generative_model(
     )
     model = load_model(
         model_config=model_config,
-        dataset_config=get_dataset_config(
-            dataset_name="multi-wiki-qa-da",
+        dataset_config=get_all_dataset_configs(
             custom_datasets_file=Path("custom_datasets.py"),
-        ),
+            dataset_ids=[],
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
+        )["multi-wiki-qa-da"],
         benchmark_config=benchmark_config,
     )
     assert model is not None
@@ -46,10 +49,12 @@ def test_load_generative_model(
     )
     model = load_model(
         model_config=model_config,
-        dataset_config=get_dataset_config(
-            dataset_name="multi-wiki-qa-da",
+        dataset_config=get_all_dataset_configs(
             custom_datasets_file=Path("custom_datasets.py"),
-        ),
+            dataset_ids=[],
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
+        )["multi-wiki-qa-da"],
         benchmark_config=benchmark_config,
     )
     assert model is not None
@@ -66,10 +71,12 @@ def test_load_non_generative_model_with_generative_data(
     with pytest.raises(InvalidBenchmark):
         load_model(
             model_config=model_config,
-            dataset_config=get_dataset_config(
-                dataset_name="nordjylland-news",
+            dataset_config=get_all_dataset_configs(
                 custom_datasets_file=Path("custom_datasets.py"),
-            ),
+                dataset_ids=[],
+                api_key=os.getenv("HF_TOKEN"),
+                cache_dir=Path(".euroeval_cache"),
+            )["nordjylland-news"],
             benchmark_config=benchmark_config,
         )
     rmtree(path=Path(benchmark_config.cache_dir, "model_cache"), ignore_errors=True)

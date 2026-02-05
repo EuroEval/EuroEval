@@ -18,7 +18,6 @@ from euroeval.benchmarker import (
     adjust_logging_level,
     clear_model_cache_fn,
     get_record,
-    prepare_dataset_configs,
 )
 from euroeval.data_models import (
     BenchmarkConfig,
@@ -28,7 +27,6 @@ from euroeval.data_models import (
     ModelConfig,
     Task,
 )
-from euroeval.dataset_configs import get_dataset_config
 from euroeval.enums import TaskGroup
 from euroeval.exceptions import HuggingFaceHubDown
 
@@ -486,42 +484,3 @@ class TestClearCacheFn:
         assert example_model_dir.exists()
 
         rmtree(path=cache_dir, ignore_errors=True)
-
-
-@pytest.mark.parametrize(
-    argnames=["dataset_names", "dataset_configs"],
-    argvalues=[
-        ([], []),
-        (
-            ["multi-wiki-qa-da"],
-            [
-                get_dataset_config(
-                    dataset_name="multi-wiki-qa-da",
-                    custom_datasets_file=Path("custom_datasets.py"),
-                )
-            ],
-        ),
-        (
-            ["multi-wiki-qa-da", "dansk"],
-            [
-                get_dataset_config(
-                    dataset_name="multi-wiki-qa-da",
-                    custom_datasets_file=Path("custom_datasets.py"),
-                ),
-                get_dataset_config(
-                    dataset_name="dansk",
-                    custom_datasets_file=Path("custom_datasets.py"),
-                ),
-            ],
-        ),
-    ],
-)
-def test_prepare_dataset_configs(
-    dataset_names: list[str], dataset_configs: list[DatasetConfig]
-) -> None:
-    """Test that the `prepare_dataset_configs` function works as expected."""
-    assert set(
-        prepare_dataset_configs(
-            dataset_names=dataset_names, custom_datasets_file=Path("custom_datasets.py")
-        )
-    ) == set(dataset_configs)

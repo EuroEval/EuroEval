@@ -35,7 +35,10 @@ if os.environ.get("CHECK_DATASET") is not None:
     dataset_configs = [
         dataset_config
         for dataset_config in get_all_dataset_configs(
-            custom_datasets_file=Path("custom_datasets.py")
+            custom_datasets_file=Path("custom_datasets.py"),
+            dataset_ids=[],
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
         ).values()
         if dataset_config.name in os.environ["CHECK_DATASET"].split(",")
         or any(
@@ -87,7 +90,10 @@ def benchmark_config(
         languages=[DANISH],
         datasets=list(
             get_all_dataset_configs(
-                custom_datasets_file=Path("custom_datasets.py")
+                custom_datasets_file=Path("custom_datasets.py"),
+                dataset_ids=[],
+                api_key=os.getenv("HF_TOKEN"),
+                cache_dir=Path(".euroeval_cache"),
             ).values()
         ),
         finetuning_batch_size=1,
@@ -133,7 +139,10 @@ def metric() -> Generator[HuggingFaceMetric, None, None]:
         {
             dataset_config.task
             for dataset_config in get_all_dataset_configs(
-                custom_datasets_file=Path("custom_datasets.py")
+                custom_datasets_file=Path("custom_datasets.py"),
+                dataset_ids=[],
+                api_key=os.getenv("HF_TOKEN"),
+                cache_dir=Path(".euroeval_cache"),
             ).values()
         }
     ),

@@ -817,8 +817,8 @@ def get_model_repo_info(
                     log(
                         f"Could not access the model {model_id} with the revision "
                         f"{revision}. The error was {str(e)!r}. Please set the "
-                        "`HUGGINGFACE_API_KEY` environment variable or use the "
-                        "`--api-key` argument.",
+                        "`HUGGINGFACE_API_KEY` or `HF_TOKEN` environment variable or "
+                        "use the `--api-key` argument.",
                         level=logging.DEBUG,
                     )
                     return None
@@ -1095,8 +1095,8 @@ def load_hf_model_config(
                     f"The model {model_id!r} is a gated repository. Please ensure "
                     "that you are logged in with `hf auth login` or have provided a "
                     "valid Hugging Face access token with the `HUGGINGFACE_API_KEY` "
-                    "environment variable or the `--api-key` argument. Also check that "
-                    "your account has access to this model."
+                    "or `HF_TOKEN` environment variable or the `--api-key` argument. "
+                    "Also check that your account has access to this model."
                 ) from e
             raise InvalidModel(
                 f"Couldn't load model config for {model_id!r}. The error was "
