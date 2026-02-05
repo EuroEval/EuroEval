@@ -690,6 +690,8 @@
       
         
       
+        
+      
     
     
     
@@ -1331,11 +1333,17 @@ the output column name depends on the type of task:</p>
 <li><strong>Reading comprehension</strong>: <code>answers</code></li>
 <li><strong>Free-form text generation</strong>: <code>target_text</code></li>
 </ul>
-<p>Text and multiple-choice classification tasks are by far the most common. Next, you
-store your three dataset splits as three different CSV files with the desired two
-columns. Finally, you create a file called <code>custom_datasets.py</code> script in which you
-define the associated <code>DatasetConfig</code> objects for your dataset. Here is an example of a
-simple text classification dataset with two classes:</p>
+<p>Text and multiple-choice classification tasks are by far the most common. Then you can
+decide whether your dataset should be accessible locally (good for testing, and good for
+sensitive datasets), or accessible via the Hugging Face Hub (good for allowing others to
+benchmark on your dataset).</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Local dataset</label><label for="__tabbed_3_2">Hugging Face Hub dataset</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>For a local dataset, you store your three dataset splits as three different CSV files
+with the desired two columns, and then you create a file called <code>custom_datasets.py</code>
+in which you define the associated <code>DatasetConfig</code> objects for your dataset. Here
+is an example of a simple text classification dataset with two classes:</p>
 <div class="highlight"><span class="filename">custom_datasets.py</span><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">TEXT_CLASSIFICATION</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">ENGLISH</span>
 
@@ -1345,7 +1353,7 @@ simple text classification dataset with two classes:</p>
     <span class="n">source</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">train</span><span class="o">=</span><span class="s2">&quot;train.csv&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="s2">&quot;val.csv&quot;</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="s2">&quot;test.csv&quot;</span><span class="p">),</span>
     <span class="n">task</span><span class="o">=</span><span class="n">TEXT_CLASSIFICATION</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ENGLISH</span><span class="p">],</span>
-    <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;positive&quot;</span><span class="p">,</span> <span class="s2">&quot;negative&quot;</span><span class="p">],</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;positive&quot;</span><span class="p">,</span> <span class="s2">&quot;negative&quot;</span><span class="p">],</span>
 <span class="p">)</span>
 </code></pre></div>
 <p>You can then benchmark your custom dataset by simply running</p>
@@ -1358,18 +1366,48 @@ dataset configuration directly into the <code>benchmark</code> method:</p>
 <span class="n">benchmarker</span> <span class="o">=</span> <span class="n">Benchmarker</span><span class="p">()</span>
 <span class="n">benchmarker</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;&lt;model-id&gt;&quot;</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">MY_CONFIG</span><span class="p">)</span>
 </code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>For a dataset that is accessible via the Hugging Face Hub, you simply need to create a
+file called <code>euroeval_config.py</code> in the root of your repository, in which you define
+the associated dataset configuration. Note that you don't need to specify the <code>name</code>,
+<code>pretty_name</code> or <code>source</code> arguments in this case, as these are automatically inferred
+from the repository name. Here is an example of a simple text classification
+dataset with two classes:</p>
+<div class="highlight"><span class="filename">euroeval_config.py</span><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">TEXT_CLASSIFICATION</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">ENGLISH</span>
+
+<span class="n">CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">TEXT_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ENGLISH</span><span class="p">],</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;positive&quot;</span><span class="p">,</span> <span class="s2">&quot;negative&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>You can then benchmark your custom dataset by simply running</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--dataset<span class="w"> </span>&lt;org-id&gt;/&lt;repo-id&gt;<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;
+</code></pre></div>
+<p>You can also run the benchmark from a Python script, by simply providing your repo ID to
+the <code>benchmark</code> method:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">Benchmarker</span>
+
+<span class="n">benchmarker</span> <span class="o">=</span> <span class="n">Benchmarker</span><span class="p">()</span>
+<span class="n">benchmarker</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;&lt;model-id&gt;&quot;</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">&quot;&lt;org-id&gt;/&lt;repo-id&gt;&quot;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+</div>
+</div>
 <p>We have included three convenience tasks to make it easier to set up custom datasets:</p>
 <ul>
 <li><code>TEXT_CLASSIFICATION</code>, which is used for text classification tasks. This requires you
-  to set the <code>_labels</code> argument in the <code>DatasetConfig</code>, and requires the columns <code>text</code>
+  to set the <code>labels</code> argument in the <code>DatasetConfig</code>, and requires the columns <code>text</code>
   and <code>label</code> to be present in the dataset.</li>
 <li><code>MULTIPLE_CHOICE</code>, which is used for multiple-choice classification tasks. This
-  also requires you to set the <code>_labels</code> argument in the <code>DatasetConfig</code>. Note that for
+  also requires you to set the <code>labels</code> argument in the <code>DatasetConfig</code>. Note that for
   multiple choice tasks, you need to set up your <code>text</code> column to also list all the
   choices, and all the samples should have the same number of choices. This requires the
   columns <code>text</code> and <code>label</code> to be present in the dataset.</li>
 <li><code>TOKEN_CLASSIFICATION</code>, which is used when classifying individual tokens in a text.
-  This also require you to set the <code>_labels</code> argument in the <code>DatasetConfig</code>. This
+  This also require you to set the <code>labels</code> argument in the <code>DatasetConfig</code>. This
   requires the columns <code>tokens</code> and <code>labels</code> to be present in the dataset, where
   <code>tokens</code> is a list of tokens/words in the text, and <code>labels</code> is a list of the
   corresponding labels for each token (so the two lists have the same length).</li>

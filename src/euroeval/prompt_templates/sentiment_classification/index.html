@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -1291,13 +1293,25 @@
 <span class="normal">363</span>
 <span class="normal">364</span>
 <span class="normal">365</span>
-<span class="normal">366</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Sentiment Analysis task.&quot;&quot;&quot;</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Sentiment Analysis task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ALBANIAN</span><span class="p">,</span>
+    <span class="n">BELARUSIAN</span><span class="p">,</span>
     <span class="n">BOSNIAN</span><span class="p">,</span>
     <span class="n">BULGARIAN</span><span class="p">,</span>
     <span class="n">CATALAN</span><span class="p">,</span>
@@ -1344,6 +1358,16 @@
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Ndjenja: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Dokument: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Klasifikoni ndjenjën në &quot;</span>
         <span class="s2">&quot;dokument. Përgjigjuni vetëm me </span><span class="si">{labels_str}</span><span class="s2">, dhe asgjë tjetër.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">BELARUSIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">positive</span><span class="o">=</span><span class="s2">&quot;станоўчы&quot;</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="s2">&quot;нейтральны&quot;</span><span class="p">,</span> <span class="n">negative</span><span class="o">=</span><span class="s2">&quot;адмоўны&quot;</span>
+        <span class="p">),</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Ніжэй прыведзены дакументы і іх сентымент, які можа &quot;</span>
+        <span class="s2">&quot;быць </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Дакумент: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Сентымент: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Дакумент: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Класіфікуйце сентымент у &quot;</span>
+        <span class="s2">&quot;дакуменце. Адкажыце толькі </span><span class="si">{labels_str}</span><span class="s2">, і нічога іншага.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">BOSNIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>

@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -899,6 +901,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#euroeval.data_models.get_package_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_package_version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.data_models.PromptConfig" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -933,10 +946,32 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.main_language" class="md-nav__link">
+  <a href="#euroeval.data_models.DatasetConfig.name" class="md-nav__link">
     <span class="md-ellipsis">
       
-        main_language
+        name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.data_models.DatasetConfig.pretty_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pretty_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.data_models.DatasetConfig.source" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        source
       
     </span>
   </a>
@@ -955,109 +990,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.prompt_prefix" class="md-nav__link">
+  <a href="#euroeval.data_models.DatasetConfig.main_language" class="md-nav__link">
     <span class="md-ellipsis">
       
-        prompt_prefix
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.prompt_template" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        prompt_template
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.instruction_prompt" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        instruction_prompt
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.num_few_shot_examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        num_few_shot_examples
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.max_generated_tokens" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        max_generated_tokens
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.labels" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        labels
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.prompt_label_mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        prompt_label_mapping
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.allowed_model_types" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        allowed_model_types
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.allowed_generative_types" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        allowed_generative_types
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#euroeval.data_models.DatasetConfig.allow_invalid_model_outputs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        allow_invalid_model_outputs
+        main_language
       
     </span>
   </a>
@@ -2145,10 +2081,164 @@
 <span class="normal">839</span>
 <span class="normal">840</span>
 <span class="normal">841</span>
-<span class="normal">842</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">842</span>
+<span class="normal">843</span>
+<span class="normal">844</span>
+<span class="normal">845</span>
+<span class="normal">846</span>
+<span class="normal">847</span>
+<span class="normal">848</span>
+<span class="normal">849</span>
+<span class="normal">850</span>
+<span class="normal">851</span>
+<span class="normal">852</span>
+<span class="normal">853</span>
+<span class="normal">854</span>
+<span class="normal">855</span>
+<span class="normal">856</span>
+<span class="normal">857</span>
+<span class="normal">858</span>
+<span class="normal">859</span>
+<span class="normal">860</span>
+<span class="normal">861</span>
+<span class="normal">862</span>
+<span class="normal">863</span>
+<span class="normal">864</span>
+<span class="normal">865</span>
+<span class="normal">866</span>
+<span class="normal">867</span>
+<span class="normal">868</span>
+<span class="normal">869</span>
+<span class="normal">870</span>
+<span class="normal">871</span>
+<span class="normal">872</span>
+<span class="normal">873</span>
+<span class="normal">874</span>
+<span class="normal">875</span>
+<span class="normal">876</span>
+<span class="normal">877</span>
+<span class="normal">878</span>
+<span class="normal">879</span>
+<span class="normal">880</span>
+<span class="normal">881</span>
+<span class="normal">882</span>
+<span class="normal">883</span>
+<span class="normal">884</span>
+<span class="normal">885</span>
+<span class="normal">886</span>
+<span class="normal">887</span>
+<span class="normal">888</span>
+<span class="normal">889</span>
+<span class="normal">890</span>
+<span class="normal">891</span>
+<span class="normal">892</span>
+<span class="normal">893</span>
+<span class="normal">894</span>
+<span class="normal">895</span>
+<span class="normal">896</span>
+<span class="normal">897</span>
+<span class="normal">898</span>
+<span class="normal">899</span>
+<span class="normal">900</span>
+<span class="normal">901</span>
+<span class="normal">902</span>
+<span class="normal">903</span>
+<span class="normal">904</span>
+<span class="normal">905</span>
+<span class="normal">906</span>
+<span class="normal">907</span>
+<span class="normal">908</span>
+<span class="normal">909</span>
+<span class="normal">910</span>
+<span class="normal">911</span>
+<span class="normal">912</span>
+<span class="normal">913</span>
+<span class="normal">914</span>
+<span class="normal">915</span>
+<span class="normal">916</span>
+<span class="normal">917</span>
+<span class="normal">918</span>
+<span class="normal">919</span>
+<span class="normal">920</span>
+<span class="normal">921</span>
+<span class="normal">922</span>
+<span class="normal">923</span>
+<span class="normal">924</span>
+<span class="normal">925</span>
+<span class="normal">926</span>
+<span class="normal">927</span>
+<span class="normal">928</span>
+<span class="normal">929</span>
+<span class="normal">930</span>
+<span class="normal">931</span>
+<span class="normal">932</span>
+<span class="normal">933</span>
+<span class="normal">934</span>
+<span class="normal">935</span>
+<span class="normal">936</span>
+<span class="normal">937</span>
+<span class="normal">938</span>
+<span class="normal">939</span>
+<span class="normal">940</span>
+<span class="normal">941</span>
+<span class="normal">942</span>
+<span class="normal">943</span>
+<span class="normal">944</span>
+<span class="normal">945</span>
+<span class="normal">946</span>
+<span class="normal">947</span>
+<span class="normal">948</span>
+<span class="normal">949</span>
+<span class="normal">950</span>
+<span class="normal">951</span>
+<span class="normal">952</span>
+<span class="normal">953</span>
+<span class="normal">954</span>
+<span class="normal">955</span>
+<span class="normal">956</span>
+<span class="normal">957</span>
+<span class="normal">958</span>
+<span class="normal">959</span>
+<span class="normal">960</span>
+<span class="normal">961</span>
+<span class="normal">962</span>
+<span class="normal">963</span>
+<span class="normal">964</span>
+<span class="normal">965</span>
+<span class="normal">966</span>
+<span class="normal">967</span>
+<span class="normal">968</span>
+<span class="normal">969</span>
+<span class="normal">970</span>
+<span class="normal">971</span>
+<span class="normal">972</span>
+<span class="normal">973</span>
+<span class="normal">974</span>
+<span class="normal">975</span>
+<span class="normal">976</span>
+<span class="normal">977</span>
+<span class="normal">978</span>
+<span class="normal">979</span>
+<span class="normal">980</span>
+<span class="normal">981</span>
+<span class="normal">982</span>
+<span class="normal">983</span>
+<span class="normal">984</span>
+<span class="normal">985</span>
+<span class="normal">986</span>
+<span class="normal">987</span>
+<span class="normal">988</span>
+<span class="normal">989</span>
+<span class="normal">990</span>
+<span class="normal">991</span>
+<span class="normal">992</span>
+<span class="normal">993</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib.metadata</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
@@ -2171,12 +2261,28 @@
     <span class="n">PORTUGUESE</span><span class="p">,</span>
     <span class="n">Language</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.metrics.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreDict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_package_version</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceBackend</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_package_version</span><span class="p">(</span><span class="n">package_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.get_package_version"><a href="../../../api/euroeval/data_models/#euroeval.data_models.get_package_version" title="Go to docs">[docs]</a></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the version of a package.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        package_name:</span>
+<span class="sd">            The name of the package.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The version of the package, or None if the package is not installed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="n">package_name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">PackageNotFoundError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
 
 
 <span class="nd">@dataclass</span>
@@ -2291,102 +2397,384 @@
         <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
 
-<span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">DatasetConfig</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig" title="Go to docs">[docs]</a></div>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for a dataset.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for a dataset.&quot;&quot;&quot;</span>
 
-<span class="sd">    Attributes:</span>
-<span class="sd">        name:</span>
-<span class="sd">            The name of the dataset. Must be lower case with no spaces.</span>
-<span class="sd">        pretty_name:</span>
-<span class="sd">            A longer prettier name for the dataset, which allows cases and spaces. Used</span>
-<span class="sd">            for logging.</span>
-<span class="sd">        source:</span>
-<span class="sd">            The source of the dataset, which can be a Hugging Face ID or a dictionary</span>
-<span class="sd">            with keys &quot;train&quot;, &quot;val&quot; and &quot;test&quot; mapping to local CSV file paths.</span>
-<span class="sd">        task:</span>
-<span class="sd">            The task of the dataset.</span>
-<span class="sd">        languages:</span>
-<span class="sd">            The ISO 639-1 language codes of the entries in the dataset.</span>
-<span class="sd">        id2label:</span>
-<span class="sd">            The mapping from ID to label.</span>
-<span class="sd">        label2id:</span>
-<span class="sd">            The mapping from label to ID.</span>
-<span class="sd">        num_labels:</span>
-<span class="sd">            The number of labels in the dataset.</span>
-<span class="sd">        _prompt_prefix (optional):</span>
-<span class="sd">            The prefix to use in the few-shot prompt. Defaults to the template for the</span>
-<span class="sd">            task and language.</span>
-<span class="sd">        _prompt_template (optional):</span>
-<span class="sd">            The template for the prompt to use when benchmarking the dataset using</span>
-<span class="sd">            few-shot evaluation. Defaults to the template for the task and language.</span>
-<span class="sd">        _instruction_prompt (optional):</span>
-<span class="sd">            The prompt to use when benchmarking the dataset using instruction-based</span>
-<span class="sd">            evaluation. Defaults to the template for the task and language.</span>
-<span class="sd">        _num_few_shot_examples (optional):</span>
-<span class="sd">            The number of examples to use when benchmarking the dataset using few-shot</span>
-<span class="sd">            evaluation. For a classification task, these will be drawn evenly from</span>
-<span class="sd">            each label. Defaults to the template for the task and language.</span>
-<span class="sd">        _max_generated_tokens (optional):</span>
-<span class="sd">            The maximum number of tokens to generate when benchmarking the dataset</span>
-<span class="sd">            using few-shot evaluation. Defaults to the template for the task and</span>
-<span class="sd">            language.</span>
-<span class="sd">        _labels (optional):</span>
-<span class="sd">            The labels in the dataset. Defaults to the template for the task and</span>
-<span class="sd">            language.</span>
-<span class="sd">        _prompt_label_mapping (optional):</span>
-<span class="sd">            A mapping from the labels to another phrase which is used as a substitute</span>
-<span class="sd">            for the label in few-shot evaluation. If &quot;auto&quot; then the mapping will be set</span>
-<span class="sd">            to a 1:1 mapping between the labels and themselves. If None then the mapping</span>
-<span class="sd">            will be set to the default mapping for the task and language. Defaults to</span>
-<span class="sd">            None.</span>
-<span class="sd">        _allowed_model_types (optional):</span>
-<span class="sd">            A list of model types that are allowed to be evaluated on this dataset.</span>
-<span class="sd">            Defaults to the one for the task.</span>
-<span class="sd">        _allowed_generative_types (optional):</span>
-<span class="sd">            A list of generative model types that are allowed to be evaluated on this</span>
-<span class="sd">            dataset. If None, all generative model types are allowed. Only relevant if</span>
-<span class="sd">            `allowed_model_types` includes generative models. Defaults to the one for</span>
-<span class="sd">            the task.</span>
-<span class="sd">        _allow_invalid_model_outputs (optional):</span>
-<span class="sd">            Whether to allow invalid model outputs. This is only relevant for</span>
-<span class="sd">            generative models on classification tasks, where the model may generate an</span>
-<span class="sd">            output which is not one of the allowed labels. If True, the model output</span>
-<span class="sd">            will be mapped to the closest valid label. If False, the model output will</span>
-<span class="sd">            be considered incorrect and the evaluation will be aborted. Defaults to</span>
-<span class="sd">            the one for the task.</span>
-<span class="sd">        _logging_string (optional):</span>
-<span class="sd">            The string used to describe evaluation on the dataset in logging. If not</span>
-<span class="sd">            provided, a default string will be generated, based on the pretty name. Only</span>
-<span class="sd">            use this if the default string is not suitable.</span>
-<span class="sd">        splits (optional):</span>
-<span class="sd">            The names of the splits in the dataset. If not provided, defaults to</span>
-<span class="sd">            [&quot;train&quot;, &quot;val&quot;, &quot;test&quot;].</span>
-<span class="sd">        bootstrap_samples (optional):</span>
-<span class="sd">            Whether to bootstrap the dataset samples. Defaults to True.</span>
-<span class="sd">        unofficial (optional):</span>
-<span class="sd">            Whether the dataset is unofficial. Defaults to False.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">task</span><span class="p">:</span> <span class="n">Task</span><span class="p">,</span>
+        <span class="n">languages</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Language</span><span class="p">],</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">pretty_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">prompt_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">prompt_template</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">instruction_prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">num_few_shot_examples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_generated_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">prompt_label_mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;auto&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">allowed_model_types</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ModelType</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">allowed_generative_types</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">GenerativeType</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">allow_invalid_model_outputs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">splits</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">),</span>
+        <span class="n">bootstrap_samples</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">unofficial</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">_prompt_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_prompt_template</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_instruction_prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_num_few_shot_examples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_max_generated_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_labels</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_prompt_label_mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;auto&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_allowed_model_types</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ModelType</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_allowed_generative_types</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">GenerativeType</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_allow_invalid_model_outputs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_logging_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise a DatasetConfig object.</span>
 
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">pretty_name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
-    <span class="n">task</span><span class="p">:</span> <span class="n">Task</span>
-    <span class="n">languages</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Language</span><span class="p">]</span>
-    <span class="n">_prompt_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_prompt_template</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_instruction_prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_num_few_shot_examples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_max_generated_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_labels</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_prompt_label_mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;auto&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_allowed_model_types</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ModelType</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_allowed_generative_types</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">GenerativeType</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_allow_invalid_model_outputs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">_logging_string</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">splits</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">])</span>
-    <span class="n">bootstrap_samples</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="n">unofficial</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="sd">        Args:</span>
+<span class="sd">            task:</span>
+<span class="sd">                The task of the dataset.</span>
+<span class="sd">            languages:</span>
+<span class="sd">                The ISO 639-1 language codes of the entries in the dataset.</span>
+<span class="sd">            name (optional):</span>
+<span class="sd">                The name of the dataset. Must be lower case with no spaces. Can be None</span>
+<span class="sd">                if and only if the dataset config resides directly in the Hugging Face</span>
+<span class="sd">                dataset repo. Defaults to None.</span>
+<span class="sd">            pretty_name (optional):</span>
+<span class="sd">                A longer prettier name for the dataset, which allows cases and spaces.</span>
+<span class="sd">                Used for logging. Can be None if and only if the dataset config resides</span>
+<span class="sd">                directly in the Hugging Face dataset repo. Defaults to None.</span>
+<span class="sd">            source (optional):</span>
+<span class="sd">                The source of the dataset, which can be a Hugging Face ID or a</span>
+<span class="sd">                dictionary with keys &quot;train&quot;, &quot;val&quot; and &quot;test&quot; mapping to local CSV file</span>
+<span class="sd">                paths. Can be None if and only if the dataset config resides directly in</span>
+<span class="sd">                the Hugging Face dataset repo. Defaults to None.</span>
+<span class="sd">            prompt_prefix (optional):</span>
+<span class="sd">                The prefix to use in the few-shot prompt. Defaults to the template for</span>
+<span class="sd">                the task and language.</span>
+<span class="sd">            prompt_template (optional):</span>
+<span class="sd">                The template for the prompt to use when benchmarking the dataset using</span>
+<span class="sd">                few-shot evaluation. Defaults to the template for the task and language.</span>
+<span class="sd">            instruction_prompt (optional):</span>
+<span class="sd">                The prompt to use when benchmarking the dataset using instruction-based</span>
+<span class="sd">                evaluation. Defaults to the template for the task and language.</span>
+<span class="sd">            num_few_shot_examples (optional):</span>
+<span class="sd">                The number of examples to use when benchmarking the dataset using</span>
+<span class="sd">                few-shot evaluation. For a classification task, these will be drawn</span>
+<span class="sd">                evenly from each label. Defaults to the template for the task and</span>
+<span class="sd">                language.</span>
+<span class="sd">            max_generated_tokens (optional):</span>
+<span class="sd">                The maximum number of tokens to generate when benchmarking the dataset</span>
+<span class="sd">                using few-shot evaluation. Defaults to the template for the task and</span>
+<span class="sd">                language.</span>
+<span class="sd">            labels (optional):</span>
+<span class="sd">                The labels in the dataset. Defaults to the template for the task and</span>
+<span class="sd">                language.</span>
+<span class="sd">            prompt_label_mapping (optional):</span>
+<span class="sd">                A mapping from the labels to another phrase which is used as a</span>
+<span class="sd">                substitute for the label in few-shot evaluation. If &quot;auto&quot; then the</span>
+<span class="sd">                mapping will be set to a 1:1 mapping between the labels and themselves.</span>
+<span class="sd">                If None then the mapping will be set to the default mapping for the task</span>
+<span class="sd">                and language. Defaults to None.</span>
+<span class="sd">            allowed_model_types (optional):</span>
+<span class="sd">                A list of model types that are allowed to be evaluated on this dataset.</span>
+<span class="sd">                Defaults to the one for the task.</span>
+<span class="sd">            allowed_generative_types (optional):</span>
+<span class="sd">                A list of generative model types that are allowed to be evaluated on</span>
+<span class="sd">                this dataset. If None, all generative model types are allowed. Only</span>
+<span class="sd">                relevant if `allowed_model_types` includes generative models. Defaults</span>
+<span class="sd">                to the one for the task.</span>
+<span class="sd">            allow_invalid_model_outputs (optional):</span>
+<span class="sd">                Whether to allow invalid model outputs. This is only relevant for</span>
+<span class="sd">                generative models on classification tasks, where the model may generate</span>
+<span class="sd">                an output which is not one of the allowed labels. If True, the model</span>
+<span class="sd">                output will be mapped to the closest valid label. If False, the model</span>
+<span class="sd">                output will be considered incorrect and the evaluation will be aborted.</span>
+<span class="sd">                Defaults to the one for the task.</span>
+<span class="sd">            splits (optional):</span>
+<span class="sd">                The names of the splits in the dataset. If not provided, defaults to</span>
+<span class="sd">                [&quot;train&quot;, &quot;val&quot;, &quot;test&quot;].</span>
+<span class="sd">            bootstrap_samples (optional):</span>
+<span class="sd">                Whether to bootstrap the dataset samples. Defaults to True.</span>
+<span class="sd">            unofficial (optional):</span>
+<span class="sd">                Whether the dataset is unofficial. Defaults to False.</span>
+<span class="sd">            _prompt_prefix (optional):</span>
+<span class="sd">                This argument is deprecated. Please use `prompt_prefix` instead.</span>
+<span class="sd">            _prompt_template (optional):</span>
+<span class="sd">                This argument is deprecated. Please use `prompt_template` instead.</span>
+<span class="sd">            _instruction_prompt (optional):</span>
+<span class="sd">                This argument is deprecated. Please use `instruction_prompt` instead.</span>
+<span class="sd">            _num_few_shot_examples (optional):</span>
+<span class="sd">                This argument is deprecated. Please use `num_few_shot_examples` instead.</span>
+<span class="sd">            _max_generated_tokens (optional):</span>
+<span class="sd">                This argument is deprecated. Please use `max_generated_tokens` instead.</span>
+<span class="sd">            _labels (optional):</span>
+<span class="sd">                This argument is deprecated. Please use `labels` instead.</span>
+<span class="sd">            _prompt_label_mapping (optional):</span>
+<span class="sd">                This argument is deprecated. Please use `prompt_label_mapping` instead.</span>
+<span class="sd">            _allowed_model_types (optional):</span>
+<span class="sd">                This argument is deprecated. Please use `allowed_model_types` instead.</span>
+<span class="sd">            _allowed_generative_types (optional):</span>
+<span class="sd">                This argument is deprecated. Please use `allowed_generative_types`</span>
+<span class="sd">                instead.</span>
+<span class="sd">            _allow_invalid_model_outputs (optional):</span>
+<span class="sd">                This argument is deprecated. Please use `allow_invalid_model_outputs`</span>
+<span class="sd">                instead.</span>
+<span class="sd">            _logging_string (optional):</span>
+<span class="sd">                This argument is deprecated. Please use `logging_string` instead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Deprecation warnings</span>
+        <span class="k">if</span> <span class="n">_prompt_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The `_prompt_prefix` argument is deprecated. Please use &quot;</span>
+                <span class="s2">&quot;`prompt_prefix` instead.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_prompt_template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The `_prompt_template` argument is deprecated. Please use &quot;</span>
+                <span class="s2">&quot;`prompt_template` instead.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_instruction_prompt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The `_instruction_prompt` argument is deprecated. Please use &quot;</span>
+                <span class="s2">&quot;`instruction_prompt` instead.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_num_few_shot_examples</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The `_num_few_shot_examples` argument is deprecated. Please use &quot;</span>
+                <span class="s2">&quot;`num_few_shot_examples` instead.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_max_generated_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The `_max_generated_tokens` argument is deprecated. Please use &quot;</span>
+                <span class="s2">&quot;`max_generated_tokens` instead.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The `_labels` argument is deprecated. Please use `labels` instead.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_prompt_label_mapping</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The `_prompt_label_mapping` argument is deprecated. Please use &quot;</span>
+                <span class="s2">&quot;`prompt_label_mapping` instead.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_allowed_model_types</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The `_allowed_model_types` argument is deprecated. Please use &quot;</span>
+                <span class="s2">&quot;`allowed_model_types` instead.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_allowed_generative_types</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The `_allowed_generative_types` argument is deprecated. Please use &quot;</span>
+                <span class="s2">&quot;`allowed_generative_types` instead.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_allow_invalid_model_outputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The `_allow_invalid_model_outputs` argument is deprecated. Please use &quot;</span>
+                <span class="s2">&quot;`allow_invalid_model_outputs` instead.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_logging_string</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The `_logging_string` argument is deprecated and is not used anymore. &quot;</span>
+                <span class="s2">&quot;Using it will have no effect.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pretty_name</span> <span class="o">=</span> <span class="n">pretty_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_source</span> <span class="o">=</span> <span class="n">source</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task</span> <span class="o">=</span> <span class="n">task</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">languages</span> <span class="o">=</span> <span class="n">languages</span>
+
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">main_language</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prompt_prefix</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">prompt_prefix</span>
+            <span class="k">if</span> <span class="n">prompt_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">template</span><span class="o">.</span><span class="n">default_prompt_prefix</span>
+            <span class="k">if</span> <span class="n">template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prompt_template</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">prompt_template</span>
+            <span class="k">if</span> <span class="n">prompt_template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">template</span><span class="o">.</span><span class="n">default_prompt_template</span>
+            <span class="k">if</span> <span class="n">template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">instruction_prompt</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">instruction_prompt</span>
+            <span class="k">if</span> <span class="n">instruction_prompt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">template</span><span class="o">.</span><span class="n">default_instruction_prompt</span>
+            <span class="k">if</span> <span class="n">template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_few_shot_examples</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">num_few_shot_examples</span>
+            <span class="k">if</span> <span class="n">num_few_shot_examples</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_num_few_shot_examples</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_generated_tokens</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">max_generated_tokens</span>
+            <span class="k">if</span> <span class="n">max_generated_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_max_generated_tokens</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">labels</span> <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_labels</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">prompt_label_mapping</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">prompt_label_mapping</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">template</span><span class="o">.</span><span class="n">default_prompt_label_mapping</span>
+                <span class="k">if</span> <span class="n">template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prompt_label_mapping</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">{</span><span class="n">label</span><span class="p">:</span> <span class="n">label</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">}</span>
+            <span class="k">if</span> <span class="n">prompt_label_mapping</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span>
+            <span class="k">else</span> <span class="n">prompt_label_mapping</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allowed_model_types</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">allowed_model_types</span>
+            <span class="k">if</span> <span class="n">allowed_model_types</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_allowed_model_types</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allowed_generative_types</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">allowed_generative_types</span>
+            <span class="k">if</span> <span class="n">allowed_generative_types</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_allowed_generative_types</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allow_invalid_model_outputs</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">allow_invalid_model_outputs</span>
+            <span class="k">if</span> <span class="n">allow_invalid_model_outputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_allow_invalid_model_outputs</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">splits</span> <span class="o">=</span> <span class="n">splits</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bootstrap_samples</span> <span class="o">=</span> <span class="n">bootstrap_samples</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unofficial</span> <span class="o">=</span> <span class="n">unofficial</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.name"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.name" title="Go to docs">[docs]</a></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the dataset.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The name of the dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The name of the dataset is not set!&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+
+    <span class="nd">@name</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the name of the dataset.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value:</span>
+<span class="sd">                The new name of the dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pretty_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.pretty_name"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.pretty_name" title="Go to docs">[docs]</a></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The pretty name of the dataset.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The pretty name of the dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pretty_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The pretty name of the dataset is not set!&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pretty_name</span>
+
+    <span class="nd">@pretty_name</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pretty_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the pretty name of the dataset.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value:</span>
+<span class="sd">                The new pretty name of the dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pretty_name</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">source</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.source"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.source" title="Go to docs">[docs]</a></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The source of the dataset.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The source of the dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_source</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The source of the dataset is not set!&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_source</span>
+
+    <span class="nd">@source</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">source</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the source of the dataset.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value:</span>
+<span class="sd">                The new source of the dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_source</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logging_string</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.logging_string"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.logging_string" title="Go to docs">[docs]</a></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The string used to describe evaluation on the dataset in logging.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The logging string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">truncated_str</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;truncated version of the &quot;</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;-mini&quot;</span><span class="p">)</span>
+            <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">logging_languages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">NORWEGIAN_BOKMÅL</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
+                <span class="ow">and</span> <span class="n">NORWEGIAN_NYNORSK</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
+                <span class="ow">and</span> <span class="n">NORWEGIAN</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
+            <span class="p">):</span>
+                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">NORWEGIAN_BOKMÅL</span><span class="p">)</span>
+                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">NORWEGIAN_NYNORSK</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="p">(</span>
+                <span class="n">NORWEGIAN_BOKMÅL</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
+                <span class="ow">or</span> <span class="n">NORWEGIAN_NYNORSK</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
+            <span class="p">)</span> <span class="ow">and</span> <span class="n">NORWEGIAN</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">:</span>
+                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">NORWEGIAN</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">PORTUGUESE</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span> <span class="ow">and</span> <span class="n">EUROPEAN_PORTUGUESE</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">:</span>
+                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">EUROPEAN_PORTUGUESE</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logging_languages</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">:</span>  <span class="c1"># Do not log too many languages</span>
+            <span class="n">languages_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">logging_languages</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">languages_str</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">lang</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">logging_languages</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; and </span><span class="si">{</span><span class="n">logging_languages</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot; &quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">languages_str</span> <span class="o">=</span> <span class="n">logging_languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span>
+
+        <span class="n">task_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+        <span class="n">dataset_name_str</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pretty_name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;the </span><span class="si">{</span><span class="n">truncated_str</span><span class="si">}{</span><span class="n">languages_str</span><span class="si">}{</span><span class="n">task_str</span><span class="si">}</span><span class="s2"> dataset </span><span class="si">{</span><span class="n">dataset_name_str</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">main_language</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Language</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.main_language"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.main_language" title="Go to docs">[docs]</a></div>
@@ -2411,156 +2799,6 @@
                     <span class="k">return</span> <span class="n">PORTUGUESE</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">logging_string</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.logging_string"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.logging_string" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The string used to describe evaluation on the dataset in logging.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logging_string</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_logging_string</span>
-
-        <span class="n">truncated_str</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;truncated version of the &quot;</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;-mini&quot;</span><span class="p">)</span>
-            <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-        <span class="p">)</span>
-
-        <span class="n">logging_languages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">))</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">if</span> <span class="p">(</span>
-                <span class="n">NORWEGIAN_BOKMÅL</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
-                <span class="ow">and</span> <span class="n">NORWEGIAN_NYNORSK</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
-                <span class="ow">and</span> <span class="n">NORWEGIAN</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
-            <span class="p">):</span>
-                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">NORWEGIAN_BOKMÅL</span><span class="p">)</span>
-                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">NORWEGIAN_NYNORSK</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="p">(</span>
-                <span class="n">NORWEGIAN_BOKMÅL</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
-                <span class="ow">or</span> <span class="n">NORWEGIAN_NYNORSK</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span>
-            <span class="p">)</span> <span class="ow">and</span> <span class="n">NORWEGIAN</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">:</span>
-                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">NORWEGIAN</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">PORTUGUESE</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span> <span class="ow">and</span> <span class="n">EUROPEAN_PORTUGUESE</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">:</span>
-                <span class="n">logging_languages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">EUROPEAN_PORTUGUESE</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logging_languages</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">languages_str</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">lang</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">logging_languages</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; and </span><span class="si">{</span><span class="n">logging_languages</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">languages_str</span> <span class="o">=</span> <span class="n">logging_languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
-
-        <span class="n">task_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
-        <span class="n">dataset_name_str</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pretty_name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;the </span><span class="si">{</span><span class="n">truncated_str</span><span class="si">}{</span><span class="n">languages_str</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">task_str</span><span class="si">}</span><span class="s2"> dataset </span><span class="si">{</span><span class="n">dataset_name_str</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">prompt_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.prompt_prefix"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.prompt_prefix" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The prefix to use in the few-shot prompt.&quot;&quot;&quot;</span>
-        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">main_language</span><span class="p">]</span>
-        <span class="n">prompt_prefix</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">prompt_config</span><span class="o">.</span><span class="n">default_prompt_prefix</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_prefix</span> <span class="ow">is</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_prefix</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">prompt_prefix</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">prompt_template</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.prompt_template"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.prompt_template" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The template used during few-shot evaluation.&quot;&quot;&quot;</span>
-        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">main_language</span><span class="p">]</span>
-        <span class="n">prompt_template</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">prompt_config</span><span class="o">.</span><span class="n">default_prompt_template</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_template</span> <span class="ow">is</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_template</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">prompt_template</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">instruction_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.instruction_prompt"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.instruction_prompt" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The prompt to use when evaluating instruction-tuned models.&quot;&quot;&quot;</span>
-        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">main_language</span><span class="p">]</span>
-        <span class="n">instruction_prompt</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">prompt_config</span><span class="o">.</span><span class="n">default_instruction_prompt</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instruction_prompt</span> <span class="ow">is</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_instruction_prompt</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">instruction_prompt</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_few_shot_examples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.num_few_shot_examples"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.num_few_shot_examples" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The number of few-shot examples to use.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_num_few_shot_examples</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_few_shot_examples</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_num_few_shot_examples</span>
-        <span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">max_generated_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.max_generated_tokens"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.max_generated_tokens" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The maximum number of tokens to generate when evaluating a model.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_max_generated_tokens</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_generated_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_max_generated_tokens</span>
-        <span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.labels"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.labels" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;The labels in the dataset.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_labels</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Labels must be specified for dataset </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> with the &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;attribute `_labels`, as the task </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> does not have &quot;</span>
-                <span class="s2">&quot;default labels.&quot;</span>
-            <span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">prompt_label_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.prompt_label_mapping"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.prompt_label_mapping" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mapping from English labels to localised labels.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_label_mapping</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{</span><span class="n">label</span><span class="p">:</span> <span class="n">label</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">}</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_label_mapping</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prompt_label_mapping</span>
-        <span class="n">prompt_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">main_language</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">prompt_config</span><span class="o">.</span><span class="n">default_prompt_label_mapping</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{</span><span class="n">label</span><span class="p">:</span> <span class="n">label</span> <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">}</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">prompt_config</span><span class="o">.</span><span class="n">default_prompt_label_mapping</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">allowed_model_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ModelType</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.allowed_model_types"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.allowed_model_types" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;A list of model types that are allowed to be evaluated on this dataset.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_allowed_model_types</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_allowed_model_types</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_allowed_model_types</span>
-        <span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">allowed_generative_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">GenerativeType</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.allowed_generative_types"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.allowed_generative_types" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;A list of generative model types that are allowed on this dataset.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_allowed_generative_types</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_allowed_generative_types</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_allowed_generative_types</span>
-        <span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">allow_invalid_model_outputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.allow_invalid_model_outputs"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.allow_invalid_model_outputs" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether to allow invalid model outputs.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_allow_invalid_model_outputs</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_allow_invalid_model_outputs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">default_allow_invalid_model_outputs</span>
-        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">id2label</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HashableDict&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.id2label"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.id2label" title="Go to docs">[docs]</a></div>

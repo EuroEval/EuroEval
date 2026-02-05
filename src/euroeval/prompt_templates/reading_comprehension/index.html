@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -1245,13 +1247,24 @@
 <span class="normal">317</span>
 <span class="normal">318</span>
 <span class="normal">319</span>
-<span class="normal">320</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Reading Comprehension task.&quot;&quot;&quot;</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span>
+<span class="normal">329</span>
+<span class="normal">330</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Reading Comprehension task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ALBANIAN</span><span class="p">,</span>
+    <span class="n">BELARUSIAN</span><span class="p">,</span>
     <span class="n">BOSNIAN</span><span class="p">,</span>
     <span class="n">BULGARIAN</span><span class="p">,</span>
     <span class="n">CATALAN</span><span class="p">,</span>
@@ -1295,6 +1308,15 @@
         <span class="s2">&quot;maksimum 3 fjalë: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Tekst: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Përgjigjuni pyetjes së mëposhtme &quot;</span>
         <span class="s2">&quot;rreth tekstit të mësipërm me maksimum 3 fjalë.</span><span class="se">\n\n</span><span class="s2">Pyetje: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">),</span>
+    <span class="n">BELARUSIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Ніжэй прыведзены тэксты з адпаведнымі пытаннямі і &quot;</span>
+        <span class="s2">&quot;адказамі.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Тэкст: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Пытанне: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Адказ &quot;</span>
+        <span class="s2">&quot;максімум 3 словамі: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Тэкст: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Адкажыце на наступнае пытанне &quot;</span>
+        <span class="s2">&quot;пра тэкст вышэй максімум 3 словамі.</span><span class="se">\n\n</span><span class="s2">Пытанне: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
     <span class="p">),</span>
     <span class="n">BOSNIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>

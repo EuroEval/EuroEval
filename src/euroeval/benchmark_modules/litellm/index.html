@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -3004,10 +3006,7 @@
 <span class="normal">1886</span>
 <span class="normal">1887</span>
 <span class="normal">1888</span>
-<span class="normal">1889</span>
-<span class="normal">1890</span>
-<span class="normal">1891</span>
-<span class="normal">1892</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1889</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
@@ -3049,6 +3048,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">requests.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestException</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.asyncio</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span> <span class="k">as</span> <span class="n">tqdm_async</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">..async_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_semaphore_and_catch_exception</span><span class="p">,</span> <span class="n">safe_run</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..caching_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_arguments</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">JSON_STRIP_CHARACTERS</span><span class="p">,</span>
@@ -3083,6 +3083,8 @@
     <span class="n">raise_if_wrong_params</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_pbar</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..model_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_model_cache_dir</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..string_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">split_model_id</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">question_answering</span><span class="p">,</span>
     <span class="n">sequence_classification</span><span class="p">,</span>
@@ -3092,13 +3094,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NER</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tokenisation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_first_label_token_mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtractLabelsFunction</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">add_semaphore_and_catch_exception</span><span class="p">,</span>
-    <span class="n">create_model_cache_dir</span><span class="p">,</span>
-    <span class="n">get_hf_token</span><span class="p">,</span>
-    <span class="n">safe_run</span><span class="p">,</span>
-    <span class="n">split_model_id</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_hf_token</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.hf</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span> <span class="n">load_hf_model_config</span><span class="p">,</span> <span class="n">load_tokeniser</span>
 

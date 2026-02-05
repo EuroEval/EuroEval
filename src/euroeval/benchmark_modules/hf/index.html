@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -1118,6 +1120,17 @@
     <span class="md-ellipsis">
       
         task_group_to_class_name
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.hf.get_class_by_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_class_by_name
       
     </span>
   </a>
@@ -2495,9 +2508,48 @@
 <span class="normal">1333</span>
 <span class="normal">1334</span>
 <span class="normal">1335</span>
-<span class="normal">1336</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1336</span>
+<span class="normal">1337</span>
+<span class="normal">1338</span>
+<span class="normal">1339</span>
+<span class="normal">1340</span>
+<span class="normal">1341</span>
+<span class="normal">1342</span>
+<span class="normal">1343</span>
+<span class="normal">1344</span>
+<span class="normal">1345</span>
+<span class="normal">1346</span>
+<span class="normal">1347</span>
+<span class="normal">1348</span>
+<span class="normal">1349</span>
+<span class="normal">1350</span>
+<span class="normal">1351</span>
+<span class="normal">1352</span>
+<span class="normal">1353</span>
+<span class="normal">1354</span>
+<span class="normal">1355</span>
+<span class="normal">1356</span>
+<span class="normal">1357</span>
+<span class="normal">1358</span>
+<span class="normal">1359</span>
+<span class="normal">1360</span>
+<span class="normal">1361</span>
+<span class="normal">1362</span>
+<span class="normal">1363</span>
+<span class="normal">1364</span>
+<span class="normal">1365</span>
+<span class="normal">1366</span>
+<span class="normal">1367</span>
+<span class="normal">1368</span>
+<span class="normal">1369</span>
+<span class="normal">1370</span>
+<span class="normal">1371</span>
+<span class="normal">1372</span>
+<span class="normal">1373</span>
+<span class="normal">1374</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -2560,6 +2612,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">..generation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">raise_if_wrong_params</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">block_terminal_output</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..model_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_model_cache_dir</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..string_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">split_model_id</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">multiple_choice_classification</span><span class="p">,</span>
     <span class="n">question_answering</span><span class="p">,</span>
@@ -2567,13 +2621,7 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tokenisation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_bos_token</span><span class="p">,</span> <span class="n">get_eos_token</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tokeniser</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">create_model_cache_dir</span><span class="p">,</span>
-    <span class="n">get_class_by_name</span><span class="p">,</span>
-    <span class="n">get_hf_token</span><span class="p">,</span>
-    <span class="n">internet_connection_available</span><span class="p">,</span>
-    <span class="n">split_model_id</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_hf_token</span><span class="p">,</span> <span class="n">internet_connection_available</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
 
 <span class="k">try</span><span class="p">:</span>
@@ -3314,8 +3362,8 @@
                     <span class="n">log</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Could not access the model </span><span class="si">{</span><span class="n">model_id</span><span class="si">}</span><span class="s2"> with the revision &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">revision</span><span class="si">}</span><span class="s2">. The error was </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">!r}</span><span class="s2">. Please set the &quot;</span>
-                        <span class="s2">&quot;`HUGGINGFACE_API_KEY` environment variable or use the &quot;</span>
-                        <span class="s2">&quot;`--api-key` argument.&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;`HUGGINGFACE_API_KEY` or `HF_TOKEN` environment variable or &quot;</span>
+                        <span class="s2">&quot;use the `--api-key` argument.&quot;</span><span class="p">,</span>
                         <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="k">return</span> <span class="kc">None</span>
@@ -3592,8 +3640,8 @@
                     <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is a gated repository. Please ensure &quot;</span>
                     <span class="s2">&quot;that you are logged in with `hf auth login` or have provided a &quot;</span>
                     <span class="s2">&quot;valid Hugging Face access token with the `HUGGINGFACE_API_KEY` &quot;</span>
-                    <span class="s2">&quot;environment variable or the `--api-key` argument. Also check that &quot;</span>
-                    <span class="s2">&quot;your account has access to this model.&quot;</span>
+                    <span class="s2">&quot;or `HF_TOKEN` environment variable or the `--api-key` argument. &quot;</span>
+                    <span class="s2">&quot;Also check that your account has access to this model.&quot;</span>
                 <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Couldn&#39;t load model config for </span><span class="si">{</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">. The error was &quot;</span>
@@ -3831,6 +3879,47 @@
     <span class="p">)</span>
     <span class="n">pascal_case</span> <span class="o">=</span> <span class="n">special_case_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pascal_case</span><span class="p">,</span> <span class="n">pascal_case</span><span class="p">)</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;AutoModelFor</span><span class="si">{</span><span class="n">pascal_case</span><span class="si">}</span><span class="s2">&quot;</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_class_by_name</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.hf.get_class_by_name"><a href="../../../../api/euroeval/benchmark_modules/hf/#euroeval.benchmark_modules.hf.get_class_by_name" title="Go to docs">[docs]</a></div>
+    <span class="n">class_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a class by its name.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        class_name:</span>
+<span class="sd">            The name of the class, written in kebab-case. The corresponding class name</span>
+<span class="sd">            must be the same, but written in PascalCase, and lying in a module with the</span>
+<span class="sd">            same name, but written in snake_case. If a list of strings is passed, the</span>
+<span class="sd">            first class that is found is returned.</span>
+<span class="sd">        module_name:</span>
+<span class="sd">            The name of the module where the class is located.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The class. If the class is not found, None is returned.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">class_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">class_name</span> <span class="o">=</span> <span class="p">[</span><span class="n">class_name</span><span class="p">]</span>
+
+    <span class="n">error_messages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">class_name</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">module_name</span><span class="p">)</span>
+            <span class="n">class_</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Type</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">class_</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ModuleNotFoundError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">error_messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">error_messages</span><span class="p">:</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">- &quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">- &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">error_messages</span><span class="p">)</span>
+        <span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not find the class with the name(s) </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">class_name</span><span class="p">)</span><span class="si">}</span><span class="s2">. The &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;following error messages were raised: </span><span class="si">{</span><span class="n">errors</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># If the class could not be found, return None</span>
+    <span class="k">return</span> <span class="kc">None</span>
 </code></pre></div></td></tr></table></div>
 
 

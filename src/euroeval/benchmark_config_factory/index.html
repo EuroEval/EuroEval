@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -1246,7 +1248,31 @@
 <span class="normal">255</span>
 <span class="normal">256</span>
 <span class="normal">257</span>
-<span class="normal">258</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Factory class for creating dataset configurations.&quot;&quot;&quot;</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Factory class for creating dataset configurations.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
@@ -1294,6 +1320,8 @@
         <span class="n">dataset</span><span class="o">=</span><span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span>
         <span class="n">languages</span><span class="o">=</span><span class="n">languages</span><span class="p">,</span>
         <span class="n">custom_datasets_file</span><span class="o">=</span><span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">custom_datasets_file</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
+        <span class="n">cache_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">),</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">BenchmarkConfig</span><span class="p">(</span>
@@ -1407,7 +1435,9 @@
     <span class="n">languages</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;Language&quot;</span><span class="p">],</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;str | DatasetConfig | c.Sequence[str | DatasetConfig] | None&quot;</span><span class="p">,</span>
     <span class="n">custom_datasets_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;DatasetConfig&quot;</span><span class="p">]:</span>
+    <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;DatasetConfig&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare dataset config(s) for benchmarking.</span>
 
 <span class="sd">    Args:</span>
@@ -1421,6 +1451,10 @@
 <span class="sd">            included, limited by the `task` and `languages` parameters.</span>
 <span class="sd">        custom_datasets_file:</span>
 <span class="sd">            A path to a Python file containing custom dataset configurations.</span>
+<span class="sd">        api_key:</span>
+<span class="sd">            The API key to use for accessing the Hugging Face Hub.</span>
+<span class="sd">        cache_dir:</span>
+<span class="sd">            The directory to store the cache in.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The prepared dataset configs.</span>
@@ -1429,9 +1463,25 @@
 <span class="sd">        InvalidBenchmark:</span>
 <span class="sd">            If the task or dataset is not found in the benchmark tasks or datasets.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Extract the dataset IDs from the `dataset` argument</span>
+    <span class="n">dataset_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">dataset_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">):</span>
+        <span class="n">dataset_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">dataset_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">):</span>
+                <span class="n">dataset_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
     <span class="c1"># Create the list of dataset configs</span>
     <span class="n">all_dataset_configs</span> <span class="o">=</span> <span class="n">get_all_dataset_configs</span><span class="p">(</span>
-        <span class="n">custom_datasets_file</span><span class="o">=</span><span class="n">custom_datasets_file</span>
+        <span class="n">custom_datasets_file</span><span class="o">=</span><span class="n">custom_datasets_file</span><span class="p">,</span>
+        <span class="n">dataset_ids</span><span class="o">=</span><span class="n">dataset_ids</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span>
+        <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">all_official_dataset_configs</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">DatasetConfig</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">dataset_config</span>

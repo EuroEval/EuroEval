@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -1098,13 +1100,13 @@
     <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/winogrande-et&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">COMMON_SENSE</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ESTONIAN</span><span class="p">],</span>
-    <span class="n">_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Sulle esitatakse lüngaga (_) tekstülesanded, &quot;</span>
+    <span class="n">prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Sulle esitatakse lüngaga (_) tekstülesanded, &quot;</span>
     <span class="s2">&quot;igal ülesandel on kaks vastusevarianti (a ja b).&quot;</span><span class="p">,</span>
-    <span class="n">_prompt_template</span><span class="o">=</span><span class="s2">&quot;Tekstülesanne: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Vastus: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
-    <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Tekstülesanne: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+    <span class="n">prompt_template</span><span class="o">=</span><span class="s2">&quot;Tekstülesanne: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Vastus: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Tekstülesanne: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
     <span class="s2">&quot;Sinu ülesanne on valida lünka sobiv vastusevariant. &quot;</span>
     <span class="s2">&quot;Vasta ainult </span><span class="si">{labels_str}</span><span class="s2">. Muud vastused ei ole lubatud.&quot;</span><span class="p">,</span>
-    <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="n">VALEU_ET_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
@@ -1115,7 +1117,7 @@
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ESTONIAN</span><span class="p">],</span>
     <span class="n">splits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
     <span class="n">bootstrap_samples</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="c1">### Unofficial datasets ###</span>
@@ -1135,7 +1137,7 @@
     <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/exam-et&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ESTONIAN</span><span class="p">],</span>
-    <span class="n">_labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">,</span> <span class="s2">&quot;f&quot;</span><span class="p">,</span> <span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="s2">&quot;i&quot;</span><span class="p">,</span> <span class="s2">&quot;j&quot;</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;n&quot;</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">],</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="s2">&quot;e&quot;</span><span class="p">,</span> <span class="s2">&quot;f&quot;</span><span class="p">,</span> <span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="s2">&quot;i&quot;</span><span class="p">,</span> <span class="s2">&quot;j&quot;</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="s2">&quot;l&quot;</span><span class="p">,</span> <span class="s2">&quot;m&quot;</span><span class="p">,</span> <span class="s2">&quot;n&quot;</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 

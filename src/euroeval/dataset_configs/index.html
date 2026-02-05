@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -909,17 +911,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#euroeval.dataset_configs.get_dataset_config" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        get_dataset_config
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -956,110 +947,130 @@
 </span><span class="mkapi-object-kind">package</span>
 <span class="mkapi-object-name"><a href="./#euroeval.dataset_configs" title="euroeval.dataset_configs">euroeval.dataset_configs</a></span>
 </p>
-<div class="mkapi-source no-copy highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span>
-<span class="normal">17</span>
-<span class="normal">18</span>
-<span class="normal">19</span>
-<span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span>
-<span class="normal">23</span>
-<span class="normal">24</span>
-<span class="normal">25</span>
-<span class="normal">26</span>
-<span class="normal">27</span>
-<span class="normal">28</span>
-<span class="normal">29</span>
-<span class="normal">30</span>
-<span class="normal">31</span>
-<span class="normal">32</span>
-<span class="normal">33</span>
-<span class="normal">34</span>
-<span class="normal">35</span>
-<span class="normal">36</span>
-<span class="normal">37</span>
-<span class="normal">38</span>
-<span class="normal">39</span>
-<span class="normal">40</span>
-<span class="normal">41</span>
-<span class="normal">42</span>
-<span class="normal">43</span>
-<span class="normal">44</span>
-<span class="normal">45</span>
-<span class="normal">46</span>
-<span class="normal">47</span>
-<span class="normal">48</span>
-<span class="normal">49</span>
-<span class="normal">50</span>
-<span class="normal">51</span>
-<span class="normal">52</span>
-<span class="normal">53</span>
-<span class="normal">54</span>
-<span class="normal">55</span>
-<span class="normal">56</span>
-<span class="normal">57</span>
-<span class="normal">58</span>
-<span class="normal">59</span>
-<span class="normal">60</span>
-<span class="normal">61</span>
-<span class="normal">62</span>
-<span class="normal">63</span>
-<span class="normal">64</span>
-<span class="normal">65</span>
-<span class="normal">66</span>
-<span class="normal">67</span>
-<span class="normal">68</span>
-<span class="normal">69</span>
-<span class="normal">70</span>
-<span class="normal">71</span>
-<span class="normal">72</span>
-<span class="normal">73</span>
-<span class="normal">74</span>
-<span class="normal">75</span>
-<span class="normal">76</span>
-<span class="normal">77</span>
-<span class="normal">78</span>
-<span class="normal">79</span>
-<span class="normal">80</span>
-<span class="normal">81</span>
-<span class="normal">82</span>
-<span class="normal">83</span>
-<span class="normal">84</span>
-<span class="normal">85</span>
-<span class="normal">86</span>
-<span class="normal">87</span>
-<span class="normal">88</span>
-<span class="normal">89</span>
-<span class="normal">90</span>
-<span class="normal">91</span>
-<span class="normal">92</span>
-<span class="normal">93</span>
-<span class="normal">94</span>
-<span class="normal">95</span>
-<span class="normal">96</span>
-<span class="normal">97</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<div class="mkapi-source no-copy highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">  1</span>
+<span class="normal">  2</span>
+<span class="normal">  3</span>
+<span class="normal">  4</span>
+<span class="normal">  5</span>
+<span class="normal">  6</span>
+<span class="normal">  7</span>
+<span class="normal">  8</span>
+<span class="normal">  9</span>
+<span class="normal"> 10</span>
+<span class="normal"> 11</span>
+<span class="normal"> 12</span>
+<span class="normal"> 13</span>
+<span class="normal"> 14</span>
+<span class="normal"> 15</span>
+<span class="normal"> 16</span>
+<span class="normal"> 17</span>
+<span class="normal"> 18</span>
+<span class="normal"> 19</span>
+<span class="normal"> 20</span>
+<span class="normal"> 21</span>
+<span class="normal"> 22</span>
+<span class="normal"> 23</span>
+<span class="normal"> 24</span>
+<span class="normal"> 25</span>
+<span class="normal"> 26</span>
+<span class="normal"> 27</span>
+<span class="normal"> 28</span>
+<span class="normal"> 29</span>
+<span class="normal"> 30</span>
+<span class="normal"> 31</span>
+<span class="normal"> 32</span>
+<span class="normal"> 33</span>
+<span class="normal"> 34</span>
+<span class="normal"> 35</span>
+<span class="normal"> 36</span>
+<span class="normal"> 37</span>
+<span class="normal"> 38</span>
+<span class="normal"> 39</span>
+<span class="normal"> 40</span>
+<span class="normal"> 41</span>
+<span class="normal"> 42</span>
+<span class="normal"> 43</span>
+<span class="normal"> 44</span>
+<span class="normal"> 45</span>
+<span class="normal"> 46</span>
+<span class="normal"> 47</span>
+<span class="normal"> 48</span>
+<span class="normal"> 49</span>
+<span class="normal"> 50</span>
+<span class="normal"> 51</span>
+<span class="normal"> 52</span>
+<span class="normal"> 53</span>
+<span class="normal"> 54</span>
+<span class="normal"> 55</span>
+<span class="normal"> 56</span>
+<span class="normal"> 57</span>
+<span class="normal"> 58</span>
+<span class="normal"> 59</span>
+<span class="normal"> 60</span>
+<span class="normal"> 61</span>
+<span class="normal"> 62</span>
+<span class="normal"> 63</span>
+<span class="normal"> 64</span>
+<span class="normal"> 65</span>
+<span class="normal"> 66</span>
+<span class="normal"> 67</span>
+<span class="normal"> 68</span>
+<span class="normal"> 69</span>
+<span class="normal"> 70</span>
+<span class="normal"> 71</span>
+<span class="normal"> 72</span>
+<span class="normal"> 73</span>
+<span class="normal"> 74</span>
+<span class="normal"> 75</span>
+<span class="normal"> 76</span>
+<span class="normal"> 77</span>
+<span class="normal"> 78</span>
+<span class="normal"> 79</span>
+<span class="normal"> 80</span>
+<span class="normal"> 81</span>
+<span class="normal"> 82</span>
+<span class="normal"> 83</span>
+<span class="normal"> 84</span>
+<span class="normal"> 85</span>
+<span class="normal"> 86</span>
+<span class="normal"> 87</span>
+<span class="normal"> 88</span>
+<span class="normal"> 89</span>
+<span class="normal"> 90</span>
+<span class="normal"> 91</span>
+<span class="normal"> 92</span>
+<span class="normal"> 93</span>
+<span class="normal"> 94</span>
+<span class="normal"> 95</span>
+<span class="normal"> 96</span>
+<span class="normal"> 97</span>
+<span class="normal"> 98</span>
+<span class="normal"> 99</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">..custom_dataset_configs</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">load_custom_datasets_module</span><span class="p">,</span>
+    <span class="n">try_get_dataset_config_from_repo</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">SPEED</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_custom_datasets_module</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.albanian</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.bosnian</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.bulgarian</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
@@ -1091,21 +1102,51 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.swedish</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.ukrainian</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 
-<div class="mkapi-source-link" id="euroeval.dataset_configs.get_all_dataset_configs"><a href="../../../api/euroeval/dataset_configs/#euroeval.dataset_configs.get_all_dataset_configs" title="Go to docs">[docs]</a></div>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_all_dataset_configs</span><span class="p">(</span><span class="n">custom_datasets_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">]:</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_all_dataset_configs</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.dataset_configs.get_all_dataset_configs"><a href="../../../api/euroeval/dataset_configs/#euroeval.dataset_configs.get_all_dataset_configs" title="Go to docs">[docs]</a></div>
+    <span class="n">custom_datasets_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">dataset_ids</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a mapping of all the dataset configurations.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        custom_datasets_file:</span>
 <span class="sd">            A path to a Python file containing custom dataset configurations.</span>
+<span class="sd">        dataset_ids:</span>
+<span class="sd">            The IDs of the datasets to include in the mapping.</span>
+<span class="sd">        api_key:</span>
+<span class="sd">            The Hugging Face API key to use to check if the repositories have custom</span>
+<span class="sd">            dataset configs.</span>
+<span class="sd">        cache_dir:</span>
+<span class="sd">            The directory to store the cache in.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A mapping between names of datasets and their configurations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">globals_dict</span> <span class="o">=</span> <span class="nb">globals</span><span class="p">()</span>
+
+    <span class="c1"># If any of the dataset IDs are referring to Hugging Face dataset IDs, then we check</span>
+    <span class="c1"># if the repositories have custom dataset configs and if they do, we add them to the</span>
+    <span class="c1"># globals dict.</span>
+    <span class="k">for</span> <span class="n">dataset_id</span> <span class="ow">in</span> <span class="n">dataset_ids</span><span class="p">:</span>
+        <span class="n">dataset_config_or_none</span> <span class="o">=</span> <span class="n">try_get_dataset_config_from_repo</span><span class="p">(</span>
+            <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">dataset_config_or_none</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">globals_dict</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_config_or_none</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Loaded external dataset configuration for </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="c1"># Add the custom datasets from the custom datasets file to the globals dict</span>
     <span class="n">module</span> <span class="o">=</span> <span class="n">load_custom_datasets_module</span><span class="p">(</span><span class="n">custom_datasets_file</span><span class="o">=</span><span class="n">custom_datasets_file</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">module</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">globals_dict</span> <span class="o">|=</span> <span class="nb">vars</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+
+    <span class="c1"># Extract the dataset configs from the globals dict</span>
     <span class="n">dataset_configs</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">cfg</span>
         <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="n">globals_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
@@ -1115,30 +1156,9 @@
         <span class="s2">&quot;There are duplicate dataset configurations. Please ensure that each dataset &quot;</span>
         <span class="s2">&quot;has a unique name.&quot;</span>
     <span class="p">)</span>
+
     <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">cfg</span> <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="n">dataset_configs</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">mapping</span>
-
-<div class="mkapi-source-link" id="euroeval.dataset_configs.get_dataset_config"><a href="../../../api/euroeval/dataset_configs/#euroeval.dataset_configs.get_dataset_config" title="Go to docs">[docs]</a></div>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_dataset_config</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">custom_datasets_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetConfig</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the dataset configuration for a dataset.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        dataset_name:</span>
-<span class="sd">            The name of the dataset.</span>
-<span class="sd">        custom_datasets_file:</span>
-<span class="sd">            A path to a Python file containing custom dataset configurations.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        The dataset configuration.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">        ValueError:</span>
-<span class="sd">            If the dataset is not found.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">dataset_configs</span> <span class="o">=</span> <span class="n">get_all_dataset_configs</span><span class="p">(</span><span class="n">custom_datasets_file</span><span class="o">=</span><span class="n">custom_datasets_file</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">dataset_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset_configs</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No dataset config found for dataset </span><span class="si">{</span><span class="n">dataset_name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">dataset_configs</span><span class="p">[</span><span class="n">dataset_name</span><span class="p">]</span>
 
 
 <span class="n">SPEED_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
@@ -1147,7 +1167,6 @@
     <span class="n">source</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">SPEED</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">get_all_languages</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
-    <span class="n">_logging_string</span><span class="o">=</span><span class="s2">&quot;the speed estimation benchmark&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 

@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -1197,13 +1199,23 @@
 <span class="normal">269</span>
 <span class="normal">270</span>
 <span class="normal">271</span>
-<span class="normal">272</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for all multiple choice tasks.&quot;&quot;&quot;</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for all multiple choice tasks.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ALBANIAN</span><span class="p">,</span>
+    <span class="n">BELARUSIAN</span><span class="p">,</span>
     <span class="n">BULGARIAN</span><span class="p">,</span>
     <span class="n">CATALAN</span><span class="p">,</span>
     <span class="n">CROATIAN</span><span class="p">,</span>
@@ -1246,6 +1258,14 @@
         <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Pyetje: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Përgjigje: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Pyetje: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Përgjigjuni pyetjes së &quot;</span>
         <span class="s2">&quot;mësipërme duke u përgjigjur me </span><span class="si">{labels_str}</span><span class="s2">, dhe asgjë tjetër.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">BELARUSIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Ніжэй прыведзены пытанні з некалькімі варыянтамі &quot;</span>
+        <span class="s2">&quot;адказу (з адказамі).&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Пытанне: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Адказ: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Пытанне: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Адкажыце на пытанне вышэй, &quot;</span>
+        <span class="s2">&quot;адказаўшы </span><span class="si">{labels_str}</span><span class="s2">, і нічога іншага.&quot;</span><span class="p">,</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">BULGARIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>

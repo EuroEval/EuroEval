@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../constants/">
+        <link rel="prev" href="../custom_dataset_configs/">
       
       
         <link rel="next" href="../data_models/">
@@ -690,6 +690,8 @@
       
         
       
+        
+      
     
     
     
@@ -953,6 +955,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1093,6 +1101,8 @@
       
         
           
+        
+      
         
       
         
@@ -1429,6 +1439,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../async_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.async_utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../benchmarker/" class="md-nav__link">
         
   
@@ -1577,6 +1615,34 @@
     
   
     euroeval.constants
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom_dataset_configs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.custom_dataset_configs
   
 
     
@@ -2058,6 +2124,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../string_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.string_utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../tasks/" class="md-nav__link">
         
   
@@ -2441,7 +2535,7 @@ If the Hugging Face Hub is down.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.data_loading.load_raw_data" title="euroeval.data_loading.load_raw_data">load_raw_data</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="datasets.dataset_dict.DatasetDict">DatasetDict</span></span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.data_loading.load_raw_data" title="euroeval.data_loading.load_raw_data">load_raw_data</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_key</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="datasets.dataset_dict.DatasetDict">DatasetDict</span></span></span>
 </p>
 <div class="mkapi-document">
 <p>Load the raw dataset.</p>
@@ -2464,6 +2558,11 @@ The configuration for the dataset.</p>
 <p><span class="mkapi-item-name">cache_dir</span> : 
 <span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
 The directory to cache the dataset.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">api_key</span> : 
+<span class="mkapi-item-type">str | None</span> <span class="mkapi-dash">&mdash;</span>
+The API key to use as the Hugging Face token.</p>
 </li>
 </ul>
 </div>

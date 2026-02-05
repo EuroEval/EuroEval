@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -1258,15 +1260,14 @@
 <span class="normal">311</span>
 <span class="normal">312</span>
 <span class="normal">313</span>
-<span class="normal">314</span>
-<span class="normal">315</span>
-<span class="normal">316</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Command-line interface for benchmarking.&quot;&quot;&quot;</span>
+<span class="normal">314</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Command-line interface for benchmarking.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">click</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmarker</span><span class="w"> </span><span class="kn">import</span> <span class="n">Benchmarker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">ATTENTION_BACKENDS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
@@ -1436,10 +1437,7 @@
     <span class="s2">&quot;--attention-backend&quot;</span><span class="p">,</span>
     <span class="n">default</span><span class="o">=</span><span class="s2">&quot;FLASHINFER&quot;</span><span class="p">,</span>
     <span class="n">show_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">(</span>
-        <span class="p">[</span><span class="s2">&quot;FLASHINFER&quot;</span><span class="p">,</span> <span class="s2">&quot;FLASH_ATTN&quot;</span><span class="p">,</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span> <span class="s2">&quot;FLEX_ATTENTION&quot;</span><span class="p">],</span>
-        <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="p">),</span>
+    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">(</span><span class="n">ATTENTION_BACKENDS</span><span class="p">,</span> <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
     <span class="n">help</span><span class="o">=</span><span class="s2">&quot;The attention backend to use for vLLM. Only relevant if the model is &quot;</span>
     <span class="s2">&quot;generative.&quot;</span><span class="p">,</span>
 <span class="p">)</span>

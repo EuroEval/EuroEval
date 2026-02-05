@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -1147,7 +1149,37 @@
 <span class="normal">189</span>
 <span class="normal">190</span>
 <span class="normal">191</span>
-<span class="normal">192</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1158,14 +1190,16 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span><span class="p">,</span> <span class="n">load_dataset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetsError</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">HfHubHTTPError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">HfHubHTTPError</span><span class="p">,</span> <span class="n">RepositoryNotFoundError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.random</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generator</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_hf_token</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceHubDown</span><span class="p">,</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">no_terminal_output</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.string_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">unscramble</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">EUROPEAN_VALUES</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">unscramble</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
@@ -1196,7 +1230,9 @@
 <span class="sd">            If the Hugging Face Hub is down.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_raw_data</span><span class="p">(</span>
-        <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span>
+        <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
+        <span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span> <span class="ow">and</span> <span class="s2">&quot;val&quot;</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">:</span>
@@ -1240,8 +1276,10 @@
 
     <span class="k">return</span> <span class="n">datasets</span>
 
-<div class="mkapi-source-link" id="euroeval.data_loading.load_raw_data"><a href="../../../api/euroeval/data_loading/#euroeval.data_loading.load_raw_data" title="Go to docs">[docs]</a></div>
-<span class="k">def</span><span class="w"> </span><span class="nf">load_raw_data</span><span class="p">(</span><span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;DatasetDict&quot;</span><span class="p">:</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">load_raw_data</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.data_loading.load_raw_data"><a href="../../../api/euroeval/data_loading/#euroeval.data_loading.load_raw_data" title="Go to docs">[docs]</a></div>
+    <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;DatasetDict&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the raw dataset.</span>
 
 <span class="sd">    Args:</span>
@@ -1249,6 +1287,8 @@
 <span class="sd">            The configuration for the dataset.</span>
 <span class="sd">        cache_dir:</span>
 <span class="sd">            The directory to cache the dataset.</span>
+<span class="sd">        api_key:</span>
+<span class="sd">            The API key to use as the Hugging Face token.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The dataset.</span>
@@ -1274,16 +1314,38 @@
                 <span class="ne">FileNotFoundError</span><span class="p">,</span>
                 <span class="ne">ConnectionError</span><span class="p">,</span>
                 <span class="n">DatasetsError</span><span class="p">,</span>
+                <span class="n">RepositoryNotFoundError</span><span class="p">,</span>
                 <span class="n">requests</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">,</span>
                 <span class="n">requests</span><span class="o">.</span><span class="n">ReadTimeout</span><span class="p">,</span>
-            <span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">log</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="si">!r}</span><span class="s2">, due to &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;the following error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Retrying...&quot;</span><span class="p">,</span>
-                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-                <span class="k">continue</span>
+            <span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">():</span>
+                        <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span>
+                            <span class="n">path</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;::&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span>
+                            <span class="n">name</span><span class="o">=</span><span class="p">(</span>
+                                <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;::&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+                                <span class="k">if</span> <span class="s2">&quot;::&quot;</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span>
+                                <span class="k">else</span> <span class="kc">None</span>
+                            <span class="p">),</span>
+                            <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span>
+                            <span class="n">token</span><span class="o">=</span><span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">),</span>
+                        <span class="p">)</span>
+                    <span class="k">break</span>
+                <span class="k">except</span> <span class="p">(</span>
+                    <span class="ne">FileNotFoundError</span><span class="p">,</span>
+                    <span class="ne">ConnectionError</span><span class="p">,</span>
+                    <span class="n">DatasetsError</span><span class="p">,</span>
+                    <span class="n">RepositoryNotFoundError</span><span class="p">,</span>
+                    <span class="n">requests</span><span class="o">.</span><span class="n">ConnectionError</span><span class="p">,</span>
+                    <span class="n">requests</span><span class="o">.</span><span class="n">ReadTimeout</span><span class="p">,</span>
+                <span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">log</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Failed to load dataset </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="si">!r}</span><span class="s2">, due to &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;the following error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Retrying...&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">continue</span>
             <span class="k">except</span> <span class="n">HfHubHTTPError</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">HuggingFaceHubDown</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>

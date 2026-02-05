@@ -682,6 +682,8 @@
       
         
       
+        
+      
     
     
     
@@ -1584,13 +1586,35 @@
 <span class="normal">656</span>
 <span class="normal">657</span>
 <span class="normal">658</span>
-<span class="normal">659</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
+<span class="normal">659</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span>
+<span class="normal">663</span>
+<span class="normal">664</span>
+<span class="normal">665</span>
+<span class="normal">666</span>
+<span class="normal">667</span>
+<span class="normal">668</span>
+<span class="normal">669</span>
+<span class="normal">670</span>
+<span class="normal">671</span>
+<span class="normal">672</span>
+<span class="normal">673</span>
+<span class="normal">674</span>
+<span class="normal">675</span>
+<span class="normal">676</span>
+<span class="normal">677</span>
+<span class="normal">678</span>
+<span class="normal">679</span>
+<span class="normal">680</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Templates for the Named Entity Recognition task.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ALBANIAN</span><span class="p">,</span>
+    <span class="n">BELARUSIAN</span><span class="p">,</span>
     <span class="n">BOSNIAN</span><span class="p">,</span>
     <span class="n">BULGARIAN</span><span class="p">,</span>
     <span class="n">CATALAN</span><span class="p">,</span>
@@ -1647,6 +1671,26 @@
         <span class="s2">&quot;emërtuara në fjali. Duhet t’i jepni ato si një fjalor JSON me çelësat &quot;</span>
         <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. Vlerat duhet të jenë lista të entiteteve të emërtuara të atij &quot;</span>
         <span class="s2">&quot;lloji, saktësisht ashtu siç shfaqen në fjali.&quot;</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">BELARUSIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;b-per&quot;</span><span class="p">:</span> <span class="s2">&quot;асоба&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-per&quot;</span><span class="p">:</span> <span class="s2">&quot;асоба&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;месца&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-loc&quot;</span><span class="p">:</span> <span class="s2">&quot;месца&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-org&quot;</span><span class="p">:</span> <span class="s2">&quot;арганізацыя&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-org&quot;</span><span class="p">:</span> <span class="s2">&quot;арганізацыя&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;b-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;рознае&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;i-misc&quot;</span><span class="p">:</span> <span class="s2">&quot;рознае&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Ніжэй прыведзены сказы і JSON-слоўнікі з іменаванымі &quot;</span>
+        <span class="s2">&quot;сутнасцямі, якія прысутнічаюць у дадзеным сказе.&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Сказ: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Іменаваныя сутнасці: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Сказ: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;Ідэнтыфікуйце іменаваныя сутнасці ў сказе. Вы павінны вывесці гэта як &quot;</span>
+        <span class="s2">&quot;JSON-слоўнік з ключамі </span><span class="si">{labels_str}</span><span class="s2">. Значэнні павінны быць спісамі &quot;</span>
+        <span class="s2">&quot;іменаваных сутнасцей гэтага тыпу, дакладна такімі, як яны з&#39;яўляюцца ў &quot;</span>
+        <span class="s2">&quot;сказе.&quot;</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="n">BOSNIAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
         <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
