@@ -513,6 +513,11 @@ class Benchmarker:
             ValueError:
                 If both `task` and `dataset` are specified.
         """
+        log(
+            "Started EuroEval run. Run with `--verbose` for more information.",
+            level=logging.INFO,
+        )
+
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
 
