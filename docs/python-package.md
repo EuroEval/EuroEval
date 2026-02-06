@@ -322,6 +322,13 @@ benchmarker = Benchmarker()
 benchmarker.benchmark(model="<model-id>", dataset="<org-id>/<repo-id>")
 ```
 
+You can try it out with our [test
+dataset](https://huggingface.co/datasets/EuroEval/test_dataset):
+
+```bash
+euroeval --dataset EuroEval/test_dataset --model <model-id>
+```
+
 ///
 
 We have included three convenience tasks to make it easier to set up custom datasets:
