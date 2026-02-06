@@ -45,9 +45,10 @@ def main() -> None:
         (df["query"].str.len() >= MIN_NUM_CHARS_IN_INSTRUCTION)  # Check text
         & (df["query"].str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION)  # Check text
         & df.choices.map(
-            lambda choices: min(len(choice) for choice in choices)
-            >= MIN_NUM_CHARS_IN_OPTION
-            and max(len(choice) for choice in choices) <= MAX_NUM_CHARS_IN_OPTION
+            lambda choices: (
+                min(len(choice) for choice in choices) >= MIN_NUM_CHARS_IN_OPTION
+                and max(len(choice) for choice in choices) <= MAX_NUM_CHARS_IN_OPTION
+            )
         )
     ]
 

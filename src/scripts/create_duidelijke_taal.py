@@ -161,12 +161,12 @@ def filter_dataset(
         & (df["complexity_diff"].abs() > min_complexity_difference)
         & (
             df["complexity_a"].apply(
-                lambda x: (len(x) >= min_n_participants if x is not None else False)
+                lambda x: len(x) >= min_n_participants if x is not None else False
             )
         )
         & (
             df["complexity_b"].apply(
-                lambda x: (len(x) >= min_n_participants if x is not None else False)
+                lambda x: len(x) >= min_n_participants if x is not None else False
             )
         )
         & (df["acc_avg"].apply(lambda x: x != "" and float(x) >= min_acc_avg))

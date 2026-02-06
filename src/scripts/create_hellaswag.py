@@ -55,9 +55,11 @@ def main() -> None:
             (df.ctx.str.len() >= MIN_NUM_CHARS_IN_INSTRUCTION)
             & (df.ctx.str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION)
             & df.endings.map(
-                lambda endings: min(len(ending) for ending in endings)
-                >= MIN_NUM_CHARS_IN_OPTION
-                and max(len(ending) for ending in endings) <= MAX_NUM_CHARS_IN_OPTION
+                lambda endings: (
+                    min(len(ending) for ending in endings) >= MIN_NUM_CHARS_IN_OPTION
+                    and max(len(ending) for ending in endings)
+                    <= MAX_NUM_CHARS_IN_OPTION
+                )
             )
         ]
 

@@ -61,9 +61,10 @@ def main() -> None:
         (df.instruction.str.len() >= MIN_NUM_CHARS_IN_INSTRUCTION)
         & (df.instruction.str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION)
         & df.choices.map(
-            lambda endings: min(len(ending) for ending in endings)
-            >= MIN_NUM_CHARS_IN_OPTION
-            and max(len(ending) for ending in endings) <= MAX_NUM_CHARS_IN_OPTION
+            lambda endings: (
+                min(len(ending) for ending in endings) >= MIN_NUM_CHARS_IN_OPTION
+                and max(len(ending) for ending in endings) <= MAX_NUM_CHARS_IN_OPTION
+            )
         )
     ]
 

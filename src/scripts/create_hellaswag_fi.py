@@ -211,14 +211,16 @@ def _print_filtering_stats(df: pd.DataFrame, split: str) -> None:
 
     short_endings_count = sum(
         df.endings.map(
-            lambda endings: min(len(ending) for ending in endings)
-            < MIN_NUM_CHARS_IN_OPTION
+            lambda endings: (
+                min(len(ending) for ending in endings) < MIN_NUM_CHARS_IN_OPTION
+            )
         )
     )
     long_endings_count = sum(
         df.endings.map(
-            lambda endings: max(len(ending) for ending in endings)
-            > MAX_NUM_CHARS_IN_OPTION
+            lambda endings: (
+                max(len(ending) for ending in endings) > MAX_NUM_CHARS_IN_OPTION
+            )
         )
     )
     logger.info(f"Split: {split}")
