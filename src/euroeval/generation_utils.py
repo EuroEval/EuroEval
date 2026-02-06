@@ -102,7 +102,7 @@ def extract_few_shot_examples(
                     )
                 label = next(labels)
                 possible_examples = shuffled_train.filter(
-                    lambda x: x["label"].lower() == label.lower()
+                    lambda x: str(x["label"]).lower() == label.lower()
                 )
                 assert isinstance(possible_examples, Dataset), (
                     f"Expected `possible_examples` to be a Dataset, but got "
@@ -142,7 +142,7 @@ def extract_few_shot_examples(
             while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
                 label = next(labels)
                 possible_examples = shuffled_train.filter(
-                    lambda x: label in [tag.lower() for tag in x["labels"]]
+                    lambda x: label in [str(tag).lower() for tag in x["labels"]]
                 )
                 assert isinstance(possible_examples, Dataset), (
                     f"Expected `possible_examples` to be a Dataset, but got "
@@ -274,7 +274,7 @@ def apply_prompt(
             few_shot_sections = [
                 create_prompt(
                     text=example["text"].replace("\n", " ").strip(),
-                    label=example["label"].replace("\n", " ").strip(),
+                    label=str(example["label"]).replace("\n", " ").strip(),
                     labels_str=labels_str,
                 )
                 for example in few_shot_examples
@@ -292,7 +292,7 @@ def apply_prompt(
             few_shot_sections = [
                 create_prompt(
                     text=example["text"].replace("\n", " ").strip(),
-                    label=example["label"].replace("\n", " ").strip(),
+                    label=str(example["label"]).replace("\n", " ").strip(),
                     labels_str=dataset_config.get_labels_str(
                         labels=extract_multiple_choice_labels(
                             prompt=example["text"],
@@ -337,7 +337,7 @@ def apply_prompt(
                     prompt_label: list() for prompt_label in prompt_labels
                 }
                 for token, label in zip(example["tokens"], example["labels"]):
-                    label = label.lower()
+                    label = str(label).lower()
                     if label == "o":
                         continue
                     prompt_label = dataset_config.prompt_label_mapping[label]

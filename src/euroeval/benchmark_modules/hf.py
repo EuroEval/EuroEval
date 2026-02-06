@@ -378,7 +378,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             if "label" in examples:
                 try:
                     examples["label"] = [
-                        self._model.config.label2id[lbl.lower()]
+                        self._model.config.label2id[str(lbl).lower()]
                         if self._model.config.label2id is not None
                         else lbl
                         for lbl in examples["label"]
