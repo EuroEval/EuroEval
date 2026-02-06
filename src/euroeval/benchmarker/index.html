@@ -3041,7 +3041,7 @@
 
                 <span class="c1"># Update the benchmark config if the dataset requires it</span>
                 <span class="k">if</span> <span class="p">(</span>
-                    <span class="s2">&quot;val&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
+                    <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span> <span class="ow">is</span> <span class="kc">None</span>
                     <span class="ow">and</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span>
                 <span class="p">):</span>
                     <span class="n">log</span><span class="p">(</span>
@@ -3317,7 +3317,7 @@
                     <span class="p">),</span>
                     <span class="n">validation_split</span><span class="o">=</span><span class="p">(</span>
                         <span class="kc">None</span>
-                        <span class="k">if</span> <span class="s2">&quot;val&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
+                        <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span> <span class="ow">is</span> <span class="kc">None</span>
                         <span class="k">else</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span>
                     <span class="p">),</span>
                 <span class="p">)</span>

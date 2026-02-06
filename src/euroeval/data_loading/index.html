@@ -1179,7 +1179,33 @@
 <span class="normal">219</span>
 <span class="normal">220</span>
 <span class="normal">221</span>
-<span class="normal">222</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1193,13 +1219,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">HfHubHTTPError</span><span class="p">,</span> <span class="n">RepositoryNotFoundError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.random</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generator</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_hf_token</span>
-
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceHubDown</span><span class="p">,</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">no_terminal_output</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.string_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">unscramble</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">EUROPEAN_VALUES</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_hf_token</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
@@ -1235,12 +1260,25 @@
         <span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span> <span class="ow">and</span> <span class="s2">&quot;val&quot;</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">:</span>
-        <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;val&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span>
+        <span class="ow">and</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="n">dataset</span><span class="p">[</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">test_split</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span><span class="p">]</span>
+
+    <span class="n">splits</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">split</span>
+        <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="n">dataset_config</span><span class="o">.</span><span class="n">train_split</span><span class="p">,</span>
+            <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span><span class="p">,</span>
+            <span class="n">dataset_config</span><span class="o">.</span><span class="n">test_split</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">]</span>
 
     <span class="c1"># Remove empty examples from the datasets</span>
     <span class="k">for</span> <span class="n">text_feature</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;tokens&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">]:</span>
-        <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">splits</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">text_feature</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">[</span><span class="n">split</span><span class="p">]</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
                 <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">text_feature</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
 
@@ -1252,7 +1290,7 @@
     <span class="c1"># Bootstrap the splits, if applicable</span>
     <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">bootstrap_samples</span><span class="p">:</span>
         <span class="n">bootstrapped_splits</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;Dataset&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">splits</span><span class="p">:</span>
             <span class="n">bootstrap_indices</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span>
                 <span class="mi">0</span><span class="p">,</span>
                 <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="n">split</span><span class="p">]),</span>
@@ -1266,7 +1304,12 @@
             <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># type: ignore[no-matching-overload]</span>
                 <span class="p">{</span>
                     <span class="n">split</span><span class="p">:</span> <span class="n">bootstrapped_splits</span><span class="p">[</span><span class="n">split</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
-                    <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
+                    <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">[</span>
+                        <span class="n">dataset_config</span><span class="o">.</span><span class="n">train_split</span><span class="p">,</span>
+                        <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span><span class="p">,</span>
+                        <span class="n">dataset_config</span><span class="o">.</span><span class="n">test_split</span><span class="p">,</span>
+                    <span class="p">]</span>
+                    <span class="k">if</span> <span class="n">split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                 <span class="p">}</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">num_iterations</span><span class="p">)</span>
@@ -1358,17 +1401,22 @@
     <span class="c1"># Case where the dataset source is a dictionary with keys &quot;train&quot;, &quot;val&quot; and &quot;test&quot;,</span>
     <span class="c1"># with the values pointing to local CSV files</span>
     <span class="k">else</span><span class="p">:</span>
+        <span class="n">split_mapping</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">train</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">train_split</span><span class="p">,</span>
+            <span class="n">val</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span><span class="p">,</span>
+            <span class="n">test</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">test_split</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="n">data_files</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">split</span><span class="p">:</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="n">split</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
-            <span class="k">if</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span>
+            <span class="n">config_split</span><span class="p">:</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="n">source_split</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">source_split</span><span class="p">,</span> <span class="n">config_split</span> <span class="ow">in</span> <span class="n">split_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">source_split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span> <span class="ow">and</span> <span class="n">config_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">}</span>
 
         <span class="c1"># Get the file extension and ensure that all files have the same extension</span>
         <span class="n">file_extensions</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">split</span><span class="p">:</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="n">split</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span>
-            <span class="k">if</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span>
+            <span class="n">config_split</span><span class="p">:</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="p">[</span><span class="n">source_split</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">source_split</span><span class="p">,</span> <span class="n">config_split</span> <span class="ow">in</span> <span class="n">split_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">source_split</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span> <span class="ow">and</span> <span class="n">config_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">file_extensions</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
@@ -1393,14 +1441,18 @@
                 <span class="n">path</span><span class="o">=</span><span class="n">file_extension</span><span class="p">,</span> <span class="n">data_files</span><span class="o">=</span><span class="n">data_files</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span>
             <span class="p">)</span>
 
-    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">DatasetDict</span><span class="p">)</span>  <span class="c1"># type: ignore[used-before-def]</span>
-    <span class="n">missing_keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">missing_keys</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
-            <span class="s2">&quot;The dataset is missing the following required splits: &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_keys</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">DatasetDict</span><span class="p">({</span><span class="n">key</span><span class="p">:</span> <span class="n">dataset</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">splits</span><span class="p">})</span>  <span class="c1"># type: ignore[no-matching-overload]</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">DatasetDict</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[no-matching-overload]</span>
+        <span class="p">{</span>
+            <span class="n">split</span><span class="p">:</span> <span class="n">dataset</span><span class="p">[</span><span class="n">split</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="n">dataset_config</span><span class="o">.</span><span class="n">train_split</span><span class="p">,</span>
+                <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span><span class="p">,</span>
+                <span class="n">dataset_config</span><span class="o">.</span><span class="n">test_split</span><span class="p">,</span>
+            <span class="p">]</span>
+            <span class="k">if</span> <span class="n">split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 
 

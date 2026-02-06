@@ -1076,7 +1076,40 @@
 <span class="normal">116</span>
 <span class="normal">117</span>
 <span class="normal">118</span>
-<span class="normal">119</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Load custom dataset configs.&quot;&quot;&quot;</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Load custom dataset configs.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1170,7 +1203,9 @@
         <span class="n">local_dir</span><span class="o">=</span><span class="n">external_config_path</span><span class="p">,</span>
         <span class="n">local_dir_use_symlinks</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">module</span> <span class="o">=</span> <span class="n">load_custom_datasets_module</span><span class="p">(</span><span class="n">custom_datasets_file</span><span class="o">=</span><span class="n">external_config_path</span><span class="p">)</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="n">load_custom_datasets_module</span><span class="p">(</span>
+        <span class="n">custom_datasets_file</span><span class="o">=</span><span class="n">external_config_path</span> <span class="o">/</span> <span class="s2">&quot;euroeval_config.py&quot;</span>
+    <span class="p">)</span>
     <span class="k">if</span> <span class="n">module</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
 
@@ -1189,11 +1224,42 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="c1"># Return the dataset config</span>
+    <span class="c1"># Get the dataset split names</span>
+    <span class="n">splits</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">split</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">dataset_info</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span><span class="o">.</span><span class="n">card_data</span><span class="o">.</span><span class="n">dataset_info</span><span class="p">[</span>
+            <span class="s2">&quot;splits&quot;</span>
+        <span class="p">]</span>
+    <span class="p">]</span>
+    <span class="n">train_split_candidates</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">split</span> <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">splits</span> <span class="k">if</span> <span class="s2">&quot;train&quot;</span> <span class="ow">in</span> <span class="n">split</span><span class="o">.</span><span class="n">lower</span><span class="p">()],</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span>
+    <span class="p">)</span>
+    <span class="n">val_split_candidates</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">split</span> <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">splits</span> <span class="k">if</span> <span class="s2">&quot;val&quot;</span> <span class="ow">in</span> <span class="n">split</span><span class="o">.</span><span class="n">lower</span><span class="p">()],</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span>
+    <span class="p">)</span>
+    <span class="n">test_split_candidates</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">split</span> <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">splits</span> <span class="k">if</span> <span class="s2">&quot;test&quot;</span> <span class="ow">in</span> <span class="n">split</span><span class="o">.</span><span class="n">lower</span><span class="p">()],</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span>
+    <span class="p">)</span>
+    <span class="n">train_split</span> <span class="o">=</span> <span class="n">train_split_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">train_split_candidates</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">val_split</span> <span class="o">=</span> <span class="n">val_split_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">val_split_candidates</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">test_split</span> <span class="o">=</span> <span class="n">test_split_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">test_split_candidates</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">test_split</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">log_once</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2"> does not have a test split, so we cannot load it. &quot;</span>
+            <span class="s2">&quot;Please ensure that the dataset has a test split.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Set up the config with the repo information</span>
     <span class="n">repo_dataset_config</span> <span class="o">=</span> <span class="n">repo_dataset_configs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">repo_dataset_config</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">dataset_id</span>
     <span class="n">repo_dataset_config</span><span class="o">.</span><span class="n">pretty_name</span> <span class="o">=</span> <span class="n">dataset_id</span>
     <span class="n">repo_dataset_config</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">dataset_id</span>
+    <span class="n">repo_dataset_config</span><span class="o">.</span><span class="n">train_split</span> <span class="o">=</span> <span class="n">train_split</span>
+    <span class="n">repo_dataset_config</span><span class="o">.</span><span class="n">val_split</span> <span class="o">=</span> <span class="n">val_split</span>
+    <span class="n">repo_dataset_config</span><span class="o">.</span><span class="n">test_split</span> <span class="o">=</span> <span class="n">test_split</span>
+
     <span class="k">return</span> <span class="n">repo_dataset_config</span>
 </code></pre></div></td></tr></table></div>
 

@@ -1057,7 +1057,19 @@
 <span class="normal">108</span>
 <span class="normal">109</span>
 <span class="normal">110</span>
-<span class="normal">111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1136,10 +1148,22 @@
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">dataset_config_or_none</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">globals_dict</span><span class="p">[</span><span class="n">dataset_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset_config_or_none</span>
-            <span class="n">log_once</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Loaded external dataset configuration for </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Loaded external dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">split_strings</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">dataset_config_or_none</span><span class="o">.</span><span class="n">train_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">split_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;train split &#39;</span><span class="si">{</span><span class="n">dataset_config_or_none</span><span class="o">.</span><span class="n">train_split</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">dataset_config_or_none</span><span class="o">.</span><span class="n">val_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">split_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;val split &#39;</span><span class="si">{</span><span class="n">dataset_config_or_none</span><span class="o">.</span><span class="n">val_split</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dataset_config_or_none</span><span class="o">.</span><span class="n">test_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">split_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;test split &#39;</span><span class="si">{</span><span class="n">dataset_config_or_none</span><span class="o">.</span><span class="n">test_split</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">split_strings</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; with </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">split_strings</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">split_strings</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;.&quot;</span>
+            <span class="n">log_once</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 
     <span class="c1"># Add the custom datasets from the custom datasets file to the globals dict</span>
     <span class="n">module</span> <span class="o">=</span> <span class="n">load_custom_datasets_module</span><span class="p">(</span><span class="n">custom_datasets_file</span><span class="o">=</span><span class="n">custom_datasets_file</span><span class="p">)</span>
