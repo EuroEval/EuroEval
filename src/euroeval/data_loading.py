@@ -53,13 +53,28 @@ def load_data(
         api_key=benchmark_config.api_key,
     )
 
-    if not benchmark_config.evaluate_test_split and "val" in dataset:
-        dataset["test"] = dataset["val"]
+    if (
+        not benchmark_config.evaluate_test_split
+        and dataset_config.val_split is not None
+    ):
+        dataset[dataset_config.test_split] = dataset[dataset_config.val_split]
+
+    splits = [
+        split
+        for split in [
+            dataset_config.train_split,
+            dataset_config.val_split,
+            dataset_config.test_split,
+        ]
+        if split is not None
+    ]
 
     # Remove empty examples from the datasets
     for text_feature in ["tokens", "text"]:
-        for split in dataset_config.splits:
-            if text_feature in dataset[split].features:
+        for split in splits:
+            if split is None:
+                continue
+            elif text_feature in dataset[split].features:
                 dataset = dataset.filter(lambda x: len(x[text_feature]) > 0)
 
     # If we are testing then truncate the test set, unless we need the full set for
@@ -70,7 +85,7 @@ def load_data(
     # Bootstrap the splits, if applicable
     if dataset_config.bootstrap_samples:
         bootstrapped_splits: dict[str, c.Sequence["Dataset"]] = dict()
-        for split in dataset_config.splits:
+        for split in splits:
             bootstrap_indices = rng.integers(
                 0,
                 len(dataset[split]),
@@ -84,7 +99,12 @@ def load_data(
             DatasetDict(  # type: ignore[no-matching-overload]
                 {
                     split: bootstrapped_splits[split][idx]
-                    for split in dataset_config.splits
+                    for split in [
+                        dataset_config.train_split,
+                        dataset_config.val_split,
+                        dataset_config.test_split,
+                    ]
+                    if split is not None
                 }
             )
             for idx in range(benchmark_config.num_iterations)
@@ -176,17 +196,22 @@ def load_raw_data(
     # Case where the dataset source is a dictionary with keys "train", "val" and "test",
     # with the values pointing to local CSV files
     else:
+        split_mapping = dict(
+            train=dataset_config.train_split,
+            val=dataset_config.val_split,
+            test=dataset_config.test_split,
+        )
         data_files = {
-            split: dataset_config.source[split]
-            for split in dataset_config.splits
-            if split in dataset_config.source
+            config_split: dataset_config.source[source_split]
+            for source_split, config_split in split_mapping.items()
+            if source_split in dataset_config.source and config_split is not None
         }
 
         # Get the file extension and ensure that all files have the same extension
         file_extensions = {
-            split: dataset_config.source[split].split(".")[-1]
-            for split in dataset_config.splits
-            if split in dataset_config.source
+            config_split: dataset_config.source[source_split].split(".")[-1]
+            for source_split, config_split in split_mapping.items()
+            if source_split in dataset_config.source and config_split is not None
         }
         if len(set(file_extensions.values())) != 1:
             raise InvalidBenchmark(
@@ -211,11 +236,15 @@ def load_raw_data(
                 path=file_extension, data_files=data_files, cache_dir=cache_dir
             )
 
-    assert isinstance(dataset, DatasetDict)  # type: ignore[used-before-def]
-    missing_keys = [key for key in dataset_config.splits if key not in dataset]
-    if missing_keys:
-        raise InvalidBenchmark(
-            "The dataset is missing the following required splits: "
-            f"{', '.join(missing_keys)}"
-        )
-    return DatasetDict({key: dataset[key] for key in dataset_config.splits})  # type: ignore[no-matching-overload]
+    assert isinstance(dataset, DatasetDict)
+    return DatasetDict(  # pyrefly: ignore[no-matching-overload]
+        {
+            split: dataset[split]
+            for split in [
+                dataset_config.train_split,
+                dataset_config.val_split,
+                dataset_config.test_split,
+            ]
+            if split is not None
+        }
+    )

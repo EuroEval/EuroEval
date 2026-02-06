@@ -790,7 +790,7 @@ class Benchmarker:
 
                 # Update the benchmark config if the dataset requires it
                 if (
-                    "val" not in dataset_config.splits
+                    dataset_config.val_split is None
                     and not benchmark_config.evaluate_test_split
                 ):
                     log(
@@ -1066,7 +1066,7 @@ class Benchmarker:
                     ),
                     validation_split=(
                         None
-                        if "val" not in dataset_config.splits
+                        if dataset_config.val_split is None
                         else not benchmark_config.evaluate_test_split
                     ),
                 )

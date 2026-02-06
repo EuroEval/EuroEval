@@ -76,7 +76,8 @@ VALEU_DA_CONFIG = DatasetConfig(
     source="EuroEval/european-values-da",
     task=EUROPEAN_VALUES,
     languages=[DANISH],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
 )
 

@@ -68,7 +68,8 @@ VALEU_EN_CONFIG = DatasetConfig(
     source="EuroEval/european-values-en",
     task=EUROPEAN_VALUES,
     languages=[ENGLISH],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
     instruction_prompt="{text}",
 )

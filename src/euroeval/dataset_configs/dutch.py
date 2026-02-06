@@ -89,7 +89,8 @@ VALEU_NL_CONFIG = DatasetConfig(
     source="EuroEval/european-values-nl",
     task=EUROPEAN_VALUES,
     languages=[DUTCH],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
     instruction_prompt="{text}",
 )
@@ -100,7 +101,7 @@ MBBQ_NL_CONFIG = DatasetConfig(
     source="EuroEval/mbbq-nl",
     task=MCSTEREO,
     languages=[DUTCH],
-    splits=["val", "test"],
+    train_split=None,
 )
 
 

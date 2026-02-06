@@ -113,6 +113,8 @@ def try_get_dataset_config_from_repo(
         )
         return None
 
+    # Get the dataset split names
+
     # Return the dataset config
     repo_dataset_config = repo_dataset_configs[0]
     repo_dataset_config.name = dataset_id

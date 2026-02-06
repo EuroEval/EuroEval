@@ -183,7 +183,9 @@ class DatasetConfig:
         allowed_model_types: c.Sequence[ModelType] | None = None,
         allowed_generative_types: c.Sequence[GenerativeType] | None = None,
         allow_invalid_model_outputs: bool | None = None,
-        splits: c.Sequence[str] = ("train", "val", "test"),
+        train_split: str | None = "train",
+        val_split: str | None = "val",
+        test_split: str = "test",
         bootstrap_samples: bool = True,
         unofficial: bool = False,
         _prompt_prefix: str | None = None,
@@ -260,9 +262,14 @@ class DatasetConfig:
                 output will be mapped to the closest valid label. If False, the model
                 output will be considered incorrect and the evaluation will be aborted.
                 Defaults to the one for the task.
-            splits (optional):
-                The names of the splits in the dataset. If not provided, defaults to
-                ["train", "val", "test"].
+            train_split (optional):
+                The name of the split to use as the training set. Can be None if there
+                is no training split in the dataset. Defaults to "train".
+            val_split (optional):
+                The name of the split to use as the validation set. Can be None if there
+                is no validation split in the dataset. Defaults to "val".
+            test_split (optional):
+                The name of the split to use as the test set. Defaults to "test".
             bootstrap_samples (optional):
                 Whether to bootstrap the dataset samples. Defaults to True.
             unofficial (optional):
@@ -436,7 +443,9 @@ class DatasetConfig:
             if allow_invalid_model_outputs is not None
             else self.task.default_allow_invalid_model_outputs
         )
-        self.splits = splits
+        self.train_split = train_split
+        self.val_split = val_split
+        self.test_split = test_split
         self.bootstrap_samples = bootstrap_samples
         self.unofficial = unofficial
 
