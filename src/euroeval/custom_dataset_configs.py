@@ -114,10 +114,39 @@ def try_get_dataset_config_from_repo(
         return None
 
     # Get the dataset split names
+    splits = [
+        split["name"]
+        for split in hf_api.dataset_info(repo_id=dataset_id).card_data.dataset_info[
+            "splits"
+        ]
+    ]
+    train_split_candidates = sorted(
+        [split for split in splits if "train" in split.lower()], key=len
+    )
+    val_split_candidates = sorted(
+        [split for split in splits if "val" in split.lower()], key=len
+    )
+    test_split_candidates = sorted(
+        [split for split in splits if "test" in split.lower()], key=len
+    )
+    train_split = train_split_candidates[0] if train_split_candidates else None
+    val_split = val_split_candidates[0] if val_split_candidates else None
+    test_split = test_split_candidates[0] if test_split_candidates else None
+    if test_split is None:
+        log_once(
+            f"Dataset {dataset_id} does not have a test split, so we cannot load it. "
+            "Please ensure that the dataset has a test split.",
+            level=logging.ERROR,
+        )
+        return None
 
-    # Return the dataset config
+    # Set up the config with the repo information
     repo_dataset_config = repo_dataset_configs[0]
     repo_dataset_config.name = dataset_id
     repo_dataset_config.pretty_name = dataset_id
     repo_dataset_config.source = dataset_id
+    repo_dataset_config.train_split = train_split
+    repo_dataset_config.val_split = val_split
+    repo_dataset_config.test_split = test_split
+
     return repo_dataset_config

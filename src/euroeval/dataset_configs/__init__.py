@@ -77,10 +77,22 @@ def get_all_dataset_configs(
         )
         if dataset_config_or_none is not None:
             globals_dict[dataset_id] = dataset_config_or_none
-            log_once(
-                f"Loaded external dataset configuration for {dataset_id}.",
-                level=logging.INFO,
-            )
+            msg = f"Loaded external dataset {dataset_id}"
+            split_strings = []
+            if dataset_config_or_none.train_split is not None:
+                split_strings.append(
+                    f"train split '{dataset_config_or_none.train_split}'"
+                )
+            if dataset_config_or_none.val_split is not None:
+                split_strings.append(f"val split '{dataset_config_or_none.val_split}'")
+            if dataset_config_or_none.test_split is not None:
+                split_strings.append(
+                    f"test split '{dataset_config_or_none.test_split}'"
+                )
+            if split_strings:
+                msg += f" with {', '.join(split_strings[:-1])} and {split_strings[-1]}"
+            msg += "."
+            log_once(msg, level=logging.INFO)
 
     # Add the custom datasets from the custom datasets file to the globals dict
     module = load_custom_datasets_module(custom_datasets_file=custom_datasets_file)
