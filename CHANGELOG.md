@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   non-underscored version (e.g., `_labels` -> `labels`), as this caused some confusion
   when defining custom datasets. We still maintain the underscored versions for
   backwards compatibility, but raise a warning when using them.
+- Now logs when the model inference service is temporarily unavailable, even when the
+  verbose flag is not set.
 
 ### Fixed
 

@@ -697,10 +697,10 @@ class LiteLLMModel(BenchmarkModule):
         elif isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
         ):
-            log_once(
-                f"Service temporarily unavailable. The error message was: {error}. "
-                "Retrying in 10 seconds...",
-                level=logging.DEBUG,
+            log(
+                "Service temporarily unavailable during generation. The error "
+                f"message was: {error}. Retrying in 10 seconds...",
+                level=logging.INFO,
             )
             return generation_kwargs, 10
         elif isinstance(error, UnsupportedParamsError):
@@ -1387,9 +1387,10 @@ class LiteLLMModel(BenchmarkModule):
                 InternalServerError,
             ) as e:
                 log(
-                    f"Service temporarily unavailable. The error message was: {e}. "
+                    "Service temporarily unavailable while checking for model "
+                    f"existence of the model {model_id!r}. The error message was: {e}. "
                     "Retrying in 10 seconds...",
-                    level=logging.DEBUG,
+                    level=logging.INFO,
                 )
                 sleep(10)
             except APIError as e:
