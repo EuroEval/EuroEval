@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   backwards compatibility, but raise a warning when using them.
 - Now logs when the model inference service is temporarily unavailable, even when the
   verbose flag is not set.
+- When evaluating local models, we now automatically add the "/v1" suffix to the API
+  base URL if not present and required by the API.
 
 ### Fixed
 

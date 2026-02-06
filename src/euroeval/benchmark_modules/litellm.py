@@ -41,7 +41,6 @@ from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
 
 from ..async_utils import add_semaphore_and_catch_exception, safe_run
-from ..caching_utils import cache_arguments
 from ..constants import (
     JSON_STRIP_CHARACTERS,
     LITELLM_CLASSIFICATION_OUTPUT_KEY,
@@ -760,6 +759,20 @@ class LiteLLMModel(BenchmarkModule):
                 script_argument="api_key=<your-api-key>",
                 run_with_cli=self.benchmark_config.run_with_cli,
             ) from error
+
+        if (
+            isinstance(error, (BadRequestError, NotFoundError))
+            and self.benchmark_config.api_base is not None
+            and not self.benchmark_config.api_base.endswith("/v1")
+        ):
+            log_once(
+                f"The API base {self.benchmark_config.api_base!r} is not valid. We "
+                "will try appending '/v1' to it and try again.",
+                level=logging.DEBUG,
+            )
+            self.benchmark_config.api_base += "/v1"
+            generation_kwargs["api_base"] = self.benchmark_config.api_base
+            return generation_kwargs, 0
 
         raise InvalidBenchmark(
             f"Failed to generate text. The error message was: {error}"
@@ -1565,7 +1578,6 @@ class LiteLLMModel(BenchmarkModule):
 
         return dataset
 
-    @cache_arguments()
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
         """Get the generation arguments for the model.
 
