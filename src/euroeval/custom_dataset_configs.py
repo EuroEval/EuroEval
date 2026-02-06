@@ -92,7 +92,9 @@ def try_get_dataset_config_from_repo(
         local_dir=external_config_path,
         local_dir_use_symlinks=False,
     )
-    module = load_custom_datasets_module(custom_datasets_file=external_config_path)
+    module = load_custom_datasets_module(
+        custom_datasets_file=external_config_path / "euroeval_config.py"
+    )
     if module is None:
         return None
 
