@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ESTONIAN
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 ### Official datasets ###
 
@@ -79,6 +89,15 @@ VALEU_ET_CONFIG = DatasetConfig(
     val_split=None,
     bootstrap_samples=False,
     instruction_prompt="{text}",
+)
+
+IFEVAL_ET_CONFIG = DatasetConfig(
+    name="ifeval-et",
+    pretty_name="IFEval-et",
+    source="EuroEval/ifeval-et",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ESTONIAN],
+    splits=["train", "test"],
 )
 
 ### Unofficial datasets ###
