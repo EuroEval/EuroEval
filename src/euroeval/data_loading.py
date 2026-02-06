@@ -72,9 +72,7 @@ def load_data(
     # Remove empty examples from the datasets
     for text_feature in ["tokens", "text"]:
         for split in splits:
-            if split is None:
-                continue
-            elif text_feature in dataset[split].features:
+            if text_feature in dataset[split].features:
                 dataset = dataset.filter(lambda x: len(x[text_feature]) > 0)
 
     # If we are testing then truncate the test set, unless we need the full set for
