@@ -2254,7 +2254,23 @@
 <span class="normal">1244</span>
 <span class="normal">1245</span>
 <span class="normal">1246</span>
-<span class="normal">1247</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1247</span>
+<span class="normal">1248</span>
+<span class="normal">1249</span>
+<span class="normal">1250</span>
+<span class="normal">1251</span>
+<span class="normal">1252</span>
+<span class="normal">1253</span>
+<span class="normal">1254</span>
+<span class="normal">1255</span>
+<span class="normal">1256</span>
+<span class="normal">1257</span>
+<span class="normal">1258</span>
+<span class="normal">1259</span>
+<span class="normal">1260</span>
+<span class="normal">1261</span>
+<span class="normal">1262</span>
+<span class="normal">1263</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -3010,6 +3026,8 @@
             <span class="k">return</span> <span class="n">current_benchmark_results</span>
 
         <span class="n">num_finished_benchmarks</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">num_skipped_benchmarks</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">num_errored_benchmarks</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">benchmark_params_to_revert</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">model_config</span> <span class="ow">in</span> <span class="n">model_configs</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">model_config_to_dataset_configs</span><span class="p">[</span><span class="n">model_config</span><span class="p">]:</span>
@@ -3090,7 +3108,7 @@
                             <span class="c1"># Add the remaining number of benchmarks for the model to</span>
                             <span class="c1"># our benchmark counter, since we&#39;re skipping the rest of</span>
                             <span class="c1"># them</span>
-                            <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="p">(</span>
+                            <span class="n">num_skipped_benchmarks</span> <span class="o">+=</span> <span class="p">(</span>
                                 <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span>
                                 <span class="o">-</span> <span class="n">dataset_configs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">dataset_config</span><span class="p">)</span>
                                 <span class="o">-</span> <span class="mi">1</span>
@@ -3113,7 +3131,7 @@
                             <span class="sa">f</span><span class="s2">&quot;only allows </span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">allowed_generative_types</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
                             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                         <span class="p">)</span>
-                        <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">num_skipped_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
                         <span class="k">continue</span>
 
                 <span class="c1"># Benchmark a single model on a single dataset</span>
@@ -3122,7 +3140,11 @@
                     <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
                     <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
                     <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
-                    <span class="n">num_finished_benchmarks</span><span class="o">=</span><span class="n">num_finished_benchmarks</span><span class="p">,</span>
+                    <span class="n">num_finished_benchmarks</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">num_finished_benchmarks</span>
+                        <span class="o">+</span> <span class="n">num_skipped_benchmarks</span>
+                        <span class="o">+</span> <span class="n">num_errored_benchmarks</span>
+                    <span class="p">),</span>
                     <span class="n">num_total_benchmarks</span><span class="o">=</span><span class="n">total_benchmarks</span><span class="p">,</span>
                 <span class="p">)</span>
 
@@ -3134,7 +3156,7 @@
 
                 <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">benchmark_output_or_err</span><span class="p">,</span> <span class="n">InvalidBenchmark</span><span class="p">):</span>
                     <span class="n">log</span><span class="p">(</span><span class="n">benchmark_output_or_err</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
-                    <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">num_errored_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
                     <span class="k">continue</span>
 
                 <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">benchmark_output_or_err</span><span class="p">,</span> <span class="n">InvalidModel</span><span class="p">):</span>
@@ -3142,7 +3164,7 @@
 
                     <span class="c1"># Add the remaining number of benchmarks for the model to our</span>
                     <span class="c1"># benchmark counter, since we&#39;re skipping the rest of them</span>
-                    <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="p">(</span>
+                    <span class="n">num_errored_benchmarks</span> <span class="o">+=</span> <span class="p">(</span>
                         <span class="nb">len</span><span class="p">(</span><span class="n">dataset_configs</span><span class="p">)</span> <span class="o">-</span> <span class="n">dataset_configs</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">dataset_config</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
                     <span class="p">)</span>
                     <span class="k">break</span>
@@ -3152,16 +3174,25 @@
                     <span class="n">current_benchmark_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">save_results</span><span class="p">:</span>
                         <span class="n">record</span><span class="o">.</span><span class="n">append_to_results</span><span class="p">(</span><span class="n">results_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">results_path</span><span class="p">)</span>
-
-                <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
 
             <span class="k">del</span> <span class="n">loaded_model</span>
             <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">clear_model_cache</span><span class="p">:</span>
                 <span class="n">clear_model_cache_fn</span><span class="p">(</span><span class="n">cache_dir</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">)</span>
 
-        <span class="n">log</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Completed </span><span class="si">{</span><span class="n">num_finished_benchmarks</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> benchmarks.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span>
-        <span class="p">)</span>
+        <span class="n">msg_components</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">num_finished_benchmarks</span><span class="p">:</span>
+            <span class="n">msg_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;completed </span><span class="si">{</span><span class="n">num_finished_benchmarks</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> benchmarks&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_skipped_benchmarks</span><span class="p">:</span>
+            <span class="n">msg_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;skipped </span><span class="si">{</span><span class="n">num_skipped_benchmarks</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> benchmarks&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_errored_benchmarks</span><span class="p">:</span>
+            <span class="n">msg_components</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;errored </span><span class="si">{</span><span class="n">num_errored_benchmarks</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> benchmarks&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">msg_components</span><span class="p">:</span>
+            <span class="n">msg_components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">msg_components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg_components</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">msg_components</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;and &quot;</span> <span class="o">+</span> <span class="n">msg_components</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg_components</span><span class="p">)</span>
+            <span class="n">log</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 
         <span class="c1"># This avoids the following warning at the end of the benchmarking:</span>
         <span class="c1">#   Warning: WARNING: process group has NOT been destroyed before we destruct</span>
@@ -3171,8 +3202,9 @@
         <span class="c1">#   point and block the progress of another member of the process group. This</span>
         <span class="c1">#   constraint has always been present,  but this warning has only been added</span>
         <span class="c1">#   since PyTorch 2.4 (function operator())</span>
-        <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">AssertionError</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
             <span class="n">destroy_process_group</span><span class="p">()</span>
+
         <span class="k">return</span> <span class="n">current_benchmark_results</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_model_ids</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
