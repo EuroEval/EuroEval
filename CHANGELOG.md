@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Now also logs the number of skipped and errored benchmarks at the end of the
+  benchmarking.
+
 ## [v16.13.0] - 2026-02-06
 
 ### Added

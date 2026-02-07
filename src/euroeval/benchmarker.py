@@ -754,6 +754,8 @@ class Benchmarker:
             return current_benchmark_results
 
         num_finished_benchmarks = 0
+        num_skipped_benchmarks = 0
+        num_errored_benchmarks = 0
         benchmark_params_to_revert: dict[str, t.Any] = dict()
         for model_config in model_configs:
             if not model_config_to_dataset_configs[model_config]:
@@ -834,7 +836,7 @@ class Benchmarker:
                             # Add the remaining number of benchmarks for the model to
                             # our benchmark counter, since we're skipping the rest of
                             # them
-                            num_finished_benchmarks += (
+                            num_skipped_benchmarks += (
                                 len(dataset_configs)
                                 - dataset_configs.index(dataset_config)
                                 - 1
@@ -857,7 +859,7 @@ class Benchmarker:
                             f"only allows {dataset_config.allowed_generative_types}.",
                             level=logging.DEBUG,
                         )
-                        num_finished_benchmarks += 1
+                        num_skipped_benchmarks += 1
                         continue
 
                 # Benchmark a single model on a single dataset
@@ -866,7 +868,11 @@ class Benchmarker:
                     model_config=model_config,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,
-                    num_finished_benchmarks=num_finished_benchmarks,
+                    num_finished_benchmarks=(
+                        num_finished_benchmarks
+                        + num_skipped_benchmarks
+                        + num_errored_benchmarks
+                    ),
                     num_total_benchmarks=total_benchmarks,
                 )
 
@@ -878,7 +884,7 @@ class Benchmarker:
 
                 elif isinstance(benchmark_output_or_err, InvalidBenchmark):
                     log(benchmark_output_or_err.message, level=logging.WARNING)
-                    num_finished_benchmarks += 1
+                    num_errored_benchmarks += 1
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
@@ -886,7 +892,7 @@ class Benchmarker:
 
                     # Add the remaining number of benchmarks for the model to our
                     # benchmark counter, since we're skipping the rest of them
-                    num_finished_benchmarks += (
+                    num_errored_benchmarks += (
                         len(dataset_configs) - dataset_configs.index(dataset_config) - 1
                     )
                     break
@@ -896,16 +902,23 @@ class Benchmarker:
                     current_benchmark_results.append(record)
                     if benchmark_config.save_results:
                         record.append_to_results(results_path=self.results_path)
-
-                num_finished_benchmarks += 1
+                    num_finished_benchmarks += 1
 
             del loaded_model
             if benchmark_config.clear_model_cache:
                 clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
 
-        log(
-            f"\nCompleted {num_finished_benchmarks:,} benchmarks.\n", level=logging.INFO
-        )
+        msg_components: list[str] = list()
+        if num_finished_benchmarks:
+            msg_components.append("completed {num_finished_benchmarks:,} benchmarks")
+        if num_skipped_benchmarks:
+            msg_components.append(f"skipped {num_skipped_benchmarks:,} benchmarks")
+        if num_errored_benchmarks:
+            msg_components.append(f"errored {num_errored_benchmarks:,} benchmarks")
+        if msg_components:
+            msg_components[0] = msg_components[0].capitalize()
+            msg = "\n" + ", ".join(msg_components[:-1]) + " and " + msg_components[-1]
+            log(msg, level=logging.INFO)
 
         # This avoids the following warning at the end of the benchmarking:
         #   Warning: WARNING: process group has NOT been destroyed before we destruct
@@ -915,8 +928,9 @@ class Benchmarker:
         #   point and block the progress of another member of the process group. This
         #   constraint has always been present,  but this warning has only been added
         #   since PyTorch 2.4 (function operator())
-        with contextlib.suppress(AssertionError):
+        with contextlib.suppress(Exception):
             destroy_process_group()
+
         return current_benchmark_results
 
     def _prepare_model_ids(self, model_id: c.Sequence[str] | str) -> c.Sequence[str]:
