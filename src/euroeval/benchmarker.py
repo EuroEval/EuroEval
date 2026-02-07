@@ -910,7 +910,7 @@ class Benchmarker:
 
         msg_components: list[str] = list()
         if num_finished_benchmarks:
-            msg_components.append("completed {num_finished_benchmarks:,} benchmarks")
+            msg_components.append(f"completed {num_finished_benchmarks:,} benchmarks")
         if num_skipped_benchmarks:
             msg_components.append(f"skipped {num_skipped_benchmarks:,} benchmarks")
         if num_errored_benchmarks:
