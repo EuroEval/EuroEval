@@ -22,7 +22,7 @@ each class equally.
 
 ## 🛠️ How to run
 
-In the command line interface of the [EuroEval Python package](/python-package.md), you
+In the command line interface of the [EuroEval Python package](/python-package), you
 can benchmark your favorite model on the sentiment classification task like so:
 
 ```bash

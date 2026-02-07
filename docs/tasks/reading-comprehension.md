@@ -23,7 +23,7 @@ differences in the answer.
 
 ## 🛠️ How to run
 
-In the command line interface of the [EuroEval Python package](/python-package.md), you
+In the command line interface of the [EuroEval Python package](/python-package), you
 can benchmark your favorite model on the reading comprehension task like so:
 
 ```bash

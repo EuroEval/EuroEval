@@ -21,7 +21,7 @@ interpret how accuracy and bias trade off.
 
 ## 🛠️ How to run
 
-In the command line interface of the [EuroEval Python package](/python-package.md), you
+In the command line interface of the [EuroEval Python package](/python-package), you
 can benchmark your favorite model on the bias detection task like so:
 
 ```bash
