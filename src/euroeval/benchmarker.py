@@ -917,7 +917,9 @@ class Benchmarker:
             msg_components.append(f"errored {num_errored_benchmarks:,} benchmarks")
         if msg_components:
             msg_components[0] = msg_components[0].capitalize()
-            msg = "\n" + ", ".join(msg_components[:-1]) + " and " + msg_components[-1]
+            if len(msg_components) > 1:
+                msg_components[-1] = "and " + msg_components[-1]
+            msg = "\n" + ", ".join(msg_components)
             log(msg, level=logging.INFO)
 
         # This avoids the following warning at the end of the benchmarking:
