@@ -7,6 +7,7 @@ import typing as t
 from datasets import Dataset
 from lettucedetect import HallucinationDetector
 
+from ..exceptions import InvalidBenchmark
 from .base import Metric
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ def detect_hallucinations(
     predictions: c.Sequence,
     model: str = "alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-en",
     device: str = "cpu",
-) -> float | None:
+) -> float:
     """Load tinylettuce model and detect hallucinations.
 
     Args:
@@ -34,6 +35,11 @@ def detect_hallucinations(
 
     Returns:
         A hallucination rate (hallucinated_tokens/total_tokens).
+
+    Raises:
+        InvalidBenchmark:
+            If there are no tokens found in predicted answers of the
+            hallucination detection model.
     """
     detector = HallucinationDetector(
         method="transformer", model_path=model, device=device
@@ -61,11 +67,10 @@ def detect_hallucinations(
             continue
 
     if total_tokens == 0:
-        logger.warning(
+        raise InvalidBenchmark(
             "Failed to run hallucination detection task "
-            "(there were no tokens found in predictions), returning None."
+            "(there were no tokens found in predictions)."
         )
-        return None
 
     hallucination_rate = hallucinated_tokens / total_tokens
 
@@ -103,7 +108,7 @@ class TokenHallucinationMetric(Metric):
     ) -> float | None:
         """Compute the token-level hallucination rate for a set of predictions.
 
-        This method wraps :func:`detect_hallucinations` to run a token-level
+        This method wraps `detect_hallucinations` to run a token-level
         hallucination detector over the provided predictions and dataset contexts,
         and returns the rate of tokens classified as hallucinated.
 
