@@ -49,14 +49,6 @@ MULTI_WIKI_QA_DA_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
-MULTI_WIKI_QA_DA_HALLUCINATION_CONFIG = DatasetConfig(
-    name="multi-wiki-hallucination-qa-da",
-    pretty_name="MultiWikiHalluQA-da",
-    source="EuroEval/multi-wiki-qa-da-mini",
-    task=HALLU,
-    languages=[DANISH],
-)
-
 NORDJYLLAND_NEWS_CONFIG = DatasetConfig(
     name="nordjylland-news",
     pretty_name="Nordjylland News",
@@ -100,6 +92,13 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
+MULTI_WIKI_QA_DA_HALLUCINATION_CONFIG = DatasetConfig(
+    name="multi-wiki-hallucination-qa-da",
+    pretty_name="MultiWikiHalluQA-da",
+    source="EuroEval/multi-wiki-qa-da-mini",
+    task=HALLU,
+    languages=[DANISH],
+)
 
 ### Unofficial datasets ###
 

@@ -21,7 +21,7 @@ if t.TYPE_CHECKING:
 def detect_hallucinations(
     dataset: Dataset,
     predictions: c.Sequence,
-    model: str = "alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-en",
+    model: str,
     device: str = "cpu",
 ) -> float:
     """Load tinylettuce model and detect hallucinations.
@@ -74,10 +74,6 @@ def detect_hallucinations(
 
     hallucination_rate = hallucinated_tokens / total_tokens
 
-    logger.debug(
-        f"Hallucination rate (hallucinated_tokens/total_tokens): "
-        f"{hallucination_rate:.2f}"
-    )
     return hallucination_rate
 
 
@@ -123,6 +119,9 @@ class TokenHallucinationMetric(Metric):
             **kwargs:
                 For API consistency, this metric accepts other arguments like
                 `references` and `benchmark_config`, but they are ignored.
+
+        Returns:
+            The hallucination rate (hallucinated_tokens/total_tokens).
         """
         hallucination_rate = detect_hallucinations(
             dataset=dataset,
