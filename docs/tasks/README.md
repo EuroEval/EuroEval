@@ -42,3 +42,4 @@ this category are:
 4. [Simplification](simplification.md)
 5. [European Values](european-values.md)
 6. [Bias Detection](bias-detection.md)
+7. [Hallucination Detection](hallucination-detection.md)

@@ -1194,3 +1194,53 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-da
 ```
+
+## Hallucination Detection
+
+### MultiWikiHalluQA-da
+
+This dataset uses the same data as [MultiWikiQA-da](#multiwikiqa-da), published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
+with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
+correctness of the generated answer, this task evaluates the degree to which the model
+hallucinates, i.e., generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+transformer-based classifier to predict hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to total
+tokens in the generated answers.
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Følgende er tekster med tilhørende spørgsmål og svar.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Tekst: {text}
+  Spørgsmål: {question}
+  Svar med maks. 3 ord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Tekst: {text}
+
+  Besvar følgende spørgsmål om teksten ovenfor med maks. 3 ord.
+
+  Spørgsmål: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-da
+```
