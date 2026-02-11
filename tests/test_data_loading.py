@@ -6,17 +6,18 @@ from functools import partial
 from pathlib import Path
 
 import pytest
-from datasets import DatasetDict
+from datasets import Dataset, DatasetDict
 from numpy.random import default_rng
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from euroeval.benchmark_modules.litellm import LiteLLMModel
 from euroeval.constants import MAX_CONTEXT_LENGTH
-from euroeval.data_loading import load_data, load_raw_data
+from euroeval.data_loading import _split_dataset_if_needed, load_data, load_raw_data
 from euroeval.data_models import BenchmarkConfig, DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import GenerativeType
 from euroeval.generation_utils import apply_prompt, extract_few_shot_examples
+from euroeval.languages import DANISH
 from euroeval.tasks import RC
 
 
@@ -69,6 +70,32 @@ class TestLoadData:
                 for feature in ["text", "tokens"]:
                     if feature in split.features:
                         assert all(len(x) > 0 for x in split[feature])
+
+
+def test_split_dataset_preserves_existing_splits() -> None:
+    """Test that missing splits are created without overwriting existing ones."""
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_dict({"text": ["a", "b", "c", "d"]}),
+            "test": Dataset.from_dict({"text": ["orig-test"]}),
+        }
+    )
+    dataset_config = DatasetConfig(
+        name="split-test",
+        pretty_name="Split Test",
+        source="dummy/split",
+        task=RC,
+        languages=[DANISH],
+        split_sizes={"train": 2, "val": None, "test": 0},
+    )
+
+    split_dataset = _split_dataset_if_needed(
+        dataset=dataset, dataset_config=dataset_config
+    )
+
+    assert list(split_dataset["test"]["text"]) == ["orig-test"]
+    assert len(split_dataset["train"]) == 2
+    assert len(split_dataset["val"]) == 2
 
 
 @pytest.mark.parametrize(

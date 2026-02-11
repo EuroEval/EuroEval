@@ -10,8 +10,16 @@ from click import ParamType
 
 from euroeval import __version__
 from euroeval.benchmarker import Benchmarker
-from euroeval.data_models import BenchmarkConfig, BenchmarkConfigParams, BenchmarkResult
+from euroeval.data_models import (
+    BenchmarkConfig,
+    BenchmarkConfigParams,
+    BenchmarkResult,
+    DatasetConfig,
+)
+from euroeval.languages import DANISH, ENGLISH
 from euroeval.metrics import HuggingFaceMetric, Metric
+from euroeval.prompt_templates import MT_TEMPLATES
+from euroeval.tasks import MT
 
 
 class TestMetric:
@@ -51,6 +59,20 @@ class TestMetric:
     ) -> None:
         """Test that the default value of `postprocessing_fn` is correct."""
         assert metric.postprocessing_fn(inputs) == expected
+
+
+def test_mt_template_uses_language_pair() -> None:
+    """Test that MT datasets use the template keyed by (source, target)."""
+    dataset_config = DatasetConfig(
+        name="mt-test",
+        pretty_name="MT Test",
+        source="dummy/mt",
+        task=MT,
+        languages=[ENGLISH, DANISH],
+    )
+    template = MT_TEMPLATES[(ENGLISH, DANISH)]
+    assert dataset_config.prompt_template == template.default_prompt_template
+    assert dataset_config.instruction_prompt == template.default_instruction_prompt
 
 
 class TestBenchmarkResult:
