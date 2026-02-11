@@ -187,6 +187,9 @@ class DatasetConfig:
         train_split: str | None = "train",
         val_split: str | None = "val",
         test_split: str = "test",
+        preprocess_fn: t.Callable | None = None,
+        split_seed: int | None = None,
+        split_sizes: dict[str, int | None] | None = None,
         bootstrap_samples: bool = True,
         unofficial: bool = False,
         _prompt_prefix: str | None = None,
@@ -271,6 +274,14 @@ class DatasetConfig:
                 is no validation split in the dataset. Defaults to "val".
             test_split (optional):
                 The name of the split to use as the test set. Defaults to "test".
+            preprocess_fn (optional):
+                A function to preprocess the raw dataset after loading, but before any
+                split validation. It must return a DatasetDict.
+            split_seed (optional):
+                Random seed used when creating splits from a single split (e.g. train).
+            split_sizes (optional):
+                Explicit sizes for each split when creating splits from a single split.
+                Use None for at most one split to assign the remainder.
             bootstrap_samples (optional):
                 Whether to bootstrap the dataset samples. Defaults to True.
             unofficial (optional):
@@ -447,6 +458,9 @@ class DatasetConfig:
         self.train_split = train_split
         self.val_split = val_split
         self.test_split = test_split
+        self.preprocess_fn = preprocess_fn
+        self.split_seed = split_seed
+        self.split_sizes = split_sizes
         self.bootstrap_samples = bootstrap_samples
         self.unofficial = unofficial
 

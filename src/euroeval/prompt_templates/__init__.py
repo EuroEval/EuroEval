@@ -9,3 +9,4 @@ from .sentiment_classification import SENT_TEMPLATES
 from .simplification import SIMPL_TEMPLATES
 from .summarization import SUMM_TEMPLATES
 from .token_classification import TOKEN_CLASSIFICATION_TEMPLATES
+from .machine_translation import MT_TEMPLATES

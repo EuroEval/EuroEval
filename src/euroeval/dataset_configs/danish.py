@@ -1,8 +1,20 @@
 """All Danish dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
-from ..languages import DANISH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..dataset_preprocessors import preprocess_wmt24pp_en_da
+from ..languages import DANISH, ENGLISH
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    KNOW,
+    LA,
+    MCRC,
+    MT,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 ### Official datasets ###
 
@@ -145,5 +157,19 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DANISH],
     labels=["a", "b"],
+    unofficial=True,
+)
+
+WMT24PP_EN_DA_CONFIG = DatasetConfig(
+    name="wmt24pp-en-da",
+    pretty_name="WMT24++ en-da",
+    source="google/wmt24pp::en-da_DK",
+    task=MT,
+    languages=[ENGLISH, DANISH],
+    splits=["train", "test"],
+    _num_few_shot_examples=1,
+    preprocess_fn=preprocess_wmt24pp_en_da,
+    split_seed=42,
+    split_sizes={"train": 1, "test": None},
     unofficial=True,
 )
