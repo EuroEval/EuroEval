@@ -20,6 +20,15 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig
 
 
+def _maybe_wrap_references(references: c.Sequence, wrap_references: bool) -> c.Sequence:
+    if not wrap_references or not references:
+        return references
+    first = references[0]
+    if isinstance(first, str):
+        return [[r] for r in references]
+    return references
+
+
 class HuggingFaceMetric(Metric):
     """A metric which is implemented in the `evaluate` package.
 
@@ -198,11 +207,14 @@ class SourceBasedMetric(HuggingFaceMetric):
                 f"instead."
             )
 
+        references_arg = _maybe_wrap_references(
+            references=references, wrap_references=True
+        )
         with no_terminal_output(disable=os.getenv("FULL_LOG", "0") == "1"):
             results = self.metric.compute(
                 sources=sources,
                 predictions=predictions,
-                references=[[r] for r in references],
+                references=references_arg,
                 **self.compute_kwargs,
             )
 
@@ -260,8 +272,8 @@ class WrappedReferencesMetric(HuggingFaceMetric):
             "__call__ method."
         )
 
-        references_arg = (
-            [[r] for r in references] if self.wrap_references else references
+        references_arg = _maybe_wrap_references(
+            references=references, wrap_references=self.wrap_references
         )
         with no_terminal_output(disable=os.getenv("FULL_LOG", "0") == "1"):
             results = self.metric.compute(
