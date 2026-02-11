@@ -64,13 +64,7 @@ def auth() -> Generator[str | bool, None, None]:
         The authentication token to the Hugging Face Hub.
     """
     # Get the authentication token to the Hugging Face Hub
-    auth = os.environ.get("HUGGINGFACE_API_KEY", True)
-
-    # Ensure that the token does not contain quotes or whitespace
-    if isinstance(auth, str):
-        auth = auth.strip(" \"'")
-
-    yield auth
+    yield "dummy_token"
 
 
 @pytest.fixture(scope="session")

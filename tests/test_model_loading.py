@@ -1,5 +1,6 @@
 """Tests for the `model_loading` module."""
 
+import importlib.util
 import os
 import sys
 from pathlib import Path
@@ -39,6 +40,10 @@ def test_load_non_generative_model(
 @pytest.mark.skipif(
     condition=sys.platform == "linux" and not torch.cuda.is_available(),
     reason="Running on Ubuntu but no CUDA available",
+)
+@pytest.mark.skipif(
+    condition=importlib.util.find_spec("vllm") is None,
+    reason="Generative extra (vllm) not installed",
 )
 def test_load_generative_model(
     generative_model_id: str, benchmark_config: BenchmarkConfig

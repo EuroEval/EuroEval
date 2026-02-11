@@ -13,6 +13,7 @@ from .closest_match import get_closest_match
 from .data_models import BenchmarkConfig, BenchmarkConfigParams, DatasetConfig, Task
 from .dataset_configs import get_all_dataset_configs
 from .enums import Device
+from .exceptions import InvalidBenchmark
 from .languages import get_all_languages
 from .logging_utils import log
 
@@ -233,7 +234,7 @@ def prepare_dataset_configs(
         if closest_distance < 5:
             msg += f" Maybe you meant to use {closest_match!r}?"
         log(msg, level=logging.ERROR)
-        sys.exit(1)
+        raise InvalidBenchmark(msg)
 
     # Create the list of dataset tasks
     task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
@@ -254,7 +255,7 @@ def prepare_dataset_configs(
         if closest_distance < 5:
             msg += f" Maybe you meant to use {closest_match!r}?"
         log(msg, level=logging.ERROR)
-        sys.exit(1)
+        raise InvalidBenchmark(msg)
 
     # Filter the dataset configs based on the specified tasks and languages
     datasets = [
