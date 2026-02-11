@@ -101,6 +101,7 @@ MT = Task(
     template_dict=MT_TEMPLATES,
     metrics=[
         m.bert_score_metric,
+        m.sacrebleu_metric,
     ],
     default_num_few_shot_examples=5,
     default_max_generated_tokens=256,

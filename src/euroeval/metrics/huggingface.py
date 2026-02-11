@@ -221,6 +221,67 @@ class SourceBasedMetric(HuggingFaceMetric):
         return score
 
 
+class WrappedReferencesMetric(HuggingFaceMetric):
+    """Metric wrapper that ensures references are lists of lists."""
+
+    def __init__(
+        self,
+        name: str,
+        pretty_name: str,
+        huggingface_id: str,
+        results_key: str,
+        compute_kwargs: dict[str, t.Any] | None = None,
+        postprocessing_fn: t.Callable[[float], tuple[float, str]] | None = None,
+        wrap_references: bool = True,
+    ) -> None:
+        super().__init__(
+            name=name,
+            pretty_name=pretty_name,
+            huggingface_id=huggingface_id,
+            results_key=results_key,
+            compute_kwargs=compute_kwargs,
+            postprocessing_fn=postprocessing_fn,
+        )
+        self.wrap_references = wrap_references
+
+    def __call__(
+        self,
+        predictions: c.Sequence,
+        references: c.Sequence,
+        dataset: "Dataset",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> float | None:
+        if self.metric is None:
+            self.download(cache_dir=benchmark_config.cache_dir)
+
+        assert self.metric is not None, (
+            "Metric has not been downloaded. Please call download() before using the "
+            "__call__ method."
+        )
+
+        references_arg = (
+            [[r] for r in references] if self.wrap_references else references
+        )
+        with no_terminal_output(disable=os.getenv("FULL_LOG", "0") == "1"):
+            results = self.metric.compute(
+                predictions=predictions,
+                references=references_arg,
+                **self.compute_kwargs,
+            )
+
+        if results is None:
+            return None
+
+        score = results[self.results_key]
+        if isinstance(score, list):
+            score = sum(score) / len(score)
+        if isinstance(score, np.floating):
+            score = float(score)
+
+        return score
+
+
 mcc_metric = HuggingFaceMetric(
     name="mcc",
     pretty_name="Matthew's Correlation Coefficient",
@@ -297,4 +358,12 @@ sari_metric = SourceBasedMetric(
     huggingface_id="sari",
     results_key="sari",
     postprocessing_fn=lambda x: (x, f"{x:.2f}%"),
+)
+
+sacrebleu_metric = WrappedReferencesMetric(
+    name="sacrebleu",
+    pretty_name="SacreBLEU",
+    huggingface_id="sacrebleu",
+    results_key="score",
+    postprocessing_fn=lambda x: (x, f"{x:.2f}"),
 )
