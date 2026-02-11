@@ -38,6 +38,19 @@ from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer import Trainer
 from urllib3.exceptions import RequestError
 
+try:
+    from transformers import MistralConfig
+
+    class Ministral3Config(MistralConfig):
+        model_type = "ministral3"
+
+    try:
+        AutoConfig.register("ministral3", Ministral3Config)
+    except ValueError:
+        pass
+except ImportError:
+    pass
+
 from ..caching_utils import cache_arguments
 from ..constants import (
     DUMMY_FILL_VALUE,

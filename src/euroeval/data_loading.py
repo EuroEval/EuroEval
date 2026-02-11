@@ -231,7 +231,9 @@ def load_raw_data(
         # Load the dataset
         with no_terminal_output():
             dataset = load_dataset(
-                path=file_extension, data_files=data_files, cache_dir=cache_dir
+                path="json" if file_extension == "jsonl" else file_extension,
+                data_files=data_files,
+                cache_dir=cache_dir,
             )
 
     assert isinstance(dataset, DatasetDict)

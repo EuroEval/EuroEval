@@ -1,6 +1,7 @@
 """All Swedish dataset configurations used in EuroEval."""
 
 from ..data_models import DatasetConfig
+from ..enums import ModelType
 from ..languages import SWEDISH
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
@@ -147,5 +148,21 @@ SWEDISH_FACTS_CONFIG = DatasetConfig(
     source="EuroEval/swedish-facts",
     task=KNOW,
     languages=[SWEDISH],
+    unofficial=True,
+)
+
+
+AISKOLPROV_CONFIG = DatasetConfig(
+    name="aiskolprov",
+    pretty_name="Aiskolprov",
+    source={
+        "train": "data/aiskolprov/test.jsonl",
+        "val": "data/aiskolprov/test.jsonl",
+        "test": "data/aiskolprov/test.jsonl",
+    },
+    task=KNOW,
+    languages=[SWEDISH],
+    labels=["a", "b", "c", "d", "e"],
+    allowed_model_types=[ModelType.ENCODER, ModelType.GENERATIVE],
     unofficial=True,
 )
