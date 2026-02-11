@@ -19,10 +19,7 @@ if t.TYPE_CHECKING:
 
 
 def detect_hallucinations(
-    dataset: Dataset,
-    predictions: c.Sequence,
-    model: str,
-    device: str = "cpu",
+    dataset: Dataset, predictions: c.Sequence, model: str, device: str = "cpu"
 ) -> float:
     """Load tinylettuce model and detect hallucinations.
 
@@ -53,18 +50,13 @@ def detect_hallucinations(
     for context, question, predicted_text in zip(
         dataset["context"], dataset["question"], predicted_texts
     ):
-        try:
-            predict_answer = detector.predict(
-                context=[context], question=question, answer=predicted_text
-            )
+        predict_answer = detector.predict(
+            context=[context], question=question, answer=predicted_text
+        )
 
-            for token in predict_answer:
-                hallucinated_tokens += token["pred"]
-                total_tokens += 1
-
-        except Exception:
-            logger.exception("Error during hallucination detection. Skipping.")
-            continue
+        for token in predict_answer:
+            hallucinated_tokens += token["pred"]
+            total_tokens += 1
 
     if total_tokens == 0:
         raise InvalidBenchmark(
@@ -136,5 +128,5 @@ class TokenHallucinationMetric(Metric):
 
 
 hallucination_metric = TokenHallucinationMetric(
-    name="hallucination_token", pretty_name="Hallucination rate"
+    name="hallucination_rate", pretty_name="Hallucination rate"
 )
