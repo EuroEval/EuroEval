@@ -8,10 +8,10 @@ if t.TYPE_CHECKING:
 
 def preprocess_wmt24pp_en_da(dataset: "DatasetDict") -> "DatasetDict":
     """Prepare the WMT24++ en-da subset for EuroEval."""
-    if "train" not in dataset:
-        return dataset
-
-    train = dataset["train"].filter(lambda x: not x["is_bad_source"])
-    train = train.rename_columns({"source": "text", "target": "target_text"})
-    dataset["train"] = train
+    for split_name, split in dataset.items():
+        if "is_bad_source" in split.column_names:
+            split = split.filter(lambda x: not x["is_bad_source"])
+        if "source" in split.column_names and "target" in split.column_names:
+            split = split.rename_columns({"source": "text", "target": "target_text"})
+        dataset[split_name] = split
     return dataset

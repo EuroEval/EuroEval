@@ -290,7 +290,12 @@ def _split_dataset_if_needed(
             "Split sizes must be provided for all requested splits."
         )
 
-    sizes: list[int | None] = [split_sizes[split] for split in splits]
+    splits_to_create = [
+        split
+        for split in splits
+        if split == dataset_config.train_split or split in missing_keys
+    ]
+    sizes: list[int | None] = [split_sizes[split] for split in splits_to_create]
     none_count = sum(1 for size in sizes if size is None)
     if none_count > 1:
         raise InvalidBenchmark(
@@ -316,8 +321,12 @@ def _split_dataset_if_needed(
         )
 
     start = 0
-    split_datasets: dict[str, c.Sequence] = dict()
-    for split_name, size in zip(splits, sizes):
+    split_datasets: dict[str, "Dataset"] = {
+        split: dataset[split]
+        for split in splits
+        if split in dataset and split not in splits_to_create
+    }
+    for split_name, size in zip(splits_to_create, sizes):
         assert size is not None
         if size < 0:
             raise InvalidBenchmark("Split sizes must be non-negative.")

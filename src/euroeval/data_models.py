@@ -134,7 +134,7 @@ class Task:
 
     name: str
     task_group: TaskGroup
-    template_dict: dict[Language, PromptConfig]
+    template_dict: dict[Language | tuple[Language, Language], PromptConfig]
     metrics: c.Sequence[Metric]
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
@@ -395,6 +395,10 @@ class DatasetConfig:
         self.languages = languages
 
         template = self.task.template_dict.get(self.main_language)
+        if template is None and len(self.languages) >= 2:
+            template = self.task.template_dict.get(
+                (self.languages[0], self.languages[1])
+            )
         self.prompt_prefix = (
             prompt_prefix
             if prompt_prefix is not None
