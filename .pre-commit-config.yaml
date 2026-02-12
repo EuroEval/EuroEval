@@ -34,7 +34,7 @@ repos:
     hooks:
     -   id: nbstripout
 -   repo: https://github.com/facebook/pyrefly-pre-commit
-    rev: 0.51.1
+    rev: 0.52.0
     hooks:
     -   id: pyrefly-check
         name: Pyrefly (type checking)
