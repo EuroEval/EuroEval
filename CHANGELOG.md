@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now logs a suggested dataset/task name if a user specified a dataset/task that is not
   found, but one exists with a similar name.
 
+### Fixed
+
+- Fixed the Swedish Skolprov dataset, by adding the missing 'e' option.
+
 ## [v16.13.0] - 2026-02-06
 
 ### Added

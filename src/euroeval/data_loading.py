@@ -2,6 +2,7 @@
 
 import collections.abc as c
 import logging
+import re
 import sys
 import time
 import typing as t
@@ -145,6 +146,66 @@ def load_raw_data(
                         cache_dir=cache_dir,
                         token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
                     )
+
+                if dataset_config.name == "skolprov":
+                    # Rename 'answer' to 'label' and lowercase it
+                    dataset = dataset.rename_column("answer", "label")
+                    dataset = dataset.map(lambda x: {"label": x["label"].lower()})
+
+                    # Construct the 'text' column with the question and options
+                    def create_text_with_options(example: dict) -> dict[str, str]:
+                        instruction = example["question"]
+                        text = f"{instruction}\nSvarsalternativ:\n"
+                        text += f"a. {example['option_a']}\n"
+                        text += f"b. {example['option_b']}\n"
+                        text += f"c. {example['option_c']}\n"
+                        text += f"d. {example['option_d']}"
+                        if example["option_e"] is not None:
+                            text += f"\ne. {example['option_e']}"
+                        return {"text": text}
+
+                    dataset = dataset.map(create_text_with_options)
+
+                    # Manually split the dataset
+                    # We use exams from 2011-2019 for training
+                    # We use exams from 2020-2023 for validation
+                    # We use exams from 2024 for testing
+                    def get_split(example: dict) -> str:
+                        # Extract the year from the test_id
+                        match = re.search(r"\d{4}", example["test_id"])
+                        if match:
+                            year = int(match.group(0))
+                        else:
+                            # Default to train if no year is found
+                            year = 2011
+
+                        if year >= 2024:
+                            return "test"
+                        elif year >= 2020:
+                            return "val"
+                        else:
+                            return "train"
+
+                    # Add a 'split' column
+                    dataset_split = dataset["train"].map(
+                        lambda x: {"split": get_split(x)}
+                    )
+
+                    # Create the new splits
+                    new_dataset = DatasetDict()
+                    new_dataset["train"] = dataset_split.filter(
+                        lambda x: x["split"] == "train"
+                    )
+                    new_dataset["val"] = dataset_split.filter(
+                        lambda x: x["split"] == "val"
+                    )
+                    new_dataset["test"] = dataset_split.filter(
+                        lambda x: x["split"] == "test"
+                    )
+
+                    # Remove the 'split' column
+                    dataset = new_dataset.remove_columns("split")
+
                 break
             except (
                 FileNotFoundError,

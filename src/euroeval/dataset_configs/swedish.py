@@ -135,9 +135,11 @@ WINOGRANDE_SV_CONFIG = DatasetConfig(
 SKOLPROV_CONFIG = DatasetConfig(
     name="skolprov",
     pretty_name="Skolprov",
-    source="EuroEval/skolprov",
+    source="Ekgren/swedish_skolprov",
     task=KNOW,
     languages=[SWEDISH],
+    labels=["a", "b", "c", "d", "e"],
+    prompt_template="Fråga: {text}\nSvar: {label}",
     unofficial=True,
 )
 
