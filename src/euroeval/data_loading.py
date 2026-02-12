@@ -147,7 +147,10 @@ def load_raw_data(
                         token=unscramble("XbjeOLhwebEaSaDUMqqaPaPIhgOcyOfDpGnX_"),
                     )
 
-                if dataset_config.name == "skolprov":
+                if (
+                    dataset_config.name == "skolprov"
+                    and dataset_config.source == "Ekgren/swedish_skolprov"
+                ):
                     # Rename 'answer' to 'label' and lowercase it
                     dataset = dataset.rename_column("answer", "label")
                     dataset = dataset.map(lambda x: {"label": x["label"].lower()})

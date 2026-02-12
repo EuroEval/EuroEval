@@ -17,6 +17,7 @@ from euroeval.data_models import DatasetConfig, Language
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.dataset_configs.danish import MULTI_WIKI_QA_DA_CONFIG, SCALA_DA_CONFIG
 from euroeval.enums import Device
+from euroeval.exceptions import InvalidBenchmark
 from euroeval.languages import (
     DANISH,
     ENGLISH,
@@ -232,7 +233,7 @@ def test_prepare_dataset_configs(
 
 def test_prepare_dataset_configs_invalid_task() -> None:
     """Test that an invalid task raises an error."""
-    with pytest.raises(SystemExit) as exc_info:
+    with pytest.raises(InvalidBenchmark):
         prepare_dataset_configs(
             task="invalid-task",
             dataset=None,
@@ -241,12 +242,11 @@ def test_prepare_dataset_configs_invalid_task() -> None:
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
         )
-    assert exc_info.value.code == 1
 
 
 def test_prepare_dataset_configs_invalid_dataset() -> None:
     """Test that an invalid dataset raises an error."""
-    with pytest.raises(SystemExit) as exc_info:
+    with pytest.raises(InvalidBenchmark):
         prepare_dataset_configs(
             task=None,
             dataset="invalid-dataset",
@@ -255,7 +255,6 @@ def test_prepare_dataset_configs_invalid_dataset() -> None:
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
         )
-    assert exc_info.value.code == 1
 
 
 @pytest.mark.parametrize(

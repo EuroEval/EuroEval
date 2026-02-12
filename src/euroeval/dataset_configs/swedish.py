@@ -1,5 +1,7 @@
 """All Swedish dataset configurations used in EuroEval."""
 
+import os
+
 from ..data_models import DatasetConfig
 from ..languages import SWEDISH
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
@@ -132,16 +134,31 @@ WINOGRANDE_SV_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-SKOLPROV_CONFIG = DatasetConfig(
-    name="skolprov",
-    pretty_name="Skolprov",
-    source="Ekgren/swedish_skolprov",
-    task=KNOW,
-    languages=[SWEDISH],
-    labels=["a", "b", "c", "d", "e"],
-    prompt_template="Fråga: {text}\nSvar: {label}",
-    unofficial=True,
-)
+# Skolprov can be loaded from two sources:
+# 1. Direct from Ekgren/swedish_skolprov (default, requires runtime preprocessing)
+# 2. From EuroEval/skolprov (legacy/official, if available/private)
+# We default to 1, but allow switching to 2 via env var for official reproduction.
+
+if os.getenv("EUROEVAL_USE_ORIGINAL_SKOLPROV") == "1":
+    SKOLPROV_CONFIG = DatasetConfig(
+        name="skolprov",
+        pretty_name="Skolprov",
+        source="EuroEval/skolprov",
+        task=KNOW,
+        languages=[SWEDISH],
+        unofficial=True,
+    )
+else:
+    SKOLPROV_CONFIG = DatasetConfig(
+        name="skolprov",
+        pretty_name="Skolprov",
+        source="Ekgren/swedish_skolprov",
+        task=KNOW,
+        languages=[SWEDISH],
+        labels=["a", "b", "c", "d", "e"],
+        prompt_template="Fråga: {text}\nSvar: {label}",
+        unofficial=True,
+    )
 
 SWEDISH_FACTS_CONFIG = DatasetConfig(
     name="swedish-facts",

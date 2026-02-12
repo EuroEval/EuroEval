@@ -186,6 +186,10 @@ def prepare_dataset_configs(
 
     Returns:
         The prepared dataset configs.
+
+    Raises:
+        InvalidBenchmark:
+            If the benchmark configuration is invalid.
     """
     # Extract the dataset IDs from the `dataset` argument
     dataset_ids: list[str] = list()
