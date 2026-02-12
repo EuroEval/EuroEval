@@ -31,7 +31,11 @@ LANGUAGES = ["da", "de", "en", "es", "fr", "is", "it", "nl", "no", "pt", "sv"]
 
 
 def main() -> None:
-    """Create the HellaSwag-mini datasets and upload them to the HF Hub."""
+    """Create the HellaSwag-mini datasets and upload them to the HF Hub.
+
+    Raises:
+        ValueError: If the dataset could not be loaded.
+    """
     # Define the base download URL
     repo_id = "alexandrainst/m_hellaswag"
 

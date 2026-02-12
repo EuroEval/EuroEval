@@ -156,6 +156,15 @@ class VLLMModel(HuggingFaceEncoderModel):
                 The benchmark configuration.
             log_metadata:
                 Whether to log the model and dataset metadata.
+
+        Raises:
+            NeedsSystemDependency:
+                If the CUDA Toolkit is not installed.
+            NeedsExtraInstalled:
+                If the generative extra is not installed.
+            InvalidBenchmark:
+                If no CUDA GPUs are available and the dataset requires structured
+                generation.
         """
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
@@ -899,6 +908,10 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         Returns:
             The model configuration.
+
+        Raises:
+            InvalidModel:
+                If the model does not exist.
         """
         model_id_components = split_model_id(model_id=model_id)
         model_info = get_model_repo_info(
@@ -991,6 +1004,13 @@ def load_model_and_tokeniser(
 
     Returns:
         A pair (model, tokeniser), with the loaded model and tokeniser
+
+    Raises:
+        NeedsExtraInstalled:
+            If a quantised model is being loaded and the required extra packages are not
+            installed.
+        InvalidModel:
+            If the model could not be loaded.
     """
     # Prefer base model ID if the model is an adapter - the adapter will be added on
     # during inference in this case
@@ -1230,6 +1250,10 @@ def load_tokeniser(
 
     Returns:
         The loaded tokeniser.
+
+    Raises:
+        InvalidModel:
+            If the tokeniser could not be loaded.
     """
     revision = revision if adapter_base_model_id is None else "main"
     config = AutoConfig.from_pretrained(

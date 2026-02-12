@@ -58,7 +58,11 @@ class TestBenchmarkResult:
 
     @pytest.fixture(scope="class")
     def benchmark_result(self) -> Generator[BenchmarkResult, None, None]:
-        """Fixture for a `BenchmarkResult` object."""
+        """Fixture for a `BenchmarkResult` object.
+
+        Yields:
+            A `BenchmarkResult` object.
+        """
         yield BenchmarkResult(
             dataset="dataset",
             model="model",
@@ -77,7 +81,11 @@ class TestBenchmarkResult:
 
     @pytest.fixture(scope="class")
     def results_path(self) -> Generator[Path, None, None]:
-        """Fixture for a `Path` object to a results file."""
+        """Fixture for a `Path` object to a results file.
+
+        Yields:
+            A `Path` object to a results file.
+        """
         results_path = Path(".euroeval_cache/test_results.jsonl")
         results_path.parent.mkdir(parents=True, exist_ok=True)
         yield results_path

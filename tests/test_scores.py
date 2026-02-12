@@ -12,7 +12,11 @@ from euroeval.types import ScoreDict
 
 @pytest.fixture(scope="module")
 def scores(metric: Metric) -> Generator[list[dict[str, float]], None, None]:
-    """Yield a dictionary of scores."""
+    """Yield a dictionary of scores.
+
+    Yields:
+        A dictionary of scores.
+    """
     yield [
         {f"test_{metric.name}": 0.50},
         {f"test_{metric.name}": 0.55},
@@ -49,7 +53,11 @@ class TestLogScores:
     def logged_scores(
         self, metric: Metric, scores: list[dict[str, float]]
     ) -> Generator[ScoreDict, None, None]:
-        """Yields the logged scores."""
+        """Yields the logged scores.
+
+        Yields:
+            The logged scores.
+        """
         yield log_scores(
             dataset_name="dataset",
             metrics=[metric],

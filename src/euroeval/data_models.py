@@ -2,7 +2,6 @@
 
 import collections.abc as c
 import importlib.metadata
-import importlib.util
 import json
 import logging
 import re
@@ -456,6 +455,10 @@ class DatasetConfig:
 
         Returns:
             The name of the dataset.
+
+        Raises:
+            ValueError:
+                If the name of the dataset is not set.
         """
         if self._name is None:
             raise ValueError("The name of the dataset is not set!")
@@ -477,6 +480,10 @@ class DatasetConfig:
 
         Returns:
             The pretty name of the dataset.
+
+        Raises:
+            ValueError:
+                If the pretty name of the dataset is not set.
         """
         if self._pretty_name is None:
             raise ValueError("The pretty name of the dataset is not set!")
@@ -498,6 +505,10 @@ class DatasetConfig:
 
         Returns:
             The source of the dataset.
+
+        Raises:
+            ValueError:
+                If the source of the dataset is not set.
         """
         if self._source is None:
             raise ValueError("The source of the dataset is not set!")
@@ -568,6 +579,10 @@ class DatasetConfig:
 
         Returns:
             The main language.
+
+        Raises:
+            InvalidBenchmark:
+                If the dataset has no languages.
         """
         match len(self.languages):
             case 0:

@@ -108,6 +108,9 @@ def enforce_reproducibility(seed: int = 4242) -> np.random.Generator:
     Args:
         seed:
             Seed for the random number generator.
+
+    Returns:
+        A numpy random generator
     """
     random.seed(seed)
     np.random.seed(seed)
@@ -168,7 +171,8 @@ def raise_if_model_output_contains_nan_values(model_output: "Predictions") -> No
             The model output to check.
 
     Raises:
-        If the model output contains NaN values.
+        NaNValueInModelOutput:
+            If the model output contains NaN values.
     """
     if isinstance(model_output, np.ndarray):
         if model_output.dtype == np.float32 and np.isnan(model_output).any():

@@ -68,9 +68,8 @@ class PipelineMetric(Metric):
                 The pretty name of the metric, used for display purposes.
             pipeline_repo:
                 The Hugging Face repository ID of the scikit-learn pipeline to load.
-            pipeline_scoring_method:
-                The method to use for scoring the predictions with the pipeline. Takes
-                a 1D sequence of predictions and returns a float score.
+            pipeline_scoring_function:
+                The function to use to score the predictions.
             pipeline_file_name (optional):
                 The name of the file to download from the Hugging Face repository.
                 Defaults to "pipeline.joblib".
@@ -162,7 +161,7 @@ class PipelineMetric(Metric):
         return pipeline
 
 
-### European Values Metric ###
+# European Values Metric ###
 
 
 def european_values_preprocessing_fn(
@@ -184,9 +183,8 @@ def european_values_preprocessing_fn(
         mapping.
 
     Raises:
-        AssertionError:
-            If the number of predictions is not a multiple of 53, which is required
-            for the European Values metric.
+        InvalidBenchmark:
+            If the predictions are not valid for the European Values metric.
     """
     num_questions = 53
     num_phrasings_per_question = 5
@@ -238,7 +236,7 @@ def european_values_preprocessing_fn(
 
         # Use majority voting to get the final prediction for each question
         # Shape: (53,)
-        arr = np.apply_along_axis(lambda x: np.bincount(x).argmax(), axis=1, arr=arr)  #  type: ignore[no-matching-overload]
+        arr = np.apply_along_axis(lambda x: np.bincount(x).argmax(), axis=1, arr=arr)  # type: ignore[no-matching-overload]
 
         # Convert the array to a list
         integer_predictions = arr.tolist()
@@ -273,7 +271,17 @@ def european_values_preprocessing_fn(
 def european_values_scoring_function(
     pipeline: "Pipeline", predictions: c.Sequence[int]
 ) -> float:
-    """Scoring function for the European Values metric."""
+    """Scoring function for the European Values metric.
+
+    Args:
+        pipeline:
+            The pipeline to use for scoring.
+        predictions:
+            The predictions to score.
+
+    Returns:
+        The score.
+    """
     normalised_predictions = pipeline[0].transform([predictions])
     log_likelihoods = pipeline[1].transform(normalised_predictions)[0]
     score = sigmoid(pipeline[2].alpha_ * (log_likelihoods - pipeline[2].center_))

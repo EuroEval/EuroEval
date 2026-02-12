@@ -71,7 +71,11 @@ def main() -> None:
 
 
 def read_dataset() -> dict:
-    """Read the CoNLL-formatted TSV files and convert them to the required format."""
+    """Read the CoNLL-formatted TSV files and convert them to the required format.
+
+    Returns:
+        A dictionary with the train, validation and test datasets.
+    """
     base_url = (
         "https://raw.githubusercontent.com/TurkuNLP/turku-ner-corpus/refs/heads/"
         "master/data/conll/{}.tsv"

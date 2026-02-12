@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import SWEDISH
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 SWEREC_CONFIG = DatasetConfig(
     name="swerec",
@@ -75,7 +75,7 @@ VALEU_SV_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 SCHIBSTED_SV_CONFIG = DatasetConfig(
     name="schibsted-sv",

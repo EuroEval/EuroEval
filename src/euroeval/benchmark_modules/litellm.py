@@ -482,6 +482,14 @@ class LiteLLMModel(BenchmarkModule):
             A pair (generation_kwargs, retry_delay_seconds), where `generation_kwargs`
             is the updated generation kwargs to pass to the model, and
             `retry_delay_seconds` is the number of seconds to wait before retrying.
+
+        Raises:
+            NeedsAdditionalArgument:
+                If the API key is not specified, but required.
+            InvalidModel:
+                If the model was not found, or does not specify a given parameter.
+            InvalidBenchmark:
+                If the model's reasoning budget is not specified correctly.
         """
         error_msg = str(error).lower()
         model_id = self.model_config.model_id
@@ -626,7 +634,7 @@ class LiteLLMModel(BenchmarkModule):
             keys_and_their_types = {
                 tag_name: (c.Sequence[str], ...) for tag_name in ner_tag_names
             }
-            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)  #  type: ignore[no-matching-overload]
+            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)  # type: ignore[no-matching-overload]
             generation_kwargs["response_format"] = pydantic_class
             return generation_kwargs, 0
         elif any(msg.lower() in error_msg for msg in no_json_schema_messages):
@@ -803,6 +811,10 @@ class LiteLLMModel(BenchmarkModule):
             A tuple (successes, failures), each being a list of tuples (idx, content),
             where the `idx` corresponds to the index of `conversations`, and `content`
             is either the model response or an Exception.
+
+        Raises:
+            InvalidBenchmark:
+                If the model input is invalid.
         """
         # Create a LiteLLM router, which will ensure that we only use a single client
         # for all the requests, preventing "too many open files" errors
@@ -909,6 +921,10 @@ class LiteLLMModel(BenchmarkModule):
 
         Returns:
             A GenerativeModelOutput object.
+
+        Raises:
+            InvalidBenchmark:
+                If the model response is invalid.
         """
         sequences = []
         scores = []
@@ -1358,6 +1374,10 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
+
+        Raises:
+            APIError:
+                The the API is not available.
         """
         model_id = split_model_id(model_id=model_id).model_id
         if model_id in litellm.model_list:
@@ -1590,6 +1610,13 @@ class LiteLLMModel(BenchmarkModule):
 
         Returns:
             The generation arguments for the model.
+
+        Raises:
+            InvalidModel:
+                If the model did not respond.
+            InvalidBenchmark:
+                If the dataset requires structured generation, but it hasn't been
+                implemented yet.
         """
         # Set the core generation arguments
         generation_kwargs: dict[str, t.Any] = dict(
@@ -1654,7 +1681,7 @@ class LiteLLMModel(BenchmarkModule):
                 for label in self.dataset_config.labels
             ]
             keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)  #  type: ignore[invalid-literal]
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)  # type: ignore[invalid-literal]
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class

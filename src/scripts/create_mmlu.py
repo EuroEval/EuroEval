@@ -53,7 +53,11 @@ MMLUX_SUBSET_IDS = {"pt": "PT-PT", "sl": "SL"}
 
 
 def main() -> None:
-    """Create the MMLU-mini datasets and upload them to the HF Hub."""
+    """Create the MMLU-mini datasets and upload them to the HF Hub.
+
+    Raises:
+        ValueError: If the number of repetitions is too high.
+    """
     # Define the base download URL
     repo_id = "alexandrainst/m_mmlu"
 

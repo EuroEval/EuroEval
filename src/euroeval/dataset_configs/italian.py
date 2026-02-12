@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import ITALIAN
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 SENTIPOLC_CONFIG = DatasetConfig(
     name="sentipolc16",
@@ -75,7 +75,7 @@ VALEU_IT_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 WIKINEURAL_IT_CONFIG = DatasetConfig(
     name="wikineural-it",

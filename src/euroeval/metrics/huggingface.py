@@ -182,6 +182,10 @@ class SourceBasedMetric(HuggingFaceMetric):
 
         Returns:
             The calculated metric score, or None if the score should be ignored.
+
+        Raises:
+            InvalidBenchmark:
+                If the dataset is not passed to the metric.
         """
         if dataset is None:
             raise InvalidBenchmark("SourceBasedMetric requires `dataset` to be passed.")

@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import POLISH
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 POLEMO2_CONFIG = DatasetConfig(
     name="polemo2",
@@ -76,7 +76,7 @@ VALEU_PL_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 MULTI_WIKI_QA_PL_CONFIG = DatasetConfig(
     name="multi-wiki-qa-pl",

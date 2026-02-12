@@ -16,7 +16,7 @@ from ..tasks import (
     SUMM,
 )
 
-### Official datasets ###
+# Official datasets ###
 
 DBRD_CONFIG = DatasetConfig(
     name="dbrd",
@@ -105,7 +105,7 @@ MBBQ_NL_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 DUTCH_COLA_CONFIG = DatasetConfig(
     name="dutch-cola",

@@ -14,7 +14,11 @@ from huggingface_hub import HfApi
 
 
 def main() -> None:
-    """Create the Estonian valence dataset and upload to HF Hub."""
+    """Create the Estonian valence dataset and upload to HF Hub.
+
+    Raises:
+        ValueError: If the dataset is not a DatasetDict.
+    """
     target_repo_id = "EuroEval/estonian-valence"
 
     # Use the reupload available on HuggingFace

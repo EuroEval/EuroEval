@@ -228,6 +228,11 @@ def apply_prompt(
 
     Returns:
         The example with the few-shot examples applied.
+
+    Raises:
+        ValueError:
+            If the `tokeniser` argument is not provided when the model is instruction
+            tuned and when we are not just returning the raw messages.
     """
     # Sanity check
     if (

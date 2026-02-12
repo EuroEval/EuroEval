@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import ICELANDIC
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 HOTTER_AND_COLDER_SENTIMENT_CONFIG = DatasetConfig(
     name="hotter-and-colder-sentiment",
@@ -76,7 +76,7 @@ VALEU_IS_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 ICE_EC_CONFIG = DatasetConfig(
     name="ice-ec",

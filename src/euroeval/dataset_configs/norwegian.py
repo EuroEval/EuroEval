@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import NORWEGIAN, NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 NOREC_CONFIG = DatasetConfig(
     name="norec",
@@ -101,7 +101,7 @@ VALEU_NO_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 NO_COLA_CONFIG = DatasetConfig(
     name="no-cola",

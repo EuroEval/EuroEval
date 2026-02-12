@@ -189,6 +189,12 @@ def finetune_single_iteration(
 
     Returns:
         The scores for the test dataset.
+
+    Raises:
+        NaNValueInModelOutput:
+            If the model output contains NaN values.
+        InvalidBenchmark:
+            If the model evaluation failed.
     """
     # Set random seeds to enforce reproducibility of the randomly initialised weights
     enforce_reproducibility(seed=training_args.seed)
@@ -238,13 +244,13 @@ def finetune_single_iteration(
     with torch.inference_mode():
         try:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],  #  type: ignore[bad-argument-type]
+                eval_dataset=dataset["test"],  # type: ignore[bad-argument-type]
                 orig_eval_dataset=dataset["original_test"],  # type: ignore[unexpected-keyword]
                 metric_key_prefix="test",
             )
         except TypeError:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],  #  type: ignore[bad-argument-type]
+                eval_dataset=dataset["test"],  # type: ignore[bad-argument-type]
                 metric_key_prefix="test",
             )
         except NaNValueInModelOutput as e:

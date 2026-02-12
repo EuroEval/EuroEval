@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import BELARUSIAN
 from ..tasks import COMMON_SENSE, LA, NER, RC, SENT
 
-### Official datasets ###
+# Official datasets ###
 
 BESLS_CONFIG = DatasetConfig(
     name="besls",

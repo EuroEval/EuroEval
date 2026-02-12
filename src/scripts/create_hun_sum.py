@@ -39,7 +39,11 @@ class SummaryValidation(BaseModel):
 
 
 def load_cache() -> dict:
-    """Load cache from CACHE_FILE if it exists."""
+    """Load cache from CACHE_FILE if it exists.
+
+    Returns:
+        The cache as a dictionary.
+    """
     try:
         with open(CACHE_FILE, "r") as cache_file:
             return json.load(cache_file)
@@ -152,6 +156,9 @@ def _text_summary_alignment(row: pd.Series) -> bool:
 
     Returns:
         True if the summary aligns with the text, False otherwise.
+
+    Raises:
+        ValueError: If the summary is not in the cache and the LLM could not
     """
     text = row["text"]
     summary = row["target_text"]

@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import FAROESE
 from ..tasks import LA, NER, RC, SENT
 
-### Official datasets ###
+# Official datasets ###
 
 FOSENT_CONFIG = DatasetConfig(
     name="fosent",
@@ -40,7 +40,7 @@ FOQA_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 WIKIANN_FO_CONFIG = DatasetConfig(
     name="wikiann-fo",

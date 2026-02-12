@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import LATVIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 LATVIAN_TWITTER_SENTIMENT_CONFIG = DatasetConfig(
     name="latvian-twitter-sentiment",
@@ -65,7 +65,7 @@ COPA_LV_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 WIKIANN_LV_CONFIG = DatasetConfig(
     name="wikiann-lv",

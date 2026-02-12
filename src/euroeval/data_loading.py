@@ -40,12 +40,6 @@ def load_data(
 
     Returns:
         A list of bootstrapped datasets, one for each iteration.
-
-    Raises:
-        InvalidBenchmark:
-            If the dataset cannot be loaded.
-        HuggingFaceHubDown:
-            If the Hugging Face Hub is down.
     """
     dataset = load_raw_data(
         dataset_config=dataset_config,
@@ -128,6 +122,12 @@ def load_raw_data(
 
     Returns:
         The dataset.
+
+    Raises:
+        InvalidBenchmark:
+            If the dataset cannot be loaded.
+        HuggingFaceHubDown:
+            If the Hugging Face Hub is down.
     """
     # Case where the dataset source is a Hugging Face ID
     if isinstance(dataset_config.source, str):

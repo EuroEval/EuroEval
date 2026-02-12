@@ -70,6 +70,9 @@ def format(row: dict[str, Any]) -> dict[str, str]:
 
     Returns:
         A dict with the prepared question in `text` and the correct answer in `label`
+
+    Raises:
+        ValueError: If the question type is unknown
     """
     text = f"Premisse: {row['premise']}\n"
 

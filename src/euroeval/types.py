@@ -48,6 +48,8 @@ class ComputeMetricsFunction(t.Protocol):
             dataset:
                 The dataset used for evaluation. This is only used in case any
                 additional metadata is used to compute the metrics.
+            benchmark_config:
+                The benchmark configuration.
 
         Returns:
             The computed metrics.

@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import CZECH
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 CSFD_SENTIMENT_CONFIG = DatasetConfig(
     name="csfd-sentiment",
@@ -63,7 +63,7 @@ HELLASWAG_CS_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 SCALA_CS_CONFIG = DatasetConfig(
     name="scala-cs",

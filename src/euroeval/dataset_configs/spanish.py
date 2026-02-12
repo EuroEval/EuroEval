@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import SPANISH
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 SENTIMENT_HEADLINES_CONFIG = DatasetConfig(
     name="sentiment-headlines-es",
@@ -75,7 +75,7 @@ VALEU_ES_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 XQUAD_ES_CONFIG = DatasetConfig(
     name="xquad-es",

@@ -48,7 +48,7 @@ def main() -> None:
     # Sort data by length, to make sure we do not get exceedingly long examples
     ds = ds.map(lambda x: {"length": len(x["text"].split())})
     for split in ds.keys():
-        ds[split] = ds[split].sort("length")  #  type: ignore[bad-argument-type]
+        ds[split] = ds[split].sort("length")  # type: ignore[bad-argument-type]
     ds = ds.remove_columns("length")
 
     train_size = 1024

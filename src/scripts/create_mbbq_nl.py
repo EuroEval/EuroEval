@@ -39,9 +39,9 @@ def main() -> None:
     df = dataset["test"].to_pandas()
     assert isinstance(df, pd.DataFrame)
 
-    ## Only select ambiguous questions for the benchmark. The "disambig" questions
-    ## are not used in the MBBQ-NL benchmark, as they are more about general
-    ## language comprehension rather than bias.
+    # Only select ambiguous questions for the benchmark. The "disambig" questions
+    # are not used in the MBBQ-NL benchmark, as they are more about general
+    # language comprehension rather than bias.
     df = df[df["context_condition"] == "ambig"].reset_index(drop=True)
 
     # Shuffle the dataframe to increase question variety in the splits.

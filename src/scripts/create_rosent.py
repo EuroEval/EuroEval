@@ -36,7 +36,11 @@ class Sentiment(BaseModel):
 
 
 def load_cache() -> dict:
-    """Load cache from CACHE_FILE if it exists."""
+    """Load cache from CACHE_FILE if it exists.
+
+    Returns:
+        The cache dictionary.
+    """
     try:
         with open(CACHE_FILE, "r") as cache_file:
             return json.load(cache_file)
@@ -110,6 +114,7 @@ def process(df: pd.DataFrame, n_samples: int) -> pd.DataFrame:
 
     Args:
         df: The input dataframe.
+        n_samples: The number of samples to use.
 
     Returns:
         A dataframe with the required columns and renamed.
@@ -154,6 +159,9 @@ def _classify_text(text: str) -> str:
 
     Returns:
         The sentiment of the text, either 'negative' or 'positive'
+
+    Raises:
+        ValueError: If the parsed response is None.
     """
     if text in label_cache:
         return label_cache[text]

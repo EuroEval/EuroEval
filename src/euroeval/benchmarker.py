@@ -180,8 +180,6 @@ class Benchmarker:
             ValueError:
                 If both `task` and `dataset` are specified, or if `download_only`
                 is True and we have no internet connection.
-            ImportError:
-                If `hf_transfer` is enabled but not installed.
         """
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
@@ -486,6 +484,10 @@ class Benchmarker:
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to the value specified when initialising
                 the benchmarker.
+            attention_backend:
+                The attention backend to use for vLLM. Only relevant if the model is
+                generative. Defaults to the value specified when initialising the
+                benchmarker.
             custom_datasets_file:
                 Path to a Python file defining custom datasets. Defaults to the value
                 specified when initialising the benchmarker.
@@ -512,6 +514,9 @@ class Benchmarker:
         Raises:
             ValueError:
                 If both `task` and `dataset` are specified.
+            InvalidModel:
+                If we're offline benchmarking an adapter model, or if model loading
+                failed.
         """
         log(
             "Started EuroEval run. Run with `--verbose` for more information.",
@@ -1129,7 +1134,17 @@ class Benchmarker:
             )
 
     def __call__(self, *args: t.Any, **kwds: t.Any) -> t.Any:  # noqa: ANN401
-        """Alias for `self.benchmark()`."""
+        """Alias for `self.benchmark()`.
+
+        Args:
+            *args:
+                Positional arguments to pass to `self.benchmark()`.
+            **kwds:
+                Keyword arguments to pass to `self.benchmark()`.
+
+        Returns:
+            The result of `self.benchmark()`.
+        """
         log(
             "Calling the `Benchmarker` class directly is deprecated. Please use the "
             "`benchmark` function instead. This will be removed in a future version.",

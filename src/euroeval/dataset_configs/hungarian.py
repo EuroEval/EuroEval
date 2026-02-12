@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import HUNGARIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 HUSST_CONFIG = DatasetConfig(
     name="husst",

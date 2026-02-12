@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import FRENCH
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 ALLOCINE_CONFIG = DatasetConfig(
     name="allocine",
@@ -77,7 +77,7 @@ VALEU_FR_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 BELEBELE_FR_CONFIG = DatasetConfig(
     name="belebele-fr",

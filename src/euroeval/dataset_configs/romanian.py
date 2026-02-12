@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import ROMANIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 ROSENT_CONFIG = DatasetConfig(
     name="ro-sent",

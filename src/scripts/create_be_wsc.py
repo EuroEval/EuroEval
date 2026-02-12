@@ -183,6 +183,9 @@ def prepare_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     Returns:
         Processed dataframe.
+
+    Raises:
+        ValueError: If required columns are missing
     """
     df = df.copy()
 
@@ -293,6 +296,9 @@ def _extract_second_candidate(row: pd.Series) -> str:
 
     Returns:
         The second candidate span.
+
+    Raises:
+        ValueError: If the OpenAI API call fails.
     """
     key = _cache_key(row)
     if key in candidate_cache:

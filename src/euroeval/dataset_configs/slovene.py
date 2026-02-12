@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import SLOVENE
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
-### Official datasets ###
+# Official datasets ###
 
 SENTINEWS_CONFIG = DatasetConfig(
     name="sentinews",

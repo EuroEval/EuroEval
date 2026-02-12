@@ -24,7 +24,7 @@ from zipfile import ZipFile
 import joblib
 import pandas as pd
 import requests as rq
-from bs4 import BeautifulSoup, NavigableString, Tag  #  type: ignore[missing-import]
+from bs4 import BeautifulSoup, NavigableString, Tag  # type: ignore[missing-import]
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
@@ -36,12 +36,7 @@ logger = logging.getLogger("create_hotter_and_colder")
 
 
 def main() -> None:
-    """Create the HotterAndColderSentiment dataset and upload it to the HF Hub.
-
-    Raises:
-        HTTPError:
-            If the dataset could not be downloaded.
-    """
+    """Create the HotterAndColderSentiment dataset and upload it to the HF Hub."""
     # Download the ZIP file
     url = (
         "https://repository.clarin.is/repository/xmlui/bitstream/handle/"

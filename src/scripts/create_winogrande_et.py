@@ -68,6 +68,10 @@ def add_options_and_label(row: MutableMapping) -> MutableMapping:
 
     Returns:
         A dictionary with the modified text and label.
+
+    Raises:
+        ValueError:
+            If the answer is not in the mapping.
     """
     letter_mapping = {"1": "a", "2": "b"}
 

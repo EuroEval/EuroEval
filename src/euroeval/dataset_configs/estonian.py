@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import ESTONIAN
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 ESTONIAN_VALENCE_CONFIG = DatasetConfig(
     name="estonian-valence",
@@ -81,7 +81,7 @@ VALEU_ET_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 SCALA_ET_CONFIG = DatasetConfig(
     name="scala-et",

@@ -42,7 +42,14 @@ def main(data_dir: str) -> None:
     valtest_df = pd.read_json(valtest_path)
 
     def set_up_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-        """Set up the dataframe."""
+        """Set up the dataframe.
+
+        Args:
+            df: The input DataFrame.
+
+        Returns:
+            The set up DataFrame.
+        """
         data_dict: dict[str, list] = defaultdict(list)
         for article_dict in df.data:
             for paragraph_dict in article_dict["paragraphs"]:

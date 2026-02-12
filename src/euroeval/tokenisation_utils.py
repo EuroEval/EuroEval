@@ -324,6 +324,10 @@ def get_end_of_chat_token_ids(
     Returns:
         The token IDs used to end chats, or None if the tokeniser does not have a chat
         template or if no end-of-chat token could be found.
+
+    Raises:
+        InvalidModel:
+            If the tokeniser does not have a chat template.
     """
     if generative_type == GenerativeType.BASE:
         return None
@@ -611,4 +615,4 @@ def apply_chat_template(
             tokenize=tokenise,
             **extra_kwargs,
         )
-    return templated_prompt  #  type: ignore[bad-return]
+    return templated_prompt  # type: ignore[bad-return]

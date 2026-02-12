@@ -21,7 +21,11 @@ FINAL_REPO_ID = "EuroEval/boolq-pt"
 
 
 def main() -> None:
-    """Create the dataset and upload to HF Hub."""
+    """Create the dataset and upload to HF Hub.
+
+    Raises:
+        ValueError: If there are not enough unique samples.
+    """
     ds_raw = load_dataset(ORIGINAL_REPO_ID, name="boolq_pt-PT")
     assert isinstance(ds_raw, DatasetDict)
 

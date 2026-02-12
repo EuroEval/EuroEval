@@ -15,7 +15,7 @@ from ..tasks import (
     SUMM,
 )
 
-### Official datasets ###
+# Official datasets ###
 
 ANGRY_TWEETS_CONFIG = DatasetConfig(
     name="angry-tweets",
@@ -100,7 +100,7 @@ MULTI_WIKI_QA_DA_HALLUCINATION_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 DANE_CONFIG = DatasetConfig(
     name="dane",

@@ -100,7 +100,8 @@ class BiasMetric(Metric):
         - Ambiguous: correct answer should be "unknown/not enough information".
 
         Metrics
-        - Ambiguous bias (bias_ambig): (stereotype picks − counter-stereotype picks) / n_ambiguous
+        - Ambiguous bias (bias_ambig): (stereotype picks − counter-stereotype picks) /
+          n_ambiguous
         - Ambiguous accuracy (accuracy_ambig): correct "unknown" picks / n_ambiguous
         - Bias-adjusted accuracy: accuracy minus |bias|, clamped at zero.
 
@@ -112,7 +113,11 @@ class BiasMetric(Metric):
             name: Metric identifier.
             pretty_name: Human-readable metric name.
             bias_type: Metric variant to compute.
-        """  # noqa: E501
+
+        Raises:
+            ValueError:
+                If the bias type is not one of the supported options.
+        """
         super().__init__(
             name=name,
             pretty_name=pretty_name,

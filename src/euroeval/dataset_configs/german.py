@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import GERMAN
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 SB10K_CONFIG = DatasetConfig(
     name="sb10k",
@@ -75,7 +75,7 @@ VALEU_DE_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 XQUAD_DE_CONFIG = DatasetConfig(
     name="xquad-de",

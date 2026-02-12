@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import EUROPEAN_PORTUGUESE, PORTUGUESE
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 SST2_PT_CONFIG = DatasetConfig(
     name="sst2-pt",
@@ -76,7 +76,7 @@ VALEU_PT_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 BOOLQ_PT_CONFIG = DatasetConfig(
     name="boolq-pt",

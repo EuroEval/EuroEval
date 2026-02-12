@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import CATALAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 GUIA_CAT_CONFIG = DatasetConfig(
     name="guia-cat",

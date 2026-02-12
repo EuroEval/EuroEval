@@ -87,6 +87,9 @@ def process_dataset(dataset: Dataset) -> pd.DataFrame:
 
     Returns:
         Processed DataFrame with text and label columns.
+
+    Raises:
+        ValueError: If the correct_answer value is unexpected.
     """
     df = dataset.to_pandas()
     assert isinstance(df, pd.DataFrame)

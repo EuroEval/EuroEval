@@ -22,7 +22,11 @@ from euroeval.tasks import RC
 
 @pytest.fixture(scope="module")
 def tokeniser_id() -> Generator[str, None, None]:
-    """Fixture for the tokeniser ID."""
+    """Fixture for the tokeniser ID.
+
+    Yields:
+        A tokeniser ID.
+    """
     yield "EuroEval/gemma-3-tokenizer"
 
 
@@ -33,7 +37,11 @@ class TestLoadData:
     def datasets(
         self, benchmark_config: BenchmarkConfig
     ) -> Generator[list[DatasetDict], None, None]:
-        """A loaded dataset."""
+        """A loaded dataset.
+
+        Yields:
+            A loaded dataset.
+        """
         yield load_data(
             rng=default_rng(seed=4242),
             dataset_config=get_all_dataset_configs(

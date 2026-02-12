@@ -135,6 +135,9 @@ def build_dataframe(url: str) -> pd.DataFrame:
 
     Returns:
         A dataframe containing the NoCoLa dataset.
+
+    Raises:
+        ValueError: If the number of components in a line is not 1 or 2.
     """
     # Get the raw data
     response = requests.get(url=url)

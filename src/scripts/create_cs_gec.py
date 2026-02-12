@@ -83,7 +83,14 @@ def main() -> None:
 
 
 def filter_by_text_length(df: pd.DataFrame) -> pd.DataFrame:
-    """Filter the dataframe by text length."""
+    """Filter the dataframe by text length.
+
+    Args:
+        df: The input dataframe.
+
+    Returns:
+        The filtered dataframe.
+    """
     df["text_len"] = df.text.str.len()
     return df.query(
         "text_len >= @MIN_NUM_CHARS_IN_DOCUMENT and "

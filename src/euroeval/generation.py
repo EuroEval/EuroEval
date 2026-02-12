@@ -124,6 +124,10 @@ def generate_single_iteration(
 
     Returns:
         A list of dictionaries containing the scores for each metric.
+
+    Raises:
+        InvalidModel:
+            If the model's batching preference is not supported.
     """
     cache.load()
 
@@ -281,6 +285,10 @@ def debug_log(
             The extracted labels from the model output.
         dataset_config:
             The configuration of the dataset.
+
+    Raises:
+        InvalidBenchmark:
+            If the dataset is not passed to the metric.
     """
     match dataset_config.task.task_group:
         case TaskGroup.TOKEN_CLASSIFICATION:

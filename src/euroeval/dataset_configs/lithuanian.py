@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import LITHUANIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 ATSILIEPIMAI_CONFIG = DatasetConfig(
     name="atsiliepimai",
@@ -63,7 +63,7 @@ WINOGRANDE_LT_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
     name="lithuanian-emotions",

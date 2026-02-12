@@ -68,6 +68,9 @@ def download_dataset(url: str, temp_path: Path) -> Path:
 
     Returns:
         Path to the data directory.
+
+    Raises:
+        FileNotFoundError: If the train.jsonl file is not found in the extracted files.
     """
     tar_path = temp_path / "cinexio.tar.gz"
     response = requests.get(url)

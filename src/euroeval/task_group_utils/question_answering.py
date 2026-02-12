@@ -91,7 +91,7 @@ class QuestionAnsweringTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
-        eval_dataloader = self.get_eval_dataloader(eval_dataset)  #  type: ignore[bad-argument-type]
+        eval_dataloader = self.get_eval_dataloader(eval_dataset)  # type: ignore[bad-argument-type]
 
         # Temporarily disable metric computation, we will do it in the loop here.
         compute_metrics = self.compute_metrics  # type: ignore[has-type]
@@ -186,8 +186,8 @@ def compute_metrics(
     results: dict[str, float] = dict()
     for metric in dataset_config.task.metrics:
         score: float | None = metric(
-            predictions=predictions,  #  type: ignore[bad-argument-type]
-            references=labels,  #  type: ignore[bad-argument-type]
+            predictions=predictions,  # type: ignore[bad-argument-type]
+            references=labels,  # type: ignore[bad-argument-type]
             dataset=dataset,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
@@ -241,7 +241,7 @@ def prepare_train_examples(
     # Some of the questions have lots of whitespace on the left, which is not useful
     # and will make the truncation of the context fail (the tokenized question will
     # take a lots of space). So we remove that left whitespace
-    examples["question"] = [q.lstrip() for q in examples["question"]]  #  type: ignore[not-iterable]
+    examples["question"] = [q.lstrip() for q in examples["question"]]  # type: ignore[not-iterable]
 
     # Extract special token metadata from the tokeniser
     special_token_metadata = get_special_token_metadata(tokeniser=tokeniser)
@@ -256,7 +256,7 @@ def prepare_train_examples(
         examples["question"] = [
             f"{cls_token}{q}{sep_token}" for q in examples["question"]
         ]
-        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]  #  type: ignore[not-iterable]
+        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]  # type: ignore[not-iterable]
 
     # Set the stride used during tokenisation, when the context is long enough to be
     # split into several features. Since we are always keeping the question tokens, we
@@ -325,7 +325,7 @@ def prepare_train_examples(
         # One example can give several spans, this is the index of the example
         # containing this span of text.
         sample_index = sample_mapping[i]
-        answers = examples["answers"][sample_index]  #  type: ignore[bad-index]
+        answers = examples["answers"][sample_index]  # type: ignore[bad-index]
 
         # If no answers are given, set the cls_index as answer.
         if len(answers["answer_start"]) == 0:
@@ -404,7 +404,7 @@ def prepare_test_examples(
     # Some of the questions have lots of whitespace on the left, which is not useful
     # and will make the truncation of the context fail (the tokenised question will
     # take a lots of space). So we remove that left whitespace
-    examples["question"] = [q.lstrip() for q in examples["question"]]  #  type: ignore[not-iterable]
+    examples["question"] = [q.lstrip() for q in examples["question"]]  # type: ignore[not-iterable]
 
     # Extract special token metadata from the tokeniser
     special_token_metadata = get_special_token_metadata(tokeniser=tokeniser)
@@ -418,7 +418,7 @@ def prepare_test_examples(
         examples["question"] = [
             f"{cls_token}{q}{sep_token}" for q in examples["question"]
         ]
-        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]  #  type: ignore[not-iterable]
+        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]  # type: ignore[not-iterable]
 
     # Set the stride used during tokenisation, when the context is long enough to be
     # split into several features. Since we are always keeping the question tokens, we
@@ -467,7 +467,7 @@ def prepare_test_examples(
         # One example can give several spans, this is the index of the example
         # containing this span of text.
         sample_index = sample_mapping[i]
-        tokenised_examples.id.append(examples["id"][sample_index])  #  type: ignore[bad-index]
+        tokenised_examples.id.append(examples["id"][sample_index])  # type: ignore[bad-index]
 
         # Set to (-1, -1) the offset_mapping that are not part of the context so it's
         # easy to determine if a token position is part of the context or not.
@@ -499,6 +499,11 @@ def postprocess_predictions_and_labels(
 
     Returns:
         The postprocessed predictions and labels.
+
+    Raises:
+        InvalidBenchmark:
+            If the predictions are not a tuple with the first two elements being
+            (start_logits, end_logits).
     """
     if len(predictions) < 2:
         raise InvalidBenchmark(

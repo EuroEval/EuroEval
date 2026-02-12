@@ -97,6 +97,7 @@ def process_(dataset: Dataset, language_code: str) -> pd.DataFrame:
 
     Args:
         dataset: HuggingFace Dataset to process.
+        language_code: Language code for the dataset
 
     Returns:
         pandas.DataFrame with columns 'text', 'label', and 'activity_label'.

@@ -227,6 +227,12 @@ def load_model_and_tokeniser(
 
     Returns:
         The loaded model and tokeniser.
+
+    Raises:
+        InvalidModel:
+            If the model could not be loaded.
+        InvalidBenchmark:
+            If the model could not be loaded for this particular dataset.
     """
     config: "PretrainedConfig"
     block_terminal_output()

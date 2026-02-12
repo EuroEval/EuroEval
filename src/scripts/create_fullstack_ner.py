@@ -116,6 +116,9 @@ def clone_fullstack_repository(repo_name: str = "FullStack") -> Path:
 
     Returns:
         Path to the cloned repository.
+
+    Raises:
+        RuntimeError: If the repository cloning fails.
     """
     if not Path(repo_name).exists():
         print("Cloning FullStack repository...")
@@ -150,6 +153,9 @@ def load_fullstack_data(repo_path: Path) -> list[dict[str, list[str] | str]]:
 
     Returns:
         A list of sentence records.
+
+    Raises:
+        FileNotFoundError: If the data directory is not found in the repository.
     """
     # Path to the data directory within the repository
     data_dir = repo_path / "NamedEntities" / "data"

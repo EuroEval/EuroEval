@@ -107,6 +107,10 @@ def extract_multiple_choice_labels(
 
     Returns:
         The extracted labels.
+
+    Raises:
+        InvalidBenchmark:
+            If no candidate labels could be found in the prompt.
     """
     sample_candidate_labels: list[str] = list()
     for candidate_label in candidate_labels:
@@ -136,7 +140,8 @@ def split_model_id(model_id: str) -> "ModelIdComponents":
         The split model ID.
 
     Raises:
-        If the model ID is not valid.
+        InvalidModel:
+            If the model ID is not valid.
     """
     # Importing here to avoid circular imports
     from .data_models import ModelIdComponents

@@ -536,6 +536,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
         Returns:
             The model configuration.
+
+        Raises:
+            InvalidModel:
+                If the model could not be found.
         """
         model_id_components = split_model_id(model_id=model_id)
         model_info = get_model_repo_info(
@@ -593,6 +597,12 @@ def load_model_and_tokeniser(
 
     Returns:
         A pair (model, tokeniser), with the loaded model and tokeniser
+
+    Raises:
+        InvalidModel:
+            If the model could not be loaded.
+        InvalidBenchmark:
+            If the model could not be loaded for this particular dataset.
     """
     config: "PretrainedConfig"
     block_terminal_output()
@@ -743,6 +753,16 @@ def get_model_repo_info(
             The model ID.
         revision:
             The revision of the model.
+        api_key:
+            The Hugging Face API key.
+        cache_dir:
+            The directory to cache the model in.
+        trust_remote_code:
+            Whether to trust remote code.
+        requires_safetensors:
+            Whether the model requires safetensors.
+        run_with_cli:
+            Whether the script is being run with the CLI.
 
     Returns:
         The information about the model, or None if the model could not be found.
@@ -953,6 +973,10 @@ def load_tokeniser(
 
     Returns:
         The loaded tokeniser.
+
+    Raises:
+        InvalidModel:
+            If the tokeniser could not be loaded.
     """
     loading_kwargs: dict[str, bool | str] = dict(
         use_fast=False if model_config.param == "slow-tokenizer" else True,
@@ -1065,6 +1089,12 @@ def load_hf_model_config(
 
     Returns:
         The Hugging Face model configuration.
+
+    Raises:
+        NeedsAdditionalArgument:
+            If an additional argument is required to load the model configuration.
+        InvalidModel:
+            If the model configuration could not be loaded.
     """
     for _ in range(num_attempts := 5):
         try:
@@ -1151,6 +1181,10 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
 
     Returns:
         The setup model.
+
+    Raises:
+        InvalidModel:
+            If the model does not have token type embeddings.
     """
     # Get the models' token type embedding children, if they exist
     children = get_children_of_module(name="model", module=model)
@@ -1249,6 +1283,12 @@ def align_model_and_tokeniser(
 
     Returns:
         The fixed model and tokeniser.
+
+    Raises:
+        InvalidModel:
+            If the model's vocab size is not set correctly.
+        ValueError:
+            If an error appeared during inference.
     """
     model_max_length = min(model_max_length, MAX_CONTEXT_LENGTH)
 

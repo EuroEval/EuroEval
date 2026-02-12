@@ -74,6 +74,9 @@ def main() -> None:
         Returns:
             The rephrased answer (if the answer is already in the context, it is
             returned as is).
+
+        Raises:
+            ValueError: If the answer is not in the context.
         """
         answer = answer[:-1] if answer.endswith(".") else answer
 

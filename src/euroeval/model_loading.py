@@ -35,6 +35,10 @@ def load_model(
 
     Returns:
         The model.
+
+    Raises:
+        InvalidModel:
+            If the model is not a supported model type.
     """
     log_once(f"\nLoading the model {model_config.model_id}...", level=logging.INFO)
 

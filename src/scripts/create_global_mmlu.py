@@ -152,6 +152,7 @@ def process_split(df: pd.DataFrame, language: str) -> pd.DataFrame:
 
     Args:
         df: The input DataFrame.
+        language: The language of the dataset.
 
     Returns:
         The processed DataFrame.
@@ -226,6 +227,7 @@ def add_text_column(df: pd.DataFrame, language: str) -> pd.DataFrame:
 
     Args:
         df: The input DataFrame.
+        language: The language of the dataset.
 
     Returns:
         The DataFrame with the added `text` column.

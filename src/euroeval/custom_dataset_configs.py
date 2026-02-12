@@ -19,9 +19,8 @@ def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None
         custom_datasets_file:
             The path to the custom datasets module.
 
-    Raises:
-        RuntimeError:
-            If the custom datasets module cannot be loaded.
+    Returns:
+        The custom datasets module, or None if it does not exist.
     """
     if custom_datasets_file.exists():
         spec = importlib.util.spec_from_file_location(

@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import SERBIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 MMS_SR_CONFIG = DatasetConfig(
     name="mms-sr",

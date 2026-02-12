@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import FINNISH
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, LA, MCRC, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 SCANDISENT_FI_CONFIG = DatasetConfig(
     name="scandisent-fi",
@@ -68,7 +68,7 @@ VALEU_FI_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 BELEBELE_FI_CONFIG = DatasetConfig(
     name="belebele-fi",

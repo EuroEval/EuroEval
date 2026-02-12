@@ -15,12 +15,30 @@ from euroeval.metrics import (
 
 @pytest.fixture(scope="module")
 def make_dataset() -> Callable[[str, Sequence[int], int | None, int], Dataset]:
-    """Build small datasets with the columns needed by bias metrics."""
+    """Build small datasets with the columns needed by bias metrics.
+
+    Returns:
+        A function that creates a dataset with the specified columns.
+    """
 
     def _make(
         cond: str, indices: Sequence[int], correct: int | None, n: int
     ) -> Dataset:
-        """Create a dataset with consistent context and label indices."""
+        """Create a dataset with consistent context and label indices.
+
+        Args:
+            cond:
+                The context condition.
+            indices:
+                The indices of the context, stereo, counter, and unknown labels.
+            correct:
+                The index of the correct label.
+            n:
+                The number of records to create.
+
+        Returns:
+            A dataset with the specified columns.
+        """
         stereo, counter, unknown = indices
         records = []
         for _ in range(n):

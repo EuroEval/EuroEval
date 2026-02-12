@@ -33,7 +33,11 @@ from euroeval.exceptions import HuggingFaceHubDown
 
 @pytest.fixture(scope="module")
 def benchmarker() -> Generator[Benchmarker, None, None]:
-    """A `Benchmarker` instance."""
+    """A `Benchmarker` instance.
+
+    Yields:
+        A `Benchmarker` instance.
+    """
     yield Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
 
 

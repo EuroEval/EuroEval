@@ -59,7 +59,15 @@ def main() -> None:
 
 
 def add_options_and_label(row: MutableMapping) -> MutableMapping:
-    """Add options to the text and transform labels to letters."""
+    """Add options to the text and transform labels to letters.
+
+    Args:
+        row:
+            A row from the dataset.
+
+    Returns:
+        A dictionary with the modified text and label.
+    """
     letters = ["a", "b", "c", "d"]
 
     question = row["küsimus"]

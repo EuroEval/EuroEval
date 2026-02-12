@@ -33,7 +33,12 @@ logger = logging.getLogger("create_skolprov")
 
 
 def main() -> None:
-    """Create the Swedish skolprov datasets and upload them to the HF Hub."""
+    """Create the Swedish skolprov datasets and upload them to the HF Hub.
+
+    Raises:
+        ValueError:
+            If the dataset cannot be loaded.
+    """
     # Define the base download URL
     repo_id = "Ekgren/swedish_skolprov"
 

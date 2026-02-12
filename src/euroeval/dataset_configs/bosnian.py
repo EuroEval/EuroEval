@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import BOSNIAN
 from ..tasks import NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 MMS_BS_CONFIG = DatasetConfig(
     name="mms-bs",

@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import GREEK
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 GREEK_SA_CONFIG = DatasetConfig(
     name="greek-sa",

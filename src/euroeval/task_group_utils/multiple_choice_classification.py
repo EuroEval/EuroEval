@@ -41,7 +41,7 @@ class MultipleChoiceClassificationTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
-        eval_dataloader = self.get_eval_dataloader(eval_dataset)  #  type: ignore[bad-argument-type]
+        eval_dataloader = self.get_eval_dataloader(eval_dataset)  # type: ignore[bad-argument-type]
 
         eval_loop = (
             self.prediction_loop
@@ -145,7 +145,7 @@ def prepare_examples(
         truncation=True,
     )
     new_examples["label"] = [
-        int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])  #  type: ignore[bad-index]
+        int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])  # type: ignore[bad-index]
         for letter, choice in zip("abcdefghijklmnopqrstuvwxyz", choices)
     ]
     new_examples["id"] = [hashlib.md5(string=doc.encode()).hexdigest()] * len(choices)
@@ -166,6 +166,10 @@ def postprocess_predictions_and_labels(
 
     Returns:
         The postprocessed predictions and labels.
+
+    Raises:
+        InvalidBenchmark:
+            If the predictions are not a 2D array with shape (num_examples, 2).
     """
     if predictions.ndim != 2 or predictions.shape[1] != 2:
         raise InvalidBenchmark(
@@ -180,7 +184,7 @@ def postprocess_predictions_and_labels(
 
     pred_label_dict = defaultdict(list)
     for pred_arr, example in zip(predictions, dataset):
-        pred_label_dict[example["id"]].append((pred_arr[1], example["label"]))  #  type: ignore[bad-index]
+        pred_label_dict[example["id"]].append((pred_arr[1], example["label"]))  # type: ignore[bad-index]
 
     # Compute the final predictions and labels
     for id_ in set(dataset["id"]):

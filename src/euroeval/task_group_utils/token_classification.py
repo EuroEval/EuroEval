@@ -48,6 +48,11 @@ def compute_metrics(
     Returns:
         A dictionary with the names of the metrics as keys and the metric values as
         values.
+
+    Raises:
+        InvalidBenchmark:
+            If the tokeniser is not of a "fast" variant and the word IDs cannot be
+            extracted.
     """
     model_outputs, labels = model_outputs_and_labels
 
@@ -57,7 +62,7 @@ def compute_metrics(
         model_outputs = model_outputs[0]
 
     predictions: list[list[str]]
-    if not isinstance(model_outputs[0][0], str):  #  type: ignore[bad-index]
+    if not isinstance(model_outputs[0][0], str):  # type: ignore[bad-index]
         raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()  # type: ignore[no-matching-overload]
 
         # Remove ignored index (special tokens)
@@ -272,6 +277,11 @@ def tokenize_and_align_labels(
 
     Returns:
         A dictionary containing the tokenized data as well as labels.
+
+    Raises:
+        InvalidBenchmark:
+            If the tokeniser is not of a "fast" variant and the word IDs cannot be
+            extracted.
     """
     # Tokenise the texts. We use the `is_split_into_words` argument here because
     # the texts in our dataset are lists of words (with a label for each word)
