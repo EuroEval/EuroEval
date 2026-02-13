@@ -302,7 +302,8 @@ def check_number_words(response: str, **constraint_kwargs) -> bool:
     num_words: int = constraint_kwargs["num_words"]
     relation: t.Literal["less than", "at least"] = constraint_kwargs["relation"]
 
-    actual = len(nltk.tokenize.word_tokenize(text=response))
+    words = nltk.tokenize.word_tokenize(text=response)
+    actual = len(words)
     if relation == "less than":
         return actual < num_words
     return actual >= num_words
