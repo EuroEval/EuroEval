@@ -1047,11 +1047,11 @@ def check_ethel_or_cedilla_not_present(response: str, **constraint_kwargs) -> bo
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``forbidden_char`` – the character that must
-            be present in the response.
+            Keyword arguments containing ``forbidden_char`` – the character that is
+            forbidden in the response (must not be present).
 
     Returns:
-        True
+        True if the forbidden character is not present in the response, False otherwise.
     """
     forbidden_char: t.Literal["œ", "ç"] = constraint_kwargs["forbidden_char"]
     return forbidden_char not in response
