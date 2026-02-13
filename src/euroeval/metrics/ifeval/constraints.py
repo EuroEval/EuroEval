@@ -89,7 +89,7 @@ def register(
                     )
 
                 # Special case for Literal, since it does not support `isinstance`
-                elif type_ == t.Literal[t.get_args(type_)]:  # pyrefly: ignore
+                elif t.get_origin(type_) == t.Literal:
                     possible_values = t.get_args(type_)
                     if constraint_kwargs[key] not in possible_values:
                         raise InvalidBenchmark(
