@@ -6,7 +6,7 @@ from .data_models import Task
 from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
     CLASSIFICATION_TEMPLATES,
-    INSTRUCTION_FOLLOWING_TEMPLATES,
+    EMPTY_TEMPLATES,
     LA_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
     NER_TEMPLATES,
@@ -226,8 +226,8 @@ MULTIPLE_CHOICE = Task(
 INSTRUCTION_FOLLOWING = Task(
     name="instruction-following",
     task_group=TaskGroup.TEXT_TO_TEXT,
-    template_dict=INSTRUCTION_FOLLOWING_TEMPLATES,
-    metrics=[m.inst_level_strict_acc_metric],
+    template_dict=EMPTY_TEMPLATES,
+    metrics=[m.instruction_accuracy],
     default_num_few_shot_examples=0,
     default_max_generated_tokens=2048,
     default_labels=None,
