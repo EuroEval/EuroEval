@@ -99,12 +99,17 @@ def register(
                         )
 
                 elif not isinstance(constraint_kwargs[key], type_):
-                    raise InvalidBenchmark(
-                        f"The function {fn.__name__!r} (registered as {name!r}) "
-                        f"expects the keyword argument {key!r} to be of type "
-                        f"{type_.__name__!r}, but got "
-                        f"{type(constraint_kwargs[key]).__name__!r}."
-                    )
+                    if type_ is int and isinstance(constraint_kwargs[key], float):
+                        constraint_kwargs[key] = int(constraint_kwargs[key])
+                    elif type_ is float and isinstance(constraint_kwargs[key], int):
+                        constraint_kwargs[key] = float(constraint_kwargs[key])
+                    else:
+                        raise InvalidBenchmark(
+                            f"The function {fn.__name__!r} (registered as {name!r}) "
+                            f"expects the keyword argument {key!r} to be of type "
+                            f"{type_.__name__!r}, but got "
+                            f"{type(constraint_kwargs[key]).__name__!r}."
+                        )
             return fn(response, **constraint_kwargs)
 
         ALL_CONSTRAINTS[name] = wrapper  # pyrefly: ignore[unsupported-operation]
