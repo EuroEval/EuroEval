@@ -984,6 +984,95 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset cnn-dailymail
 ```
 
+## Instruction-following
+
+### IFEval
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2311.07911)
+and contains 541 prompts, each with a combination of one or more of 25 different
+constraints. We use the original dataset as the test split, and do not include the other
+splits, as we only evaluate models zero-shot and the size is too small to warrant an
+even smaller validation set.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Write an essay on the differences between Sunni and Shi'a Muslims. Your entire response must contain at least 1200 words.",
+    "target_text": {
+        "instruction_id_list": [
+            "length_constraints:number_words"
+        ],
+        "kwargs": [
+            {
+                "num_words": 1200,
+                "relation": "at least",
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "You feel strongly about a local issue that involves the environment, pollution, and climate change. Write a template for a letter to the editor of a newspaper. Use the word para at least once.",
+    "target_text": {
+        "instruction_id_list": [
+            "keywords:frequency"
+        ],
+        "kwargs": [
+            {
+                "frequency": 1,
+                "keyword": "para",
+                "relation": "at least",
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Students are travelling to UCI for 3 days. Create a hilarious itinerary for them. Do not use the word 'university'. Your entire response should have exactly 4 paragraphs.  Separate paragraphs with the markdown divider: ***",
+    "target_text": {
+        "instruction_id_list": [
+            "length_constraints:number_paragraphs",
+            "keywords:forbidden_words"
+        ],
+        "kwargs": [
+            {
+                "num_paragraphs": 4,
+            },
+            {
+                "forbidden_words": [
+                    "university"
+                ],
+            }
+        ]
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ifeval
+```
+
 ## European Values
 
 ### ValEU-en

@@ -748,6 +748,197 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset err-news
 ```
 
+## Instruction-following
+
+### IFEval-et
+
+This dataset is a translation of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each
+with a combination of one or more of 25 different constraints. The dataset was
+translated by a professional translator, and the samples were also localised to Estonia.
+For instance, "President of the United States" is replaced with "President of Estonia".
+
+We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Kirjuta vemmalv\u00e4rss naisest nimega Saara, kes elab linnas, kus on alati 30\u00b0C. T\u00f5sta oma vastuses markdowni vorminguga esile v\u00e4hemalt kuus osa, n\u00e4iteks: *esilet\u00f5stetud osa*. Maini nime Saara ainult \u00fcks kord.",
+    "target_text": {
+        "instruction_id_list": [
+            "detectable_format:number_highlighted_sections",
+            "keywords:frequency",
+            "keywords:existence"
+        ],
+        "kwargs": [
+            {
+                "num_highlights": 6
+            },
+            {
+                "frequency": 2,
+                "keyword": "Saara",
+                "relation": "less than"
+            },
+            {
+                "keywords": [
+                    "Saara"
+                ]
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Kirjuta j\u00e4rgnevast tekstist naljakas kokkuv\u00f5te: \u201e2018. aasta Nobeli keemiapreemia p\u00e4lvisid Frances Arnold, George P. Smith ja Gregory P. Winter oma t\u00f6\u00f6 eest suunatud evolutsiooni valdkonnas. Pool auhinnast anti Frances Arnoldile ens\u00fc\u00fcmide suunatud evolutsiooni alase t\u00f6\u00f6 eest, teine pool l\u00e4ks jagamisele George P. Smithi ja Gregory P. Winteri vahel nende t\u00f6\u00f6 eest antikehade suunatud evolutsiooni alal.\u201c\n\n\u00c4ra kasuta oma vastuses \u00fchelgi kujul m\u00e4rks\u00f5nu \u201eens\u00fc\u00fcmid\u201c ja \u201eantikehad\u201c.",
+    "target_text": {
+        "instruction_id_list": [
+            "keywords:forbidden_words"
+        ],
+        "kwargs": [
+            {
+                "forbidden_words": [
+                    "ens\u00fc\u00fcm",
+                    "ens\u00fc\u00fcmi",
+                    "ens\u00fc\u00fcmisse",
+                    "ens\u00fc\u00fcmis",
+                    "ens\u00fc\u00fcmist",
+                    "ens\u00fc\u00fcmile",
+                    "ens\u00fc\u00fcmil",
+                    "ens\u00fc\u00fcmilt",
+                    "ens\u00fc\u00fcmiks",
+                    "ens\u00fc\u00fcmini",
+                    "ens\u00fc\u00fcmina",
+                    "ens\u00fc\u00fcmita",
+                    "ens\u00fc\u00fcmiga",
+                    "ens\u00fc\u00fcmid",
+                    "ens\u00fc\u00fcmide",
+                    "ens\u00fc\u00fcme",
+                    "ens\u00fc\u00fcmisid",
+                    "ens\u00fc\u00fcmidesse",
+                    "ens\u00fc\u00fcmesse",
+                    "ens\u00fc\u00fcmides",
+                    "ens\u00fc\u00fcmes",
+                    "ens\u00fc\u00fcmidest",
+                    "ens\u00fc\u00fcmest",
+                    "ens\u00fc\u00fcmidele",
+                    "ens\u00fc\u00fcmele",
+                    "ens\u00fc\u00fcmidel",
+                    "ens\u00fc\u00fcmel",
+                    "ens\u00fc\u00fcmidelt",
+                    "ens\u00fc\u00fcmelt",
+                    "ens\u00fc\u00fcmideks",
+                    "ens\u00fc\u00fcmeks",
+                    "ens\u00fc\u00fcmideni",
+                    "ens\u00fc\u00fcmidena",
+                    "ens\u00fc\u00fcmideta",
+                    "ens\u00fc\u00fcmidega",
+                    "antikeha",
+                    "antikeha",
+                    "antikehasse",
+                    "antikehas",
+                    "antikehast",
+                    "antikehale",
+                    "antikehal",
+                    "antikehalt",
+                    "antikehaks",
+                    "antikehani",
+                    "antikehana",
+                    "antikehata",
+                    "antikehaga",
+                    "antikehad",
+                    "antikehade",
+                    "antikehi",
+                    "antikehasid",
+                    "antikehadesse",
+                    "antikehisse",
+                    "antikehades",
+                    "antikehis",
+                    "antikehadest",
+                    "antikehist",
+                    "antikehadele",
+                    "antikehile",
+                    "antikehadel",
+                    "antikehil",
+                    "antikehadelt",
+                    "antikehilt",
+                    "antikehadeks",
+                    "antikehiks",
+                    "antikehadeni",
+                    "antikehadena",
+                    "antikehadeta",
+                    "antikehadega"
+                ]
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Kirjuta raamatu\u00fclevaade uuest raamatust \u201eKodukool ilma kodukollideta\u201c. \u00dclevaade peaks olema kahe inimese vaheline vestlus. Vastus ei tohi sisaldada \u00fcheski vormis s\u00f5na \u201esina\u201c.",
+    "target_text": {
+        "instruction_id_list": [
+            "keywords:forbidden_words"
+        ],
+        "kwargs": [
+            {
+                "forbidden_words": [
+                    "sina",
+                    "sinu",
+                    "sind",
+                    "sinusse",
+                    "sinus",
+                    "sinust",
+                    "sinule",
+                    "sinul",
+                    "sinult",
+                    "sinuks",
+                    "sinuni",
+                    "sinuna",
+                    "sinuta",
+                    "sinuga",
+                    "sa",
+                    "su",
+                    "susse",
+                    "sus",
+                    "sust",
+                    "sulle",
+                    "sul",
+                    "sult",
+                    "suga"
+                ]
+            }
+        ]
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ifeval-et
+```
+
 ## European Values
 
 ### ValEU-et
