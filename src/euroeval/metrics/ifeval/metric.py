@@ -25,8 +25,8 @@ class IFEvalInstructionAccuracy(Metric):
         """Initialise the metric."""
         self.downloaded_nltk = False
         super().__init__(
-            name="inst_level_strict_acc",
-            pretty_name="Instruction-Level Strict Accuracy",
+            name="instruction_accuracy",
+            pretty_name="Instruction Accuracy",
             postprocessing_fn=None,
         )
 
