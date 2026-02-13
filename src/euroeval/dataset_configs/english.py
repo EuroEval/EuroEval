@@ -73,6 +73,16 @@ HELLASWAG_CONFIG = DatasetConfig(
     languages=[ENGLISH],
 )
 
+IFEVAL_CONFIG = DatasetConfig(
+    name="ifeval",
+    pretty_name="IFEval-en",
+    source="EuroEval/ifeval-en",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ENGLISH],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_EN_CONFIG = DatasetConfig(
     name="valeu-en",
     pretty_name="VaLEU-en",
@@ -140,16 +150,5 @@ WINOGRANDE_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[ENGLISH],
     labels=["a", "b"],
-    unofficial=True,
-)
-
-IFEVAL_CONFIG = DatasetConfig(
-    name="ifeval",
-    pretty_name="IFEval-en",
-    source="EuroEval/ifeval-en",
-    task=INSTRUCTION_FOLLOWING,
-    languages=[ENGLISH],
-    train_split=None,
-    val_split=None,
     unofficial=True,
 )
