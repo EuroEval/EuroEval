@@ -1145,7 +1145,7 @@ Here are a few examples from the training split:
         "kwargs": [
             {},
             {
-                "prompt_to_repeat": "nSkriv en historie om en mand, der forsøger at få styr på sit liv. Skriv historiens navn i dobbelte vinkelparenteser, dvs. <<historien om xyz>>."
+                "prompt_to_repeat": "Skriv en historie om en mand, der forsøger at få styr på sit liv. Skriv historiens navn i dobbelte vinkelparenteser, dvs. <<historien om xyz>>."
             }
         ]
     }
