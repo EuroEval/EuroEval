@@ -81,7 +81,7 @@ class IFEvalInstructionAccuracy(Metric):
                 if instruction_id not in ALL_CONSTRAINTS:
                     log_once(
                         f"Skipping unsupported instruction: {instruction_id}",
-                        level=logging.DEBUG,
+                        level=logging.WARNING,
                     )
                     continue
 
