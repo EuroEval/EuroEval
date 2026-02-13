@@ -7,7 +7,7 @@ import typing as t
 import nltk
 
 from ..base import Metric
-from .constraint_utils import ALL_CONSTRAINTS
+from .constraints import ALL_CONSTRAINTS
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
