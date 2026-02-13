@@ -149,6 +149,7 @@ IFEVAL_EN_CONFIG = DatasetConfig(
     source="EuroEval/ifeval-en",
     task=INSTRUCTION_FOLLOWING,
     languages=[ENGLISH],
+    train_split=None,
     val_split=None,
     unofficial=True,
 )
