@@ -517,7 +517,7 @@ def check_json_format(response: str, **_) -> bool:
         .removeprefix("```Json")
         .removeprefix("```JSON")
         .removeprefix("```")
-        .removesuffix("````")
+        .removesuffix("```")
         .strip()
     )
     try:
