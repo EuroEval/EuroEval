@@ -112,7 +112,7 @@ def register(
                         )
             return fn(response, **constraint_kwargs)
 
-        ALL_CONSTRAINTS[name] = wrapper  # pyrefly: ignore[unsupported-operation]
+        ALL_CONSTRAINTS[name] = wrapper
         return fn
 
     return decorator
@@ -655,6 +655,24 @@ def check_english_capital(response: str, **_) -> bool:
     """
     try:
         return response.isupper() and langdetect.detect(response) == "en"
+    except langdetect.LangDetectException:
+        return True
+
+
+@register("change_case:spanish_capital")
+def check_spanish_capital(response: str, **_) -> bool:
+    """Check response is Spanish and all caps.
+
+    Args:
+        response:
+            The response string to check.
+
+    Returns:
+        True if the response is entirely uppercase and detected as English,
+        False otherwise. Returns True if language detection fails.
+    """
+    try:
+        return response.isupper() and langdetect.detect(response) == "es"
     except langdetect.LangDetectException:
         return True
 

@@ -996,7 +996,7 @@ Here are a few examples from the training split:
     "text": "Elabora una propuesta para un nuevo proyecto de investigación para mejorar la calidad de vida de las personas con discapacidad. Tu respuesta debe poder visualizarse en HTML e incluir las palabras \"atlántida\" y \"policía\".",
     "target_text": {
         "instruction_id_list": [
-            "es:keywords:existence"
+            "keywords:existence"
         ],
         "kwargs": [
             {
@@ -1015,8 +1015,8 @@ Here are a few examples from the training split:
     "text": "Escribe un poema sobre una solitaria Helena. El poema debe estar escrito para adolescentes. En tu poema, pon al menos una sección en cursiva en markdown, es decir *este es un texto en cursiva*, e incluye la palabra \"solteros\" al menos dos veces.",
     "target_text": {
         "instruction_id_list": [
-            "es:detectable_format:number_highlighted_sections",
-            "es:keywords:frequency"
+            "detectable_format:number_highlighted_sections",
+            "keywords:frequency"
         ],
         "kwargs": [
             {
@@ -1037,7 +1037,7 @@ Here are a few examples from the training split:
     "text": "Escribe dos cuartetos para madres sobre lo difícil que es conseguir que los hijos hagan las tareas domésticas. Utiliza un tono enfadado. Separa los dos cuartetos con seis asteriscos (******).",
     "target_text": {
         "instruction_id_list": [
-            "es:combination:two_responses"
+            "combination:two_responses"
         ],
         "kwargs": [
             {}

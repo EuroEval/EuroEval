@@ -7,6 +7,8 @@
 # ///
 """Create the IFEval instruction-following datasets and upload to HF Hub."""
 
+import re
+
 from datasets import DatasetDict, load_dataset
 from huggingface_hub import HfApi
 
@@ -92,7 +94,11 @@ def main() -> None:
                 The transformed row.
             """
             prompt = row[prompt_column]
-            instruction_id_list = row[instruction_id_list_column]
+            instruction_id_list = [
+                re.sub(r"^es:", "", instruction_id)
+                for instruction_id in row[instruction_id_list_column]
+            ]
+
             kwargs = row[kwargs_column]
             if isinstance(kwargs, dict):
                 kwargs = [kwargs] * len(instruction_id_list)
