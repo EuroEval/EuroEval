@@ -1006,7 +1006,7 @@ Here are a few examples from the training split:
         "kwargs": [
             {
                 "num_words": 1200,
-                "relation": "at least",
+                "relation": "at least"
             }
         ]
     }
@@ -1024,7 +1024,7 @@ Here are a few examples from the training split:
             {
                 "frequency": 1,
                 "keyword": "para",
-                "relation": "at least",
+                "relation": "at least"
             }
         ]
     }
