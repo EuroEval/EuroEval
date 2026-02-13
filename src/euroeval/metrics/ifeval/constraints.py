@@ -62,6 +62,9 @@ def register(
         Returns:
             The function.
         """
+        # This enables us to chain the register decorator
+        if hasattr(fn, "_original_fn"):
+            fn = fn._original_fn
 
         @wraps(fn)
         def wrapper(response: str, **constraint_kwargs) -> bool:
@@ -112,6 +115,7 @@ def register(
                         )
             return fn(response, **constraint_kwargs)
 
+        wrapper._original_fn = fn
         ALL_CONSTRAINTS[name] = wrapper
         return fn
 
@@ -668,11 +672,29 @@ def check_spanish_capital(response: str, **_) -> bool:
             The response string to check.
 
     Returns:
-        True if the response is entirely uppercase and detected as English,
-        False otherwise. Returns True if language detection fails.
+        True if the response is entirely uppercase and detected as Spanish, False
+        otherwise. Returns True if language detection fails.
     """
     try:
         return response.isupper() and langdetect.detect(response) == "es"
+    except langdetect.LangDetectException:
+        return True
+
+
+@register("change_case:spanish_lowercase")
+def check_spanish_lowercase(response: str, **_) -> bool:
+    """Check response is Spanish and all lowercase.
+
+    Args:
+        response:
+            The response string to check.
+
+    Returns:
+        True if the response is entirely lowercase and detected as Spanish,
+        False otherwise. Returns True if language detection fails.
+    """
+    try:
+        return response.islower() and langdetect.detect(response) == "es"
     except langdetect.LangDetectException:
         return True
 
@@ -747,6 +769,7 @@ def check_response_language(response: str, **constraint_kwargs) -> bool:
 
 
 @register("change_case:lowercase_letters")
+@register("change_case:lowercase")
 def check_lowercase_letters(response: str, **_) -> bool:
     """Check response has no uppercase letters.
 
@@ -761,6 +784,7 @@ def check_lowercase_letters(response: str, **_) -> bool:
 
 
 @register("change_case:capital_letters")
+@register("change_case:capital")
 def check_capital_letters(response: str, **_) -> bool:
     """Check response has no lowercase letters.
 
