@@ -63,7 +63,13 @@ class IFEvalInstructionAccuracy(Metric):
             response = str(pred)
 
             if not response.strip():
-                results = [False] * len(ref["instruction_id_list"])
+                results = [False] * len(
+                    [
+                        instruction_id
+                        for instruction_id in ref["instruction_id_list"]
+                        if instruction_id in ALL_CONSTRAINTS
+                    ]
+                )
                 all_results.extend(results)
                 continue
 
