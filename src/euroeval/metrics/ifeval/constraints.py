@@ -1039,7 +1039,7 @@ def check_no_digits(response: str, **_) -> bool:
     return not any(char.isdigit() for char in response)
 
 
-@register("fr:special_character:ethel_or_cedilla", forbidden_char=t.Literal["ë", "ç"])
+@register("fr:special_character:ethel_or_cedilla", forbidden_char=t.Literal["œ", "ç"])
 def check_ethel_or_cedilla_not_present(response: str, **constraint_kwargs) -> bool:
     """Check response contains no forbidden character.
 
@@ -1053,7 +1053,7 @@ def check_ethel_or_cedilla_not_present(response: str, **constraint_kwargs) -> bo
     Returns:
         True
     """
-    forbidden_char: t.Literal["ë", "ç"] = constraint_kwargs["forbidden_char"]
+    forbidden_char: t.Literal["œ", "ç"] = constraint_kwargs["forbidden_char"]
     return forbidden_char not in response
 
 
