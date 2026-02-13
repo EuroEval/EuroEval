@@ -534,3 +534,88 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset dacsa-ca
 ```
+
+## Instruction-following
+
+### IFEval-ca
+
+This dataset was published
+[here](https://huggingface.co/datasets/projecte-aina/IFEval_ca) and is a
+translation of the English IFEval dataset, which was published in [this
+paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
+combination of one or more of 25 different constraints. The data professionally
+translated.
+
+We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Escriu un article que es tituli \"Vic és la millor ciutat del món\"\n\nLa teva resposta no ha de tenir cap coma i ha de tenir almenys 2 marcadors de posició entre claudàtors, per exemple [autor].",
+    "target_text": {
+        "instruction_id_list": [
+            "ca:punctuation:no_comma",
+            "ca:detectable_content:number_placeholders"
+        ],
+        "kwargs": [
+            {},
+            {
+                "num_placeholders": 2
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Fes una pluja d'idees per trobar un nom per a una empresa que recull i analitza les tarifes del transport públic. La resposta ha de ser en català i en majúscules.",
+    "target_text": {
+        "instruction_id_list": [
+            "ca:change_case:catalan_capital"
+        ],
+        "kwargs": [
+            {}
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Amplia l'endevinalla a una història amb un to divertit:\n\nQuè pots arreplegar però no llançar?\nUn refredat\n\nUtilitza * per destacar almenys 2 seccions al teu text. Per exemple: *aquesta és una secció destacada de text*",
+    "target_text": {
+        "instruction_id_list": [
+            "ca:detectable_format:number_highlighted_sections"
+        ],
+        "kwargs": [
+            {
+                "num_highlights": 2
+            }
+        ]
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ifeval-ca
+```

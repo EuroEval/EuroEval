@@ -11,6 +11,7 @@ from datasets import DatasetDict, load_dataset
 from huggingface_hub import HfApi
 
 LANGUAGES = {
+    "ca": "projecte-aina/IFEval_ca",
     "da": "danish-foundation-models/ifeval-da",
     "de": "jzhang86/de_ifeval",
     "it": "mii-llm/ifeval-ita",
