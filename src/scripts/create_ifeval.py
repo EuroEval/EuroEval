@@ -13,6 +13,7 @@ from huggingface_hub import HfApi
 LANGUAGES = {
     "da": "danish-foundation-models/ifeval-da",
     "de": "jzhang86/de_ifeval",
+    "it": "mii-llm/ifeval-ita",
     "el": "ilsp/ifeval_greek",
     "en": "tartuNLP/ifeval_en",
     "es": "BSC-LT/IFEval_es",

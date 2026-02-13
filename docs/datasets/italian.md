@@ -927,6 +927,97 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ilpost-sum
 ```
 
+## Instruction-following
+
+### IFEval-it
+
+This dataset was published
+[here](https://huggingface.co/datasets/mii-llm/ifeval-ita) and is a
+translation of the English IFEval dataset, which was published in [this
+paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
+combination of one or more of 25 different constraints. The data was machine translated
+using Claude Opus.
+
+We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Indica esattamente 3 nomi per un cane bianco e nero usando punti elenco come:\n* Punto elenco 1",
+    "target_text": {
+        "instruction_id_list": [
+            "detectable_format:number_bullet_lists"
+        ],
+        "kwargs": [
+            {
+                "num_bullets": 3
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Cosa significa per te il termine \"atleta stereotipico\"? Si prega di fornire una risposta in due parti, separate da 3 asterischi '***'. Inoltre, si prega di rispondere senza utilizzare il termine \"atleta stereotipico\" nella risposta.",
+    "target_text": {
+        "instruction_id_list": [
+            "keywords:forbidden_words",
+            "length_constraints:number_paragraphs"
+        ],
+        "kwargs": [
+            {
+                "forbidden_words": [
+                    "atleta"
+                ],
+            },
+            {
+                "num_paragraphs": 2
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Nella frase \"Non è chiaro quanto di questo denaro venga realmente speso per i bambini\", il tono espresso è positivo o negativo? C'è qualcos'altro in cui posso esserti d'aiuto?",
+    "target_text": {
+        "instruction_id_list": [
+            "startend:end_checker"
+        ],
+        "kwargs": [
+            {
+                "end_phrase": "Is there anything else I can help with?"
+            }
+        ]
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ifeval-it
+```
+
 ## European Values
 
 ### ValEU-it
