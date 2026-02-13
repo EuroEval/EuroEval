@@ -918,7 +918,7 @@ def check_french_lowercase(response: str, **_) -> bool:
 
 @register("ca:change_case:catalan_lowercase")
 def check_catalan_lowercase(response: str, **_) -> bool:
-    """Check response is Catalanand all lowercase.
+    """Check response is Catalan and all lowercase.
 
     Args:
         response:
