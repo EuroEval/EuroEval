@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import UKRAINIAN
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -61,4 +61,14 @@ WINOGRANDE_UK_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[UKRAINIAN],
     labels=["a", "b"],
+)
+
+IFEVAL_UK_CONFIG = DatasetConfig(
+    name="ifeval-uk",
+    pretty_name="IFEval-uk",
+    source="EuroEval/ifeval-uk",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[UKRAINIAN],
+    train_split=None,
+    val_split=None,
 )

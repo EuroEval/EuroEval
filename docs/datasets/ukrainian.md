@@ -520,3 +520,90 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset lr-sum-uk
 ```
+
+## Instruction-following
+
+### IFEval-uk
+
+This dataset was published
+[here](https://huggingface.co/datasets/INSAIT-Institute/ifeval_ukr) and is a
+translation of the English IFEval dataset, which was published in [this
+paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
+combination of one or more of 25 different constraints. It is unknown how the data was
+translated.
+
+We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Напишіть казку про принцесу і дракона, переконавшись, що слова 'відповіла' з'являється щонайменше двічі.",
+    "target_text": {
+        "instruction_id_list": [
+            "keywords:frequency"
+        ],
+        "kwargs": [
+            {
+                "frequency": 2,
+                "keyword": "відповіла",
+                "relation": "at least"
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Чи можете ви надати переклад для \"今天天气很好\" німецькою мовою? Не використовуйте слово \"heute\". Будь ласка, використовуйте інше слово.",
+    "target_text": {
+        "instruction_id_list": [
+            "keywords:forbidden_words"
+        ],
+        "kwargs": [
+            {
+                "forbidden_words": [
+                    "heute"
+                ],
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Напишіть лимерик про написання лимерика. Не використовуйте жодної коми у всій своїй відповіді.",
+    "target_text": {
+        "instruction_id_list": [
+            "punctuation:no_comma"
+        ],
+        "kwargs": [
+            {}
+        ]
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ifeval-uk
+```

@@ -22,6 +22,7 @@ LANGUAGES = {
     "fi": "LumiOpen/ifeval_mt::fi",
     "fr": "le-leadboard/IFEval-fr",
     "sv": "LumiOpen/ifeval_mt::sv",
+    "uk": "INSAIT-Institute/ifeval_ukr",
 }
 TARGET_REPO = "EuroEval/ifeval-{language}"
 
