@@ -1041,7 +1041,7 @@ Here are a few examples from the training split:
         ],
         "kwargs": [
             {
-                "num_paragraphs": 4,
+                "num_paragraphs": 4
             },
             {
                 "forbidden_words": [
