@@ -6,8 +6,8 @@ import typing as t
 
 import nltk
 
+from ...logging_utils import log_once
 from ..base import Metric
-from ..logging_utils import log_once
 from .constraints import ALL_CONSTRAINTS
 
 if t.TYPE_CHECKING:
