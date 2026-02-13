@@ -64,14 +64,14 @@ def register(
         """
 
         @wraps
-        def wrapper(response: str, **kwargs) -> bool:
+        def wrapper(response: str, **constraint_kwargs) -> bool:
             """Wrapper function that checks the keyword arguments and their types.
 
             Args:
                 response:
                     The response string to be checked.
-                **kwargs:
-                    Keyword arguments to be passed to the function.
+                **constraint_kwargs:
+                    Extra keyword arguments for the constraint function.
 
             Returns:
                 The result of the function.
@@ -82,7 +82,7 @@ def register(
                     has the wrong type.
             """
             for key, type_ in desired_keys_and_types.items():
-                if key not in kwargs:
+                if key not in constraint_kwargs:
                     raise InvalidBenchmark(
                         f"The function {fn.__name__!r} (registered as {name!r}) "
                         f"requires the keyword argument {key!r}."
@@ -91,22 +91,23 @@ def register(
                 # Special case for Literal, since it does not support `isinstance`
                 elif type_ == t.Literal[t.get_args(type_)]:  # pyrefly: ignore
                     possible_values = t.get_args(type_)
-                    if kwargs[key] not in possible_values:
+                    if constraint_kwargs[key] not in possible_values:
                         raise InvalidBenchmark(
                             f"The function {fn.__name__!r} (registered as {name!r}) "
                             f"expects the keyword argument {key!r} to be one of "
-                            f"{possible_values}, but got {kwargs[key]!r}."
+                            f"{possible_values}, but got {constraint_kwargs[key]!r}."
                         )
 
-                elif not isinstance(kwargs[key], type_):
+                elif not isinstance(constraint_kwargs[key], type_):
                     raise InvalidBenchmark(
                         f"The function {fn.__name__!r} (registered as {name!r}) "
                         f"expects the keyword argument {key!r} to be of type "
-                        f"{type_.__name__!r}, but got {type(kwargs[key]).__name__!r}."
+                        f"{type_.__name__!r}, but got "
+                        f"{type(constraint_kwargs[key]).__name__!r}."
                     )
-            return fn(response, **kwargs)
+            return fn(response, **constraint_kwargs)
 
-        ALL_CONSTRAINTS[name] = fn
+        ALL_CONSTRAINTS[name] = wrapper  # pyrefly: ignore[unsupported-operation]
         return fn
 
     return decorator
