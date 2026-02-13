@@ -13,7 +13,6 @@ except ImportError:
         MistralCommonBackend as MistralCommonTokenizer,
     )
 
-
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
     from numpy.typing import NDArray
@@ -21,10 +20,12 @@ if t.TYPE_CHECKING:
 
     from .data_models import BenchmarkConfig, GenerativeModelOutput
 
+
 ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[dict[str, float]]]
 Predictions: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Labels: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Tokeniser: t.TypeAlias = PreTrainedTokenizer | MistralCommonTokenizer
+Relation: t.TypeAlias = t.Literal["less than", "at least"]
 
 
 class ComputeMetricsFunction(t.Protocol):
