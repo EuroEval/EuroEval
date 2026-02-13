@@ -81,17 +81,28 @@ def register(
                     If a required keyword argument is missing or if a keyword argument
                     has the wrong type.
             """
-            for key, value in desired_keys_and_types.items():
+            for key, type_ in desired_keys_and_types.items():
                 if key not in kwargs:
                     raise InvalidBenchmark(
                         f"The function {fn.__name__!r} (registered as {name!r}) "
                         f"requires the keyword argument {key!r}."
                     )
-                elif key in kwargs and not isinstance(kwargs[key], value):
+
+                # Special case for Literal, since it does not support `isinstance`
+                elif type_ == t.Literal[t.get_args(type_)]:  # pyrefly: ignore
+                    possible_values = t.get_args(type_)
+                    if kwargs[key] not in possible_values:
+                        raise InvalidBenchmark(
+                            f"The function {fn.__name__!r} (registered as {name!r}) "
+                            f"expects the keyword argument {key!r} to be one of "
+                            f"{possible_values}, but got {kwargs[key]!r}."
+                        )
+
+                elif not isinstance(kwargs[key], type_):
                     raise InvalidBenchmark(
                         f"The function {fn.__name__!r} (registered as {name!r}) "
                         f"expects the keyword argument {key!r} to be of type "
-                        f"{value.__name__!r}, but got {type(kwargs[key]).__name__!r}."
+                        f"{type_.__name__!r}, but got {type(kwargs[key]).__name__!r}."
                     )
             return fn(response, **kwargs)
 
