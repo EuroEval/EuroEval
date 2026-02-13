@@ -83,4 +83,4 @@ class IFEvalInstructionAccuracy(Metric):
         return sum(all_results) / len(all_results) if all_results else 0.0
 
 
-inst_level_strict_acc_metric = IFEvalInstructionAccuracy()
+instruction_accuracy = IFEvalInstructionAccuracy()
