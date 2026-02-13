@@ -9,8 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added support for instruction-following benchmarks. This includes the English IFEval
-  benchmark, as well as an Estonian version of it. This was added by @slowwavesleep ✨
+- Added new instruction-following task! This was added by @slowwavesleep ✨
+- Added instruction-following datasets for English 🇬🇧 and Estonian 🇪🇪. This was added
+  by @slowwavesleep ✨
+- Added instruction-following datasets for German, Greek, Spanish, Finnish, French and
+  Swedish.
 - Now also logs the number of skipped and errored benchmarks at the end of the
   benchmarking.
 - Now logs a suggested dataset/task name if a user specified a dataset/task that is not
