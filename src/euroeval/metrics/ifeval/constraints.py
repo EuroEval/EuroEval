@@ -700,3 +700,34 @@ def check_quotation(response: str, **_) -> bool:
     """
     response = response.strip()
     return len(response) > 1 and response[0] == '"' and response[-1] == '"'
+
+
+@register("language:response_language", language=str)
+def check_response_language(response: str, **constraint_kwargs) -> bool:
+    """Check response is in specified language.
+
+    Args:
+        response:
+            The response string to check.
+        **constraint_kwargs:
+            Keyword arguments containing ``language`` – the language code of the
+            language the response must be in.
+
+    Returns:
+        True if the response is detected as the specified language, False otherwise.
+    """
+    return langdetect.detect(response) == "en"
+
+
+@register("change_case:lowercase_letters")
+def check_lowercase_letters(response: str, **_) -> bool:
+    """Check response has no uppercase letters.
+
+    Args:
+        response:
+            The response string to check.
+
+    Returns:
+        True if the response contains no uppercase letters, False otherwise.
+    """
+    return response.islower()
