@@ -732,3 +732,17 @@ def check_lowercase_letters(response: str, **_) -> bool:
         True if the response contains no uppercase letters, False otherwise.
     """
     return response.islower()
+
+
+@register("change_case:capital_letters")
+def check_capital_letters(response: str, **_) -> bool:
+    """Check response has no lowercase letters.
+
+    Args:
+        response:
+            The response string to check.
+
+    Returns:
+        True if the response contains no lowercase letters, False otherwise.
+    """
+    return response.isupper()
