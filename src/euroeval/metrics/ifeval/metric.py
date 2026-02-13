@@ -7,6 +7,7 @@ import typing as t
 import nltk
 
 from ..base import Metric
+from ..logging_utils import log_once
 from .constraints import ALL_CONSTRAINTS
 
 if t.TYPE_CHECKING:
@@ -78,7 +79,10 @@ class IFEvalInstructionAccuracy(Metric):
                 ref["instruction_id_list"], ref["kwargs"]
             ):
                 if instruction_id not in ALL_CONSTRAINTS:
-                    logger.debug(f"Skipping unsupported instruction: {instruction_id}")
+                    log_once(
+                        f"Skipping unsupported instruction: {instruction_id}",
+                        level=logging.DEBUG,
+                    )
                     continue
 
                 constraint_function = ALL_CONSTRAINTS[instruction_id]
