@@ -848,12 +848,11 @@ euroeval --model <model-id> --dataset orange-sum
 
 ### IFEval-fr
 
-This dataset was published
-[here](https://huggingface.co/datasets/le-leadboard/IFEval-fr) and is a translation of
-the English IFEval dataset, which was published in [this
-paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
-combination of one or more of 25 different constraints. It is unclear exactly how the
-dataset was translated.
+This dataset was published in [this
+paper](https://doi.org/10.18653/v1/2025.findings-naacl.344) and is a manually curated
+French version of the English IFEval dataset, which was published in [this
+paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 235 prompts, each with a
+combination of one or more of different constraints.
 
 We use the original dataset as the test split, and do not include the other splits, as
 we only evaluate models zero-shot and the size is too small to warrant an even smaller
@@ -863,18 +862,16 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Écris un limerick sur un gars nommé Dave qui est drôle pour les mamans. Le limerick doit se terminer par la phrase \"Oui Maman, je suis Dave.\" Ne dis rien après le limerick.",
+    "text": "Narre une histoire d'amour contrariée se déroulant pendant la Seconde Guerre mondiale. Votre récit devrait inclure le mot \"guerre\" moins de deux fois.",
     "target_text": {
         "instruction_id_list": [
-            "language:response_language",
-            "startend:quotation"
+            "fr:keywords:frequency"
         ],
         "kwargs": [
             {
-                "language": "French"
-            },
-            {
-                "end_phrase": "Oui Maman, je suis Dave."
+                "frequency": 2,
+                "keyword": "guerre",
+                "relation": "moins de"
             }
         ]
     }
@@ -883,29 +880,13 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Je voudrais créer ma propre entreprise. Pouvez-vous me donner quelques conseils généraux ? Veuillez éviter de mentionner la \"photographie\" - je n'ai aucun intérêt pour ce marché. Je voudrais que vous fournissiez vos conseils en exactement 5 paragraphes (séparez les paragraphes voisins avec 3 astérisques ***) et mettez en évidence au moins trois sections avec du markdown, comme *section mise en évidence*.",
+    "text": "Élaborez un discours sur les points positifs et négatifs de l'intelligence artificielle dans notre vie de tous les jours. Veuillez rédiger votre réponse en utilisant uniquement des lettres minuscules, sans aucun mot en majuscule.",
     "target_text": {
         "instruction_id_list": [
-            "detectable_format:constrained_response",
-            "length_constraints:number_paragraphs",
-            "detectable_format:number_highlighted_sections",
-            "language:response_language"
+            "fr:change_case:french_lowercase"
         ],
         "kwargs": [
-            {
-                "forbidden_words": [
-                    "photographie"
-                ]
-            },
-            {
-                "num_paragraphs": 5
-            },
-            {
-                "num_highlights": 3
-            },
-            {
-                "language": "French"
-            }
+            {}
         ]
     }
 }
@@ -913,20 +894,16 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Pourriez-vous s'il vous plaît me donner les avantages et les inconvénients de travailler à l'étranger sous forme de JSON. Assurez-vous que votre réponse ne contient qu'un bloc JSON. Veuillez également inclure les mots-clés 'compensé' et 'immigrants' dans la réponse.",
+    "text": "Rédigez une lettre adressée à votre vous-même dans une décennie. Assurez-vous d'inclure les termes ['gouvernance', 'palais'] dans votre lettre.",
     "target_text": {
         "instruction_id_list": [
-            "detectable_format:json_format",
-            "keywords:existence"
+            "fr:keywords:existence"
         ],
         "kwargs": [
-            {
-                "language": "French"
-            },
             {
                 "keywords": [
-                    "compensé",
-                    "immigrants"
+                    "gouvernance",
+                    "palais"
                 ]
             }
         ]

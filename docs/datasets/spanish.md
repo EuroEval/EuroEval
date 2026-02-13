@@ -993,17 +993,22 @@ validation set.
 Here are a few examples from the training split:
 
 ```json
-    "text": "Elabora una propuesta para un nuevo proyecto de investigación para mejorar la calidad de vida de las personas con discapacidad. Tu respuesta debe poder visualizarse en HTML e incluir las palabras \"atlántida\" y \"policía\".",
+{
+    "text": "He intentado que me devuelvan el dinero de un producto que compré por Internet, pero la empresa se niega a reembolsármelo. ¿Puedes ayudarme a escribirles una carta? Quiero que la carta incluya las palabras confianza, marca, cliente, ley, política e inutilizable.",
     "target_text": {
         "instruction_id_list": [
-            "keywords:existence"
+            "es:keywords:existence"
         ],
         "kwargs": [
             {
                 "keywords": [
-                    "atlántida",
-                    "policía"
-                ],
+                    "confianza",
+                    "marca",
+                    "cliente",
+                    "ley",
+                    "política",
+                    "inutilizable"
+                ]
             }
         ]
     }
@@ -1012,19 +1017,19 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Escribe un poema sobre una solitaria Helena. El poema debe estar escrito para adolescentes. En tu poema, pon al menos una sección en cursiva en markdown, es decir *este es un texto en cursiva*, e incluye la palabra \"solteros\" al menos dos veces.",
+    "text": "Escribe una historia sobre un hombre que está enamorado de una mujer que tiene Tourette. La historia debe tener al menos 4 secciones y cada sección debe empezar con Sección X (donde X es 1, 2, 3, 4) y toda la respuesta debe tener al menos 100 frases.",
     "target_text": {
         "instruction_id_list": [
-            "detectable_format:number_highlighted_sections",
-            "keywords:frequency"
+            "es:detectable_format:multiple_sections",
+            "es:length_constraints:number_sentences"
         ],
         "kwargs": [
             {
-                "num_highlights": 1
+                "num_sections": 4,
+                "section_spliter": "Sección"
             },
             {
-                "frequency": 2,
-                "keyword": "solteros",
+                "num_sentences": 100,
                 "relation": "at least"
             }
         ]
@@ -1034,13 +1039,24 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Escribe dos cuartetos para madres sobre lo difícil que es conseguir que los hijos hagan las tareas domésticas. Utiliza un tono enfadado. Separa los dos cuartetos con seis asteriscos (******).",
+    "text": "Escribe una entrada de blog sobre las últimas noticias de España, con un título entre paréntesis angulares dobles, es decir, <<título>>, y que tenga menos de 5 frases (excluyendo 5). Las frases deben ser largas para que el número total de palabras de tu respuesta sea de 250 o más.",
     "target_text": {
         "instruction_id_list": [
-            "combination:two_responses"
+            "es:detectable_format:title",
+            "es:length_constraints:number_sentences",
+            "es:length_constraints:number_words"
         ],
         "kwargs": [
-            {}
+            {
+            },
+            {
+                "num_sentences": 5,
+                "relation": "less than"
+            },
+            {
+                "num_words": 250,
+                "relation": "at least"
+            }
         ]
     }
 }

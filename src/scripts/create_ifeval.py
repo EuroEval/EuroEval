@@ -7,8 +7,6 @@
 # ///
 """Create the IFEval instruction-following datasets and upload to HF Hub."""
 
-import re
-
 from datasets import DatasetDict, load_dataset
 from huggingface_hub import HfApi
 
@@ -22,7 +20,7 @@ LANGUAGES = {
     "es": "BSC-LT/IFEval_es",
     "et": "tartuNLP/ifeval_et",
     "fi": "LumiOpen/ifeval_mt::fi",
-    "fr": "le-leadboard/IFEval-fr",
+    "fr": "json:https://raw.githubusercontent.com/lightblue-tech/M-IFEval/refs/heads/main/data/fr_input_data.jsonl",
     "sv": "LumiOpen/ifeval_mt::sv",
     "uk": "INSAIT-Institute/ifeval_ukr",
 }
@@ -48,7 +46,12 @@ def main() -> None:
             if "::" in source_repo_id
             else (source_repo_id, None)
         )
-        dataset = load_dataset(source_repo_id, name=subset)
+
+        if source_repo_id.startswith("json:"):
+            source_repo_id = source_repo_id[len("json:") :]
+            dataset = load_dataset("json", data_files={"test": source_repo_id})
+        else:
+            dataset = load_dataset(source_repo_id, name=subset)
 
         if len(dataset) > 1:
             raise ValueError(
@@ -94,10 +97,7 @@ def main() -> None:
                 The transformed row.
             """
             prompt = row[prompt_column]
-            instruction_id_list = [
-                re.sub(r"^es:", "", instruction_id)
-                for instruction_id in row[instruction_id_list_column]
-            ]
+            instruction_id_list = row[instruction_id_list_column]
 
             kwargs = row[kwargs_column]
             if isinstance(kwargs, dict):
