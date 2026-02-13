@@ -4,7 +4,7 @@
 
 Instruction-following is a task of generating a response to a given instruction, after
 which we check whether the model's response satisfied all the instructions. These
-instructions are very specific and can be checked in a deterministc fashion. An example
+instructions are very specific and can be checked in a deterministic fashion. An example
 of such an instruction is "Do not write any commas". Samples typically have more than
 one instruction at the same time.
 
