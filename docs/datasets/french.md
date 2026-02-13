@@ -863,69 +863,73 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Rédigez un article académique universitaire sur le Président des États-Unis ressentant de la pression. Assurez-vous de ne pas inclure de mots négatifs tels que 'triste', 'fou', 'stress', etc., dans la réponse. Assurez-vous également d'inclure au moins 15 espaces réservés représentés par des crochets, tels que [adresse].",
+    "text": "Écris un limerick sur un gars nommé Dave qui est drôle pour les mamans. Le limerick doit se terminer par la phrase \"Oui Maman, je suis Dave.\" Ne dis rien après le limerick.",
     "target_text": {
         "instruction_id_list": [
-            "detectable_content:number_placeholders",
-            "language:response_language",
-            "keywords:forbidden_words"
-        ],
-        "kwargs": {
-            "forbidden_words": [
-                "triste",
-                "fou",
-                "stress"
-            ],
-            "language": "French",
-            "num_placeholders": 15
-        }
-    }
-}
-```
-
-```json
-{
-    "text": "Pouvez-vous recréer un récit d'un journal fictif avec le titre : « Un homme est mystérieusement décédé chez lui, et la police enquête » ? Veuillez inclure une critique du récit et adopter le style d'un Président des États-Unis. Ne mentionnez pas les mots-clés « récit », « meurtrier », « mort », « découvert », « loi », « pièce », « tuer », « résultat », « utiliser », « approche », « gens », « président ».",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:forbidden_words",
-            "detectable_format:title",
-            "language:response_language"
-        ],
-        "kwargs": {
-            "forbidden_words": [
-                "récit",
-                "meurtrier",
-                "mort",
-                "découvert",
-                "loi",
-                "pièce",
-                "tuer",
-                "résultat",
-                "utiliser",
-                "approche",
-                "gens",
-                "président"
-            ],
-            "language": "French",
-        }
-    }
-}
-```
-
-```json
-{
-    "text": "Nommer exactement 3 noms pour un chien noir et blanc en utilisant des puces markdown comme suit :\n* Puce 1",
-    "target_text": {
-        "instruction_id_list": [
-            "detectable_format:number_bullet_lists",
             "language:response_language",
             "startend:quotation"
         ],
-        "kwargs": {
-            "language": "French",
-            "num_bullets": 3,
-        }
+        "kwargs": [
+            {
+                "language": "French"
+            },
+            {
+                "end_phrase": "Oui Maman, je suis Dave."
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Je voudrais créer ma propre entreprise. Pouvez-vous me donner quelques conseils généraux ? Veuillez éviter de mentionner la \"photographie\" - je n'ai aucun intérêt pour ce marché. Je voudrais que vous fournissiez vos conseils en exactement 5 paragraphes (séparez les paragraphes voisins avec 3 astérisques ***) et mettez en évidence au moins trois sections avec du markdown, comme *section mise en évidence*.",
+    "target_text": {
+        "instruction_id_list": [
+            "detectable_format:constrained_response",
+            "length_constraints:number_paragraphs",
+            "detectable_format:number_highlighted_sections",
+            "language:response_language"
+        ],
+        "kwargs": [
+            {
+                "forbidden_words": [
+                    "photographie"
+                ]
+            },
+            {
+                "num_paragraphs": 5
+            },
+            {
+                "num_highlights": 3
+            },
+            {
+                "language": "French"
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Pourriez-vous s'il vous plaît me donner les avantages et les inconvénients de travailler à l'étranger sous forme de JSON. Assurez-vous que votre réponse ne contient qu'un bloc JSON. Veuillez également inclure les mots-clés 'compensé' et 'immigrants' dans la réponse.",
+    "target_text": {
+        "instruction_id_list": [
+            "detectable_format:json_format",
+            "keywords:existence"
+        ],
+        "kwargs": [
+            {
+                "language": "French"
+            },
+            {
+                "keywords": [
+                    "compensé",
+                    "immigrants"
+                ]
+            }
+        ]
     }
 }
 ```

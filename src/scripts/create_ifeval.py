@@ -90,6 +90,8 @@ def main() -> None:
             prompt = row[prompt_column]
             instruction_id_list = row[instruction_id_list_column]
             kwargs = row[kwargs_column]
+            if isinstance(kwargs, dict):
+                kwargs = [kwargs] * len(instruction_id_list)
             return dict(
                 text=prompt,
                 target_text=dict(
