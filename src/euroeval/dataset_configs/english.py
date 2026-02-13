@@ -75,7 +75,7 @@ HELLASWAG_CONFIG = DatasetConfig(
 
 IFEVAL_CONFIG = DatasetConfig(
     name="ifeval",
-    pretty_name="IFEval-en",
+    pretty_name="IFEval",
     source="EuroEval/ifeval-en",
     task=INSTRUCTION_FOLLOWING,
     languages=[ENGLISH],
