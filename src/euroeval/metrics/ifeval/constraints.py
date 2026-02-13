@@ -63,7 +63,7 @@ def register(
             The function.
         """
 
-        @wraps
+        @wraps(fn)
         def wrapper(response: str, **constraint_kwargs) -> bool:
             """Wrapper function that checks the keyword arguments and their types.
 
