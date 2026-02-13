@@ -18,7 +18,7 @@ def main() -> None:
     """Create the IFEval datasets and upload to HF Hub."""
     for language in LANGUAGES:
         source_repo_id = LANGUAGES[language]
-        dataset = load_dataset(source_repo_id, split="test")
+        dataset = load_dataset(source_repo_id)
 
         def transform(row: dict) -> dict:
             """Transform the dataset to match the expected format.
