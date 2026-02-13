@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FRENCH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -62,6 +73,16 @@ HELLASWAG_FR_CONFIG = DatasetConfig(
     source="EuroEval/hellaswag-fr-mini",
     task=COMMON_SENSE,
     languages=[FRENCH],
+)
+
+IFEVAL_FR_CONFIG = DatasetConfig(
+    name="ifeval-fr",
+    pretty_name="IFEval-fr",
+    source="EuroEval/ifeval-fr",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[FRENCH],
+    train_split=None,
+    val_split=None,
 )
 
 VALEU_FR_CONFIG = DatasetConfig(

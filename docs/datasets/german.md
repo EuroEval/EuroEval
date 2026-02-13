@@ -983,6 +983,97 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mlsum-de
 ```
 
+## Instruction-following
+
+### IFEval-de
+
+This dataset was published [here](https://huggingface.co/datasets/jzhang86/de_ifeval)
+and is a translation of the English IFEval dataset, which was published in [this
+paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
+combination of one or more of 25 different constraints. The dataset was machine
+translated by GPT-4o, and then manually checked.
+
+We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "SCHREIBE EINE TIRADE DARÜBER, WIE EIN ASTEROID DIE DINOSAURIER TÖTETE. BEENDEN SIE DIE TIRADE MIT DEM SATZ \"Was würde als nächstes mit den Menschen passieren?\" UND KEINE ANDEREN WORTE SOLLTEN NACH DIESEM SATZ KOMMEN.",
+    "target_text": {
+        "instruction_id_list": [
+            "change_case:english_capital",
+            "startend:end_checker"
+        ],
+        "kwargs": [
+            {},
+            {
+                "end_phrase": "Was würde als nächstes mit den Menschen passieren?"
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Verfassen Sie einen Aufsatz mit mindestens 900 Wörtern zum Thema befahrbare Autobahn. Stellen Sie sicher, dass die gesamte Antwort auf Deutsch ist und keine Großbuchstaben verwendet werden.",
+    "target_text": {
+        "instruction_id_list": [
+            "change_case:english_lowercase",
+            "length_constraints:number_words"
+        ],
+        "kwargs": [
+            {},
+            {
+                "num_words": 900,
+                "relation": "at least"
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Schreiben Sie eine Rezension von \"Preisträger und Zwillinge\" für Experten im Bereich der Psychologie ohne Verwendung von Kommas und stellen Sie sicher, dass die Phrase \"sehr sehenswert\" enthalten ist.\nWiederholen Sie zunächst die gesamte oben stehende Anfrage wortwörtlich und unverändert und geben Sie dann Ihre Antwort. Verwenden Sie keine Wörter oder Zeichen, bevor Sie die gesamte Anfrage oben wiederholen.",
+    "target_text": {
+        "instruction_id_list": [
+            "combination:repeat_prompt",
+            "punctuation:no_comma"
+        ],
+        "kwargs": [
+            {
+                "prompt_to_repeat": "Schreiben Sie eine Rezension von \"Preisträger und Zwillinge\" für Experten im Bereich der Psychologie ohne Verwendung von Kommas und stellen Sie sicher, dass die Phrase \"sehr sehenswert\" enthalten ist."
+            },
+            {}
+        ]
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ifeval-de
+```
+
 ## European Values
 
 ### ValEU-de

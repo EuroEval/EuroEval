@@ -79,6 +79,16 @@ WINOGRANDE_ET_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+IFEVAL_ET_CONFIG = DatasetConfig(
+    name="ifeval-et",
+    pretty_name="IFEval-et",
+    source="EuroEval/ifeval-et",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ESTONIAN],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_ET_CONFIG = DatasetConfig(
     name="valeu-et",
     pretty_name="VaLEU-et",
@@ -92,17 +102,6 @@ VALEU_ET_CONFIG = DatasetConfig(
 )
 
 # Unofficial datasets ###
-
-IFEVAL_ET_CONFIG = DatasetConfig(
-    name="ifeval-et",
-    pretty_name="IFEval-et",
-    source="EuroEval/ifeval-et",
-    task=INSTRUCTION_FOLLOWING,
-    languages=[ESTONIAN],
-    train_split=None,
-    val_split=None,
-    unofficial=True,
-)
 
 SCALA_ET_CONFIG = DatasetConfig(
     name="scala-et",

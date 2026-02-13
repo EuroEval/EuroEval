@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SWEDISH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -60,6 +71,16 @@ HELLASWAG_SV_CONFIG = DatasetConfig(
     source="EuroEval/hellaswag-sv-mini",
     task=COMMON_SENSE,
     languages=[SWEDISH],
+)
+
+IFEVAL_SV_CONFIG = DatasetConfig(
+    name="ifeval-sv",
+    pretty_name="IFEval-sv",
+    source="EuroEval/ifeval-sv",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[SWEDISH],
+    train_split=None,
+    val_split=None,
 )
 
 VALEU_SV_CONFIG = DatasetConfig(

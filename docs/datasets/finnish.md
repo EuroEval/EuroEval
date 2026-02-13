@@ -757,6 +757,112 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset xlsum-fi
 ```
 
+## Instruction-following
+
+### IFEval-fi
+
+This dataset was published [here](https://huggingface.co/datasets/LumiOpen/ifeval_mt)
+and is a translation of the English IFEval dataset, which was published in [this
+paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
+combination of one or more of 25 different constraints. The dataset was machine
+translated with DeepL and manually reviewed and corrected by native speakers.
+
+We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Työskentelen markkinointiosastolla ja tarvitsen apuasi. Tarvitsen mallin uuden tuotteen, kannettavan kameran, mainosta varten. Kirjoita mallissa muutama sana isolla alkukirjaimella pääkohtien korostamiseksi. Rajoita isoilla kirjaimilla kirjoitettujen sanojen määrä alle neljään. Vastauksesi tulisi sisältää vähintään kymmenen lausetta.",
+    "target_text": {
+        "instruction_id_list": [
+            "change_case:capital_word_frequency",
+            "length_constraints:number_sentences",
+            "language:response_language"
+        ],
+        "kwargs": [
+            {
+                "capital_frequency": 4,
+                "capital_relation": "less than"
+            },
+            {
+                "num_sentences": 10,
+                "relation": "at least"
+            },
+            {
+                "language": "fi"
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Luo mainoskopio laajentamalla \"Kulje 100 kilometriä litralla moottoritiellä\" QA:n muotoon oudolla tyylillä. Vastauksesi tulisi sisältää alle 8 lausetta. Älä sisällä vastauksessasi avainsanoja \"kilometrimäärä\" tai \"polttoaine\".",
+    "target_text": {
+        "instruction_id_list": [
+            "length_constraints:number_sentences",
+            "keywords:forbidden_words",
+            "language:response_language"
+        ],
+        "kwargs": [
+            {
+                "num_sentences": 8,
+                "relation": "less than"
+            },
+            {
+                "forbidden_words": [
+                    "kilometrimäärä",
+                    "polttoaine"
+                ],
+            },
+            {
+                "language": "fi"
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Mitkä ovat hyviä ideoita aloittaville yrityksille? Kirjoita suomenkielinen runo tästä. Käytä vastauksessasi vain suomea, muita kieliä ei sallita.",
+    "target_text": {
+        "instruction_id_list": [
+            "language:response_language"
+        ],
+        "kwargs": [
+            {
+                "language": "fi"
+            }
+        ]
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ifeval-fi
+```
+
 ## European Values
 
 ### ValEU-fi

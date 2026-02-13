@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import GREEK
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -61,4 +61,14 @@ WINOGRANDE_EL_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-el",
     task=COMMON_SENSE,
     languages=[GREEK],
+)
+
+IFEVAL_EL_CONFIG = DatasetConfig(
+    name="ifeval-el",
+    pretty_name="IFEval-el",
+    source="EuroEval/ifeval-el",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[GREEK],
+    train_split=None,
+    val_split=None,
 )

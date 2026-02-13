@@ -976,6 +976,96 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset dacsa-es
 ```
 
+## Instruction-following
+
+### IFEval-es
+
+This dataset was published [here](https://huggingface.co/datasets/BSC-LT/IFEval_es)
+and is a translation of the English IFEval dataset, which was published in [this
+paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
+combination of one or more of 25 different constraints. The dataset was manually
+translated by a professional translator.
+
+We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.
+
+Here are a few examples from the training split:
+
+```json
+    "text": "Elabora una propuesta para un nuevo proyecto de investigación para mejorar la calidad de vida de las personas con discapacidad. Tu respuesta debe poder visualizarse en HTML e incluir las palabras \"atlántida\" y \"policía\".",
+    "target_text": {
+        "instruction_id_list": [
+            "es:keywords:existence"
+        ],
+        "kwargs": [
+            {
+                "keywords": [
+                    "atlántida",
+                    "policía"
+                ],
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Escribe un poema sobre una solitaria Helena. El poema debe estar escrito para adolescentes. En tu poema, pon al menos una sección en cursiva en markdown, es decir *este es un texto en cursiva*, e incluye la palabra \"solteros\" al menos dos veces.",
+    "target_text": {
+        "instruction_id_list": [
+            "es:detectable_format:number_highlighted_sections",
+            "es:keywords:frequency"
+        ],
+        "kwargs": [
+            {
+                "num_highlights": 1
+            },
+            {
+                "frequency": 2,
+                "keyword": "solteros",
+                "relation": "at least"
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Escribe dos cuartetos para madres sobre lo difícil que es conseguir que los hijos hagan las tareas domésticas. Utiliza un tono enfadado. Separa los dos cuartetos con seis asteriscos (******).",
+    "target_text": {
+        "instruction_id_list": [
+            "es:combination:two_responses"
+        ],
+        "kwargs": [
+            {}
+        ]
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ifeval-es
+```
+
 ## European Values
 
 ### ValEU-es
