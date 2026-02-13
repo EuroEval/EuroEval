@@ -1106,8 +1106,8 @@ def check_informal_address(response: str, **_) -> bool:
         r"\btu\b",  # "tu" pronoun
         r"\bte\b",  # "te" pronoun
         r"\bt'\b",  # "t'" pronoun
-        r"\btoi\b"  # "toi" pronoun
-        r"\bton\b"  # possessive adjective
+        r"\btoi\b",  # "toi" pronoun
+        r"\bton\b",  # possessive adjective
         r"\bta\b",  # possessive adjective
         r"\btes\b",  # possessive adjective
     ]
