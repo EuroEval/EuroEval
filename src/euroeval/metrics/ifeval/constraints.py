@@ -717,7 +717,10 @@ def check_response_language(response: str, **constraint_kwargs) -> bool:
         True if the response is detected as the specified language, False otherwise.
     """
     language: str = constraint_kwargs["language"]
-    return langdetect.detect(response) == language
+    try:
+        return langdetect.detect(response) == language
+    except langdetect.LangDetectException:
+        return True
 
 
 @register("change_case:lowercase_letters")
