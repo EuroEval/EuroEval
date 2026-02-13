@@ -760,6 +760,7 @@ def check_response_language(response: str, **constraint_kwargs) -> bool:
 
     Returns:
         True if the response is detected as the specified language, False otherwise.
+        Returns True if language detection fails.
     """
     language: str = constraint_kwargs["language"]
     try:
