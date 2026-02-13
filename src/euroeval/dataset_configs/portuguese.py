@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import EUROPEAN_PORTUGUESE, PORTUGUESE
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -61,6 +72,16 @@ GOLDENSWAG_PT_CONFIG = DatasetConfig(
     source="EuroEval/goldenswag-pt-mini",
     task=COMMON_SENSE,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+)
+
+IFEVAL_PT_CONFIG = DatasetConfig(
+    name="ifeval-pt",
+    pretty_name="IFEval-pt",
+    source="EuroEval/ifeval-pt",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[PORTUGUESE],
+    train_split=None,
+    val_split=None,
 )
 
 VALEU_PT_CONFIG = DatasetConfig(

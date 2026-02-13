@@ -7,6 +7,8 @@
 # ///
 """Create the IFEval instruction-following datasets and upload to HF Hub."""
 
+import json
+
 from datasets import DatasetDict, load_dataset
 from huggingface_hub import HfApi
 
@@ -21,14 +23,19 @@ LANGUAGES = {
     "et": "tartuNLP/ifeval_et",
     "fi": "LumiOpen/ifeval_mt::fi",
     "fr": "json:https://raw.githubusercontent.com/lightblue-tech/M-IFEval/refs/heads/main/data/fr_input_data.jsonl",
+    "pt": "facebook/Multi-IF?language=Portuguese",
     "sv": "LumiOpen/ifeval_mt::sv",
     "uk": "INSAIT-Institute/ifeval_ukr",
 }
 TARGET_REPO = "EuroEval/ifeval-{language}"
 
-PROMPT_COLUMN_CANDIDATES = ["prompt", "promptly"]
-INSTRUCTION_ID_LIST_COLUMN_CANDIDATES = ["instruction_id_list", "categories"]
-KWARGS_COLUMN_CANDIDATES = ["kwargs"]
+PROMPT_COLUMN_CANDIDATES = ["prompt", "promptly", "turn_1_prompt"]
+INSTRUCTION_ID_LIST_COLUMN_CANDIDATES = [
+    "instruction_id_list",
+    "categories",
+    "turn_1_instruction_id_list",
+]
+KWARGS_COLUMN_CANDIDATES = ["kwargs", "turn_1_kwargs"]
 
 
 def main() -> None:
@@ -41,11 +48,21 @@ def main() -> None:
     """
     for language in LANGUAGES:
         source_repo_id = LANGUAGES[language]
-        source_repo_id, subset = (
-            source_repo_id.split("::")
-            if "::" in source_repo_id
-            else (source_repo_id, None)
-        )
+
+        # Extract the source repo ID, subset and arguments
+        if "::" in source_repo_id:
+            if "?" in source_repo_id:
+                source_repo_id, args = source_repo_id.split("?")
+                args, subset = args.split("::")
+            else:
+                source_repo_id, subset = source_repo_id.split("::")
+                args = None
+        elif "?" in source_repo_id:
+            source_repo_id, args = source_repo_id.split("?")
+            subset = None
+        else:
+            args = None
+            subset = None
 
         if source_repo_id.startswith("json:"):
             source_repo_id = source_repo_id[len("json:") :]
@@ -57,6 +74,14 @@ def main() -> None:
             raise ValueError(
                 f"Dataset {source_repo_id} has more than one split. This is currently "
                 f"not supported."
+            )
+
+        if args is not None:
+            filter_dict = {
+                arg.split("=")[0]: arg.split("=")[1] for arg in args.split("&")
+            }
+            dataset = dataset.filter(
+                lambda x: all(x[arg] == value for arg, value in filter_dict.items())
             )
 
         # Ensure that the single split is called "test"
@@ -99,9 +124,27 @@ def main() -> None:
             prompt = row[prompt_column]
             instruction_id_list = row[instruction_id_list_column]
 
+            # Ensure that the prompt is a non-JSON string
+            try:
+                prompt = json.loads(prompt)
+            except json.JSONDecodeError:
+                pass
+            if isinstance(prompt, dict):
+                prompt = prompt["content"]
+
+            # Ensure that the instruction_id_list is a list of strings
+            if isinstance(instruction_id_list, str):
+                instruction_id_list = json.loads(instruction_id_list)
+
+            # Ensure that kwargs is a list of dicts
             kwargs = row[kwargs_column]
+            if isinstance(kwargs, str):
+                kwargs = json.loads(kwargs)
+            if any(isinstance(kwarg, str) for kwarg in kwargs):
+                kwargs = [json.loads(kwarg) for kwarg in kwargs]
             if isinstance(kwargs, dict):
                 kwargs = [kwargs] * len(instruction_id_list)
+
             return dict(
                 text=prompt,
                 target_text=dict(

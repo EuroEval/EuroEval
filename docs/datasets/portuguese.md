@@ -725,6 +725,92 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset publico
 ```
 
+## Instruction-following
+
+### IFEval-pt
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.15553)
+and is a translation of the English IFEval dataset, which was published in [this
+paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
+combination of one or more of 25 different constraints. The dataset was machine
+translated using the Llama-3.1-405B model.
+
+We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Traduza a seguinte frase para alemão e depois critique-a: Werner era um bom amigo meu, mas não muito inteligente. Evite a palavra \"esperto\" em toda a sua resposta.",
+    "target_text": {
+        "instruction_id_list": [
+            "keywords:forbidden_words"
+        ],
+        "kwargs": [
+            {
+                "forbidden_words": [
+                    "esperto"
+                ]
+            }
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Escreva cartas de apresentação para uma candidatura a emprego. É para uma posição de professor assistente. Forneça exatamente duas versões e separe-as com seis símbolos de asterisco:\n\nVersão da carta de apresentação 1\n******\nVersão da carta de apresentação 2\n\nAlém disso, evite usar vírgulas na sua resposta.",
+    "target_text": {
+        "instruction_id_list": [
+            "combination:two_responses",
+            "punctuation:no_comma"
+        ],
+        "kwargs": [
+            {},
+            {}
+        ]
+    }
+}
+```
+
+```json
+{
+    "text": "Escreva um limerique sobre um cara chamado Dave que seja engraçado para mães. O limerique deve terminar com a frase \"Sim mãe, eu sou o Dave.\" Não diga nada após o limerique.",
+    "target_text": {
+        "instruction_id_list": [
+            "startend:end_checker"
+        ],
+        "kwargs": [
+            {
+                "end_phrase": "Sim mãe, eu sou o Dave."
+            }
+        ]
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ifeval-pt
+```
+
 ## European Values
 
 ### ValEU-pt

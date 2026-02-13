@@ -125,6 +125,7 @@ def register(
 @register("keywords:existence", keywords=list)
 @register("fr:keywords:existence", keywords=list)
 @register("es:keywords:existence", keywords=list)
+@register("ca:keywords:existence", keywords=list)
 def check_keyword_existence(response: str, **constraint_kwargs) -> bool:
     """Check that all keywords exist in the response.
 
@@ -164,6 +165,12 @@ def check_keyword_existence(response: str, **constraint_kwargs) -> bool:
     frequency=int,
     relation=t.Literal["less than", "at least"],
 )
+@register(
+    "ca:keywords:frequency",
+    keyword=str,
+    frequency=int,
+    relation=t.Literal["less than", "at least"],
+)
 def check_keyword_frequency(response: str, **constraint_kwargs) -> bool:
     """Check keyword appears with required frequency.
 
@@ -193,6 +200,7 @@ def check_keyword_frequency(response: str, **constraint_kwargs) -> bool:
 @register("keywords:forbidden_words", forbidden_words=list)
 @register("fr:keywords:forbidden_words", forbidden_words=list)
 @register("es:keywords:forbidden_words", forbidden_words=list)
+@register("ca:keywords:forbidden_words", forbidden_words=list)
 def check_forbidden_words(response: str, **constraint_kwargs) -> bool:
     """Check that forbidden words don't appear.
 
@@ -230,6 +238,12 @@ def check_forbidden_words(response: str, **constraint_kwargs) -> bool:
 )
 @register(
     "es:keywords:letter_frequency",
+    letter=str,
+    let_frequency=int,
+    let_relation=t.Literal["less than", "at least"],
+)
+@register(
+    "ca:keywords:letter_frequency",
     letter=str,
     let_frequency=int,
     let_relation=t.Literal["less than", "at least"],
@@ -280,6 +294,11 @@ def check_letter_frequency(response: str, **constraint_kwargs) -> bool:
     num_sentences=int,
     relation=t.Literal["less than", "at least"],
 )
+@register(
+    "ca:length_constraints:number_sentences",
+    num_sentences=int,
+    relation=t.Literal["less than", "at least"],
+)
 def check_number_sentences(response: str, **constraint_kwargs) -> bool:
     """Check number of sentences.
 
@@ -304,6 +323,7 @@ def check_number_sentences(response: str, **constraint_kwargs) -> bool:
 @register("length_constraints:number_paragraphs", num_paragraphs=int)
 @register("fr:length_constraints:number_paragraphs", num_paragraphs=int)
 @register("es:length_constraints:number_paragraphs", num_paragraphs=int)
+@register("ca:length_constraints:number_paragraphs", num_paragraphs=int)
 def check_number_paragraphs(response: str, **constraint_kwargs) -> bool:
     """Check number of paragraphs (separated by ***).
 
@@ -346,6 +366,11 @@ def check_number_paragraphs(response: str, **constraint_kwargs) -> bool:
     num_words=int,
     relation=t.Literal["less than", "at least"],
 )
+@register(
+    "ca:length_constraints:number_words",
+    num_words=int,
+    relation=t.Literal["less than", "at least"],
+)
 def check_number_words(response: str, **constraint_kwargs) -> bool:
     """Check number of words.
 
@@ -382,6 +407,12 @@ def check_number_words(response: str, **constraint_kwargs) -> bool:
 )
 @register(
     "es:length_constraints:nth_paragraph_first_word",
+    num_paragraphs=int,
+    nth_paragraph=int,
+    first_word=str,
+)
+@register(
+    "ca:length_constraints:nth_paragraph_first_word",
     num_paragraphs=int,
     nth_paragraph=int,
     first_word=str,
@@ -437,6 +468,7 @@ def check_nth_paragraph_first_word(response: str, **constraint_kwargs) -> bool:
 @register("detectable_content:number_placeholders", num_placeholders=int)
 @register("fr:detectable_content:number_placeholders", num_placeholders=int)
 @register("es:detectable_content:number_placeholders", num_placeholders=int)
+@register("ca:detectable_content:number_placeholders", num_placeholders=int)
 def check_number_placeholders(response: str, **constraint_kwargs) -> bool:
     """Check minimum number of [placeholder] brackets.
 
@@ -460,6 +492,7 @@ def check_number_placeholders(response: str, **constraint_kwargs) -> bool:
 @register("detectable_content:postscript", postscript_marker=str)
 @register("fr:detectable_content:postscript", postscript_marker=str)
 @register("es:detectable_content:postscript", postscript_marker=str)
+@register("ca:detectable_content:postscript", postscript_marker=str)
 def check_postscript(response: str, **constraint_kwargs) -> bool:
     """Check for postscript marker.
 
@@ -488,6 +521,7 @@ def check_postscript(response: str, **constraint_kwargs) -> bool:
 @register("detectable_format:number_bullet_lists", num_bullets=int)
 @register("fr:detectable_format:number_bullet_lists", num_bullets=int)
 @register("es:detectable_format:number_bullet_lists", num_bullets=int)
+@register("ca:detectable_format:number_bullet_lists", num_bullets=int)
 def check_number_bullet_lists(response: str, **constraint_kwargs) -> bool:
     """Check exact number of bullet points.
 
@@ -514,6 +548,7 @@ def check_number_bullet_lists(response: str, **constraint_kwargs) -> bool:
 @register("detectable_format:constrained_response")
 @register("fr:detectable_format:constrained_response")
 @register("es:detectable_format:constrained_response")
+@register("ca:detectable_format:constrained_response")
 def check_constrained_response(response: str, **_) -> bool:
     """Check response contains one of the constrained options.
 
@@ -532,6 +567,7 @@ def check_constrained_response(response: str, **_) -> bool:
 @register("detectable_format:number_highlighted_sections", num_highlights=int)
 @register("fr:detectable_format:number_highlighted_sections", num_highlights=int)
 @register("es:detectable_format:number_highlighted_sections", num_highlights=int)
+@register("ca:detectable_format:number_highlighted_sections", num_highlights=int)
 def check_number_highlighted_sections(response: str, **constraint_kwargs) -> bool:
     """Check minimum highlighted *sections*.
 
@@ -566,6 +602,9 @@ def check_number_highlighted_sections(response: str, **constraint_kwargs) -> boo
 @register(
     "es:detectable_format:multiple_sections", section_spliter=str, num_sections=int
 )
+@register(
+    "ca:detectable_format:multiple_sections", section_spliter=str, num_sections=int
+)
 def check_multiple_sections(response: str, **constraint_kwargs) -> bool:
     """Check for Section X markers.
 
@@ -590,6 +629,7 @@ def check_multiple_sections(response: str, **constraint_kwargs) -> bool:
 @register("detectable_format:json_format")
 @register("fr:detectable_format:json_format")
 @register("es:detectable_format:json_format")
+@register("ca:detectable_format:json_format")
 def check_json_format(response: str, **_) -> bool:
     """Check response is valid JSON.
 
@@ -620,6 +660,7 @@ def check_json_format(response: str, **_) -> bool:
 @register("detectable_format:title")
 @register("fr:detectable_format:title")
 @register("es:detectable_format:title")
+@register("ca:detectable_format:title")
 def check_title(response: str, **_) -> bool:
     """Check for <<title>> format.
 
@@ -640,6 +681,7 @@ def check_title(response: str, **_) -> bool:
 @register("combination:two_responses")
 @register("fr:combination:two_responses")
 @register("es:combination:two_responses")
+@register("ca:combination:two_responses")
 def check_two_responses(response: str, **_) -> bool:
     """Check for two different responses separated by ******.
 
@@ -665,6 +707,7 @@ def check_two_responses(response: str, **_) -> bool:
 @register("combination:repeat_prompt", prompt_to_repeat=str)
 @register("fr:combination:repeat_prompt", prompt_to_repeat=str)
 @register("es:combination:repeat_prompt", prompt_to_repeat=str)
+@register("ca:combination:repeat_prompt", prompt_to_repeat=str)
 def check_repeat_prompt(response: str, **constraint_kwargs) -> bool:
     """Check response starts with the prompt.
 
@@ -685,6 +728,7 @@ def check_repeat_prompt(response: str, **constraint_kwargs) -> bool:
 @register("startend:end_checker", end_phrase=str)
 @register("fr:startend:end_checker", end_phrase=str)
 @register("es:startend:end_checker", end_phrase=str)
+@register("ca:startend:end_checker", end_phrase=str)
 def check_end_phrase(response: str, **constraint_kwargs) -> bool:
     """Check response ends with exact phrase.
 
@@ -714,6 +758,11 @@ def check_end_phrase(response: str, **constraint_kwargs) -> bool:
 )
 @register(
     "es:change_case:capital_word_frequency",
+    capital_frequency=int,
+    capital_relation=t.Literal["less than", "at least"],
+)
+@register(
+    "ca:change_case:capital_word_frequency",
     capital_frequency=int,
     capital_relation=t.Literal["less than", "at least"],
 )
@@ -795,6 +844,24 @@ def check_french_capital(response: str, **_) -> bool:
         return True
 
 
+@register("ca:change_case:catalan_capital")
+def check_catalan_capital(response: str, **_) -> bool:
+    """Check response is Catalan and all caps.
+
+    Args:
+        response:
+            The response string to check.
+
+    Returns:
+        True if the response is entirely uppercase and detected as Catalan,
+        False otherwise. Returns True if language detection fails.
+    """
+    try:
+        return response.isupper() and langdetect.detect(response) == "ca"
+    except langdetect.LangDetectException:
+        return True
+
+
 @register("change_case:english_lowercase")
 def check_english_lowercase(response: str, **_) -> bool:
     """Check response is English and all lowercase.
@@ -849,9 +916,28 @@ def check_french_lowercase(response: str, **_) -> bool:
         return True
 
 
+@register("ca:change_case:catalan_lowercase")
+def check_catalan_lowercase(response: str, **_) -> bool:
+    """Check response is Catalanand all lowercase.
+
+    Args:
+        response:
+            The response string to check.
+
+    Returns:
+        True if the response is entirely lowercase and detected as Catalan,
+        False otherwise. Returns True if language detection fails.
+    """
+    try:
+        return response.islower() and langdetect.detect(response) == "ca"
+    except langdetect.LangDetectException:
+        return True
+
+
 @register("punctuation:no_comma")
 @register("fr:punctuation:no_comma")
 @register("es:punctuation:no_comma")
+@register("ca:punctuation:no_comma")
 def check_no_comma(response: str, **_) -> bool:
     """Check response has no commas.
 
@@ -868,6 +954,7 @@ def check_no_comma(response: str, **_) -> bool:
 @register("startend:quotation")
 @register("fr:startend:quotation")
 @register("es:startend:quotation")
+@register("ca:startend:quotation")
 def check_quotation(response: str, **_) -> bool:
     """Check response is wrapped in double quotes.
 
@@ -886,6 +973,7 @@ def check_quotation(response: str, **_) -> bool:
 @register("language:response_language", language=str)
 @register("fr:language:response_language", language=str)
 @register("es:language:response_language", language=str)
+@register("ca:language:response_language", language=str)
 def check_response_language(response: str, **constraint_kwargs) -> bool:
     """Check response is in specified language.
 
