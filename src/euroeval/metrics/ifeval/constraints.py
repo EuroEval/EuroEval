@@ -606,7 +606,9 @@ def check_end_phrase(response: str, **constraint_kwargs) -> bool:
 
 
 @register(
-    "change_case:capital_word_frequency", capital_frequency=int, capital_relation=str
+    "change_case:capital_word_frequency",
+    capital_frequency=int,
+    capital_relation=t.Literal["less than", "at least"],
 )
 def check_capital_word_frequency(response: str, **constraint_kwargs) -> bool:
     """Check frequency of ALL CAPS words.
@@ -623,7 +625,9 @@ def check_capital_word_frequency(response: str, **constraint_kwargs) -> bool:
         False otherwise.
     """
     capital_frequency: int = constraint_kwargs["capital_frequency"]
-    capital_relation: str = constraint_kwargs["capital_relation"]
+    capital_relation: t.Literal["less than", "at least"] = constraint_kwargs[
+        "capital_relation"
+    ]
 
     words = nltk.word_tokenize(response)
     count = sum(1 for w in words if w.isupper())
