@@ -321,7 +321,7 @@ def check_nth_paragraph_first_word(response: str, **constraint_kwargs) -> bool:
     num_paragraphs: int = constraint_kwargs["num_paragraphs"]
     nth_paragraph: int = constraint_kwargs["nth_paragraph"]
     first_word: str = constraint_kwargs["first_word"]
-    if nth_paragraph >= num_paragraphs:
+    if nth_paragraph > num_paragraphs:
         raise InvalidBenchmark(
             "The n'th paragraph is greater than the number of paragraphs in the "
             "`check_nth_paragraph_first_word` constraint. This should not happen."
