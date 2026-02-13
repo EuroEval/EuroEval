@@ -130,14 +130,14 @@ def check_keyword_existence(response: str, **constraint_kwargs) -> bool:
     keywords: list[str] = constraint_kwargs["keywords"]
 
     for keyword in keywords:
-        if not re.search(keyword, response, flags=re.IGNORECASE):
+        if not re.search(pattern=keyword, string=response, flags=re.IGNORECASE):
             return False
     return True
 
 
 @register(
     "keywords:frequency",
-    keywords=str,
+    keyword=str,
     frequency=int,
     relation=t.Literal["less than", "at least"],
 )
@@ -159,7 +159,9 @@ def check_keyword_frequency(response: str, **constraint_kwargs) -> bool:
     frequency: int = constraint_kwargs["frequency"]
     relation: t.Literal["less than", "at least"] = constraint_kwargs["relation"]
 
-    all_keyword_matches = re.findall(keyword, response, flags=re.IGNORECASE)
+    all_keyword_matches = re.findall(
+        pattern=keyword, string=response, flags=re.IGNORECASE
+    )
     if relation == "less than":
         return len(all_keyword_matches) < frequency
     return len(all_keyword_matches) >= frequency
@@ -182,7 +184,9 @@ def check_forbidden_words(response: str, **constraint_kwargs) -> bool:
     forbidden_words: list[str] = constraint_kwargs["forbidden_words"]
 
     for word in forbidden_words:
-        if re.search(r"\b" + word + r"\b", response, flags=re.IGNORECASE):
+        if re.search(
+            pattern=r"\b" + word + r"\b", string=response, flags=re.IGNORECASE
+        ):
             return False
     return True
 
@@ -339,7 +343,7 @@ def check_nth_paragraph_first_word(response: str, **constraint_kwargs) -> bool:
             "`check_nth_paragraph_first_word` constraint. This should not happen."
         )
 
-    paragraphs = re.split(r"\n\n", response)
+    paragraphs = re.split(pattern=r"\n\n", string=response)
     count = sum(1 for p in paragraphs if p.strip())
     if nth_paragraph > count:
         return False
@@ -375,7 +379,7 @@ def check_number_placeholders(response: str, **constraint_kwargs) -> bool:
     """
     num_placeholders: int = constraint_kwargs["num_placeholders"]
 
-    placeholders = re.findall(r"\[.*?\]", response)
+    placeholders = re.findall(pattern=r"\[.*?\]", string=response)
     return len(placeholders) >= num_placeholders
 
 
@@ -402,7 +406,7 @@ def check_postscript(response: str, **constraint_kwargs) -> bool:
         pattern = r"\s*p\.\s?s\..*$"
     else:
         pattern = r"\s*" + postscript_marker.lower() + r".*$"
-    return bool(re.findall(pattern, response, flags=re.MULTILINE))
+    return bool(re.findall(pattern=pattern, string=response, flags=re.MULTILINE))
 
 
 @register("detectable_format:number_bullet_lists", num_bullets=int)
@@ -422,8 +426,10 @@ def check_number_bullet_lists(response: str, **constraint_kwargs) -> bool:
     """
     num_bullets: int = constraint_kwargs["num_bullets"]
 
-    bullets1 = re.findall(r"^\s*\*[^\*].*$", response, flags=re.MULTILINE)
-    bullets2 = re.findall(r"^\s*-.*$", response, flags=re.MULTILINE)
+    bullets1 = re.findall(
+        pattern=r"^\s*\*[^\*].*$", string=response, flags=re.MULTILINE
+    )
+    bullets2 = re.findall(pattern=r"^\s*-.*$", string=response, flags=re.MULTILINE)
     return len(bullets1) + len(bullets2) == num_bullets
 
 
@@ -462,10 +468,10 @@ def check_number_highlighted_sections(response: str, **constraint_kwargs) -> boo
     num_highlights: int = constraint_kwargs["num_highlights"]
 
     count = 0
-    for h in re.findall(r"\*[^\n\*]*\*", response):
+    for h in re.findall(pattern=r"\*[^\n\*]*\*", string=response):
         if h.strip("*").strip():
             count += 1
-    for h in re.findall(r"\*\*[^\n\*]*\*\*", response):
+    for h in re.findall(pattern=r"\*\*[^\n\*]*\*\*", string=response):
         if h.removeprefix("**").removesuffix("**").strip():
             count += 1
     return count >= num_highlights
@@ -533,7 +539,7 @@ def check_title(response: str, **_) -> bool:
         True if the response contains at least one non‑empty title wrapped in
         double angle brackets (e.g. <<My Title>>), False otherwise.
     """
-    for title in re.findall(r"<<[^\n]+>>", response):
+    for title in re.findall(pattern=r"<<[^\n]+>>", string=response):
         if title.lstrip("<").rstrip(">").strip():
             return True
     return False
