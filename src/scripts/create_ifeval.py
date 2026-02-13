@@ -128,6 +128,7 @@ def main() -> None:
             try:
                 prompt = json.loads(prompt)
             except json.JSONDecodeError:
+                # If the prompt is not valid JSON, keep the original string value.
                 pass
             if isinstance(prompt, dict):
                 prompt = prompt["content"]

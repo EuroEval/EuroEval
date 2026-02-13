@@ -536,7 +536,7 @@ We use the original dataset as the test split, and do not include the other spli
 we only evaluate models zero-shot and the size is too small to warrant an even smaller
 validation set.
 
-Here are a few examples from the training split:
+Here are a few examples from the test split:
 
 ```json
 {

@@ -918,7 +918,7 @@ def check_french_lowercase(response: str, **_) -> bool:
 
 @register("ca:change_case:catalan_lowercase")
 def check_catalan_lowercase(response: str, **_) -> bool:
-    """Check response is Catalanand all lowercase.
+    """Check response is Catalan and all lowercase.
 
     Args:
         response:
@@ -1047,11 +1047,11 @@ def check_ethel_or_cedilla_not_present(response: str, **constraint_kwargs) -> bo
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``forbidden_char`` – the character that must
-            be present in the response.
+            Keyword arguments containing ``forbidden_char`` – the character that is
+            forbidden in the response (must not be present).
 
     Returns:
-        True
+        True if the forbidden character is not present in the response, False otherwise.
     """
     forbidden_char: t.Literal["œ", "ç"] = constraint_kwargs["forbidden_char"]
     return forbidden_char not in response
@@ -1106,8 +1106,8 @@ def check_informal_address(response: str, **_) -> bool:
         r"\btu\b",  # "tu" pronoun
         r"\bte\b",  # "te" pronoun
         r"\bt'\b",  # "t'" pronoun
-        r"\btoi\b"  # "toi" pronoun
-        r"\bton\b"  # possessive adjective
+        r"\btoi\b",  # "toi" pronoun
+        r"\bton\b",  # possessive adjective
         r"\bta\b",  # possessive adjective
         r"\btes\b",  # possessive adjective
     ]

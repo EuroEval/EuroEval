@@ -543,14 +543,14 @@ This dataset was published
 [here](https://huggingface.co/datasets/projecte-aina/IFEval_ca) and is a
 translation of the English IFEval dataset, which was published in [this
 paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
-combination of one or more of 25 different constraints. The data professionally
+combination of one or more of 25 different constraints. The data was professionally
 translated.
 
 We use the original dataset as the test split, and do not include the other splits, as
 we only evaluate models zero-shot and the size is too small to warrant an even smaller
 validation set.
 
-Here are a few examples from the training split:
+Here are a few examples from the test split:
 
 ```json
 {
