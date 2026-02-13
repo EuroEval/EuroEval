@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -938,8 +940,30 @@
 <span class="normal"> 8</span>
 <span class="normal"> 9</span>
 <span class="normal">10</span>
-<span class="normal">11</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;The different prompt templates used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;The different prompt templates used in EuroEval.&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">PromptConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.classification</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLASSIFICATION_TEMPLATES</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.linguistic_acceptability</span><span class="w"> </span><span class="kn">import</span> <span class="n">LA_TEMPLATES</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.multiple_choice</span><span class="w"> </span><span class="kn">import</span> <span class="n">MULTIPLE_CHOICE_TEMPLATES</span>
@@ -949,6 +973,20 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.simplification</span><span class="w"> </span><span class="kn">import</span> <span class="n">SIMPL_TEMPLATES</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.summarization</span><span class="w"> </span><span class="kn">import</span> <span class="n">SUMM_TEMPLATES</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.token_classification</span><span class="w"> </span><span class="kn">import</span> <span class="n">TOKEN_CLASSIFICATION_TEMPLATES</span>
+
+<span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">Language</span>
+
+
+<span class="n">EMPTY_TEMPLATES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="s2">&quot;Language&quot;</span><span class="p">,</span> <span class="n">PromptConfig</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">lang</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+        <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{text}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">get_all_languages</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+<span class="p">}</span>
 </code></pre></div></td></tr></table></div>
 
 

@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1150,7 +1152,25 @@
 <span class="normal">220</span>
 <span class="normal">221</span>
 <span class="normal">222</span>
-<span class="normal">223</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All benchmarks tasks used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All benchmarks tasks used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">metrics</span> <span class="k">as</span> <span class="n">m</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span>
@@ -1158,6 +1178,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">ModelType</span><span class="p">,</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.prompt_templates</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">CLASSIFICATION_TEMPLATES</span><span class="p">,</span>
+    <span class="n">EMPTY_TEMPLATES</span><span class="p">,</span>
     <span class="n">LA_TEMPLATES</span><span class="p">,</span>
     <span class="n">MULTIPLE_CHOICE_TEMPLATES</span><span class="p">,</span>
     <span class="n">NER_TEMPLATES</span><span class="p">,</span>
@@ -1372,6 +1393,23 @@
     <span class="n">default_labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">default_allowed_model_types</span><span class="o">=</span><span class="p">[</span><span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">],</span>
     <span class="n">uses_logprobs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">INSTRUCTION_FOLLOWING</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;instruction-following&quot;</span><span class="p">,</span>
+    <span class="n">task_group</span><span class="o">=</span><span class="n">TaskGroup</span><span class="o">.</span><span class="n">TEXT_TO_TEXT</span><span class="p">,</span>
+    <span class="n">template_dict</span><span class="o">=</span><span class="n">EMPTY_TEMPLATES</span><span class="p">,</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">instruction_accuracy</span><span class="p">],</span>
+    <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>
+    <span class="n">default_labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">default_allowed_model_types</span><span class="o">=</span><span class="p">[</span><span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">],</span>
+    <span class="n">default_allowed_generative_types</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">GenerativeType</span><span class="o">.</span><span class="n">INSTRUCTION_TUNED</span><span class="p">,</span>
+        <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="n">requires_zero_shot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">uses_logprobs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 

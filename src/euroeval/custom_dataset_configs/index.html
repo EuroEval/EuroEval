@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1108,8 +1110,7 @@
 <span class="normal">148</span>
 <span class="normal">149</span>
 <span class="normal">150</span>
-<span class="normal">151</span>
-<span class="normal">152</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Load custom dataset configs.&quot;&quot;&quot;</span>
+<span class="normal">151</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Load custom dataset configs.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1130,9 +1131,8 @@
 <span class="sd">        custom_datasets_file:</span>
 <span class="sd">            The path to the custom datasets module.</span>
 
-<span class="sd">    Raises:</span>
-<span class="sd">        RuntimeError:</span>
-<span class="sd">            If the custom datasets module cannot be loaded.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        The custom datasets module, or None if it does not exist.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">custom_datasets_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
         <span class="n">spec</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">spec_from_file_location</span><span class="p">(</span>

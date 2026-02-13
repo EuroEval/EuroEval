@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -961,6 +963,8 @@
       
         
       
+        
+      
     
     
     
@@ -1239,6 +1243,8 @@
       
         
       
+        
+      
     
     
     
@@ -1293,6 +1299,70 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../ifeval/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.metrics.ifeval
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
               
             
               
@@ -1832,6 +1902,34 @@
     
   
     euroeval.cli
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../closest_match/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.closest_match
   
 
     
@@ -2644,7 +2742,8 @@ Bias and accuracy metrics for MBBQ (Neplenbroek et al., 2024).</p>
 <p>Context type
 - Ambiguous: correct answer should be "unknown/not enough information".</p>
 <p>Metrics
-- Ambiguous bias (bias_ambig): (stereotype picks − counter-stereotype picks) / n_ambiguous
+- Ambiguous bias (bias_ambig): (stereotype picks − counter-stereotype picks) /
+  n_ambiguous
 - Ambiguous accuracy (accuracy_ambig): correct "unknown" picks / n_ambiguous
 - Bias-adjusted accuracy: accuracy minus |bias|, clamped at zero.</p>
 <div class="admonition note">
@@ -2678,6 +2777,23 @@ Human-readable metric name.</p>
 <p><span class="mkapi-item-name">bias_type</span> : 
 <span class="mkapi-item-type"><span class="mkapi-tooltip" title="euroeval.metrics.bias.BiasType">BiasType</span></span> <span class="mkapi-dash">&mdash;</span>
 Metric variant to compute.</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle raises">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Raises</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">ValueError</span>
+ <span class="mkapi-dash">&mdash;</span>
+If the bias type is not one of the supported options.</p>
 </li>
 </ul>
 </div>

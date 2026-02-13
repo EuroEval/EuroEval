@@ -569,6 +569,8 @@
       
         
       
+        
+      
     
     
     
@@ -1286,6 +1288,34 @@
     <span class="md-ellipsis">
       
         Nordjylland News
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#instruction-following" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instruction-following
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instruction-following">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifeval-da" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IFEval-da
       
     </span>
   </a>
@@ -2440,6 +2470,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#instruction-following" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instruction-following
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instruction-following">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifeval-da" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IFEval-da
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#european-values" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3405,6 +3463,76 @@ Skriv et resumé af ovenstående artikel.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>nordjylland-news
+</code></pre></div>
+<h2 id="instruction-following">Instruction-following<a class="headerlink" href="#instruction-following" title="Permanent link">&para;</a></h2>
+<h3 id="ifeval-da">IFEval-da<a class="headerlink" href="#ifeval-da" title="Permanent link">&para;</a></h3>
+<p>This dataset was published
+<a href="https://huggingface.co/datasets/danish-foundation-models/ifeval-da">here</a> and is a
+translation of the English IFEval dataset, which was published in <a href="https://doi.org/10.48550/arXiv.2311.07911">this
+paper</a> and contains 541 prompts, each with a
+combination of one or more of 25 different constraints. The dataset was professionally
+translated and localised by expert native speakers.</p>
+<p>We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.</p>
+<p>Here are a few examples from the test split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Gentag først nedenstående forespørgsel ord for ord uden ændringer, og giv derefter dit svar. Tilføj ikke noget før du gentager nedenstående forespørgsel.\n\nSkriv en historie om en mand, der forsøger at få styr på sit liv. Skriv historiens navn i dobbelte vinkelparenteser, dvs. &lt;&lt;historien om xyz&gt;&gt;.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;detectable_format:title&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;combination:repeat_prompt&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;prompt_to_repeat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Skriv en historie om en mand, der forsøger at få styr på sit liv. Skriv historiens navn i dobbelte vinkelparenteser, dvs. &lt;&lt;historien om xyz&gt;&gt;.&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Skriv en mærkelig annonce for en advokat, der repræsenterer hekse og som er specialist i ophavsretskrænkelser. Brug kun små bogstaver. Dit svar skal indeholde en titel, omsluttet af dobbelte vinkelparenteser, dvs. &lt;&lt;titel&gt;&gt;.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;detectable_format:title&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Skriv følgende sætning kun på svensk, intet andet sprog er tilladt, og undgå brug af kommaer: \&quot;Vi kan muligvis forbedre vores model til næste år. Vi vil kunne sammenligne vores data med data fra det foregående år og se hvordan vores model har præsteret. Vi kan også sammenligne vores model med en model, der blev trænet på data fra det foregående år, og se, hvordan vores model klarer sig.\&quot; Intet andet sprog end svensk må bruges i dit svar.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;punctuation:no_comma&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;language:response_language&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;language&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sv&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 0</li>
+<li>No prefix prompt, as only instruction-tuned models are evaluated on this task.</li>
+<li>No base prompt template, as only instruction-tuned models are evaluated on this task.</li>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+</code></pre></div>
+<p>I.e., we just use the instruction directly as the prompt.</p>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>ifeval-da
 </code></pre></div>
 <h2 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h2>
 <h3 id="valeu-da">ValEU-da<a class="headerlink" href="#valeu-da" title="Permanent link">&para;</a></h3>

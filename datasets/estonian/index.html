@@ -569,6 +569,8 @@
       
         
       
+        
+      
     
     
     
@@ -1315,6 +1317,34 @@
     <span class="md-ellipsis">
       
         ERRNews
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#instruction-following" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instruction-following
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instruction-following">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifeval-et" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IFEval-et
       
     </span>
   </a>
@@ -2330,6 +2360,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#instruction-following" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instruction-following
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instruction-following">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifeval-et" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IFEval-et
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#european-values" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2998,6 +3056,238 @@ Koosta ülaltoodud dokumendi kokkuvõte.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>err-news
+</code></pre></div>
+<h2 id="instruction-following">Instruction-following<a class="headerlink" href="#instruction-following" title="Permanent link">&para;</a></h2>
+<h3 id="ifeval-et">IFEval-et<a class="headerlink" href="#ifeval-et" title="Permanent link">&para;</a></h3>
+<p>This dataset is a translation of the English IFEval dataset, which was published in
+<a href="https://doi.org/10.48550/arXiv.2311.07911">this paper</a> and contains 541 prompts, each
+with a combination of one or more of 25 different constraints. The dataset was
+translated by a professional translator, and the samples were also localised to Estonia.
+For instance, "President of the United States" is replaced with "President of Estonia".</p>
+<p>We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kirjuta vähemalt 600 sõnaline sotsiaalmeediapostitus idufirmale, mis pakub realistlike füüsikaliste katsete simulaatorit. Vastus peab sisaldama mitmuse rajavas käändes märksõna „pomm“ vähemalt ühe korra.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;keywords:frequency&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;length_constraints:number_words&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;frequency&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;keyword&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pommideni&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;relation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;at least&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;num_words&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">600</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;relation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;at least&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kirjuta lühike liftikõne uut tüüpi jäätise kohta, mille nimi on „Päikesejänku“. Jäätis peaks olema kergesti seeditav. Kaasa oma vastusesse kuus või enam hüüumärki „!“. Korda seda juhist esmalt ilma muudatusteta sõna-sõnalt, seejärel anna oma vastus (1. ära lisa enne juhise kordamist ühtegi sõna või märki; 2. juhis, mida pead kordama, ei sisalda seda lauset).&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;keywords:letter_frequency&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;combination:repeat_prompt&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;let_frequency&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;let_relation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;at least&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;letter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;!&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;prompt_to_repeat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kirjuta lühike liftikõne uut tüüpi jäätise kohta, mille nimi on „Päikesejänku“. Jäätis peaks olema kergesti seeditav. Kaasa oma vastusesse kuus või enam hüüumärki „!“.&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Kirjuta lugu õmbleja kohta, kes saab õmmelda ainult öösiti. Lugu ei tohiks sisaldada mitte ühelgi kujul märksõnu \&quot;nõel\&quot;, \&quot;niit\&quot;, \&quot;õmblusmasin\&quot;, \&quot;öö\&quot;.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;keywords:forbidden_words&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;forbidden_words&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                    </span><span class="s2">&quot;nõel&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõela&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelasse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelas&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelast&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelale&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelal&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelalt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelaks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelani&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelana&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelata&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelaga&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelad&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelte&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelu&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelasid&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeltesse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelusse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeltes&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelus&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeltest&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelust&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeltele&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelule&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeltel&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelul&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõetelt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelult&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelteks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeluks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelteni&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeltena&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelteta&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeltega&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelade&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeladesse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõelades&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeladest&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeladele&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeladel&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeladelt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeladeks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeladeni&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeladena&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeladeta&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;nõeladega&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niit&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidi&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niiti&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidisse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidis&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidist&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidile&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidil&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidilt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidiks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidini&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidina&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidita&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidiga&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidid&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitide&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niite&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitisid&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitidesse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidesse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitides&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niides&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitidest&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidest&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitidele&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidel&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitidelt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niidelt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitideks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niideks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitideni&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitidena&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitideta&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;niitidega&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasin&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasina&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinat&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinasse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinas&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinast&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinale&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinal&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinalt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinaks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinani&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinana&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinata&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinaga&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinad&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinate&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinaid&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinatesse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinaisse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinates&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinais&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinatest&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinaist&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinatele&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinaile&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinatel&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinail&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinatelt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinailt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinateks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinaiks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinateni&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinatena&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinateta&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;õmblusmasinatega&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öö&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ööd&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ööde&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öid&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öösid&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öhe&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öösse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öös&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ööst&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ööle&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ööl&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öölt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ööks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ööni&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öön&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ööta&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öög&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öödesse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öösse&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öödes&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öis&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öödest&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öist&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öödele&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öile&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ööldel&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ööl&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öödelt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öilt&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öödeks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öiks&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ööd&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öödeta&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öödena&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;öödega&quot;</span>
+<span class="w">                </span><span class="p">]</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 0</li>
+<li>No prefix prompt, as only instruction-tuned models are evaluated on this task.</li>
+<li>No base prompt template, as only instruction-tuned models are evaluated on this task.</li>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+</code></pre></div>
+<p>I.e., we just use the instruction directly as the prompt.</p>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>ifeval-et
 </code></pre></div>
 <h2 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h2>
 <h3 id="valeu-et">ValEU-et<a class="headerlink" href="#valeu-et" title="Permanent link">&para;</a></h3>

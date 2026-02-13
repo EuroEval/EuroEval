@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1659,7 +1661,11 @@
 <span class="normal">611</span>
 <span class="normal">612</span>
 <span class="normal">613</span>
-<span class="normal">614</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
+<span class="normal">614</span>
+<span class="normal">615</span>
+<span class="normal">616</span>
+<span class="normal">617</span>
+<span class="normal">618</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1985,6 +1991,10 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The token IDs used to end chats, or None if the tokeniser does not have a chat</span>
 <span class="sd">        template or if no end-of-chat token could be found.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidModel:</span>
+<span class="sd">            If the tokeniser does not have a chat template.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -2272,7 +2282,7 @@
             <span class="n">tokenize</span><span class="o">=</span><span class="n">tokenise</span><span class="p">,</span>
             <span class="o">**</span><span class="n">extra_kwargs</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="k">return</span> <span class="n">templated_prompt</span>  <span class="c1">#  type: ignore[bad-return]</span>
+    <span class="k">return</span> <span class="n">templated_prompt</span>  <span class="c1"># type: ignore[bad-return]</span>
 </code></pre></div></td></tr></table></div>
 
 

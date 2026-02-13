@@ -569,6 +569,8 @@
       
         
       
+        
+      
     
     
     
@@ -1914,6 +1916,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#instruction-following" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instruction-following
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instruction-following">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifeval-sv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IFEval-sv
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#european-values" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2428,6 +2458,34 @@
     <span class="md-ellipsis">
       
         Unofficial: Schibsted-sv
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#instruction-following" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instruction-following
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instruction-following">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifeval-sv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IFEval-sv
       
     </span>
   </a>
@@ -3409,6 +3467,85 @@ Skriv en sammanfattning av artikeln ovan.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>schibsted-sv
+</code></pre></div>
+<h2 id="instruction-following">Instruction-following<a class="headerlink" href="#instruction-following" title="Permanent link">&para;</a></h2>
+<h3 id="ifeval-sv">IFEval-sv<a class="headerlink" href="#ifeval-sv" title="Permanent link">&para;</a></h3>
+<p>This dataset was published <a href="https://huggingface.co/datasets/LumiOpen/ifeval_mt">here</a>
+and is a translation of the English IFEval dataset, which was published in <a href="https://doi.org/10.48550/arXiv.2311.07911">this
+paper</a> and contains 541 prompts, each with a
+combination of one or more of 25 different constraints. The dataset was machine
+translated with DeepL and manually reviewed and corrected by native speakers.</p>
+<p>We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.</p>
+<p>Here are a few examples from the test split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Förklara för mig hur man cyklar som om jag vore ett barn. Inkludera inte heller nyckelorden \&quot;långsam\&quot;, \&quot;som\&quot; och \&quot;barn\&quot;.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;keywords:forbidden_words&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;language:response_language&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;forbidden_words&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                    </span><span class="s2">&quot;långsam&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;som&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;barn&quot;</span>
+<span class="w">                </span><span class="p">],</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;language&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sv&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Vilka är fördelarna och nackdelarna med att ha övernaturliga krafter? Gör det kort. Packa in hela utdata i JSON-format. Du kan använda markdown-ticks som ```.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;detectable_format:json_format&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;language:response_language&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;language&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sv&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Skriv en gåta om Camilla utan att använda kommatecken.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;punctuation:no_comma&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;language:response_language&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;language&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sv&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 0</li>
+<li>No prefix prompt, as only instruction-tuned models are evaluated on this task.</li>
+<li>No base prompt template, as only instruction-tuned models are evaluated on this task.</li>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+</code></pre></div>
+<p>I.e., we just use the instruction directly as the prompt.</p>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>ifeval-sv
 </code></pre></div>
 <h2 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h2>
 <h3 id="valeu-sv">ValEU-sv<a class="headerlink" href="#valeu-sv" title="Permanent link">&para;</a></h3>

@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1247,12 +1249,6 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of bootstrapped datasets, one for each iteration.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">        InvalidBenchmark:</span>
-<span class="sd">            If the dataset cannot be loaded.</span>
-<span class="sd">        HuggingFaceHubDown:</span>
-<span class="sd">            If the Hugging Face Hub is down.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_raw_data</span><span class="p">(</span>
         <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
@@ -1335,6 +1331,12 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The dataset.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidBenchmark:</span>
+<span class="sd">            If the dataset cannot be loaded.</span>
+<span class="sd">        HuggingFaceHubDown:</span>
+<span class="sd">            If the Hugging Face Hub is down.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Case where the dataset source is a Hugging Face ID</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>

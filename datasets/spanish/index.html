@@ -569,6 +569,8 @@
       
         
       
+        
+      
     
     
     
@@ -1836,6 +1838,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#instruction-following" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instruction-following
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instruction-following">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifeval-es" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IFEval-es
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#european-values" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2328,6 +2358,34 @@
     <span class="md-ellipsis">
       
         Unofficial: DACSA-es
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#instruction-following" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instruction-following
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instruction-following">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifeval-es" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IFEval-es
       
     </span>
   </a>
@@ -3226,6 +3284,95 @@ Escribe un resumen del documento anterior.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>dacsa-es
+</code></pre></div>
+<h2 id="instruction-following">Instruction-following<a class="headerlink" href="#instruction-following" title="Permanent link">&para;</a></h2>
+<h3 id="ifeval-es">IFEval-es<a class="headerlink" href="#ifeval-es" title="Permanent link">&para;</a></h3>
+<p>This dataset was published <a href="https://huggingface.co/datasets/BSC-LT/IFEval_es">here</a>
+and is a translation of the English IFEval dataset, which was published in <a href="https://doi.org/10.48550/arXiv.2311.07911">this
+paper</a> and contains 541 prompts, each with a
+combination of one or more of 25 different constraints. The dataset was manually
+translated by a professional translator.</p>
+<p>We use the original dataset as the test split, and do not include the other splits, as
+we only evaluate models zero-shot and the size is too small to warrant an even smaller
+validation set.</p>
+<p>Here are a few examples from the test split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;He intentado que me devuelvan el dinero de un producto que compré por Internet, pero la empresa se niega a reembolsármelo. ¿Puedes ayudarme a escribirles una carta? Quiero que la carta incluya las palabras confianza, marca, cliente, ley, política e inutilizable.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;es:keywords:existence&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;keywords&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                    </span><span class="s2">&quot;confianza&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;marca&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;cliente&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;ley&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;política&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="s2">&quot;inutilizable&quot;</span>
+<span class="w">                </span><span class="p">]</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Escribe una historia sobre un hombre que está enamorado de una mujer que tiene Tourette. La historia debe tener al menos 4 secciones y cada sección debe empezar con Sección X (donde X es 1, 2, 3, 4) y toda la respuesta debe tener al menos 100 frases.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;es:detectable_format:multiple_sections&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;es:length_constraints:number_sentences&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;num_sections&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;section_spliter&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sección&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;num_sentences&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;relation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;at least&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Escribe una entrada de blog sobre las últimas noticias de España, con un título entre paréntesis angulares dobles, es decir, &lt;&lt;título&gt;&gt;, y que tenga menos de 5 frases (excluyendo 5). Las frases deben ser largas para que el número total de palabras de tu respuesta sea de 250 o más.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;es:detectable_format:title&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;es:length_constraints:number_sentences&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;es:length_constraints:number_words&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;num_sentences&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;relation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;less than&quot;</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;num_words&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">250</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;relation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;at least&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 0</li>
+<li>No prefix prompt, as only instruction-tuned models are evaluated on this task.</li>
+<li>No base prompt template, as only instruction-tuned models are evaluated on this task.</li>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+</code></pre></div>
+<p>I.e., we just use the instruction directly as the prompt.</p>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>ifeval-es
 </code></pre></div>
 <h2 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h2>
 <h3 id="valeu-es">ValEU-es<a class="headerlink" href="#valeu-es" title="Permanent link">&para;</a></h3>

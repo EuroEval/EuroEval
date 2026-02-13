@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1354,20 +1356,16 @@
 <span class="normal">383</span>
 <span class="normal">384</span>
 <span class="normal">385</span>
-<span class="normal">386</span>
-<span class="normal">387</span>
-<span class="normal">388</span>
-<span class="normal">389</span>
-<span class="normal">390</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
+<span class="normal">386</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">Levenshtein</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">..closest_match</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_closest_match</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..string_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_multiple_choice_labels</span>
@@ -1551,29 +1549,25 @@
         <span class="c1"># We set the word edit distance weights such that we heavily penalise insertions</span>
         <span class="c1"># and substitutions, so that we don&#39;t just insert the correct label, but that we</span>
         <span class="c1"># want the model to have included the correct label in its output.</span>
-        <span class="n">insertion_weight</span> <span class="o">=</span> <span class="mi">1000</span>
-        <span class="n">deletion_weight</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="n">substitution_weight</span> <span class="o">=</span> <span class="mi">1000</span>
 
         <span class="c1"># Compute the word edit distances between the predicted label and all candidate</span>
         <span class="c1"># labels</span>
-        <span class="n">edit_distances</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">Levenshtein</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span>
-                <span class="n">s1</span><span class="o">=</span><span class="n">predicted_label</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
-                <span class="n">s2</span><span class="o">=</span><span class="n">candidate_label</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
-                <span class="n">weights</span><span class="o">=</span><span class="p">(</span><span class="n">insertion_weight</span><span class="p">,</span> <span class="n">deletion_weight</span><span class="p">,</span> <span class="n">substitution_weight</span><span class="p">),</span>
-            <span class="p">)</span>
-            <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">sample_candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="p">]</span>
-
-        <span class="n">best_candidate_label</span> <span class="o">=</span> <span class="n">sample_candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">edit_distances</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
-        <span class="p">]</span>
+        <span class="n">best_candidate_label</span><span class="p">,</span> <span class="n">closest_distance</span> <span class="o">=</span> <span class="n">get_closest_match</span><span class="p">(</span>
+            <span class="n">string</span><span class="o">=</span><span class="n">predicted_label</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+            <span class="n">options</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">candidate_label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">sample_candidate_labels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="p">],</span>
+            <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">insertion_weight</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+            <span class="n">deletion_weight</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">substitution_weight</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="c1"># If no candidate labels were found, we either pick the label with the smallest</span>
         <span class="c1"># word edit distance to the predicted label (if invalid model outputs are</span>
         <span class="c1"># allowed), or we raise an error</span>
-        <span class="k">if</span> <span class="nb">min</span><span class="p">(</span><span class="n">edit_distances</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">1000</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">closest_distance</span> <span class="o">&gt;=</span> <span class="mi">1000</span><span class="p">:</span>
             <span class="n">num_predictions_being_very_off</span> <span class="o">+=</span> <span class="mi">1</span>
 
         <span class="n">new_predicted_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">best_candidate_label</span><span class="p">)</span>

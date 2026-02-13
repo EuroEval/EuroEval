@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1243,7 +1245,13 @@
 <span class="normal">228</span>
 <span class="normal">229</span>
 <span class="normal">230</span>
-<span class="normal">231</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions to be used in other scripts.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1258,6 +1266,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalTokenNotFoundError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langdetect</span><span class="w"> </span><span class="kn">import</span> <span class="n">DetectorFactory</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">requests.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestException</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.caching_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_arguments</span>
@@ -1353,6 +1362,9 @@
 <span class="sd">    Args:</span>
 <span class="sd">        seed:</span>
 <span class="sd">            Seed for the random number generator.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A numpy random generator</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
@@ -1364,6 +1376,7 @@
     <span class="n">torch</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">cudnn</span><span class="o">.</span><span class="n">benchmark</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">torch</span><span class="o">.</span><span class="n">backends</span><span class="o">.</span><span class="n">cudnn</span><span class="o">.</span><span class="n">deterministic</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">torch</span><span class="o">.</span><span class="n">use_deterministic_algorithms</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">warn_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">DetectorFactory</span><span class="o">.</span><span class="n">seed</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">return</span> <span class="n">rng</span>
 
 
@@ -1413,7 +1426,8 @@
 <span class="sd">            The model output to check.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        If the model output contains NaN values.</span>
+<span class="sd">        NaNValueInModelOutput:</span>
+<span class="sd">            If the model output contains NaN values.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_output</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">model_output</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>

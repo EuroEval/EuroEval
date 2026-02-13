@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1478,7 +1480,12 @@
 <span class="normal">507</span>
 <span class="normal">508</span>
 <span class="normal">509</span>
-<span class="normal">510</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
+<span class="normal">510</span>
+<span class="normal">511</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
@@ -1708,6 +1715,11 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The example with the few-shot examples applied.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError:</span>
+<span class="sd">            If the `tokeniser` argument is not provided when the model is instruction</span>
+<span class="sd">            tuned and when we are not just returning the raw messages.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Sanity check</span>
     <span class="k">if</span> <span class="p">(</span>

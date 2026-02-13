@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1268,7 +1270,15 @@
 <span class="normal">286</span>
 <span class="normal">287</span>
 <span class="normal">288</span>
-<span class="normal">289</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on a scikit-learn Pipeline.&quot;&quot;&quot;</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on a scikit-learn Pipeline.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1338,9 +1348,8 @@
 <span class="sd">                The pretty name of the metric, used for display purposes.</span>
 <span class="sd">            pipeline_repo:</span>
 <span class="sd">                The Hugging Face repository ID of the scikit-learn pipeline to load.</span>
-<span class="sd">            pipeline_scoring_method:</span>
-<span class="sd">                The method to use for scoring the predictions with the pipeline. Takes</span>
-<span class="sd">                a 1D sequence of predictions and returns a float score.</span>
+<span class="sd">            pipeline_scoring_function:</span>
+<span class="sd">                The function to use to score the predictions.</span>
 <span class="sd">            pipeline_file_name (optional):</span>
 <span class="sd">                The name of the file to download from the Hugging Face repository.</span>
 <span class="sd">                Defaults to &quot;pipeline.joblib&quot;.</span>
@@ -1432,7 +1441,7 @@
         <span class="k">return</span> <span class="n">pipeline</span>
 
 
-<span class="c1">### European Values Metric ###</span>
+<span class="c1"># European Values Metric ###</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">european_values_preprocessing_fn</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.metrics.pipeline.european_values_preprocessing_fn"><a href="../../../../api/euroeval/metrics/pipeline/#euroeval.metrics.pipeline.european_values_preprocessing_fn" title="Go to docs">[docs]</a></div>
@@ -1454,9 +1463,8 @@
 <span class="sd">        mapping.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        AssertionError:</span>
-<span class="sd">            If the number of predictions is not a multiple of 53, which is required</span>
-<span class="sd">            for the European Values metric.</span>
+<span class="sd">        InvalidBenchmark:</span>
+<span class="sd">            If the predictions are not valid for the European Values metric.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">num_questions</span> <span class="o">=</span> <span class="mi">53</span>
     <span class="n">num_phrasings_per_question</span> <span class="o">=</span> <span class="mi">5</span>
@@ -1508,7 +1516,7 @@
 
         <span class="c1"># Use majority voting to get the final prediction for each question</span>
         <span class="c1"># Shape: (53,)</span>
-        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">arr</span><span class="p">)</span>  <span class="c1">#  type: ignore[no-matching-overload]</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">arr</span><span class="p">)</span>  <span class="c1"># type: ignore[no-matching-overload]</span>
 
         <span class="c1"># Convert the array to a list</span>
         <span class="n">integer_predictions</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
@@ -1543,7 +1551,17 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">european_values_scoring_function</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.metrics.pipeline.european_values_scoring_function"><a href="../../../../api/euroeval/metrics/pipeline/#euroeval.metrics.pipeline.european_values_scoring_function" title="Go to docs">[docs]</a></div>
     <span class="n">pipeline</span><span class="p">:</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Scoring function for the European Values metric.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Scoring function for the European Values metric.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pipeline:</span>
+<span class="sd">            The pipeline to use for scoring.</span>
+<span class="sd">        predictions:</span>
+<span class="sd">            The predictions to score.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The score.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">normalised_predictions</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span><span class="p">([</span><span class="n">predictions</span><span class="p">])</span>
     <span class="n">log_likelihoods</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">normalised_predictions</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">score</span> <span class="o">=</span> <span class="n">sigmoid</span><span class="p">(</span><span class="n">pipeline</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">alpha_</span> <span class="o">*</span> <span class="p">(</span><span class="n">log_likelihoods</span> <span class="o">-</span> <span class="n">pipeline</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">center_</span><span class="p">))</span>

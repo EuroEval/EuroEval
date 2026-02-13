@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -2546,7 +2548,47 @@
 <span class="normal">1371</span>
 <span class="normal">1372</span>
 <span class="normal">1373</span>
-<span class="normal">1374</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1374</span>
+<span class="normal">1375</span>
+<span class="normal">1376</span>
+<span class="normal">1377</span>
+<span class="normal">1378</span>
+<span class="normal">1379</span>
+<span class="normal">1380</span>
+<span class="normal">1381</span>
+<span class="normal">1382</span>
+<span class="normal">1383</span>
+<span class="normal">1384</span>
+<span class="normal">1385</span>
+<span class="normal">1386</span>
+<span class="normal">1387</span>
+<span class="normal">1388</span>
+<span class="normal">1389</span>
+<span class="normal">1390</span>
+<span class="normal">1391</span>
+<span class="normal">1392</span>
+<span class="normal">1393</span>
+<span class="normal">1394</span>
+<span class="normal">1395</span>
+<span class="normal">1396</span>
+<span class="normal">1397</span>
+<span class="normal">1398</span>
+<span class="normal">1399</span>
+<span class="normal">1400</span>
+<span class="normal">1401</span>
+<span class="normal">1402</span>
+<span class="normal">1403</span>
+<span class="normal">1404</span>
+<span class="normal">1405</span>
+<span class="normal">1406</span>
+<span class="normal">1407</span>
+<span class="normal">1408</span>
+<span class="normal">1409</span>
+<span class="normal">1410</span>
+<span class="normal">1411</span>
+<span class="normal">1412</span>
+<span class="normal">1413</span>
+<span class="normal">1414</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
@@ -3084,6 +3126,10 @@
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The model configuration.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InvalidModel:</span>
+<span class="sd">                If the model could not be found.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">model_id_components</span> <span class="o">=</span> <span class="n">split_model_id</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">)</span>
         <span class="n">model_info</span> <span class="o">=</span> <span class="n">get_model_repo_info</span><span class="p">(</span>
@@ -3141,6 +3187,12 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A pair (model, tokeniser), with the loaded model and tokeniser</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidModel:</span>
+<span class="sd">            If the model could not be loaded.</span>
+<span class="sd">        InvalidBenchmark:</span>
+<span class="sd">            If the model could not be loaded for this particular dataset.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">config</span><span class="p">:</span> <span class="s2">&quot;PretrainedConfig&quot;</span>
     <span class="n">block_terminal_output</span><span class="p">()</span>
@@ -3291,6 +3343,16 @@
 <span class="sd">            The model ID.</span>
 <span class="sd">        revision:</span>
 <span class="sd">            The revision of the model.</span>
+<span class="sd">        api_key:</span>
+<span class="sd">            The Hugging Face API key.</span>
+<span class="sd">        cache_dir:</span>
+<span class="sd">            The directory to cache the model in.</span>
+<span class="sd">        trust_remote_code:</span>
+<span class="sd">            Whether to trust remote code.</span>
+<span class="sd">        requires_safetensors:</span>
+<span class="sd">            Whether the model requires safetensors.</span>
+<span class="sd">        run_with_cli:</span>
+<span class="sd">            Whether the script is being run with the CLI.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The information about the model, or None if the model could not be found.</span>
@@ -3501,6 +3563,10 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded tokeniser.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidModel:</span>
+<span class="sd">            If the tokeniser could not be loaded.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">loading_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
         <span class="n">use_fast</span><span class="o">=</span><span class="kc">False</span> <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="o">==</span> <span class="s2">&quot;slow-tokenizer&quot;</span> <span class="k">else</span> <span class="kc">True</span><span class="p">,</span>
@@ -3613,6 +3679,12 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The Hugging Face model configuration.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        NeedsAdditionalArgument:</span>
+<span class="sd">            If an additional argument is required to load the model configuration.</span>
+<span class="sd">        InvalidModel:</span>
+<span class="sd">            If the model configuration could not be loaded.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span> <span class="o">:=</span> <span class="mi">5</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
@@ -3699,6 +3771,10 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The setup model.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidModel:</span>
+<span class="sd">            If the model does not have token type embeddings.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Get the models&#39; token type embedding children, if they exist</span>
     <span class="n">children</span> <span class="o">=</span> <span class="n">get_children_of_module</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">module</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
@@ -3797,6 +3873,12 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The fixed model and tokeniser.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidModel:</span>
+<span class="sd">            If the model&#39;s vocab size is not set correctly.</span>
+<span class="sd">        ValueError:</span>
+<span class="sd">            If an error appeared during inference.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">model_max_length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">model_max_length</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">)</span>
 

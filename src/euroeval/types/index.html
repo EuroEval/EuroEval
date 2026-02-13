@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1167,7 +1169,10 @@
 <span class="normal">152</span>
 <span class="normal">153</span>
 <span class="normal">154</span>
-<span class="normal">155</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Types used throughout the project.&quot;&quot;&quot;</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Types used throughout the project.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -1182,7 +1187,6 @@
         <span class="n">MistralCommonBackend</span> <span class="k">as</span> <span class="n">MistralCommonTokenizer</span><span class="p">,</span>
     <span class="p">)</span>
 
-
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.arrow_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NDArray</span>
@@ -1190,10 +1194,12 @@
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">GenerativeModelOutput</span>
 
+
 <span class="n">ScoreDict</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeAlias</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span>
 <span class="n">Predictions</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeAlias</span> <span class="o">=</span> <span class="s2">&quot;NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]&quot;</span>
 <span class="n">Labels</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeAlias</span> <span class="o">=</span> <span class="s2">&quot;NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]&quot;</span>
 <span class="n">Tokeniser</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">PreTrainedTokenizer</span> <span class="o">|</span> <span class="n">MistralCommonTokenizer</span>
+<span class="n">Relation</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;less than&quot;</span><span class="p">,</span> <span class="s2">&quot;at least&quot;</span><span class="p">]</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">ComputeMetricsFunction</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">Protocol</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.types.ComputeMetricsFunction"><a href="../../../api/euroeval/types/#euroeval.types.ComputeMetricsFunction" title="Go to docs">[docs]</a></div>
@@ -1217,6 +1223,8 @@
 <span class="sd">            dataset:</span>
 <span class="sd">                The dataset used for evaluation. This is only used in case any</span>
 <span class="sd">                additional metadata is used to compute the metrics.</span>
+<span class="sd">            benchmark_config:</span>
+<span class="sd">                The benchmark configuration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The computed metrics.</span>

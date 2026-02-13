@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1335,7 +1337,13 @@
 <span class="normal">314</span>
 <span class="normal">315</span>
 <span class="normal">316</span>
-<span class="normal">317</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Freshly initialised encoder models.&quot;&quot;&quot;</span>
+<span class="normal">317</span>
+<span class="normal">318</span>
+<span class="normal">319</span>
+<span class="normal">320</span>
+<span class="normal">321</span>
+<span class="normal">322</span>
+<span class="normal">323</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Freshly initialised encoder models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -1564,6 +1572,12 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded model and tokeniser.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidModel:</span>
+<span class="sd">            If the model could not be loaded.</span>
+<span class="sd">        InvalidBenchmark:</span>
+<span class="sd">            If the model could not be loaded for this particular dataset.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">config</span><span class="p">:</span> <span class="s2">&quot;PretrainedConfig&quot;</span>
     <span class="n">block_terminal_output</span><span class="p">()</span>

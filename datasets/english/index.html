@@ -569,6 +569,8 @@
       
         
       
+        
+      
     
     
     
@@ -1320,6 +1322,34 @@
     <span class="md-ellipsis">
       
         CNN/DailyMail
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#instruction-following" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instruction-following
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instruction-following">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifeval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IFEval
       
     </span>
   </a>
@@ -2396,6 +2426,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#instruction-following" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instruction-following
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instruction-following">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ifeval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IFEval
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#european-values" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3250,6 +3308,79 @@ Write a summary of the above article.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>cnn-dailymail
+</code></pre></div>
+<h2 id="instruction-following">Instruction-following<a class="headerlink" href="#instruction-following" title="Permanent link">&para;</a></h2>
+<h3 id="ifeval">IFEval<a class="headerlink" href="#ifeval" title="Permanent link">&para;</a></h3>
+<p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2311.07911">this paper</a>
+and contains 541 prompts, each with a combination of one or more of 25 different
+constraints. We use the original dataset as the test split, and do not include the other
+splits, as we only evaluate models zero-shot and the size is too small to warrant an
+even smaller validation set.</p>
+<p>Here are a few examples from the dataset:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Write an essay on the differences between Sunni and Shi&#39;a Muslims. Your entire response must contain at least 1200 words.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;length_constraints:number_words&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;num_words&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1200</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;relation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;at least&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;You feel strongly about a local issue that involves the environment, pollution, and climate change. Write a template for a letter to the editor of a newspaper. Use the word para at least once.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;keywords:frequency&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;frequency&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;keyword&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;para&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nt">&quot;relation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;at least&quot;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Students are travelling to UCI for 3 days. Create a hilarious itinerary for them. Do not use the word &#39;university&#39;. Your entire response should have exactly 4 paragraphs.  Separate paragraphs with the markdown divider: ***&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target_text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;instruction_id_list&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="s2">&quot;length_constraints:number_paragraphs&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="s2">&quot;keywords:forbidden_words&quot;</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;kwargs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;num_paragraphs&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">&quot;forbidden_words&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                    </span><span class="s2">&quot;university&quot;</span>
+<span class="w">                </span><span class="p">],</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 0</li>
+<li>No prefix prompt, as only instruction-tuned models are evaluated on this task.</li>
+<li>No base prompt template, as only instruction-tuned models are evaluated on this task.</li>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+</code></pre></div>
+<p>I.e., we just use the instruction directly as the prompt.</p>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>ifeval
 </code></pre></div>
 <h2 id="european-values">European Values<a class="headerlink" href="#european-values" title="Permanent link">&para;</a></h2>
 <h3 id="valeu-en">ValEU-en<a class="headerlink" href="#valeu-en" title="Permanent link">&para;</a></h3>

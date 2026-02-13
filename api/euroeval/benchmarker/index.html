@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -961,6 +963,8 @@
       
         
       
+        
+      
     
     
     
@@ -1223,6 +1227,8 @@
       
         
           
+        
+      
         
       
         
@@ -1706,6 +1712,34 @@
     
   
     euroeval.cli
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../closest_match/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.closest_match
   
 
     
@@ -2823,11 +2857,6 @@ Deprecated argument. Please use <code>finetuning_batch_size</code> instead.</p>
 If both <code>task</code> and <code>dataset</code> are specified, or if <code>download_only</code>
 is True and we have no internet connection.</p>
 </li>
-<li>
-<p><span class="mkapi-item-name">ImportError</span>
- <span class="mkapi-dash">&mdash;</span>
-If <code>hf_transfer</code> is enabled but not installed.</p>
-</li>
 </ul>
 </div>
 <p class="mkapi-section">
@@ -3072,6 +3101,13 @@ the tags of the model. Defaults to the value specified when initialising
 the benchmarker.</p>
 </li>
 <li>
+<p><span class="mkapi-item-name">attention_backend</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="typing">t</span>.<span class="mkapi-tooltip" title="typing.Literal">Literal</span>[*<span class="mkapi-tooltip" title="euroeval.constants.ATTENTION_BACKENDS">ATTENTION_BACKENDS</span>,] | None</span> <span class="mkapi-dash">&mdash;</span>
+The attention backend to use for vLLM. Only relevant if the model is
+generative. Defaults to the value specified when initialising the
+benchmarker.</p>
+</li>
+<li>
 <p><span class="mkapi-item-name">custom_datasets_file</span> : 
 <span class="mkapi-item-type"><span class="mkapi-tooltip" title="pathlib.Path">Path</span> | str | None</span> <span class="mkapi-dash">&mdash;</span>
 Path to a Python file defining custom datasets. Defaults to the value
@@ -3145,7 +3181,10 @@ A list of benchmark results.</p>
 If both <code>task</code> and <code>dataset</code> are specified.</p>
 </li>
 <li>
-<p><span class="mkapi-item-type"><a href="../exceptions/#euroeval.exceptions.InvalidModel" title="euroeval.exceptions.InvalidModel">InvalidModel</a></span></p>
+<p><span class="mkapi-item-name">InvalidModel</span>
+ <span class="mkapi-dash">&mdash;</span>
+If we're offline benchmarking an adapter model, or if model loading
+failed.</p>
 </li>
 <li>
 <p><span class="mkapi-item-type">benchmark_output_or_err</span></p>

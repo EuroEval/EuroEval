@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -2270,7 +2272,22 @@
 <span class="normal">1260</span>
 <span class="normal">1261</span>
 <span class="normal">1262</span>
-<span class="normal">1263</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1263</span>
+<span class="normal">1264</span>
+<span class="normal">1265</span>
+<span class="normal">1266</span>
+<span class="normal">1267</span>
+<span class="normal">1268</span>
+<span class="normal">1269</span>
+<span class="normal">1270</span>
+<span class="normal">1271</span>
+<span class="normal">1272</span>
+<span class="normal">1273</span>
+<span class="normal">1274</span>
+<span class="normal">1275</span>
+<span class="normal">1276</span>
+<span class="normal">1277</span>
+<span class="normal">1278</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2452,8 +2469,6 @@
 <span class="sd">            ValueError:</span>
 <span class="sd">                If both `task` and `dataset` are specified, or if `download_only`</span>
 <span class="sd">                is True and we have no internet connection.</span>
-<span class="sd">            ImportError:</span>
-<span class="sd">                If `hf_transfer` is enabled but not installed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dataset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only one of `task` and `dataset` can be specified.&quot;</span><span class="p">)</span>
@@ -2758,6 +2773,10 @@
 <span class="sd">                generative. If not specified, then the type will be inferred based on</span>
 <span class="sd">                the tags of the model. Defaults to the value specified when initialising</span>
 <span class="sd">                the benchmarker.</span>
+<span class="sd">            attention_backend:</span>
+<span class="sd">                The attention backend to use for vLLM. Only relevant if the model is</span>
+<span class="sd">                generative. Defaults to the value specified when initialising the</span>
+<span class="sd">                benchmarker.</span>
 <span class="sd">            custom_datasets_file:</span>
 <span class="sd">                Path to a Python file defining custom datasets. Defaults to the value</span>
 <span class="sd">                specified when initialising the benchmarker.</span>
@@ -2784,6 +2803,9 @@
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError:</span>
 <span class="sd">                If both `task` and `dataset` are specified.</span>
+<span class="sd">            InvalidModel:</span>
+<span class="sd">                If we&#39;re offline benchmarking an adapter model, or if model loading</span>
+<span class="sd">                failed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">log</span><span class="p">(</span>
             <span class="s2">&quot;Started EuroEval run. Run with `--verbose` for more information.&quot;</span><span class="p">,</span>
@@ -3401,7 +3423,17 @@
             <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa: ANN401</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Alias for `self.benchmark()`.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Alias for `self.benchmark()`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            *args:</span>
+<span class="sd">                Positional arguments to pass to `self.benchmark()`.</span>
+<span class="sd">            **kwds:</span>
+<span class="sd">                Keyword arguments to pass to `self.benchmark()`.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The result of `self.benchmark()`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">log</span><span class="p">(</span>
             <span class="s2">&quot;Calling the `Benchmarker` class directly is deprecated. Please use the &quot;</span>
             <span class="s2">&quot;`benchmark` function instead. This will be removed in a future version.&quot;</span><span class="p">,</span>

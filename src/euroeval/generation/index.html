@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1334,7 +1336,15 @@
 <span class="normal">363</span>
 <span class="normal">364</span>
 <span class="normal">365</span>
-<span class="normal">366</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1460,6 +1470,10 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of dictionaries containing the scores for each metric.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidModel:</span>
+<span class="sd">            If the model&#39;s batching preference is not supported.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">cache</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
@@ -1617,6 +1631,10 @@
 <span class="sd">            The extracted labels from the model output.</span>
 <span class="sd">        dataset_config:</span>
 <span class="sd">            The configuration of the dataset.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidBenchmark:</span>
+<span class="sd">            If the dataset is not passed to the metric.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">match</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span><span class="p">:</span>
         <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">TOKEN_CLASSIFICATION</span><span class="p">:</span>

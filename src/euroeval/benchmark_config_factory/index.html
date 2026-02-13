@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1272,21 +1274,35 @@
 <span class="normal">279</span>
 <span class="normal">280</span>
 <span class="normal">281</span>
-<span class="normal">282</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Factory class for creating dataset configurations.&quot;&quot;&quot;</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Factory class for creating dataset configurations.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.closest_match</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_closest_match</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">BenchmarkConfigParams</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">Task</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.dataset_configs</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_dataset_configs</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
 
 <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">pass</span>
@@ -1458,10 +1474,6 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The prepared dataset configs.</span>
-
-<span class="sd">    Raises:</span>
-<span class="sd">        InvalidBenchmark:</span>
-<span class="sd">            If the task or dataset is not found in the benchmark tasks or datasets.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Extract the dataset IDs from the `dataset` argument</span>
     <span class="n">dataset_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
@@ -1500,9 +1512,16 @@
                 <span class="n">all_dataset_configs</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">dataset</span>
             <span class="p">]</span>
     <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2"> not found in the benchmark datasets.&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="n">closest_match</span><span class="p">,</span> <span class="n">closest_distance</span> <span class="o">=</span> <span class="n">get_closest_match</span><span class="p">(</span>
+            <span class="n">string</span><span class="o">=</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">options</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">all_dataset_configs</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+            <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2"> not found in the benchmark datasets.&quot;</span>
+        <span class="k">if</span> <span class="n">closest_distance</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Maybe you meant to use </span><span class="si">{</span><span class="n">closest_match</span><span class="si">!r}</span><span class="s2">?&quot;</span>
+        <span class="n">log</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="c1"># Create the list of dataset tasks</span>
     <span class="n">task_mapping</span> <span class="o">=</span> <span class="p">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">cfg</span><span class="o">.</span><span class="n">task</span> <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="n">all_dataset_configs</span><span class="o">.</span><span class="n">values</span><span class="p">()}</span>
@@ -1516,7 +1535,14 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">task_mapping</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">task</span><span class="p">]</span>
     <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Task </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2"> not found in the benchmark tasks.&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="n">closest_match</span><span class="p">,</span> <span class="n">closest_distance</span> <span class="o">=</span> <span class="n">get_closest_match</span><span class="p">(</span>
+            <span class="n">string</span><span class="o">=</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">options</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">task_mapping</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span> <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Task </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2"> not found in the benchmark tasks.&quot;</span>
+        <span class="k">if</span> <span class="n">closest_distance</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Maybe you meant to use </span><span class="si">{</span><span class="n">closest_match</span><span class="si">!r}</span><span class="s2">?&quot;</span>
+        <span class="n">log</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="c1"># Filter the dataset configs based on the specified tasks and languages</span>
     <span class="n">datasets</span> <span class="o">=</span> <span class="p">[</span>

@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -961,6 +963,8 @@
       
         
       
+        
+      
     
     
     
@@ -1239,6 +1243,8 @@
       
         
       
+        
+      
     
     
     
@@ -1293,6 +1299,70 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../ifeval/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.metrics.ifeval
+  
+
+    
+  </span>
+  
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
               
             
               
@@ -1865,6 +1935,34 @@
     
   
     euroeval.cli
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../closest_match/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.closest_match
   
 
     
@@ -2776,10 +2874,9 @@ The pretty name of the metric, used for display purposes.</p>
 The Hugging Face repository ID of the scikit-learn pipeline to load.</p>
 </li>
 <li>
-<p><span class="mkapi-item-name">pipeline_scoring_method</span>
- <span class="mkapi-dash">&mdash;</span>
-The method to use for scoring the predictions with the pipeline. Takes
-a 1D sequence of predictions and returns a float score.</p>
+<p><span class="mkapi-item-name">pipeline_scoring_function</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Callable">Callable</span>[['Pipeline', <span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>], float]</span> <span class="mkapi-dash">&mdash;</span>
+The function to use to score the predictions.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">pipeline_file_name</span> : 
@@ -2871,13 +2968,9 @@ mapping.</p>
 <div class="mkapi-section-content">
 <ul class="mkapi-item-list">
 <li>
-<p><span class="mkapi-item-name">AssertionError</span>
+<p><span class="mkapi-item-name">InvalidBenchmark</span>
  <span class="mkapi-dash">&mdash;</span>
-If the number of predictions is not a multiple of 53, which is required
-for the European Values metric.</p>
-</li>
-<li>
-<p><span class="mkapi-item-type"><a href="../../exceptions/#euroeval.exceptions.InvalidBenchmark" title="euroeval.exceptions.InvalidBenchmark">InvalidBenchmark</a></span></p>
+If the predictions are not valid for the European Values metric.</p>
 </li>
 </ul>
 </div>
@@ -2895,6 +2988,44 @@ for the European Values metric.</p>
 </p>
 <div class="mkapi-document">
 <p>Scoring function for the European Values metric.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">pipeline</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="sklearn.pipeline.Pipeline">Pipeline</span></span> <span class="mkapi-dash">&mdash;</span>
+The pipeline to use for scoring.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">predictions</span> : 
+<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[int]</span> <span class="mkapi-dash">&mdash;</span>
+The predictions to score.</p>
+</li>
+</ul>
+</div>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle returns">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Returns</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-type">float</span> <span class="mkapi-dash">&mdash;</span>
+The score.</p>
+</li>
+</ul>
+</div>
 </div>
 
 

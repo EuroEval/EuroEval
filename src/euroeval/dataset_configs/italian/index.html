@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -1051,13 +1053,45 @@
 <span class="normal">121</span>
 <span class="normal">122</span>
 <span class="normal">123</span>
-<span class="normal">124</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Italian dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Italian dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">ITALIAN</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">COMMON_SENSE</span><span class="p">,</span> <span class="n">EUROPEAN_VALUES</span><span class="p">,</span> <span class="n">KNOW</span><span class="p">,</span> <span class="n">LA</span><span class="p">,</span> <span class="n">MCRC</span><span class="p">,</span> <span class="n">NER</span><span class="p">,</span> <span class="n">RC</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">SUMM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">COMMON_SENSE</span><span class="p">,</span>
+    <span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
+    <span class="n">INSTRUCTION_FOLLOWING</span><span class="p">,</span>
+    <span class="n">KNOW</span><span class="p">,</span>
+    <span class="n">LA</span><span class="p">,</span>
+    <span class="n">MCRC</span><span class="p">,</span>
+    <span class="n">NER</span><span class="p">,</span>
+    <span class="n">RC</span><span class="p">,</span>
+    <span class="n">SENT</span><span class="p">,</span>
+    <span class="n">SUMM</span><span class="p">,</span>
+<span class="p">)</span>
 
-<span class="c1">### Official datasets ###</span>
+<span class="c1"># Official datasets ###</span>
 
 <span class="n">SENTIPOLC_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sentipolc16&quot;</span><span class="p">,</span>
@@ -1115,6 +1149,16 @@
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
 <span class="p">)</span>
 
+<span class="n">IFEVAL_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ifeval-it&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;IFEval-it&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/ifeval-it&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">INSTRUCTION_FOLLOWING</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ITALIAN</span><span class="p">],</span>
+    <span class="n">train_split</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">val_split</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+
 <span class="n">VALEU_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;valeu-it&quot;</span><span class="p">,</span>
     <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;VaLEU-it&quot;</span><span class="p">,</span>
@@ -1128,7 +1172,7 @@
 <span class="p">)</span>
 
 
-<span class="c1">### Unofficial datasets ###</span>
+<span class="c1"># Unofficial datasets ###</span>
 
 <span class="n">WIKINEURAL_IT_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;wikineural-it&quot;</span><span class="p">,</span>

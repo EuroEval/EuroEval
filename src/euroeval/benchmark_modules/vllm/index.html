@@ -563,6 +563,8 @@
       
         
       
+        
+      
     
     
     
@@ -2718,7 +2720,31 @@
 <span class="normal">1598</span>
 <span class="normal">1599</span>
 <span class="normal">1600</span>
-<span class="normal">1601</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1601</span>
+<span class="normal">1602</span>
+<span class="normal">1603</span>
+<span class="normal">1604</span>
+<span class="normal">1605</span>
+<span class="normal">1606</span>
+<span class="normal">1607</span>
+<span class="normal">1608</span>
+<span class="normal">1609</span>
+<span class="normal">1610</span>
+<span class="normal">1611</span>
+<span class="normal">1612</span>
+<span class="normal">1613</span>
+<span class="normal">1614</span>
+<span class="normal">1615</span>
+<span class="normal">1616</span>
+<span class="normal">1617</span>
+<span class="normal">1618</span>
+<span class="normal">1619</span>
+<span class="normal">1620</span>
+<span class="normal">1621</span>
+<span class="normal">1622</span>
+<span class="normal">1623</span>
+<span class="normal">1624</span>
+<span class="normal">1625</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2876,6 +2902,15 @@
 <span class="sd">                The benchmark configuration.</span>
 <span class="sd">            log_metadata:</span>
 <span class="sd">                Whether to log the model and dataset metadata.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NeedsSystemDependency:</span>
+<span class="sd">                If the CUDA Toolkit is not installed.</span>
+<span class="sd">            NeedsExtraInstalled:</span>
+<span class="sd">                If the generative extra is not installed.</span>
+<span class="sd">            InvalidBenchmark:</span>
+<span class="sd">                If no CUDA GPUs are available and the dataset requires structured</span>
+<span class="sd">                generation.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NeedsExtraInstalled</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;generative&quot;</span><span class="p">)</span>
@@ -3619,6 +3654,10 @@
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The model configuration.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InvalidModel:</span>
+<span class="sd">                If the model does not exist.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">model_id_components</span> <span class="o">=</span> <span class="n">split_model_id</span><span class="p">(</span><span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">)</span>
         <span class="n">model_info</span> <span class="o">=</span> <span class="n">get_model_repo_info</span><span class="p">(</span>
@@ -3711,6 +3750,13 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A pair (model, tokeniser), with the loaded model and tokeniser</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        NeedsExtraInstalled:</span>
+<span class="sd">            If a quantised model is being loaded and the required extra packages are not</span>
+<span class="sd">            installed.</span>
+<span class="sd">        InvalidModel:</span>
+<span class="sd">            If the model could not be loaded.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Prefer base model ID if the model is an adapter - the adapter will be added on</span>
     <span class="c1"># during inference in this case</span>
@@ -3950,6 +3996,10 @@
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The loaded tokeniser.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        InvalidModel:</span>
+<span class="sd">            If the tokeniser could not be loaded.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">revision</span> <span class="o">=</span> <span class="n">revision</span> <span class="k">if</span> <span class="n">adapter_base_model_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;main&quot;</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">AutoConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
