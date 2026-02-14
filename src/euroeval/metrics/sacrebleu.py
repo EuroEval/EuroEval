@@ -30,11 +30,11 @@ class ChrF(Metric):
         super().__init__(
             name="chr_f4pp",
             pretty_name="ChrF4++",
-            postprocessing_fn=lambda x: (x, f"{x:.2%}"),
+            postprocessing_fn=lambda x: (x, f"{x:.2f}%"),
         )
         self.word_order = word_order
         self.beta = beta
-        self.metric = CHRF(char_order=6, word_order=word_order, beta=self.beta)
+        self.metric = CHRF(char_order=6, word_order=self.word_order, beta=self.beta)
 
     def __call__(
         self,
