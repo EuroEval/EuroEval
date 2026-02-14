@@ -196,7 +196,6 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         elif hasattr(self._model, "parameters"):
             num_params = sum(p.numel() for p in self._model.parameters())
         else:
-            breakpoint()
             log(
                 "The number of parameters could not be determined for the model, since "
                 "the model is not stored in the safetensors format. If this is your "

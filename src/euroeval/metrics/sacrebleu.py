@@ -71,7 +71,9 @@ class ChrF(Metric):
         return sum(scores) / len(scores)
 
 
-chrf_metric = ChrF()
+chrf2_metric = ChrF()
+chrf3_metric = ChrF(beta=3)
 chrf4_metric = ChrF(beta=4)
-chrfpp_metric = ChrF(word_order=2)
+chrf2pp_metric = ChrF(word_order=2)
+chrf3pp_metric = ChrF(word_order=2, beta=3)
 chrf4pp_metric = ChrF(word_order=2, beta=4)
