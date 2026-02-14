@@ -62,9 +62,13 @@ class ChrF(Metric):
         Returns:
             The ChrF score.
         """
-        return self.metric.corpus_score(
-            hypotheses=predictions, references=[[ref] for ref in references]
-        ).score
+        scores = [
+            self.metric.sentence_score(
+                hypothesis=prediction, references=[reference]
+            ).score
+            for prediction, reference in zip(predictions, references)
+        ]
+        return sum(scores) / len(scores)
 
 
 chrf_metric = ChrF()
