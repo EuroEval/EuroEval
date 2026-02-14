@@ -28,8 +28,8 @@ class ChrF(Metric):
                 original chrF (and chrF++) metric.
         """
         super().__init__(
-            name="chr_f4pp",
-            pretty_name="ChrF4++",
+            name=f"chr_f{beta}" + "p" * word_order,
+            pretty_name=f"ChrF{beta}" + "+" * word_order,
             postprocessing_fn=lambda x: (x, f"{x:.2f}%"),
         )
         self.word_order = word_order
