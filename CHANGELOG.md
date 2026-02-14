@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Changed the primary summarisation metric from BERTScore to ChrF3++, as it has better
+  correlation with human judgements, and has the upside of being model-agnostic,
+  reducing potential biases against low-resource languages.
+
 ## [v16.14.0] - 2026-02-13
 
 ### Added
