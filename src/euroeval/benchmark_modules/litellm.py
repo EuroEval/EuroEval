@@ -13,12 +13,6 @@ from time import sleep
 import litellm
 import ollama
 from datasets import Dataset
-from huggingface_hub import HfApi
-from huggingface_hub.errors import (
-    HFValidationError,
-    RepositoryNotFoundError,
-    RevisionNotFoundError,
-)
 from litellm.exceptions import (
     APIConnectionError,
     APIError,
@@ -37,8 +31,9 @@ from litellm.types.router import RouterRateLimitError
 from litellm.types.utils import ChoiceLogprobs, Logprobs
 from litellm.utils import supports_reasoning, supports_response_schema
 from pydantic import ValidationError, conlist, create_model
-from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
+
+from euroeval.safetensors_utils import get_num_params_from_safetensors_metadata
 
 from ..async_utils import add_semaphore_and_catch_exception, safe_run
 from ..constants import (
@@ -85,7 +80,6 @@ from ..task_group_utils import (
 from ..tasks import NER
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
-from ..utils import get_hf_token
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokeniser
 
@@ -1095,6 +1089,16 @@ class LiteLLMModel(BenchmarkModule):
             if HuggingFaceEncoderModel.model_exists(
                 model_id=model_id, benchmark_config=self.benchmark_config
             ):
+                # Try safetensors metadata first
+                num_params_or_none = get_num_params_from_safetensors_metadata(
+                    model_id=model_id,
+                    revision="main",
+                    api_key=self.benchmark_config.api_key,
+                )
+                if num_params_or_none is not None:
+                    return num_params_or_none
+
+                # Otherwise, try the Hugging Face model configuration
                 hf_config = load_hf_model_config(
                     model_id=model_id,
                     num_labels=self.dataset_config.num_labels,
@@ -1106,30 +1110,7 @@ class LiteLLMModel(BenchmarkModule):
                     trust_remote_code=self.benchmark_config.trust_remote_code,
                     run_with_cli=self.benchmark_config.run_with_cli,
                 )
-
-                hf_api = HfApi()
-                try:
-                    repo_info = hf_api.model_info(
-                        repo_id=model_id,
-                        revision="main",
-                        token=get_hf_token(api_key=self.benchmark_config.api_key),
-                    )
-                except (
-                    RepositoryNotFoundError,
-                    RevisionNotFoundError,
-                    RequestException,
-                    HFValidationError,
-                ):
-                    repo_info = None
-
                 if (
-                    repo_info is not None
-                    and hasattr(repo_info, "safetensors")
-                    and repo_info.safetensors is not None
-                    and "total" in repo_info.safetensors
-                ):
-                    return repo_info.safetensors["total"]
-                elif (
                     hasattr(hf_config, "num_params")
                     and hf_config.num_params is not None
                 ):
