@@ -34,8 +34,7 @@ def get_num_params_from_safetensors_metadata(
         log_once(
             "The number of parameters could not be determined for the model "
             f"{model_id}, since the model is not stored in the safetensors format. "
-            "If this is your the model is not stored in the safetensors format. If "
-            "this is your own model, then you can use this Hugging Face Space to "
+            "If this is your own model, then you can use this Hugging Face Space to "
             "convert your model to the safetensors format: "
             "https://huggingface.co/spaces/safetensors/convert.",
             level=logging.WARNING,
