@@ -93,40 +93,45 @@ def test_split_model_id_invalid() -> None:
         split_model_id(model_id="@#")
 
 
-def test_extract_json_dict_from_string_valid() -> None:
-    """Test extracting valid JSON dict from string."""
-    text = 'Some text {"key": "value", "num": 42} more text'
+@pytest.mark.parametrize(
+    "text,expected_result,description",
+    [
+        (
+            'Some text {"key": "value", "num": 42} more text',
+            {"key": "value", "num": 42},
+            "valid_json",
+        ),
+        (
+            'Text {"outer": "value"} and {"inner": 123}',
+            {"outer": "value"},
+            "nested_first_match",
+        ),
+        ("This is just plain text with no JSON", None, "no_json"),
+        ("Text {invalid json} more text", None, "invalid_json"),
+        ('Text ["array", "not", "dict"] more text', None, "non_dict"),
+        ("Text {} more text", {}, "empty_dict"),
+        (
+            'Text {\n    "key1": "value1",\n    "key2": "value2"\n} more',
+            {"key1": "value1", "key2": "value2"},
+            "multiline",
+        ),
+    ],
+    ids=[
+        "valid",
+        "nested",
+        "no_json",
+        "invalid_json",
+        "non_dict",
+        "empty_dict",
+        "multiline",
+    ],
+)
+def test_extract_json_dict_from_string(
+    text: str, expected_result: dict | None, description: str
+) -> None:
+    """Test extracting JSON dict from string with various inputs."""
     result = extract_json_dict_from_string(text)
-    assert result == {"key": "value", "num": 42}
-
-
-def test_extract_json_dict_from_string_nested() -> None:
-    """Test extracting nested JSON (first match only)."""
-    text = 'Text {"outer": "value"} and {"inner": 123}'
-    result = extract_json_dict_from_string(text)
-    # Should extract the first JSON dict
-    assert result == {"outer": "value"}
-
-
-def test_extract_json_dict_from_string_no_json() -> None:
-    """Test extraction returns None when no JSON present."""
-    text = "This is just plain text with no JSON"
-    result = extract_json_dict_from_string(text)
-    assert result is None
-
-
-def test_extract_json_dict_from_string_invalid_json() -> None:
-    """Test extraction returns None for invalid JSON."""
-    text = "Text {invalid json} more text"
-    result = extract_json_dict_from_string(text)
-    assert result is None
-
-
-def test_extract_json_dict_from_string_non_dict() -> None:
-    """Test extraction returns None when JSON is not a dict."""
-    text = 'Text ["array", "not", "dict"] more text'
-    result = extract_json_dict_from_string(text)
-    assert result is None
+    assert result == expected_result
 
 
 def test_extract_json_dict_from_string_non_string_keys() -> None:
@@ -138,45 +143,45 @@ def test_extract_json_dict_from_string_non_string_keys() -> None:
     assert result is None or all(isinstance(k, str) for k in result.keys())
 
 
-def test_extract_json_dict_from_string_empty_dict() -> None:
-    """Test extraction of empty dictionary."""
-    text = "Text {} more text"
-    result = extract_json_dict_from_string(text)
-    assert result == {}
-
-
-def test_extract_json_dict_multiline() -> None:
-    """Test extraction of multiline JSON."""
-    text = """Text {
-        "key1": "value1",
-        "key2": "value2"
-    } more text"""
-    result = extract_json_dict_from_string(text)
-    assert result == {"key1": "value1", "key2": "value2"}
-
-
-def test_extract_multiple_choice_labels_basic() -> None:
-    """Test extracting multiple choice labels from prompt."""
-    prompt = "Question text\na. First option\nb. Second option\nc. Third option"
-    labels = extract_multiple_choice_labels(prompt, ["a", "b", "c"])
-    assert labels == ["a", "b", "c"]
-
-
-def test_extract_multiple_choice_labels_subset() -> None:
-    """Test extracting subset of labels."""
-    prompt = "Question text\na. First option\nc. Third option"
-    labels = extract_multiple_choice_labels(prompt, ["a", "b", "c", "d"])
-    assert "a" in labels
-    assert "c" in labels
-    assert "b" not in labels
-
-
-def test_extract_multiple_choice_labels_case_insensitive() -> None:
-    """Test that label extraction is case insensitive."""
-    prompt = "Question text\nA. First option\nB. Second option"
-    labels = extract_multiple_choice_labels(prompt, ["a", "b"])
-    assert "a" in labels
-    assert "b" in labels
+@pytest.mark.parametrize(
+    "prompt,candidate_labels,expected_labels,description",
+    [
+        (
+            "Question text\na. First option\nb. Second option\nc. Third option",
+            ["a", "b", "c"],
+            ["a", "b", "c"],
+            "basic_extraction",
+        ),
+        (
+            "Question text\na. First option\nc. Third option",
+            ["a", "b", "c", "d"],
+            ["a", "c"],
+            "subset_extraction",
+        ),
+        (
+            "Question text\nA. First option\nB. Second option",
+            ["a", "b"],
+            ["a", "b"],
+            "case_insensitive",
+        ),
+        (
+            "Question\n1. First\n2. Second\n3. Third",
+            ["1", "2", "3"],
+            ["1", "2", "3"],
+            "numeric_labels",
+        ),
+    ],
+    ids=["basic", "subset", "case_insensitive", "numeric"],
+)
+def test_extract_multiple_choice_labels(
+    prompt: str,
+    candidate_labels: list[str],
+    expected_labels: list[str],
+    description: str,
+) -> None:
+    """Test extracting multiple choice labels from prompts."""
+    labels = extract_multiple_choice_labels(prompt, candidate_labels)
+    assert set(labels) == set(expected_labels)
 
 
 def test_extract_multiple_choice_labels_no_labels() -> None:

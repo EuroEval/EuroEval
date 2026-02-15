@@ -31,33 +31,28 @@ def test_get_pbar_custom_args() -> None:
     pbar.close()
 
 
-def test_log_debug(caplog: pytest.LogCaptureFixture) -> None:
-    """Test debug level logging."""
-    with caplog.at_level(logging.DEBUG):
-        log("Debug message", level=logging.DEBUG)
-    assert "Debug message" in caplog.text
-    assert "DEBUG" in caplog.text
-
-
-def test_log_info(caplog: pytest.LogCaptureFixture) -> None:
-    """Test info level logging."""
-    with caplog.at_level(logging.INFO):
-        log("Info message", level=logging.INFO)
-    assert "Info message" in caplog.text
-
-
-def test_log_warning(caplog: pytest.LogCaptureFixture) -> None:
-    """Test warning level logging."""
-    with caplog.at_level(logging.WARNING):
-        log("Warning message", level=logging.WARNING)
-    assert "Warning message" in caplog.text
-
-
-def test_log_error(caplog: pytest.LogCaptureFixture) -> None:
-    """Test error level logging."""
-    with caplog.at_level(logging.ERROR):
-        log("Error message", level=logging.ERROR)
-    assert "Error message" in caplog.text
+@pytest.mark.parametrize(
+    "log_level,message,check_level_in_text",
+    [
+        (logging.DEBUG, "Debug message", True),
+        (logging.INFO, "Info message", False),
+        (logging.WARNING, "Warning message", False),
+        (logging.ERROR, "Error message", False),
+    ],
+    ids=["debug", "info", "warning", "error"],
+)
+def test_log_levels(
+    caplog: pytest.LogCaptureFixture,
+    log_level: int,
+    message: str,
+    check_level_in_text: bool,
+) -> None:
+    """Test logging at different levels."""
+    with caplog.at_level(log_level):
+        log(message, level=log_level)
+    assert message in caplog.text
+    if check_level_in_text:
+        assert "DEBUG" in caplog.text
 
 
 def test_log_with_colour(caplog: pytest.LogCaptureFixture) -> None:

@@ -120,45 +120,31 @@ class TestLogScores:
         for val in total_dict.values():
             assert isinstance(val, float)
 
-    def test_log_scores_with_revision(
-        self, metric: Metric, scores: list[dict[str, float]]
+    @pytest.mark.parametrize(
+        "model_revision,model_param,description",
+        [
+            ("v1.0", None, "with non-main revision"),
+            ("main", "param_value", "with model parameter"),
+            ("v2.0", "param_value", "with both revision and parameter"),
+        ],
+        ids=["revision_only", "param_only", "revision_and_param"],
+    )
+    def test_log_scores_variations(
+        self,
+        metric: Metric,
+        scores: list[dict[str, float]],
+        model_revision: str,
+        model_param: str | None,
+        description: str,
     ) -> None:
-        """Test log_scores with non-main revision."""
+        """Test log_scores with different model revision and parameter combinations."""
         result = log_scores(
             dataset_name="dataset",
             metrics=[metric],
             scores=scores,
             model_id="model_id",
-            model_revision="v1.0",
-            model_param=None,
-        )
-        assert isinstance(result, dict)
-
-    def test_log_scores_with_param(
-        self, metric: Metric, scores: list[dict[str, float]]
-    ) -> None:
-        """Test log_scores with model parameter."""
-        result = log_scores(
-            dataset_name="dataset",
-            metrics=[metric],
-            scores=scores,
-            model_id="model_id",
-            model_revision="main",
-            model_param="param_value",
-        )
-        assert isinstance(result, dict)
-
-    def test_log_scores_with_revision_and_param(
-        self, metric: Metric, scores: list[dict[str, float]]
-    ) -> None:
-        """Test log_scores with both revision and parameter."""
-        result = log_scores(
-            dataset_name="dataset",
-            metrics=[metric],
-            scores=scores,
-            model_id="model_id",
-            model_revision="v2.0",
-            model_param="param_value",
+            model_revision=model_revision,
+            model_param=model_param,
         )
         assert isinstance(result, dict)
         assert "raw" in result
