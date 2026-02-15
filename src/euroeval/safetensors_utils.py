@@ -3,7 +3,13 @@
 import logging
 
 from huggingface_hub import get_safetensors_metadata
-from huggingface_hub.errors import NotASafetensorsRepoError
+from huggingface_hub.errors import (
+    GatedRepoError,
+    HfHubHTTPError,
+    NotASafetensorsRepoError,
+    RepositoryNotFoundError,
+    SafetensorsParsingError,
+)
 
 from .logging_utils import log_once
 from .utils import get_hf_token
@@ -30,7 +36,7 @@ def get_num_params_from_safetensors_metadata(
         metadata = get_safetensors_metadata(
             repo_id=model_id, revision=revision, token=get_hf_token(api_key=api_key)
         )
-    except NotASafetensorsRepoError:
+    except (NotASafetensorsRepoError, SafetensorsParsingError):
         log_once(
             "The number of parameters could not be determined for the model "
             f"{model_id}, since the model is not stored in the safetensors format. "
@@ -38,6 +44,28 @@ def get_num_params_from_safetensors_metadata(
             "this is your own model, then you can use this Hugging Face Space to "
             "convert your model to the safetensors format: "
             "https://huggingface.co/spaces/safetensors/convert.",
+            level=logging.WARNING,
+        )
+        return None
+    except RepositoryNotFoundError:
+        log_once(
+            f"The model {model_id} could not be found on the Hugging Face Hub. "
+            "Please check that the model ID is correct.",
+            level=logging.WARNING,
+        )
+        return None
+    except GatedRepoError:
+        log_once(
+            f"The model {model_id} is gated, so the number of parameters could not be "
+            "determined. Please ensure that you have access to this model, and that "
+            "you have provided a valid API key or set the `HUGGINGFACE_API_KEY` or "
+            "`HF_TOKEN` environment variable.",
+            level=logging.WARNING,
+        )
+        return None
+    except HfHubHTTPError as e:
+        log_once(
+            f"Failed to get the number of parameters for the model {model_id}: {e}.",
             level=logging.WARNING,
         )
         return None
