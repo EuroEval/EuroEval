@@ -19,7 +19,7 @@ class TestGetNumParamsFromSafetensorsMetadata:
         """Test getting number of parameters with a single entry."""
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
-        
+
         # Mock the metadata with a single parameter count entry
         mock_metadata = MagicMock()
         mock_metadata.parameter_count = {"model.safetensors": 1000000}
@@ -43,7 +43,7 @@ class TestGetNumParamsFromSafetensorsMetadata:
         """Test getting number of parameters with multiple entries."""
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
-        
+
         # Mock the metadata with multiple parameter count entries
         mock_metadata = MagicMock()
         mock_metadata.parameter_count = {
@@ -68,7 +68,7 @@ class TestGetNumParamsFromSafetensorsMetadata:
         """Test handling of models not in safetensors format."""
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
-        
+
         # Mock the function to raise NotASafetensorsRepoError
         mock_get_metadata.side_effect = NotASafetensorsRepoError("Not safetensors")
 
@@ -86,7 +86,7 @@ class TestGetNumParamsFromSafetensorsMetadata:
         """Test handling of models with empty parameter count dictionary."""
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
-        
+
         # Mock the metadata with an empty parameter count dictionary
         mock_metadata = MagicMock()
         mock_metadata.parameter_count = {}
@@ -106,7 +106,7 @@ class TestGetNumParamsFromSafetensorsMetadata:
         """Test that API key is properly passed through."""
         # Mock the token retrieval
         mock_get_hf_token.return_value = "test_token"
-        
+
         # Mock the metadata
         mock_metadata = MagicMock()
         mock_metadata.parameter_count = {"model.safetensors": 500000}
@@ -130,7 +130,7 @@ class TestGetNumParamsFromSafetensorsMetadata:
         """Test that revision parameter is properly passed through."""
         # Mock the token retrieval
         mock_get_hf_token.return_value = False
-        
+
         # Mock the metadata
         mock_metadata = MagicMock()
         mock_metadata.parameter_count = {"model.safetensors": 750000}
