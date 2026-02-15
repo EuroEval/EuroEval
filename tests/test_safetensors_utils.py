@@ -22,7 +22,7 @@ class TestGetNumParamsFromSafetensorsMetadata:
 
         # Mock the metadata with a single parameter count entry
         mock_metadata = MagicMock()
-        mock_metadata.parameter_count = {"model.safetensors": 1000000}
+        mock_metadata.parameter_count = {"BF16": 1000000}
         mock_get_metadata.return_value = mock_metadata
 
         result = get_num_params_from_safetensors_metadata(
@@ -47,9 +47,9 @@ class TestGetNumParamsFromSafetensorsMetadata:
         # Mock the metadata with multiple parameter count entries
         mock_metadata = MagicMock()
         mock_metadata.parameter_count = {
-            "model-00001-of-00003.safetensors": 1000000,
-            "model-00002-of-00003.safetensors": 1500000,
-            "model-00003-of-00003.safetensors": 500000,
+            "BF16": 1000000,
+            "FP32": 1500000,
+            "I32": 500000,
         }
         mock_get_metadata.return_value = mock_metadata
 
@@ -109,7 +109,7 @@ class TestGetNumParamsFromSafetensorsMetadata:
 
         # Mock the metadata
         mock_metadata = MagicMock()
-        mock_metadata.parameter_count = {"model.safetensors": 500000}
+        mock_metadata.parameter_count = {"FP16": 500000}
         mock_get_metadata.return_value = mock_metadata
 
         result = get_num_params_from_safetensors_metadata(
@@ -133,7 +133,7 @@ class TestGetNumParamsFromSafetensorsMetadata:
 
         # Mock the metadata
         mock_metadata = MagicMock()
-        mock_metadata.parameter_count = {"model.safetensors": 750000}
+        mock_metadata.parameter_count = {"BF16": 750000}
         mock_get_metadata.return_value = mock_metadata
 
         result = get_num_params_from_safetensors_metadata(
