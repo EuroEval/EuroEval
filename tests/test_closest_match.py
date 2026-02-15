@@ -57,7 +57,8 @@ def test_get_closest_match_custom_weights() -> None:
     match2, distance2 = get_closest_match(
         string, options, case_sensitive=True, substitution_weight=10
     )
-    # Now "ca" (1 deletion, weight 1) should be closer than "bat" (1 substitution, weight 10)
+    # Now "ca" (1 deletion, weight 1) should be closer than
+    # "bat" (1 substitution, weight 10)
     assert match2 == "ca"
     assert distance2 == 1
 

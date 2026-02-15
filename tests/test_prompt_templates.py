@@ -1,6 +1,5 @@
 """Tests for the `prompt_templates` package."""
 
-import pytest
 
 from euroeval.data_models import PromptConfig
 from euroeval.languages import DANISH, ENGLISH, SWEDISH
@@ -22,11 +21,11 @@ def test_classification_templates_structure() -> None:
     """Test that classification templates have expected structure."""
     assert isinstance(CLASSIFICATION_TEMPLATES, dict)
     assert len(CLASSIFICATION_TEMPLATES) > 0
-    
+
     # Check a few languages are present
     assert ENGLISH in CLASSIFICATION_TEMPLATES
     assert DANISH in CLASSIFICATION_TEMPLATES
-    
+
     # Check that values are PromptConfig objects
     for lang, config in CLASSIFICATION_TEMPLATES.items():
         assert isinstance(config, PromptConfig)
@@ -39,7 +38,7 @@ def test_sentiment_templates_structure() -> None:
     assert isinstance(SENT_TEMPLATES, dict)
     assert len(SENT_TEMPLATES) > 0
     assert ENGLISH in SENT_TEMPLATES
-    
+
     for config in SENT_TEMPLATES.values():
         assert isinstance(config, PromptConfig)
 
@@ -98,7 +97,7 @@ def test_empty_templates_structure() -> None:
 def test_prompt_config_has_required_fields() -> None:
     """Test that prompt configs have all required fields."""
     config = CLASSIFICATION_TEMPLATES[ENGLISH]
-    
+
     assert isinstance(config.default_prompt_prefix, str)
     assert isinstance(config.default_prompt_template, str)
     assert isinstance(config.default_instruction_prompt, str)
@@ -108,7 +107,7 @@ def test_prompt_config_has_required_fields() -> None:
 def test_prompt_templates_contain_placeholders() -> None:
     """Test that prompt templates contain expected placeholders."""
     config = CLASSIFICATION_TEMPLATES[ENGLISH]
-    
+
     # Check that templates have placeholders
     assert '{text}' in config.default_prompt_template
     assert '{label}' in config.default_prompt_template
@@ -118,7 +117,7 @@ def test_prompt_templates_contain_placeholders() -> None:
 def test_multiple_languages_have_templates() -> None:
     """Test that multiple languages have classification templates."""
     languages_to_check = [ENGLISH, DANISH, SWEDISH]
-    
+
     for lang in languages_to_check:
         assert lang in CLASSIFICATION_TEMPLATES
         config = CLASSIFICATION_TEMPLATES[lang]

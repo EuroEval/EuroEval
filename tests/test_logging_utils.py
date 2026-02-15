@@ -2,7 +2,6 @@
 
 import logging
 import sys
-from unittest.mock import MagicMock, patch
 
 import pytest
 from tqdm.auto import tqdm

@@ -1,8 +1,6 @@
 """Tests for the `model_cache` module."""
 
-import json
 from pathlib import Path
-from unittest.mock import Mock, patch
 
 import pytest
 from datasets import Dataset
@@ -225,7 +223,9 @@ def test_create_model_cache_dir_from_hub_id() -> None:
     assert "org--model-name" in result
 
 
-def test_model_cache_load_corrupted(model_cache: ModelCache, caplog: pytest.LogCaptureFixture) -> None:
+def test_model_cache_load_corrupted(
+    model_cache: ModelCache, caplog: pytest.LogCaptureFixture
+) -> None:
     """Test loading a corrupted cache file."""
     # Create a corrupted JSON file
     model_cache.cache_path.parent.mkdir(parents=True, exist_ok=True)

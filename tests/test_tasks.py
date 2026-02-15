@@ -89,7 +89,10 @@ def test_european_values_task_constraints() -> None:
     """Test the European values task special constraints."""
     assert tasks.EUROPEAN_VALUES.requires_zero_shot is True
     assert tasks.EUROPEAN_VALUES.default_num_few_shot_examples == 0
-    assert GenerativeType.INSTRUCTION_TUNED in tasks.EUROPEAN_VALUES.default_allowed_generative_types
+    assert (
+        GenerativeType.INSTRUCTION_TUNED
+        in tasks.EUROPEAN_VALUES.default_allowed_generative_types
+    )
     assert tasks.EUROPEAN_VALUES.default_allow_invalid_model_outputs is False
 
 
