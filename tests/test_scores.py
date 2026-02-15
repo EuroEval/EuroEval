@@ -45,6 +45,25 @@ class TestAggregateScores:
         agg_scores = aggregate_scores(scores=list(), metric=metric)
         assert np.isnan(agg_scores).all()
 
+    def test_single_score(self, metric: Metric) -> None:
+        """Test that `aggregate_scores` handles a single score correctly."""
+        single_scores = [{f"test_{metric.name}": 0.75}]
+        agg_scores = aggregate_scores(scores=single_scores, metric=metric)
+        # With a single score, mean should be the value and SE should be NaN
+        assert agg_scores[0] == 0.75
+        assert np.isnan(agg_scores[1])
+
+    def test_scores_with_metric_name_without_prefix(self, metric: Metric) -> None:
+        """Test aggregate_scores with metric name without test_ prefix."""
+        scores_no_prefix = [
+            {metric.name: 0.40},
+            {metric.name: 0.50},
+            {metric.name: 0.60},
+        ]
+        agg_scores = aggregate_scores(scores=scores_no_prefix, metric=metric)
+        assert agg_scores[0] == 0.50
+        assert agg_scores[1] > 0  # Should have non-zero SE
+
 
 class TestLogScores:
     """Tests for the `log_scores` function."""
@@ -100,3 +119,47 @@ class TestLogScores:
         assert isinstance(total_dict, dict)
         for val in total_dict.values():
             assert isinstance(val, float)
+
+    def test_log_scores_with_revision(
+        self, metric: Metric, scores: list[dict[str, float]]
+    ) -> None:
+        """Test log_scores with non-main revision."""
+        result = log_scores(
+            dataset_name="dataset",
+            metrics=[metric],
+            scores=scores,
+            model_id="model_id",
+            model_revision="v1.0",
+            model_param=None,
+        )
+        assert isinstance(result, dict)
+
+    def test_log_scores_with_param(
+        self, metric: Metric, scores: list[dict[str, float]]
+    ) -> None:
+        """Test log_scores with model parameter."""
+        result = log_scores(
+            dataset_name="dataset",
+            metrics=[metric],
+            scores=scores,
+            model_id="model_id",
+            model_revision="main",
+            model_param="param_value",
+        )
+        assert isinstance(result, dict)
+
+    def test_log_scores_with_revision_and_param(
+        self, metric: Metric, scores: list[dict[str, float]]
+    ) -> None:
+        """Test log_scores with both revision and parameter."""
+        result = log_scores(
+            dataset_name="dataset",
+            metrics=[metric],
+            scores=scores,
+            model_id="model_id",
+            model_revision="v2.0",
+            model_param="param_value",
+        )
+        assert isinstance(result, dict)
+        assert "raw" in result
+        assert "total" in result
