@@ -8,7 +8,6 @@ from tqdm.auto import tqdm
 
 from euroeval.logging_utils import (
     adjust_logging_level,
-    block_terminal_output,
     get_pbar,
     log,
     log_once,
@@ -106,13 +105,6 @@ def test_log_once_with_prefix(caplog: pytest.LogCaptureFixture) -> None:
     assert "PREFIX: Test message" in caplog.text
 
 
-def test_block_terminal_output() -> None:
-    """Test that block_terminal_output doesn't raise errors."""
-    # Just test that it executes without errors
-    block_terminal_output()
-    # Can't easily test the actual blocking in a unit test
-
-
 def test_no_terminal_output_context_manager() -> None:
     """Test the no_terminal_output context manager."""
     with no_terminal_output(disable=True):
@@ -149,10 +141,7 @@ def test_adjust_logging_level_during_testing() -> None:
 
 @pytest.mark.parametrize(
     "verbose,ignore_testing,expected",
-    [
-        (True, True, logging.DEBUG),
-        (False, True, logging.INFO),
-    ],
+    [(True, True, logging.DEBUG), (False, True, logging.INFO)],
     ids=["verbose_debug", "not_verbose_info"],
 )
 def test_adjust_logging_level_parametrized(

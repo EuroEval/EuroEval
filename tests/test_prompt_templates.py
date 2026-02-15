@@ -1,6 +1,5 @@
 """Tests for the `prompt_templates` package."""
 
-
 from euroeval.data_models import PromptConfig
 from euroeval.languages import DANISH, ENGLISH, SWEDISH
 from euroeval.prompt_templates import (
@@ -29,8 +28,8 @@ def test_classification_templates_structure() -> None:
     # Check that values are PromptConfig objects
     for lang, config in CLASSIFICATION_TEMPLATES.items():
         assert isinstance(config, PromptConfig)
-        assert hasattr(config, 'default_prompt_prefix')
-        assert hasattr(config, 'default_prompt_template')
+        assert hasattr(config, "default_prompt_prefix")
+        assert hasattr(config, "default_prompt_template")
 
 
 def test_sentiment_templates_structure() -> None:
@@ -109,9 +108,9 @@ def test_prompt_templates_contain_placeholders() -> None:
     config = CLASSIFICATION_TEMPLATES[ENGLISH]
 
     # Check that templates have placeholders
-    assert '{text}' in config.default_prompt_template
-    assert '{label}' in config.default_prompt_template
-    assert '{text}' in config.default_instruction_prompt
+    assert "{text}" in config.default_prompt_template
+    assert "{label}" in config.default_prompt_template
+    assert "{text}" in config.default_instruction_prompt
 
 
 def test_multiple_languages_have_templates() -> None:

@@ -41,43 +41,52 @@ def test_safe_run_with_exception() -> None:
         safe_run(failing_coroutine())
 
 
-@pytest.mark.asyncio
-async def test_add_semaphore_success() -> None:
+def test_add_semaphore_success() -> None:
     """Test that add_semaphore_and_catch_exception works with a successful coroutine."""
-    semaphore = asyncio.Semaphore(1)
-    result = await add_semaphore_and_catch_exception(simple_coroutine(), semaphore)
-    assert result == "test_result"
+
+    async def run_test() -> None:
+        semaphore = asyncio.Semaphore(1)
+        result = await add_semaphore_and_catch_exception(simple_coroutine(), semaphore)
+        assert result == "test_result"
+
+    safe_run(run_test())
 
 
-@pytest.mark.asyncio
-async def test_add_semaphore_catches_exception() -> None:
+def test_add_semaphore_catches_exception() -> None:
     """Test that add_semaphore_and_catch_exception catches exceptions."""
-    semaphore = asyncio.Semaphore(1)
-    result = await add_semaphore_and_catch_exception(failing_coroutine(), semaphore)
-    assert isinstance(result, ValueError)
-    assert str(result) == "Test error"
+
+    async def run_test() -> None:
+        semaphore = asyncio.Semaphore(1)
+        result = await add_semaphore_and_catch_exception(failing_coroutine(), semaphore)
+        assert isinstance(result, ValueError)
+        assert str(result) == "Test error"
+
+    safe_run(run_test())
 
 
-@pytest.mark.asyncio
-async def test_add_semaphore_limits_concurrency() -> None:
+def test_add_semaphore_limits_concurrency() -> None:
     """Test that semaphore limits concurrent execution."""
-    semaphore = asyncio.Semaphore(2)
-    execution_order: list[int] = []
 
-    async def tracked_coroutine(task_id: int) -> int:
-        """Coroutine that tracks execution order."""
-        execution_order.append(task_id)
-        await asyncio.sleep(0.01)
-        return task_id
+    async def run_test() -> None:
+        semaphore = asyncio.Semaphore(2)
+        execution_order: list[int] = []
 
-    # Create 5 tasks with a semaphore that allows only 2 concurrent executions
-    tasks = [
-        add_semaphore_and_catch_exception(tracked_coroutine(i), semaphore)
-        for i in range(5)
-    ]
-    results = await asyncio.gather(*tasks)
+        async def tracked_coroutine(task_id: int) -> int:
+            """Coroutine that tracks execution order."""
+            execution_order.append(task_id)
+            await asyncio.sleep(0.01)
+            return task_id
 
-    # All tasks should complete
-    assert results == list(range(5))
-    # All tasks should have been tracked
-    assert len(execution_order) == 5
+        # Create 5 tasks with a semaphore that allows only 2 concurrent executions
+        tasks = [
+            add_semaphore_and_catch_exception(tracked_coroutine(i), semaphore)
+            for i in range(5)
+        ]
+        results = await asyncio.gather(*tasks)
+
+        # All tasks should complete
+        assert results == list(range(5))
+        # All tasks should have been tracked
+        assert len(execution_order) == 5
+
+    safe_run(run_test())
