@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from huggingface_hub.errors import NotASafetensorsRepoError
 
 from euroeval.safetensors_utils import get_num_params_from_safetensors_metadata
