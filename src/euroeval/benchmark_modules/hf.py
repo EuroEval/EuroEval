@@ -20,7 +20,6 @@ from huggingface_hub.errors import (
     HFValidationError,
     LocalTokenNotFoundError,
     RepositoryNotFoundError,
-    RevisionNotFoundError,
 )
 from huggingface_hub.hf_api import ModelInfo as HfApiModelInfo
 from peft import PeftConfig
@@ -65,6 +64,7 @@ from ..generation_utils import raise_if_wrong_params
 from ..languages import get_all_languages
 from ..logging_utils import block_terminal_output, log, log_once
 from ..model_cache import create_model_cache_dir
+from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import split_model_id
 from ..task_group_utils import (
     multiple_choice_classification,
@@ -153,42 +153,16 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             The number of parameters in the model.
         """
         # No need to try to use the API if we have no internet.
-        if not internet_connection_available():
-            repo_info = None
-        else:
-            token = get_hf_token(api_key=self.benchmark_config.api_key)
-            hf_api = HfApi(token=token)
-            try:
-                repo_info = hf_api.model_info(
-                    repo_id=self.model_config.adapter_base_model_id
-                    or self.model_config.model_id,
-                    revision=self.model_config.revision,
-                )
-            except (
-                RepositoryNotFoundError,
-                RevisionNotFoundError,
-                RequestException,
-                HFValidationError,
-            ):
-                repo_info = None
+        if internet_connection_available():
+            num_params_or_none = get_num_params_from_safetensors_metadata(
+                model_id=self.model_config.model_id,
+                revision=self.model_config.revision,
+                api_key=self.benchmark_config.api_key,
+            )
+            if num_params_or_none is not None:
+                return num_params_or_none
 
         if (
-            repo_info is not None
-            and hasattr(repo_info, "safetensors")
-            and repo_info.safetensors is not None
-            and "total" in repo_info.safetensors
-        ):
-            num_params_candidates: list[int] = [repo_info.safetensors["total"]]
-            if "parameters" in repo_info.safetensors and isinstance(
-                repo_info.safetensors["parameters"], dict
-            ):
-                num_params_candidates.extend(
-                    int(v)
-                    for v in repo_info.safetensors["parameters"].values()
-                    if isinstance(v, int) or (isinstance(v, str) and v.isdigit())
-                )
-            num_params = max(num_params_candidates)
-        elif (
             hasattr(self._model.config, "num_params")
             and self._model.config.num_params is not None
         ):
@@ -196,12 +170,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         elif hasattr(self._model, "parameters"):
             num_params = sum(p.numel() for p in self._model.parameters())
         else:
-            log(
-                "The number of parameters could not be determined for the model, since "
-                "the model is not stored in the safetensors format. If this is your "
-                "own model, then you can use this Hugging Face Space to convert your "
-                "model to the safetensors format: "
-                "https://huggingface.co/spaces/safetensors/convert.",
+            log_once(
+                "The number of parameters could not be determined for the model "
+                f"{self.model_config.model_id}, neither from the safetensors metadata "
+                "nor from the model configuration.",
                 level=logging.WARNING,
             )
             num_params = -1
