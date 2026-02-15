@@ -17,14 +17,14 @@ class ChrF(Metric):
     """The ChrF metric."""
 
     def __init__(self, word_order: int = 0, beta: int = 2) -> None:
-        """Initialise the ChrF++ metric.
+        """Initialise the ChrF metric.
 
         Args:
             word_order (optional):
-                The word order for the ChrF++ metric. Defaults to 0, which is the
+                The word order for the ChrF metric. Defaults to 0, which is the
                 original chrF metric. If set to 2, it is the chrF++ metric.
             beta (optional):
-                The beta parameter for the ChrF++ metric. Defaults to 2, which is the
+                The beta parameter for the ChrF metric. Defaults to 2, which is the
                 original chrF (and chrF++) metric.
         """
         super().__init__(
