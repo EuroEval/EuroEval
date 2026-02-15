@@ -86,7 +86,7 @@ def get_num_params_from_safetensors_metadata(
         case _:
             log_once(
                 f"The model {model_id} has multiple parameter count entries in its "
-                "safetensors metadata: {parameter_count_dict}. Using the largest one.",
+                f"safetensors metadata: {parameter_count_dict}. Using the largest one.",
                 level=logging.DEBUG,
             )
             return max(parameter_count_dict.values())
