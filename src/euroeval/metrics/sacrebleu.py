@@ -68,7 +68,7 @@ class ChrF(Metric):
             ).score
             for prediction, reference in zip(predictions, references)
         ]
-        return sum(scores) / len(scores)
+        return 1.0 if not scores else sum(scores) / len(scores)
 
 
 chrf2_metric = ChrF()
