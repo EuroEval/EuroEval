@@ -13,7 +13,7 @@ RUN apt-get -y update && \
     apt-get -y update && \
     apt-get -y upgrade && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      python3.12 python3.12-venv python3.12-dev && \
+      gcc git-all python3.12 python3.12-venv python3.12-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
