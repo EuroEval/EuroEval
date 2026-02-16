@@ -1239,7 +1239,7 @@ models on the Danish sentiment classification task:</p>
 <p>A Dockerfile is provided in the repo, which can be downloaded and run, without needing
 to clone the repo and installing from source. This can be fetched programmatically by
 running the following:</p>
-<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>https://raw.githubusercontent.com/EuroEval/EuroEval/main/Dockerfile.cuda
+<div class="highlight"><pre><span></span><code>wget<span class="w"> </span>https://raw.githubusercontent.com/EuroEval/EuroEval/main/Dockerfile
 </code></pre></div>
 <p>Next, to be able to build the Docker image, first ensure that the NVIDIA Container
 Toolkit is
@@ -1249,7 +1249,7 @@ and
 Ensure that the the CUDA version stated at the top of the Dockerfile matches the CUDA
 version installed (which you can check using <code>nvidia-smi</code>). After that, we build the
 image as follows:</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>--pull<span class="w"> </span>-t<span class="w"> </span>euroeval<span class="w"> </span>-f<span class="w"> </span>Dockerfile.cuda<span class="w"> </span>.
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>--pull<span class="w"> </span>-t<span class="w"> </span>euroeval<span class="w"> </span>.
 </code></pre></div>
 <p>With the Docker image built, we can now evaluate any model as follows:</p>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">args</span><span class="o">=</span><span class="s2">&quot;&lt;euroeval-arguments&gt;&quot;</span><span class="w"> </span>--gpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--name<span class="w"> </span>euroeval<span class="w"> </span>--rm<span class="w"> </span>euroeval

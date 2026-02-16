@@ -2560,35 +2560,7 @@
 <span class="normal">1383</span>
 <span class="normal">1384</span>
 <span class="normal">1385</span>
-<span class="normal">1386</span>
-<span class="normal">1387</span>
-<span class="normal">1388</span>
-<span class="normal">1389</span>
-<span class="normal">1390</span>
-<span class="normal">1391</span>
-<span class="normal">1392</span>
-<span class="normal">1393</span>
-<span class="normal">1394</span>
-<span class="normal">1395</span>
-<span class="normal">1396</span>
-<span class="normal">1397</span>
-<span class="normal">1398</span>
-<span class="normal">1399</span>
-<span class="normal">1400</span>
-<span class="normal">1401</span>
-<span class="normal">1402</span>
-<span class="normal">1403</span>
-<span class="normal">1404</span>
-<span class="normal">1405</span>
-<span class="normal">1406</span>
-<span class="normal">1407</span>
-<span class="normal">1408</span>
-<span class="normal">1409</span>
-<span class="normal">1410</span>
-<span class="normal">1411</span>
-<span class="normal">1412</span>
-<span class="normal">1413</span>
-<span class="normal">1414</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1386</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
@@ -2610,7 +2582,6 @@
     <span class="n">HFValidationError</span><span class="p">,</span>
     <span class="n">LocalTokenNotFoundError</span><span class="p">,</span>
     <span class="n">RepositoryNotFoundError</span><span class="p">,</span>
-    <span class="n">RevisionNotFoundError</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub.hf_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelInfo</span> <span class="k">as</span> <span class="n">HfApiModelInfo</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">peft</span><span class="w"> </span><span class="kn">import</span> <span class="n">PeftConfig</span>
@@ -2655,6 +2626,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_all_languages</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">block_terminal_output</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..model_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_model_cache_dir</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..safetensors_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_num_params_from_safetensors_metadata</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..string_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">split_model_id</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">multiple_choice_classification</span><span class="p">,</span>
@@ -2743,42 +2715,16 @@
 <span class="sd">            The number of parameters in the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># No need to try to use the API if we have no internet.</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">():</span>
-            <span class="n">repo_info</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">token</span> <span class="o">=</span> <span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">)</span>
-            <span class="n">hf_api</span> <span class="o">=</span> <span class="n">HfApi</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">repo_info</span> <span class="o">=</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">model_info</span><span class="p">(</span>
-                    <span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span>
-                    <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-                    <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">except</span> <span class="p">(</span>
-                <span class="n">RepositoryNotFoundError</span><span class="p">,</span>
-                <span class="n">RevisionNotFoundError</span><span class="p">,</span>
-                <span class="n">RequestException</span><span class="p">,</span>
-                <span class="n">HFValidationError</span><span class="p">,</span>
-            <span class="p">):</span>
-                <span class="n">repo_info</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">():</span>
+            <span class="n">num_params_or_none</span> <span class="o">=</span> <span class="n">get_num_params_from_safetensors_metadata</span><span class="p">(</span>
+                <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+                <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+                <span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">num_params_or_none</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">num_params_or_none</span>
 
         <span class="k">if</span> <span class="p">(</span>
-            <span class="n">repo_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">repo_info</span><span class="p">,</span> <span class="s2">&quot;safetensors&quot;</span><span class="p">)</span>
-            <span class="ow">and</span> <span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="ow">and</span> <span class="s2">&quot;total&quot;</span> <span class="ow">in</span> <span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span>
-        <span class="p">):</span>
-            <span class="n">num_params_candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span><span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">]]</span>
-            <span class="k">if</span> <span class="s2">&quot;parameters&quot;</span> <span class="ow">in</span> <span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
-                <span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">],</span> <span class="nb">dict</span>
-            <span class="p">):</span>
-                <span class="n">num_params_candidates</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
-                    <span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">repo_info</span><span class="o">.</span><span class="n">safetensors</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
-                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">isdigit</span><span class="p">())</span>
-                <span class="p">)</span>
-            <span class="n">num_params</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">num_params_candidates</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="p">(</span>
             <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;num_params&quot;</span><span class="p">)</span>
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">):</span>
@@ -2786,12 +2732,10 @@
         <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="s2">&quot;parameters&quot;</span><span class="p">):</span>
             <span class="n">num_params</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">numel</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">log</span><span class="p">(</span>
-                <span class="s2">&quot;The number of parameters could not be determined for the model, since &quot;</span>
-                <span class="s2">&quot;the model is not stored in the safetensors format. If this is your &quot;</span>
-                <span class="s2">&quot;own model, then you can use this Hugging Face Space to convert your &quot;</span>
-                <span class="s2">&quot;model to the safetensors format: &quot;</span>
-                <span class="s2">&quot;https://huggingface.co/spaces/safetensors/convert.&quot;</span><span class="p">,</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The number of parameters could not be determined for the model &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">}</span><span class="s2">, neither from the safetensors metadata &quot;</span>
+                <span class="s2">&quot;nor from the model configuration.&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">num_params</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
