@@ -17,12 +17,13 @@ RUN apt-get -y update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN python3.12 -m venv /venv && \
-    /venv/bin/python3.12 -m pip install --upgrade pip wheel && \
-    /venv/bin/python3.12 -m pip install --upgrade euroeval[all]
-
 WORKDIR /project
+
+RUN python3.12 -m venv .venv && \
+    .venv/bin/python3.12 -m pip install --upgrade pip wheel && \
+    .venv/bin/python3.12 -m pip install --upgrade euroeval[all]
+
 COPY euroeval_benchmark_results.jsonl* .
 
-ENTRYPOINT ["euroeval"]
+ENTRYPOINT [".venv/bin/euroeval"]
 CMD ["--help"]
