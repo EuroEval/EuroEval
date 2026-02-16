@@ -1,7 +1,7 @@
 FROM nvidia/cuda:12.2.0-base-ubuntu22.04
 
 # If CUDA is not available, raise an error during build
-RUN if ! command -v nvidia-smi &> /dev/null; then \
+RUN if ! command -v nvidia-smi >/dev/null 2>&1; then \
       echo "CUDA is not available. Please build this Docker image on a machine with CUDA."; \
       exit 1; \
     fi
