@@ -2,8 +2,7 @@
 
 import typing as t
 
-from euroeval.data_models import PromptConfig
-
+from ..data_models import PromptConfig
 from ..languages import ENGLISH
 
 if t.TYPE_CHECKING:
@@ -24,6 +23,6 @@ TOOL_CALLING_TEMPLATES: dict["Language", PromptConfig] = {
             'Each item should have "function" (the function name) '
             'and "arguments" (an object with the parameters).'
         ),
-        default_prompt_label_mapping="auto",
+        default_prompt_label_mapping=dict(),
     )
 }

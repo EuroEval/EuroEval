@@ -7,8 +7,7 @@ import typing as t
 
 import numpy as np
 
-from euroeval.constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
-
+from ..constants import METRIC_ATTRIBUTES_TAKING_UP_MEMORY
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
 from ..metrics import HuggingFaceMetric

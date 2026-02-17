@@ -2,8 +2,6 @@
 
 import json
 
-from euroeval.prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES
-
 from . import metrics as m
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import Task
@@ -21,6 +19,7 @@ from .prompt_templates import (
     TOKEN_CLASSIFICATION_TEMPLATES,
     TRANSLATION_TEMPLATES,
 )
+from .prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES
 
 LA = Task(
     name="linguistic-acceptability",
@@ -193,8 +192,8 @@ BFCL_OUTPUT_STRUCTURE = {
     },
 }
 
-BFCL = Task(
-    name="bfcl",
+TOOL_CALLING = Task(
+    name="tool-calling",
     task_group=TaskGroup.TOOL_CALLING,
     template_dict=TOOL_CALLING_TEMPLATES,
     metrics=[m.tool_calling_metric],

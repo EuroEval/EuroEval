@@ -10,49 +10,8 @@ from datasets import Dataset, DatasetDict
 from dotenv import load_dotenv
 
 
-def split_dataset_to_dict(items: list[dict]) -> DatasetDict:
-    """Split dataset into train/validation/test with deterministic random sampling.
-
-    Args:
-        items: List of dataset items to split
-
-    Returns:
-        DatasetDict with train (10%), validation (10%), and test (80%) splits
-    """
-    random.seed(42)
-    shuffled_items = items.copy()
-    random.shuffle(shuffled_items)
-
-    total = len(shuffled_items)
-    train_size = int(0.1 * total)
-    val_size = int(0.1 * total)
-
-    train_items = shuffled_items[:train_size]
-    val_items = shuffled_items[train_size : train_size + val_size]
-    test_items = shuffled_items[train_size + val_size :]
-
-    return DatasetDict(
-        {
-            "train": Dataset.from_list(train_items),
-            "validation": Dataset.from_list(val_items),
-            "test": Dataset.from_list(test_items),
-        }
-    )
-
-
-def _load_jsonl(x: str | Path) -> list:
-    if isinstance(x, Path):
-        x = x.read_text()
-    return [json.loads(line) for line in x.splitlines()]
-
-
-def _load_jsonl_from_url(url: str) -> list:
-    with urlopen(url) as r:
-        return _load_jsonl(r.read().decode())
-
-
 def main() -> None:
-    """Create bfcl dataset."""
+    """Create BFCL dataset (the part used by EuroEval) and push to hugging face."""
     items: list = []
     for subset_name in [
         "live_multiple",
@@ -88,10 +47,68 @@ def main() -> None:
         item["ground_truth"] = json.dumps(item["ground_truth"])
 
     load_dotenv()
-    dataset_dict = split_dataset_to_dict(items)
+    dataset_dict = _split_dataset_to_dict(items)
     dataset_dict.push_to_hub(
         "EuroEval/bfcl-en", private=True, token=os.getenv("HF_TOKEN")
     )
+
+
+def _split_dataset_to_dict(items: list[dict]) -> DatasetDict:
+    """Split dataset into train/validation/test with deterministic random sampling.
+
+    Args:
+        items:
+            List of dataset items to split
+
+    Returns:
+        DatasetDict with train, validation, and test splits
+    """
+    random.seed(42)
+    shuffled_items = items.copy()
+    random.shuffle(shuffled_items)
+
+    total = len(shuffled_items)
+    train_size = int(0.1 * total)
+    val_size = int(0.1 * total)
+
+    train_items = shuffled_items[:train_size]
+    val_items = shuffled_items[train_size : train_size + val_size]
+    test_items = shuffled_items[train_size + val_size :]
+
+    return DatasetDict(
+        {
+            "train": Dataset.from_list(train_items),
+            "val": Dataset.from_list(val_items),
+            "test": Dataset.from_list(test_items),
+        }
+    )
+
+
+def _load_jsonl(path: str | Path) -> list:
+    """Load jsonl.
+
+    Args:
+        path: string with serialized JSONL or Path to JSONL file
+
+    Returns:
+        List of deserialized objects
+    """
+    if isinstance(path, Path):
+        path = path.read_text()
+    return [json.loads(line) for line in path.splitlines()]
+
+
+def _load_jsonl_from_url(url: str) -> list:
+    """Load jsonl from url.
+
+    Args:
+        url: url to JSONL
+
+    Returns:
+        List of deserialized objects
+    """
+    with urlopen(url) as r:
+        return _load_jsonl(r.read().decode())
 
 
 if __name__ == "__main__":
