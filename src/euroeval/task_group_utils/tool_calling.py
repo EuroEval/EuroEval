@@ -1,4 +1,4 @@
-"""Utility functions related to the text-to-text task group."""
+"""Utility functions related to the tool-calling task group."""
 
 import collections.abc as c
 import json

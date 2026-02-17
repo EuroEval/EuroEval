@@ -30,11 +30,17 @@ def _evaluate_function_toolcall_response(
         pred_args = pred_call.get("arguments", {})
         if not pred_name:
             return False
-        assert len(ref_call) == 1
-        ref_name, ref_args = list(ref_call.items())[0]
-        if pred_call["function"] != ref_name:
+        if len(ref_call) != 1:
             return False
-        required_args = description["parameters"].get("required", None)
+        ref_name: str
+        ref_args: dict
+        ref_name, ref_args = list(ref_call.items())[0]
+        if pred_call.get("function", None) != ref_name:
+            return False
+        parameters = description.get("parameters", None)
+        required_args = (
+            parameters.get("required", None) if isinstance(parameters, dict) else None
+        )
         for key, values in ref_args.items():
             if required_args and key not in required_args:
                 continue
@@ -63,7 +69,10 @@ class ToolCallingMetric(Metric):
         results = []
         for x in zip(predictions, references, function_descriptions):
             results.append(_evaluate_function_toolcall_response(*x))
-        return sum(results) / len(results)
+        if not results:
+            return None
+        else:
+            return sum(results) / len(results)
 
 
 tool_calling_metric = ToolCallingMetric(

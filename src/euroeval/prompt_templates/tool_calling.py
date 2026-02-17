@@ -19,8 +19,10 @@ TOOL_CALLING_TEMPLATES: dict["Language", PromptConfig] = {
             "Given the following user request: '{question}', "
             "answer with a list of function(s) to use in the exact format:\n"
             "{output_format_example}\n"
-            "Each item should have 'function' (the function name) "
-            "and 'arguments' (an object with the parameters)."
+            "The answer MUST be a valid JSON, using double quotes for all keys"
+            "and strings, and must not include any additional explanatory text. "
+            'Each item should have "function" (the function name) '
+            'and "arguments" (an object with the parameters).'
         ),
         default_prompt_label_mapping="auto",
     )

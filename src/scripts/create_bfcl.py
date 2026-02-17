@@ -73,11 +73,11 @@ def main() -> None:
         input_url = f"{url_prefix}/BFCL_v4_{subset_name}.json"
         ground_truth_url = f"{url_prefix}/possible_answer/BFCL_v4_{subset_name}.json"
         print(f"Loading dataset '{subset_name}'")
-        input = _load_jsonl_from_url(input_url)
+        inputs = _load_jsonl_from_url(input_url)
         ground_truth = _load_jsonl_from_url(ground_truth_url)
         # Join input and ground_truth by 'id' key
         ground_truth_by_id = {item["id"]: item for item in ground_truth}
-        for item in input:
+        for item in inputs:
             item_id = item["id"]
             gt: dict = ground_truth_by_id.get(item_id, {})
             joined: dict = item | gt

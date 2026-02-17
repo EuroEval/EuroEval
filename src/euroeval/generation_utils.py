@@ -354,8 +354,8 @@ def apply_prompt(
             ):
                 question = question[0][0]["content"]
                 OUTPUT_FORMAT_EXAMPLE = (
-                    "[{'function': 'function_name', "
-                    "'arguments': {'argument_name': value, ... } }, ...]"
+                    '[{"function": "function_name", '
+                    '"arguments": {"argument_name": value, ... } }, ...]'
                 )
                 prompt = dataset_config.prompt_template.format(
                     question=question,
