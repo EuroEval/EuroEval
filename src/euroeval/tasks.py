@@ -8,6 +8,7 @@ from .prompt_templates import (
     CLASSIFICATION_TEMPLATES,
     EMPTY_TEMPLATES,
     LA_TEMPLATES,
+    MT_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
     NER_TEMPLATES,
     RC_TEMPLATES,
@@ -73,6 +74,7 @@ SENT = Task(
     uses_logprobs=True,
 )
 
+
 SIMPL = Task(
     name="simplification",
     task_group=TaskGroup.TEXT_TO_TEXT,
@@ -84,12 +86,25 @@ SIMPL = Task(
     default_allowed_model_types=[ModelType.GENERATIVE],
 )
 
+
 SUMM = Task(
     name="summarization",
     task_group=TaskGroup.TEXT_TO_TEXT,
     template_dict=SUMM_TEMPLATES,
     metrics=[m.bert_score_metric, m.rouge_l_metric],
     default_num_few_shot_examples=1,
+    default_max_generated_tokens=256,
+    default_labels=[],
+    default_allowed_model_types=[ModelType.GENERATIVE],
+)
+
+
+MT = Task(
+    name="machine-translation",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=MT_TEMPLATES,
+    metrics=[m.bert_score_metric, m.rouge_l_metric],
+    default_num_few_shot_examples=5,
     default_max_generated_tokens=256,
     default_labels=[],
     default_allowed_model_types=[ModelType.GENERATIVE],
