@@ -984,6 +984,102 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset cnn-dailymail
 ```
 
+## Translation
+
+### WMT24++
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. They cover translation pairs from
+English to 55 languages, where 9 of them are post-edited from the original dataset.
+These are all manually translated.
+
+The original full dataset consists of 998 samples for each language. A small portion of
+the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the training split, 128 samples for the validation split, and the rest for the test
+split.
+
+We use the following target languages from the dataset:
+
+- Bulgarian (bg)
+- Catalan (ca)
+- Czech (cs)
+- Danish (da)
+- Dutch (nl)
+- Estonian (et)
+- Finnish (fi)
+- French (fr)
+- German (de)
+- Greek (el)
+- Hungarian (hu)
+- Icelandic (is)
+- Italian (it)
+- Latvian (lv)
+- Lithuanian (lt)
+- Norwegian (no)
+- Polish (pl)
+- Portuguese (pt)
+- Romanian (ro)
+- Serbian (sr)
+- Slovak (sk)
+- Slovene (sl)
+- Spanish (es)
+- Swedish (sv)
+- Ukrainian (uk)
+
+Here are a few examples from some of the training splits:
+
+```json
+{
+    "text": "Still to do; hallway floor, all the skirtings. Decorator is coming in a month, so it’s bare plaster chic for us for now",
+    "target_text": "Vi mangler gulvet i gangen og alle fodlister. Maleren kommer om en måned, så det er et pænt råpuds for os indtil videre."
+}
+```
+
+```json
+{
+    "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
+    "target_text": "У мене немає телеметрії для акумулятора. Це те, що я, можливо, додам у майбутній версії."
+}
+```
+
+```json
+{
+    "text": "\"You mean... the horrible god monster thing that we... helped kill?\" Tenuk stuttered.",
+    "target_text": "\"Vols dir… l'horrible deïtat monstruosa que hem… ajudat a matar?\", Tanuk tartamudejà."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding {target_language} translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  {target_language} translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into {target_language}.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-en-{target_language_code}
+```
+
 ## Instruction-following
 
 ### IFEval

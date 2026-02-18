@@ -37,6 +37,7 @@ WMT24PP_EN_BG_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-bg",
     task=TRANSLATION,
     languages=[ENGLISH, BULGARIAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_CA_CONFIG = DatasetConfig(
@@ -45,6 +46,7 @@ WMT24PP_EN_CA_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-ca",
     task=TRANSLATION,
     languages=[ENGLISH, CATALAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_CS_CONFIG = DatasetConfig(
@@ -53,6 +55,7 @@ WMT24PP_EN_CS_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-cs",
     task=TRANSLATION,
     languages=[ENGLISH, CZECH],
+    unofficial=True,
 )
 
 WMT24PP_EN_DA_CONFIG = DatasetConfig(
@@ -61,6 +64,7 @@ WMT24PP_EN_DA_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-da",
     task=TRANSLATION,
     languages=[ENGLISH, DANISH],
+    unofficial=True,
 )
 
 WMT24PP_EN_DE_CONFIG = DatasetConfig(
@@ -69,6 +73,7 @@ WMT24PP_EN_DE_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-de",
     task=TRANSLATION,
     languages=[ENGLISH, GERMAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_EL_CONFIG = DatasetConfig(
@@ -77,6 +82,7 @@ WMT24PP_EN_EL_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-el",
     task=TRANSLATION,
     languages=[ENGLISH, GREEK],
+    unofficial=True,
 )
 
 WMT24PP_EN_ET_CONFIG = DatasetConfig(
@@ -85,6 +91,7 @@ WMT24PP_EN_ET_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-et",
     task=TRANSLATION,
     languages=[ENGLISH, ESTONIAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_FI_CONFIG = DatasetConfig(
@@ -93,6 +100,7 @@ WMT24PP_EN_FI_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-fi",
     task=TRANSLATION,
     languages=[ENGLISH, FINNISH],
+    unofficial=True,
 )
 
 WMT24PP_EN_FR_CONFIG = DatasetConfig(
@@ -101,6 +109,7 @@ WMT24PP_EN_FR_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-fr",
     task=TRANSLATION,
     languages=[ENGLISH, FRENCH],
+    unofficial=True,
 )
 
 WMT24PP_EN_HR_CONFIG = DatasetConfig(
@@ -109,6 +118,7 @@ WMT24PP_EN_HR_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-hr",
     task=TRANSLATION,
     languages=[ENGLISH, CROATIAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_HU_CONFIG = DatasetConfig(
@@ -117,6 +127,7 @@ WMT24PP_EN_HU_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-hu",
     task=TRANSLATION,
     languages=[ENGLISH, HUNGARIAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_IS_CONFIG = DatasetConfig(
@@ -125,6 +136,7 @@ WMT24PP_EN_IS_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-is",
     task=TRANSLATION,
     languages=[ENGLISH, ICELANDIC],
+    unofficial=True,
 )
 
 WMT24PP_EN_IT_CONFIG = DatasetConfig(
@@ -133,6 +145,7 @@ WMT24PP_EN_IT_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-it",
     task=TRANSLATION,
     languages=[ENGLISH, ITALIAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_LT_CONFIG = DatasetConfig(
@@ -141,6 +154,7 @@ WMT24PP_EN_LT_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-lt",
     task=TRANSLATION,
     languages=[ENGLISH, LITHUANIAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_LV_CONFIG = DatasetConfig(
@@ -149,6 +163,7 @@ WMT24PP_EN_LV_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-lv",
     task=TRANSLATION,
     languages=[ENGLISH, LATVIAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_NL_CONFIG = DatasetConfig(
@@ -157,6 +172,7 @@ WMT24PP_EN_NL_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-nl",
     task=TRANSLATION,
     languages=[ENGLISH, DUTCH],
+    unofficial=True,
 )
 
 WMT24PP_EN_NO_CONFIG = DatasetConfig(
@@ -165,6 +181,7 @@ WMT24PP_EN_NO_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-no",
     task=TRANSLATION,
     languages=[ENGLISH, NORWEGIAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_PL_CONFIG = DatasetConfig(
@@ -173,6 +190,7 @@ WMT24PP_EN_PL_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-pl",
     task=TRANSLATION,
     languages=[ENGLISH, POLISH],
+    unofficial=True,
 )
 
 WMT24PP_EN_PT_CONFIG = DatasetConfig(
@@ -181,6 +199,7 @@ WMT24PP_EN_PT_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-pt",
     task=TRANSLATION,
     languages=[ENGLISH, PORTUGUESE],
+    unofficial=True,
 )
 
 WMT24PP_EN_RO_CONFIG = DatasetConfig(
@@ -189,6 +208,7 @@ WMT24PP_EN_RO_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-ro",
     task=TRANSLATION,
     languages=[ENGLISH, ROMANIAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_SK_CONFIG = DatasetConfig(
@@ -197,6 +217,7 @@ WMT24PP_EN_SK_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-sk",
     task=TRANSLATION,
     languages=[ENGLISH, SLOVAK],
+    unofficial=True,
 )
 
 WMT24PP_EN_SL_CONFIG = DatasetConfig(
@@ -205,6 +226,7 @@ WMT24PP_EN_SL_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-sl",
     task=TRANSLATION,
     languages=[ENGLISH, SLOVENE],
+    unofficial=True,
 )
 
 WMT24PP_EN_SR_CONFIG = DatasetConfig(
@@ -213,6 +235,7 @@ WMT24PP_EN_SR_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-sr",
     task=TRANSLATION,
     languages=[ENGLISH, SERBIAN],
+    unofficial=True,
 )
 
 WMT24PP_EN_SV_CONFIG = DatasetConfig(
@@ -221,6 +244,7 @@ WMT24PP_EN_SV_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-sv",
     task=TRANSLATION,
     languages=[ENGLISH, SWEDISH],
+    unofficial=True,
 )
 
 WMT24PP_EN_UK_CONFIG = DatasetConfig(
@@ -229,4 +253,5 @@ WMT24PP_EN_UK_CONFIG = DatasetConfig(
     source="EuroEval/wmt24pp-en-uk",
     task=TRANSLATION,
     languages=[ENGLISH, UKRAINIAN],
+    unofficial=True,
 )
