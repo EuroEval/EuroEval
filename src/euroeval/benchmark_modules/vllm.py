@@ -493,8 +493,22 @@ class VLLMModel(HuggingFaceEncoderModel):
             self.dataset_config.task.uses_structured_output
             and self.dataset_config.task.structured_output_schema is not None
         ):
+            raw_schema = self.dataset_config.task.structured_output_schema
+            # Normalize structured_output_schema into a JSON Schema dict for vLLM.
+            if isinstance(raw_schema, str):
+                # Attempt to parse JSON string; ignore failures and keep original.
+                with contextlib.suppress(json.JSONDecodeError):
+                    raw_schema = json.loads(raw_schema)
+            # BFCL-style wrapper: {"name": ..., "schema": ...}
+            if isinstance(raw_schema, dict) and "schema" in raw_schema:
+                inner_schema = raw_schema["schema"]
+                if isinstance(inner_schema, str):
+                    with contextlib.suppress(json.JSONDecodeError):
+                        inner_schema = json.loads(inner_schema)
+                raw_schema = inner_schema
+            structured_generation_schema = raw_schema
             structured_outputs = StructuredOutputsParams(
-                json=self.dataset_config.task.structured_output_schema
+                json=structured_generation_schema
             )
         elif self.dataset_config.task.uses_structured_output:
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())

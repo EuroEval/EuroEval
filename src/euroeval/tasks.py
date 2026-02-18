@@ -1,7 +1,5 @@
 """All benchmarks tasks used in EuroEval."""
 
-import json
-
 from . import metrics as m
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import Task
@@ -202,7 +200,7 @@ TOOL_CALLING = Task(
     default_labels=[],
     requires_zero_shot=True,
     uses_structured_output=True,
-    structured_output_schema=json.dumps(BFCL_OUTPUT_STRUCTURE),
+    structured_output_schema=BFCL_OUTPUT_STRUCTURE,
 )
 
 

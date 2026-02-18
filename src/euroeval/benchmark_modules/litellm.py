@@ -1639,8 +1639,7 @@ class LiteLLMModel(BenchmarkModule):
                     )
                 elif dataset_config.task.structured_output_schema:
                     pydantic_class = create_model(
-                        "AnswerFormat",
-                        **json.loads(dataset_config.task.structured_output_schema),
+                        "AnswerFormat", **dataset_config.task.structured_output_schema
                     )
                 else:
                     raise InvalidBenchmark(
