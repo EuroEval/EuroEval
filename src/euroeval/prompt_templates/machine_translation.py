@@ -1,4 +1,4 @@
-"""Templates for the Summarization task."""
+"""Templates for the machine translation task."""
 
 import typing as t
 
