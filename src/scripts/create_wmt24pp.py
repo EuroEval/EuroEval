@@ -51,7 +51,7 @@ def main() -> None:
         ds = load_dataset("google/wmt24pp", name=subset, split="train").shuffle()
         assert isinstance(ds, Dataset)
 
-        ds = ds.filter(lambda x: x["is_bad_source"] is False)
+        ds = ds.filter(lambda x: not x["is_bad_source"])
         ds = ds.rename_columns(dict(source="text", target="target_text"))
 
         train_size = 64
