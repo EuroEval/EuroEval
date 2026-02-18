@@ -590,10 +590,10 @@ class DatasetConfig:
                 If the dataset has no languages.
         """
         # Importing here to avoid circular imports
-        from .tasks import MT
+        from .tasks import TRANSLATION
 
         # Special case for datasets with multiple languages
-        if self.task == MT:
+        if self.task == TRANSLATION:
             return (self.languages[0], self.languages[1])
 
         match len(self.languages):

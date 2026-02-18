@@ -99,8 +99,8 @@ SUMM = Task(
 )
 
 
-MT = Task(
-    name="machine-translation",
+TRANSLATION = Task(
+    name="translation",
     task_group=TaskGroup.TEXT_TO_TEXT,
     template_dict=MT_TEMPLATES,
     metrics=[m.bert_score_metric, m.rouge_l_metric],
