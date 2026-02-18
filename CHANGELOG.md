@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added a new `translation` task. This uses BERTScore and ROUGE-L as metrics, just like
   the `summarization` task. This was added by @oliverkinch ✨
-- Added all the translation datasets from WMT24++ between European languages.
+- Added 25 translation datasets from the WMT24++ dataset. These all translate from
+  English to the target language.
 - Now supports the `detectable_format:constrained_response_with_argument` IFEval
   constraint, being the same as `detectable_format:constrained_response` but with
   a list of options to check for, rather than a hardcoded list of English options.
