@@ -1,5 +1,7 @@
 """Templates for the Summarization task."""
 
+import typing as t
+
 from ..data_models import PromptConfig
 from ..languages import (
     ALBANIAN,
@@ -27,11 +29,14 @@ from ..languages import (
     SPANISH,
     SWEDISH,
     UKRAINIAN,
-    Language,
     get_all_languages,
 )
 
-MT_TEMPLATES: dict[tuple[Language, Language], PromptConfig] = {
+if t.TYPE_CHECKING:
+    from ..data_models import Language
+
+
+MT_TEMPLATES: dict[tuple["Language", "Language"], PromptConfig] = {
     **{
         (ENGLISH, language): PromptConfig(
             default_prompt_prefix=(
