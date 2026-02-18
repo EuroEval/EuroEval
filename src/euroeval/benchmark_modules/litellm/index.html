@@ -565,6 +565,8 @@
       
         
       
+        
+      
     
     
     
@@ -3028,8 +3030,7 @@
 <span class="normal">1906</span>
 <span class="normal">1907</span>
 <span class="normal">1908</span>
-<span class="normal">1909</span>
-<span class="normal">1910</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1909</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
@@ -3063,8 +3064,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">litellm.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">supports_reasoning</span><span class="p">,</span> <span class="n">supports_response_schema</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="n">conlist</span><span class="p">,</span> <span class="n">create_model</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.asyncio</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span> <span class="k">as</span> <span class="n">tqdm_async</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.safetensors_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_num_params_from_safetensors_metadata</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..async_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_semaphore_and_catch_exception</span><span class="p">,</span> <span class="n">safe_run</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -3101,6 +3100,7 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_pbar</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..model_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_model_cache_dir</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..safetensors_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_num_params_from_safetensors_metadata</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..string_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">split_model_id</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..task_group_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">question_answering</span><span class="p">,</span>
