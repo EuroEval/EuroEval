@@ -48,7 +48,7 @@ def main() -> None:
     for language, subset in tqdm(
         iterable=LANGUAGES.items(), desc="Creating WMT24++ datasets", unit="language"
     ):
-        ds = load_dataset("google/wmt24pp", name=subset, split="train").shuffle()
+        ds = load_dataset("google/wmt24pp", name=subset, split="train").shuffle(seed=42)
         assert isinstance(ds, Dataset)
 
         ds = ds.filter(lambda x: not x["is_bad_source"])
