@@ -8,7 +8,6 @@ from .prompt_templates import (
     CLASSIFICATION_TEMPLATES,
     EMPTY_TEMPLATES,
     LA_TEMPLATES,
-    MT_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
     NER_TEMPLATES,
     RC_TEMPLATES,
@@ -16,6 +15,7 @@ from .prompt_templates import (
     SIMPL_TEMPLATES,
     SUMM_TEMPLATES,
     TOKEN_CLASSIFICATION_TEMPLATES,
+    TRANSLATION_TEMPLATES,
 )
 
 LA = Task(
@@ -102,7 +102,7 @@ SUMM = Task(
 TRANSLATION = Task(
     name="translation",
     task_group=TaskGroup.TEXT_TO_TEXT,
-    template_dict=MT_TEMPLATES,
+    template_dict=TRANSLATION_TEMPLATES,
     metrics=[m.bert_score_metric, m.rouge_l_metric],
     default_num_few_shot_examples=5,
     default_max_generated_tokens=256,

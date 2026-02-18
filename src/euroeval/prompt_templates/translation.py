@@ -1,4 +1,4 @@
-"""Templates for the machine translation task."""
+"""Templates for the translation task."""
 
 import typing as t
 
@@ -36,7 +36,7 @@ if t.TYPE_CHECKING:
     from ..data_models import Language
 
 
-MT_TEMPLATES: dict[tuple["Language", "Language"], PromptConfig] = {
+TRANSLATION_TEMPLATES: dict[tuple["Language", "Language"], PromptConfig] = {
     **{
         (ENGLISH, language): PromptConfig(
             default_prompt_prefix=(

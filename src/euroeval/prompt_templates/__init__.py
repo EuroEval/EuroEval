@@ -6,7 +6,6 @@ from ..data_models import PromptConfig
 from ..languages import get_all_languages
 from .classification import CLASSIFICATION_TEMPLATES
 from .linguistic_acceptability import LA_TEMPLATES
-from .machine_translation import MT_TEMPLATES
 from .multiple_choice import MULTIPLE_CHOICE_TEMPLATES
 from .named_entity_recognition import NER_TEMPLATES
 from .reading_comprehension import RC_TEMPLATES
@@ -14,6 +13,7 @@ from .sentiment_classification import SENT_TEMPLATES
 from .simplification import SIMPL_TEMPLATES
 from .summarization import SUMM_TEMPLATES
 from .token_classification import TOKEN_CLASSIFICATION_TEMPLATES
+from .translation import TRANSLATION_TEMPLATES
 
 if t.TYPE_CHECKING:
     from ..languages import Language
