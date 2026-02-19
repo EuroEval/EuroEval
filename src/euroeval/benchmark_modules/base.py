@@ -18,7 +18,6 @@ from ..task_group_utils import (
     sequence_classification,
     text_to_text,
     token_classification,
-    tool_calling,
 )
 
 if t.TYPE_CHECKING:
@@ -212,12 +211,6 @@ class BenchmarkModule(ABC):
             case TaskGroup.QUESTION_ANSWERING:
                 return partial(
                     question_answering.compute_metrics,
-                    dataset_config=self.dataset_config,
-                    benchmark_config=self.benchmark_config,
-                )
-            case TaskGroup.TOOL_CALLING:
-                return partial(
-                    tool_calling.compute_metrics,
                     dataset_config=self.dataset_config,
                     benchmark_config=self.benchmark_config,
                 )

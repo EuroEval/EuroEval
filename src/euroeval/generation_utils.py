@@ -131,17 +131,6 @@ def extract_few_shot_examples(
                     lambda x: x["text"] != example["text"]
                 )
 
-        case TaskGroup.TOOL_CALLING:
-            while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
-                example = shuffled_train.select(range(1))[0]
-                assert isinstance(example, dict), (
-                    f"Expected `example` to be a dict, but got {type(example)} instead."
-                )
-                few_shot_examples.append(example)
-                shuffled_train = shuffled_train.filter(
-                    lambda x: x["question"] != example["question"]
-                )
-
         case TaskGroup.TOKEN_CLASSIFICATION:
             labels = it.cycle(
                 [
@@ -343,26 +332,6 @@ def apply_prompt(
                 create_prompt(text=text.replace("\n", " ").strip(), target_text="")
                 for text in examples["text"]
             ]
-
-        case TaskGroup.TOOL_CALLING:
-            if few_shot_examples:
-                raise NotImplementedError
-            few_shot_sections = []
-            new_sections = []
-            for question, function_info in zip(
-                examples["question"], examples["function"]
-            ):
-                question = question[0][0]["content"]
-                OUTPUT_FORMAT_EXAMPLE = (
-                    '[{"function": "function_name", '
-                    '"arguments": {"argument_name": value, ... } }, ...]'
-                )
-                prompt = dataset_config.prompt_template.format(
-                    question=question,
-                    function_info=function_info,
-                    output_format_example=OUTPUT_FORMAT_EXAMPLE,
-                )
-                new_sections.append((prompt, ""))
 
         case TaskGroup.TOKEN_CLASSIFICATION:
             labels_str = dataset_config.get_labels_str()

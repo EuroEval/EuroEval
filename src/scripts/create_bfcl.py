@@ -43,8 +43,13 @@ def main() -> None:
             items.append(joined)
 
     for item in items:
-        item["function"] = json.dumps(item["function"])
-        item["ground_truth"] = json.dumps(item["ground_truth"])
+        function_str = json.dumps(item["function"])
+        question_str = item["question"][0][0]["content"]
+        item: dict
+        item["text"] = f"Functions:\n{function_str}\nQuestion: {question_str}"
+        item["function"] = function_str
+        item["question"] = question_str
+        item["target_text"] = json.dumps(item.pop("ground_truth"))
 
     load_dotenv()
     dataset_dict = _split_dataset_to_dict(items)

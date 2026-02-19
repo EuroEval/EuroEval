@@ -33,6 +33,8 @@ def _evaluate_function_toolcall_response(
         assert isinstance(pred_calls, list)
     except json.JSONDecodeError:
         return False
+    except AssertionError:
+        return False
     ref_calls = json.loads(ref_calls_str)
     # number of predicted function calls should equal the reference
     if len(pred_calls) != len(ref_calls):

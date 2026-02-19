@@ -144,7 +144,6 @@ class TaskGroup(AutoStrEnum):
 
     SEQUENCE_CLASSIFICATION = auto()
     MULTIPLE_CHOICE_CLASSIFICATION = auto()
-    TOOL_CALLING = auto()
     TOKEN_CLASSIFICATION = auto()
     QUESTION_ANSWERING = auto()
     TEXT_TO_TEXT = auto()

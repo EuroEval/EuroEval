@@ -17,7 +17,7 @@ from .prompt_templates import (
     TOKEN_CLASSIFICATION_TEMPLATES,
     TRANSLATION_TEMPLATES,
 )
-from .prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES
+from .prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES, ToolCallingResponse
 
 LA = Task(
     name="linguistic-acceptability",
@@ -169,30 +169,10 @@ EUROPEAN_VALUES = Task(
     default_allow_invalid_model_outputs=False,
 )
 
-BFCL_OUTPUT_STRUCTURE = {
-    "name": "FunctionInvocations",
-    "schema": {
-        "type": "object",
-        "properties": {
-            "invocations": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "function": {"type": "string"},
-                        "arguments": {"type": "object"},
-                    },
-                    "required": ["function", "arguments"],
-                },
-            }
-        },
-        "required": ["invocations"],
-    },
-}
 
 TOOL_CALLING = Task(
     name="tool-calling",
-    task_group=TaskGroup.TOOL_CALLING,
+    task_group=TaskGroup.TEXT_TO_TEXT,
     template_dict=TOOL_CALLING_TEMPLATES,
     metrics=[m.tool_calling_metric],
     default_num_few_shot_examples=0,
@@ -200,7 +180,7 @@ TOOL_CALLING = Task(
     default_labels=[],
     requires_zero_shot=True,
     uses_structured_output=True,
-    structured_output_schema=BFCL_OUTPUT_STRUCTURE,
+    structured_output_model=ToolCallingResponse,
 )
 
 

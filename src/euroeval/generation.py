@@ -251,14 +251,6 @@ def generate_single_iteration(
         if not isinstance(cached_labels, list):
             cached_labels = list(cached_labels)
         ground_truth = non_cached_labels + cached_labels
-    elif "ground_truth" in non_cached_dataset.column_names:
-        non_cached_labels = non_cached_dataset["ground_truth"]
-        if not isinstance(non_cached_labels, list):
-            non_cached_labels = list(non_cached_labels)
-        cached_labels = cached_dataset["ground_truth"]
-        if not isinstance(cached_labels, list):
-            cached_labels = list(cached_labels)
-        ground_truth = non_cached_labels + cached_labels
     else:
         log_once(
             "No labels found in the dataset. We assume that this is intentional, and "
@@ -350,9 +342,6 @@ def debug_log(
 
         case TaskGroup.TEXT_TO_TEXT:
             labels = batch["target_text"]
-
-        case TaskGroup.TOOL_CALLING:
-            labels = batch["ground_truth"]
 
         case _:
             raise InvalidBenchmark(
