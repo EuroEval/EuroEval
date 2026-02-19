@@ -204,8 +204,11 @@ class ModelCache:
                 The model output.
         """
         input_column = "messages" if "messages" in model_inputs else "text"
-        metadata = deepcopy(model_inputs)
-        metadata.pop("messages" if "messages" != input_column else "text", None)
+
+        if self.store_metadata:
+            metadata = deepcopy(model_inputs)
+            metadata.pop("messages" if "messages" != input_column else "text", None)
+
         model_inputs = model_inputs[input_column]
 
         # Double check that the number of inputs and outputs match
