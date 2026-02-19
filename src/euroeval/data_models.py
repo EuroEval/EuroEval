@@ -972,10 +972,19 @@ class GenerativeModelOutput:
             The scores of the sequences. This is an array of shape (batch_size,
             num_tokens, num_logprobs, 2), where the last dimension contains the
             token and its logprob. Can be None if the scores are not available.
+        metadatas:
+            All the metadata fields for the samples, including ground truth labels (if
+            applicable).
     """
 
     sequences: c.Sequence[str]
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
+    metadatas: list["HashableDict | None"] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        """Post-initialisation."""
+        if not self.metadatas:
+            self.metadatas = [None] * len(self.sequences)
 
 
 @dataclass
@@ -989,10 +998,14 @@ class SingleGenerativeModelOutput:
             The scores of the sequence. This is an array of shape (num_tokens,
             num_logprobs, 2), where the last dimension contains the token and its
             logprob. Can be None if the scores are not available.
+        metadata:
+            The metadata fields for the sample, including ground truth labels (if
+            applicable).
     """
 
     sequence: str
     scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
+    metadata: "HashableDict | None" = None
 
 
 @dataclass

@@ -75,7 +75,8 @@ def generate(
         cache_name=cache_name,
         max_generated_tokens=dataset_config.max_generated_tokens,
         progress_bar=benchmark_config.progress_bar,
-        hash_inputs=not benchmark_config.debug,
+        store_metadata=benchmark_config.debug,
+        indent_json_when_saving=benchmark_config.debug,
     )
 
     scores: list[dict[str, float]] = list()
@@ -175,7 +176,9 @@ def generate_single_iteration(
 
         # Generate the completions for the non-cached examples
         for batch in itr:
-            assert isinstance(batch, dict)
+            assert isinstance(batch, dict), (
+                f"Expected a dictionary but got {type(batch)}."
+            )
 
             single_sample_batch = (
                 "text" in batch and isinstance(batch["text"], str)
