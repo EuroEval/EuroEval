@@ -1346,7 +1346,10 @@
 <span class="normal">371</span>
 <span class="normal">372</span>
 <span class="normal">373</span>
-<span class="normal">374</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1423,7 +1426,8 @@
         <span class="n">cache_name</span><span class="o">=</span><span class="n">cache_name</span><span class="p">,</span>
         <span class="n">max_generated_tokens</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">max_generated_tokens</span><span class="p">,</span>
         <span class="n">progress_bar</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">progress_bar</span><span class="p">,</span>
-        <span class="n">hash_inputs</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span>
+        <span class="n">store_metadata</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span>
+        <span class="n">indent_json_when_saving</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
@@ -1523,7 +1527,9 @@
 
         <span class="c1"># Generate the completions for the non-cached examples</span>
         <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">itr</span><span class="p">:</span>
-            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="nb">dict</span><span class="p">),</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected a dictionary but got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
 
             <span class="n">single_sample_batch</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="s2">&quot;text&quot;</span> <span class="ow">in</span> <span class="n">batch</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">batch</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">)</span>

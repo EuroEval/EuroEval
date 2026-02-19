@@ -1286,7 +1286,8 @@
 <span class="normal">322</span>
 <span class="normal">323</span>
 <span class="normal">324</span>
-<span class="normal">325</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on LLM-as-a-judge.&quot;&quot;&quot;</span>
+<span class="normal">325</span>
+<span class="normal">326</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on LLM-as-a-judge.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1433,7 +1434,8 @@
             <span class="n">cache_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-model-outputs.json&quot;</span><span class="p">,</span>
             <span class="n">max_generated_tokens</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">max_generated_tokens</span><span class="p">,</span>
             <span class="n">progress_bar</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">progress_bar</span><span class="p">,</span>
-            <span class="n">hash_inputs</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span>
+            <span class="n">store_metadata</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span>
+            <span class="n">indent_json_when_saving</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">debug</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">judge_cache</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 

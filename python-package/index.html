@@ -946,6 +946,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#analysing-the-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analysing the results
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1128,6 +1139,17 @@
     <span class="md-ellipsis">
       
         Creating your own custom task
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analysing-the-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analysing the results
       
     </span>
   </a>
@@ -1476,6 +1498,26 @@ generate a SQL query based on a natural language input:</p>
 <p>Again, with this you can benchmark your custom dataset by simply running</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--dataset<span class="w"> </span>my-sql-dataset<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;
 </code></pre></div>
+<h3 id="analysing-the-results">Analysing the results<a class="headerlink" href="#analysing-the-results" title="Permanent link">&para;</a></h3>
+<p>If you're evaluating a generative model and want to be able to analyse the model results
+more in-depth, you can run your evaluation with the <code>--debug</code> flag (or <code>debug=True</code> if
+using the <code>Benchmarker</code>), which will output all the model outputs and all the dataset
+metadata (including the ground truth labels, if present) to both the terminal as well as
+to a JSON file in your current working directory, named
+<code>&lt;model-id&gt;-&lt;dataset-name&gt;-model-outputs.json</code>.</p>
+<p>It is a JSON dictionary with keys being hashes of the input, and values being
+dictionaries with the following keys:</p>
+<ul>
+<li><code>sequence</code>: The generated sequence by the model.</li>
+<li><code>scores</code>: An array of shape (<code>num_tokens_generated</code>, <code>num_logprobs_per_token</code>, 2),
+  where the first dimension is the index of the token in the generated sequence, the
+  second dimension is the index of the logprob for that token (ordered by most likely
+  token to be generated to least likely), and the third dimension is a pair (token,
+  logprob) for the token and its logprob. This will only be present if the task requires
+  logprobs, and will otherwise be null.</li>
+<li>Any metadata for the sample that was present in the dataset, including the ground truth
+  label, if present.</li>
+</ul>
 
 
 

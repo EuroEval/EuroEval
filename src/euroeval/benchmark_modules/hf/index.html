@@ -2716,15 +2716,15 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The number of parameters in the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># No need to try to use the API if we have no internet.</span>
-        <span class="k">if</span> <span class="n">internet_connection_available</span><span class="p">():</span>
-            <span class="n">num_params_or_none</span> <span class="o">=</span> <span class="n">get_num_params_from_safetensors_metadata</span><span class="p">(</span>
-                <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-                <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
-                <span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">if</span> <span class="n">num_params_or_none</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">num_params_or_none</span>
+        <span class="n">num_params_or_none</span> <span class="o">=</span> <span class="n">get_num_params_from_safetensors_metadata</span><span class="p">(</span>
+            <span class="n">model_id</span><span class="o">=</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+            <span class="p">),</span>
+            <span class="n">revision</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_params_or_none</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">num_params_or_none</span>
 
         <span class="k">if</span> <span class="p">(</span>
             <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;num_params&quot;</span><span class="p">)</span>
