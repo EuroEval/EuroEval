@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- When evaluating community evaluation datasets from the Hugging Face Hub, we now
+  require that the user actively set `--trust-remote-code` (or `trust_remote_code=True`
+  if running with the `Benchmarker` class). This is to prevent accidental execution of
+  malicious code.
+
 ### Fixed
 
 - v16.15.0 introduced an error related to the parsing of safetensors metadata from

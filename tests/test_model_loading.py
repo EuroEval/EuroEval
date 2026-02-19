@@ -29,6 +29,8 @@ def test_load_non_generative_model(
             dataset_ids=[],
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         )["multi-wiki-qa-da"],
         benchmark_config=benchmark_config,
     )
@@ -54,6 +56,8 @@ def test_load_generative_model(
             dataset_ids=[],
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         )["multi-wiki-qa-da"],
         benchmark_config=benchmark_config,
     )
@@ -76,6 +80,8 @@ def test_load_non_generative_model_with_generative_data(
                 dataset_ids=[],
                 api_key=os.getenv("HF_TOKEN"),
                 cache_dir=Path(".euroeval_cache"),
+                trust_remote_code=True,
+                run_with_cli=True,
             )["nordjylland-news"],
             benchmark_config=benchmark_config,
         )
