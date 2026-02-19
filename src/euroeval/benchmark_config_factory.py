@@ -239,7 +239,7 @@ def prepare_dataset_configs(
             options=list(all_dataset_configs.keys()),
             case_sensitive=False,
         )
-        msg = f"Dataset {e} not found in the benchmark datasets."
+        msg = f"The dataset {e} was not found or unavailable."
         if closest_distance < 5:
             msg += f" Maybe you meant to use {closest_match!r}?"
         log(msg, level=logging.ERROR)

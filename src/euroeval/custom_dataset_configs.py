@@ -2,6 +2,7 @@
 
 import importlib.util
 import logging
+import sys
 from pathlib import Path
 from types import ModuleType
 
@@ -91,7 +92,9 @@ def try_get_dataset_config_from_repo(
         return None
 
     # At this point we know that the config exists in the repo, so we now check if the
-    # user has allowed running code from remote repositories, and abort if not
+    # user has allowed running code from remote repositories, and abort if not. We abort
+    # the entire evaluation here to avoid a double error message, and since it requires
+    # the user to explicitly allow it before continuing.
     if not trust_remote_code:
         rerunning_msg = (
             "the --trust-remote-code flag"
@@ -99,12 +102,12 @@ def try_get_dataset_config_from_repo(
             else "`trust_remote_code=True`"
         )
         log_once(
-            f"Dataset {dataset_id} has a euroeval_config.py file, but remote code is "
-            f"not allowed. Please rerun this with {rerunning_msg} if you trust the "
-            "code in this repository. Skipping.",
-            level=logging.WARNING,
+            f"The dataset {dataset_id} exists on the Hugging Face Hub and has a "
+            "euroeval_config.py file, but remote code is not allowed. Please rerun "
+            f"this with {rerunning_msg} if you trust the code in this repository.",
+            level=logging.ERROR,
         )
-        return None
+        sys.exit(1)
 
     # Fetch the euroeval_config.py file, abort if loading failed
     external_config_path = cache_dir / "external_dataset_configs" / dataset_id
