@@ -1,12 +1,13 @@
 """Utility functions related to parsing of safetensors metadata of models."""
 
 import logging
+from pathlib import Path
 
 from huggingface_hub import get_safetensors_metadata
 from huggingface_hub.errors import NotASafetensorsRepoError
 
 from .logging_utils import log_once
-from .utils import get_hf_token
+from .utils import get_hf_token, internet_connection_available
 
 
 def get_num_params_from_safetensors_metadata(
@@ -26,6 +27,11 @@ def get_num_params_from_safetensors_metadata(
     Returns:
         The number of parameters, or None if the metadata could not be found.
     """
+    # We cannot determine the number of parameters if there is no internet connection
+    # or if the model is stored locally
+    if not internet_connection_available() or Path(model_id).exists():
+        return None
+
     try:
         metadata = get_safetensors_metadata(
             repo_id=model_id, revision=revision, token=get_hf_token(api_key=api_key)
