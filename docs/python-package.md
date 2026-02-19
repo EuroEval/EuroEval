@@ -410,3 +410,25 @@ Again, with this you can benchmark your custom dataset by simply running
 ```bash
 euroeval --dataset my-sql-dataset --model <model-id>
 ```
+
+### Analysing the results
+
+If you're evaluating a generative model and want to be able to analyse the model results
+more in-depth, you can run your evaluation with the `--debug` flag (or `debug=True` if
+using the `Benchmarker`), which will output all the model outputs and all the dataset
+metadata (including the ground truth labels, if present) to both the terminal as well as
+to a JSON file in your current working directory, named
+`<model-id>-<dataset-name>-model-outputs.json`.
+
+It is a JSON dictionary with keys being hashes of the input, and values being
+dictionaries with the following keys:
+
+- `sequence`: The generated sequence by the model.
+- `scores`: An array of shape (`num_tokens_generated`, `num_logprobs_per_token`, 2),
+  where the first dimension is the index of the token in the generated sequence, the
+  second dimension is the index of the logprob for that token (ordered by most likely
+  token to be generated to least likely), and the third dimension is a pair (token,
+  logprob) for the token and its logprob. This will only be present if the task requires
+  logprobs, and will otherwise be null.
+- Any metadata for the sample that was present in the dataset, including the ground truth
+  label, if present.
