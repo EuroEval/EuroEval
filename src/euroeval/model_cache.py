@@ -100,7 +100,7 @@ class ModelCache:
             sequence = value_dict.pop("sequence")
             scores = value_dict.pop("scores", None)
             cache[key] = SingleGenerativeModelOutput(
-                sequence=sequence, scores=scores, metadata=value_dict
+                sequence=sequence, scores=scores, metadata=HashableDict(value_dict)
             )
 
         self.cache = cache
