@@ -411,7 +411,7 @@ Again, with this you can benchmark your custom dataset by simply running
 euroeval --dataset my-sql-dataset --model <model-id>
 ```
 
-### Analysing the results
+## Analysing the results
 
 If you're evaluating a generative model and want to be able to analyse the model results
 more in-depth, you can run your evaluation with the `--debug` flag (or `debug=True` if
