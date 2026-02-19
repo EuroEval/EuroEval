@@ -111,7 +111,7 @@ class ModelCache:
         dumpable_cache: dict[str, dict] = defaultdict(dict)
         for key, value in self.cache.items():
             value_dict = asdict(value)
-            metadata = value_dict.pop("metadata")
+            metadata = value_dict.pop("metadata", dict())
             value_dict |= metadata
             dumpable_cache[key] = value_dict
 
