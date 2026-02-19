@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - We now add all metadata (including ground truth labels, if applicable) to the model
   cache when debug mode is enabled (with `--debug` or `debug=True`). We have added a
-  [section in the documentation](missing) on how to use this feature.
+  [section in the
+  documentation](https://euroeval.com/python-package/#analysing-the-results) on how to
+  use this feature.
 
 ### Fixed
 
