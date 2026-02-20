@@ -7,7 +7,7 @@ import time
 import typing as t
 
 import requests
-from datasets import DatasetDict, load_dataset
+from datasets import Dataset, DatasetDict, load_dataset
 from datasets.exceptions import DatasetsError
 from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from numpy.random import Generator
@@ -20,8 +20,6 @@ from .tasks import EUROPEAN_VALUES
 from .utils import get_hf_token
 
 if t.TYPE_CHECKING:
-    from datasets import Dataset
-
     from .data_models import BenchmarkConfig, DatasetConfig
 
 
@@ -46,6 +44,17 @@ def load_data(
         cache_dir=benchmark_config.cache_dir,
         api_key=benchmark_config.api_key,
     )
+
+    # Always add an index column to the dataset, so that we can easily identify which
+    # example is which when we're bootstrapping
+    for split_name, split in dataset.items():
+        if "index" not in split.features:
+            split = split.add_column(name="index", column=range(len(split)))
+            assert isinstance(split, Dataset), (
+                f"Expected a Dataset object after adding an index column, but got "
+                f"{type(split)}."
+            )
+            dataset[split_name] = split
 
     if (
         not benchmark_config.evaluate_test_split
