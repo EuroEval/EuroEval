@@ -432,3 +432,160 @@ dictionaries with the following keys:
   logprobs, and will otherwise be null.
 - Any metadata for the sample that was present in the dataset, including the ground truth
   label, if present.
+
+??? example
+
+    Here is a (truncated) example of a model output file:
+
+    ```json
+    {
+      "cb3f9ea749fec9d2f83ca6d3a8744cce": {
+        "sequence": "nej",
+        "scores": [
+          [
+            [
+              "nej",
+              -0.5232811570167542
+            ],
+            [
+              "ja",
+              -0.8982811570167542
+            ],
+            [
+              "ne",
+              -8.77328109741211
+            ],
+            [
+              "n",
+              -12.96078109741211
+            ],
+            [
+              "j",
+              -14.21078109741211
+            ],
+            [
+              "\"",
+              -100.0
+            ],
+            [
+              "#",
+              -100.0
+            ],
+            [
+              "!",
+              -100.0
+            ]
+          ]
+        ],
+        "corruption_type": null,
+        "label": "correct",
+        "messages": [
+          {
+            "content": "S\u00e6tning: Styrkeforholdet m\u00e5 v\u00e6re det afg\u00f8rene, siger de begge.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "nej",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: S\u00e6t ikke en r\u00e6v til at vogte g\u00e6s.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "ja",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: Det kan priskrig betyde, bekr\u00e6fter P. E. Pedersen.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "nej",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: Selv deres uddannelser har dem til f\u00e6lles.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "nej",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: Hans totale afvisning af, at han fik disse informationer, rammer hans egen departementschef Peter Wiese meget h\u00e5rdt, idet Wiese ikke har lagt skjul p\u00e5, at det gentagne gange blev grundigt informeret af Poul Lundb\u00e6k Andersen - og har forklaret, at han videregav oplysningerne til \"chefen\" statsminister Poul Schl\u00fcter.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "nej",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: Torsdag aften tilbragte den 26-\u00e5rige fodboldspiller sammen sin belgiske hustru Fabienne.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "nej",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: John Lee Hookers indflydelse p\u00e5 andre musikere som sanger og is\u00e6r som guitarist har v\u00e6ret intet mindre end monumental.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "ja",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: Men et rodet manuskript, der vandrer rundt ad omst\u00e6ndelige og langvarige omveje, og en instruktion, der helst vil fort\u00e6lle en k\u00e6rlighedshistorie, som er totalt forudsigelig, tager kraften ud af budskabet og giver os i stedet et hult melodrama sammensat af lige dele had, pjank, drilleri og afsluttende hjerternes fortrolighed.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "ja",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: T\u00e6nk, at jeg skulle ene som manden, der vidste for meget!\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "nej",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: R\u00f8gen stammede fra glasfiber- og polyestermaterialer, br\u00e6ndt maling og kemikalier, og den kan if\u00f8lge chefl\u00e6ge A. B. Larsen, Faaborg Sygehus, have en lumsk sundhedsskadelig virkning, hvor symptomerne f\u00f8rst viser sig mange timer senere.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "ja",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: Men skal filmen tages alvorligt, m\u00e5 man ogs\u00e5 besk\u00e6ftige sig med vigtige emner i film.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "ja",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: B.T. kan i dag lette p\u00e5 sl\u00f8ret for en af de andre store \"Lego-klodser\" i kriseplanen, der trods l\u00f8fter om det modsatte forbliver m\u00f8rklagt weekenden over.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "ja",
+            "role": "assistant"
+          },
+          {
+            "content": "S\u00e6tning: R\u00f8r peberfrugt i og steg igen et par minutter.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          }
+        ],
+        "prompt": "S\u00e6tning: R\u00f8r peberfrugt i og steg igen et par minutter.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet."
+      },
+      "a8fab2c68e9ec63184636341eaf43f6c": {
+        (...)
+      },
+      (...)
+    }
+    ```
