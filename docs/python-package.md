@@ -440,33 +440,29 @@ dictionaries with the following keys:
     ```json
     {
       "cb3f9ea749fec9d2f83ca6d3a8744cce": {
-        "sequence": "nej",
-        "predicted_label": "incorrect",
+        "sequence": "ja",
+        "predicted_label": "correct",
         "scores": [
           [
             [
-              "nej",
-              -0.4742433726787567
+              "ja",
+              -0.5762162804603577
             ],
             [
-              "ja",
-              -0.9742434024810791
+              "nej",
+              -0.8262162804603577
             ],
             [
               "ne",
-              -8.7242431640625
-            ],
-            [
-              "n",
-              -12.7242431640625
+              -8.201216697692871
             ],
             [
               "j",
-              -14.1617431640625
+              -13.388716697692871
             ],
             [
-              "!",
-              -100.0
+              "n",
+              -13.888716697692871
             ],
             [
               "\"",
@@ -475,11 +471,16 @@ dictionaries with the following keys:
             [
               "#",
               -100.0
+            ],
+            [
+              "!",
+              -100.0
             ]
           ]
         ],
         "corruption_type": null,
         "label": "correct",
+        "index": 181,
         "messages": [
           {
             "content": "S\u00e6tning: Styrkeforholdet m\u00e5 v\u00e6re det afg\u00f8rene, siger de begge.\n\nBestem om s\u00e6tningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
