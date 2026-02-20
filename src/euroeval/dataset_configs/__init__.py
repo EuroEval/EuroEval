@@ -50,6 +50,8 @@ def get_all_dataset_configs(
     dataset_ids: c.Sequence[str],
     api_key: str | None,
     cache_dir: Path,
+    trust_remote_code: bool,
+    run_with_cli: bool,
 ) -> dict[str, DatasetConfig]:
     """Get a mapping of all the dataset configurations.
 
@@ -63,6 +65,10 @@ def get_all_dataset_configs(
             dataset configs.
         cache_dir:
             The directory to store the cache in.
+        trust_remote_code:
+            Whether to trust remote code from Hugging Face.
+        run_with_cli:
+            Whether the code is being run with the CLI.
 
     Returns:
         A mapping between names of datasets and their configurations.
@@ -74,7 +80,11 @@ def get_all_dataset_configs(
     # globals dict.
     for dataset_id in dataset_ids:
         dataset_config_or_none = try_get_dataset_config_from_repo(
-            dataset_id=dataset_id, api_key=api_key, cache_dir=cache_dir
+            dataset_id=dataset_id,
+            api_key=api_key,
+            cache_dir=cache_dir,
+            trust_remote_code=trust_remote_code,
+            run_with_cli=run_with_cli,
         )
         if dataset_config_or_none is not None:
             globals_dict[dataset_id] = dataset_config_or_none

@@ -306,10 +306,17 @@ CONFIG = DatasetConfig(
 )
 ```
 
+!!! note
+
+    To benchmark a dataset from the Hugging Face Hub, you always need to set the
+    `--trust-remote-code` flag (or `trust_remote_code=True` if using the `Benchmarker`),
+    as the dataset configuration is loaded from the remote code. We advise you to always
+    look at the code of the dataset configuration before running the benchmark.
+
 You can then benchmark your custom dataset by simply running
 
 ```bash
-euroeval --dataset <org-id>/<repo-id> --model <model-id>
+euroeval --dataset <org-id>/<repo-id> --model <model-id> --trust-remote-code
 ```
 
 You can also run the benchmark from a Python script, by simply providing your repo ID to
@@ -319,14 +326,16 @@ the `benchmark` method:
 from euroeval import Benchmarker
 
 benchmarker = Benchmarker()
-benchmarker.benchmark(model="<model-id>", dataset="<org-id>/<repo-id>")
+benchmarker.benchmark(
+    model="<model-id>", dataset="<org-id>/<repo-id>", trust_remote_code=True
+)
 ```
 
 You can try it out with our [test
 dataset](https://huggingface.co/datasets/EuroEval/test_dataset):
 
 ```bash
-euroeval --dataset EuroEval/test_dataset --model <model-id>
+euroeval --dataset EuroEval/test_dataset --model <model-id> --trust-remote-code
 ```
 
 ///

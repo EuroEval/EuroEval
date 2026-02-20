@@ -39,6 +39,8 @@ if os.environ.get("CHECK_DATASET") is not None:
             dataset_ids=[],
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         ).values()
         if dataset_config.name in os.environ["CHECK_DATASET"].split(",")
         or any(
@@ -106,6 +108,8 @@ def benchmark_config(
                 dataset_ids=[],
                 api_key=os.getenv("HF_TOKEN"),
                 cache_dir=Path(".euroeval_cache"),
+                trust_remote_code=True,
+                run_with_cli=True,
             ).values()
         ),
         finetuning_batch_size=1,
@@ -159,6 +163,8 @@ def metric() -> Generator[HuggingFaceMetric, None, None]:
                 dataset_ids=[],
                 api_key=os.getenv("HF_TOKEN"),
                 cache_dir=Path(".euroeval_cache"),
+                trust_remote_code=True,
+                run_with_cli=True,
             ).values()
         }
     ),
