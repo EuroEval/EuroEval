@@ -95,8 +95,9 @@ class ModelCache:
             dumpable_cache[key] = asdict(value)
 
         try:
-            with self.cache_path.open("w") as f:
-                json.dump(dumpable_cache, f)
+            self.cache_path.parent.mkdir(exist_ok=True, parents=True)
+            self.cache_path.write_text(json.dumps(dumpable_cache))
+
         except KeyError:
             log(
                 f"Failed to load the cache from {self.cache_path}. The cache will be "

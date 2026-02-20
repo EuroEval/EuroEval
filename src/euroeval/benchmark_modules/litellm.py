@@ -29,7 +29,7 @@ from litellm.llms.vertex_ai.common_utils import VertexAIError
 from litellm.router import Router
 from litellm.types.router import RouterRateLimitError
 from litellm.types.utils import ChoiceLogprobs, Logprobs
-from litellm.utils import supports_reasoning, supports_response_schema
+from litellm.utils import supports_reasoning
 from pydantic import ValidationError, conlist, create_model
 from tqdm.asyncio import tqdm as tqdm_async
 
@@ -68,6 +68,7 @@ from ..generation_utils import (
 )
 from ..logging_utils import get_pbar, log, log_once
 from ..model_cache import create_model_cache_dir
+from ..prompt_templates.tool_calling import TOOL_CALLING_KEYS
 from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import split_model_id
 from ..task_group_utils import (
@@ -949,8 +950,11 @@ class LiteLLMModel(BenchmarkModule):
             # In the case where we're dealing with a classification task, the model is
             # outputting a JSON dictionary, so we will extract the generated text from
             # within the dictionary
+            # This is not relevant for tooling and may cause problems there
             generation_dct: dict[str, t.Any] | None = None
-            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output:
+            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output and not all(
+                [k in generation_output for k in TOOL_CALLING_KEYS]
+            ):
                 try:
                     generation_dct = json.loads(generation_output)
                     assert isinstance(generation_dct, dict)
@@ -1624,7 +1628,7 @@ class LiteLLMModel(BenchmarkModule):
                     "enable it.",
                     level=logging.DEBUG,
                 )
-            elif supports_response_schema(model=self.model_config.model_id):
+            else:
                 if dataset_config.task == NER:
                     ner_tag_names = list(dataset_config.prompt_label_mapping.values())
                     keys_and_their_types: dict[str, t.Any] = {
@@ -1634,6 +1638,9 @@ class LiteLLMModel(BenchmarkModule):
                     pydantic_class = create_model(
                         "AnswerFormat", **keys_and_their_types
                     )
+                elif dataset_config.task.structured_output_model:
+                    pydantic_class = dataset_config.task.structured_output_model
+                    generation_kwargs["response_format"] = pydantic_class
                 else:
                     raise InvalidBenchmark(
                         "This task requires structured generation, but it has not "
@@ -1647,14 +1654,7 @@ class LiteLLMModel(BenchmarkModule):
                     f"{pydantic_class.model_json_schema()}",
                     level=logging.DEBUG,
                 )
-            else:
-                generation_kwargs["response_format"] = dict(type="json_object")
-                log_once(
-                    "Enabling structured JSON generation for model "
-                    f"{self.model_config.model_id!r} with no custom JSON schema, as "
-                    "the model does not support schemas.",
-                    level=logging.DEBUG,
-                )
+
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             localised_labels = [
                 self.dataset_config.prompt_label_mapping[label]
@@ -1887,6 +1887,8 @@ def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
     # inference endpoints, LiteLLM gets confused since it's already using the `openai/`
     # prefix. We thus have to add it twice, and this hack here is to ensure that we
     # don't store the results with model ID `openai/openai/...`.
+    # This is where the "openai/openai/..." bug arose. I'm guessing we keep it,
+    # though it doesn't seem to work for me when using VLLM locally for inference.
     elif benchmark_config.api_base is not None and model_id.startswith("openai/"):
         model_id = "openai/openai/" + re.sub(r"(openai/)*", "", model_id)
 

@@ -486,6 +486,14 @@ class VLLMModel(HuggingFaceEncoderModel):
                 f"model {self.model_config.model_id!r} is a reasoning model.",
                 level=logging.DEBUG,
             )
+        elif (
+            self.dataset_config.task.uses_structured_output
+            and self.dataset_config.task.structured_output_model is not None
+        ):
+            structured_outputs = StructuredOutputsParams(
+                json=self.dataset_config.task.structured_output_model.model_json_schema(),
+                disable_fallback=True,
+            )
         elif self.dataset_config.task.uses_structured_output:
             ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types: dict[str, t.Any] = {
