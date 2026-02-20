@@ -97,10 +97,14 @@ class ModelCache:
         cache: dict[str, SingleGenerativeModelOutput] = dict()
         for key in json_cache:
             value_dict = json_cache[key]
-            sequence = value_dict.pop("sequence")
+            sequence = value_dict.pop("sequence", None)
+            predicted_label = value_dict.pop("predicted_label", None)
             scores = value_dict.pop("scores", None)
             cache[key] = SingleGenerativeModelOutput(
-                sequence=sequence, scores=scores, metadata=HashableDict(value_dict)
+                sequence=sequence,
+                predicted_label=predicted_label,
+                scores=scores,
+                metadata=HashableDict(value_dict),
             )
 
         self.cache = cache
@@ -203,6 +207,10 @@ class ModelCache:
             model_output:
                 The model output.
         """
+        assert model_output.predicted_labels is not None, (
+            "The predicted labels should not be None if the model output is not None."
+        )
+
         input_column = "messages" if "messages" in model_inputs else "text"
 
         if self.store_metadata:
@@ -260,6 +268,7 @@ class ModelCache:
 
                 self[model_input] = SingleGenerativeModelOutput(
                     sequence=model_output.sequences[sample_idx],
+                    predicted_label=model_output.predicted_labels[sample_idx],
                     scores=scores,
                     metadata=single_metadata,
                 )

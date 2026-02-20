@@ -968,16 +968,21 @@ class GenerativeModelOutput:
     Attributes:
         sequences:
             The generated sequences.
-        scores:
+        predicted_labels (optional):
+            The predicted labels from the `sequences` and sometimes also `scores`. Can
+            be None if the labels have not been predicted yet. Defaults to None.
+        scores (optional):
             The scores of the sequences. This is an array of shape (batch_size,
             num_tokens, num_logprobs, 2), where the last dimension contains the
-            token and its logprob. Can be None if the scores are not available.
-        metadatas:
+            token and its logprob. Can be None if the scores are not available. Defaults
+            to None.
+        metadatas (optional):
             All the metadata fields for the samples, including ground truth labels (if
-            applicable).
+            applicable). Defaults to an empty list.
     """
 
     sequences: c.Sequence[str]
+    predicted_labels: c.Sequence[str] | None = None
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
     metadatas: list["HashableDict | None"] = field(default_factory=list)
 
@@ -994,16 +999,20 @@ class SingleGenerativeModelOutput:
     Attributes:
         sequence:
             The generated sequence.
-        scores:
+        predicted_label (optional):
+            The predicted label from the `sequence` and sometimes also `scores`. Can be
+            None if the label has not been predicted yet. Defaults to None.
+        scores (optional):
             The scores of the sequence. This is an array of shape (num_tokens,
             num_logprobs, 2), where the last dimension contains the token and its
-            logprob. Can be None if the scores are not available.
-        metadata:
+            logprob. Can be None if the scores are not available. Defaults to None.
+        metadata (optional):
             The metadata fields for the sample, including ground truth labels (if
-            applicable).
+            applicable). Can be None if the metadata is not available. Defaults to None.
     """
 
     sequence: str
+    predicted_label: str | None = None
     scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
     metadata: "HashableDict | None" = None
 
