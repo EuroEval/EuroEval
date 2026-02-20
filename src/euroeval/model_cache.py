@@ -127,6 +127,8 @@ class ModelCache:
             value_dict = asdict(value)
             metadata = value_dict.pop("metadata", dict())
             value_dict |= metadata
+            if "index" in metadata:
+                value_dict = {"index": metadata.pop("index")} | value_dict
             dumpable_cache[key] = value_dict
 
         try:
