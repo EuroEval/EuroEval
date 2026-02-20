@@ -885,7 +885,7 @@ class BenchmarkResult(pydantic.BaseModel):
             results_path:
                 The path to the results file.
         """
-        json_str = json.dumps(self.model_dump())
+        json_str = json.dumps(self.model_dump(), ensure_ascii=False)
         with results_path.open("a") as f:
             f.write("\n" + json_str)
 

@@ -496,7 +496,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             structured_generation_schema = answer_format_class.model_json_schema()
             log_once(
                 "Using structured generation with the JSON schema: "
-                f"{json.dumps(structured_generation_schema)}",
+                f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
                 level=logging.DEBUG,
             )
             structured_outputs = StructuredOutputsParams(

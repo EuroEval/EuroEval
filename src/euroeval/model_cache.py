@@ -79,7 +79,12 @@ class ModelCache:
         """Load the model output cache."""
         if not self.cache_path.exists():
             with self.cache_path.open("w") as f:
-                json.dump(dict(), f, indent=2 if self.indent_json_when_saving else None)
+                json.dump(
+                    dict(),
+                    f,
+                    indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
+                )
 
         try:
             with self.cache_path.open() as f:
@@ -92,7 +97,12 @@ class ModelCache:
             )
             json_cache = dict()
             with self.cache_path.open("w") as f:
-                json.dump(dict(), f, indent=2 if self.indent_json_when_saving else None)
+                json.dump(
+                    dict(),
+                    f,
+                    indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
+                )
 
         cache: dict[str, SingleGenerativeModelOutput] = dict()
         for key in json_cache:
@@ -125,6 +135,7 @@ class ModelCache:
                     dumpable_cache,
                     f,
                     indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
                 )
 
         except KeyError:
@@ -135,7 +146,12 @@ class ModelCache:
             )
             self.cache = dict()
             with self.cache_path.open("w") as f:
-                json.dump(dict(), f, indent=2 if self.indent_json_when_saving else None)
+                json.dump(
+                    dict(),
+                    f,
+                    indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
+                )
 
     def _hash_key(self, key: str | c.Sequence[dict[str, str]]) -> str:
         """Hash the key to use as an index in the cache.
