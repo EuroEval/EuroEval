@@ -447,6 +447,30 @@ following keys:
 - Any metadata for the sample that was present in the dataset, including the ground truth
   label, if present.
 
+If you sort the rows by this index, you will get the samples in the same order as they
+appear in the dataset, effectively just recreating the entire dataset, with the
+additional model output features mentioned above. Here's an example of how you can do
+this in Python:
+
+```python
+>>> import json
+>>> import pandas as pd
+>>> with open("<model-id>-<dataset-name>-model-outputs.json") as f:
+...    model_outputs = json.load(f)
+>>> df = pd.DataFrame(model_outputs.values()).sort_values(by="index")
+>>> df.head()
+      index sequence predicted_label                                             scores          corruption_type      label                                           messages                                             prompt
+45        0      nej       incorrect  [[[nej, -1.735893965815194e-05], [ja, -11.0000...         flip_nogle_nogen  incorrect  [{'content': 'Sætning: Styrkeforholdet må være...  Sætning: Peter Elmegaard med nogen af sine hæs...
+1558      0      nej       incorrect  [[[nej, -3.128163257315464e-07], [ja, -15.125]...         flip_nogle_nogen  incorrect  [{'content': 'Sætning: Ægteparret hævdede, at ...  Sætning: Peter Elmegaard med nogen af sine hæs...
+569       0      nej       incorrect  [[[nej, -0.0009307525469921529], [ja, -7.00093...         flip_nogle_nogen  incorrect  [{'content': 'Sætning: Samtidig lægger hans on...  Sætning: Peter Elmegaard med nogen af sine hæs...
+890       0      nej       incorrect  [[[nej, -4.127333340875339e-06], [ja, -12.5000...         flip_nogle_nogen  incorrect  [{'content': 'Sætning: Hej til Bente som jeg v...  Sætning: Peter Elmegaard med nogen af sine hæs...
+1535      1      nej       incorrect  [[[nej, 0.0], [ja, -16.75], [ne, -19.0], [n, -...  flip_indefinite_article  incorrect  [{'content': 'Sætning: Ægteparret hævdede, at ...  Sætning: Der blev afprøvet et masse ting.\n\nB...
+```
+
+Note that the `index` column is not unique, which is because the model is generating
+multiple answers for each sample, but with different few-shot examples. You can see
+these few-shot examples in the `messages` column.
+
 ??? example
 
     Here is a (truncated) example of a model output file:
