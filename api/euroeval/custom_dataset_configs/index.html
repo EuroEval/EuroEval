@@ -2573,7 +2573,7 @@ The custom datasets module, or None if it does not exist.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.custom_dataset_configs.try_get_dataset_config_from_repo" title="euroeval.custom_dataset_configs.try_get_dataset_config_from_repo">try_get_dataset_config_from_repo</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_key</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="pathlib.Path">Path</span></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a> | None</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.custom_dataset_configs.try_get_dataset_config_from_repo" title="euroeval.custom_dataset_configs.try_get_dataset_config_from_repo">try_get_dataset_config_from_repo</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">dataset_id</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">api_key</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">cache_dir</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="pathlib.Path">Path</span></span><span class="mkapi-comma">, </span><span class="mkapi-arg">trust_remote_code</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-comma">, </span><span class="mkapi-arg">run_with_cli</span><span class="mkapi-colon">: </span><span class="mkapi-ann">bool</span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a> | None</span></span>
 </p>
 <div class="mkapi-document">
 <p>Try to get a dataset config from a Hugging Face dataset repository.</p>
@@ -2602,6 +2602,17 @@ dataset configs.</p>
 <p><span class="mkapi-item-name">cache_dir</span> : 
 <span class="mkapi-item-type"><span class="mkapi-tooltip" title="pathlib.Path">Path</span></span> <span class="mkapi-dash">&mdash;</span>
 The directory to store the cache in.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">trust_remote_code</span> : 
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether to trust remote code. If this is not set to True, then we will not
+load the dataset config.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">run_with_cli</span> : 
+<span class="mkapi-item-type">bool</span> <span class="mkapi-dash">&mdash;</span>
+Whether the code is being run with the CLI.</p>
 </li>
 </ul>
 </div>

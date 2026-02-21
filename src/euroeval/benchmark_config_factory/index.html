@@ -1288,7 +1288,17 @@
 <span class="normal">291</span>
 <span class="normal">292</span>
 <span class="normal">293</span>
-<span class="normal">294</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Factory class for creating dataset configurations.&quot;&quot;&quot;</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Factory class for creating dataset configurations.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
@@ -1340,6 +1350,8 @@
         <span class="n">custom_datasets_file</span><span class="o">=</span><span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">custom_datasets_file</span><span class="p">,</span>
         <span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
         <span class="n">cache_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">),</span>
+        <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
+        <span class="n">run_with_cli</span><span class="o">=</span><span class="n">benchmark_config_params</span><span class="o">.</span><span class="n">run_with_cli</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">BenchmarkConfig</span><span class="p">(</span>
@@ -1455,6 +1467,8 @@
     <span class="n">custom_datasets_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
     <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;DatasetConfig&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare dataset config(s) for benchmarking.</span>
 
@@ -1473,6 +1487,10 @@
 <span class="sd">            The API key to use for accessing the Hugging Face Hub.</span>
 <span class="sd">        cache_dir:</span>
 <span class="sd">            The directory to store the cache in.</span>
+<span class="sd">        trust_remote_code:</span>
+<span class="sd">            Whether to trust remote code.</span>
+<span class="sd">        run_with_cli:</span>
+<span class="sd">            Whether to run the benchmark with the CLI.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The prepared dataset configs.</span>
@@ -1496,6 +1514,8 @@
         <span class="n">dataset_ids</span><span class="o">=</span><span class="n">dataset_ids</span><span class="p">,</span>
         <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span>
         <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span>
+        <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
+        <span class="n">run_with_cli</span><span class="o">=</span><span class="n">run_with_cli</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">all_official_dataset_configs</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">DatasetConfig</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">dataset_config</span>
@@ -1519,7 +1539,7 @@
             <span class="n">options</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">all_dataset_configs</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
             <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2"> not found in the benchmark datasets.&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;The dataset </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2"> was not found in the benchmark datasets.&quot;</span>
         <span class="k">if</span> <span class="n">closest_distance</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Maybe you meant to use </span><span class="si">{</span><span class="n">closest_match</span><span class="si">!r}</span><span class="s2">?&quot;</span>
         <span class="n">log</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>

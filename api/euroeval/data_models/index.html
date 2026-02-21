@@ -4497,7 +4497,7 @@ instead.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">dataclass</span>
-<span class="mkapi-object-name"><a href="./#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">sequences</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[tuple[str, float]]]] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metadatas</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list['HashableDict | None']</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=list)</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.data_models.GenerativeModelOutput" title="euroeval.data_models.GenerativeModelOutput">GenerativeModelOutput</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">sequences</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span><span class="mkapi-comma">, </span><span class="mkapi-arg">predicted_labels</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[tuple[str, float]]]] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metadatas</span><span class="mkapi-colon">: </span><span class="mkapi-ann">list['HashableDict | None']</span><span class="mkapi-equal"> = </span><span class="mkapi-default"><span class="mkapi-tooltip" title="dataclasses.field">field</span>(default_factory=list)</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p>The output of a generative model.</p>
@@ -4517,17 +4517,24 @@ instead.</p>
 The generated sequences.</p>
 </li>
 <li>
+<p><span class="mkapi-item-name">predicted_labels</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+The predicted labels from the <span class="mkapi-tooltip" title="euroeval.data_models.GenerativeModelOutput.sequences"><code>sequences</code></span> and sometimes also <span class="mkapi-tooltip" title="euroeval.data_models.GenerativeModelOutput.scores"><code>scores</code></span>. Can
+be None if the labels have not been predicted yet. Defaults to None.</p>
+</li>
+<li>
 <p><span class="mkapi-item-name">scores</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[tuple[str, float]]]] | None</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
 The scores of the sequences. This is an array of shape (batch_size,
 num_tokens, num_logprobs, 2), where the last dimension contains the
-token and its logprob. Can be None if the scores are not available.</p>
+token and its logprob. Can be None if the scores are not available. Defaults
+to None.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">metadatas</span> : 
-<span class="mkapi-item-type">list['HashableDict | None']</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
 All the metadata fields for the samples, including ground truth labels (if
-applicable).</p>
+applicable). Defaults to an empty list.</p>
 </li>
 </ul>
 </div>
@@ -4541,7 +4548,7 @@ applicable).</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">dataclass</span>
-<span class="mkapi-object-name"><a href="./#euroeval.data_models.SingleGenerativeModelOutput" title="euroeval.data_models.SingleGenerativeModelOutput">SingleGenerativeModelOutput</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">sequence</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[tuple[str, float]]] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metadata</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="./#euroeval.data_models.HashableDict" title="euroeval.data_models.HashableDict">HashableDict</a> | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-paren">)</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.data_models.SingleGenerativeModelOutput" title="euroeval.data_models.SingleGenerativeModelOutput">SingleGenerativeModelOutput</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">sequence</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-comma">, </span><span class="mkapi-arg">predicted_label</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">scores</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[tuple[str, float]]] | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">metadata</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="./#euroeval.data_models.HashableDict" title="euroeval.data_models.HashableDict">HashableDict</a> | None</span><span class="mkapi-equal"> = </span><span class="mkapi-default">None</span><span class="mkapi-paren">)</span></span>
 </p>
 <div class="mkapi-document">
 <p>A single output of a generative model.</p>
@@ -4561,17 +4568,23 @@ applicable).</p>
 The generated sequence.</p>
 </li>
 <li>
+<p><span class="mkapi-item-name">predicted_label</span> : 
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
+The predicted label from the <span class="mkapi-tooltip" title="euroeval.data_models.SingleGenerativeModelOutput.sequence"><code>sequence</code></span> and sometimes also <span class="mkapi-tooltip" title="euroeval.data_models.SingleGenerativeModelOutput.scores"><code>scores</code></span>. Can be
+None if the label has not been predicted yet. Defaults to None.</p>
+</li>
+<li>
 <p><span class="mkapi-item-name">scores</span> : 
-<span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[<span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[tuple[str, float]]] | None</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
 The scores of the sequence. This is an array of shape (num_tokens,
 num_logprobs, 2), where the last dimension contains the token and its
-logprob. Can be None if the scores are not available.</p>
+logprob. Can be None if the scores are not available. Defaults to None.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">metadata</span> : 
-<span class="mkapi-item-type"><a href="./#euroeval.data_models.HashableDict" title="euroeval.data_models.HashableDict">HashableDict</a> | None</span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type">optional</span> <span class="mkapi-dash">&mdash;</span>
 The metadata fields for the sample, including ground truth labels (if
-applicable).</p>
+applicable). Can be None if the metadata is not available. Defaults to None.</p>
 </li>
 </ul>
 </div>

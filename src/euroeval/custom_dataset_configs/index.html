@@ -1112,10 +1112,39 @@
 <span class="normal">148</span>
 <span class="normal">149</span>
 <span class="normal">150</span>
-<span class="normal">151</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Load custom dataset configs.&quot;&quot;&quot;</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Load custom dataset configs.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModuleType</span>
 
@@ -1161,7 +1190,11 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">try_get_dataset_config_from_repo</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.custom_dataset_configs.try_get_dataset_config_from_repo"><a href="../../../api/euroeval/custom_dataset_configs/#euroeval.custom_dataset_configs.try_get_dataset_config_from_repo" title="Go to docs">[docs]</a></div>
-    <span class="n">dataset_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="n">dataset_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetConfig</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Try to get a dataset config from a Hugging Face dataset repository.</span>
 
@@ -1173,6 +1206,11 @@
 <span class="sd">            dataset configs.</span>
 <span class="sd">        cache_dir:</span>
 <span class="sd">            The directory to store the cache in.</span>
+<span class="sd">        trust_remote_code:</span>
+<span class="sd">            Whether to trust remote code. If this is not set to True, then we will not</span>
+<span class="sd">            load the dataset config.</span>
+<span class="sd">        run_with_cli:</span>
+<span class="sd">            Whether the code is being run with the CLI.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The dataset config if it exists, otherwise None.</span>
@@ -1194,6 +1232,24 @@
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># At this point we know that the config exists in the repo, so we now check if the</span>
+    <span class="c1"># user has allowed running code from remote repositories, and abort if not. We abort</span>
+    <span class="c1"># the entire evaluation here to avoid a double error message, and since it requires</span>
+    <span class="c1"># the user to explicitly allow it before continuing.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">trust_remote_code</span><span class="p">:</span>
+        <span class="n">rerunning_msg</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;the --trust-remote-code flag&quot;</span>
+            <span class="k">if</span> <span class="n">run_with_cli</span>
+            <span class="k">else</span> <span class="s2">&quot;`trust_remote_code=True`&quot;</span>
+        <span class="p">)</span>
+        <span class="n">log_once</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2"> exists on the Hugging Face Hub and has a &quot;</span>
+            <span class="s2">&quot;euroeval_config.py file, but remote code is not allowed. Please rerun &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;this with </span><span class="si">{</span><span class="n">rerunning_msg</span><span class="si">}</span><span class="s2"> if you trust the code in this repository.&quot;</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="c1"># Fetch the euroeval_config.py file, abort if loading failed</span>
     <span class="n">external_config_path</span> <span class="o">=</span> <span class="n">cache_dir</span> <span class="o">/</span> <span class="s2">&quot;external_dataset_configs&quot;</span> <span class="o">/</span> <span class="n">dataset_id</span>
