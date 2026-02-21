@@ -6,13 +6,18 @@ import json
 import logging
 import sys
 from collections import defaultdict
+from copy import deepcopy
 from dataclasses import asdict
 from pathlib import Path
 
 from datasets import Dataset
 
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
-from .data_models import GenerativeModelOutput, SingleGenerativeModelOutput
+from .data_models import (
+    GenerativeModelOutput,
+    HashableDict,
+    SingleGenerativeModelOutput,
+)
 from .logging_utils import get_pbar, log, log_once
 
 
@@ -30,8 +35,10 @@ class ModelCache:
             The maximum number of tokens to generate for each example.
         progress_bar:
             Whether to show a progress bar when caching model outputs.
-        hash_inputs:
-            Whether to hash the model inputs to use as keys in the cache.
+        store_metadata:
+            Whether to store metadata for the model outputs.
+        indent_json_when_saving:
+            Whether to indent the JSON when saving the cache.
     """
 
     def __init__(
@@ -40,7 +47,8 @@ class ModelCache:
         cache_name: str,
         max_generated_tokens: int,
         progress_bar: bool,
-        hash_inputs: bool,
+        store_metadata: bool,
+        indent_json_when_saving: bool,
     ) -> None:
         """Initialise the model output cache.
 
@@ -53,21 +61,30 @@ class ModelCache:
                 The maximum number of tokens to generate for each example.
             progress_bar:
                 Whether to show a progress bar when caching model outputs.
-            hash_inputs:
-                Whether to hash the model inputs to use as keys in the cache.
+            store_metadata:
+                Whether to store metadata for the model outputs.
+            indent_json_when_saving:
+                Whether to indent the JSON when saving the cache.
         """
         self.model_cache_dir = model_cache_dir
         self.model_cache_dir.mkdir(parents=True, exist_ok=True)
         self.cache_path = self.model_cache_dir / cache_name.replace("/", "--")
         self.max_generated_tokens = max_generated_tokens
         self.progress_bar = progress_bar
-        self.hash_inputs = hash_inputs
+        self.store_metadata = store_metadata
+        self.indent_json_when_saving = indent_json_when_saving
+        self.cache: dict[str, SingleGenerativeModelOutput] = dict()
 
     def load(self) -> None:
         """Load the model output cache."""
         if not self.cache_path.exists():
             with self.cache_path.open("w") as f:
-                json.dump(dict(), f)
+                json.dump(
+                    dict(),
+                    f,
+                    indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
+                )
 
         try:
             with self.cache_path.open() as f:
@@ -80,23 +97,49 @@ class ModelCache:
             )
             json_cache = dict()
             with self.cache_path.open("w") as f:
-                json.dump(dict(), f)
+                json.dump(
+                    dict(),
+                    f,
+                    indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
+                )
 
         cache: dict[str, SingleGenerativeModelOutput] = dict()
         for key in json_cache:
-            cache[key] = SingleGenerativeModelOutput(**json_cache[key])
+            value_dict = json_cache[key]
+            sequence = value_dict.pop("sequence", None)
+            predicted_label = value_dict.pop("predicted_label", None)
+            scores = value_dict.pop("scores", None)
+            cache[key] = SingleGenerativeModelOutput(
+                sequence=sequence,
+                predicted_label=predicted_label,
+                scores=scores,
+                metadata=HashableDict(value_dict),
+            )
 
         self.cache = cache
 
     def save(self) -> None:
         """Save the model output cache to disk."""
+        # Unpack metadata to get a flat dict to dump
         dumpable_cache: dict[str, dict] = defaultdict(dict)
         for key, value in self.cache.items():
-            dumpable_cache[key] = asdict(value)
+            value_dict = asdict(value)
+            metadata = value_dict.pop("metadata", dict())
+            value_dict |= metadata
+            if "index" in metadata:
+                value_dict = {"index": metadata.pop("index")} | value_dict
+            dumpable_cache[key] = value_dict
 
         try:
             with self.cache_path.open("w") as f:
-                json.dump(dumpable_cache, f)
+                json.dump(
+                    dumpable_cache,
+                    f,
+                    indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
+                )
+
         except KeyError:
             log(
                 f"Failed to load the cache from {self.cache_path}. The cache will be "
@@ -105,7 +148,12 @@ class ModelCache:
             )
             self.cache = dict()
             with self.cache_path.open("w") as f:
-                json.dump(dict(), f)
+                json.dump(
+                    dict(),
+                    f,
+                    indent=2 if self.indent_json_when_saving else None,
+                    ensure_ascii=False,
+                )
 
     def _hash_key(self, key: str | c.Sequence[dict[str, str]]) -> str:
         """Hash the key to use as an index in the cache.
@@ -117,10 +165,7 @@ class ModelCache:
         Returns:
             The hashed key.
         """
-        if self.hash_inputs:
-            return hashlib.md5(string=str(key).encode()).hexdigest()
-        else:
-            return str(key)
+        return hashlib.md5(string=str(key).encode()).hexdigest()
 
     def __getitem__(
         self, key: str | c.Sequence[dict[str, str]]
@@ -180,7 +225,16 @@ class ModelCache:
             model_output:
                 The model output.
         """
+        assert model_output.predicted_labels is not None, (
+            "The predicted labels should not be None if the model output is not None."
+        )
+
         input_column = "messages" if "messages" in model_inputs else "text"
+
+        if self.store_metadata:
+            metadata = deepcopy(model_inputs)
+            metadata.pop("messages" if "messages" != input_column else "text", None)
+
         model_inputs = model_inputs[input_column]
 
         # Double check that the number of inputs and outputs match
@@ -219,8 +273,22 @@ class ModelCache:
                             level=logging.DEBUG,
                         )
                     scores = None
+
+                if self.store_metadata:
+                    single_metadata = HashableDict(
+                        {
+                            metadata_column: metadata_values[sample_idx]
+                            for metadata_column, metadata_values in metadata.items()
+                        }
+                    )
+                else:
+                    single_metadata = None
+
                 self[model_input] = SingleGenerativeModelOutput(
-                    sequence=model_output.sequences[sample_idx], scores=scores
+                    sequence=model_output.sequences[sample_idx],
+                    predicted_label=model_output.predicted_labels[sample_idx],
+                    scores=scores,
+                    metadata=single_metadata,
                 )
 
 

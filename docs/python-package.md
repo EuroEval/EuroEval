@@ -419,3 +419,135 @@ Again, with this you can benchmark your custom dataset by simply running
 ```bash
 euroeval --dataset my-sql-dataset --model <model-id>
 ```
+
+## Analysing the results of generative models
+
+If you're evaluating a generative model and want to be able to analyse the model results
+more in-depth, you can run your evaluation with the `--debug` flag (or `debug=True` if
+using the `Benchmarker`), which will output all the model outputs and all the dataset
+metadata (including the ground truth labels, if present) to both the terminal as well as
+to a JSON file in your current working directory, named
+`<model-id>-<dataset-name>-model-outputs.json`.
+
+It is a JSON dictionary with keys being hashes of the input (which you can just ignore,
+it's used for caching during generation), and values being dictionaries with the
+following keys:
+
+- `index`: The row index of the sample in the dataset. This allows you to match up the
+  sample with the corresponding sample in the dataset.
+- `text`/`messages`: The full input prompt used for generation. If the model is a base
+  decoder then this will be a string stored in `text`, and if it's an instruction-tuned
+  model then this will be an array of dictionaries stored in `messages`. This will
+  include all few-shot examples, if any - see the below `prompt` to get the content of
+  the present sample, without any few-shot examples.
+- `prompt`: The actual example, without any few-shot examples. This is not exactly the
+  input to the model (unless you're conducting zero-shot evaluation), but it can be
+  handy to separate the actual query that the model was asked to answer.
+- `sequence`: The generated sequence by the model.
+- `predicted_label`: The predicted label for the generated sequence, if the task has a
+  label. This allows you to compare directly with the ground truth label, if present.
+- `scores`: An array of shape (`num_tokens_generated`, `num_logprobs_per_token`, 2),
+  where the first dimension is the index of the token in the generated sequence, the
+  second dimension is the index of the logprob for that token (ordered by most likely
+  token to be generated to least likely), and the third dimension is a pair (token,
+  logprob) for the token and its logprob. This will only be present if the task requires
+  logprobs, and will otherwise be null.
+- Any metadata for the sample that was present in the dataset, including the ground truth
+  label, if present.
+
+If you sort the rows by this index, you will get the samples in the same order as they
+appear in the dataset, effectively just recreating the entire dataset, with the
+additional model output features mentioned above. Here's an example of how you can do
+this in Python:
+
+```python
+>>> import json
+>>> import pandas as pd
+>>> with open("<model-id>-<dataset-name>-model-outputs.json") as f:
+...    model_outputs = json.load(f)
+>>> df = pd.DataFrame(model_outputs.values()).set_index('index').sort_index()
+>>> df.head()
+      sequence predicted_label                                             scores          corruption_type      label                                           messages                                             prompt
+index
+0          nej       incorrect  [[[nej, -1.735893965815194e-05], [ja, -11.0000...         flip_nogle_nogen  incorrect  [{'content': 'Sætning: Styrkeforholdet må være...  Sætning: Peter Elmegaard med nogen af sine hæs...
+0          nej       incorrect  [[[nej, -3.128163257315464e-07], [ja, -15.125]...         flip_nogle_nogen  incorrect  [{'content': 'Sætning: Ægteparret hævdede, at ...  Sætning: Peter Elmegaard med nogen af sine hæs...
+0          nej       incorrect  [[[nej, -0.0009307525469921529], [ja, -7.00093...         flip_nogle_nogen  incorrect  [{'content': 'Sætning: Samtidig lægger hans on...  Sætning: Peter Elmegaard med nogen af sine hæs...
+0          nej       incorrect  [[[nej, -4.127333340875339e-06], [ja, -12.5000...         flip_nogle_nogen  incorrect  [{'content': 'Sætning: Hej til Bente som jeg v...  Sætning: Peter Elmegaard med nogen af sine hæs...
+1          nej       incorrect  [[[nej, 0.0], [ja, -16.75], [ne, -19.0], [n, -...  flip_indefinite_article  incorrect  [{'content': 'Sætning: Ægteparret hævdede, at ...  Sætning: Der blev afprøvet et masse ting.\n\nB...
+```
+
+Note that the `index` column is not unique, which is because the model is generating
+multiple answers for each sample, but with different few-shot examples. You can see
+these few-shot examples in the `messages` column.
+
+??? example
+
+    Here is a (truncated) example of a model output file:
+
+    ```json
+    {
+      "cb3f9ea749fec9d2f83ca6d3a8744cce": {
+        "index": 181,
+        "sequence": "ja",
+        "predicted_label": "correct",
+        "scores": [
+          [
+            [
+              "ja",
+              -0.5232800841331482
+            ],
+            [
+              "nej",
+              -0.8982800841331482
+            ],
+            [
+              "ne",
+              -8.773280143737793
+            ],
+            [
+              "j",
+              -13.710780143737793
+            ],
+            [
+              "n",
+              -13.960780143737793
+            ],
+            [
+              "!",
+              -100.0
+            ],
+            [
+              "\"",
+              -100.0
+            ],
+            [
+              "#",
+              -100.0
+            ]
+          ]
+        ],
+        "corruption_type": null,
+        "label": "correct",
+        "messages": [
+          {
+            "content": "Sætning: Styrkeforholdet må være det afgørene, siger de begge.\n\nBestem om sætningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          },
+          {
+            "content": "nej",
+            "role": "assistant"
+          },
+          (...more few-shot examples...)
+          {
+            "content": "Sætning: Rør peberfrugt i og steg igen et par minutter.\n\nBestem om sætningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet.",
+            "role": "user"
+          }
+        ],
+        "prompt": "Sætning: Rør peberfrugt i og steg igen et par minutter.\n\nBestem om sætningen er grammatisk korrekt eller ej. Svar kun med 'ja' eller 'nej', og intet andet."
+      },
+      "a8fab2c68e9ec63184636341eaf43f6c": {
+        (...)
+      },
+      (...)
+    }
+    ```
