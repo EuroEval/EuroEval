@@ -420,7 +420,7 @@ Again, with this you can benchmark your custom dataset by simply running
 euroeval --dataset my-sql-dataset --model <model-id>
 ```
 
-## Analysing the results
+## Analysing the results of generative models
 
 If you're evaluating a generative model and want to be able to analyse the model results
 more in-depth, you can run your evaluation with the `--debug` flag (or `debug=True` if
@@ -435,6 +435,14 @@ following keys:
 
 - `index`: The row index of the sample in the dataset. This allows you to match up the
   sample with the corresponding sample in the dataset.
+- `text`/`messages`: The full input prompt used for generation. If the model is a base
+  decoder then this will be a string stored in `text`, and if it's an instruction-tuned
+  model then this will be an array of dictionaries stored in `messages`. This will
+  include all few-shot examples, if any - see the below `prompt` to get the content of
+  the present sample, without any few-shot examples.
+- `prompt`: The actual example, without any few-shot examples. This is not exactly the
+  input to the model (unless you're conducting zero-shot evaluation), but it can be
+  handy to separate the actual query that the model was asked to answer.
 - `sequence`: The generated sequence by the model.
 - `predicted_label`: The predicted label for the generated sequence, if the task has a
   label. This allows you to compare directly with the ground truth label, if present.
