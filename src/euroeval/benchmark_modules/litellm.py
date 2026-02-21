@@ -33,8 +33,6 @@ from litellm.utils import supports_reasoning, supports_response_schema
 from pydantic import ValidationError, conlist, create_model
 from tqdm.asyncio import tqdm as tqdm_async
 
-from euroeval.safetensors_utils import get_num_params_from_safetensors_metadata
-
 from ..async_utils import add_semaphore_and_catch_exception, safe_run
 from ..constants import (
     JSON_STRIP_CHARACTERS,
@@ -70,6 +68,7 @@ from ..generation_utils import (
 )
 from ..logging_utils import get_pbar, log, log_once
 from ..model_cache import create_model_cache_dir
+from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import split_model_id
 from ..task_group_utils import (
     question_answering,

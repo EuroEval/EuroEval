@@ -50,6 +50,8 @@ def build_benchmark_config(
         custom_datasets_file=benchmark_config_params.custom_datasets_file,
         api_key=benchmark_config_params.api_key,
         cache_dir=Path(benchmark_config_params.cache_dir),
+        trust_remote_code=benchmark_config_params.trust_remote_code,
+        run_with_cli=benchmark_config_params.run_with_cli,
     )
 
     return BenchmarkConfig(
@@ -165,6 +167,8 @@ def prepare_dataset_configs(
     custom_datasets_file: Path,
     api_key: str | None,
     cache_dir: Path,
+    trust_remote_code: bool,
+    run_with_cli: bool,
 ) -> list["DatasetConfig"]:
     """Prepare dataset config(s) for benchmarking.
 
@@ -183,6 +187,10 @@ def prepare_dataset_configs(
             The API key to use for accessing the Hugging Face Hub.
         cache_dir:
             The directory to store the cache in.
+        trust_remote_code:
+            Whether to trust remote code.
+        run_with_cli:
+            Whether to run the benchmark with the CLI.
 
     Returns:
         The prepared dataset configs.
@@ -206,6 +214,8 @@ def prepare_dataset_configs(
         dataset_ids=dataset_ids,
         api_key=api_key,
         cache_dir=cache_dir,
+        trust_remote_code=trust_remote_code,
+        run_with_cli=run_with_cli,
     )
     all_official_dataset_configs: c.Sequence[DatasetConfig] = [
         dataset_config
@@ -229,7 +239,7 @@ def prepare_dataset_configs(
             options=list(all_dataset_configs.keys()),
             case_sensitive=False,
         )
-        msg = f"Dataset {e} not found in the benchmark datasets."
+        msg = f"The dataset {e} was not found in the benchmark datasets."
         if closest_distance < 5:
             msg += f" Maybe you meant to use {closest_match!r}?"
         log(msg, level=logging.ERROR)

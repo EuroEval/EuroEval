@@ -15,6 +15,7 @@ from .prompt_templates import (
     SIMPL_TEMPLATES,
     SUMM_TEMPLATES,
     TOKEN_CLASSIFICATION_TEMPLATES,
+    TRANSLATION_TEMPLATES,
 )
 
 LA = Task(
@@ -73,6 +74,7 @@ SENT = Task(
     uses_logprobs=True,
 )
 
+
 SIMPL = Task(
     name="simplification",
     task_group=TaskGroup.TEXT_TO_TEXT,
@@ -84,12 +86,25 @@ SIMPL = Task(
     default_allowed_model_types=[ModelType.GENERATIVE],
 )
 
+
 SUMM = Task(
     name="summarization",
     task_group=TaskGroup.TEXT_TO_TEXT,
     template_dict=SUMM_TEMPLATES,
     metrics=[m.chrf3pp_metric, m.chrf4pp_metric],
     default_num_few_shot_examples=1,
+    default_max_generated_tokens=256,
+    default_labels=[],
+    default_allowed_model_types=[ModelType.GENERATIVE],
+)
+
+
+TRANSLATION = Task(
+    name="translation",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=TRANSLATION_TEMPLATES,
+    metrics=[m.bert_score_metric, m.rouge_l_metric],
+    default_num_few_shot_examples=5,
     default_max_generated_tokens=256,
     default_labels=[],
     default_allowed_model_types=[ModelType.GENERATIVE],

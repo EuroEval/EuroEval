@@ -546,10 +546,7 @@ def check_number_bullet_lists(response: str, **constraint_kwargs) -> bool:
 
 
 @register("detectable_format:constrained_response")
-@register("fr:detectable_format:constrained_response")
-@register("es:detectable_format:constrained_response")
-@register("ca:detectable_format:constrained_response")
-def check_constrained_response(response: str, **_) -> bool:
+def check_constrained_response_english(response: str, **_) -> bool:
     """Check response contains one of the constrained options.
 
     Args:
@@ -561,6 +558,78 @@ def check_constrained_response(response: str, **_) -> bool:
         no.", or "My answer is maybe.", False otherwise.
     """
     options = ("My answer is yes.", "My answer is no.", "My answer is maybe.")
+    return any(opt in response.strip() for opt in options)
+
+
+@register("es:detectable_format:constrained_response")
+def check_constrained_response_spanish(response: str, **_) -> bool:
+    """Check response contains one of the constrained options.
+
+    Args:
+        response:
+            The response string to check.
+
+    Returns:
+        True if the response contains exactly one of "Mi respuesta es sí" or
+        "Mi respuesta es no" or "Mi respuesta es tal vez", False otherwise.
+    """
+    options = ("Mi respuesta es sí", "Mi respuesta es no", "Mi respuesta es tal vez")
+    return any(opt in response.strip() for opt in options)
+
+
+@register("ca:detectable_format:constrained_response")
+def check_constrained_response_catalan(response: str, **_) -> bool:
+    """Check response contains one of the constrained options.
+
+    Args:
+        response:
+            The response string to check.
+
+    Returns:
+        True if the response contains exactly one of "La meva resposta és sí.",
+        "La meva resposta és no.", or "La meva resposta és potser.", False otherwise.
+    """
+    options = (
+        "La meva resposta és sí.",
+        "La meva resposta és no.",
+        "La meva resposta és potser.",
+    )
+    return any(opt in response.strip() for opt in options)
+
+
+@register("fr:detectable_format:constrained_response")
+def check_constrained_response_french(response: str, **_) -> bool:
+    """Check response contains one of the constrained options.
+
+    Args:
+        response:
+            The response string to check.
+
+    Returns:
+        True if the response contains exactly one of "Oui.", "Non.", or "Peut-être.",
+        False otherwise.
+    """
+    options = ("Oui.", "Non.", "Peut-être.")
+    return any(opt in response.strip() for opt in options)
+
+
+@register("detectable_format:constrained_response_with_argument", options=list)
+def check_constrained_response_with_argument(
+    response: str, **constraint_kwargs
+) -> bool:
+    """Check response contains one of the constrained options.
+
+    Args:
+        response:
+            The response string to check.
+        **constraint_kwargs:
+            Keyword arguments containing ``options`` – a list of strings to
+            check for.
+
+    Returns:
+        True if the response contains exactly one of the options, False otherwise.
+    """
+    options: list[str] = constraint_kwargs["options"]
     return any(opt in response.strip() for opt in options)
 
 

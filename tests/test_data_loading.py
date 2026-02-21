@@ -49,6 +49,8 @@ class TestLoadData:
                 dataset_ids=[],
                 api_key=os.getenv("HF_TOKEN"),
                 cache_dir=Path(".euroeval_cache"),
+                trust_remote_code=True,
+                run_with_cli=True,
             )["multi-wiki-qa-da"],
             benchmark_config=benchmark_config,
         )
@@ -88,6 +90,8 @@ class TestLoadData:
             dataset_ids=[],
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         ).values()
         if os.getenv("CHECK_DATASET") is not None
         and (

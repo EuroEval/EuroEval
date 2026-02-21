@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- When evaluating community evaluation datasets from the Hugging Face Hub, we now
+  require that the user actively set `--trust-remote-code` (or `trust_remote_code=True`
+  if running with the `Benchmarker` class). This is to prevent accidental execution of
+  malicious code.
+  
 ### Changed
 
 - Changed the primary summarisation metric from BERTScore to ChrF3++, as it has better
@@ -15,8 +22,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- v16.15.0 introduced an error related to the parsing of safetensors metadata from
+  adapter models. This has now been fixed.
+
+## [v16.15.0] - 2026-02-18
+
+### Added
+
+- Added a new `translation` task. This uses BERTScore and ROUGE-L as metrics, just like
+  the `summarization` task. This was added by @oliverkinch ✨
+- Added 25 translation datasets from the WMT24++ dataset. These all translate from
+  English to the target language. It's added as unofficial for now.
+- Now supports the `detectable_format:constrained_response_with_argument` IFEval
+  constraint, being the same as `detectable_format:constrained_response` but with
+  a list of options to check for, rather than a hardcoded list of English options.
+
+### Fixed
+
 - The `huggingface_hub` safetensors API has changed, so we did not fetch the number of
   model parameters correctly - this has now been fixed.
+- For the French, Spanish and Catalan instruction-following datasets, the
+  `detectable_format:constrained_response` constraint was not being applied correctly,
+  so this has now been fixed.
 
 ## [v16.14.0] - 2026-02-13
 

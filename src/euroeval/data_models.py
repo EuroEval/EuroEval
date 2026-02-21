@@ -88,7 +88,8 @@ class Task:
         task_group:
             The task group of the task.
         template_dict:
-            The template dictionary for the task, from language to prompt template.
+            The template dictionary for the task, from language (or language tuples) to
+            prompt template.
         metrics:
             The metrics used to evaluate the task.
         default_num_few_shot_examples:
@@ -133,7 +134,9 @@ class Task:
 
     name: str
     task_group: TaskGroup
-    template_dict: dict[Language, PromptConfig]
+    template_dict: (
+        dict[Language, PromptConfig] | dict[tuple[Language, Language], PromptConfig]
+    )
     metrics: c.Sequence[Metric]
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
@@ -382,7 +385,9 @@ class DatasetConfig:
         self.task = task
         self.languages = languages
 
-        template = self.task.template_dict.get(self.main_language)
+        template = self.task.template_dict.get(  # pyrefly: ignore[no-matching-overload]
+            self.main_language
+        )
         self.prompt_prefix = (
             prompt_prefix
             if prompt_prefix is not None
@@ -574,16 +579,23 @@ class DatasetConfig:
         )
 
     @property
-    def main_language(self) -> Language:
+    def main_language(self) -> Language | tuple[Language, Language]:
         """Get the main language of the dataset.
 
         Returns:
-            The main language.
+            The main language or languages of the dataset.
 
         Raises:
             InvalidBenchmark:
                 If the dataset has no languages.
         """
+        # Importing here to avoid circular imports
+        from .tasks import TRANSLATION
+
+        # Special case for datasets with multiple languages
+        if self.task == TRANSLATION:
+            return (self.languages[0], self.languages[1])
+
         match len(self.languages):
             case 0:
                 raise InvalidBenchmark(

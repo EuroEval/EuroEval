@@ -1021,7 +1021,7 @@ wheels = [
 
 [[package]]
 name = "euroeval"
-version = "16.14.0.dev0"
+version = "16.15.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
@@ -1428,6 +1428,7 @@ dependencies = [
 wheels = [
     { url = "https://files.pythonhosted.org/packages/30/8f/f7f1d3ef8c4bd58e8e152f00cf426c0cb75d2d6e3a0d2db23abf72a802f3/fbgemm_gpu-1.5.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:0e5b5ad9e0e740c240b9e9d052e520e969e3559c0ce80547d2d3e395afc38ac4", size = 551744978, upload-time = "2026-01-26T19:17:34.006Z" },
     { url = "https://files.pythonhosted.org/packages/77/45/7efaa5b8fc0abec76025350765302880b612b3bf4794c3363018289cebde/fbgemm_gpu-1.5.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:e9385f86931abbf604afe892422304a01ca175eae3fddfbbb35314e5ebcb13ec", size = 551744494, upload-time = "2026-01-26T19:17:03.648Z" },
+    { url = "https://files.pythonhosted.org/packages/0b/60/b87c0e3e723967c2b7c78b7a9b525fc2677bc8e7f76f06af7f360284dd90/fbgemm_gpu-1.5.0-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:9fe76bd1c5f1917c6f26932c7673633ed9780ccd8747993cf70d5c0c2ae561c5", size = 551745417, upload-time = "2026-02-17T20:08:55.578Z" },
 ]
 
 [[package]]
