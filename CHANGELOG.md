@@ -23,9 +23,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - v16.15.0 introduced an error related to the parsing of safetensors metadata from
   adapter models. This has now been fixed.
-- Litellm's structured output support check was failing for custom API URLs, as it can
+- LiteLLM's structured output support check was failing for custom API URLs, as it can
   only reliably verify official providers. This check is now skipped for custom
-  endpoints, and we assume they support structured outputs.
+  endpoints, and we assume they support structured outputs. This was added by
+  @viggo-gascou ✨
 
 ## [v16.15.0] - 2026-02-18
 
