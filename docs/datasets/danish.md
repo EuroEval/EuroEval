@@ -297,7 +297,7 @@ and, similarly as ScaLA, was automatically created from the [Danish Universal De
 
 This is an extension of ScaLA-da based on an analysis of most common errors done by Danish speakers. It adds 12 new linguistically grounded error types on top of the existing 2 from ScaLA-da, the corruption type applied to each sentence is also indicated in the dataset (`corruption_type` column). The corruptions have been based on linguistic features (e.g. POS tags, morphology features etc.) so to both ground them on linguistic rules and ensure the unacceptability of the corrupted sentences. The corruption quality has been both automatically and manually validated as detailed in the paper.
 
-The proportions are the same of ScaLA-da: 5,512 samples, from which we use 1,024 / 256 / 2,048 samples for training, validation and testing, respectively (so 3,328 samples used in total)
+Like ScaLA-da, the original dataset consists of 5,512 samples, from which we use 1,024 / 256 / 2,048 samples for training, validation and testing, respectively (so 3,328 samples used in total).
 
 Here are a few examples from the training split:
 
