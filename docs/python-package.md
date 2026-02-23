@@ -134,7 +134,7 @@ docker build --pull -t euroeval .
 With the Docker image built, we can now evaluate any model as follows:
 
 ```bash
-docker run -e args="<euroeval-arguments>" --gpus 1 --name euroeval --rm euroeval
+docker run --rm --gpus 1 euroeval <euroeval-arguments>
 ```
 
 Here `<euroeval-arguments>` consists of the arguments added to the `euroeval` CLI
