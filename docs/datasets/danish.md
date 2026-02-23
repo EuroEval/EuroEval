@@ -293,7 +293,7 @@ euroeval --model <model-id> --dataset scala-da
 ### DaLA
 
 This dataset was published in [this paper](https://arxiv.org/abs/2512.04799)
-and, similarly as ScaLA, was automatically created from the [Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master) by assuming that the documents in the treebank are correct, and corrupting the sample to create grammatically incorrect samples. 
+and, similarly to ScaLA, was automatically created from the [Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master) by assuming that the documents in the treebank are correct, and corrupting the samples to create grammatically incorrect samples. 
 
 This is an extension of ScaLA-da based on an analysis of most common errors made by Danish speakers. It adds 12 new linguistically grounded error types on top of the existing 2 from ScaLA-da, the corruption type applied to each sentence is also indicated in the dataset (`corruption_type` column). The corruptions have been based on linguistic features (e.g. POS tags, morphology features etc.) so to both ground them on linguistic rules and ensure the unacceptability of the corrupted sentences. The corruption quality has been both automatically and manually validated as detailed in the paper.
 
