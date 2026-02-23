@@ -1624,7 +1624,13 @@ class LiteLLMModel(BenchmarkModule):
                     "enable it.",
                     level=logging.DEBUG,
                 )
-            elif supports_response_schema(model=self.model_config.model_id):
+            # Skip litellm's support check when using a custom base_api URL, as
+            # litellm can only reliably verify support for their official API providers,
+            # not custom endpoints.
+            # We assume custom endpoint models support structured generation.
+            elif self.benchmark_config.api_base is not None or supports_response_schema(
+                model=self.model_config.model_id
+            ):
                 if dataset_config.task == NER:
                     ner_tag_names = list(dataset_config.prompt_label_mapping.values())
                     keys_and_their_types: dict[str, t.Any] = {
