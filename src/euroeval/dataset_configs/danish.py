@@ -33,6 +33,14 @@ SCALA_DA_CONFIG = DatasetConfig(
     languages=[DANISH],
 )
 
+DALA_CONFIG = DatasetConfig(
+    name="dala",
+    pretty_name="DaLA",
+    source="giannor/dala",
+    task=LA,
+    languages=[DANISH],
+)
+
 DANSK_CONFIG = DatasetConfig(
     name="dansk",
     pretty_name="DANSK",
