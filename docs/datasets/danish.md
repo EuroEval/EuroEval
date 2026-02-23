@@ -290,6 +290,76 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset scala-da
 ```
 
+### DaLA
+
+This dataset was published in [this paper](https://arxiv.org/abs/2512.04799)
+and, similarly as ScaLA, was automatically created from the [Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master) by assuming that the documents in the treebank are correct, and corrupting the sample to create grammatically incorrect samples. 
+
+This is an extension of ScaLA-da based on an analysis of most common errors done by Danish speakers. It adds 12 new linguistically grounded error types on top of the existing 2 from ScaLA-da, the corruption type applied to each sentence is also indicated in the dataset (`corruption_type` column). The corruptions have been based on linguistic features (e.g. POS tags, morphology features etc.) so to both ground them on linguistic rules and ensure the unacceptability of the corrupted sentences. The corruption quality has been both automatically and manually validated as detailed in the paper.
+
+The proportions are the same of ScaLA-da: 5,512 samples, from which we use 1,024 / 256 / 2,048 samples for training, validation and testing, respectively (so 3,328 samples used in total)
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Det gøres bedst i en enhedsskole med differentieret undervisning.",
+  "label": "correct",
+  "corruption_type": null
+}
+```
+
+```json
+{
+  "text": "Endelig er også inspektionsskiben Fylla til salg.",
+  "label": "incorrect",
+  "corruption_type": "flip_en_et_suffix"
+}
+```
+
+```json
+{
+  "text": "Men trods betalingen har kreditorene jo stadig haft milliontab på sagen?",
+  "label": "incorrect",
+  "corruption_type": "corrupt_ende_ene"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er sætninger og om de er grammatisk korrekte.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Sætning: {text}
+  Grammatisk korrekt: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Sætning: {text}
+
+  Bestem om sætningen er grammatisk korrekt eller ej. Svar med 'ja', hvis sætningen er korrekt, og 'nej', hvis den ikke er.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nej`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dala
+```
+
 ## Reading Comprehension
 
 ### MultiWikiQA-da
