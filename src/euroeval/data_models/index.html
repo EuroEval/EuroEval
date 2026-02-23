@@ -2283,7 +2283,29 @@
 <span class="normal">1037</span>
 <span class="normal">1038</span>
 <span class="normal">1039</span>
-<span class="normal">1040</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">1040</span>
+<span class="normal">1041</span>
+<span class="normal">1042</span>
+<span class="normal">1043</span>
+<span class="normal">1044</span>
+<span class="normal">1045</span>
+<span class="normal">1046</span>
+<span class="normal">1047</span>
+<span class="normal">1048</span>
+<span class="normal">1049</span>
+<span class="normal">1050</span>
+<span class="normal">1051</span>
+<span class="normal">1052</span>
+<span class="normal">1053</span>
+<span class="normal">1054</span>
+<span class="normal">1055</span>
+<span class="normal">1056</span>
+<span class="normal">1057</span>
+<span class="normal">1058</span>
+<span class="normal">1059</span>
+<span class="normal">1060</span>
+<span class="normal">1061</span>
+<span class="normal">1062</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.metadata</span>
@@ -3170,7 +3192,7 @@
 <span class="sd">            results_path:</span>
 <span class="sd">                The path to the results file.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">json_str</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_dump</span><span class="p">())</span>
+        <span class="n">json_str</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">results_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">json_str</span><span class="p">)</span>
 
@@ -3253,14 +3275,28 @@
 <span class="sd">    Attributes:</span>
 <span class="sd">        sequences:</span>
 <span class="sd">            The generated sequences.</span>
-<span class="sd">        scores:</span>
+<span class="sd">        predicted_labels (optional):</span>
+<span class="sd">            The predicted labels from the `sequences` and sometimes also `scores`. Can</span>
+<span class="sd">            be None if the labels have not been predicted yet. Defaults to None.</span>
+<span class="sd">        scores (optional):</span>
 <span class="sd">            The scores of the sequences. This is an array of shape (batch_size,</span>
 <span class="sd">            num_tokens, num_logprobs, 2), where the last dimension contains the</span>
-<span class="sd">            token and its logprob. Can be None if the scores are not available.</span>
+<span class="sd">            token and its logprob. Can be None if the scores are not available. Defaults</span>
+<span class="sd">            to None.</span>
+<span class="sd">        metadatas (optional):</span>
+<span class="sd">            All the metadata fields for the samples, including ground truth labels (if</span>
+<span class="sd">            applicable). Defaults to an empty list.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">sequences</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">predicted_labels</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">scores</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadatas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;HashableDict | None&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Post-initialisation.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadatas</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metadatas</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sequences</span><span class="p">)</span>
 
 
 <span class="nd">@dataclass</span>
@@ -3270,14 +3306,22 @@
 <span class="sd">    Attributes:</span>
 <span class="sd">        sequence:</span>
 <span class="sd">            The generated sequence.</span>
-<span class="sd">        scores:</span>
+<span class="sd">        predicted_label (optional):</span>
+<span class="sd">            The predicted label from the `sequence` and sometimes also `scores`. Can be</span>
+<span class="sd">            None if the label has not been predicted yet. Defaults to None.</span>
+<span class="sd">        scores (optional):</span>
 <span class="sd">            The scores of the sequence. This is an array of shape (num_tokens,</span>
 <span class="sd">            num_logprobs, 2), where the last dimension contains the token and its</span>
-<span class="sd">            logprob. Can be None if the scores are not available.</span>
+<span class="sd">            logprob. Can be None if the scores are not available. Defaults to None.</span>
+<span class="sd">        metadata (optional):</span>
+<span class="sd">            The metadata fields for the sample, including ground truth labels (if</span>
+<span class="sd">            applicable). Can be None if the metadata is not available. Defaults to None.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">sequence</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">predicted_label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">scores</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="s2">&quot;HashableDict | None&quot;</span> <span class="o">=</span> <span class="kc">None</span>
 
 
 <span class="nd">@dataclass</span>

@@ -951,6 +951,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#analysing-the-results-of-generative-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analysing the results of generative models
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1139,6 +1150,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#analysing-the-results-of-generative-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Analysing the results of generative models
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1254,7 +1276,7 @@ image as follows:</p>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>--pull<span class="w"> </span>-t<span class="w"> </span>euroeval<span class="w"> </span>.
 </code></pre></div>
 <p>With the Docker image built, we can now evaluate any model as follows:</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>--gpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>euroeval<span class="w"> </span>&lt;euroeval-arguments&gt;
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">args</span><span class="o">=</span><span class="s2">&quot;&lt;euroeval-arguments&gt;&quot;</span><span class="w"> </span>--gpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--name<span class="w"> </span>euroeval<span class="w"> </span>--rm<span class="w"> </span>euroeval
 </code></pre></div>
 <p>Here <code>&lt;euroeval-arguments&gt;</code> consists of the arguments added to the <code>euroeval</code> CLI
 argument. This could for instance be <code>--model &lt;model-id&gt; --task
@@ -1485,6 +1507,130 @@ generate a SQL query based on a natural language input:</p>
 <p>Again, with this you can benchmark your custom dataset by simply running</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--dataset<span class="w"> </span>my-sql-dataset<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;
 </code></pre></div>
+<h2 id="analysing-the-results-of-generative-models">Analysing the results of generative models<a class="headerlink" href="#analysing-the-results-of-generative-models" title="Permanent link">&para;</a></h2>
+<p>If you're evaluating a generative model and want to be able to analyse the model results
+more in-depth, you can run your evaluation with the <code>--debug</code> flag (or <code>debug=True</code> if
+using the <code>Benchmarker</code>), which will output all the model outputs and all the dataset
+metadata (including the ground truth labels, if present) to both the terminal as well as
+to a JSON file in your current working directory, named
+<code>&lt;model-id&gt;-&lt;dataset-name&gt;-model-outputs.json</code>.</p>
+<p>It is a JSON dictionary with keys being hashes of the input (which you can just ignore,
+it's used for caching during generation), and values being dictionaries with the
+following keys:</p>
+<ul>
+<li><code>index</code>: The row index of the sample in the dataset. This allows you to match up the
+  sample with the corresponding sample in the dataset.</li>
+<li><code>text</code>/<code>messages</code>: The full input prompt used for generation. If the model is a base
+  decoder then this will be a string stored in <code>text</code>, and if it's an instruction-tuned
+  model then this will be an array of dictionaries stored in <code>messages</code>. This will
+  include all few-shot examples, if any - see the below <code>prompt</code> to get the content of
+  the present sample, without any few-shot examples.</li>
+<li><code>prompt</code>: The actual example, without any few-shot examples. This is not exactly the
+  input to the model (unless you're conducting zero-shot evaluation), but it can be
+  handy to separate the actual query that the model was asked to answer.</li>
+<li><code>sequence</code>: The generated sequence by the model.</li>
+<li><code>predicted_label</code>: The predicted label for the generated sequence, if the task has a
+  label. This allows you to compare directly with the ground truth label, if present.</li>
+<li><code>scores</code>: An array of shape (<code>num_tokens_generated</code>, <code>num_logprobs_per_token</code>, 2),
+  where the first dimension is the index of the token in the generated sequence, the
+  second dimension is the index of the logprob for that token (ordered by most likely
+  token to be generated to least likely), and the third dimension is a pair (token,
+  logprob) for the token and its logprob. This will only be present if the task requires
+  logprobs, and will otherwise be null.</li>
+<li>Any metadata for the sample that was present in the dataset, including the ground truth
+  label, if present.</li>
+</ul>
+<p>If you sort the rows by this index, you will get the samples in the same order as they
+appear in the dataset, effectively just recreating the entire dataset, with the
+additional model output features mentioned above. Here's an example of how you can do
+this in Python:</p>
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;&lt;model-id&gt;-&lt;dataset-name&gt;-model-outputs.json&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="o">...</span>    <span class="n">model_outputs</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">model_outputs</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;index&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+      <span class="n">sequence</span> <span class="n">predicted_label</span>                                             <span class="n">scores</span>          <span class="n">corruption_type</span>      <span class="n">label</span>                                           <span class="n">messages</span>                                             <span class="n">prompt</span>
+<span class="n">index</span>
+<span class="mi">0</span>          <span class="n">nej</span>       <span class="n">incorrect</span>  <span class="p">[[[</span><span class="n">nej</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.735893965815194e-05</span><span class="p">],</span> <span class="p">[</span><span class="n">ja</span><span class="p">,</span> <span class="o">-</span><span class="mf">11.0000</span><span class="o">...</span>         <span class="n">flip_nogle_nogen</span>  <span class="n">incorrect</span>  <span class="p">[{</span><span class="s1">&#39;content&#39;</span><span class="p">:</span> <span class="s1">&#39;Sætning: Styrkeforholdet må være...  Sætning: Peter Elmegaard med nogen af sine hæs...</span>
+<span class="mi">0</span>          <span class="n">nej</span>       <span class="n">incorrect</span>  <span class="p">[[[</span><span class="n">nej</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.128163257315464e-07</span><span class="p">],</span> <span class="p">[</span><span class="n">ja</span><span class="p">,</span> <span class="o">-</span><span class="mf">15.125</span><span class="p">]</span><span class="o">...</span>         <span class="n">flip_nogle_nogen</span>  <span class="n">incorrect</span>  <span class="p">[{</span><span class="s1">&#39;content&#39;</span><span class="p">:</span> <span class="s1">&#39;Sætning: Ægteparret hævdede, at ...  Sætning: Peter Elmegaard med nogen af sine hæs...</span>
+<span class="mi">0</span>          <span class="n">nej</span>       <span class="n">incorrect</span>  <span class="p">[[[</span><span class="n">nej</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.0009307525469921529</span><span class="p">],</span> <span class="p">[</span><span class="n">ja</span><span class="p">,</span> <span class="o">-</span><span class="mf">7.00093</span><span class="o">...</span>         <span class="n">flip_nogle_nogen</span>  <span class="n">incorrect</span>  <span class="p">[{</span><span class="s1">&#39;content&#39;</span><span class="p">:</span> <span class="s1">&#39;Sætning: Samtidig lægger hans on...  Sætning: Peter Elmegaard med nogen af sine hæs...</span>
+<span class="mi">0</span>          <span class="n">nej</span>       <span class="n">incorrect</span>  <span class="p">[[[</span><span class="n">nej</span><span class="p">,</span> <span class="o">-</span><span class="mf">4.127333340875339e-06</span><span class="p">],</span> <span class="p">[</span><span class="n">ja</span><span class="p">,</span> <span class="o">-</span><span class="mf">12.5000</span><span class="o">...</span>         <span class="n">flip_nogle_nogen</span>  <span class="n">incorrect</span>  <span class="p">[{</span><span class="s1">&#39;content&#39;</span><span class="p">:</span> <span class="s1">&#39;Sætning: Hej til Bente som jeg v...  Sætning: Peter Elmegaard med nogen af sine hæs...</span>
+<span class="mi">1</span>          <span class="n">nej</span>       <span class="n">incorrect</span>  <span class="p">[[[</span><span class="n">nej</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">],</span> <span class="p">[</span><span class="n">ja</span><span class="p">,</span> <span class="o">-</span><span class="mf">16.75</span><span class="p">],</span> <span class="p">[</span><span class="n">ne</span><span class="p">,</span> <span class="o">-</span><span class="mf">19.0</span><span class="p">],</span> <span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="o">-...</span>  <span class="n">flip_indefinite_article</span>  <span class="n">incorrect</span>  <span class="p">[{</span><span class="s1">&#39;content&#39;</span><span class="p">:</span> <span class="s1">&#39;Sætning: Ægteparret hævdede, at ...  Sætning: Der blev afprøvet et masse ting.</span><span class="se">\n\n</span><span class="s1">B...</span>
+</code></pre></div>
+<p>Note that the <code>index</code> column is not unique, which is because the model is generating
+multiple answers for each sample, but with different few-shot examples. You can see
+these few-shot examples in the <code>messages</code> column.</p>
+<details class="example">
+<summary>Example</summary>
+<p>Here is a (truncated) example of a model output file:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;cb3f9ea749fec9d2f83ca6d3a8744cce&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;index&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">181</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;sequence&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ja&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;predicted_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;scores&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">[</span>
+<span class="w">        </span><span class="p">[</span>
+<span class="w">          </span><span class="s2">&quot;ja&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="mf">-0.5232800841331482</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="p">[</span>
+<span class="w">          </span><span class="s2">&quot;nej&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="mf">-0.8982800841331482</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="p">[</span>
+<span class="w">          </span><span class="s2">&quot;ne&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="mf">-8.773280143737793</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="p">[</span>
+<span class="w">          </span><span class="s2">&quot;j&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="mf">-13.710780143737793</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="p">[</span>
+<span class="w">          </span><span class="s2">&quot;n&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="mf">-13.960780143737793</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="p">[</span>
+<span class="w">          </span><span class="s2">&quot;!&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="mf">-100.0</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="p">[</span>
+<span class="w">          </span><span class="s2">&quot;\&quot;&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="mf">-100.0</span>
+<span class="w">        </span><span class="p">],</span>
+<span class="w">        </span><span class="p">[</span>
+<span class="w">          </span><span class="s2">&quot;#&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="mf">-100.0</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;corruption_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sætning: Styrkeforholdet må være det afgørene, siger de begge.\n\nBestem om sætningen er grammatisk korrekt eller ej. Svar kun med &#39;ja&#39; eller &#39;nej&#39;, og intet andet.&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;nej&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;assistant&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="err">(...more</span><span class="w"> </span><span class="kc">fe</span><span class="err">w</span><span class="mi">-</span><span class="err">sho</span><span class="kc">t</span><span class="w"> </span><span class="err">examples...)</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sætning: Rør peberfrugt i og steg igen et par minutter.\n\nBestem om sætningen er grammatisk korrekt eller ej. Svar kun med &#39;ja&#39; eller &#39;nej&#39;, og intet andet.&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sætning: Rør peberfrugt i og steg igen et par minutter.\n\nBestem om sætningen er grammatisk korrekt eller ej. Svar kun med &#39;ja&#39; eller &#39;nej&#39;, og intet andet.&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;a8fab2c68e9ec63184636341eaf43f6c&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="err">(...)</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="err">(...)</span>
+<span class="p">}</span>
+</code></pre></div>
+</details>
 
 
 
