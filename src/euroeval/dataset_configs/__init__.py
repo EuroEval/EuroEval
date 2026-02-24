@@ -75,10 +75,16 @@ def get_all_dataset_configs(
     """
     globals_dict = globals()
 
+    builtin_dataset_names = {
+        cfg.name for cfg in globals_dict.values() if isinstance(cfg, DatasetConfig)
+    }
+
     # If any of the dataset IDs are referring to Hugging Face dataset IDs, then we check
     # if the repositories have custom dataset configs and if they do, we add them to the
     # globals dict.
     for dataset_id in dataset_ids:
+        if dataset_id in builtin_dataset_names:
+            continue
         dataset_config_or_none = try_get_dataset_config_from_repo(
             dataset_id=dataset_id,
             api_key=api_key,
