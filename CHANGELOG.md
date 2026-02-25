@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   only reliably verify official providers. This check is now skipped for custom
   endpoints, and we assume they support structured outputs. This was added by
   @viggo-gascou ✨
+- When evaluating models on a custom inference API with a task that uses LLM-as-a-judge
+  metrics, an error caused the same model to be the judge. We now disallow judges to run
+  on custom inference APIs to solve this. Support for running local judges in this sense
+  could be supported in the future.
 
 ## [v16.15.0] - 2026-02-18
 
