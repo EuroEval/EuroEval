@@ -20,6 +20,8 @@ from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
+from ..tasks import NER
+
 from ..constants import (
     ATTENTION_BACKENDS,
     CUSTOM_STOP_TOKENS,
@@ -43,6 +45,7 @@ from ..enums import (
 from ..exceptions import (
     InvalidBenchmark,
     InvalidModel,
+    InvalidTask,
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
     NeedsSystemDependency,
@@ -428,6 +431,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             InvalidBenchmark:
                 If the dataset requires logprobs, but we could not get the first token
                 of each label in the dataset.
+            InvalidTask:
+                If the task requires structured output, but either is not NER or
+                does not define an output structure.
         """
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
@@ -489,10 +495,9 @@ class VLLMModel(HuggingFaceEncoderModel):
         elif self.dataset_config.task.uses_structured_output:
             if self.dataset_config.task.structured_output_format is not None:
                 structured_outputs = StructuredOutputsParams(
-                    json=self.dataset_config.task.structured_output_format.model_json_schema(),
-                    disable_fallback=True,
+                    json=self.dataset_config.task.structured_output_format.model_json_schema()
                 )
-            else:
+            elif self.dataset_config.task == NER:
                 ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
                 keys_and_their_types: dict[str, t.Any] = {
                     tag_name: (conlist(str, max_length=5), ...)
@@ -509,6 +514,14 @@ class VLLMModel(HuggingFaceEncoderModel):
                 )
                 structured_outputs = StructuredOutputsParams(
                     json=structured_generation_schema
+                )
+            else:
+                raise InvalidTask(
+                    message=(
+                        "Task set to use structured out, but neither is an NER task "
+                        "nor defines an output structure "
+                        "- at least one of these must be true."
+                    )
                 )
         elif (
             self.dataset_config.task.uses_logprobs

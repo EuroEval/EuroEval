@@ -167,6 +167,13 @@ class Task:
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
         self.uses_logprobs = self.uses_logprobs or self.requires_logprobs
+        if not self.uses_structured_output and self.structured_output_format:
+            log_once(
+                "`structured_output_format` is specified however "
+                "`uses_structured_output=False` "
+                "- thus this specified structure will not be used.",
+                level=logging.WARNING,
+            )
 
     def __hash__(self) -> int:
         """Return a hash of the task."""

@@ -1,7 +1,13 @@
 """All benchmarks tasks used in EuroEval."""
 
+import pydantic
+
 from . import metrics as m
-from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
+from .constants import (
+    NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    TOOL_CALLING_ARGUMENTS_KEY,
+    TOOL_CALLING_FUNCTION_KEY,
+)
 from .data_models import Task
 from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
@@ -17,7 +23,7 @@ from .prompt_templates import (
     TOKEN_CLASSIFICATION_TEMPLATES,
     TRANSLATION_TEMPLATES,
 )
-from .prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES, ToolCallingResponse
+from .prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES
 
 LA = Task(
     name="linguistic-acceptability",
@@ -168,6 +174,22 @@ EUROPEAN_VALUES = Task(
     uses_logprobs=True,
     default_allow_invalid_model_outputs=False,
 )
+
+
+ToolCall = pydantic.create_model(
+    "ToolCall",
+    __base__=pydantic.BaseModel,
+    **{
+        TOOL_CALLING_FUNCTION_KEY: (str, ...),
+        TOOL_CALLING_ARGUMENTS_KEY: (dict[str, str], ...),
+    },
+)
+
+
+class ToolCallingResponse(pydantic.BaseModel):
+    """For structured generation purposes in tool-calling."""
+
+    tool_calls: list[ToolCall]  # type: ignore
 
 
 TOOL_CALLING = Task(
