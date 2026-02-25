@@ -1,7 +1,13 @@
 """All benchmarks tasks used in EuroEval."""
 
+import pydantic
+
 from . import metrics as m
-from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
+from .constants import (
+    NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    TOOL_CALLING_ARGUMENTS_KEY,
+    TOOL_CALLING_FUNCTION_KEY,
+)
 from .data_models import Task
 from .enums import GenerativeType, ModelType, TaskGroup
 from .prompt_templates import (
@@ -17,6 +23,7 @@ from .prompt_templates import (
     TOKEN_CLASSIFICATION_TEMPLATES,
     TRANSLATION_TEMPLATES,
 )
+from .prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES
 
 LA = Task(
     name="linguistic-acceptability",
@@ -166,6 +173,37 @@ EUROPEAN_VALUES = Task(
     requires_zero_shot=True,
     uses_logprobs=True,
     default_allow_invalid_model_outputs=False,
+)
+
+
+ToolCall = pydantic.create_model(
+    "ToolCall",
+    __base__=pydantic.BaseModel,
+    **{
+        TOOL_CALLING_FUNCTION_KEY: (str, ...),
+        TOOL_CALLING_ARGUMENTS_KEY: (dict[str, str], ...),
+    },
+)
+
+
+class ToolCallingResponse(pydantic.RootModel[list[ToolCall]]):
+    """For structured generation purposes in tool-calling."""
+
+    # root: list[ToolCall]
+    pass
+
+
+TOOL_CALLING = Task(
+    name="tool-calling",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=TOOL_CALLING_TEMPLATES,
+    metrics=[m.tool_calling_metric],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=500,
+    default_labels=[],
+    requires_zero_shot=True,
+    uses_structured_output=True,
+    structured_output_format=ToolCallingResponse,
 )
 
 

@@ -1246,3 +1246,139 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-en
 ```
+
+## Tool calling
+
+### BFCL
+
+This dataset is an excerpt from the
+[Berkeley Function Calling Leaderboard (v4) dataset](https://openreview.net/forum?id=2GmDdhBdDk),
+containing the following subsets (n.o. samples in the parentheses):
+
+- live_multiple (1053)
+- live_parallel_multiple (24)
+- live_parallel (16)
+- live_simple (258)
+- multiple (200)
+- parallel_multiple (200)
+- parallel (200)
+- simple_java (100)
+- simple_javascript (50)
+- simple_python (400)
+
+In total 2501 out of the 5088 samples in the score-contributing part of BFCL
+([reference](https://gorilla.cs.berkeley.edu/blogs/15_bfcl_v4_web_search.html)).
+
+We use only zero-shot evaluation on this dataset.
+
+Here is an example from the training split:
+
+```json
+{
+    "id": "live_multiple_295-130-4",
+    "question": [
+        [
+            {
+                "role": "user",
+                "content": "Hotel room are so costly , I need a house to stay . I am travelling to LAX."
+            }
+        ]
+    ],
+    "function": [
+        {
+            "name": "Hotels_2_BookHouse",
+            "description": "Books a selected house for a specified duration and number of adults.",
+            "parameters": {
+                "type": "dict",
+                "required": [
+                    "where_to",
+                    "number_of_adults",
+                    "check_in_date",
+                    "check_out_date"
+                ],
+                "properties": {
+                    "where_to": {
+                        "type": "string",
+                        "description": "The location of the house to book, in the format of 'City, State', such as 'San Francisco, CA'."
+                    },
+                    "number_of_adults": {
+                        "type": "integer",
+                        "description": "The number of adults to include in the reservation."
+                    },
+                    "check_in_date": {
+                        "type": "string",
+                        "description": "The check-in date for the reservation in the format 'MM/DD/YYYY'."
+                    },
+                    "check_out_date": {
+                        "type": "string",
+                        "description": "The check-out date for the reservation in the format 'MM/DD/YYYY'."
+                    }
+                }
+            }
+        },
+        {
+            "name": "Hotels_2_SearchHouse",
+            "description": "Search for a house accommodation at a specific location, optionally filtering by laundry service availability, number of adults, and review rating.",
+            "parameters": {
+                "type": "dict",
+                "required": [
+                    "where_to"
+                ],
+                "properties": {
+                    "where_to": {
+                        "type": "string",
+                        "description": "The destination where the house is searched for, in the format of 'City, State', such as 'Austin, TX' or 'San Francisco, CA'. State has to be abbrieviated"
+                    },
+                    "has_laundry_service": {
+                        "type": "string",
+                        "description": "Indicates if the house should have laundry service available.",
+                        "enum": [
+                            "True",
+                            "False",
+                            "dontcare"
+                        ],
+                        "default": "dontcare"
+                    },
+                    "number_of_adults": {
+                        "type": "integer",
+                        "description": "The number of adults for the reservation. Use 0 to indicate 'dontcare'.",
+                        "default": 0
+                    },
+                    "rating": {
+                        "type": "float",
+                        "description": "The minimum review rating of the house on a scale from 1.0 to 5.0, with 5.0 being the highest. Use 0 to indicate 'dontcare'.",
+                        "default": 0.0
+                    }
+                }
+            }
+        }
+    ],
+    "ground_truth": [
+        {
+            "Hotels_2_SearchHouse": {
+                "where_to": [
+                    "Los Angeles, CA"
+                ],
+                "has_laundry_service": [
+                    "",
+                    "dontcare"
+                ],
+                "number_of_adults": [
+                    "",
+                    0
+                ],
+                "rating": [
+                    "",
+                    0.0
+                ]
+            }
+        }
+    ]
+}
+```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset bfcl
+```

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- A task _Tool Calling_ and a dataset under this task _bfcl_ a subset of the
+Berkeley Function Calling Leaderboard benchmark (v4).
+Currently only supported for English.
+
 - We now add all metadata (including ground truth labels, if applicable) to the model
   cache when debug mode is enabled (with `--debug` or `debug=True`). We have added a
   [section in the
