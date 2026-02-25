@@ -227,10 +227,6 @@ class ModelCache:
             model_output:
                 The model output.
         """
-        assert model_output.predicted_labels is not None, (
-            "The predicted labels should not be None if the model output is not None."
-        )
-
         input_column = "messages" if "messages" in model_inputs else "text"
 
         if self.store_metadata:
@@ -288,7 +284,11 @@ class ModelCache:
 
                 self[model_input] = SingleGenerativeModelOutput(
                     sequence=model_output.sequences[sample_idx],
-                    predicted_label=model_output.predicted_labels[sample_idx],
+                    predicted_label=(
+                        model_output.predicted_labels[sample_idx]
+                        if model_output.predicted_labels is not None
+                        else None
+                    ),
                     scores=scores,
                     metadata=single_metadata,
                 )
