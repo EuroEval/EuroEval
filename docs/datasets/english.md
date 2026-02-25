@@ -1247,23 +1247,27 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset valeu-en
 ```
 
-## European Values
+## Tool calling
 
 ### BFCL
 
-This dataset is an excerpt from the Berkeley Function Calling Leaderboard (v4) dataset,
-containing the following subsets:
+This dataset is an excerpt from the
+[Berkeley Function Calling Leaderboard (v4) dataset](https://openreview.net/forum?id=2GmDdhBdDk),
+containing the following subsets (n.o. samples in the parentheses):
 
-- "live_multiple",
-- "live_parallel_multiple",
-- "live_parallel",
-- "live_simple",
-- "multiple",
-- "parallel_multiple",
-- "parallel",
-- "simple_java",
-- "simple_javascript",
-- "simple_python",
+- live_multiple (1053)
+- live_parallel_multiple (24)
+- live_parallel (16)
+- live_simple (258)
+- multiple (200)
+- parallel_multiple (200)
+- parallel (200)
+- simple_java (100)
+- simple_javascript (50)
+- simple_python (400)
+
+In total 2501 out of the 5088 samples in the score-contributing part of BFCL
+([reference](https://gorilla.cs.berkeley.edu/blogs/15_bfcl_v4_web_search.html)).
 
 We use only zero-shot evaluation on this dataset.
 

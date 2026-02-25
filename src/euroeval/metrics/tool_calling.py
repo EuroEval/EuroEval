@@ -14,6 +14,53 @@ if t.TYPE_CHECKING:
 from ..metrics.base import Metric
 
 
+class ToolCallingAccuracy(Metric):
+    """Metric for tool calling."""
+
+    def __call__(
+        self,
+        predictions: c.Sequence,
+        references: c.Sequence,
+        dataset: "Dataset",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> float | None:
+        """Calculate tool calling accuracy.
+
+        Args:
+            predictions:
+                Predicted "labels" - meaning tool calls in this context.
+            references:
+                Ground truth data - NB: format is different from predictions,
+                since ground truth contains lists of possible outputs rather than
+                a single 'truth'.
+            dataset:
+                Dataset - used for tool information like required arguments.
+            dataset_config:
+                Part of interface - not used here.
+            benchmark_config:
+                Part of interface - not used here.
+
+        Returns:
+            The score (accuracy).
+            Returns None if any of predictions, references or dataset["function"]
+            sequences are empty - meaning a score could not be calculated.
+        """
+        function_descriptions = [json.loads(f) for f in dataset["function"]]
+        results = []
+        for x in zip(predictions, references, function_descriptions):
+            results.append(_evaluate_function_toolcall_response(*x))
+        if not results:
+            return None
+        else:
+            return sum(results) / len(results)
+
+
+tool_calling_metric = ToolCallingAccuracy(
+    name="tool_calling_accuracy", pretty_name="Tool Calling Accuracy"
+)
+
+
 def _evaluate_function_toolcall_response(
     pred_calls_str: str, ref_calls_str: str, descriptions: list[dict]
 ) -> bool:
@@ -89,36 +136,3 @@ def _evaluate_function_toolcall_response(
             if key not in pred_args or pred_args[key] not in values:
                 return False
     return True
-
-
-class ToolCallingMetric(Metric):
-    """Metric for tool calling."""
-
-    def __call__(
-        self,
-        predictions: c.Sequence,
-        references: c.Sequence,
-        dataset: "Dataset",
-        dataset_config: "DatasetConfig",
-        benchmark_config: "BenchmarkConfig",
-    ) -> float | None:
-        """Calculate tool calling metric.
-
-        Returns:
-            The score.
-            Returns None if any of predictions, references or dataset["function"]
-            sequences are empty - meaning a score could not be calculated.
-        """
-        function_descriptions = [json.loads(f) for f in dataset["function"]]
-        results = []
-        for x in zip(predictions, references, function_descriptions):
-            results.append(_evaluate_function_toolcall_response(*x))
-        if not results:
-            return None
-        else:
-            return sum(results) / len(results)
-
-
-tool_calling_metric = ToolCallingMetric(
-    name="tool_calling_accuracy", pretty_name="Accuracy (Tool Calling)"
-)

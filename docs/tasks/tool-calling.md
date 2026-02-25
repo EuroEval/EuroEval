@@ -22,7 +22,4 @@ In the command line interface of the [EuroEval Python package](/python-package),
 can benchmark your favorite model on the tool calling task like so:
 
 ```bash
-euroeval --model <model-id> --task tool-calling --language en
-```
-
-Currently only the english language is supported
+euroeval --model <model-id> --task tool-calling

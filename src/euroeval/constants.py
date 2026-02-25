@@ -139,3 +139,8 @@ ATTENTION_BACKENDS: list[str] = [
 # the languages. This is for instance the case for the speed benchmark, which has all
 # the languages. The threshold of 5 is somewhat arbitrary.
 MAX_NUMBER_OF_LOGGING_LANGUAGES = 5
+
+# Constants for the tool-calling task
+TOOL_CALLING_FUNCTION_KEY = "function"
+TOOL_CALLING_ARGUMENTS_KEY = "arguments"
+TOOL_CALLING_KEYS = [TOOL_CALLING_FUNCTION_KEY, TOOL_CALLING_ARGUMENTS_KEY]
