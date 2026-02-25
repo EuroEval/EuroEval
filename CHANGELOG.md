@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v16.16.0] - 2026-02-25
+
 ### Added
 
 - We now add all metadata (including ground truth labels, if applicable) to the model
