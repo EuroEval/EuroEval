@@ -1659,10 +1659,6 @@
 <span class="sd">            model_output:</span>
 <span class="sd">                The model output.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">assert</span> <span class="n">model_output</span><span class="o">.</span><span class="n">predicted_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span>
-            <span class="s2">&quot;The predicted labels should not be None if the model output is not None.&quot;</span>
-        <span class="p">)</span>
-
         <span class="n">input_column</span> <span class="o">=</span> <span class="s2">&quot;messages&quot;</span> <span class="k">if</span> <span class="s2">&quot;messages&quot;</span> <span class="ow">in</span> <span class="n">model_inputs</span> <span class="k">else</span> <span class="s2">&quot;text&quot;</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">store_metadata</span><span class="p">:</span>
@@ -1720,7 +1716,11 @@
 
                 <span class="bp">self</span><span class="p">[</span><span class="n">model_input</span><span class="p">]</span> <span class="o">=</span> <span class="n">SingleGenerativeModelOutput</span><span class="p">(</span>
                     <span class="n">sequence</span><span class="o">=</span><span class="n">model_output</span><span class="o">.</span><span class="n">sequences</span><span class="p">[</span><span class="n">sample_idx</span><span class="p">],</span>
-                    <span class="n">predicted_label</span><span class="o">=</span><span class="n">model_output</span><span class="o">.</span><span class="n">predicted_labels</span><span class="p">[</span><span class="n">sample_idx</span><span class="p">],</span>
+                    <span class="n">predicted_label</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">model_output</span><span class="o">.</span><span class="n">predicted_labels</span><span class="p">[</span><span class="n">sample_idx</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">model_output</span><span class="o">.</span><span class="n">predicted_labels</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                        <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
                     <span class="n">scores</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span>
                     <span class="n">metadata</span><span class="o">=</span><span class="n">single_metadata</span><span class="p">,</span>
                 <span class="p">)</span>
