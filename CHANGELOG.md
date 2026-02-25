@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
+  unofficial for now. This was added by @N-essuno ✨
+
 ## [v16.16.1] - 2026-02-25
 
 ### Fixed
