@@ -290,7 +290,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset scala-da
 ```
 
-### DaLA
+### Unofficial: DaLA
 
 This dataset was published in [this paper](https://arxiv.org/abs/2512.04799)
 and, similarly to ScaLA, was automatically created from the [Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master) by assuming that the documents in the treebank are correct, and corrupting the samples to create grammatically incorrect samples. 
