@@ -141,7 +141,7 @@ class LLMAsAJudgeMetric(Metric):
         self.judge = LiteLLMModel(
             model_config=judge_model_config,
             dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
+            benchmark_config=judge_benchmark_config,
             log_metadata=False,
             **self.judge_kwargs,
         )
