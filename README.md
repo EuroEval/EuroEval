@@ -200,9 +200,16 @@ A huge thank you to all the contributors who have helped make this project a suc
 </a>
 <a href="https://github.com/SwekeR-463">
     <img
-        src="https://avatars.githubusercontent.com/u/114919896?v=4"
+        src="https://avatars.githubusercontent.com/u/114919896"
         width=50
         alt="Contributor avatar for SwekeR-463"
+    />
+</a>
+<a href="https://github.com/N-essuno">
+    <img
+        src="https://avatars.githubusercontent.com/u/70454516"
+        width=50
+        alt="Contributor avatar for N-essuno"
     />
 </a>
 
