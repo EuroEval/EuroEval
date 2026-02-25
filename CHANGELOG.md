@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v16.16.1] - 2026-02-25
+
 ### Fixed
 
--
+- LLM-as-a-judge outputs were not cached correctly - this has now been fixed.
 
 ## [v16.16.0] - 2026-02-25
 
