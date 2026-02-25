@@ -39,6 +39,7 @@ DALA_CONFIG = DatasetConfig(
     source="giannor/dala",
     task=LA,
     languages=[DANISH],
+    unofficial=True,
 )
 
 DANSK_CONFIG = DatasetConfig(
