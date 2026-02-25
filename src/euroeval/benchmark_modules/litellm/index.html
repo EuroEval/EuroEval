@@ -3039,6 +3039,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_property</span><span class="p">,</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">sleep</span>
 
@@ -3218,7 +3219,6 @@
     <span class="s2">&quot;llamafile/&quot;</span><span class="p">,</span>
     <span class="s2">&quot;litellm_proxy/&quot;</span><span class="p">,</span>
     <span class="s2">&quot;lm_studio/&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;openai/&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">UNOFFICIAL_INFERENCE_API_PREFIXES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ordbogen/&quot;</span><span class="p">]</span>
@@ -3405,10 +3405,7 @@
             <span class="n">batch_indices</span><span class="p">,</span> <span class="n">batch_inputs</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">inputs_to_run</span><span class="p">)</span>
             <span class="n">successes</span><span class="p">,</span> <span class="n">failures</span> <span class="o">=</span> <span class="n">safe_run</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_generate_async</span><span class="p">(</span>
-                    <span class="n">model_id</span><span class="o">=</span><span class="n">clean_model_id</span><span class="p">(</span>
-                        <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-                        <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
-                    <span class="p">),</span>
+                    <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
                     <span class="n">inputs</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">batch_inputs</span><span class="p">),</span>
                     <span class="n">max_concurrent_calls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;max_concurrent_calls&quot;</span><span class="p">],</span>
                     <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
@@ -3841,13 +3838,19 @@
 <span class="sd">            InvalidBenchmark:</span>
 <span class="sd">                If the model input is invalid.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cleaned_model_id</span> <span class="o">=</span> <span class="n">clean_model_id</span><span class="p">(</span>
+            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span>
+        <span class="p">)</span>
+
         <span class="c1"># Create a LiteLLM router, which will ensure that we only use a single client</span>
         <span class="c1"># for all the requests, preventing &quot;too many open files&quot; errors</span>
         <span class="n">router</span> <span class="o">=</span> <span class="n">Router</span><span class="p">(</span>
             <span class="n">model_list</span><span class="o">=</span><span class="p">[</span>
                 <span class="n">litellm</span><span class="o">.</span><span class="n">DeploymentTypedDict</span><span class="p">(</span>
-                    <span class="n">model_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-                    <span class="n">litellm_params</span><span class="o">=</span><span class="n">litellm</span><span class="o">.</span><span class="n">LiteLLMParamsTypedDict</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model_id</span><span class="p">),</span>
+                    <span class="n">model_name</span><span class="o">=</span><span class="n">cleaned_model_id</span><span class="p">,</span>
+                    <span class="n">litellm_params</span><span class="o">=</span><span class="n">litellm</span><span class="o">.</span><span class="n">LiteLLMParamsTypedDict</span><span class="p">(</span>
+                        <span class="n">model</span><span class="o">=</span><span class="n">cleaned_model_id</span>
+                    <span class="p">),</span>
                 <span class="p">)</span>
             <span class="p">]</span>
         <span class="p">)</span>
@@ -3862,11 +3865,7 @@
             <span class="n">requests</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">add_semaphore_and_catch_exception</span><span class="p">(</span>
                     <span class="n">router</span><span class="o">.</span><span class="n">atext_completion</span><span class="p">(</span>
-                        <span class="n">model</span><span class="o">=</span><span class="n">clean_model_id</span><span class="p">(</span>
-                            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span>
-                        <span class="p">),</span>
-                        <span class="n">prompt</span><span class="o">=</span><span class="n">input_</span><span class="p">,</span>
-                        <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
+                        <span class="n">model</span><span class="o">=</span><span class="n">cleaned_model_id</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="n">input_</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
                     <span class="p">),</span>
                     <span class="n">semaphore</span><span class="o">=</span><span class="n">semaphore</span><span class="p">,</span>
                 <span class="p">)</span>
@@ -3882,11 +3881,7 @@
             <span class="n">requests</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">add_semaphore_and_catch_exception</span><span class="p">(</span>
                     <span class="n">router</span><span class="o">.</span><span class="n">acompletion</span><span class="p">(</span>
-                        <span class="n">model</span><span class="o">=</span><span class="n">clean_model_id</span><span class="p">(</span>
-                            <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span> <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span>
-                        <span class="p">),</span>
-                        <span class="n">messages</span><span class="o">=</span><span class="n">input_</span><span class="p">,</span>
-                        <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
+                        <span class="n">model</span><span class="o">=</span><span class="n">cleaned_model_id</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">input_</span><span class="p">,</span> <span class="o">**</span><span class="n">generation_kwargs</span>
                     <span class="p">),</span>
                     <span class="n">semaphore</span><span class="o">=</span><span class="n">semaphore</span><span class="p">,</span>
                 <span class="p">)</span>
@@ -4656,7 +4651,13 @@
                     <span class="s2">&quot;enable it.&quot;</span><span class="p">,</span>
                     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">supports_response_schema</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">):</span>
+            <span class="c1"># Skip litellm&#39;s support check when using a custom base_api URL, as</span>
+            <span class="c1"># litellm can only reliably verify support for their official API providers,</span>
+            <span class="c1"># not custom endpoints.</span>
+            <span class="c1"># We assume custom endpoint models support structured generation.</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">supports_response_schema</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
+            <span class="p">):</span>
                 <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span> <span class="o">==</span> <span class="n">NER</span><span class="p">:</span>
                     <span class="n">ner_tag_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
                     <span class="n">keys_and_their_types</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
@@ -4751,10 +4752,7 @@
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_attempts</span> <span class="o">:=</span> <span class="mi">10</span><span class="p">):</span>
             <span class="n">_</span><span class="p">,</span> <span class="n">failures</span> <span class="o">=</span> <span class="n">safe_run</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_generate_async</span><span class="p">(</span>
-                    <span class="n">model_id</span><span class="o">=</span><span class="n">clean_model_id</span><span class="p">(</span>
-                        <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-                        <span class="n">benchmark_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="p">,</span>
-                    <span class="p">),</span>
+                    <span class="n">model_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
                     <span class="n">inputs</span><span class="o">=</span><span class="p">[</span><span class="n">test_input</span><span class="p">],</span>
                     <span class="n">max_concurrent_calls</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">generation_kwargs</span><span class="p">,</span>
@@ -4900,29 +4898,31 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The cleaned model ID.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">new_model_id</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span>
+
     <span class="c1"># Remove unofficial prefixes</span>
     <span class="k">for</span> <span class="n">unofficial_prefix</span> <span class="ow">in</span> <span class="n">UNOFFICIAL_INFERENCE_API_PREFIXES</span><span class="p">:</span>
-        <span class="n">model_id</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
-            <span class="n">pattern</span><span class="o">=</span><span class="sa">rf</span><span class="s2">&quot;^</span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">unofficial_prefix</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">repl</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">model_id</span>
+        <span class="n">new_model_id</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+            <span class="n">pattern</span><span class="o">=</span><span class="sa">rf</span><span class="s2">&quot;^</span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">unofficial_prefix</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">repl</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">new_model_id</span>
         <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span>
-        <span class="n">model_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="n">CUSTOM_INFERENCE_API_PREFIXES</span>
+        <span class="n">new_model_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="n">CUSTOM_INFERENCE_API_PREFIXES</span>
     <span class="p">):</span>
         <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">BASE</span><span class="p">:</span>
             <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;text-completion-openai/&quot;</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;openai/&quot;</span>
-        <span class="n">model_id</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">model_id</span>
+        <span class="n">new_model_id</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">new_model_id</span>
 
     <span class="c1"># When we want to evaluate an OpenAI model on a custom inference server, such as HF</span>
     <span class="c1"># inference endpoints, LiteLLM gets confused since it&#39;s already using the `openai/`</span>
     <span class="c1"># prefix. We thus have to add it twice, and this hack here is to ensure that we</span>
     <span class="c1"># don&#39;t store the results with model ID `openai/openai/...`.</span>
-    <span class="k">elif</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">model_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;openai/&quot;</span><span class="p">):</span>
-        <span class="n">model_id</span> <span class="o">=</span> <span class="s2">&quot;openai/openai/&quot;</span> <span class="o">+</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(openai/)*&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">model_id</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">new_model_id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;openai/&quot;</span><span class="p">):</span>
+        <span class="n">new_model_id</span> <span class="o">=</span> <span class="s2">&quot;openai/openai/&quot;</span> <span class="o">+</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(openai/)*&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">new_model_id</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">model_id</span>
+    <span class="k">return</span> <span class="n">new_model_id</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">set_up_benchmark_config_for_model</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.litellm.set_up_benchmark_config_for_model"><a href="../../../../api/euroeval/benchmark_modules/litellm/#euroeval.benchmark_modules.litellm.set_up_benchmark_config_for_model" title="Go to docs">[docs]</a></div>

@@ -1367,7 +1367,12 @@
 <span class="normal">392</span>
 <span class="normal">393</span>
 <span class="normal">394</span>
-<span class="normal">395</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to text generation of models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1564,14 +1569,19 @@
             <span class="n">extracted_labels</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">extract_labels_from_generation</span><span class="p">(</span>
                 <span class="n">input_batch</span><span class="o">=</span><span class="n">batch</span><span class="p">,</span> <span class="n">model_output</span><span class="o">=</span><span class="n">model_output</span>
             <span class="p">)</span>
-            <span class="n">extracted_to_predicted</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">extracted</span><span class="p">:</span> <span class="n">predicted</span>
-                <span class="k">for</span> <span class="n">predicted</span><span class="p">,</span> <span class="n">extracted</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-            <span class="p">}</span>
-            <span class="n">model_output</span><span class="o">.</span><span class="n">predicted_labels</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">extracted_to_predicted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-                <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">extracted_labels</span>
-            <span class="p">]</span>
+            <span class="k">if</span> <span class="n">pred2extracted</span> <span class="o">:=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">:</span>
+                <span class="n">extracted_to_predicted</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="n">extracted</span><span class="p">:</span> <span class="n">predicted</span>
+                    <span class="k">for</span> <span class="n">predicted</span><span class="p">,</span> <span class="n">extracted</span> <span class="ow">in</span> <span class="n">pred2extracted</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">}</span>
+                <span class="n">model_output</span><span class="o">.</span><span class="n">predicted_labels</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">extracted_to_predicted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+                    <span class="k">else</span> <span class="p">[</span><span class="n">extracted_to_predicted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lbl</span><span class="p">,</span> <span class="n">lbl</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">label</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">extracted_labels</span>
+                <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">model_output</span><span class="o">.</span><span class="n">predicted_labels</span> <span class="o">=</span> <span class="n">extracted_labels</span>
 
             <span class="c1"># Extended logging if we are running in debug mode</span>
             <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">debug</span><span class="p">:</span>

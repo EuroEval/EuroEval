@@ -1276,7 +1276,7 @@ image as follows:</p>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>--pull<span class="w"> </span>-t<span class="w"> </span>euroeval<span class="w"> </span>.
 </code></pre></div>
 <p>With the Docker image built, we can now evaluate any model as follows:</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">args</span><span class="o">=</span><span class="s2">&quot;&lt;euroeval-arguments&gt;&quot;</span><span class="w"> </span>--gpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>--name<span class="w"> </span>euroeval<span class="w"> </span>--rm<span class="w"> </span>euroeval
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>--gpus<span class="w"> </span><span class="m">1</span><span class="w"> </span>euroeval<span class="w"> </span>&lt;euroeval-arguments&gt;
 </code></pre></div>
 <p>Here <code>&lt;euroeval-arguments&gt;</code> consists of the arguments added to the <code>euroeval</code> CLI
 argument. This could for instance be <code>--model &lt;model-id&gt; --task
