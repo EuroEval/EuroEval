@@ -3,6 +3,7 @@
 import collections.abc as c
 import logging
 import typing as t
+from copy import deepcopy
 from pathlib import Path
 
 from pydantic import BaseModel, Field, ValidationError
@@ -128,13 +129,19 @@ class LLMAsAJudgeMetric(Metric):
             )
 
         # Load the judge model
+        # NOTE: We could add support for local judges in the future, if there is a
+        #       demand for it, but we disallow it for now.
         judge_model_config = LiteLLMModel.get_model_config(
             model_id=self.judge_id, benchmark_config=benchmark_config
         )
+        judge_benchmark_config = deepcopy(benchmark_config)
+        judge_benchmark_config.api_base = None
+        judge_benchmark_config.api_key = None
+        judge_benchmark_config.api_version = None
         self.judge = LiteLLMModel(
             model_config=judge_model_config,
             dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
+            benchmark_config=judge_benchmark_config,
             log_metadata=False,
             **self.judge_kwargs,
         )

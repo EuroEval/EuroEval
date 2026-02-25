@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   assigned the `openai/openai/` prefix. This should only happen if the model ID starts
   with `openai/`, such as `openai/gpt-oss-20b`, for instance (this is because LiteLLM
   attaches a special meaning to the `openai/` prefix). This has been fixed now.
+- When evaluating models on a custom inference API with a task that uses LLM-as-a-judge
+  metrics, an error caused the same model to be the judge. We now disallow judges to run
+  on custom inference APIs to solve this. Support for running local judges in this sense
+  could be supported in the future.
 
 ## [v16.15.0] - 2026-02-18
 
