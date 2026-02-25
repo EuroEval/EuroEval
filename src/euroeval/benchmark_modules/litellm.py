@@ -186,7 +186,6 @@ CUSTOM_INFERENCE_API_PREFIXES = [
     "llamafile/",
     "litellm_proxy/",
     "lm_studio/",
-    "openai/",
 ]
 
 UNOFFICIAL_INFERENCE_API_PREFIXES = ["ordbogen/"]

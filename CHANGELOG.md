@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   only reliably verify official providers. This check is now skipped for custom
   endpoints, and we assume they support structured outputs. This was added by
   @viggo-gascou ✨
+- Fixed issue when evaluating models on custom inference APIs that the model ID would be
+  assigned the `openai/openai/` prefix. This should only happen if the model ID starts
+  with `openai/`, such as `openai/gpt-oss-20b`, for instance (this is because LiteLLM
+  attaches a special meaning to the `openai/` prefix). This has been fixed now.
 
 ## [v16.15.0] - 2026-02-18
 
