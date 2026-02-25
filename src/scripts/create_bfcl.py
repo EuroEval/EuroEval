@@ -75,6 +75,7 @@ def _split_dataset_to_dict(items: list[dict]) -> DatasetDict:
 
     train_size = 250
     val_size = 250
+    # test_size = 2001
 
     train_items = shuffled_items[:train_size]
     val_items = shuffled_items[train_size : train_size + val_size]

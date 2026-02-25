@@ -18,14 +18,6 @@ from ..tasks import (
 
 # Official datasets ###
 
-BFCL_CONFIG = DatasetConfig(
-    name="bfcl",
-    pretty_name="BFCL-v4",
-    source="EuroEval/bfcl-en",
-    task=TOOL_CALLING,
-    languages=[ENGLISH],
-)
-
 SST5_CONFIG = DatasetConfig(
     name="sst5",
     pretty_name="SST-5",
@@ -90,6 +82,14 @@ IFEVAL_CONFIG = DatasetConfig(
     languages=[ENGLISH],
     train_split=None,
     val_split=None,
+)
+
+BFCL_CONFIG = DatasetConfig(
+    name="bfcl",
+    pretty_name="BFCL-v4",
+    source="EuroEval/bfcl-en",
+    task=TOOL_CALLING,
+    languages=[ENGLISH],
 )
 
 VALEU_EN_CONFIG = DatasetConfig(

@@ -40,6 +40,8 @@ from ..constants import (
     LITELLM_CLASSIFICATION_OUTPUT_KEY,
     MAX_LITELLM_LOGPROBS,
     REASONING_MAX_TOKENS,
+    TOOL_CALLING_CALLS_KEY,
+    TOOL_CALLING_KEYS,
 )
 from ..data_models import (
     BenchmarkConfig,
@@ -69,7 +71,6 @@ from ..generation_utils import (
 )
 from ..logging_utils import get_pbar, log, log_once
 from ..model_cache import create_model_cache_dir
-from ..prompt_templates.tool_calling import TOOL_CALLING_KEYS
 from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import split_model_id
 from ..task_group_utils import (
@@ -1620,20 +1621,26 @@ class LiteLLMModel(BenchmarkModule):
         # Set up the `response_format` generation argument if we are dealing with a task
         # using structured generation
         if dataset_config.task.uses_structured_output:
-            if dataset_config.task.structured_output_format is not None:
-                pydantic_class = dataset_config.task.structured_output_format
-                generation_kwargs["response_format"] = pydantic_class
-                log_once(
-                    "Enabling structured generation for model "
-                    f"{self.model_config.model_id!r} with response_format "
-                    f"{pydantic_class.model_json_schema()}.",
-                    level=logging.DEBUG,
-                )
-            elif self.generative_type == GenerativeType.REASONING:
+            if self.generative_type == GenerativeType.REASONING:
                 log_once(
                     f"The model {self.model_config.model_id!r} is a reasoning model "
                     "and thus does not support structured generation, so we do not "
                     "enable it.",
+                    level=logging.DEBUG,
+                )
+            elif dataset_config.task.structured_output_format is not None:
+                pydantic_class = dataset_config.task.structured_output_format
+                generation_kwargs["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": TOOL_CALLING_CALLS_KEY,
+                        "schema": pydantic_class.model_json_schema(),
+                    },
+                }
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with response_format "
+                    f"{pydantic_class.model_json_schema()}.",
                     level=logging.DEBUG,
                 )
             # Skip litellm's support check when using a custom base_api URL, as
