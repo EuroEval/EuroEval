@@ -195,14 +195,19 @@ def generate_single_iteration(
             extracted_labels = model.extract_labels_from_generation(
                 input_batch=batch, model_output=model_output
             )
-            extracted_to_predicted = {
-                extracted: predicted
-                for predicted, extracted in dataset_config.prompt_label_mapping.items()
-            }
-            model_output.predicted_labels = [
-                extracted_to_predicted.get(label, label).lower()
-                for label in extracted_labels
-            ]
+            if pred2extracted := dataset_config.prompt_label_mapping:
+                extracted_to_predicted = {
+                    extracted: predicted
+                    for predicted, extracted in pred2extracted.items()
+                }
+                model_output.predicted_labels = [
+                    extracted_to_predicted.get(label, label).lower()
+                    if isinstance(label, str)
+                    else [extracted_to_predicted.get(lbl, lbl).lower() for lbl in label]
+                    for label in extracted_labels
+                ]
+            else:
+                model_output.predicted_labels = extracted_labels
 
             # Extended logging if we are running in debug mode
             if benchmark_config.debug:

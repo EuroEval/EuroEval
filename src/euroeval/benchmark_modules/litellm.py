@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import typing as t
+from copy import deepcopy
 from functools import cached_property, partial
 from time import sleep
 
@@ -186,7 +187,6 @@ CUSTOM_INFERENCE_API_PREFIXES = [
     "llamafile/",
     "litellm_proxy/",
     "lm_studio/",
-    "openai/",
 ]
 
 UNOFFICIAL_INFERENCE_API_PREFIXES = ["ordbogen/"]
@@ -373,10 +373,7 @@ class LiteLLMModel(BenchmarkModule):
             batch_indices, batch_inputs = zip(*inputs_to_run)
             successes, failures = safe_run(
                 self._generate_async(
-                    model_id=clean_model_id(
-                        model_id=self.model_config.model_id,
-                        benchmark_config=self.benchmark_config,
-                    ),
+                    model_id=self.model_config.model_id,
                     inputs=list(batch_inputs),
                     max_concurrent_calls=self.buffer["max_concurrent_calls"],
                     **generation_kwargs,
@@ -809,13 +806,19 @@ class LiteLLMModel(BenchmarkModule):
             InvalidBenchmark:
                 If the model input is invalid.
         """
+        cleaned_model_id = clean_model_id(
+            model_id=model_id, benchmark_config=self.benchmark_config
+        )
+
         # Create a LiteLLM router, which will ensure that we only use a single client
         # for all the requests, preventing "too many open files" errors
         router = Router(
             model_list=[
                 litellm.DeploymentTypedDict(
-                    model_name=self.model_config.model_id,
-                    litellm_params=litellm.LiteLLMParamsTypedDict(model=model_id),
+                    model_name=cleaned_model_id,
+                    litellm_params=litellm.LiteLLMParamsTypedDict(
+                        model=cleaned_model_id
+                    ),
                 )
             ]
         )
@@ -830,11 +833,7 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.atext_completion(
-                        model=clean_model_id(
-                            model_id=model_id, benchmark_config=self.benchmark_config
-                        ),
-                        prompt=input_,
-                        **generation_kwargs,
+                        model=cleaned_model_id, prompt=input_, **generation_kwargs
                     ),
                     semaphore=semaphore,
                 )
@@ -850,11 +849,7 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.acompletion(
-                        model=clean_model_id(
-                            model_id=model_id, benchmark_config=self.benchmark_config
-                        ),
-                        messages=input_,
-                        **generation_kwargs,
+                        model=cleaned_model_id, messages=input_, **generation_kwargs
                     ),
                     semaphore=semaphore,
                 )
@@ -1624,7 +1619,13 @@ class LiteLLMModel(BenchmarkModule):
                     "enable it.",
                     level=logging.DEBUG,
                 )
-            elif supports_response_schema(model=self.model_config.model_id):
+            # Skip litellm's support check when using a custom base_api URL, as
+            # litellm can only reliably verify support for their official API providers,
+            # not custom endpoints.
+            # We assume custom endpoint models support structured generation.
+            elif self.benchmark_config.api_base is not None or supports_response_schema(
+                model=self.model_config.model_id
+            ):
                 if dataset_config.task == NER:
                     ner_tag_names = list(dataset_config.prompt_label_mapping.values())
                     keys_and_their_types: dict[str, t.Any] = {
@@ -1719,10 +1720,7 @@ class LiteLLMModel(BenchmarkModule):
         for _ in range(num_attempts := 10):
             _, failures = safe_run(
                 self._generate_async(
-                    model_id=clean_model_id(
-                        model_id=self.model_config.model_id,
-                        benchmark_config=self.benchmark_config,
-                    ),
+                    model_id=self.model_config.model_id,
                     inputs=[test_input],
                     max_concurrent_calls=1,
                     **generation_kwargs,
@@ -1868,29 +1866,31 @@ def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
     Returns:
         The cleaned model ID.
     """
+    new_model_id = deepcopy(model_id)
+
     # Remove unofficial prefixes
     for unofficial_prefix in UNOFFICIAL_INFERENCE_API_PREFIXES:
-        model_id = re.sub(
-            pattern=rf"^{re.escape(unofficial_prefix)}", repl="", string=model_id
+        new_model_id = re.sub(
+            pattern=rf"^{re.escape(unofficial_prefix)}", repl="", string=new_model_id
         )
 
     if benchmark_config.api_base is not None and not any(
-        model_id.startswith(prefix) for prefix in CUSTOM_INFERENCE_API_PREFIXES
+        new_model_id.startswith(prefix) for prefix in CUSTOM_INFERENCE_API_PREFIXES
     ):
         if benchmark_config.generative_type == GenerativeType.BASE:
             prefix = "text-completion-openai/"
         else:
             prefix = "openai/"
-        model_id = prefix + model_id
+        new_model_id = prefix + new_model_id
 
     # When we want to evaluate an OpenAI model on a custom inference server, such as HF
     # inference endpoints, LiteLLM gets confused since it's already using the `openai/`
     # prefix. We thus have to add it twice, and this hack here is to ensure that we
     # don't store the results with model ID `openai/openai/...`.
-    elif benchmark_config.api_base is not None and model_id.startswith("openai/"):
-        model_id = "openai/openai/" + re.sub(r"(openai/)*", "", model_id)
+    elif benchmark_config.api_base is not None and new_model_id.startswith("openai/"):
+        new_model_id = "openai/openai/" + re.sub(r"(openai/)*", "", new_model_id)
 
-    return model_id
+    return new_model_id
 
 
 def set_up_benchmark_config_for_model(

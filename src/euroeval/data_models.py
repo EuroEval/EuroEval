@@ -982,7 +982,7 @@ class GenerativeModelOutput:
     """
 
     sequences: c.Sequence[str]
-    predicted_labels: c.Sequence[str] | None = None
+    predicted_labels: c.Sequence | None = None
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
     metadatas: list["HashableDict | None"] = field(default_factory=list)
 

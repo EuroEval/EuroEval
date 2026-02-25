@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v16.16.1] - 2026-02-25
+
+### Fixed
+
+- LLM-as-a-judge outputs were not cached correctly - this has now been fixed.
+
+## [v16.16.0] - 2026-02-25
+
 ### Added
 
 - We now add all metadata (including ground truth labels, if applicable) to the model
@@ -23,6 +31,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - v16.15.0 introduced an error related to the parsing of safetensors metadata from
   adapter models. This has now been fixed.
+- LiteLLM's structured output support check was failing for custom API URLs, as it can
+  only reliably verify official providers. This check is now skipped for custom
+  endpoints, and we assume they support structured outputs. This was added by
+  @viggo-gascou ✨
+- Fixed issue when evaluating models on custom inference APIs that the model ID would be
+  assigned the `openai/openai/` prefix. This should only happen if the model ID starts
+  with `openai/`, such as `openai/gpt-oss-20b`, for instance (this is because LiteLLM
+  attaches a special meaning to the `openai/` prefix). This has been fixed now.
+- When evaluating models on a custom inference API with a task that uses LLM-as-a-judge
+  metrics, an error caused the same model to be the judge. We now disallow judges to run
+  on custom inference APIs to solve this. Support for running local judges in this sense
+  could be supported in the future.
 
 ## [v16.15.0] - 2026-02-18
 
