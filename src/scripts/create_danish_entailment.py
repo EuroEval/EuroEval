@@ -47,9 +47,7 @@ def main() -> None:
             # Skip header/dummy rows and rows with unexpected labels
             if label not in {"true", "false", "neutral"}:
                 continue
-            rows.append(
-                dict(premise=premise, hypothesis=hypothesis, label=label)
-            )
+            rows.append(dict(premise=premise, hypothesis=hypothesis, label=label))
 
     df = pd.DataFrame(rows)
 
@@ -62,9 +60,7 @@ def main() -> None:
     df["label"] = df["label"].map(label_mapping)
 
     # Build the combined `text` field used by the EuroEval evaluation framework
-    df["text"] = (
-        "Udsagn 1: " + df["premise"] + "\nUdsagn 2: " + df["hypothesis"]
-    )
+    df["text"] = "Udsagn 1: " + df["premise"] + "\nUdsagn 2: " + df["hypothesis"]
 
     # Keep only the columns needed for evaluation
     df = df[["text", "label"]].drop_duplicates().reset_index(drop=True)

@@ -15,8 +15,8 @@ NLI_TEMPLATES: dict["Language", PromptConfig] = {
         ),
         default_prompt_prefix="Følgende er par af udsagn og om det andet udsagn følger "
         "af det første, hvilket kan være {labels_str}.",
-        default_prompt_template="Udsagn: {text}\nEntailment: {label}",
-        default_instruction_prompt="Udsagn: {text}\n\nBestem om det andet udsagn følger "
+        default_prompt_template="{text}\nEntailment: {label}",
+        default_instruction_prompt="{text}\n\nBestem om det andet udsagn følger "
         "af det første udsagn. Svar kun med {labels_str}, og intet andet.",
-    ),
+    )
 }
