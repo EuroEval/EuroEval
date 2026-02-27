@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   [NorSumm dataset](https://github.com/SamiaTouileb/NorSumm). The splits are given by
   14 / 16 / 33 samples for train / val / test, respectively. Both datasets are marked as
   `unofficial` for now.
-- Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
+- Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
 
 ## [v16.16.1] - 2026-02-25

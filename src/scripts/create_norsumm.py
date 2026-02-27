@@ -3,7 +3,6 @@
 # dependencies = [
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
-#     "pandas==2.2.0",
 #     "requests==2.32.3",
 # ]
 # ///
@@ -37,9 +36,7 @@ def load_norsumm(split: str) -> list[dict]:
     return response.json()
 
 
-def process_records(
-    records: list[dict], lang: str
-) -> list[dict[str, str | list[str]]]:
+def process_records(records: list[dict], lang: str) -> list[dict[str, str | list[str]]]:
     """Process raw NorSumm records into EuroEval format.
 
     Args:
