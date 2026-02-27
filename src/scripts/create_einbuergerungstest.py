@@ -13,6 +13,7 @@
 """Create the Einbürgerungstest dataset and upload it to the HF Hub."""
 
 import re
+from collections import Counter
 
 import pandas as pd
 import requests
@@ -20,7 +21,14 @@ from bs4 import BeautifulSoup, Tag
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 
-from .constants import CHOICES_MAPPING
+from .constants import (
+    CHOICES_MAPPING,
+    MAX_NUM_CHARS_IN_INSTRUCTION,
+    MAX_NUM_CHARS_IN_OPTION,
+    MAX_REPETITIONS,
+    MIN_NUM_CHARS_IN_INSTRUCTION,
+    MIN_NUM_CHARS_IN_OPTION,
+)
 
 BASE_URL = "https://www.einbuergerungstest-online.eu"
 FRAGEN_URL = f"{BASE_URL}/fragen/"
@@ -30,6 +38,53 @@ def main() -> None:
     """Create the Einbürgerungstest dataset and upload it to the HF Hub."""
     # Scrape the questions
     df = scrape_questions()
+
+    # Remove the samples with overly short or long texts
+    df = df.loc[
+        (df.instruction.str.len() >= MIN_NUM_CHARS_IN_INSTRUCTION)
+        & (df.instruction.str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION)
+        & (df.option_a.str.len() >= MIN_NUM_CHARS_IN_OPTION)
+        & (df.option_a.str.len() <= MAX_NUM_CHARS_IN_OPTION)
+        & (df.option_b.str.len() >= MIN_NUM_CHARS_IN_OPTION)
+        & (df.option_b.str.len() <= MAX_NUM_CHARS_IN_OPTION)
+        & (df.option_c.str.len() >= MIN_NUM_CHARS_IN_OPTION)
+        & (df.option_c.str.len() <= MAX_NUM_CHARS_IN_OPTION)
+        & (df.option_d.str.len() >= MIN_NUM_CHARS_IN_OPTION)
+        & (df.option_d.str.len() <= MAX_NUM_CHARS_IN_OPTION)
+    ]
+
+    def is_repetitive(text: str) -> bool:
+        """Return True if the text is repetitive."""
+        max_repetitions = max(Counter(text.split()).values())
+        return max_repetitions > MAX_REPETITIONS
+
+    # Remove overly repetitive samples
+    df = df.loc[
+        ~df.instruction.apply(is_repetitive)
+        & ~df.option_a.apply(is_repetitive)
+        & ~df.option_b.apply(is_repetitive)
+        & ~df.option_c.apply(is_repetitive)
+        & ~df.option_d.apply(is_repetitive)
+    ]
+    assert isinstance(df, pd.DataFrame)
+
+    # Make a `text` column with all the options in it
+    df["text"] = [
+        row.instruction.replace("\n", " ").strip()
+        + f"\n{CHOICES_MAPPING['de']}:\n"
+        + "a. "
+        + row.option_a.replace("\n", " ").strip()
+        + "\nb. "
+        + row.option_b.replace("\n", " ").strip()
+        + "\nc. "
+        + row.option_c.replace("\n", " ").strip()
+        + "\nd. "
+        + row.option_d.replace("\n", " ").strip()
+        for _, row in df.iterrows()
+    ]
+
+    # Only keep the `text` and `label` columns
+    df = df[["text", "label"]]
 
     # Remove duplicates
     df.drop_duplicates(inplace=True)
@@ -74,41 +129,63 @@ def scrape_questions() -> pd.DataFrame:
     """Scrape questions from the Einbürgerungstest website.
 
     Returns:
-        A DataFrame with columns 'text' and 'label'.
+        A DataFrame with columns 'instruction', 'option_a', 'option_b', 'option_c',
+        'option_d', and 'label'.
     """
     response = requests.get(FRAGEN_URL, timeout=30)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, "lxml")
 
-    texts: list[str] = []
+    instructions: list[str] = []
+    option_as: list[str] = []
+    option_bs: list[str] = []
+    option_cs: list[str] = []
+    option_ds: list[str] = []
     labels: list[str] = []
 
     # The page lists all questions; find each question block
     # Try common patterns used on quiz/test websites
-    question_blocks = soup.find_all("div", class_=re.compile(r"frage|question|item", re.I))
+    question_blocks = soup.find_all(
+        "div", class_=re.compile(r"frage|question|item", re.I)
+    )
     if not question_blocks:
         question_blocks = soup.find_all("article")
     if not question_blocks:
-        question_blocks = soup.find_all("li", class_=re.compile(r"frage|question", re.I))
+        question_blocks = soup.find_all(
+            "li", class_=re.compile(r"frage|question", re.I)
+        )
 
     for block in question_blocks:
         result = _parse_question_block(block)
         if result is not None:
-            text, label = result
-            texts.append(text)
+            instruction, options, label = result
+            instructions.append(instruction)
+            option_as.append(options["a"])
+            option_bs.append(options["b"])
+            option_cs.append(options["c"])
+            option_ds.append(options["d"])
             labels.append(label)
 
-    if not texts:
+    if not instructions:
         # Fallback: try parsing the full page differently
-        texts, labels = _parse_page_fallback(soup)
+        instructions, option_as, option_bs, option_cs, option_ds, labels = (
+            _parse_page_fallback(soup)
+        )
 
-    df = pd.DataFrame({"text": texts, "label": labels})
+    df = pd.DataFrame(
+        {
+            "instruction": instructions,
+            "option_a": option_as,
+            "option_b": option_bs,
+            "option_c": option_cs,
+            "option_d": option_ds,
+            "label": labels,
+        }
+    )
     return df
 
 
-def _parse_question_block(
-    block: Tag,
-) -> tuple[str, str] | None:
+def _parse_question_block(block: Tag) -> tuple[str, dict[str, str], str] | None:
     """Parse a single question block from the HTML.
 
     Args:
@@ -116,19 +193,21 @@ def _parse_question_block(
             The HTML block containing the question.
 
     Returns:
-        A tuple of (text, label) where text is the formatted question with choices
-        and label is the correct answer letter ('a', 'b', 'c', or 'd'), or None if
-        the block could not be parsed.
+        A tuple of (instruction, options, label) where instruction is the question
+        text, options is a dict mapping 'a'/'b'/'c'/'d' to option texts, and label
+        is the correct answer letter, or None if the block could not be parsed.
     """
     # Try to extract question text
-    question_el = block.find(class_=re.compile(r"frage|question.?text|frage.?text", re.I))
+    question_el = block.find(
+        class_=re.compile(r"frage|question.?text|frage.?text", re.I)
+    )
     if question_el is None:
         question_el = block.find(["h2", "h3", "h4", "p"])
     if question_el is None:
         return None
 
-    question_text = clean_text(question_el.get_text())
-    if not question_text:
+    instruction = clean_text(question_el.get_text())
+    if not instruction:
         return None
 
     # Try to find answer options
@@ -162,16 +241,12 @@ def _parse_question_block(
     if len(options) != 4 or correct_label is None:
         return None
 
-    text = (
-        question_text
-        + f"\n{CHOICES_MAPPING['de']}:\n"
-        + "\n".join(f"{letter}. {options[letter]}" for letter in "abcd")
-    )
-
-    return text, correct_label
+    return instruction, options, correct_label
 
 
-def _parse_page_fallback(soup: BeautifulSoup) -> tuple[list[str], list[str]]:
+def _parse_page_fallback(
+    soup: BeautifulSoup,
+) -> tuple[list[str], list[str], list[str], list[str], list[str], list[str]]:
     """Fallback parser for when the main parser fails.
 
     Tries to find questions and answers from the page using a different approach,
@@ -182,9 +257,13 @@ def _parse_page_fallback(soup: BeautifulSoup) -> tuple[list[str], list[str]]:
             The BeautifulSoup object for the full page.
 
     Returns:
-        A tuple of (texts, labels) lists.
+        A tuple of (instructions, option_as, option_bs, option_cs, option_ds, labels).
     """
-    texts: list[str] = []
+    instructions: list[str] = []
+    option_as: list[str] = []
+    option_bs: list[str] = []
+    option_cs: list[str] = []
+    option_ds: list[str] = []
     labels: list[str] = []
 
     # Look for question patterns in any text block
@@ -197,7 +276,7 @@ def _parse_page_fallback(soup: BeautifulSoup) -> tuple[list[str], list[str]]:
 
         # Look for question numbers like "1.", "Frage 1", etc.
         if re.match(r"^(Frage\s+)?\d+[.)]\s+\S", line):
-            question_text = re.sub(r"^(Frage\s+)?\d+[.)]\s+", "", line).strip()
+            instruction = re.sub(r"^(Frage\s+)?\d+[.)]\s+", "", line).strip()
 
             options: dict[str, str] = {}
             correct_label: str | None = None
@@ -220,19 +299,18 @@ def _parse_page_fallback(soup: BeautifulSoup) -> tuple[list[str], list[str]]:
                     break
 
             if len(options) == 4 and correct_label is not None:
-                text = (
-                    question_text
-                    + f"\n{CHOICES_MAPPING['de']}:\n"
-                    + "\n".join(f"{letter}. {options[letter]}" for letter in "abcd")
-                )
-                texts.append(text)
+                instructions.append(instruction)
+                option_as.append(options["a"])
+                option_bs.append(options["b"])
+                option_cs.append(options["c"])
+                option_ds.append(options["d"])
                 labels.append(correct_label)
                 i = j
                 continue
 
         i += 1
 
-    return texts, labels
+    return instructions, option_as, option_bs, option_cs, option_ds, labels
 
 
 def clean_text(text: str) -> str:
