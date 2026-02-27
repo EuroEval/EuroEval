@@ -152,3 +152,12 @@ WINOGRANDE_DE_CONFIG = DatasetConfig(
     labels=["a", "b"],
     unofficial=True,
 )
+
+EINBUERGERUNGSTEST_CONFIG = DatasetConfig(
+    name="einbuergerungstest",
+    pretty_name="Einbürgerungstest",
+    source="EuroEval/einbuergerungstest",
+    task=KNOW,
+    languages=[GERMAN],
+    unofficial=True,
+)
