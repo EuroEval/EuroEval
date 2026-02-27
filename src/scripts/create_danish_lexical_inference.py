@@ -33,6 +33,7 @@ def main() -> None:
 
     # Parse all the inference text files from the password-protected sub-archives
     records: list[dict[str, str]] = []
+    num_skipped = 0
     with ZipFile(file=io.BytesIO(initial_bytes=response.content)) as outer_zip:
         role_names = ["AGENTIVE", "CONSTITUTIVE", "FORMAL", "TELIC"]
         for role in role_names:
@@ -53,12 +54,23 @@ def main() -> None:
                         record = parse_line(line=line)
                         if record is not None:
                             records.append(record)
+                        else:
+                            num_skipped += 1
+
+    if num_skipped > 0:
+        print(f"Warning: skipped {num_skipped} malformed lines during parsing.")
 
     df = pd.DataFrame(records)
 
     # Remove duplicates and reset the index
     df.drop_duplicates(inplace=True)
     df.reset_index(drop=True, inplace=True)
+
+    expected_num_samples = 1020
+    assert len(df) == expected_num_samples, (
+        f"Expected {expected_num_samples} samples after deduplication, "
+        f"but got {len(df)}. The upstream dataset may have changed."
+    )
 
     # Create validation split
     val_size = 64

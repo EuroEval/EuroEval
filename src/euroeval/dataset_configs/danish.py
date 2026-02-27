@@ -180,7 +180,7 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
 
 DANISH_LEXICAL_INFERENCE_CONFIG = DatasetConfig(
     name="danish-lexical-inference",
-    pretty_name="the Danish Lexical Inference dataset",
+    pretty_name="Danish Lexical Inference",
     source="EuroEval/danish-lexical-inference",
     task=LA,
     languages=[DANISH],
