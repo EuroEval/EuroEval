@@ -107,32 +107,32 @@ def make_splits(
 
     stratify_col = test_df["subject"] if "subject" in test_df.columns else None
 
-    # Sample val split from test source, stratified by subject
-    if stratify_col is not None and stratify_col.nunique() <= val_size:
+    # Sample val split from test source, stratified by subject where possible
+    n_val = min(val_size, len(test_df))
+    try:
         val_df_final, remaining_df = train_test_split(
             test_df,
-            train_size=val_size,
+            train_size=n_val,
             random_state=4242,
             stratify=stratify_col,
         )
-    else:
-        val_df_final = test_df.sample(
-            n=min(val_size, len(test_df)), random_state=4242, replace=False
-        )
+    except ValueError:
+        val_df_final = test_df.sample(n=n_val, random_state=4242, replace=False)
         remaining_df = test_df[~test_df.index.isin(val_df_final.index)]
 
-    # Sample test split from remaining, stratified by subject
+    # Sample test split from remaining, stratified by subject where possible
     remaining_stratify = (
         remaining_df["subject"] if "subject" in remaining_df.columns else None
     )
-    if remaining_stratify is not None and remaining_stratify.nunique() <= test_size:
+    n_test = min(test_size, max(0, len(remaining_df) - 1))
+    try:
         test_df_final, _ = train_test_split(
             remaining_df,
-            train_size=min(test_size, len(remaining_df) - 1),
+            train_size=n_test,
             random_state=4242,
             stratify=remaining_stratify,
         )
-    else:
+    except ValueError:
         test_df_final = remaining_df.sample(
             n=min(test_size, len(remaining_df)), random_state=4242, replace=False
         )

@@ -387,7 +387,7 @@ professional exams, covering 57 topics including regional knowledge.
 
 The original dataset consists of a 'validation' split used as training data and a 'test' split from which val and test sets are sampled. The training split is capped at 1,024 samples from the validation split, while 256 and 2,048 samples are drawn from the test split for the val and test sets, respectively, with stratification based on the subject. The dataset is sourced from [CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44).
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {
