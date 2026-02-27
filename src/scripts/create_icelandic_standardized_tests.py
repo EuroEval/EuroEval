@@ -250,8 +250,7 @@ def extract_multiple_choice_questions(
         if correct_answer not in LABEL_LETTERS:
             continue
         text = format_question_text(
-            question=question_data["question"],
-            options=question_data["options"],
+            question=question_data["question"], options=question_data["options"]
         )
         if text is None:
             continue
@@ -270,10 +269,10 @@ def extract_text_from_pdf(pdf_bytes: bytes) -> str:
     Returns:
         The extracted text content.
     """
-    doc = fitz.open(stream=io.BytesIO(pdf_bytes), filetype="pdf")
-    text_parts = []
-    for page in doc:
-        text_parts.append(page.get_text())
+    with fitz.open(stream=io.BytesIO(pdf_bytes), filetype="pdf") as doc:
+        text_parts = []
+        for page in doc:
+            text_parts.append(page.get_text())
     return "\n".join(text_parts)
 
 
@@ -303,9 +302,7 @@ def parse_answer_key(answers_text: str) -> dict[int, str]:
     return answer_key
 
 
-def parse_multiple_choice_questions(
-    test_text: str,
-) -> dict[int, dict]:
+def parse_multiple_choice_questions(test_text: str) -> dict[int, dict]:
     """Parse multiple-choice questions from the test PDF text.
 
     Args:
@@ -367,17 +364,12 @@ def parse_multiple_choice_questions(
 
         # Only keep questions with exactly 4 options (a, b, c, d)
         if set(options.keys()) == {"a", "b", "c", "d"}:
-            questions[q_num] = {
-                "question": question_text.strip(),
-                "options": options,
-            }
+            questions[q_num] = {"question": question_text.strip(), "options": options}
 
     return questions
 
 
-def format_question_text(
-    question: str, options: dict[str, str]
-) -> str | None:
+def format_question_text(question: str, options: dict[str, str]) -> str | None:
     """Format a multiple-choice question as a text string for EuroEval.
 
     Args:
