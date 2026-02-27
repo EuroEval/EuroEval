@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
   unofficial for now. This was added by @N-essuno ✨
+- Added the Danish Lexical Inference dataset
+  [danish-lexical-inference](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark/tree/main/inference),
+  based on the Danish Semantic Reasoning Benchmark. The dataset measures lexical
+  inference through the ability to determine whether a statement is true or false, given
+  two true context statements. The split is given by 128 / 64 / 828 samples for train /
+  val / test, respectively. It is marked as `unofficial` for now.
 
 ## [v16.16.1] - 2026-02-25
 
