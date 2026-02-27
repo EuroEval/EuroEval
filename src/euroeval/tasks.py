@@ -16,6 +16,7 @@ from .prompt_templates import (
     SUMM_TEMPLATES,
     TOKEN_CLASSIFICATION_TEMPLATES,
     TRANSLATION_TEMPLATES,
+    WIC_TEMPLATES,
 )
 
 LA = Task(
@@ -253,4 +254,16 @@ INSTRUCTION_FOLLOWING = Task(
     ],
     requires_zero_shot=True,
     uses_logprobs=False,
+)
+
+
+WIC = Task(
+    name="word-in-context",
+    task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+    template_dict=WIC_TEMPLATES,
+    metrics=[m.mcc_metric, m.macro_f1_metric],
+    default_num_few_shot_examples=12,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    default_labels=["same_sense", "different_sense"],
+    uses_logprobs=True,
 )
