@@ -372,6 +372,69 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset global-mmlu-el
 ```
 
+### Unofficial: INCLUDE-el
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a comprehensive
+knowledge- and reasoning-centric benchmark that evaluates multilingual LLMs across 44
+languages. It contains 4-option multiple-choice questions extracted from academic and
+professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test' split from which val and test sets are sampled. The training split is capped at 1,024 samples from the validation split, while 256 and 2,048 samples are drawn from the test split for the val and test sets, respectively, with stratification based on the subject. The dataset is sourced from [CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44).
+
+Here are a few examples from the dataset:
+
+```json
+{
+  "text": "Ποια είναι η πρωτεύουσα της Ελλάδας;\nΕπιλογές:\na. Θεσσαλονίκη\nb. Πάτρα\nc. Ηράκλειο\nd. Αθήνα",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Ποιος έγραψε την 'Οδύσσεια';\nΕπιλογές:\na. Σοφοκλής\nb. Ηρόδοτος\nc. Όμηρος\nd. Πλάτωνας",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Ποιο κυτταρικό οργανίδιο είναι υπεύθυνο για την παραγωγή ενέργειας;\nΕπιλογές:\na. Ριβόσωμα\nb. Χλωροπλάστης\nc. Μιτοχόνδριο\nd. Σύμπλεγμα Golgi",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Ακολουθούν ερωτήσεις πολλαπλών επιλογών (με απαντήσεις).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Ερώτηση: {text}
+  Απάντηση: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Ερώτηση: {text}
+
+  Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας {labels_str}, και τίποτα άλλο.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-el
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-el

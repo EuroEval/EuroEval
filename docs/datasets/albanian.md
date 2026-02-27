@@ -382,6 +382,69 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset global-mmlu-lite-sq
 ```
 
+### Unofficial: INCLUDE-sq
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a comprehensive
+knowledge- and reasoning-centric benchmark that evaluates multilingual LLMs across 44
+languages. It contains 4-option multiple-choice questions extracted from academic and
+professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test' split from which val and test sets are sampled. The training split is capped at 1,024 samples from the validation split, while 256 and 2,048 samples are drawn from the test split for the val and test sets, respectively, with stratification based on the subject. The dataset is sourced from [CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44).
+
+Here are a few examples from the dataset:
+
+```json
+{
+  "text": "Cila është kryeqyteti i Shqipërisë?\nOpsione:\na. Shkodra\nb. Durrësi\nc. Tirana\nd. Vlora",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Kush ishte autori i veprës 'Gjarpërinjtë e gjakut'?\nOpsione:\na. Ismail Kadare\nb. Naim Frashëri\nc. Gjergj Fishta\nd. Fan Noli",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Cila nga organelet e mëposhtme të qelizës është përgjegjëse për prodhimin e energjisë?\nOpsione:\na. Kloroplasti\nb. Mitokondria\nc. Ribozomi\nd. Aparati i Golxhit",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Më poshtë janë pyetje me zgjedhje të shumëfishtë (me përgjigje).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pyetje: {text}
+  Përgjigje: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pyetje: {text}
+
+  Përgjigjuni pyetjes së mësipërme duke u përgjigjur me {labels_str}, dhe asgjë tjetër.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-sq
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-sq

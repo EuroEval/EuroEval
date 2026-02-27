@@ -72,3 +72,15 @@ IFEVAL_EL_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
 )
+
+
+# Unofficial datasets ###
+
+INCLUDE_EL_CONFIG = DatasetConfig(
+    name="include-el",
+    pretty_name="INCLUDE-el",
+    source="EuroEval/include-el-mini",
+    task=KNOW,
+    languages=[GREEK],
+    unofficial=True,
+)

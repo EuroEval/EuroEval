@@ -666,6 +666,69 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc-nl
 ```
 
+### Unofficial: INCLUDE-nl
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a comprehensive
+knowledge- and reasoning-centric benchmark that evaluates multilingual LLMs across 44
+languages. It contains 4-option multiple-choice questions extracted from academic and
+professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test' split from which val and test sets are sampled. The training split is capped at 1,024 samples from the validation split, while 256 and 2,048 samples are drawn from the test split for the val and test sets, respectively, with stratification based on the subject. The dataset is sourced from [CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44).
+
+Here are a few examples from the dataset:
+
+```json
+{
+  "text": "Wat is de hoofdstad van Nederland?\nAntwoordopties:\na. Rotterdam\nb. Amsterdam\nc. Den Haag\nd. Utrecht",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Wie schreef het boek 'De aanslag'?\nAntwoordopties:\na. Harry Mulisch\nb. W.F. Hermans\nc. Gerard Reve\nd. Maarten 't Hart",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Welk organel in de cel is verantwoordelijk voor de productie van energie?\nAntwoordopties:\na. Ribosoom\nb. Chloroplast\nc. Mitochondrie\nd. Golgi-apparaat",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+
+  Beantwoord de bovenstaande vraag met {labels_str}, en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-nl
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-nl

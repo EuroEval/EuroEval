@@ -6,6 +6,7 @@ from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
     INSTRUCTION_FOLLOWING,
+    KNOW,
     LA,
     MCRC,
     NER,
@@ -125,4 +126,13 @@ IFEVAL_FI_CONFIG = DatasetConfig(
     languages=[FINNISH],
     train_split=None,
     val_split=None,
+)
+
+INCLUDE_FI_CONFIG = DatasetConfig(
+    name="include-fi",
+    pretty_name="INCLUDE-fi",
+    source="EuroEval/include-fi-mini",
+    task=KNOW,
+    languages=[FINNISH],
+    unofficial=True,
 )

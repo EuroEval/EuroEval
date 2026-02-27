@@ -73,3 +73,12 @@ LITHUANIAN_EMOTIONS_CONFIG = DatasetConfig(
     languages=[LITHUANIAN],
     unofficial=True,
 )
+
+INCLUDE_LT_CONFIG = DatasetConfig(
+    name="include-lt",
+    pretty_name="INCLUDE-lt",
+    source="EuroEval/include-lt-mini",
+    task=KNOW,
+    languages=[LITHUANIAN],
+    unofficial=True,
+)

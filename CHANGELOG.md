@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
   unofficial for now. This was added by @N-essuno ✨
+- Added the [INCLUDE](https://huggingface.co/datasets/CohereLabs/include-base-44)
+  knowledge dataset for 17 languages: Albanian, Bulgarian, Croatian, Dutch, Estonian,
+  Finnish, French, German, Greek, Hungarian, Italian, Lithuanian, Polish, Portuguese,
+  Serbian, Spanish, and Ukrainian. All are marked as unofficial for now.
 
 ## [v16.16.1] - 2026-02-25
 

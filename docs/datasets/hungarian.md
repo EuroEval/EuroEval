@@ -385,6 +385,69 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-hu
 ```
 
+### Unofficial: INCLUDE-hu
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a comprehensive
+knowledge- and reasoning-centric benchmark that evaluates multilingual LLMs across 44
+languages. It contains 4-option multiple-choice questions extracted from academic and
+professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test' split from which val and test sets are sampled. The training split is capped at 1,024 samples from the validation split, while 256 and 2,048 samples are drawn from the test split for the val and test sets, respectively, with stratification based on the subject. The dataset is sourced from [CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44).
+
+Here are a few examples from the dataset:
+
+```json
+{
+  "text": "Mi Magyarország fővárosa?\nVálaszlehetőségek:\na. Debrecen\nb. Miskolc\nc. Pécs\nd. Budapest",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Ki írta az 'Egri csillagok' regényt?\nVálaszlehetőségek:\na. Mikszáth Kálmán\nb. Móricz Zsigmond\nc. Gárdonyi Géza\nd. Jókai Mór",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Melyik sejtorganellum felelős az energiatermelésért?\nVálaszlehetőségek:\na. Riboszóma\nb. Kloroplaszt\nc. Golgi-készülék\nd. Mitokondrium",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Az alábbiakban több választási lehetőséget tartalmazó kérdések találhatók (válaszokkal együtt).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Kérdés: {text}
+  Válasz: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Kérdés: {text}
+
+  Válaszoljon a fenti kérdésre az elérhető lehetőségek közül {labels_str} használatával, és semmi mással.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-hu
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-hu

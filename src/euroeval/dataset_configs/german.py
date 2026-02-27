@@ -152,3 +152,12 @@ WINOGRANDE_DE_CONFIG = DatasetConfig(
     labels=["a", "b"],
     unofficial=True,
 )
+
+INCLUDE_DE_CONFIG = DatasetConfig(
+    name="include-de",
+    pretty_name="INCLUDE-de",
+    source="EuroEval/include-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+    unofficial=True,
+)

@@ -478,6 +478,69 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset llmzszl
 ```
 
+### Unofficial: INCLUDE-pl
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a comprehensive
+knowledge- and reasoning-centric benchmark that evaluates multilingual LLMs across 44
+languages. It contains 4-option multiple-choice questions extracted from academic and
+professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test' split from which val and test sets are sampled. The training split is capped at 1,024 samples from the validation split, while 256 and 2,048 samples are drawn from the test split for the val and test sets, respectively, with stratification based on the subject. The dataset is sourced from [CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44).
+
+Here are a few examples from the dataset:
+
+```json
+{
+  "text": "Jaka jest stolica Polski?\nOpcje:\na. Kraków\nb. Gdańsk\nc. Wrocław\nd. Warszawa",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Kto napisał powieść 'Pan Tadeusz'?\nOpcje:\na. Henryk Sienkiewicz\nb. Bolesław Prus\nc. Adam Mickiewicz\nd. Juliusz Słowacki",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Który organellum komórkowe jest odpowiedzialne za produkcję energii?\nOpcje:\na. Rybosom\nb. Chloroplast\nc. Mitochondrium\nd. Aparat Golgiego",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Poniżej znajdują się pytania wielokrotnego wyboru (z odpowiedziami).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pytanie: {text}
+  Odpowiedź: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pytanie: {text}
+
+  Odpowiedz na powyższe pytanie, używając {labels_str} i niczego więcej.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-pl
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-pl
