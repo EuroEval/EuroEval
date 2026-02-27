@@ -675,7 +675,7 @@ Dutch society (Kennis van de Nederlandse Maatschappij, KNM), covering topics suc
 Dutch history, politics, laws, culture, and social norms.
 
 The dataset contains multiple-choice questions with 4 answer options (a, b, c, d). The
-split is given by ... / 64 / 512 samples for train / val / test, respectively.
+split is given by all remaining samples / 64 / 512 samples for train / val / test, respectively.
 
 Here are a few examples from the training split:
 

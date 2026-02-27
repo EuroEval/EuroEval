@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   [Inburgeringsexamen](https://nt2taalmenu.nl/), scraped from nt2taalmenu.nl. The
   dataset consists of multiple-choice questions about Dutch society (Kennis van de
   Nederlandse Maatschappij, KNM). It is marked as `unofficial` for now.
-- Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
+- Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
 
 ## [v16.16.1] - 2026-02-25

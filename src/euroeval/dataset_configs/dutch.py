@@ -187,5 +187,6 @@ INBURGERINGSEXAMEN_CONFIG = DatasetConfig(
     source="EuroEval/inburgeringsexamen",
     task=KNOW,
     languages=[DUTCH],
+    labels=["a", "b", "c", "d"],
     unofficial=True,
 )

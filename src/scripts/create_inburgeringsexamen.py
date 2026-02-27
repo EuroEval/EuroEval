@@ -71,13 +71,22 @@ def main() -> None:
     df.drop_duplicates(inplace=True)
     df.reset_index(drop=True, inplace=True)
 
-    # Create test split from the newest data
+    # Define split sizes
     test_size = 512
+    val_size = 64
+    min_required_samples = (
+        test_size + val_size + 1
+    )  # ensure at least 1 training example
+    assert len(df) >= min_required_samples, (
+        f"Dataset has only {len(df)} samples, need at least {min_required_samples} "
+        f"(test: {test_size}, val: {val_size}, train: >=1)"
+    )
+
+    # Create test split from the newest data
     test_df = df.tail(test_size).copy()
     remaining_df = df.iloc[: len(df) - test_size].copy()
 
     # Create validation split
-    val_size = 64
     val_df = remaining_df.tail(val_size).copy()
     train_df = remaining_df.iloc[: len(remaining_df) - val_size].copy()
 
