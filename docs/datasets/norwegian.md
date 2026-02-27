@@ -1658,6 +1658,98 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset schibsted-no
 ```
 
+### Unofficial: Schibsted-front-title-no
+
+This dataset was published
+[here](https://huggingface.co/datasets/Schibsted/schibsted-front-page-titles) and
+features front-page titles of news articles from Schibsted Medias Norwegian newsrooms.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "<article text>",
+  "target_text": "<front-page title>"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Her følger nyhetsartikler med tilhørende titler.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+  Tittel: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+
+  Skriv en tittel for den ovennevnte artikkelen.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset schibsted-front-title-no
+```
+
+### Unofficial: Schibsted-seo-title-no
+
+This dataset was published
+[here](https://huggingface.co/datasets/Schibsted/schibsted-seo-titles) and features SEO
+titles of news articles from Schibsted Medias Norwegian newsrooms.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "<article text>",
+  "target_text": "<SEO title>"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Her følger nyhetsartikler med tilhørende SEO-titler.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+  SEO-tittel: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+
+  Skriv en SEO-tittel for den ovennevnte artikkelen.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset schibsted-seo-title-no
+```
+
 ### Unofficial: Personal Sum
 
 This dataset was released [here](https://github.com/SmartmediaAI/PersonalSum) and
