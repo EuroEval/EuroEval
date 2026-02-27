@@ -502,6 +502,82 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-pt
 ```
 
+### Unofficial: MultiLoKo-pt
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
+Portuguese questions are separately sourced and designed to target locally relevant topics
+for Portuguese-speaking populations.
+
+The original dataset only contains a test split. We merge all available splits, remove
+duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively (or smaller if fewer samples are
+available).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Qual é a capital de Portugal?\nOpções:\na. Porto\nb. Lisboa\nc. Braga\nd. Coimbra",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Qual rio passa pela cidade do Porto?\nOpções:\na. Tejo\nb. Guadiana\nc. Douro\nd. Mondego",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Quem escreveu Os Lusíadas?\nOpções:\na. Fernando Pessoa\nb. José Saramago\nc. Luís de Camões\nd. Eça de Queirós",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+  Opções:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Responde à pergunta acima usando só 'a', 'b', 'c' ou 'd', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-pt
+```
+
 ## Common-sense Reasoning
 
 ### GoldenSwag-pt

@@ -666,6 +666,82 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc-nl
 ```
 
+### Unofficial: MultiLoKo-nl
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Dutch
+questions are separately sourced and designed to target locally relevant topics for the
+Dutch-speaking population.
+
+The original dataset only contains a test split. We merge all available splits, remove
+duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively (or smaller if fewer samples are
+available).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Welke stad is de hoofdstad van Nederland?\nAntwoordopties:\na. Amsterdam\nb. Rotterdam\nc. Den Haag\nd. Utrecht",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Welk schilderij is gemaakt door Rembrandt van Rijn?\nAntwoordopties:\na. De Nachtwacht\nb. De Zonnebloemen\nc. De Sterrennacht\nd. De Melkweg",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Welke rivier stroomt door Amsterdam?\nAntwoordopties:\na. De Rijn\nb. De Maas\nc. Het IJ\nd. De Amstel",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Beantwoord de bovenstaande vraag met 'a', 'b', 'c' of 'd', en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-nl
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-nl

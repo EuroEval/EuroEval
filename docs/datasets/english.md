@@ -775,6 +775,82 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc
 ```
 
+### Unofficial: MultiLoKo-en
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The English
+questions are separately sourced and designed to target locally relevant topics for
+English-speaking populations.
+
+The original dataset only contains a test split. We merge all available splits, remove
+duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively (or smaller if fewer samples are
+available).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "What is the capital city of the United States?\nChoices:\na. New York City\nb. Los Angeles\nc. Washington, D.C.\nd. Chicago",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Which river flows through the Grand Canyon?\nChoices:\na. Mississippi River\nb. Colorado River\nc. Missouri River\nd. Rio Grande",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Who wrote the Declaration of Independence?\nChoices:\na. George Washington\nb. Benjamin Franklin\nc. Thomas Jefferson\nd. John Adams",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are multiple choice questions (with answers).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Choices:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Answer: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+  Choices:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Answer the above question by replying with 'a', 'b', 'c' or 'd', and nothing else.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-en
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag

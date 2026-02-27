@@ -776,6 +776,82 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset swedish-facts
 ```
 
+### Unofficial: MultiLoKo-sv
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Swedish
+questions are separately sourced and designed to target locally relevant topics for
+Swedish-speaking populations.
+
+The original dataset only contains a test split. We merge all available splits, remove
+duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively (or smaller if fewer samples are
+available).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Vilken stad är Sveriges huvudstad?\nSvarsalternativ:\na. Göteborg\nb. Malmö\nc. Stockholm\nd. Uppsala",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Vilken sjö är störst i Sverige?\nSvarsalternativ:\na. Vänern\nb. Vättern\nc. Mälaren\nd. Hjälmaren",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Vem skrev Pippi Långstrump?\nSvarsalternativ:\na. Selma Lagerlöf\nb. August Strindberg\nc. Astrid Lindgren\nd. Vilhelm Moberg",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Följande är flervalsfrågor (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Fråga: {text}
+  Svarsalternativ:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-sv
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-sv

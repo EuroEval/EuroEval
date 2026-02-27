@@ -11,6 +11,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
   unofficial for now. This was added by @N-essuno ✨
+- Added the MultiLoKo multilingual local knowledge benchmark datasets for Dutch
+  ([multiloko-nl](https://huggingface.co/datasets/EuroEval/multiloko-nl-mini)),
+  English
+  ([multiloko-en](https://huggingface.co/datasets/EuroEval/multiloko-en-mini)),
+  French
+  ([multiloko-fr](https://huggingface.co/datasets/EuroEval/multiloko-fr-mini)),
+  German
+  ([multiloko-de](https://huggingface.co/datasets/EuroEval/multiloko-de-mini)),
+  Italian
+  ([multiloko-it](https://huggingface.co/datasets/EuroEval/multiloko-it-mini)),
+  Portuguese
+  ([multiloko-pt](https://huggingface.co/datasets/EuroEval/multiloko-pt-mini)),
+  Spanish
+  ([multiloko-es](https://huggingface.co/datasets/EuroEval/multiloko-es-mini))
+  and Swedish
+  ([multiloko-sv](https://huggingface.co/datasets/EuroEval/multiloko-sv-mini)).
+  All datasets are marked as `unofficial` for now.
 
 ## [v16.16.1] - 2026-02-25
 

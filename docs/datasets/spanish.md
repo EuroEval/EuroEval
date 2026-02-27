@@ -614,6 +614,82 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-es
 ```
 
+### Unofficial: MultiLoKo-es
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Spanish
+questions are separately sourced and designed to target locally relevant topics for
+Spanish-speaking populations.
+
+The original dataset only contains a test split. We merge all available splits, remove
+duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively (or smaller if fewer samples are
+available).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "¿Cuál es la capital de España?\nOpciones:\na. Barcelona\nb. Sevilla\nc. Madrid\nd. Valencia",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "¿Qué río atraviesa Madrid?\nOpciones:\na. Ebro\nb. Guadalquivir\nc. Manzanares\nd. Tajo",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "¿Quién pintó Las Meninas?\nOpciones:\na. Francisco Goya\nb. El Greco\nc. Joan Miró\nd. Diego Velázquez",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Respuesta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pregunta: {text}
+  Opciones:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Responda la pregunta anterior usando solo 'a', 'b', 'c' o 'd', y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-es
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-es

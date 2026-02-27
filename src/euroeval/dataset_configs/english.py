@@ -152,3 +152,12 @@ WINOGRANDE_CONFIG = DatasetConfig(
     labels=["a", "b"],
     unofficial=True,
 )
+
+MULTILOKO_EN_CONFIG = DatasetConfig(
+    name="multiloko-en",
+    pretty_name="MultiLoKo-en",
+    source="EuroEval/multiloko-en-mini",
+    task=KNOW,
+    languages=[ENGLISH],
+    unofficial=True,
+)
