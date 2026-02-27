@@ -116,8 +116,8 @@ def make_splits_with_val(
     val_size = min(256, len(val_df))
     val_df_final = val_df.sample(n=val_size, random_state=4242, replace=False)
 
-    train_size = min(1024, len(test_df) - 1)
-    test_size = min(2048, len(test_df) - train_size)
+    test_size = min(2048, max(1, len(test_df) - 1024))
+    train_size = min(1024, len(test_df) - test_size)
 
     stratify_col = test_df["category"] if "category" in test_df.columns else None
     if stratify_col is not None and stratify_col.nunique() <= train_size:
