@@ -715,11 +715,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Vraag: {text}
-  Antwoordopties:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
   Antwoord: {label}
   ```
 
@@ -727,11 +722,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Vraag: {text}
-  Antwoordopties:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
 
   Beantwoord de bovenstaande vraag met 'a', 'b', 'c' of 'd', en niets anders.
   ```

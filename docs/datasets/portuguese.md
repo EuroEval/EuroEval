@@ -551,11 +551,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Pergunta: {text}
-  Opções:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
   Resposta: {label}
   ```
 
@@ -563,11 +558,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Pergunta: {text}
-  Opções:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
 
   Responde à pergunta acima usando só 'a', 'b', 'c' ou 'd', e nada mais.
   ```

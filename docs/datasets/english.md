@@ -824,11 +824,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Question: {text}
-  Choices:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
   Answer: {label}
   ```
 
@@ -836,11 +831,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Question: {text}
-  Choices:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
 
   Answer the above question by replying with 'a', 'b', 'c' or 'd', and nothing else.
   ```

@@ -825,11 +825,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Fråga: {text}
-  Svarsalternativ:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
   Svar: {label}
   ```
 
@@ -837,11 +832,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Fråga: {text}
-  Svarsalternativ:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
 
   Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
   ```
