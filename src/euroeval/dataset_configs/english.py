@@ -134,6 +134,16 @@ MMLU_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+MMLU_PRO_CONFIG = DatasetConfig(
+    name="mmlu-pro",
+    pretty_name="MMLU-Pro",
+    source="EuroEval/mmlu-pro-mini",
+    task=KNOW,
+    languages=[ENGLISH],
+    labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+    unofficial=True,
+)
+
 MULTI_WIKI_QA_EN_CONFIG = DatasetConfig(
     name="multi-wiki-qa-en",
     pretty_name="MultiWikiQA-en",
