@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added the Greek knowledge dataset [GreekMMLU](https://huggingface.co/datasets/dascim/GreekMMLU). The split is given by 1,024 / 256 / 2,048 samples for train / val / test, respectively. It is marked as `unofficial` for now.
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
   unofficial for now. This was added by @N-essuno ✨
 

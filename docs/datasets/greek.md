@@ -372,6 +372,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset global-mmlu-el
 ```
 
+### GreekMMLU
+
+GreekMMLU was published in [this paper](https://doi.org/10.48550/arXiv.2602.05150) and
+is a native Greek benchmark for massive multitask language understanding, comprising
+multiple-choice questions across 45 subject areas sourced from academic, professional,
+and governmental exams in Greece. Unlike machine-translated benchmarks, all questions
+are originally authored or sourced in Greek.
+
+The publicly released dataset consists of 16,857 samples. We use 1,024 / 256 / 2,048
+samples for our training, validation and test splits, respectively (so 3,328 samples
+used in total).
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Ποια είναι η πρωτεύουσα της Ελλάδας;\nΕπιλογές:\na. Θεσσαλονίκη\nb. Αθήνα\nc. Πάτρα\nd. Ηράκλειο",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "Ποιος φιλόσοφος έγραψε το έργο \"Πολιτεία\";\nΕπιλογές:\na. Αριστοτέλης\nb. Σωκράτης\nc. Πλάτων\nd. Ηράκλειτος",
+    "label": "c"
+}
+```
+
+```json
+{
+    "text": "Ποιο είναι το χημικό σύμβολο του νατρίου;\nΕπιλογές:\na. Na\nb. N\nc. Ni\nd. Ns",
+    "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Ακολουθούν ερωτήσεις πολλαπλών επιλογών (με απαντήσεις).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Ερώτηση: {text}
+  Απάντηση: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Ερώτηση: {text}
+
+  Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας 'a', 'b', 'c' ή 'd', και τίποτα άλλο.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset greek-mmlu
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-el
