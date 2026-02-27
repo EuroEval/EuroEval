@@ -1306,3 +1306,54 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-sv
 ```
+
+
+## Grammatical Error Detection
+
+### Unofficial: GerLangMod-sv
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the Swedish Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.
+
+The split sizes are 1,024 / 256 / 2,048 samples for training, validation and testing,
+respectively.
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Nedan är meningar och JSON-ordböcker med de grammatiska fel som förekommer i den givna meningen.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Mening: {text}
+  Grammatiska fel: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Mening: {text}
+
+  Identifiera de grammatiska felen i meningen. Du ska skriva ut detta som en JSON-ordbok med nyckeln 'fel'. Värdet ska vara en lista över felplacerade ord, precis som de visas i meningen.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `fel`
+  - `I-ERR` ➡️ `fel`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-sv
+```

@@ -1229,3 +1229,54 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-is
 ```
+
+
+## Grammatical Error Detection
+
+### Unofficial: GerLangMod-is
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the Icelandic Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.
+
+The split sizes are 1,024 / 256 / 2,048 samples for training, validation and testing,
+respectively.
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Hér fyrir neðan eru setningar og JSON orðabækur með málfræðilegum villum sem koma fyrir í viðkomandi setningu.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Setning: {text}
+  Málfræðilegar villur: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Setning: {text}
+
+  Finndu málfræðilegar villur í setningunni. Þú átt að prenta þetta sem JSON orðabók með lyklinum 'villa'. Gildið á að vera listi yfir rangt staðsett orð, nákvæmlega eins og þau koma fyrir í setningunni.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `villa`
+  - `I-ERR` ➡️ `villa`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-is
+```

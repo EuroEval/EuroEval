@@ -1803,3 +1803,104 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-no
 ```
+
+
+## Grammatical Error Detection
+
+### Unofficial: GerLangMod-nb
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the Norwegian Bokmål Universal Dependencies treebank.
+Assuming UD annotations are accurate and sentences are well-formed, the dataset contains
+permuted versions of these UD sentences where half of the verbs have been misplaced
+within their phrase boundaries. Noun-headed groups of tokens are treated as impermeable
+units so misplaced verbs cannot split them up, and no verb can be placed in the first
+position of the first phrase of each sentence to avoid creating correct polar question
+syntax.
+
+The split sizes are 1,024 / 256 / 2,048 samples for training, validation and testing,
+respectively.
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Nedenfor er setninger og JSON-ordbøker med de grammatiske feilene som forekommer i den gitte setningen.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Setning: {text}
+  Grammatiske feil: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Setning: {text}
+
+  Identifiser de grammatiske feilene i setningen. Du skal skrive dette ut som en JSON-ordbok med nøkkelen 'feil'. Verdien skal være en liste over feilplasserte ord, akkurat som de vises i setningen.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `feil`
+  - `I-ERR` ➡️ `feil`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-nb
+```
+
+### Unofficial: GerLangMod-nn
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the Norwegian Nynorsk Universal Dependencies treebank.
+Assuming UD annotations are accurate and sentences are well-formed, the dataset contains
+permuted versions of these UD sentences where half of the verbs have been misplaced
+within their phrase boundaries. Noun-headed groups of tokens are treated as impermeable
+units so misplaced verbs cannot split them up, and no verb can be placed in the first
+position of the first phrase of each sentence to avoid creating correct polar question
+syntax.
+
+The split sizes are 1,024 / 256 / 2,048 samples for training, validation and testing,
+respectively.
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Nedanfor er setningar og JSON-ordbøker med dei grammatiske feila som førekjem i den gitte setninga.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Setning: {text}
+  Grammatiske feil: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Setning: {text}
+
+  Identifiser dei grammatiske feila i setninga. Du skal skrive dette ut som ein JSON-ordbok med nøkkelen 'feil'. Verdien skal vere ei liste over feilplasserte ord, akkurat som dei viser seg i setninga.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `feil`
+  - `I-ERR` ➡️ `feil`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-nn
+```

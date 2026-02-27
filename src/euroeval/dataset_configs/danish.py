@@ -5,6 +5,7 @@ from ..languages import DANISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    GED,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -175,5 +176,14 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DANISH],
     labels=["a", "b"],
+    unofficial=True,
+)
+
+GERLANGMOD_DA_CONFIG = DatasetConfig(
+    name="gerlangmod-da",
+    pretty_name="GerLangMod-da",
+    source="EuroEval/gerlangmod-da",
+    task=GED,
+    languages=[DANISH],
     unofficial=True,
 )
