@@ -1351,3 +1351,76 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-da
 ```
+
+## Word in Context
+
+### DanWiC
+
+This dataset was published in [this
+paper](https://doi.org/10.7146/nys.v1i65.143072) and is based on the semantic module of
+the [COR.SEM resource](https://corsem.dsl.dk/). The dataset measures the ability to
+distinguish word meanings/senses in context: given two sentences containing the same
+target word, the task is to determine whether the word carries the same sense in both
+sentences.
+
+The original full dataset consists of 1,098 polysemous samples with balanced labels.
+We use a split of 128 / 64 / 906 samples for training, validation and testing,
+respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Ord: klinik\nKontekst 1: Når vi møder unge i vores klinik, som tager snus, forklarer vi dem om skaderne på tænderne, men også om, hvordan det påvirker hjernen\nKontekst 2: hun er privatpraktiserende psykoterapeut i en klinik, der har lokale i centrum af Odense",
+  "label": "same_sense"
+}
+```
+
+```json
+{
+  "text": "Ord: spand\nKontekst 1: Den blå spand er til genbrugsaffald, såsom plastic, papir, metal m.v.\nKontekst 2: Den gamle spand af en Volvo startede først efter fire hostende forsøg med selvstarteren",
+  "label": "different_sense"
+}
+```
+
+```json
+{
+  "text": "Ord: arbejdstid\nKontekst 1: Min arbejdstid er 37 timer om ugen fordelt på 5 dage\nKontekst 2: Fra næste sommer skal lærernes arbejdstid lægges fuldstændig om og tælles op time for time",
+  "label": "same_sense"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er eksempler på ord brugt i to kontekster og om de har samme betydning.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}
+  Samme betydning: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+
+  Har ordet den samme betydning i de to kontekster? Svar kun med 'ja' eller 'nej', og intet andet.
+  ```
+
+- Label mapping:
+  - `same_sense` ➡️ `ja`
+  - `different_sense` ➡️ `nej`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset danwic
+```

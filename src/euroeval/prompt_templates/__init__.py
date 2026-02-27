@@ -14,6 +14,7 @@ from .simplification import SIMPL_TEMPLATES
 from .summarization import SUMM_TEMPLATES
 from .token_classification import TOKEN_CLASSIFICATION_TEMPLATES
 from .translation import TRANSLATION_TEMPLATES
+from .wic import WIC_TEMPLATES
 
 if t.TYPE_CHECKING:
     from ..languages import Language

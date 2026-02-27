@@ -13,6 +13,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    WIC,
 )
 
 # Official datasets ###
@@ -100,6 +101,14 @@ VALEU_DA_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     bootstrap_samples=False,
+)
+
+DANWIC_CONFIG = DatasetConfig(
+    name="danwic",
+    pretty_name="DanWiC",
+    source="EuroEval/danwic",
+    task=WIC,
+    languages=[DANISH],
 )
 
 
