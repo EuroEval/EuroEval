@@ -1406,7 +1406,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Sætning: {text}
 
-  Identificer de grammatiske fejl i sætningen. Du skal outputte dette som en JSON-ordbog med nøglen 'fejl'. Værdien skal være en liste over de forkert placerede ord, præcis som de forekommer i sætningen.
+  Identificér de grammatiske fejl i sætningen. Du skal outputte dette som en JSON-ordbog med nøglen 'fejl'. Værdien skal være en liste over de forkert placerede ord, præcis som de forekommer i sætningen.
   ```
 
 - Label mapping:

@@ -28,7 +28,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="Nedenstående er sætninger og JSON-ordbøger med de "
         "grammatiske fejl, der forekommer i den givne sætning.",
         default_prompt_template="Sætning: {text}\nGrammatiske fejl: {label}",
-        default_instruction_prompt="Sætning: {text}\n\nIdentificer de grammatiske "
+        default_instruction_prompt="Sætning: {text}\n\nIdentificér de grammatiske "
         "fejl i sætningen. Du skal outputte dette som en JSON-ordbog med nøglen "
         "'fejl'. Værdien skal være en liste over de forkert placerede ord, præcis "
         "som de forekommer i sætningen.",
@@ -67,8 +67,8 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="Unten sind Sätze und JSON-Wörterbücher mit den "
         "grammatischen Fehlern, die im jeweiligen Satz vorkommen.",
         default_prompt_template="Satz: {text}\nGrammatische Fehler: {label}",
-        default_instruction_prompt="Satz: {text}\n\nIdentifiziere die grammatischen "
-        "Fehler im Satz. Du solltest dies als JSON-Wörterbuch mit dem Schlüssel "
+        default_instruction_prompt="Satz: {text}\n\nIdentifizieren Sie die grammatischen "
+        "Fehler im Satz. Sie sollten dies als JSON-Wörterbuch mit dem Schlüssel "
         "'fehler' ausgeben. Der Wert soll eine Liste der falsch platzierten Wörter "
         "sein, genau so, wie sie im Satz erscheinen.",
     ),

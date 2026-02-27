@@ -1190,7 +1190,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Satz: {text}
 
-  Identifiziere die grammatischen Fehler im Satz. Du solltest dies als JSON-Wörterbuch mit dem Schlüssel 'fehler' ausgeben. Der Wert soll eine Liste der falsch platzierten Wörter sein, genau so, wie sie im Satz erscheinen.
+  Identifizieren Sie die grammatischen Fehler im Satz. Sie sollten dies als JSON-Wörterbuch mit dem Schlüssel 'fehler' ausgeben. Der Wert soll eine Liste der falsch platzierten Wörter sein, genau so, wie sie im Satz erscheinen.
   ```
 
 - Label mapping:
