@@ -471,14 +471,12 @@ euroeval --model <model-id> --dataset lt-history
 
 ### Unofficial: INCLUDE-lt
 
-This dataset is part of [INCLUDE](https://arxiv.org/abs/2501.14249), a comprehensive
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a comprehensive
 knowledge- and reasoning-centric benchmark that evaluates multilingual LLMs across 44
 languages. It contains 4-option multiple-choice questions extracted from academic and
 professional exams, covering 57 topics including regional knowledge.
 
-The dataset is built from the
-[CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44)
-dataset.
+The original dataset consists of a 'validation' split used as training data and a 'test' split from which val and test sets are sampled. The training split is capped at 1,024 samples from the validation split, while 256 and 2,048 samples are drawn from the test split for the val and test sets, respectively, with stratification based on the subject. The dataset is sourced from [CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44).
 
 Here are a few examples from the training split:
 

@@ -14,7 +14,6 @@ from collections import Counter
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 from .constants import (
@@ -57,129 +56,90 @@ def main() -> None:
         dataset = load_dataset(path=repo_id, name=lang_name)
         assert isinstance(dataset, DatasetDict)
 
-        # Convert the dataset to a dataframe (use test split if available,
-        # otherwise use train split)
-        if "test" in dataset:
-            test_df = dataset["test"].to_pandas()
-        else:
-            test_df = dataset["train"].to_pandas()
-        assert isinstance(test_df, pd.DataFrame)
-
-        if "validation" in dataset:
-            val_df = dataset["validation"].to_pandas()
-        elif "dev" in dataset:
-            val_df = dataset["dev"].to_pandas()
-        else:
-            val_df = None
+        # Use 'validation' split as training data and 'test' split for val/test
+        train_source_df = dataset["validation"].to_pandas()
+        test_source_df = dataset["test"].to_pandas()
+        assert isinstance(train_source_df, pd.DataFrame)
+        assert isinstance(test_source_df, pd.DataFrame)
 
         # Process the dataframes
-        test_df = process_split(df=test_df, lang_code=lang_code)
+        train_source_df = process_split(df=train_source_df, lang_code=lang_code)
+        test_source_df = process_split(df=test_source_df, lang_code=lang_code)
 
-        if val_df is not None:
-            val_df = process_split(df=val_df, lang_code=lang_code)
-            train_df, val_df_final, test_df_final = make_splits_with_val(
-                val_df=val_df, test_df=test_df
-            )
-        else:
-            train_df, val_df_final, test_df_final = make_splits_no_val(df=test_df)
+        train_df, val_df, test_df = make_splits(
+            train_df=train_source_df, test_df=test_source_df
+        )
 
         # Collect datasets in a dataset dictionary
         dataset_out = DatasetDict(
             {
                 "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
-                "val": Dataset.from_pandas(val_df_final, split=Split.VALIDATION),
-                "test": Dataset.from_pandas(test_df_final, split=Split.TEST),
+                "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(test_df, split=Split.TEST),
             }
         )
 
         dataset_id = f"EuroEval/include-{lang_code}-mini"
 
-        # Remove the dataset from Hugging Face Hub if it already exists
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-
         # Push the dataset to the Hugging Face Hub
         dataset_out.push_to_hub(dataset_id, private=True)
 
 
-def make_splits_with_val(
-    val_df: pd.DataFrame, test_df: pd.DataFrame
+def make_splits(
+    train_df: pd.DataFrame, test_df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Make train/val/test splits when a validation set is available.
+    """Make train/val/test splits from the validation and test sources.
+
+    The full original validation split becomes the training split (capped at 1,024
+    samples). 256 samples are drawn from the original test split for the EuroEval
+    validation split, and a further 2,048 samples are drawn from the remainder for the
+    EuroEval test split. Both samples are stratified by the 'subject' column.
 
     Args:
-        val_df: The validation dataframe.
-        test_df: The test dataframe.
+        train_df: The processed validation dataframe (used as training source).
+        test_df: The processed test dataframe (used as val/test source).
 
     Returns:
         The final training, validation, and test dataframes.
     """
-    val_size = min(256, len(val_df))
-    val_df_final = val_df.sample(n=val_size, random_state=4242, replace=False)
+    val_size = 256
+    test_size = 2048
 
-    test_size = min(2048, max(1, len(test_df) - 1024))
-    train_size = min(1024, len(test_df) - test_size)
+    stratify_col = test_df["subject"] if "subject" in test_df.columns else None
 
-    stratify_col = test_df["category"] if "category" in test_df.columns else None
-    if stratify_col is not None and stratify_col.nunique() <= train_size:
-        train_df_final, remaining_df = train_test_split(
+    # Sample val split from test source, stratified by subject
+    if stratify_col is not None and stratify_col.nunique() <= val_size:
+        val_df_final, remaining_df = train_test_split(
             test_df,
-            train_size=train_size,
+            train_size=val_size,
             random_state=4242,
             stratify=stratify_col,
         )
     else:
-        train_df_final, remaining_df = train_test_split(
-            test_df,
-            train_size=train_size,
-            random_state=4242,
+        val_df_final = test_df.sample(
+            n=min(val_size, len(test_df)), random_state=4242, replace=False
         )
+        remaining_df = test_df[~test_df.index.isin(val_df_final.index)]
 
-    test_df_final = remaining_df.sample(
-        n=min(test_size, len(remaining_df)), random_state=4242, replace=False
+    # Sample test split from remaining, stratified by subject
+    remaining_stratify = (
+        remaining_df["subject"] if "subject" in remaining_df.columns else None
     )
-
-    # Reset the index
-    train_df_final = train_df_final.reset_index(drop=True)
-    val_df_final = val_df_final.reset_index(drop=True)
-    test_df_final = test_df_final.reset_index(drop=True)
-
-    return train_df_final, val_df_final, test_df_final
-
-
-def make_splits_no_val(
-    df: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Make train/val/test splits when no validation set is available.
-
-    Args:
-        df: The full dataframe.
-
-    Returns:
-        The final training, validation, and test dataframes.
-    """
-    train_size = min(1024, len(df) - 300)
-    val_size = min(256, len(df) - train_size - 1)
-
-    stratify_col = df["category"] if "category" in df.columns else None
-    if stratify_col is not None and stratify_col.nunique() <= train_size:
-        train_df_final, remaining_df = train_test_split(
-            df,
-            train_size=train_size,
+    if remaining_stratify is not None and remaining_stratify.nunique() <= test_size:
+        test_df_final, _ = train_test_split(
+            remaining_df,
+            train_size=min(test_size, len(remaining_df) - 1),
             random_state=4242,
-            stratify=stratify_col,
+            stratify=remaining_stratify,
         )
     else:
-        train_df_final, remaining_df = train_test_split(
-            df,
-            train_size=train_size,
-            random_state=4242,
+        test_df_final = remaining_df.sample(
+            n=min(test_size, len(remaining_df)), random_state=4242, replace=False
         )
 
-    val_df_final = remaining_df.sample(n=val_size, random_state=4242, replace=False)
-    remaining_df2 = remaining_df[~remaining_df.index.isin(val_df_final.index)]
-    test_size = min(2048, len(remaining_df2))
-    test_df_final = remaining_df2.sample(
-        n=test_size, random_state=4242, replace=False
+    # Use the full validation source as training (capped at 1,024)
+    train_df_final = train_df.sample(
+        n=min(1024, len(train_df)), random_state=4242, replace=False
     )
 
     # Reset the index
@@ -205,8 +165,8 @@ def process_split(df: pd.DataFrame, lang_code: str) -> pd.DataFrame:
     df = filter_repetitive(df=df)
     df = add_text_column(df=df, lang_code=lang_code)
     keep_cols = ["text", "label"]
-    if "category" in df.columns:
-        keep_cols.append("category")
+    if "subject" in df.columns:
+        keep_cols.append("subject")
     df = df.loc[:, keep_cols]
     df = df.drop_duplicates(inplace=False)
     df = df.reset_index(drop=True)
