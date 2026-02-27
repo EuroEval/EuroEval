@@ -211,3 +211,21 @@ WINOGRANDE_NO_CONFIG = DatasetConfig(
     labels=["a", "b"],
     unofficial=True,
 )
+
+NORSUMM_NB_CONFIG = DatasetConfig(
+    name="norsumm-nb",
+    pretty_name="NorSumm-nb",
+    source="EuroEval/norsumm-nb",
+    task=SUMM,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    unofficial=True,
+)
+
+NORSUMM_NN_CONFIG = DatasetConfig(
+    name="norsumm-nn",
+    pretty_name="NorSumm-nn",
+    source="EuroEval/norsumm-nn",
+    task=SUMM,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+    unofficial=True,
+)
