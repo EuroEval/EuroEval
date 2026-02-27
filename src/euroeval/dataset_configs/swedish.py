@@ -170,3 +170,12 @@ SWEDISH_FACTS_CONFIG = DatasetConfig(
     languages=[SWEDISH],
     unofficial=True,
 )
+
+MULTILOKO_SV_CONFIG = DatasetConfig(
+    name="multiloko-sv",
+    pretty_name="MultiLoKo-sv",
+    source="EuroEval/multiloko-sv-mini",
+    task=KNOW,
+    languages=[SWEDISH],
+    unofficial=True,
+)

@@ -552,6 +552,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-fr
 ```
 
+### Unofficial: MultiLoKo-fr
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The French
+questions are separately sourced and designed to target locally relevant topics for
+French-speaking populations.
+
+The original dataset only contains a test split. We merge all available splits, remove
+duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively (or smaller if fewer samples are
+available).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Quelle est la capitale de la France?\nChoix:\na. Lyon\nb. Marseille\nc. Paris\nd. Bordeaux",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Quel fleuve traverse Paris?\nChoix:\na. La Loire\nb. La Seine\nc. Le Rhône\nd. La Garonne",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Qui a peint La Joconde?\nChoix:\na. Picasso\nb. Monet\nc. Léonard de Vinci\nd. Renoir",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Réponse: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Répondez à la question ci-dessus par 'a', 'b', 'c' ou 'd', et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-fr
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-fr
