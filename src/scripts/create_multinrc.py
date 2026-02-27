@@ -29,11 +29,7 @@ from .constants import (
 
 LANGUAGES = ["en", "es", "fr"]
 
-LANGUAGE_SUBSET_MAPPING = {
-    "en": "english",
-    "es": "spanish",
-    "fr": "french",
-}
+LANGUAGE_SUBSET_MAPPING = {"en": "english", "es": "spanish", "fr": "french"}
 
 
 def main() -> None:
@@ -154,10 +150,7 @@ def main() -> None:
         )
 
         # Create dataset ID
-        if language == "en":
-            dataset_id = "EuroEval/multinrc-en"
-        else:
-            dataset_id = f"EuroEval/multinrc-{language}"
+        dataset_id = f"EuroEval/multinrc-{language}"
 
         # Remove the dataset from Hugging Face Hub if it already exists
         HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
