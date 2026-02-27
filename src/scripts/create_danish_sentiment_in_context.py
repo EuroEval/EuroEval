@@ -42,8 +42,7 @@ def main() -> None:
             f"Expected one TSV file in the ZIP file, but found {len(tsv_files)}."
         )
         df = pd.read_csv(
-            filepath_or_buffer=io.BytesIO(initial_bytes=tsv_files[0]),
-            sep="\t",
+            filepath_or_buffer=io.BytesIO(initial_bytes=tsv_files[0]), sep="\t"
         )
 
     # Build the 'text' column by combining the target word and context
@@ -69,12 +68,17 @@ def main() -> None:
 
     # Create validation split
     val_size = 64
-    traintest_df, val_df = train_test_split(df, test_size=val_size, random_state=4242)
+    traintest_df, val_df = train_test_split(
+        df, test_size=val_size, random_state=4242, stratify=df["label"]
+    )
 
     # Create train and test splits
     train_size = 128
     train_df, test_df = train_test_split(
-        traintest_df, train_size=train_size, random_state=4242
+        traintest_df,
+        train_size=train_size,
+        random_state=4242,
+        stratify=traintest_df["label"],
     )
 
     # Reset the indices

@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
+- Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
 - Added the Danish Sentiment in Context dataset, part of the [Danish Semantic Reasoning
   Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark). The
