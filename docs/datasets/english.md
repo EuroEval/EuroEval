@@ -701,6 +701,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu
 ```
 
+### Unofficial: MMLU-Pro
+
+This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2406.01574)
+and is a more robust and challenging version of MMLU, featuring 12,032 complex questions
+across various disciplines. Each question has 10 answer options instead of the usual 4.
+
+The original full dataset consists of 70 / 12,032 samples for validation and testing,
+respectively. We use a 1,024 / 256 / 2,048 split for training, validation and testing,
+respectively (so 3,328 samples used in total). These splits are new and there can thus be
+some overlap between the original validation and test sets and our validation and test
+sets.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "What is the first step in the process of perception?\nChoices:\na. Organizing\nb. Interpreting\nc. Selecting\nd. Evaluating\ne. Encoding\nf. Memory\ng. Attention\nh. Sensation\ni. Integration\nj. Association",
+  "label": "h"
+}
+```
+
+```json
+{
+  "text": "In the Compton effect, when an X-ray photon collides with a free electron, which of the following is conserved?\nChoices:\na. The frequency of the photon only\nb. The wavelength of the photon only\nc. Both momentum and kinetic energy\nd. Momentum only\ne. Kinetic energy only\nf. The angle of scattering only\ng. Both momentum and total energy\nh. Total energy only\ni. Neither momentum nor energy\nj. The speed of the photon only",
+  "label": "g"
+}
+```
+
+```json
+{
+  "text": "What is the term for the process by which a gene's sequence is used to synthesize a functional gene product?\nChoices:\na. Replication\nb. Mutation\nc. Recombination\nd. Translation\ne. Transcription\nf. Splicing\ng. Transduction\nh. Expression\ni. Transposition\nj. Conjugation",
+  "label": "h"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are multiple choice questions (with answers).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Answer: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Answer the above question by replying with 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i' or 'j', and nothing else.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset mmlu-pro
+```
+
 ### Unofficial: ARC
 
 This dataset was published [in this paper](https://doi.org/10.48550/arXiv.1803.05457)
