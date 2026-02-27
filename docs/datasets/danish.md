@@ -293,11 +293,22 @@ euroeval --model <model-id> --dataset scala-da
 ### Unofficial: DaLA
 
 This dataset was published in [this paper](https://arxiv.org/abs/2512.04799)
-and, similarly to ScaLA, was automatically created from the [Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master) by assuming that the documents in the treebank are correct, and corrupting the samples to create grammatically incorrect samples. 
+and, similarly to ScaLA, was automatically created from the [Danish Universal
+Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples.
 
-This is an extension of ScaLA-da based on an analysis of most common errors made by Danish speakers. It adds 12 new linguistically grounded error types on top of the existing 2 from ScaLA-da, the corruption type applied to each sentence is also indicated in the dataset (`corruption_type` column). The corruptions have been based on linguistic features (e.g. POS tags, morphology features etc.) so to both ground them on linguistic rules and ensure the unacceptability of the corrupted sentences. The corruption quality has been both automatically and manually validated as detailed in the paper.
+This is an extension of ScaLA-da based on an analysis of most common errors made by
+Danish speakers. It adds 12 new linguistically grounded error types on top of the
+existing 2 from ScaLA-da, the corruption type applied to each sentence is also indicated
+in the dataset (`corruption_type` column). The corruptions have been based on linguistic
+features (e.g. POS tags, morphology features etc.) so to both ground them on linguistic
+rules and ensure the unacceptability of the corrupted sentences. The corruption quality
+has been both automatically and manually validated as detailed in the paper.
 
-Like ScaLA-da, the original dataset consists of 5,512 samples, from which we use 1,024 / 256 / 2,048 samples for training, validation and testing, respectively (so 3,328 samples used in total).
+Like ScaLA-da, the original dataset consists of 5,512 samples, from which we use
+1,024 / 256 / 2,048 samples for training, validation and testing, respectively (so
+3,328 samples used in total).
 
 Here are a few examples from the training split:
 
@@ -358,6 +369,80 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset dala
+```
+
+## Natural Language Inference
+
+### The Danish Entailment Dataset
+
+This dataset was published in [this
+paper](https://aclanthology.org/2024.lrec-main.1421/) as part of the Danish Semantic
+Reasoning Benchmark and was developed at the Centre for Language Technology at the
+University of Copenhagen. Each sample pairs two Danish statements and asks whether the
+second statement follows from the first.
+
+The original dataset contains 319 usable samples after filtering. We use a split of
+64 / 64 / 190 samples for training, validation and testing, respectively (so 318 samples
+used in total after deduplication). The splits were created by randomly sampling from
+the full dataset.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Udsagn 1: Peter efterlod sig kone og tre små børn.\nUdsagn 2: Peter havde en kone og mindre børn.",
+  "label": "entailment"
+}
+```
+
+```json
+{
+  "text": "Udsagn 1: Peter efterlod sig kone og tre små børn.\nUdsagn 2: Peter er stadig gift med sin kone.",
+  "label": "contradiction"
+}
+```
+
+```json
+{
+  "text": "Udsagn 1: Regeringen afskaffede karaktergivning på de første tre klassetrin i grundskolen.\nUdsagn 2: Der gives ikke længere karakterer til eleverne på grundskolens mellemste klassetrin.",
+  "label": "neutral"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er par af udsagn og om det andet udsagn følger af det første, hvilket kan være 'sand', 'neutral' eller 'falsk'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Udsagn: {text}
+  Entailment: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Udsagn: {text}
+
+  Bestem om det andet udsagn følger af det første udsagn. Svar kun med 'sand', 'neutral' eller 'falsk', og intet andet.
+  ```
+
+- Label mapping:
+  - `entailment` ➡️ `sand`
+  - `neutral` ➡️ `neutral`
+  - `contradiction` ➡️ `falsk`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset danish-entailment
 ```
 
 ## Reading Comprehension
