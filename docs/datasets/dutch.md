@@ -666,6 +666,82 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc-nl
 ```
 
+### Unofficial: Inburgeringsexamen
+
+This dataset was created by scraping the Dutch civic integration exam
+(inburgeringsexamen) practice tests from
+[nt2taalmenu.nl](https://nt2taalmenu.nl/). The inburgeringsexamen tests knowledge of
+Dutch society (Kennis van de Nederlandse Maatschappij, KNM), covering topics such as
+Dutch history, politics, laws, culture, and social norms.
+
+The dataset contains multiple-choice questions with 4 answer options (a, b, c, d). The
+split is given by all remaining samples / 64 / 512 samples for train / val / test, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Wat is de hoofdstad van Nederland?\nAntwoordopties:\na. Rotterdam\nb. Amsterdam\nc. Den Haag\nd. Utrecht",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Wie is het staatshoofd van Nederland?\nAntwoordopties:\na. De minister-president\nb. De koningin of koning\nc. De voorzitter van de Tweede Kamer\nd. De burgemeester van Amsterdam",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Wat is de naam van het Nederlandse parlement?\nAntwoordopties:\na. De Senaat\nb. De Rijksdag\nc. De Staten-Generaal\nd. De Volksraad",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoordopties:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Beantwoord de bovenstaande vraag met 'a', 'b', 'c' of 'd', en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset inburgeringsexamen
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-nl

@@ -180,3 +180,13 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     labels=["a", "b"],
     unofficial=True,
 )
+
+INBURGERINGSEXAMEN_CONFIG = DatasetConfig(
+    name="inburgeringsexamen",
+    pretty_name="Inburgeringsexamen",
+    source="EuroEval/inburgeringsexamen",
+    task=KNOW,
+    languages=[DUTCH],
+    labels=["a", "b", "c", "d"],
+    unofficial=True,
+)
