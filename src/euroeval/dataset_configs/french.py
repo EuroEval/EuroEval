@@ -136,3 +136,12 @@ WINOGRANDE_FR_CONFIG = DatasetConfig(
     labels=["a", "b"],
     unofficial=True,
 )
+
+MULTINRC_FR_CONFIG = DatasetConfig(
+    name="multinrc-fr",
+    pretty_name="MultiNRC-fr",
+    source="EuroEval/multinrc-fr",
+    task=KNOW,
+    languages=[FRENCH],
+    unofficial=True,
+)
