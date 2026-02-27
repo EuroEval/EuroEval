@@ -502,6 +502,71 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-pt
 ```
 
+### Unofficial: INCLUDE-pt
+
+This dataset is part of [INCLUDE](https://arxiv.org/abs/2501.14249), a comprehensive
+knowledge- and reasoning-centric benchmark that evaluates multilingual LLMs across 44
+languages. It contains 4-option multiple-choice questions extracted from academic and
+professional exams, covering 57 topics including regional knowledge.
+
+The dataset is built from the
+[CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44)
+dataset.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Qual é a capital de Portugal?\nOpções:\na. Porto\nb. Coimbra\nc. Braga\nd. Lisboa",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Quem escreveu 'Os Lusíadas'?\nOpções:\na. Fernando Pessoa\nb. Eça de Queirós\nc. Luís de Camões\nd. José Saramago",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Qual organela celular é responsável pela produção de energia?\nOpções:\na. Ribossomo\nb. Cloroplasto\nc. Aparelho de Golgi\nd. Mitocôndria",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+
+  Responde à pergunta acima usando só {labels_str}, e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-pt
+```
+
 ## Common-sense Reasoning
 
 ### GoldenSwag-pt

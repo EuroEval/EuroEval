@@ -469,6 +469,71 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset lt-history
 ```
 
+### Unofficial: INCLUDE-lt
+
+This dataset is part of [INCLUDE](https://arxiv.org/abs/2501.14249), a comprehensive
+knowledge- and reasoning-centric benchmark that evaluates multilingual LLMs across 44
+languages. It contains 4-option multiple-choice questions extracted from academic and
+professional exams, covering 57 topics including regional knowledge.
+
+The dataset is built from the
+[CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44)
+dataset.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Koks yra Lietuvos sostinė?\nPasirinkimai:\na. Kaunas\nb. Klaipėda\nc. Šiauliai\nd. Vilnius",
+  "label": "d"
+}
+```
+
+```json
+{
+  "text": "Kas parašė romaną 'Kryžkelė'?\nPasirinkimai:\na. Vincas Krėvė\nb. Jonas Biliūnas\nc. Kristijonas Donelaitis\nd. Žemaitė",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Kuris ląstelių organelas yra atsakingas už energijos gamybą?\nPasirinkimai:\na. Ribosoma\nb. Chloroplastas\nc. Mitochondrija\nd. Golgi aparatas",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Toliau pateikti daugiavariančiai klausimai (su atsakymais).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Klausimas: {text}
+  Atsakymas: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Klausimas: {text}
+
+  Atsakykite į aukščiau pateiktą klausimą atsakydami {labels_str}, ir nieko daugiau.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-lt
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-lt

@@ -385,6 +385,71 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-hr
 ```
 
+### Unofficial: INCLUDE-hr
+
+This dataset is part of [INCLUDE](https://arxiv.org/abs/2501.14249), a comprehensive
+knowledge- and reasoning-centric benchmark that evaluates multilingual LLMs across 44
+languages. It contains 4-option multiple-choice questions extracted from academic and
+professional exams, covering 57 topics including regional knowledge.
+
+The dataset is built from the
+[CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44)
+dataset.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Koji je glavni grad Hrvatske?\nIzbori:\na. Split\nb. Rijeka\nc. Zagreb\nd. Osijek",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Tko je napisao roman 'Na rubu pameti'?\nIzbori:\na. Miroslav Krleža\nb. Antun Gustav Matoš\nc. Tin Ujević\nd. Silvije Strahimir Kranjčević",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Koja organela u stanici je odgovorna za proizvodnju energije?\nIzbori:\na. Ribosomi\nb. Kloroplasti\nc. Golgijeva tijela\nd. Mitohondriji",
+  "label": "d"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Sljedeća su pitanja s višestrukim izborom (s odgovorima).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pitanje: {text}
+  Odgovor: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pitanje: {text}
+
+  Odgovorite na gornje pitanje koristeći {labels_str}, i ništa drugo.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-hr
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-hr

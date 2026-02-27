@@ -130,3 +130,12 @@ MMLU_ET_CONFIG = DatasetConfig(
     languages=[ESTONIAN],
     unofficial=True,
 )
+
+INCLUDE_ET_CONFIG = DatasetConfig(
+    name="include-et",
+    pretty_name="INCLUDE-et",
+    source="EuroEval/include-et-mini",
+    task=KNOW,
+    languages=[ESTONIAN],
+    unofficial=True,
+)

@@ -54,3 +54,15 @@ WINOGRANDE_HR_CONFIG = DatasetConfig(
     languages=[CROATIAN],
     labels=["a", "b"],
 )
+
+
+# Unofficial datasets ###
+
+INCLUDE_HR_CONFIG = DatasetConfig(
+    name="include-hr",
+    pretty_name="INCLUDE-hr",
+    source="EuroEval/include-hr-mini",
+    task=KNOW,
+    languages=[CROATIAN],
+    unofficial=True,
+)

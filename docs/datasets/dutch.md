@@ -666,6 +666,71 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc-nl
 ```
 
+### Unofficial: INCLUDE-nl
+
+This dataset is part of [INCLUDE](https://arxiv.org/abs/2501.14249), a comprehensive
+knowledge- and reasoning-centric benchmark that evaluates multilingual LLMs across 44
+languages. It contains 4-option multiple-choice questions extracted from academic and
+professional exams, covering 57 topics including regional knowledge.
+
+The dataset is built from the
+[CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44)
+dataset.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Wat is de hoofdstad van Nederland?\nAntwoordopties:\na. Rotterdam\nb. Amsterdam\nc. Den Haag\nd. Utrecht",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Wie schreef het boek 'De aanslag'?\nAntwoordopties:\na. Harry Mulisch\nb. W.F. Hermans\nc. Gerard Reve\nd. Maarten 't Hart",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Welk organel in de cel is verantwoordelijk voor de productie van energie?\nAntwoordopties:\na. Ribosoom\nb. Chloroplast\nc. Mitochondrie\nd. Golgi-apparaat",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+
+  Beantwoord de bovenstaande vraag met {labels_str}, en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-nl
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-nl

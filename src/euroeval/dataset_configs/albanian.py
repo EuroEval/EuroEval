@@ -62,3 +62,15 @@ WINOGRANDE_SQ_CONFIG = DatasetConfig(
     languages=[ALBANIAN],
     labels=["a", "b"],
 )
+
+
+# Unofficial datasets ###
+
+INCLUDE_SQ_CONFIG = DatasetConfig(
+    name="include-sq",
+    pretty_name="INCLUDE-sq",
+    source="EuroEval/include-sq-mini",
+    task=KNOW,
+    languages=[ALBANIAN],
+    unofficial=True,
+)
