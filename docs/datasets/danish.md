@@ -360,6 +360,80 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset dala
 ```
 
+## Natural Language Inference
+
+### The Danish Entailment Dataset
+
+This dataset was published in [this
+paper](https://aclanthology.org/2024.lrec-main.1421/) as part of the Danish Semantic
+Reasoning Benchmark and was developed at the Centre for Language Technology at the
+University of Copenhagen. Each sample pairs two Danish statements and asks whether the
+second statement follows from the first.
+
+The original dataset contains 319 usable samples after filtering. We use a split of
+64 / 64 / 190 samples for training, validation and testing, respectively (so 318 samples
+used in total after deduplication). The splits were created by randomly sampling from
+the full dataset.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Udsagn 1: Peter efterlod sig kone og tre små børn.\nUdsagn 2: Peter havde en kone og mindre børn.",
+  "label": "entailment"
+}
+```
+
+```json
+{
+  "text": "Udsagn 1: Peter efterlod sig kone og tre små børn.\nUdsagn 2: Peter er stadig gift med sin kone.",
+  "label": "contradiction"
+}
+```
+
+```json
+{
+  "text": "Udsagn 1: Regeringen afskaffede karaktergivning på de første tre klassetrin i grundskolen.\nUdsagn 2: Der gives ikke længere karakterer til eleverne på grundskolens mellemste klassetrin.",
+  "label": "neutral"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er par af udsagn og om det andet udsagn følger af det første, hvilket kan være 'sand', 'neutral' eller 'falsk'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Udsagn: {text}
+  Entailment: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Udsagn: {text}
+
+  Bestem om det andet udsagn følger af det første udsagn. Svar kun med 'sand', 'neutral' eller 'falsk', og intet andet.
+  ```
+
+- Label mapping:
+  - `entailment` ➡️ `sand`
+  - `neutral` ➡️ `neutral`
+  - `contradiction` ➡️ `falsk`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset danish-entailment
+```
+
 ## Reading Comprehension
 
 ### MultiWikiQA-da

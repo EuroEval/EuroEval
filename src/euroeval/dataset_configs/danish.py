@@ -10,6 +10,7 @@ from ..tasks import (
     LA,
     MCRC,
     NER,
+    NLI,
     RC,
     SENT,
     SUMM,
@@ -100,6 +101,14 @@ VALEU_DA_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     bootstrap_samples=False,
+)
+
+DANISH_ENTAILMENT_CONFIG = DatasetConfig(
+    name="danish-entailment",
+    pretty_name="The Danish Entailment Dataset",
+    source="EuroEval/danish-entailment",
+    task=NLI,
+    languages=[DANISH],
 )
 
 

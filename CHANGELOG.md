@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
   unofficial for now. This was added by @N-essuno ✨
+- Added the new Natural Language Inference task type and the Danish Entailment Dataset
+  [`danish-entailment`](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark/tree/main/entailment).
+  The split is given by 64 / 64 / 190 samples for train / val / test, respectively.
 
 ## [v16.16.1] - 2026-02-25
 
