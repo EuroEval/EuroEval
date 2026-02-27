@@ -775,6 +775,80 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc
 ```
 
+### Unofficial: MultiNRC-en
+
+This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2507.17476)
+and consists of native-authored reasoning questions designed to assess multilingual
+reasoning ability. Unlike benchmarks that simply translate English-centric content, the
+questions are crafted by native speakers to capture linguistic and cultural nuances.
+
+The original dataset consists of over 1,000 reasoning questions. The exact split sizes
+depend on the number of samples available per language after filtering.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Which of the following best describes the relationship between supply and demand?\nChoices:\na. When supply increases, prices typically rise.\nb. When demand increases and supply remains constant, prices typically rise.\nc. When supply increases and demand remains constant, prices typically rise.\nd. When demand decreases, prices typically rise.",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "What is the primary purpose of the United Nations Security Council?\nChoices:\na. To promote international trade\nb. To maintain international peace and security\nc. To regulate global financial markets\nd. To oversee international environmental agreements",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Which of the following is an example of a renewable energy source?\nChoices:\na. Coal\nb. Natural gas\nc. Solar power\nd. Nuclear fission",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are multiple choice questions (with answers).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Options:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Answer: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+  Options:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Answer the above question by replying with 'a', 'b', 'c' or 'd', and nothing else.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multinrc-en
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag

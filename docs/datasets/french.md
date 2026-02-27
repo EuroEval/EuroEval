@@ -552,6 +552,81 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-fr
 ```
 
+### Unofficial: MultiNRC-fr
+
+This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2507.17476)
+and consists of native-authored reasoning questions designed to assess multilingual
+reasoning ability in French. Unlike benchmarks that simply translate English-centric
+content, the questions are crafted by native French speakers to capture linguistic and
+cultural nuances.
+
+The original dataset consists of over 1,000 reasoning questions. The exact split sizes
+depend on the number of samples available per language after filtering.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Quelle est la capitale de la France?\nChoix:\na. Lyon\nb. Marseille\nc. Paris\nd. Bordeaux",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Lequel des éléments suivants est un exemple de source d'énergie renouvelable?\nChoix:\na. Charbon\nb. Gaz naturel\nc. Énergie solaire\nd. Fission nucléaire",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Qu'est-ce qui caractérise principalement la démocratie représentative?\nChoix:\na. Les citoyens votent directement sur toutes les lois\nb. Les citoyens élisent des représentants pour prendre des décisions en leur nom\nc. Un seul parti politique détient le pouvoir\nd. Les décisions sont prises par des experts nommés",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Réponse: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+  Choix:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Répondez à la question ci-dessus par 'a', 'b', 'c' ou 'd', et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multinrc-fr
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-fr
