@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
   unofficial for now. This was added by @N-essuno ✨
+- Added the German knowledge dataset
+  [einbuergerungstest](https://huggingface.co/datasets/EuroEval/einbuergerungstest),
+  based on the official German citizenship test (Einbürgerungstest) published by BAMF.
+  The questions were scraped from
+  [einbuergerungstest-online.eu](https://www.einbuergerungstest-online.eu/fragen/). It
+  is marked as `unofficial` for now.
 
 ## [v16.16.1] - 2026-02-25
 

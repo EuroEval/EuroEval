@@ -690,6 +690,83 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc-de
 ```
 
+### Unofficial: Einbürgerungstest
+
+This dataset is based on the official German citizenship test (Einbürgerungstest)
+published by the [Federal Office for Migration and Refugees
+(BAMF)](https://www.bamf.de). The questions were scraped from
+[einbuergerungstest-online.eu](https://www.einbuergerungstest-online.eu/fragen/) and
+cover topics such as German history, politics, society, and the rule of law. This test
+is used to assess the knowledge required to obtain German citizenship.
+
+The original catalog consists of 310 questions, from which we create a dataset after
+removing duplicates and filtering out samples with overly short or long texts. We use a
+train / val / test split, where the test split holds the largest share of the data.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "In Deutschland dürfen Menschen offen etwas gegen die Regierung sagen, weil ...\nAntwortmöglichkeiten:\na. die Menschen Steuern zahlen.\nb. die Menschen das Recht auf freie Meinungsäußerung haben.\nc. die Regierung die Menschen um ihre Meinung bittet.\nd. die Verfassung die Regierung schützt.",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Welches Recht gehört zu den Grundrechten, die im Grundgesetz der Bundesrepublik Deutschland garantiert werden?\nAntwortmöglichkeiten:\na. Das Recht auf Arbeit\nb. Das Recht auf Wohnung\nc. Das Recht auf Asyl\nd. Das Recht auf Urlaub",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Welche Farben hat die Nationalflagge Deutschlands?\nAntwortmöglichkeiten:\na. Schwarz-Rot-Gold\nb. Blau-Weiß-Rot\nc. Grün-Weiß-Rot\nd. Schwarz-Weiß-Rot",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Frage: {text}
+  Antwortmöglichkeiten:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Antwort: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Frage: {text}
+  Antwortmöglichkeiten:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Beantworten Sie die obige Frage mit 'a', 'b', 'c' oder 'd', und nichts anderes.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset einbuergerungstest
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-de
