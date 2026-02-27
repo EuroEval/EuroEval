@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
   unofficial for now. This was added by @N-essuno ✨
+- Added the Schibsted front-page title and SEO title datasets, which contain
+  front-page titles and SEO titles of news articles from Schibsted Media's Norwegian and
+  Swedish newsrooms. The datasets have been split into separate datasets per language:
+  `schibsted-front-title-sv` and `schibsted-seo-title-sv` for Swedish, and
+  `schibsted-front-title-no` and `schibsted-seo-title-no` for Norwegian. All four
+  datasets are marked as `unofficial` for now.
 
 ## [v16.16.1] - 2026-02-25
 

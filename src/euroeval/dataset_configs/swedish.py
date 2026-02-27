@@ -107,6 +107,32 @@ SCHIBSTED_SV_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+SCHIBSTED_FRONT_TITLE_SV_CONFIG = DatasetConfig(
+    name="schibsted-front-title-sv",
+    pretty_name="Schibsted-front-title-sv",
+    source="EuroEval/schibsted-front-page-titles-sv",
+    task=SUMM,
+    languages=[SWEDISH],
+    unofficial=True,
+    prompt_prefix="Nedan följer artiklar med tillhörande rubriker.",
+    prompt_template="Artikel: {text}\nRubrik: {target_text}",
+    instruction_prompt="Artikel: {text}\n\nSkriv en rubrik för ovanstående artikel.",
+)
+
+SCHIBSTED_SEO_TITLE_SV_CONFIG = DatasetConfig(
+    name="schibsted-seo-title-sv",
+    pretty_name="Schibsted-seo-title-sv",
+    source="EuroEval/schibsted-seo-titles-sv",
+    task=SUMM,
+    languages=[SWEDISH],
+    unofficial=True,
+    prompt_prefix="Nedan följer artiklar med tillhörande SEO-rubriker.",
+    prompt_template="Artikel: {text}\nSEO-rubrik: {target_text}",
+    instruction_prompt=(
+        "Artikel: {text}\n\nSkriv en SEO-rubrik för ovanstående artikel."
+    ),
+)
+
 ARC_SV_CONFIG = DatasetConfig(
     name="arc-sv",
     pretty_name="ARC-sv",
