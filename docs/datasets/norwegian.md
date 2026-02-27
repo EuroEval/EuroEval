@@ -1726,6 +1726,162 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset personal-sum
 ```
 
+### Unofficial: NorSumm-nb
+
+This dataset was released in [this paper](https://doi.org/10.48550/arXiv.2501.07718) and
+features manually annotated summaries of Norwegian news articles written in Bokmål. The
+articles are sourced from the Norwegian event extraction dataset
+[EDEN](https://aclanthology.org/2024.lrec-main.488/), and each article is accompanied by
+three distinct gold-standard summaries authored by native Norwegian speakers.
+
+The original dataset contains 30 development and 33 test articles. We use the development
+articles for training and validation, with 14 / 16 samples for train / val, and all 33
+test articles as the test split. Each sample contains up to three reference summaries.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hvor langt strekker SVs toleranse seg? Friskoler | SV har gått til valg med toleranse og romslighet som høyt profilerte verdisaker. Det finnes tydeligvis ulike forståelser av hva begreper som toleranse og romslighet betyr. En forståelse er at de betyr å tolerere de som har en annen overbevisning enn en selv har og gi rom for denne. En annen oppfatning er at toleranse er å ha et bestemt sett av meninger og holdninger. De som ikke deler de politisk korrekte meningene er intolerante, og det er toleranseelitens plikt å slå ned på disse. Det synes som om det er det siste synet eierne av toleransebegrepet i SV og Dagbladet synes å ha. Kristin Halvorsen er ikke nådig når hun angriper de intolerante i et intervju i Dagbladet, representert ved blant andre Dagfinn Høybråten, Halvorsen forteller at hun har personlig imot han pga hans holdninger. Hun mener at han som har meninger som er så langt fra hennes gjør Norge «trangere og tristere». Han får folk til å føle seg «mislykket» og «mindreverdige». Han får folk til å «krympe», Han innynder seg hos «sære sekter» (aktive kristne i bedehus, frikirker og statskirken). I tillegg er han «fordømmende» og spiller «kynisk «med fordommer». Det koster å være uenig med Halvorsen. Hennes meningsfelle Øyvind Foss går faktisk enda lenger i sin kamp mot friskoler, særlig de kristne. De står åpenbart for et annet syn en venstresidens. De er derfor «ideologisk reaksjonære», bygger på løgn og respekterer ikke «menneskerettighetene og andres trosoppfatninger». Han mener en «flerkulturell, demokratisk rettstat» ikke kan tåle slike friskoler. Det innebærer nemlig at «mennesker blir krenket og mentalt mishandlet». I tillegg driver skoler som sosialistene ikke liker med «indoktrinering og fordømmelse av andre mennesker». Representanter for SV har til og med uttrykt at det er et «samfunnsproblem» med friskoler. En kan jo risikere at foreldre vil sende barna sine på skoler som formidler et annet verdisyn enn det som en rød regjering vil ønske. De bør derfor forbys. Men hvordan kan det være toleranse å hetse folk for livssyn? Hvordan kan det være toleranse å skjelle ut folk som mener noe annet enn en selv? Hvordan kan det være toleranse å nekte noen å drive skoler fordi de er uenige med en selv? Hvordan kan det være toleranse å nekte foreldre retten til selv å velge skole for sine barn? Er slike holdninger virkelig toleranse, romslighet og å ta hensyn til mangfoldet? Dersom å være tolerant er å bare tolerere de som er enige med seg selv, har Kristin Halvorsen og co et godt poeng. Dersom det imidlertid betyr å tolerere andres meninger, spørs det om de ikke har bommet litt.",
+  "target_text": [
+    "SV har gått til valg med toleranse og romslighet som høyt profilerte verdisaker, men det finnes tydeligvis ulike forståelser av hva slike begreper betyr. \n\n Det synes at SV og Dagbladet har en forståelse av toleranse som et bestemt sett av meninger og holdninger. \n\n De som ikke deler de politisk korrekte meningene er intolerante og det er toleranseelitens plikt å slå ned på disse. \n\n Kristin Halvorsen angriper de intolerante i et intervju i Dagbladet, representert ved blant andre Dagfinn Høybråten. \n\n Halvorsen mener Høybråten er med på å gjøre Norge «trangere og tristere». \n\n Halvorsens meningsfelle Øyvind Foss går enda lenger i sin kamp mot friskoler, særlig de kristne.",
+    "Kristin Halvorsen (SV) angriper og sier i intervju til Dagbladet at hun er personlig imot Dagfinn Høybråten, samtidig som SV har gått til valg med toleranse og romslighet som høyt profilerte verdisaker. \n\n SV kritiseres for å ikke praktisere egne verdier, når de hetser folk for sitt livssyn, og skjeller ut mennesker som har andre meninger enn dem selv. \n\n SV ønsker å forby friskoler. \n\n Øyvind Foss (SV) uttalte at de kristne friskolene bygger på løgn, og gir mennesker som blir \"krenket og mentalt mishandlet\", samtidig som skolene driver med \"indoktrinering og fordømmelse av andre mennesker\".",
+    "Sosialistisk Venstreparti går til valg på toleranse og romslighet som viktige saker, men det virker ikke som lederen i SV, Kristin Halvorsen, er særlig tolerant når det kommer til religion og livssyn. \n\n Hun har sagt at hun er imot Dagfinn Høybråten sine holdninger, og kaller KrF-lederen fordømmende. \n\n Partikollegaen hennes, Øyvind Foss, går enda lenger, og mener at særlig kristne friskoler er ideologisk reaksjonære. \n\n Skal man tillate denne formen for hets av livssyn? \n\n Hvis toleranse er å bare tolerere meninger som er like sine egne, gjør SV en god jobb. Hvis det handler om å tåle meningsmotstand, stiller de svakt."
+  ]
+}
+```
+
+```json
+{
+  "text": "Dødssyke Hannah får oppfylt sitt siste ønske likevel | Forsikringsselskapet lar henne dra til Disneyland. Får dø hjemme: Kreftsyke Hannah Jones (13) overbeviste britiske helsemyndigheter om å få slippe en hjertetransplantasjon. Hun vil heller tilbringe de siste månedene av sitt liv hjemme hos familien. Liker Disney: Hannah var i Euro Disney for flere år siden. Nå får hun oppfylt drømmen om å dra til Disneyland i USA. Overbeviste med sin modenhet: Hannah Jones fikk selv velge at hun ikke skal få et nytt hjerte. Historien om Hannah har fått stor oppmerksomhet i britiske medier, blant annet Sky News. Dødssyke Hannah Jones (13) har sagt nei til et nytt hjerte. Hun orker ikke en ny operasjon, og vil heller dø hjemme. Hannah ønsker å få tilbringe sine siste dager hjemme sammen med foreldrene og søsknene Oliver (11), Lucy (10) og Phoebe (4). Samtidig har hun en siste drøm: Å få reise til Disneyland i Orlando i USA. Fikk ikke reiseforsikring | 13-åringenes foreldre forsøkte å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av veldedige Caudwell Children. Alle barna fikk reiseforsikring. Men ikke Hannah, selv om familien prøvde hos en rekke selskaper. Det så ut til at det aldri skulle bli noe av turen. Men nå har et selskap meldt seg og sagt seg villig til å forsikre 13-åringen, melder Sky News. - Jeg er henrykt og overveldet, sier hun til TV-kanalen. - En uke vekk fra rutinene på sykehuset vil være en fin avkobling for meg og familien min, vi vil være som en vanlig familie en liten stund, sier hun. - Gleder oss | Navnet på selskapet som oppfyller Hannahs drøm er ikke kjent. Hannahs far, Andrew Jones, taker nå alle som har hjulpet familien. - Vi er veldig glade for at vi får til dette, og gleder oss til å se smilet hennes når vi kommer dit, sier han. Hannah Jones fikk konstatert leukemi da hun var fem år, og har gått på tunge medisiner i flere år. Til slutt førte medisinene til en alvorlig hjertefeil, og Hannah har i dag et hull i hjertet. Da legene foreslo en hjertetransplantasjon svarte jenta nei. Hun ville heller få lov å avslutte livet sammen med sine aller nærmeste, noe som kan bety at hun bare har seks måneder igjen å leve.",
+  "target_text": [
+    "Hannah Jones (13) fikk konstatert leukemi da hun var fem år gammel og har gått på tunge medisiner i flere år. \n\n Til slutt førte medisinene til en alvorlig hjertefeil, og Hanna har i dag et hull i hjerte. \n\n Hannah har en siste drøm om å dra til Disneyland i USA. \n\n Foreldrene prøvde å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av Caudwell Children. \n\n Alle barna fikk reiseforsikring bortsett fra Hannah og det så ut som at hun ikke kunne reise likevel. \n\n Men nå har et selskap sagt seg villig til å forsikre Hannah slik at hun og familien kan dra likevel, melder Sky News.",
+    "Dødssyke Hannah Jones (13) får oppfylt sitt siste ønske likevel. \n\n Historien om Hannah fikk stor oppmerksomhet i britiske medier da hun ble nektet reiseforsikring, og ikke kunne dra til Disneyland i USA med familien sin. \n\n Hannah fikk påvist leukemi da hun var fem år, og har gått på tunge medisiner som til slutt gav henne hull i hjertet. \n\n Hannah sa nei til hjertetransplantasjon, som betyr at hun trolig har rundt seks måneder igjen å leve. \n\n Nå har et forsikringsselskap sagt seg villig til å forsikre 13-åringen, og hun er henrykt over å kunne tilbringe en uke på ferie sammen med familien sin.",
+    "Dødssyke Hannah Jones (13) har takket nei til hjertetransplantasjon, og vil tilbringe den siste tiden med familien og reise til Disneyland. \n\n Hun orker ikke en ny hjerteoperasjon, og vil heller bruke de siste dagene sammen med foreldre og søsken. \n\n Den siste drømmen hennes er å reise til USA for å besøke Disneyland, sammen med flere syke barn. \n\n Men hun fikk først ikke reiseforsikring, før et selskap meldte seg i siste liten. \n\n Faren hennes setter stor pris på all hjelp de har fått, og gleder seg til å se smilet på datteren sin når de kommer fram."
+  ]
+}
+```
+
+```json
+{
+  "text": "Her går de to journalistene om bord i Clintons fly | Spiste middag på Kim Jong-il | Arrestert for ulovlig grensekryssing | Sa han unnskyld? Nord-Korea fornærmet Hillary Clinton | Eks-presidenten brukte under ett døgn for å få journalistene benådet fra 12 år i nordkoreansk arbeidsleir. Kona sendte Clinton til Nord-Korea | Fangene slippes fri | Journalister som forhandlingskort | Familiene ber om nåde for amerikanske journalister | Tirsdag morgen landet tidligere president Bill Clinton i Nord-Koreas hovedstad Pyongyang med ett mål for øyet: å få frigitt de to amerikanske journalistene Euna Lee og Laura Ling, som ble fengslet i kommunistlandet 17. mars i år, og i juni dømt til tolv års straffarbeid i en arbeidsleir. 20 timer senere gikk Clinton og de to journalistene om bord i eks-presidentens privatfly, på vei hjem til USA. Clinton ble mottatt med blomster og vennlige håndtrykk da han landet, og dro så i et møte med den nordkoreanske lederen, Kim Jong-il. Ifølge CNN varte møtet i én time og ett kvarter, før den tidligere presidenten og hans to medarbeidere spiste en to timer lang middag sammen med de nord-koreanske lederne. Det ble også tid til å posere for fotografene, på relativt oppstilt, nord-koreansk vis: Hva som ble sagt på møtet mellom Kim Jong-il og Clinton er ikke kjent, men ifølge flere amerikanske medier skal Clintons besøk ha åpnet en kanal for dialog mellom de to landene, som ikke har et spesielt godt forhold. Nordkoreanske medier skriver at Clinton leverte en personlig melding til Kim fra president Obama, men Det hvite hus benekter dette. Samtidig sier flere diplomater og Asia-eksperter til The Washington Times at det er svært sannsynlig at Nord-Koreas omstridte atomprogram ble diskutert.",
+  "target_text": [
+    "Tirsdag morgen landet tidligere president Bill Clinton i Nord-Koreas hovedstad Pyongyang med et mål om å få frigitt to amerikanske journalister, Euna Lee og Laura Ling. \n\n De ble fengslet 17. mars i år og i juni dømt til tolv års straffearbeid i en arbeidsleir. \n\n 20 timer etter landing i Nord-Korea gikk Clinton og de to journalistene om bord i Clintons privatfly på vei hjem til USA. \n\n Clinton hadde et møte med den nordkoreanske lederen, Kim Jong-il. \n\n Møtet skal ifølge flere amerikanske medier ha åpnet en kanal for dialog mellom de to landene, som ikke har et spesielt godt forhold. \n\n En kilde nær den amerikanske regjering understreker at besøket var et privat oppdrag for menneskerettighetene.",
+    "Et besøk av tidligere president Bill Clinton var det som måtte til for å få Nord-Korea til å løslate de to amerikanske journalistene som har vært fengslet i kommunistlandet siden 17. mars i år. \n\n Clinton landet i Pyongyang tirsdag morgen, og hadde møte og påfølgende middag med den nordkoreanske lederen Kim Jong-il, før journalistene ble løslatt. \n\n De to amerikanske journalistene Euna Lee (36) og Laura Ling (32) ble pågrepet for å ulovlig ha krysset grensen til Nord-Korea, før de senere dømt til 12 års straffarbeid i arbeidsleir. \n\n Lee og Ling skal angivelig ha arbeidet med en sak om menneskehandel, i grenseområdet mellom Kina og Nord-Korea.",
+    "Tidligere president Bill Clinton reiste til Nord-Korea i håp om å få løslatt de to amerikanske journalistene Euna Lee og Laura Ling som har vært fengslet i landet siden april. \n\n Møtet mellom Kim Jong-il varte en drøy time, før de spiste middag og poserte for pressen. \n\n En kilde nær den amerikanske regjeringen sier til CNN at USA hadde fått bekreftet at de to journalistene skulle bli satt fri. \n\n De to journalistene ble arrestert for å ha krysset grensen til Nord-Korea. \n\n Clinton skulle opprinnelig besøke Nord-Korea mot slutten av presidentperioden, men turen ble den gang avlyst på grunn av uro i Midtøsten."
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Her følger nyhetsartikler med tilhørende sammendrag.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+  Sammendrag: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+
+  Skriv et sammendrag av den ovennevnte artikkelen.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset norsumm-nb
+```
+
+### Unofficial: NorSumm-nn
+
+This dataset was released in [this paper](https://doi.org/10.48550/arXiv.2501.07718) and
+features manually annotated summaries of Norwegian news articles written in Nynorsk. The
+articles are sourced from the Norwegian event extraction dataset
+[EDEN](https://aclanthology.org/2024.lrec-main.488/), and each article is accompanied by
+three distinct gold-standard summaries authored by native Norwegian speakers.
+
+The original dataset contains 30 development and 33 test articles. We use the development
+articles for training and validation, with 14 / 16 samples for train / val, and all 33
+test articles as the test split. Each sample contains up to three reference summaries.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hvor langt strekker SVs toleranse seg? Friskoler | SV har gått til valg med toleranse og romslighet som høyt profilerte verdisaker. Det finnes tydeligvis ulike forståelser av hva begreper som toleranse og romslighet betyr. En forståelse er at de betyr å tolerere de som har en annen overbevisning enn en selv har og gi rom for denne. En annen oppfatning er at toleranse er å ha et bestemt sett av meninger og holdninger. De som ikke deler de politisk korrekte meningene er intolerante, og det er toleranseelitens plikt å slå ned på disse. Det synes som om det er det siste synet eierne av toleransebegrepet i SV og Dagbladet synes å ha. Kristin Halvorsen er ikke nådig når hun angriper de intolerante i et intervju i Dagbladet, representert ved blant andre Dagfinn Høybråten, Halvorsen forteller at hun har personlig imot han pga hans holdninger. Hun mener at han som har meninger som er så langt fra hennes gjør Norge «trangere og tristere». Han får folk til å føle seg «mislykket» og «mindreverdige». Han får folk til å «krympe», Han innynder seg hos «sære sekter» (aktive kristne i bedehus, frikirker og statskirken). I tillegg er han «fordømmende» og spiller «kynisk «med fordommer». Det koster å være uenig med Halvorsen. Hennes meningsfelle Øyvind Foss går faktisk enda lenger i sin kamp mot friskoler, særlig de kristne. De står åpenbart for et annet syn en venstresidens. De er derfor «ideologisk reaksjonære», bygger på løgn og respekterer ikke «menneskerettighetene og andres trosoppfatninger». Han mener en «flerkulturell, demokratisk rettstat» ikke kan tåle slike friskoler. Det innebærer nemlig at «mennesker blir krenket og mentalt mishandlet». I tillegg driver skoler som sosialistene ikke liker med «indoktrinering og fordømmelse av andre mennesker». Representanter for SV har til og med uttrykt at det er et «samfunnsproblem» med friskoler. En kan jo risikere at foreldre vil sende barna sine på skoler som formidler et annet verdisyn enn det som en rød regjering vil ønske. De bør derfor forbys. Men hvordan kan det være toleranse å hetse folk for livssyn? Hvordan kan det være toleranse å skjelle ut folk som mener noe annet enn en selv? Hvordan kan det være toleranse å nekte noen å drive skoler fordi de er uenige med en selv? Hvordan kan det være toleranse å nekte foreldre retten til selv å velge skole for sine barn? Er slike holdninger virkelig toleranse, romslighet og å ta hensyn til mangfoldet? Dersom å være tolerant er å bare tolerere de som er enige med seg selv, har Kristin Halvorsen og co et godt poeng. Dersom det imidlertid betyr å tolerere andres meninger, spørs det om de ikke har bommet litt.",
+  "target_text": [
+    "SV har gått til val med toleranse og det å vera romsleg som høgt profilerte verdisaker, men det fins tydelegvis ulike tolkingar av kva slike omgrep betyr. \n\n Det syns at SV og Dagbladet har ein forståing av toleranse som eit bestemt sett av meiningar og haldningar. \n\n Dei som ikkje deler dei politisk korrekte meiningane er intolerante og det er toleranseeliten si plikt å slå ned på desse. \n\n Kristin Halvorsen angrip de intolerante i eit intervju i Dagbladet, representert ved mellom anna Dagfinn Høybråten. \n\n Halvorsen meiner Høybråten er med på å gjera Norge «trongare og tristare». \n\n Halvorsen si meiningsfelle Øyvind Foss går enda lenger i sin kamp mot friskuler, særlig dei kristne.",
+    "Kristin Halvorsen (SV) angrip og seier i intervju til Dagbladet at ho er personleg imot Dagfinn Høybråten, samtidig som SV har gått til val med toleranse som høgt profilert verdisak. \n\n SV blir kritisert for å ikkje praktisera egne verdiar, når dei hetser folk for livssynet og skjeller ut menneske som har andre meiningar enn dei sjølv. \n\n SV ønsker å forby friskular. \n\n Øyvind Foss (SV) uttala at deim kristne friskulane byggjer på løgn, og gjev menneske som blir \"krenka og mentalt mishandla\", samtidig som skulane driv med \"indoktrinering og fordøming av andre menneske\".",
+    "Sosialistisk Venstreparti går til val på toleranse og romslegheit som viktige saker, men det verkar ikkje som leiaren i SV, Kristin Halvorsen, er særleg tolerant når det kjem til religion og livssyn. \n\n Ho har sagt at ho er i mot Dagfinn Høybråten sine haldningar, og kallar Krf-leiaren fordømmande. \n\n Partifella hennar, Øyvind Foss, går endå lenger, og meiner at særleg kristne friskular er ideologisk reaksjonære. \n\n Skal ein tillate denne formen for hets av livssyn? \n\n Viss toleranse er å berre tolerera meiningar som er like sine eigne, gjer SV ein god jobb. Viss det handlar om å tola meiningsmotstand, stiller dei svakt."
+  ]
+}
+```
+
+```json
+{
+  "text": "Dødssyke Hannah får oppfylt sitt siste ønske likevel | Forsikringsselskapet lar henne dra til Disneyland. Får dø hjemme: Kreftsyke Hannah Jones (13) overbeviste britiske helsemyndigheter om å få slippe en hjertetransplantasjon. Hun vil heller tilbringe de siste månedene av sitt liv hjemme hos familien. Liker Disney: Hannah var i Euro Disney for flere år siden. Nå får hun oppfylt drømmen om å dra til Disneyland i USA. Overbeviste med sin modenhet: Hannah Jones fikk selv velge at hun ikke skal få et nytt hjerte. Historien om Hannah har fått stor oppmerksomhet i britiske medier, blant annet Sky News. Dødssyke Hannah Jones (13) har sagt nei til et nytt hjerte. Hun orker ikke en ny operasjon, og vil heller dø hjemme. Hannah ønsker å få tilbringe sine siste dager hjemme sammen med foreldrene og søsknene Oliver (11), Lucy (10) og Phoebe (4). Samtidig har hun en siste drøm: Å få reise til Disneyland i Orlando i USA. Fikk ikke reiseforsikring | 13-åringenes foreldre forsøkte å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av veldedige Caudwell Children. Alle barna fikk reiseforsikring. Men ikke Hannah, selv om familien prøvde hos en rekke selskaper. Det så ut til at det aldri skulle bli noe av turen. Men nå har et selskap meldt seg og sagt seg villig til å forsikre 13-åringen, melder Sky News. - Jeg er henrykt og overveldet, sier hun til TV-kanalen. - En uke vekk fra rutinene på sykehuset vil være en fin avkobling for meg og familien min, vi vil være som en vanlig familie en liten stund, sier hun. - Gleder oss | Navnet på selskapet som oppfyller Hannahs drøm er ikke kjent. Hannahs far, Andrew Jones, taker nå alle som har hjulpet familien. - Vi er veldig glade for at vi får til dette, og gleder oss til å se smilet hennes når vi kommer dit, sier han. Hannah Jones fikk konstatert leukemi da hun var fem år, og har gått på tunge medisiner i flere år. Til slutt førte medisinene til en alvorlig hjertefeil, og Hannah har i dag et hull i hjertet. Da legene foreslo en hjertetransplantasjon svarte jenta nei. Hun ville heller få lov å avslutte livet sammen med sine aller nærmeste, noe som kan bety at hun bare har seks måneder igjen å leve.",
+  "target_text": [
+    "Hannah Jones (13) fekk konstatert leukemi då ho var fem år gamal og har gått på tunge medisinar i fleire år. \n\n Til slutt førte medisinane til ein alvorleg hjertefeil, og Hanna har i dag et hol i hjarta. \n\n Hannah har ein siste draum om å reisa til Disneyland i USA. \n\n Foreldrene prøvde å få ho med på ein gruppetur med 40 andre sjuke eller funksjonshemma ungar, arrangert av Caudwell Children. \n\n Alle ungane fekk reiseforsikring bortsett frå Hannah og det såg ut som at ho ikkje kunne reisa likevel. \n\n Men no har et selskap sagt seg villig til å forsikra Hannah slik at ho og familien kan reisa likevel, melder Sky News.",
+    "Dødssjuke Hannah Jones (13) får oppfylt sitt siste ynskje likevel. \n\n Historia om Hannah fekk stor merksemd i britiske medium då ho vart nekta reiseforsikring, og ikkje kunne reisa til Disneyland i USA med familien sin. \n\n Hannah fekk påvist leukemi da ho var fem år, og har gått på tunge medisinar som til slutt ga ho hol i hjarta. \n\n Hannah sa nei til hjertetransplantasjon, som betyr at ho truleg har rundt seks månadar igjen å leva. \n\n No har et forsikringsselskap sagt seg villig til å forsikra 13-åringen, og ho er henrykt over å kunne tilbringa en veke på ferie saman med familien sin.",
+    "Dødssjuke Hannah Jones (13) har takka nei til hjartetransplantasjon, og vil tilbringa den siste tida med familien og reisa til Disneyland. \n\n Ho orkar ikkje ein ny hjarteoperasjon, og vil heller bruka dei siste dagane med foreldra og søskena. \n\n Den siste draumen hennar er å reisa til USA for å besøka Disneyland, saman med fleire sjuke ungar. \n\n Men ho fekk først ikkje reiseforsikring, før eit selskap meldte seg i siste liten. \n\n Faren hennar set stor pris på all hjelp dei har fått, og gler seg til å sjå smilet på dottera si når dei kjem fram."
+  ]
+}
+```
+
+```json
+{
+  "text": "Her går de to journalistene om bord i Clintons fly | Spiste middag på Kim Jong-il | Arrestert for ulovlig grensekryssing | Sa han unnskyld? Nord-Korea fornærmet Hillary Clinton | Eks-presidenten brukte under ett døgn for å få journalistene benådet fra 12 år i nordkoreansk arbeidsleir. Kona sendte Clinton til Nord-Korea | Fangene slippes fri | Journalister som forhandlingskort | Familiene ber om nåde for amerikanske journalister | Tirsdag morgen landet tidligere president Bill Clinton i Nord-Koreas hovedstad Pyongyang med ett mål for øyet: å få frigitt de to amerikanske journalistene Euna Lee og Laura Ling, som ble fengslet i kommunistlandet 17. mars i år, og i juni dømt til tolv års straffarbeid i en arbeidsleir. 20 timer senere gikk Clinton og de to journalistene om bord i eks-presidentens privatfly, på vei hjem til USA. Clinton ble mottatt med blomster og vennlige håndtrykk da han landet, og dro så i et møte med den nordkoreanske lederen, Kim Jong-il. Ifølge CNN varte møtet i én time og ett kvarter, før den tidligere presidenten og hans to medarbeidere spiste en to timer lang middag sammen med de nord-koreanske lederne. Det ble også tid til å posere for fotografene, på relativt oppstilt, nord-koreansk vis: Hva som ble sagt på møtet mellom Kim Jong-il og Clinton er ikke kjent, men ifølge flere amerikanske medier skal Clintons besøk ha åpnet en kanal for dialog mellom de to landene, som ikke har et spesielt godt forhold. Nordkoreanske medier skriver at Clinton leverte en personlig melding til Kim fra president Obama, men Det hvite hus benekter dette. Samtidig sier flere diplomater og Asia-eksperter til The Washington Times at det er svært sannsynlig at Nord-Koreas omstridte atomprogram ble diskutert.",
+  "target_text": [
+    "Tysdag morgon landa tidlegare president Bill Clinton i Nord-Koreas hovudstad Pyongyang med et mål om å få frigitt to amerikanske journalistar, Euna Lee og Laura Ling. \n\n Dei blei fengsla 17. mars i år, og i juni blei dei dømd til tolv års straffarbeid i ein arbeidsleir. \n\n 20 timer etter Clinton landa i Nord-Korea gjekk han og dei to journalistane om bord i Clintons privatfly, og sette kurs på heim til USA. \n\n Clinton hadde eit møte med den nordkoreanske leiaren, Kim Jong-il. \n\n Møtet skal ifølge fleire amerikanske media ha opna ein kanal for dialog mellom dei to landa, som ikkje har eit spesielt godt forhold. \n\n Ei kjelde nær den amerikanske regjeringa understrekar at besøket var eit privat oppdrag for menneskerettigheitene.",
+    "Eit besøk av tidlegare president Bill Clinton var det som måtte til for å få Nord-Korea til å sleppa fri dei to amerikanske journalistane som har vore fengsla i kommunistlandet sidan 17. mars i år. \n\n Clinton landa i Pyongyang tysdag morgon, og hadde møte og påfølgande middag med den nordkoreanske leiaren Kim Jong-il, før journalistane vart slepne frid. \n\n Dei to amerikanske journalistane Euna Lee (36) og Laura Ling (32) vart pågripne for å ulovlig ha kryssa grensa til Nord-Korea, før dei seinare vart dømt til 12 års straffarbeid i arbeidsleir. \n\n Lee og Ling skal etter det som er opplyst ha jobba med ei sak om menneskehandel, i grenseområdet mellom Kina og Nord-Korea.",
+    "Tidlegare president Bill Clinton reiste til Nord-Korea i håp om å frigjera dei to amerikanske journalistane Euna Lee og Laura Ling som har vore fengsla i landet sidan april. \n\n Møtet mellom Kim Jong-il varte ein drøy time, før dei åt middag og poserte framfor journalistar. \n\n Ei kjelde nær den amerikanske regjeringa seier til CNN at USA hadde fått stadfesta at dei to journalistane skulle bli sett fri. \n\n Dei to journalistane vart arresterte for å ha kryssa grensa til Nord-Korea. \n\n Clinton skulle opprinneleg besøka Nord-Korea mot slutten av presidentperioden, men den vart avlyst grunna uro i Midtausten."
+  ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Her følger nyhetsartikler med tilhørende sammendrag.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+  Sammendrag: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+
+  Skriv et sammendrag av den ovennevnte artikkelen.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset norsumm-nn
+```
+
 ## European Values
 
 ### ValEU-no
