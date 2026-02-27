@@ -78,6 +78,83 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset angry-tweets
 ```
 
+### Unofficial: Danish Sentiment in Context
+
+This dataset was published in [this
+paper](https://doi.org/10.7146/nys.v1i65.143072) and is part of the [Danish
+Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+It differs from other sentiment datasets by measuring the sentiment of an individual
+word given its context, meaning the sentiment of the surrounding text may differ from
+the sentiment of the target word. The data is based on the semantic module of the [COR
+lexicon](https://aclanthology.org/2022.lrec-1.6.pdf), a human-curated lexical-semantic
+resource developed by the Society for Danish Language and Literature.
+
+The original dataset consists of 1,041 samples. We use a 128 / 64 / 849 split for
+training, validation and testing, respectively (so 1,041 samples used in total).
+
+The sentiment labels from the original dataset are on a scale from -3 (very negative)
+to +3 (very positive), which we map to `negative` (< 0), `neutral` (= 0), and
+`positive` (> 0).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Ord: brud\nKontekst: Der skete et brud på vandledningen.",
+  "label": "negative"
+}
+```
+
+```json
+{
+  "text": "Ord: glæde\nKontekst: Hun følte stor glæde ved at se sine børn lege.",
+  "label": "positive"
+}
+```
+
+```json
+{
+  "text": "Ord: hus\nKontekst: Vi bor i et hus på landet.",
+  "label": "neutral"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er ord med kontekst og ordets sentiment, som kan være 'positiv', 'neutral' eller 'negativ'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}
+  Sentiment: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+
+  Klassificer sentimentet for det angivne ord i konteksten. Svar kun med 'positiv', 'neutral' eller 'negativ', og intet andet.
+  ```
+
+- Label mapping:
+  - `positive` ➡️ `positiv`
+  - `neutral` ➡️ `neutral`
+  - `negative` ➡️ `negativ`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset danish-sentiment-in-context
+```
+
 ## Named Entity Recognition
 
 ### DANSK

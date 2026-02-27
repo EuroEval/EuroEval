@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
   unofficial for now. This was added by @N-essuno ✨
+- Added the Danish Sentiment in Context dataset, part of the [Danish Semantic Reasoning
+  Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark). The
+  dataset measures the sentiment of individual words in context. The split is 128 / 64 /
+  849 samples for train / val / test, respectively. It is marked as `unofficial` for
+  now.
 
 ## [v16.16.1] - 2026-02-25
 
