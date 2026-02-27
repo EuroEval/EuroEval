@@ -1137,8 +1137,8 @@ euroeval --model <model-id> --dataset schibsted-sv
 
 This dataset was published
 [here](https://huggingface.co/datasets/Schibsted/schibsted-front-page-titles) and
-features front-page titles of news articles from Schibsted Medias Swedish newsroom, from
-Aftonbladet.
+features front-page titles of news articles from Schibsted Media's Swedish newsroom,
+from Aftonbladet.
 
 Here are a few examples from the training split:
 
@@ -1184,7 +1184,7 @@ euroeval --model <model-id> --dataset schibsted-front-title-sv
 
 This dataset was published
 [here](https://huggingface.co/datasets/Schibsted/schibsted-seo-titles) and features
-SEO titles of news articles from Schibsted Medias Swedish newsroom, from Aftonbladet.
+SEO titles of news articles from Schibsted Media's Swedish newsroom, from Aftonbladet.
 
 Here are a few examples from the training split:
 
