@@ -1151,3 +1151,54 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-de
 ```
+
+
+## Grammatical Error Detection
+
+### Unofficial: GerLangMod-de
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the German Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.
+
+The split sizes are 1,024 / 256 / 2,048 samples for training, validation and testing,
+respectively.
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Unten sind Sätze und JSON-Wörterbücher mit den grammatischen Fehlern, die im jeweiligen Satz vorkommen.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Satz: {text}
+  Grammatische Fehler: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Satz: {text}
+
+  Identifiziere die grammatischen Fehler im Satz. Du solltest dies als JSON-Wörterbuch mit dem Schlüssel 'fehler' ausgeben. Der Wert soll eine Liste der falsch platzierten Wörter sein, genau so, wie sie im Satz erscheinen.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `fehler`
+  - `I-ERR` ➡️ `fehler`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-de
+```

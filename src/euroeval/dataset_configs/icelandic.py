@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ICELANDIC
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, GED, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -155,6 +155,15 @@ MULTI_WIKI_QA_IS_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-is",
     source="EuroEval/multi-wiki-qa-is-mini",
     task=RC,
+    languages=[ICELANDIC],
+    unofficial=True,
+)
+
+GERLANGMOD_IS_CONFIG = DatasetConfig(
+    name="gerlangmod-is",
+    pretty_name="GerLangMod-is",
+    source="EuroEval/gerlangmod-is",
+    task=GED,
     languages=[ICELANDIC],
     unofficial=True,
 )

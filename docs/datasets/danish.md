@@ -1351,3 +1351,70 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-da
 ```
+
+
+## Grammatical Error Detection
+
+### Unofficial: GerLangMod-da
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the Danish Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.
+
+The split sizes are 1,024 / 256 / 2,048 samples for training, validation and testing,
+respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "tokens": ["Han", "spiser", "mad", "."],
+  "labels": ["O", "O", "O", "O"]
+}
+```
+
+```json
+{
+  "tokens": ["Han", "mad", "spiser", "."],
+  "labels": ["O", "O", "B-ERR", "O"]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Nedenstående er sætninger og JSON-ordbøger med de grammatiske fejl, der forekommer i den givne sætning.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Sætning: {text}
+  Grammatiske fejl: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Sætning: {text}
+
+  Identificer de grammatiske fejl i sætningen. Du skal outputte dette som en JSON-ordbog med nøglen 'fejl'. Værdien skal være en liste over de forkert placerede ord, præcis som de forekommer i sætningen.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `fejl`
+  - `I-ERR` ➡️ `fejl`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-da
+```

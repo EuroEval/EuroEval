@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
   unofficial for now. This was added by @N-essuno ✨
+- Added the new grammatical error detection task and the Germanic Verb Placement Error
+  Detection datasets for Danish (`gerlangmod-da`), Dutch (`gerlangmod-nl`), Faroese
+  (`gerlangmod-fo`), German (`gerlangmod-de`), Icelandic (`gerlangmod-is`), Norwegian
+  Bokmål (`gerlangmod-nb`), Norwegian Nynorsk (`gerlangmod-nn`), and Swedish
+  (`gerlangmod-sv`), based on the
+  [GerLangMod](https://github.com/noahmanu/gerlangmod) collection. All datasets are
+  marked as unofficial for now.
 
 ## [v16.16.1] - 2026-02-25
 

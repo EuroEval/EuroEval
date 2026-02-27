@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import NORWEGIAN, NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, GED, KNOW, LA, MCRC, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -209,5 +209,23 @@ WINOGRANDE_NO_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     labels=["a", "b"],
+    unofficial=True,
+)
+
+GERLANGMOD_NB_CONFIG = DatasetConfig(
+    name="gerlangmod-nb",
+    pretty_name="GerLangMod-nb",
+    source="EuroEval/gerlangmod-nb",
+    task=GED,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    unofficial=True,
+)
+
+GERLANGMOD_NN_CONFIG = DatasetConfig(
+    name="gerlangmod-nn",
+    pretty_name="GerLangMod-nn",
+    source="EuroEval/gerlangmod-nn",
+    task=GED,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
 )
