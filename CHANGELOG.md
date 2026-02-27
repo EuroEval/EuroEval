@@ -9,8 +9,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
+- Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
+- Added the Icelandic standardized tests datasets
+  [icelandic-lang-tests](https://huggingface.co/datasets/EuroEval/icelandic-lang-tests)
+  and
+  [icelandic-math-tests](https://huggingface.co/datasets/EuroEval/icelandic-math-tests),
+  based on old Icelandic primary school standardized tests (2013–2017) from
+  [mms.is](https://mms.is/eldri-prof-og-svor), covering Icelandic language and
+  mathematics, respectively. Both are marked as `unofficial` for now.
 
 ## [v16.16.1] - 2026-02-25
 
