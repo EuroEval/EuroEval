@@ -1803,3 +1803,75 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-no
 ```
+
+## Dialect Classification
+
+### Unofficial: NorDial
+
+This dataset was published in [this paper](https://aclanthology.org/2021.nodalida-main.51/)
+and consists of Norwegian tweets manually annotated for the writing form used: standard
+Bokmål, standard Nynorsk, dialectal Norwegian, or a mix of these.
+
+The original full dataset consists of 848 / 106 / 110 samples for training, validation
+and test, respectively. We use all available samples, resulting in the same 848 / 106 /
+110 split for training, validation and test, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "@olavelg @TrollkrittIda Om noen vet hvor på Torshov de har Tamarind Paste, si fra så jeg også kan bære med å leke.",
+  "label": "bokmål"
+}
+```
+
+```json
+{
+  "text": "@kiheger Eg skal bidra med 700 kroner i ekstra etter heving av frikortgrensa",
+  "label": "nynorsk"
+}
+```
+
+```json
+{
+  "text": "@Robert_Haug @PetterSateroy mest usannsynlige med denna videoen e hentydninga til at d e gangavstand mellom NÅN steda i Nord-Norge, smh.",
+  "label": "dialectal"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er norske tweets og hvilken skriftform de er skrevet på, som kan være 'bokmål', 'nynorsk', 'dialekt' eller 'blandet'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Tweet: {text}
+  Skriftform: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Tweet: {text}
+
+  Klassifiser skriftformen av tweeten. Svar med 'bokmål', 'nynorsk', 'dialekt' eller 'blandet', og ikke noe annet.
+  ```
+
+- Label mapping:
+  - `bokmål` ➡️ `bokmål`
+  - `nynorsk` ➡️ `nynorsk`
+  - `dialectal` ➡️ `dialekt`
+  - `mixed` ➡️ `blandet`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset nordial
+```

@@ -211,3 +211,24 @@ WINOGRANDE_NO_CONFIG = DatasetConfig(
     labels=["a", "b"],
     unofficial=True,
 )
+
+NORDIAL_CONFIG = DatasetConfig(
+    name="nordial",
+    pretty_name="NorDial",
+    source="EuroEval/nordial",
+    task=SENT,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
+    labels=["bokmål", "nynorsk", "dialectal", "mixed"],
+    prompt_prefix="Følgende er norske tweets og hvilken skriftform de er skrevet på, "
+    "som kan være {labels_str}.",
+    prompt_template="Tweet: {text}\nSkriftform: {label}",
+    instruction_prompt="Tweet: {text}\n\nKlassifiser skriftformen av tweeten. Svar med "
+    "{labels_str}, og ikke noe annet.",
+    prompt_label_mapping=dict(
+        bokmål="bokmål",
+        nynorsk="nynorsk",
+        dialectal="dialekt",
+        mixed="blandet",
+    ),
+    unofficial=True,
+)

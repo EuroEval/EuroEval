@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added the Norwegian dialect classification dataset [NorDial](https://github.com/jerbarnes/nordial/tree/main/tweet_level/data). The split is given by 848 / 106 / 110 samples for train / val / test, respectively. It is marked as `unofficial` for now.
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
   unofficial for now. This was added by @N-essuno ✨
 
