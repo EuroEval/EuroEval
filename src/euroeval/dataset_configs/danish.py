@@ -177,3 +177,18 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
     labels=["a", "b"],
     unofficial=True,
 )
+
+DANISH_LEXICAL_INFERENCE_CONFIG = DatasetConfig(
+    name="danish-lexical-inference",
+    pretty_name="the Danish Lexical Inference dataset",
+    source="EuroEval/danish-lexical-inference",
+    task=LA,
+    languages=[DANISH],
+    prompt_prefix="Følgende er udsagn og om de er sande.",
+    prompt_template="Udsagn: {text}\nSand: {label}",
+    instruction_prompt=(
+        "Udsagn: {text}\n\nBestem om det tredje udsagn er sandt, givet de to "
+        "foregående udsagn. Svar kun med {labels_str}, og intet andet."
+    ),
+    unofficial=True,
+)

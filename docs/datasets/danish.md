@@ -360,6 +360,82 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset dala
 ```
 
+### Unofficial: Danish Lexical Inference
+
+This dataset was published in [this
+paper](https://aclanthology.org/2024.lrec-main.1421/) and is part of the [Danish
+Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+It measures word knowledge through lexical inference: given two true statements as
+context, a model must determine whether a third statement is true or false. The
+statements are based on DanNet relations corresponding to four Qualia roles:
+
+- Agentive role (how a concept came about): _man laver salat ved at stege den_
+- Constitutive role (part-whole relation): _en fugl kan have et næb_
+- Formal role (taxonomical classification): _en hoppe er et dyr_
+- Telic role (the function of a concept): _man bruger en køledisk til at afkøle i_
+
+The original dataset consists of 1,020 samples across 17 sub-datasets. We use a 128 /
+64 / 828 split for training, validation and testing, respectively (so all 1,020 samples
+are used in total).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "træthed er en følelse; jegfølelse er en følelse. Ferieminde er en følelse",
+  "label": "incorrect"
+}
+```
+
+```json
+{
+  "text": "en armstol har armlæn; et glasbord har en glasplade. En morgenbitter har ikke et afløb",
+  "label": "correct"
+}
+```
+
+```json
+{
+  "text": "tabskonto vedrører emnet driftsøkonomi; fiskeriaftale vedrører emnet erhvervsfiskeri. Scottish vedrører emnet dans",
+  "label": "correct"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er udsagn og om de er sande.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Udsagn: {text}
+  Sand: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Udsagn: {text}
+
+  Bestem om det tredje udsagn er sandt, givet de to foregående udsagn. Svar kun med {labels_str}, og intet andet.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nej`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset danish-lexical-inference
+```
+
 ## Reading Comprehension
 
 ### MultiWikiQA-da
