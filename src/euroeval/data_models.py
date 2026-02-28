@@ -176,6 +176,7 @@ class DatasetConfig:
         name: str | None = None,
         pretty_name: str | None = None,
         source: str | dict[str, str] | None = None,
+        label_column: str | None = None,
         prompt_prefix: str | None = None,
         prompt_template: str | None = None,
         instruction_prompt: str | None = None,
@@ -223,6 +224,11 @@ class DatasetConfig:
                 dictionary with keys "train", "val" and "test" mapping to local CSV file
                 paths. Can be None if and only if the dataset config resides directly in
                 the Hugging Face dataset repo. Defaults to None.
+            label_column (optional):
+                The name of the column in the dataset that contains the labels. If None,
+                the default column name for the task group is used ("label" for most
+                tasks, "labels" for token classification, "target_text" for text-to-text
+                tasks). Defaults to None.
             prompt_prefix (optional):
                 The prefix to use in the few-shot prompt. Defaults to the template for
                 the task and language.
@@ -382,6 +388,7 @@ class DatasetConfig:
         self._name = name
         self._pretty_name = pretty_name
         self._source = source
+        self.label_column = label_column
         self.task = task
         self.languages = languages
 

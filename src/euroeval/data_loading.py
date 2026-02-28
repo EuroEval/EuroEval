@@ -13,6 +13,7 @@ from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from numpy.random import Generator
 
 from .constants import SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS
+from .enums import TaskGroup
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark
 from .logging_utils import log, no_terminal_output
 from .string_utils import unscramble
@@ -244,7 +245,7 @@ def load_raw_data(
             )
 
     assert isinstance(dataset, DatasetDict)
-    return DatasetDict(  # pyrefly: ignore[no-matching-overload]
+    dataset = DatasetDict(  # pyrefly: ignore[no-matching-overload]
         {
             split: dataset[split]
             for split in [
@@ -255,3 +256,22 @@ def load_raw_data(
             if split is not None
         }
     )
+
+    # If a custom label column is specified, rename it to the standard column name
+    if dataset_config.label_column is not None:
+        if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+            target_label_column = "labels"
+        elif dataset_config.task.task_group == TaskGroup.TEXT_TO_TEXT:
+            target_label_column = "target_text"
+        else:
+            target_label_column = "label"
+        if dataset_config.label_column != target_label_column:
+            for split_name, split in dataset.items():
+                if dataset_config.label_column in split.column_names:
+                    if target_label_column in split.column_names:
+                        split = split.remove_columns([target_label_column])
+                    dataset[split_name] = split.rename_column(
+                        dataset_config.label_column, target_label_column
+                    )
+
+    return dataset
