@@ -374,9 +374,268 @@ These can all be imported from `euroeval.tasks` module.
 ### Creating your own custom task
 
 You are of course also free to define your own task from scratch, which allows you to
-customise the prompts used when evaluating generative models, for instance. Here is an
-example of a custom free-form text generation task, where the goal for the model is to
-generate a SQL query based on a natural language input:
+customise the prompts used when evaluating generative models, for instance. When
+creating a custom task you need to specify a `task_group`, which determines the overall
+type of task and the required dataset columns. Below are examples for each supported
+task group.
+
+The `PromptConfig` object defines the prompts used for evaluation and accepts the
+following arguments:
+
+- `default_prompt_prefix`: Introductory text shown before the few-shot examples.
+- `default_prompt_template`: Template used to format each example in few-shot
+  evaluation. Available placeholders depend on the task group (see examples below).
+- `default_instruction_prompt`: Template used for instruction-tuned models (zero-shot
+  or instruction-style evaluation). Available placeholders depend on the task group (see
+  examples below).
+- `default_prompt_label_mapping`: A mapping from label strings to human-readable
+  phrases used in the prompts (e.g., `{"b-per": "person"}`). Set to `"auto"` for a 1:1
+  mapping or to an empty `dict()` for tasks that don't use labels in prompts.
+
+/// tab | Sequence classification
+
+**Task group**: `TaskGroup.SEQUENCE_CLASSIFICATION`
+
+**Required dataset columns**: `text` (string), `label` (string)
+
+The `label` column should contain the class label as a string. You must provide the
+list of possible labels in the `DatasetConfig`.
+
+**Available placeholders** in `PromptConfig`:
+
+- `{text}`: The input text.
+- `{label}`: The label for the example (empty string for the new sample).
+- `{labels_str}`: A formatted string listing all possible labels.
+
+```python title="custom_datasets.py"
+from euroeval import DatasetConfig
+from euroeval.data_models import Task, PromptConfig
+from euroeval.enums import TaskGroup, ModelType
+from euroeval.languages import ENGLISH
+from euroeval.metrics import mcc_metric, macro_f1_metric
+from euroeval.constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
+
+my_classification_task = Task(
+    name="my-classification",
+    task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+    template_dict={
+        ENGLISH: PromptConfig(
+            default_prompt_prefix="The following are texts and their categories, which "
+            "can be {labels_str}.",
+            default_prompt_template="Text: {text}\nCategory: {label}",
+            default_instruction_prompt="Text: {text}\n\nClassify the text into one of "
+            "the categories {labels_str}, and answer with only the category.",
+            default_prompt_label_mapping="auto",
+        ),
+    },
+    metrics=[mcc_metric, macro_f1_metric],
+    default_num_few_shot_examples=12,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    uses_logprobs=True,
+)
+
+MY_DATASET = DatasetConfig(
+    name="my-classification-dataset",
+    pretty_name="My Classification Dataset",
+    source=dict(train="train.csv", val="val.csv", test="test.csv"),
+    task=my_classification_task,
+    languages=[ENGLISH],
+    labels=["sports", "politics", "entertainment"],
+)
+```
+
+///
+/// tab | Multiple-choice classification
+
+**Task group**: `TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION`
+
+**Required dataset columns**: `text` (string), `label` (string)
+
+The `text` column must include both the question and the answer choices (e.g., `"a.
+Option 1\nb. Option 2\n..."`), and the `label` column should be the letter of the
+correct choice (e.g., `"a"`). All samples must have the same number of choices. You
+must provide the list of possible label letters in the `DatasetConfig` (e.g.,
+`["a", "b", "c", "d"]`).
+
+**Available placeholders** in `PromptConfig`:
+
+- `{text}`: The full question text including choices.
+- `{label}`: The correct answer letter (empty string for the new sample).
+- `{labels_str}`: A formatted string listing all possible answer letters.
+
+```python title="custom_datasets.py"
+from euroeval import DatasetConfig
+from euroeval.data_models import Task, PromptConfig
+from euroeval.enums import TaskGroup, ModelType
+from euroeval.languages import ENGLISH
+from euroeval.metrics import mcc_metric, accuracy_metric
+from euroeval.constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
+
+my_multiple_choice_task = Task(
+    name="my-multiple-choice",
+    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+    template_dict={
+        ENGLISH: PromptConfig(
+            default_prompt_prefix="The following are multiple-choice questions "
+            "(with answers).",
+            default_prompt_template="Question: {text}\nAnswer: {label}",
+            default_instruction_prompt="Question: {text}\n\nAnswer the question above "
+            "by replying with {labels_str}, and nothing else.",
+            default_prompt_label_mapping="auto",
+        ),
+    },
+    metrics=[mcc_metric, accuracy_metric],
+    default_num_few_shot_examples=5,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    default_allowed_model_types=[ModelType.GENERATIVE],
+    uses_logprobs=True,
+)
+
+MY_DATASET = DatasetConfig(
+    name="my-multiple-choice-dataset",
+    pretty_name="My Multiple Choice Dataset",
+    source=dict(train="train.csv", val="val.csv", test="test.csv"),
+    task=my_multiple_choice_task,
+    languages=[ENGLISH],
+    labels=["a", "b", "c", "d"],
+)
+```
+
+///
+/// tab | Token classification
+
+**Task group**: `TaskGroup.TOKEN_CLASSIFICATION`
+
+**Required dataset columns**: `tokens` (list of strings), `labels` (list of strings)
+
+The `tokens` column is a list of word tokens in the text, and the `labels` column is a
+list of corresponding BIO tags (e.g., `["O", "B-PER", "I-PER", "O"]`). The two lists
+must have the same length. You must provide the full list of possible labels (including
+`"O"`) in the `DatasetConfig`. The `default_prompt_label_mapping` should map BIO labels
+to human-readable category names (e.g., `{"b-per": "person", "i-per": "person"}`), or
+use `"auto"` for a 1:1 mapping.
+
+**Available placeholders** in `PromptConfig`:
+
+- `{text}`: The tokens joined into a string.
+- `{label}`: A JSON dictionary mapping category names to lists of matching spans
+  (empty string for the new sample).
+- `{labels_str}`: A formatted string listing all category names from the label mapping.
+
+```python title="custom_datasets.py"
+from euroeval import DatasetConfig
+from euroeval.data_models import Task, PromptConfig
+from euroeval.enums import TaskGroup
+from euroeval.languages import ENGLISH
+from euroeval.metrics import micro_f1_metric
+
+my_token_classification_task = Task(
+    name="my-token-classification",
+    task_group=TaskGroup.TOKEN_CLASSIFICATION,
+    template_dict={
+        ENGLISH: PromptConfig(
+            default_prompt_prefix="Below are texts and JSON dictionaries with the "
+            "categories that appear in the given text.",
+            default_prompt_template="Text: {text}\nCategories: {label}",
+            default_instruction_prompt="Text: {text}\n\nIdentify the categories in "
+            "the text. Print this as a JSON dictionary with the keys being "
+            "{labels_str}. The values should be lists of the spans of that category, "
+            "exactly as they appear in the text.",
+            default_prompt_label_mapping={
+                "b-product": "product",
+                "i-product": "product",
+                "b-company": "company",
+                "i-company": "company",
+                "o": "o",
+            },
+        ),
+    },
+    metrics=[micro_f1_metric],
+    default_num_few_shot_examples=8,
+    default_max_generated_tokens=128,
+    uses_structured_output=True,
+)
+
+MY_DATASET = DatasetConfig(
+    name="my-token-classification-dataset",
+    pretty_name="My Token Classification Dataset",
+    source=dict(train="train.csv", val="val.csv", test="test.csv"),
+    task=my_token_classification_task,
+    languages=[ENGLISH],
+    labels=["o", "b-product", "i-product", "b-company", "i-company"],
+)
+```
+
+///
+/// tab | Question answering
+
+**Task group**: `TaskGroup.QUESTION_ANSWERING`
+
+**Required dataset columns**: `context` (string), `question` (string), `answers` (dict)
+
+The `context` column is the passage to read, `question` is the question to answer, and
+`answers` is a dict with `"text"` (a list of answer strings) and `"answer_start"` (a
+list of character-level start positions of those answers in the context). This follows
+the SQuAD format.
+
+**Available placeholders** in `PromptConfig`:
+
+- `{text}`: The context passage.
+- `{question}`: The question.
+- `{label}`: The answer text (empty string for the new sample).
+
+```python title="custom_datasets.py"
+from euroeval import DatasetConfig
+from euroeval.data_models import Task, PromptConfig
+from euroeval.enums import TaskGroup
+from euroeval.languages import ENGLISH
+from euroeval.metrics import f1_metric, em_metric
+
+my_qa_task = Task(
+    name="my-reading-comprehension",
+    task_group=TaskGroup.QUESTION_ANSWERING,
+    template_dict={
+        ENGLISH: PromptConfig(
+            default_prompt_prefix="Below are texts with questions and answers.",
+            default_prompt_template="Text: {text}\nQuestion: {question}\nAnswer in "
+            "max 3 words: {label}",
+            default_instruction_prompt="Text: {text}\n\nAnswer the following question "
+            "about the text above in max 3 words.\n\nQuestion: {question}",
+            default_prompt_label_mapping=dict(),
+        ),
+    },
+    metrics=[f1_metric, em_metric],
+    default_num_few_shot_examples=4,
+    default_max_generated_tokens=32,
+)
+
+MY_DATASET = DatasetConfig(
+    name="my-reading-comprehension-dataset",
+    pretty_name="My Reading Comprehension Dataset",
+    source=dict(train="train.csv", val="val.csv", test="test.csv"),
+    task=my_qa_task,
+    languages=[ENGLISH],
+)
+```
+
+///
+/// tab | Text-to-text
+
+**Task group**: `TaskGroup.TEXT_TO_TEXT`
+
+**Required dataset columns**: `text` (string), `target_text` (string)
+
+The `text` column is the input to the model, and `target_text` is the expected output.
+This covers tasks such as summarization, translation, simplification, and free-form text
+generation.
+
+**Available placeholders** in `PromptConfig`:
+
+- `{text}`: The input text.
+- `{target_text}`: The expected output text (empty string for the new sample).
+
+Here is an example of a custom text-to-text task where the goal is to generate a SQL
+query from a natural language input:
 
 ```python title="custom_datasets.py"
 from euroeval import DatasetConfig
@@ -414,10 +673,12 @@ MY_SQL_DATASET = DatasetConfig(
 )
 ```
 
-Again, with this you can benchmark your custom dataset by simply running
+///
+
+With any of these custom tasks you can then benchmark your dataset by running
 
 ```bash
-euroeval --dataset my-sql-dataset --model <model-id>
+euroeval --dataset <dataset-name> --model <model-id>
 ```
 
 ## Analysing the results of generative models
