@@ -780,7 +780,7 @@ class Benchmarker:
                     raise InvalidModel(
                         "Offline benchmarking of models with adapters is not currently "
                         "supported. An active internet connection is required. "
-                        "{open_issue_msg}"
+                        f"{open_issue_msg}"
                     )
                 elif benchmark_config.download_only:
                     log_once(
