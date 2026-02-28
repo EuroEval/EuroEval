@@ -1119,6 +1119,8 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The vocabulary size of the model.
         """
+        if self.benchmark_config.vocabulary_size is not None:
+            return self.benchmark_config.vocabulary_size
         # Start by trying out the regex mapping, and use the value if it matches
         for key, value in VOCAB_SIZE_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
@@ -1174,6 +1176,8 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The maximum length of the model.
         """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
         # Start by trying out the regex mapping, and use the value if it matches
         for key, value in MODEL_MAX_LENGTH_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:

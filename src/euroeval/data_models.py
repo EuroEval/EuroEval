@@ -771,8 +771,8 @@ class BenchmarkConfig:
     verbose: bool
     debug: bool
     run_with_cli: bool
-    max_context_length: int | None = None
-    vocabulary_size: int | None = None
+    max_context_length: int | None
+    vocabulary_size: int | None
 
     @property
     def tasks(self) -> c.Sequence[Task]:
@@ -823,8 +823,8 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     verbose: bool
     debug: bool
     run_with_cli: bool
-    max_context_length: int | None = None
-    vocabulary_size: int | None = None
+    max_context_length: int | None
+    vocabulary_size: int | None
 
 
 class BenchmarkResult(pydantic.BaseModel):

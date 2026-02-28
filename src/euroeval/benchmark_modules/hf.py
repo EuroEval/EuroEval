@@ -123,6 +123,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
+        # This is already set when calling `super().__init__`, but we need it to get
+        # the correct value from `self.model_max_length`, so we set it here as well.
+        self.benchmark_config = benchmark_config
+
         model, tokeniser = load_model_and_tokeniser(
             model_config=model_config,
             dataset_config=dataset_config,
@@ -130,11 +134,6 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         )
         self._model: "PreTrainedModel" = model
         self._tokeniser: "PreTrainedTokenizer | MistralCommonTokenizer" = tokeniser
-
-        # Pre-populate the cached_property cache for `model_max_length` if the user
-        # has specified an override, so that `align_model_and_tokeniser` uses it.
-        if benchmark_config.max_context_length is not None:
-            self.__dict__["model_max_length"] = benchmark_config.max_context_length
 
         self._model, self._tokeniser = align_model_and_tokeniser(
             model=self._model,
@@ -191,6 +190,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The vocabulary size of the model.
         """
+        if self.benchmark_config.vocabulary_size is not None:
+            return self.benchmark_config.vocabulary_size
         if (
             hasattr(self._model.config, "vocab_size")
             and self._model.config.vocab_size is not None
@@ -212,6 +213,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The maximum context length of the model.
         """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
         all_max_lengths: list[int] = list()
 
         # Add the registered max length of the tokeniser

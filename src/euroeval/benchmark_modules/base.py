@@ -78,12 +78,6 @@ class BenchmarkModule(ABC):
         self.benchmark_config = benchmark_config
         self.log_metadata = log_metadata
         self.buffer: dict[str, t.Any] = dict()
-        if benchmark_config.max_context_length is not None:
-            # `cached_property` stores its value in `__dict__`, so setting it directly
-            # here pre-populates the cache and effectively overrides the property.
-            self.__dict__["model_max_length"] = benchmark_config.max_context_length
-        if benchmark_config.vocabulary_size is not None:
-            self.__dict__["vocab_size"] = benchmark_config.vocabulary_size
         if self.log_metadata:
             self._log_metadata()
 

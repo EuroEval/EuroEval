@@ -409,6 +409,8 @@ class Benchmarker:
         model_language: str | c.Sequence[str] | None = None,
         dataset_language: str | c.Sequence[str] | None = None,
         batch_size: int | None = None,
+        max_context_length: int | None = None,
+        vocabulary_size: int | None = None,
     ) -> c.Sequence[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -517,6 +519,14 @@ class Benchmarker:
                 Deprecated argument. Please use `language` instead.
             batch_size:
                 Deprecated argument. Please use `finetuning_batch_size` instead.
+            max_context_length:
+                Override for the maximum context length of the model. If None, the
+                value will be inferred automatically from the model. Defaults to the
+                value specified when initialising the benchmarker.
+            vocabulary_size:
+                Override for the vocabulary size of the model. If None, the value will
+                be inferred automatically from the model. Defaults to the value
+                specified when initialising the benchmarker.
 
         Returns:
             A list of benchmark results.
@@ -693,6 +703,16 @@ class Benchmarker:
                 else self.benchmark_config_default_params.debug
             ),
             run_with_cli=self.benchmark_config_default_params.run_with_cli,
+            max_context_length=(
+                max_context_length
+                if max_context_length is not None
+                else self.benchmark_config_default_params.max_context_length
+            ),
+            vocabulary_size=(
+                vocabulary_size
+                if vocabulary_size is not None
+                else self.benchmark_config_default_params.vocabulary_size
+            ),
         )
         benchmark_config = build_benchmark_config(
             benchmark_config_params=benchmark_config_params
