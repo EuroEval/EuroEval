@@ -131,6 +131,11 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         self._model: "PreTrainedModel" = model
         self._tokeniser: "PreTrainedTokenizer | MistralCommonTokenizer" = tokeniser
 
+        # Pre-populate the cached_property cache for `model_max_length` if the user
+        # has specified an override, so that `align_model_and_tokeniser` uses it.
+        if benchmark_config.max_context_length is not None:
+            self.__dict__["model_max_length"] = benchmark_config.max_context_length
+
         self._model, self._tokeniser = align_model_and_tokeniser(
             model=self._model,
             tokeniser=self._tokeniser,

@@ -77,6 +77,12 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
         # value from `self.model_max_length`, so we set it here as well.
         self.model_config = model_config
 
+        # Pre-populate the cached_property cache for `model_max_length` if the user
+        # has specified an override, so that `load_model_and_tokeniser` and
+        # `align_model_and_tokeniser` use it.
+        if benchmark_config.max_context_length is not None:
+            self.__dict__["model_max_length"] = benchmark_config.max_context_length
+
         model, tokeniser = load_model_and_tokeniser(
             model_config=model_config,
             dataset_config=dataset_config,
