@@ -4,9 +4,10 @@ import os
 from collections.abc import Generator
 from functools import partial
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
-from datasets import DatasetDict
+from datasets import Dataset, DatasetDict
 from numpy.random import default_rng
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
@@ -16,8 +17,10 @@ from euroeval.data_loading import load_data, load_raw_data
 from euroeval.data_models import BenchmarkConfig, DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import GenerativeType
+from euroeval.exceptions import InvalidBenchmark
 from euroeval.generation_utils import apply_prompt, extract_few_shot_examples
-from euroeval.tasks import RC
+from euroeval.languages import DANISH
+from euroeval.tasks import NER, RC, SENT, SUMM
 
 
 @pytest.fixture(scope="module")
@@ -191,3 +194,81 @@ class TestAllDatasets:
                 f"Dataset {dataset_config.name} is a reading comprehension dataset but "
                 f"the {split} split does not have an 'id' column."
             )
+
+
+def _make_dataset(label_col: str, value: str = "positive") -> DatasetDict:
+    """Build a minimal two-split DatasetDict with the given label column name."""
+    split = Dataset.from_dict({"text": ["hello"], label_col: [value]})
+    return DatasetDict({"train": split, "val": split, "test": split})
+
+
+class TestLabelColumnRenaming:
+    """Tests for the label_column renaming logic in `load_raw_data`."""
+
+    def _config(self, task, label_column: str | None = None) -> DatasetConfig:
+        return DatasetConfig(
+            name="test-dataset",
+            pretty_name="Test Dataset",
+            source="dummy/source",
+            task=task,
+            languages=[DANISH],
+            label_column=label_column,
+        )
+
+    def test_sequence_classification_renames_to_label(self) -> None:
+        """Custom column is renamed to 'label' for sequence classification tasks."""
+        raw = _make_dataset("sentiment")
+        config = self._config(SENT, label_column="sentiment")
+        with patch("euroeval.data_loading.load_dataset", return_value=raw):
+            result = load_raw_data(
+                dataset_config=config, cache_dir=".euroeval_cache", api_key=None
+            )
+        assert "label" in result["test"].column_names
+        assert "sentiment" not in result["test"].column_names
+
+    def test_token_classification_renames_to_labels(self) -> None:
+        """Custom column is renamed to 'labels' for token classification tasks."""
+        raw = _make_dataset("ner_tags", value="O")
+        config = self._config(NER, label_column="ner_tags")
+        with patch("euroeval.data_loading.load_dataset", return_value=raw):
+            result = load_raw_data(
+                dataset_config=config, cache_dir=".euroeval_cache", api_key=None
+            )
+        assert "labels" in result["test"].column_names
+        assert "ner_tags" not in result["test"].column_names
+
+    def test_text_to_text_renames_to_target_text(self) -> None:
+        """Custom column is renamed to 'target_text' for text-to-text tasks."""
+        raw = _make_dataset("summary")
+        config = self._config(SUMM, label_column="summary")
+        with patch("euroeval.data_loading.load_dataset", return_value=raw):
+            result = load_raw_data(
+                dataset_config=config, cache_dir=".euroeval_cache", api_key=None
+            )
+        assert "target_text" in result["test"].column_names
+        assert "summary" not in result["test"].column_names
+
+    def test_conflict_existing_target_column_is_replaced(self) -> None:
+        """When target column already exists, it is removed before renaming."""
+        split = Dataset.from_dict(
+            {"text": ["hello"], "sentiment": ["positive"], "label": ["negative"]}
+        )
+        raw = DatasetDict({"train": split, "val": split, "test": split})
+        config = self._config(SENT, label_column="sentiment")
+        with patch("euroeval.data_loading.load_dataset", return_value=raw):
+            result = load_raw_data(
+                dataset_config=config, cache_dir=".euroeval_cache", api_key=None
+            )
+        assert "label" in result["test"].column_names
+        assert result["test"]["label"] == ["positive"]
+        assert "sentiment" not in result["test"].column_names
+
+    def test_missing_label_column_raises_invalid_benchmark(self) -> None:
+        """Raises InvalidBenchmark when the configured label_column is absent."""
+        raw = _make_dataset("label")  # does NOT have "sentiment" column
+        config = self._config(SENT, label_column="sentiment")
+        with patch("euroeval.data_loading.load_dataset", return_value=raw):
+            with pytest.raises(InvalidBenchmark, match="sentiment"):
+                load_raw_data(
+                    dataset_config=config, cache_dir=".euroeval_cache", api_key=None
+                )

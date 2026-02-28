@@ -266,12 +266,20 @@ def load_raw_data(
         else:
             target_label_column = "label"
         if dataset_config.label_column != target_label_column:
+            label_column_found = False
             for split_name, split in dataset.items():
                 if dataset_config.label_column in split.column_names:
+                    label_column_found = True
                     if target_label_column in split.column_names:
                         split = split.remove_columns([target_label_column])
                     dataset[split_name] = split.rename_column(
                         dataset_config.label_column, target_label_column
                     )
+            if not label_column_found:
+                raise InvalidBenchmark(
+                    "The dataset is configured with a custom label column "
+                    f"{dataset_config.label_column!r}, but this column was not found "
+                    f"in any split for the dataset {dataset_config.name!r}."
+                )
 
     return dataset
