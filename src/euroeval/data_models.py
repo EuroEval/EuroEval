@@ -736,6 +736,12 @@ class BenchmarkConfig:
             Whether to run the benchmark in debug mode.
         run_with_cli:
             Whether the benchmark is being run with the CLI.
+        max_context_length:
+            Override for the maximum context length of the model. If None, the value
+            will be inferred automatically from the model.
+        vocabulary_size:
+            Override for the vocabulary size of the model. If None, the value will be
+            inferred automatically from the model.
     """
 
     datasets: c.Sequence[DatasetConfig]
@@ -765,6 +771,8 @@ class BenchmarkConfig:
     verbose: bool
     debug: bool
     run_with_cli: bool
+    max_context_length: int | None = None
+    vocabulary_size: int | None = None
 
     @property
     def tasks(self) -> c.Sequence[Task]:
@@ -815,6 +823,8 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     verbose: bool
     debug: bool
     run_with_cli: bool
+    max_context_length: int | None = None
+    vocabulary_size: int | None = None
 
 
 class BenchmarkResult(pydantic.BaseModel):

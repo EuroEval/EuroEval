@@ -87,6 +87,8 @@ class Benchmarker:
         model_language: str | c.Sequence[str] | None = None,
         dataset_language: str | c.Sequence[str] | None = None,
         batch_size: int | None = None,
+        max_context_length: int | None = None,
+        vocabulary_size: int | None = None,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -175,6 +177,12 @@ class Benchmarker:
                 Deprecated argument. Please use `language` instead.
             batch_size:
                 Deprecated argument. Please use `finetuning_batch_size` instead.
+            max_context_length:
+                Override for the maximum context length of the model. If None, the value
+                will be inferred automatically from the model. Defaults to None.
+            vocabulary_size:
+                Override for the vocabulary size of the model. If None, the value will
+                be inferred automatically from the model. Defaults to None.
 
         Raises:
             ValueError:
@@ -271,6 +279,8 @@ class Benchmarker:
             force=force,
             debug=debug,
             run_with_cli=run_with_cli,
+            max_context_length=max_context_length,
+            vocabulary_size=vocabulary_size,
         )
 
         self.benchmark_config = build_benchmark_config(
