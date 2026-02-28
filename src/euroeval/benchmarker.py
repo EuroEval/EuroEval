@@ -780,7 +780,7 @@ class Benchmarker:
                     raise InvalidModel(
                         "Offline benchmarking of models with adapters is not currently "
                         "supported. An active internet connection is required. "
-                        "{open_issue_msg}"
+                        f"{open_issue_msg}"
                     )
                 elif benchmark_config.download_only:
                     log_once(
@@ -822,6 +822,15 @@ class Benchmarker:
                     )
                     benchmark_params_to_revert["few_shot"] = True
                     benchmark_config.few_shot = False
+
+                if benchmark_config.download_only:
+                    self._download(
+                        dataset_config=dataset_config,
+                        model_config=model_config,
+                        benchmark_config=benchmark_config,
+                    )
+                    num_finished_benchmarks += 1
+                    continue
 
                 # We do not re-initialise generative models as their architecture is not
                 # customised to specific datasets
