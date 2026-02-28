@@ -123,6 +123,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
+        # This is already set when calling `super().__init__`, but we need it to get
+        # the correct value from `self.model_max_length`, so we set it here as well.
+        self.benchmark_config = benchmark_config
+
         model, tokeniser = load_model_and_tokeniser(
             model_config=model_config,
             dataset_config=dataset_config,
@@ -186,6 +190,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The vocabulary size of the model.
         """
+        if self.benchmark_config.vocabulary_size is not None:
+            return self.benchmark_config.vocabulary_size
         if (
             hasattr(self._model.config, "vocab_size")
             and self._model.config.vocab_size is not None
@@ -207,6 +213,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The maximum context length of the model.
         """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
         all_max_lengths: list[int] = list()
 
         # Add the registered max length of the tokeniser
