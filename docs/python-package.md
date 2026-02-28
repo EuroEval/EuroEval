@@ -410,7 +410,7 @@ list of possible labels in the `DatasetConfig`.
 ```python title="custom_datasets.py"
 from euroeval import DatasetConfig
 from euroeval.data_models import Task, PromptConfig
-from euroeval.enums import TaskGroup, ModelType
+from euroeval.enums import TaskGroup
 from euroeval.languages import ENGLISH
 from euroeval.metrics import mcc_metric, macro_f1_metric
 from euroeval.constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
@@ -509,11 +509,11 @@ MY_DATASET = DatasetConfig(
 **Required dataset columns**: `tokens` (list of strings), `labels` (list of strings)
 
 The `tokens` column is a list of word tokens in the text, and the `labels` column is a
-list of corresponding BIO tags (e.g., `["O", "B-PER", "I-PER", "O"]`). The two lists
+list of corresponding BIO tags (e.g., `["o", "b-per", "i-per", "o"]`). The two lists
 must have the same length. You must provide the full list of possible labels (including
-`"O"`) in the `DatasetConfig`. The `default_prompt_label_mapping` should map BIO labels
-to human-readable category names (e.g., `{"b-per": "person", "i-per": "person"}`), or
-use `"auto"` for a 1:1 mapping.
+`"o"`) in the `DatasetConfig`. The `default_prompt_label_mapping` should map BIO labels
+to human-readable category names, and for each entity type both `b-X` and `i-X` must map
+to the same category string (e.g., `{"b-per": "person", "i-per": "person"}`).
 
 **Available placeholders** in `PromptConfig`:
 
@@ -546,7 +546,6 @@ my_token_classification_task = Task(
                 "i-product": "product",
                 "b-company": "company",
                 "i-company": "company",
-                "o": "o",
             },
         ),
     },
