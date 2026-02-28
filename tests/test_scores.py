@@ -89,10 +89,13 @@ class TestLogScores:
         """Test that `log_scores` returns a dictionary with the correct keys."""
         total_dict = logged_scores["total"]
         assert isinstance(total_dict, dict)
-        assert sorted(total_dict.keys()) == [
-            f"test_{metric.name}",
-            f"test_{metric.name}_se",
-        ]
+        assert sorted(total_dict.keys()) == sorted(
+            [
+                f"test_{metric.name}",
+                f"test_{metric.name}_se",
+                "num_failed_instances",
+            ]
+        )
 
     def test_total_scores_values_are_floats(self, logged_scores: ScoreDict) -> None:
         """Test that `log_scores` returns a dictionary with float values."""

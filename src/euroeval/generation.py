@@ -143,6 +143,7 @@ def generate_single_iteration(
         non_cached_dataset = dataset
 
     all_preds: list[str] = list()
+    num_failed_instances = 0
 
     if len(non_cached_dataset) > 0:
         itr: t.Iterable
@@ -195,6 +196,7 @@ def generate_single_iteration(
             extracted_labels = model.extract_labels_from_generation(
                 input_batch=batch, model_output=model_output
             )
+            num_failed_instances += model_output.num_failed_instances
             if pred2extracted := dataset_config.prompt_label_mapping:
                 extracted_to_predicted = {
                     extracted: predicted
@@ -239,6 +241,7 @@ def generate_single_iteration(
         extracted_labels = model.extract_labels_from_generation(
             input_batch=cached_dataset[:], model_output=model_output
         )
+        num_failed_instances += model_output.num_failed_instances
         if model_output.predicted_labels is None:
             model_output.predicted_labels = [
                 dataset_config.prompt_label_mapping.get(label, label).lower()
@@ -289,6 +292,7 @@ def generate_single_iteration(
         dataset=dataset,
         benchmark_config=benchmark_config,
     )
+    itr_scores["num_failed_instances"] = float(num_failed_instances)
 
     return itr_scores
 
