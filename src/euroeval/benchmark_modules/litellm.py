@@ -525,7 +525,10 @@ class LiteLLMModel(BenchmarkModule):
             "Only temperature=1 is supported",
         ]
         max_items_messages = ["'maxItems' is not permitted."]
-        no_json_schema_messages = ["Property keys should match pattern"]
+        no_json_schema_messages = [
+            "Property keys should match pattern",
+            "'json_schema' is not supported",
+        ]
         thinking_budget_pattern = re.compile(
             r"the thinking budget [0-9]+ is invalid. please choose a value between "
             r"[0-9]+ and ([0-9]+)\."
@@ -536,6 +539,7 @@ class LiteLLMModel(BenchmarkModule):
             "got an unexpected keyword argument 'response_format'",
             "the model returned empty outputs",
             "'maxitems' is not supported",
+            "must contain the word 'json'",
         ]
 
         if (

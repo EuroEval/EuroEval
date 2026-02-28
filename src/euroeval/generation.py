@@ -240,10 +240,19 @@ def generate_single_iteration(
             input_batch=cached_dataset[:], model_output=model_output
         )
         if model_output.predicted_labels is None:
-            model_output.predicted_labels = [
-                dataset_config.prompt_label_mapping.get(label, label).lower()
-                for label in extracted_labels
-            ]
+            if pred2extracted := dataset_config.prompt_label_mapping:
+                extracted_to_predicted = {
+                    extracted: predicted
+                    for predicted, extracted in pred2extracted.items()
+                }
+                model_output.predicted_labels = [
+                    extracted_to_predicted.get(label, label).lower()
+                    if isinstance(label, str)
+                    else [extracted_to_predicted.get(lbl, lbl).lower() for lbl in label]
+                    for label in extracted_labels
+                ]
+            else:
+                model_output.predicted_labels = extracted_labels
         all_preds.extend(extracted_labels)
 
     if "label" in non_cached_dataset.column_names:
