@@ -195,7 +195,7 @@ class DatasetConfig:
         unofficial: bool = False,
         input_column: str = "text",
         target_column: str | None = None,
-        choices_column: str | None = None,
+        choices_column: str | list[str] | None = None,
         preprocessing_func: c.Callable[[DatasetDict], DatasetDict] | None = None,
         _prompt_prefix: str | None = None,
         _prompt_template: str | None = None,
@@ -295,9 +295,12 @@ class DatasetConfig:
                 tasks, "labels" for token classification, "target_text" for text-to-text
                 tasks). Defaults to None.
             choices_column (optional):
-                The name of the column in the dataset that contains the list of answer
-                choices (for multiple-choice tasks). When set, the input text and choices
-                are merged into a single "text" column. Defaults to None.
+                The name of the column (or list of column names) in the dataset that
+                contains the answer choices. If a single column name is provided, that
+                column must hold a list of answer-choice strings. If a list of column
+                names is provided, each column holds a single answer-choice string.
+                When set, the input text and choices are merged into a single "text"
+                column. Defaults to None.
             preprocessing_func (optional):
                 A custom preprocessing function that takes a DatasetDict and returns a
                 DatasetDict. If set together with any of the column arguments, a warning

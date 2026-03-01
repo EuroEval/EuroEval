@@ -14,19 +14,21 @@ if t.TYPE_CHECKING:
 def merge_input_and_choices(
     example: dict,
     input_column: str,
-    choices_column: str,
+    choices_column: "str | list[str]",
     choices_label: str,
 ) -> dict:
     """Merge input text and choices into a single text field.
 
     Args:
         example:
-            A single dataset example with at least the ``input_column`` and
-            ``choices_column`` keys.
+            A single dataset example with at least the ``input_column`` and the column(s)
+            named by ``choices_column``.
         input_column:
             The name of the column containing the input text.
         choices_column:
-            The name of the column containing the list of answer choices.
+            Either the name of a single column containing a list of answer-choice
+            strings, or a list of column names each containing a single answer-choice
+            string.
         choices_label:
             The language-specific label for the choices section (e.g. ``"Choices"``).
 
@@ -35,7 +37,10 @@ def merge_input_and_choices(
         choices.
     """
     input_text = example[input_column].replace("\n", " ").strip()
-    choices = example[choices_column]
+    if isinstance(choices_column, list):
+        choices = [example[col] for col in choices_column]
+    else:
+        choices = example[choices_column]
     options = "\n".join(
         f"{letter}. {choice.replace('\n', ' ').strip()}"
         for letter, choice in zip("abcdefghijklmnopqrstuvwxyz", choices)
@@ -49,7 +54,7 @@ def build_preprocessing_func(
     task_group: "TaskGroup",
     input_column: str,
     target_column: str | None,
-    choices_column: str | None,
+    choices_column: "str | list[str] | None",
     choices_label: str,
 ) -> "c.Callable[[DatasetDict], DatasetDict]":
     """Build a preprocessing function from column mapping arguments.
@@ -72,9 +77,6 @@ def build_preprocessing_func(
       ``"labels"`` for token classification, ``"target_text"`` for text-to-text, and
       ``"label"`` for everything else.
 
-    ``InvalidBenchmark`` is raised when the function is called if any configured column
-    is absent from all splits.
-
     Args:
         dataset_name:
             The name of the dataset, used in error messages.
@@ -87,13 +89,20 @@ def build_preprocessing_func(
         target_column:
             Column to rename to the task-appropriate standard target column name.
         choices_column:
-            Column with a list of answer-choice strings to merge with the input column.
+            Either the name of a single column containing a list of answer-choice
+            strings, or a list of column names each containing a single answer-choice
+            string, to merge with the input column.
         choices_label:
             The language-specific label for the choices section (e.g. ``"Choices"``).
 
     Returns:
         A callable that accepts a ``DatasetDict`` and returns a preprocessed
         ``DatasetDict``.
+
+    Raises:
+        InvalidBenchmark:
+            When the returned callable is called, if any configured column is absent
+            from all splits.
     """
     # Determine the standard target column for the task group
     if target_column is not None:
@@ -124,6 +133,14 @@ def build_preprocessing_func(
             InvalidBenchmark:
                 If a configured input or target column is absent from all splits.
         """
+        # Normalize choices_column to a list for uniform handling
+        if isinstance(choices_column, list):
+            choices_cols: list[str] | None = choices_column
+        elif choices_column is not None:
+            choices_cols = [choices_column]
+        else:
+            choices_cols = None
+
         # Validate that the configured columns exist in all splits
         if input_column != "text":
             input_found = all(
@@ -135,6 +152,17 @@ def build_preprocessing_func(
                     f"{input_column!r}, but this column was not found in all splits "
                     f"for the dataset {dataset_name!r}."
                 )
+        if choices_cols is not None:
+            for col in choices_cols:
+                col_found = all(
+                    col in split.column_names for split in dataset.values()
+                )
+                if not col_found:
+                    raise InvalidBenchmark(
+                        f"The dataset is configured with a choices column "
+                        f"{col!r}, but this column was not found in all splits "
+                        f"for the dataset {dataset_name!r}."
+                    )
         if target_column is not None:
             target_found = all(
                 target_column in split.column_names for split in dataset.values()
@@ -148,25 +176,21 @@ def build_preprocessing_func(
 
         for split_name, split in dataset.items():
             # Handle input column (optionally merging with choices)
-            if choices_column is not None:
-                if (
-                    input_column in split.column_names
-                    and choices_column in split.column_names
-                ):
-                    merge_fn = functools.partial(
-                        merge_input_and_choices,
-                        input_column=input_column,
-                        choices_column=choices_column,
-                        choices_label=choices_label,
-                    )
-                    split = split.map(merge_fn)
-                    cols_to_drop = [
-                        col
-                        for col in [input_column, choices_column]
-                        if col in split.column_names and col != "text"
-                    ]
-                    if cols_to_drop:
-                        split = split.remove_columns(cols_to_drop)
+            if choices_cols is not None:
+                merge_fn = functools.partial(
+                    merge_input_and_choices,
+                    input_column=input_column,
+                    choices_column=choices_column,
+                    choices_label=choices_label,
+                )
+                split = split.map(merge_fn)
+                cols_to_drop = [
+                    col
+                    for col in [input_column, *choices_cols]
+                    if col in split.column_names and col != "text"
+                ]
+                if cols_to_drop:
+                    split = split.remove_columns(cols_to_drop)
             elif input_column != "text":
                 if "text" in split.column_names:
                     split = split.remove_columns(["text"])
