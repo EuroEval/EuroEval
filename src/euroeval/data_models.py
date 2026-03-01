@@ -12,9 +12,10 @@ from pathlib import Path
 
 import pydantic
 import torch
+from datasets import DatasetDict
 from transformers.generation.configuration_utils import GenerationConfig
 
-from .constants import ATTENTION_BACKENDS, MAX_NUMBER_OF_LOGGING_LANGUAGES
+from .constants import ATTENTION_BACKENDS, CHOICES_MAPPING, MAX_NUMBER_OF_LOGGING_LANGUAGES
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
 from .languages import (
@@ -166,6 +167,122 @@ class Task:
         return hash(self.name)
 
 
+def _build_preprocessing_func(
+    dataset_name: str,
+    task_group: "TaskGroup",
+    input_column: str | None,
+    target_column: str | None,
+    choices_column: str | None,
+    choices_label: str,
+) -> "c.Callable[[DatasetDict], DatasetDict]":
+    """Build a preprocessing function from column mapping arguments.
+
+    Args:
+        dataset_name:
+            The name of the dataset (used in error messages).
+        task_group:
+            The task group, used to determine the standard target column name.
+        input_column:
+            Column to rename to "text". If also combined with choices_column, the two
+            are merged into a formatted "text" column.
+        target_column:
+            Column to rename to the task-appropriate standard target column name.
+        choices_column:
+            Column with a list of answer choices to merge with the input column.
+        choices_label:
+            The language-specific label for the choices section (e.g. "Choices").
+
+    Returns:
+        A callable that takes a DatasetDict and returns a preprocessed DatasetDict.
+    """
+    # Determine the standard target column for the task group
+    if target_column is not None:
+        if task_group == TaskGroup.TOKEN_CLASSIFICATION:
+            std_target = "labels"
+        elif task_group == TaskGroup.TEXT_TO_TEXT:
+            std_target = "target_text"
+        else:
+            std_target = "label"
+    else:
+        std_target = None
+
+    def preprocessing_func(dataset: DatasetDict) -> DatasetDict:
+        # Validate that the configured columns exist in at least one split
+        if input_column is not None:
+            input_found = any(
+                input_column in split.column_names for split in dataset.values()
+            )
+            if not input_found:
+                raise InvalidBenchmark(
+                    f"The dataset is configured with an input column "
+                    f"{input_column!r}, but this column was not found in any split "
+                    f"for the dataset {dataset_name!r}."
+                )
+        if target_column is not None:
+            target_found = any(
+                target_column in split.column_names for split in dataset.values()
+            )
+            if not target_found:
+                raise InvalidBenchmark(
+                    f"The dataset is configured with a target column "
+                    f"{target_column!r}, but this column was not found in any split "
+                    f"for the dataset {dataset_name!r}."
+                )
+
+        for split_name, split in dataset.items():
+            # Handle input column (optionally merging with choices)
+            if input_column is not None and choices_column is not None:
+                if (
+                    input_column in split.column_names
+                    and choices_column in split.column_names
+                ):
+
+                    def _merge(example: dict) -> dict:
+                        input_text = example[input_column].replace("\n", " ").strip()
+                        choices = example[choices_column]
+                        options = "\n".join(
+                            f"{letter}. {choice.replace('\n', ' ').strip()}"
+                            for letter, choice in zip(
+                                "abcdefghijklmnopqrstuvwxyz", choices
+                            )
+                        )
+                        example["text"] = (
+                            f"{input_text}\n{choices_label}:\n{options}"
+                        )
+                        return example
+
+                    split = split.map(_merge)
+                    cols_to_drop = [
+                        col
+                        for col in [input_column, choices_column]
+                        if col in split.column_names and col != "text"
+                    ]
+                    if cols_to_drop:
+                        split = split.remove_columns(cols_to_drop)
+            elif input_column is not None and input_column != "text":
+                if input_column in split.column_names:
+                    if "text" in split.column_names:
+                        split = split.remove_columns(["text"])
+                    split = split.rename_column(input_column, "text")
+
+            # Handle target column renaming
+            if (
+                std_target is not None
+                and target_column is not None
+                and target_column != std_target
+                and target_column in split.column_names
+            ):
+                if std_target in split.column_names:
+                    split = split.remove_columns([std_target])
+                split = split.rename_column(target_column, std_target)
+
+            dataset[split_name] = split
+
+        return dataset
+
+    return preprocessing_func
+
+
 class DatasetConfig:
     """Configuration for a dataset."""
 
@@ -191,7 +308,10 @@ class DatasetConfig:
         test_split: str = "test",
         bootstrap_samples: bool = True,
         unofficial: bool = False,
-        label_column: str | None = None,
+        input_column: str | None = None,
+        target_column: str | None = None,
+        choices_column: str | None = None,
+        preprocessing_func: c.Callable[[DatasetDict], DatasetDict] | None = None,
         _prompt_prefix: str | None = None,
         _prompt_template: str | None = None,
         _instruction_prompt: str | None = None,
@@ -278,11 +398,26 @@ class DatasetConfig:
                 Whether to bootstrap the dataset samples. Defaults to True.
             unofficial (optional):
                 Whether the dataset is unofficial. Defaults to False.
-            label_column (optional):
+            input_column (optional):
+                The name of the column in the dataset that contains the input texts. If
+                set, this column will be renamed to the standard input column name
+                ("text"). If `choices_column` is also set, the two columns are merged
+                into a single "text" column formatted as in the official dataset
+                creation scripts. Defaults to None.
+            target_column (optional):
                 The name of the column in the dataset that contains the labels. If None,
                 the default column name for the task group is used ("label" for most
                 tasks, "labels" for token classification, "target_text" for text-to-text
                 tasks). Defaults to None.
+            choices_column (optional):
+                The name of the column in the dataset that contains the list of answer
+                choices (for multiple-choice tasks). Requires `input_column` to also be
+                set. When set, the input text and choices are merged into a single
+                "text" column. Defaults to None.
+            preprocessing_func (optional):
+                A custom preprocessing function that takes a DatasetDict and returns a
+                DatasetDict. If set together with any of the column arguments, a warning
+                is logged and `preprocessing_func` takes precedence. Defaults to None.
             _prompt_prefix (optional):
                 This argument is deprecated. Please use `prompt_prefix` instead.
             _prompt_template (optional):
@@ -388,7 +523,6 @@ class DatasetConfig:
         self._name = name
         self._pretty_name = pretty_name
         self._source = source
-        self.label_column = label_column
         self.task = task
         self.languages = languages
 
@@ -460,6 +594,42 @@ class DatasetConfig:
         self.test_split = test_split
         self.bootstrap_samples = bootstrap_samples
         self.unofficial = unofficial
+
+        # Validate that choices_column is only used together with input_column
+        if choices_column is not None and input_column is None:
+            raise ValueError(
+                "The `choices_column` argument requires `input_column` to also be set."
+            )
+
+        # Build or assign the preprocessing function
+        column_args_set = any(
+            arg is not None for arg in [input_column, target_column, choices_column]
+        )
+        if preprocessing_func is not None and column_args_set:
+            log_once(
+                "Both `preprocessing_func` and column arguments (`input_column`, "
+                "`target_column`, `choices_column`) are set. `preprocessing_func` "
+                "takes precedence and the column arguments will be ignored.",
+                level=logging.WARNING,
+            )
+            self.preprocessing_func: (
+                c.Callable[[DatasetDict], DatasetDict] | None
+            ) = preprocessing_func
+        elif column_args_set:
+            # Determine the language-specific choices label
+            main_lang = self.languages[0] if self.languages else None
+            lang_code = main_lang.code if main_lang is not None else "en"
+            choices_label = CHOICES_MAPPING.get(lang_code, "Choices")
+            self.preprocessing_func = _build_preprocessing_func(
+                dataset_name=name or "",
+                task_group=self.task.task_group,
+                input_column=input_column,
+                target_column=target_column,
+                choices_column=choices_column,
+                choices_label=choices_label,
+            )
+        else:
+            self.preprocessing_func = preprocessing_func  # None or user-provided
 
     @property
     def name(self) -> str:

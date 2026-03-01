@@ -13,7 +13,6 @@ from huggingface_hub.errors import HfHubHTTPError, RepositoryNotFoundError
 from numpy.random import Generator
 
 from .constants import SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS
-from .enums import TaskGroup
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark
 from .logging_utils import log, no_terminal_output
 from .string_utils import unscramble
@@ -45,6 +44,10 @@ def load_data(
         cache_dir=benchmark_config.cache_dir,
         api_key=benchmark_config.api_key,
     )
+
+    # Apply custom preprocessing function if configured
+    if dataset_config.preprocessing_func is not None:
+        dataset = dataset_config.preprocessing_func(dataset)
 
     # Always add an index column to the dataset, so that we can easily identify which
     # example is which when we're bootstrapping
@@ -256,30 +259,5 @@ def load_raw_data(
             if split is not None
         }
     )
-
-    # If a custom label column is specified, rename it to the standard column name
-    if dataset_config.label_column is not None:
-        if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
-            target_label_column = "labels"
-        elif dataset_config.task.task_group == TaskGroup.TEXT_TO_TEXT:
-            target_label_column = "target_text"
-        else:
-            target_label_column = "label"
-        if dataset_config.label_column != target_label_column:
-            label_column_found = False
-            for split_name, split in dataset.items():
-                if dataset_config.label_column in split.column_names:
-                    label_column_found = True
-                    if target_label_column in split.column_names:
-                        split = split.remove_columns([target_label_column])
-                    dataset[split_name] = split.rename_column(
-                        dataset_config.label_column, target_label_column
-                    )
-            if not label_column_found:
-                raise InvalidBenchmark(
-                    "The dataset is configured with a custom label column "
-                    f"{dataset_config.label_column!r}, but this column was not found "
-                    f"in any split for the dataset {dataset_config.name!r}."
-                )
 
     return dataset
