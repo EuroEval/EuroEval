@@ -195,7 +195,7 @@ class TestAllDatasets:
             )
 
 
-def _make_dataset(col: str, value: str = "positive") -> DatasetDict:
+def make_dataset(col: str, value: str = "positive") -> DatasetDict:
     """Build a minimal three-split DatasetDict with a 'text' column and a custom column.
 
     Args:
@@ -219,7 +219,7 @@ class TestPreprocessingFunc:
         self,
         task,
         target_column: str | None = None,
-        input_column: str | None = None,
+        input_column: str = "text",
         choices_column: str | None = None,
     ) -> DatasetConfig:
         return DatasetConfig(
@@ -235,7 +235,7 @@ class TestPreprocessingFunc:
 
     def test_sequence_classification_renames_to_label(self) -> None:
         """target_column is renamed to 'label' for sequence classification tasks."""
-        raw = _make_dataset("sentiment")
+        raw = make_dataset(col="sentiment")
         config = self._config(SENT, target_column="sentiment")
         assert config.preprocessing_func is not None
         result = config.preprocessing_func(raw)
@@ -244,7 +244,7 @@ class TestPreprocessingFunc:
 
     def test_token_classification_renames_to_labels(self) -> None:
         """target_column is renamed to 'labels' for token classification tasks."""
-        raw = _make_dataset("ner_tags", value="O")
+        raw = make_dataset(col="ner_tags", value="O")
         config = self._config(NER, target_column="ner_tags")
         assert config.preprocessing_func is not None
         result = config.preprocessing_func(raw)
@@ -253,7 +253,7 @@ class TestPreprocessingFunc:
 
     def test_text_to_text_renames_to_target_text(self) -> None:
         """target_column is renamed to 'target_text' for text-to-text tasks."""
-        raw = _make_dataset("summary")
+        raw = make_dataset(col="summary")
         config = self._config(SUMM, target_column="summary")
         assert config.preprocessing_func is not None
         result = config.preprocessing_func(raw)
@@ -275,7 +275,7 @@ class TestPreprocessingFunc:
 
     def test_missing_target_column_raises_invalid_benchmark(self) -> None:
         """Raises InvalidBenchmark when the configured target_column is absent."""
-        raw = _make_dataset("label")  # does NOT have "sentiment" column
+        raw = make_dataset(col="label")  # does NOT have "sentiment" column
         config = self._config(SENT, target_column="sentiment")
         assert config.preprocessing_func is not None
         with pytest.raises(InvalidBenchmark, match="sentiment"):

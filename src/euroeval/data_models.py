@@ -193,7 +193,7 @@ class DatasetConfig:
         test_split: str = "test",
         bootstrap_samples: bool = True,
         unofficial: bool = False,
-        input_column: str | None = None,
+        input_column: str = "text",
         target_column: str | None = None,
         choices_column: str | None = None,
         preprocessing_func: c.Callable[[DatasetDict], DatasetDict] | None = None,
@@ -284,11 +284,11 @@ class DatasetConfig:
             unofficial (optional):
                 Whether the dataset is unofficial. Defaults to False.
             input_column (optional):
-                The name of the column in the dataset that contains the input texts. If
-                set, this column will be renamed to the standard input column name
-                ("text"). If `choices_column` is also set, the two columns are merged
-                into a single "text" column formatted as in the official dataset
-                creation scripts. Defaults to None.
+                The name of the column in the dataset that contains the input texts.
+                If different from "text", this column will be renamed to "text". If
+                `choices_column` is also set, the two columns are merged into a single
+                "text" column formatted as in the official dataset creation scripts.
+                Defaults to "text".
             target_column (optional):
                 The name of the column in the dataset that contains the labels. If None,
                 the default column name for the task group is used ("label" for most
@@ -296,9 +296,8 @@ class DatasetConfig:
                 tasks). Defaults to None.
             choices_column (optional):
                 The name of the column in the dataset that contains the list of answer
-                choices (for multiple-choice tasks). Requires `input_column` to also be
-                set. When set, the input text and choices are merged into a single
-                "text" column. Defaults to None.
+                choices (for multiple-choice tasks). When set, the input text and choices
+                are merged into a single "text" column. Defaults to None.
             preprocessing_func (optional):
                 A custom preprocessing function that takes a DatasetDict and returns a
                 DatasetDict. If set together with any of the column arguments, a warning
@@ -480,15 +479,9 @@ class DatasetConfig:
         self.bootstrap_samples = bootstrap_samples
         self.unofficial = unofficial
 
-        # Validate that choices_column is only used together with input_column
-        if choices_column is not None and input_column is None:
-            raise ValueError(
-                "The `choices_column` argument requires `input_column` to also be set."
-            )
-
         # Build or assign the preprocessing function
         column_args_set = any(
-            arg is not None for arg in [input_column, target_column, choices_column]
+            (input_column != "text", target_column is not None, choices_column is not None)
         )
         if preprocessing_func is not None and column_args_set:
             log_once(
