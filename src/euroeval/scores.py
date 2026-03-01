@@ -11,13 +11,13 @@ from .logging_utils import log
 
 if t.TYPE_CHECKING:
     from .metrics import Metric
-    from .types import ScoreDict
+    from .types import IterationScores, ScoreDict
 
 
 def log_scores(
     dataset_name: str,
     metrics: c.Sequence["Metric"],
-    scores: c.Sequence[dict[str, float]],
+    scores: c.Sequence["IterationScores"],
     model_id: str,
     model_revision: str,
     model_param: str | None,
@@ -63,13 +63,16 @@ def log_scores(
             else f"- {metric.pretty_name}: {test_score_str}"
         )
         all_log_strs.append(log_str)
+    total_dict["num_failed_instances"] = float(
+        sum(len(dct.get("failed_instances", [])) for dct in scores)
+    )
     log("\n".join(all_log_strs), level=logging.INFO)
 
     return dict(raw=scores, total=total_dict)
 
 
 def aggregate_scores(
-    scores: c.Sequence[dict[str, float]], metric: "Metric"
+    scores: c.Sequence["IterationScores"], metric: "Metric"
 ) -> tuple[float, float]:
     """Helper function to compute the mean with confidence intervals.
 

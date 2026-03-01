@@ -211,6 +211,12 @@ def extract_labels_from_generation(
         # allowed), or we raise an error
         if closest_distance >= 1000:
             num_predictions_being_very_off += 1
+            model_output.failed_instances.append(
+                dict(
+                    sample_index=idx,
+                    error="No candidate label found in model output",
+                )
+            )
 
         new_predicted_labels.append(best_candidate_label)
 

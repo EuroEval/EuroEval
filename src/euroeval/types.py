@@ -21,7 +21,24 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, GenerativeModelOutput
 
 
-ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[dict[str, float]]]
+class FailedInstance(t.TypedDict):
+    """A failed instance during generation.
+
+    Attributes:
+        sample_index:
+            The index of the sample in the batch that failed.
+        error:
+            A short description of why the instance failed.
+    """
+
+    sample_index: int
+    error: str
+
+
+IterationScores: t.TypeAlias = dict[str, float | list[FailedInstance]]
+ScoreDict: t.TypeAlias = dict[
+    str, dict[str, float] | c.Sequence[IterationScores]
+]
 Predictions: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Labels: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Tokeniser: t.TypeAlias = PreTrainedTokenizer | MistralCommonTokenizer

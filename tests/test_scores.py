@@ -89,10 +89,13 @@ class TestLogScores:
         """Test that `log_scores` returns a dictionary with the correct keys."""
         total_dict = logged_scores["total"]
         assert isinstance(total_dict, dict)
-        assert sorted(total_dict.keys()) == [
-            f"test_{metric.name}",
-            f"test_{metric.name}_se",
-        ]
+        assert sorted(total_dict.keys()) == sorted(
+            [
+                f"test_{metric.name}",
+                f"test_{metric.name}_se",
+                "num_failed_instances",
+            ]
+        )
 
     def test_total_scores_values_are_floats(self, logged_scores: ScoreDict) -> None:
         """Test that `log_scores` returns a dictionary with float values."""
@@ -100,3 +103,58 @@ class TestLogScores:
         assert isinstance(total_dict, dict)
         for val in total_dict.values():
             assert isinstance(val, float)
+
+    def test_num_failed_instances_defaults_to_zero(self, metric: Metric) -> None:
+        """Test that `log_scores` defaults `num_failed_instances` to 0.0 when absent."""
+        scores_without_failures = [
+            {f"test_{metric.name}": 0.50},
+            {f"test_{metric.name}": 0.55},
+        ]
+        result = log_scores(
+            dataset_name="dataset",
+            metrics=[metric],
+            scores=scores_without_failures,
+            model_id="model_id",
+            model_revision="main",
+            model_param=None,
+        )
+        total_dict = result["total"]
+        assert isinstance(total_dict, dict)
+        assert total_dict["num_failed_instances"] == 0.0
+
+    def test_num_failed_instances_sums_across_iterations(
+        self, metric: Metric
+    ) -> None:
+        """Test that `log_scores` sums `num_failed_instances` across iterations."""
+        scores_with_failures = [
+            {
+                f"test_{metric.name}": 0.50,
+                "failed_instances": [
+                    {"sample_index": 0, "error": "err"},
+                    {"sample_index": 1, "error": "err"},
+                ],
+            },
+            {
+                f"test_{metric.name}": 0.55,
+                "failed_instances": [
+                    {"sample_index": 2, "error": "err"},
+                    {"sample_index": 3, "error": "err"},
+                    {"sample_index": 4, "error": "err"},
+                ],
+            },
+            {
+                f"test_{metric.name}": 0.60,
+                "failed_instances": [],
+            },
+        ]
+        result = log_scores(
+            dataset_name="dataset",
+            metrics=[metric],
+            scores=scores_with_failures,
+            model_id="model_id",
+            model_revision="main",
+            model_param=None,
+        )
+        total_dict = result["total"]
+        assert isinstance(total_dict, dict)
+        assert total_dict["num_failed_instances"] == 5.0
