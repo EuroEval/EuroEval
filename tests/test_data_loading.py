@@ -6,7 +6,7 @@ from functools import partial
 from pathlib import Path
 
 import pytest
-from datasets import DatasetDict
+from datasets import Dataset, DatasetDict
 from numpy.random import default_rng
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
@@ -16,8 +16,10 @@ from euroeval.data_loading import load_data, load_raw_data
 from euroeval.data_models import BenchmarkConfig, DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import GenerativeType
+from euroeval.exceptions import InvalidBenchmark
 from euroeval.generation_utils import apply_prompt, extract_few_shot_examples
-from euroeval.tasks import RC
+from euroeval.languages import DANISH
+from euroeval.tasks import NER, RC, SENT, SUMM
 
 
 @pytest.fixture(scope="module")
@@ -191,3 +193,121 @@ class TestAllDatasets:
                 f"Dataset {dataset_config.name} is a reading comprehension dataset but "
                 f"the {split} split does not have an 'id' column."
             )
+
+
+def make_dataset(col: str, value: str = "positive") -> DatasetDict:
+    """Build a minimal three-split DatasetDict with a 'text' column and a custom column.
+
+    Args:
+        col:
+            The name of the custom column to add.
+        value:
+            The value to use in the custom column. Defaults to "positive".
+
+    Returns:
+        A DatasetDict with "train", "val", and "test" splits, each containing a single
+        row with a "text" column and the specified custom column.
+    """
+    split = Dataset.from_dict({"text": ["hello"], col: [value]})
+    return DatasetDict({"train": split, "val": split, "test": split})
+
+
+class TestPreprocessingFunc:
+    """Tests for the preprocessing function built from column arguments."""
+
+    def _config(
+        self,
+        task,
+        target_column: str | None = None,
+        input_column: str = "text",
+        choices_column: str | None = None,
+    ) -> DatasetConfig:
+        return DatasetConfig(
+            name="test-dataset",
+            pretty_name="Test Dataset",
+            source="dummy/source",
+            task=task,
+            languages=[DANISH],
+            target_column=target_column,
+            input_column=input_column,
+            choices_column=choices_column,
+        )
+
+    def test_sequence_classification_renames_to_label(self) -> None:
+        """target_column is renamed to 'label' for sequence classification tasks."""
+        raw = make_dataset(col="sentiment")
+        config = self._config(SENT, target_column="sentiment")
+        assert config.preprocessing_func is not None
+        result = config.preprocessing_func(raw)
+        assert "label" in result["test"].column_names
+        assert "sentiment" not in result["test"].column_names
+
+    def test_token_classification_renames_to_labels(self) -> None:
+        """target_column is renamed to 'labels' for token classification tasks."""
+        raw = make_dataset(col="ner_tags", value="O")
+        config = self._config(NER, target_column="ner_tags")
+        assert config.preprocessing_func is not None
+        result = config.preprocessing_func(raw)
+        assert "labels" in result["test"].column_names
+        assert "ner_tags" not in result["test"].column_names
+
+    def test_text_to_text_renames_to_target_text(self) -> None:
+        """target_column is renamed to 'target_text' for text-to-text tasks."""
+        raw = make_dataset(col="summary")
+        config = self._config(SUMM, target_column="summary")
+        assert config.preprocessing_func is not None
+        result = config.preprocessing_func(raw)
+        assert "target_text" in result["test"].column_names
+        assert "summary" not in result["test"].column_names
+
+    def test_conflict_existing_target_column_is_replaced(self) -> None:
+        """When target column already exists, it is removed before renaming."""
+        split = Dataset.from_dict(
+            {"text": ["hello"], "sentiment": ["positive"], "label": ["negative"]}
+        )
+        raw = DatasetDict({"train": split, "val": split, "test": split})
+        config = self._config(SENT, target_column="sentiment")
+        assert config.preprocessing_func is not None
+        result = config.preprocessing_func(raw)
+        assert "label" in result["test"].column_names
+        assert result["test"]["label"] == ["positive"]
+        assert "sentiment" not in result["test"].column_names
+
+    def test_missing_target_column_raises_invalid_benchmark(self) -> None:
+        """Raises InvalidBenchmark when the configured target_column is absent."""
+        raw = make_dataset(col="label")  # does NOT have "sentiment" column
+        config = self._config(SENT, target_column="sentiment")
+        assert config.preprocessing_func is not None
+        with pytest.raises(InvalidBenchmark, match="sentiment"):
+            config.preprocessing_func(raw)
+
+    def test_input_column_renamed_to_text(self) -> None:
+        """input_column is renamed to 'text'."""
+        split = Dataset.from_dict({"question": ["what?"], "label": ["a"]})
+        raw = DatasetDict({"train": split, "val": split, "test": split})
+        config = self._config(SENT, input_column="question")
+        assert config.preprocessing_func is not None
+        result = config.preprocessing_func(raw)
+        assert "text" in result["test"].column_names
+        assert "question" not in result["test"].column_names
+
+    def test_choices_column_merged_with_input_column(self) -> None:
+        """choices_column is merged with input_column into 'text'."""
+        split = Dataset.from_dict(
+            {
+                "question": ["What is 1+1?"],
+                "choices": [["1", "2", "3", "4"]],
+                "label": ["b"],
+            }
+        )
+        raw = DatasetDict({"train": split, "val": split, "test": split})
+        config = self._config(SENT, input_column="question", choices_column="choices")
+        assert config.preprocessing_func is not None
+        result = config.preprocessing_func(raw)
+        assert "text" in result["test"].column_names
+        assert "question" not in result["test"].column_names
+        assert "choices" not in result["test"].column_names
+        text = result["test"]["text"][0]
+        assert "What is 1+1?" in text
+        assert "a. 1" in text
+        assert "b. 2" in text

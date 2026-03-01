@@ -12,9 +12,10 @@ from pathlib import Path
 
 import pydantic
 import torch
+from datasets import DatasetDict
 from transformers.generation.configuration_utils import GenerationConfig
 
-from .constants import ATTENTION_BACKENDS, MAX_NUMBER_OF_LOGGING_LANGUAGES
+from .constants import ATTENTION_BACKENDS, CHOICES_MAPPING, MAX_NUMBER_OF_LOGGING_LANGUAGES
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
 from .languages import (
@@ -28,6 +29,7 @@ from .languages import (
 )
 from .logging_utils import log_once
 from .metrics.base import Metric
+from .preprocessing import build_preprocessing_func
 from .types import ScoreDict
 
 if t.TYPE_CHECKING:
@@ -191,6 +193,10 @@ class DatasetConfig:
         test_split: str = "test",
         bootstrap_samples: bool = True,
         unofficial: bool = False,
+        input_column: str = "text",
+        target_column: str | None = None,
+        choices_column: str | list[str] | None = None,
+        preprocessing_func: c.Callable[[DatasetDict], DatasetDict] | None = None,
         _prompt_prefix: str | None = None,
         _prompt_template: str | None = None,
         _instruction_prompt: str | None = None,
@@ -277,6 +283,28 @@ class DatasetConfig:
                 Whether to bootstrap the dataset samples. Defaults to True.
             unofficial (optional):
                 Whether the dataset is unofficial. Defaults to False.
+            input_column (optional):
+                The name of the column in the dataset that contains the input texts.
+                If different from "text", this column will be renamed to "text". If
+                `choices_column` is also set, the two columns are merged into a single
+                "text" column formatted as in the official dataset creation scripts.
+                Defaults to "text".
+            target_column (optional):
+                The name of the column in the dataset that contains the labels. If None,
+                the default column name for the task group is used ("label" for most
+                tasks, "labels" for token classification, "target_text" for text-to-text
+                tasks). Defaults to None.
+            choices_column (optional):
+                The name of the column (or list of column names) in the dataset that
+                contains the answer choices. If a single column name is provided, that
+                column must hold a list of answer-choice strings. If a list of column
+                names is provided, each column holds a single answer-choice string.
+                When set, the input text and choices are merged into a single "text"
+                column. Defaults to None.
+            preprocessing_func (optional):
+                A custom preprocessing function that takes a DatasetDict and returns a
+                DatasetDict. If set together with any of the column arguments, a warning
+                is logged and `preprocessing_func` takes precedence. Defaults to None.
             _prompt_prefix (optional):
                 This argument is deprecated. Please use `prompt_prefix` instead.
             _prompt_template (optional):
@@ -453,6 +481,36 @@ class DatasetConfig:
         self.test_split = test_split
         self.bootstrap_samples = bootstrap_samples
         self.unofficial = unofficial
+
+        # Build or assign the preprocessing function
+        column_args_set = any(
+            (input_column != "text", target_column is not None, choices_column is not None)
+        )
+        if preprocessing_func is not None and column_args_set:
+            log_once(
+                "Both `preprocessing_func` and column arguments (`input_column`, "
+                "`target_column`, `choices_column`) are set. `preprocessing_func` "
+                "takes precedence and the column arguments will be ignored.",
+                level=logging.WARNING,
+            )
+            self.preprocessing_func: (
+                c.Callable[[DatasetDict], DatasetDict] | None
+            ) = preprocessing_func
+        elif column_args_set:
+            # Determine the language-specific choices label
+            main_lang = self.languages[0] if self.languages else None
+            lang_code = main_lang.code if main_lang is not None else "en"
+            choices_label = CHOICES_MAPPING.get(lang_code, "Choices")
+            self.preprocessing_func = build_preprocessing_func(
+                dataset_name=name or "",
+                task_group=self.task.task_group,
+                input_column=input_column,
+                target_column=target_column,
+                choices_column=choices_column,
+                choices_label=choices_label,
+            )
+        else:
+            self.preprocessing_func = preprocessing_func  # None or user-provided
 
     @property
     def name(self) -> str:

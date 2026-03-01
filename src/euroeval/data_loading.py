@@ -45,6 +45,10 @@ def load_data(
         api_key=benchmark_config.api_key,
     )
 
+    # Apply custom preprocessing function if configured
+    if dataset_config.preprocessing_func is not None:
+        dataset = dataset_config.preprocessing_func(dataset)
+
     # Always add an index column to the dataset, so that we can easily identify which
     # example is which when we're bootstrapping
     for split_name, split in dataset.items():
@@ -244,7 +248,7 @@ def load_raw_data(
             )
 
     assert isinstance(dataset, DatasetDict)
-    return DatasetDict(  # pyrefly: ignore[no-matching-overload]
+    dataset = DatasetDict(  # pyrefly: ignore[no-matching-overload]
         {
             split: dataset[split]
             for split in [
@@ -255,3 +259,5 @@ def load_raw_data(
             if split is not None
         }
     )
+
+    return dataset
