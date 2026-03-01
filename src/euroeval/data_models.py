@@ -28,7 +28,7 @@ from .languages import (
 )
 from .logging_utils import log_once
 from .metrics.base import Metric
-from .types import ScoreDict
+from .types import FailedInstance, ScoreDict
 
 if t.TYPE_CHECKING:
     from .enums import InferenceBackend
@@ -981,15 +981,15 @@ class GenerativeModelOutput:
             applicable). Defaults to an empty list.
         failed_instances (optional):
             A list of dictionaries, one per failed instance, each containing
-            ``"model_output"`` (the raw generation) and ``"error"`` (a short
-            description of why it failed). Defaults to an empty list.
+            ``"sample_index"`` (the index of the sample in the batch) and ``"error"``
+            (a short description of why it failed). Defaults to an empty list.
     """
 
     sequences: c.Sequence[str]
     predicted_labels: c.Sequence | None = None
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
     metadatas: list["HashableDict | None"] = field(default_factory=list)
-    failed_instances: list[dict[str, str]] = field(default_factory=list)
+    failed_instances: list["FailedInstance"] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Post-initialisation."""

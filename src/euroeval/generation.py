@@ -29,6 +29,7 @@ if t.TYPE_CHECKING:
         GenerativeModelOutput,
         ModelConfig,
     )
+    from .types import IterationScores
 
 
 def generate(
@@ -37,7 +38,7 @@ def generate(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
-) -> c.Sequence[dict[str, float]]:
+) -> c.Sequence["IterationScores"]:
     """Evaluate a model on a dataset through generation.
 
     Args:
@@ -79,7 +80,7 @@ def generate(
         indent_json_when_saving=benchmark_config.debug,
     )
 
-    scores: list[dict[str, t.Any]] = list()
+    scores: list["IterationScores"] = list()
     for idx in get_pbar(
         iterable=range(len(datasets)),
         desc="Benchmarking",
@@ -108,7 +109,7 @@ def generate_single_iteration(
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
     cache: ModelCache,
-) -> dict[str, t.Any]:
+) -> "IterationScores":
     """Evaluate a model on a dataset in a single iteration through generation.
 
     Args:
@@ -287,7 +288,7 @@ def generate_single_iteration(
         )
         ground_truth = []
 
-    itr_scores: dict[str, t.Any] = model.compute_metrics(
+    itr_scores: "IterationScores" = model.compute_metrics(
         model_outputs_and_labels=(all_preds, ground_truth),
         dataset=dataset,
         benchmark_config=benchmark_config,

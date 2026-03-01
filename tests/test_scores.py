@@ -130,16 +130,16 @@ class TestLogScores:
             {
                 f"test_{metric.name}": 0.50,
                 "failed_instances": [
-                    {"model_output": "bad1", "error": "err"},
-                    {"model_output": "bad2", "error": "err"},
+                    {"sample_index": 0, "error": "err"},
+                    {"sample_index": 1, "error": "err"},
                 ],
             },
             {
                 f"test_{metric.name}": 0.55,
                 "failed_instances": [
-                    {"model_output": "bad3", "error": "err"},
-                    {"model_output": "bad4", "error": "err"},
-                    {"model_output": "bad5", "error": "err"},
+                    {"sample_index": 2, "error": "err"},
+                    {"sample_index": 3, "error": "err"},
+                    {"sample_index": 4, "error": "err"},
                 ],
             },
             {

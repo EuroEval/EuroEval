@@ -213,7 +213,7 @@ def extract_labels_from_generation(
             num_predictions_being_very_off += 1
             model_output.failed_instances.append(
                 dict(
-                    model_output=predicted_label,
+                    sample_index=idx,
                     error="No candidate label found in model output",
                 )
             )
