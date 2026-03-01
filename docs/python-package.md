@@ -382,9 +382,11 @@ task group.
 The `PromptConfig` object defines the prompts used for evaluation and accepts the
 following arguments:
 
-- `default_prompt_prefix`: Introductory text shown before the few-shot examples.
+- `default_prompt_prefix`: Introductory text shown before the few-shot examples (only
+  required for base decoders).
 - `default_prompt_template`: Template used to format each example in few-shot
-  evaluation. Available placeholders depend on the task group (see examples below).
+  evaluation (only required for base decoders). Available placeholders depend on the
+  task group (see examples below).
 - `default_instruction_prompt`: Template used for instruction-tuned models (zero-shot
   or instruction-style evaluation). Available placeholders depend on the task group (see
   examples below).
@@ -411,7 +413,7 @@ list of possible labels in the `DatasetConfig`.
 from euroeval import DatasetConfig
 from euroeval.data_models import Task, PromptConfig
 from euroeval.enums import TaskGroup
-from euroeval.languages import ENGLISH
+from euroeval.languages import DANISH
 from euroeval.metrics import mcc_metric, macro_f1_metric
 from euroeval.constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 
@@ -419,7 +421,7 @@ my_classification_task = Task(
     name="my-classification",
     task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
     template_dict={
-        ENGLISH: PromptConfig(
+        DANISH: PromptConfig(
             default_prompt_prefix="The following are texts and their categories, which "
             "can be {labels_str}.",
             default_prompt_template="Text: {text}\nCategory: {label}",
@@ -439,7 +441,7 @@ MY_DATASET = DatasetConfig(
     pretty_name="My Classification Dataset",
     source=dict(train="train.csv", val="val.csv", test="test.csv"),
     task=my_classification_task,
-    languages=[ENGLISH],
+    languages=[DANISH],
     labels=["sports", "politics", "entertainment"],
 )
 ```
@@ -467,7 +469,7 @@ must provide the list of possible label letters in the `DatasetConfig` (e.g.,
 from euroeval import DatasetConfig
 from euroeval.data_models import Task, PromptConfig
 from euroeval.enums import TaskGroup, ModelType
-from euroeval.languages import ENGLISH
+from euroeval.languages import FRENCH
 from euroeval.metrics import mcc_metric, accuracy_metric
 from euroeval.constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 
@@ -475,7 +477,7 @@ my_multiple_choice_task = Task(
     name="my-multiple-choice",
     task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
     template_dict={
-        ENGLISH: PromptConfig(
+        FRENCH: PromptConfig(
             default_prompt_prefix="The following are multiple-choice questions "
             "(with answers).",
             default_prompt_template="Question: {text}\nAnswer: {label}",
@@ -496,7 +498,7 @@ MY_DATASET = DatasetConfig(
     pretty_name="My Multiple Choice Dataset",
     source=dict(train="train.csv", val="val.csv", test="test.csv"),
     task=my_multiple_choice_task,
-    languages=[ENGLISH],
+    languages=[FRENCH],
     labels=["a", "b", "c", "d"],
 )
 ```
@@ -526,14 +528,14 @@ to the same category string (e.g., `{"b-per": "person", "i-per": "person"}`).
 from euroeval import DatasetConfig
 from euroeval.data_models import Task, PromptConfig
 from euroeval.enums import TaskGroup
-from euroeval.languages import ENGLISH
+from euroeval.languages import GERMAN
 from euroeval.metrics import micro_f1_metric
 
 my_token_classification_task = Task(
     name="my-token-classification",
     task_group=TaskGroup.TOKEN_CLASSIFICATION,
     template_dict={
-        ENGLISH: PromptConfig(
+        GERMAN: PromptConfig(
             default_prompt_prefix="Below are texts and JSON dictionaries with the "
             "categories that appear in the given text.",
             default_prompt_template="Text: {text}\nCategories: {label}",
@@ -560,7 +562,7 @@ MY_DATASET = DatasetConfig(
     pretty_name="My Token Classification Dataset",
     source=dict(train="train.csv", val="val.csv", test="test.csv"),
     task=my_token_classification_task,
-    languages=[ENGLISH],
+    languages=[GERMAN],
     labels=["o", "b-product", "i-product", "b-company", "i-company"],
 )
 ```
@@ -587,14 +589,14 @@ the SQuAD format.
 from euroeval import DatasetConfig
 from euroeval.data_models import Task, PromptConfig
 from euroeval.enums import TaskGroup
-from euroeval.languages import ENGLISH
+from euroeval.languages import SWEDISH
 from euroeval.metrics import f1_metric, em_metric
 
 my_qa_task = Task(
     name="my-reading-comprehension",
     task_group=TaskGroup.QUESTION_ANSWERING,
     template_dict={
-        ENGLISH: PromptConfig(
+        SWEDISH: PromptConfig(
             default_prompt_prefix="Below are texts with questions and answers.",
             default_prompt_template="Text: {text}\nQuestion: {question}\nAnswer in "
             "max 3 words: {label}",
@@ -613,7 +615,7 @@ MY_DATASET = DatasetConfig(
     pretty_name="My Reading Comprehension Dataset",
     source=dict(train="train.csv", val="val.csv", test="test.csv"),
     task=my_qa_task,
-    languages=[ENGLISH],
+    languages=[SWEDISH],
 )
 ```
 
