@@ -17,7 +17,7 @@ if t.TYPE_CHECKING:
 def log_scores(
     dataset_name: str,
     metrics: c.Sequence["Metric"],
-    scores: c.Sequence[dict[str, float]],
+    scores: c.Sequence[dict[str, t.Any]],
     model_id: str,
     model_revision: str,
     model_param: str | None,
@@ -64,7 +64,7 @@ def log_scores(
         )
         all_log_strs.append(log_str)
     total_dict["num_failed_instances"] = float(
-        sum(dct.get("num_failed_instances", 0) for dct in scores)
+        sum(len(dct.get("failed_instances", [])) for dct in scores)
     )
     log("\n".join(all_log_strs), level=logging.INFO)
 
@@ -72,7 +72,7 @@ def log_scores(
 
 
 def aggregate_scores(
-    scores: c.Sequence[dict[str, float]], metric: "Metric"
+    scores: c.Sequence[dict[str, t.Any]], metric: "Metric"
 ) -> tuple[float, float]:
     """Helper function to compute the mean with confidence intervals.
 

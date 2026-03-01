@@ -979,16 +979,17 @@ class GenerativeModelOutput:
         metadatas (optional):
             All the metadata fields for the samples, including ground truth labels (if
             applicable). Defaults to an empty list.
-        num_failed_instances (optional):
-            The number of instances in `sequences` for which the model failed to
-            produce a valid output. Defaults to 0.
+        failed_instances (optional):
+            A list of dictionaries, one per failed instance, each containing
+            ``"model_output"`` (the raw generation) and ``"error"`` (a short
+            description of why it failed). Defaults to an empty list.
     """
 
     sequences: c.Sequence[str]
     predicted_labels: c.Sequence | None = None
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
     metadatas: list["HashableDict | None"] = field(default_factory=list)
-    num_failed_instances: int = 0
+    failed_instances: list[dict[str, str]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Post-initialisation."""

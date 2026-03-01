@@ -21,7 +21,7 @@ if t.TYPE_CHECKING:
     from .data_models import BenchmarkConfig, GenerativeModelOutput
 
 
-ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[dict[str, float]]]
+ScoreDict: t.TypeAlias = dict[str, dict[str, t.Any] | c.Sequence[dict[str, t.Any]]]
 Predictions: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Labels: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Tokeniser: t.TypeAlias = PreTrainedTokenizer | MistralCommonTokenizer

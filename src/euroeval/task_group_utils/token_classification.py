@@ -213,7 +213,12 @@ def extract_labels_from_generation(
     for idx, raw_prediction in enumerate(model_output.sequences):
         prediction_dict = extract_json_dict_from_string(s=raw_prediction)
         if prediction_dict is None:
-            model_output.num_failed_instances += 1
+            model_output.failed_instances.append(
+                dict(
+                    model_output=raw_prediction,
+                    error="Could not parse JSON from model output",
+                )
+            )
             continue
 
         prompt_label_mapping = dataset_config.prompt_label_mapping

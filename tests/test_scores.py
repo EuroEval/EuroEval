@@ -127,9 +127,25 @@ class TestLogScores:
     ) -> None:
         """Test that `log_scores` sums `num_failed_instances` across iterations."""
         scores_with_failures = [
-            {f"test_{metric.name}": 0.50, "num_failed_instances": 2.0},
-            {f"test_{metric.name}": 0.55, "num_failed_instances": 3.0},
-            {f"test_{metric.name}": 0.60, "num_failed_instances": 0.0},
+            {
+                f"test_{metric.name}": 0.50,
+                "failed_instances": [
+                    {"model_output": "bad1", "error": "err"},
+                    {"model_output": "bad2", "error": "err"},
+                ],
+            },
+            {
+                f"test_{metric.name}": 0.55,
+                "failed_instances": [
+                    {"model_output": "bad3", "error": "err"},
+                    {"model_output": "bad4", "error": "err"},
+                    {"model_output": "bad5", "error": "err"},
+                ],
+            },
+            {
+                f"test_{metric.name}": 0.60,
+                "failed_instances": [],
+            },
         ]
         result = log_scores(
             dataset_name="dataset",
