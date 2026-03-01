@@ -29,6 +29,7 @@ from .languages import (
 )
 from .logging_utils import log_once
 from .metrics.base import Metric
+from .preprocessing import build_preprocessing_func
 from .types import ScoreDict
 
 if t.TYPE_CHECKING:
@@ -165,122 +166,6 @@ class Task:
     def __hash__(self) -> int:
         """Return a hash of the task."""
         return hash(self.name)
-
-
-def _build_preprocessing_func(
-    dataset_name: str,
-    task_group: "TaskGroup",
-    input_column: str | None,
-    target_column: str | None,
-    choices_column: str | None,
-    choices_label: str,
-) -> "c.Callable[[DatasetDict], DatasetDict]":
-    """Build a preprocessing function from column mapping arguments.
-
-    Args:
-        dataset_name:
-            The name of the dataset (used in error messages).
-        task_group:
-            The task group, used to determine the standard target column name.
-        input_column:
-            Column to rename to "text". If also combined with choices_column, the two
-            are merged into a formatted "text" column.
-        target_column:
-            Column to rename to the task-appropriate standard target column name.
-        choices_column:
-            Column with a list of answer choices to merge with the input column.
-        choices_label:
-            The language-specific label for the choices section (e.g. "Choices").
-
-    Returns:
-        A callable that takes a DatasetDict and returns a preprocessed DatasetDict.
-    """
-    # Determine the standard target column for the task group
-    if target_column is not None:
-        if task_group == TaskGroup.TOKEN_CLASSIFICATION:
-            std_target = "labels"
-        elif task_group == TaskGroup.TEXT_TO_TEXT:
-            std_target = "target_text"
-        else:
-            std_target = "label"
-    else:
-        std_target = None
-
-    def preprocessing_func(dataset: DatasetDict) -> DatasetDict:
-        # Validate that the configured columns exist in at least one split
-        if input_column is not None:
-            input_found = any(
-                input_column in split.column_names for split in dataset.values()
-            )
-            if not input_found:
-                raise InvalidBenchmark(
-                    f"The dataset is configured with an input column "
-                    f"{input_column!r}, but this column was not found in any split "
-                    f"for the dataset {dataset_name!r}."
-                )
-        if target_column is not None:
-            target_found = any(
-                target_column in split.column_names for split in dataset.values()
-            )
-            if not target_found:
-                raise InvalidBenchmark(
-                    f"The dataset is configured with a target column "
-                    f"{target_column!r}, but this column was not found in any split "
-                    f"for the dataset {dataset_name!r}."
-                )
-
-        for split_name, split in dataset.items():
-            # Handle input column (optionally merging with choices)
-            if input_column is not None and choices_column is not None:
-                if (
-                    input_column in split.column_names
-                    and choices_column in split.column_names
-                ):
-
-                    def _merge(example: dict) -> dict:
-                        input_text = example[input_column].replace("\n", " ").strip()
-                        choices = example[choices_column]
-                        options = "\n".join(
-                            f"{letter}. {choice.replace('\n', ' ').strip()}"
-                            for letter, choice in zip(
-                                "abcdefghijklmnopqrstuvwxyz", choices
-                            )
-                        )
-                        example["text"] = (
-                            f"{input_text}\n{choices_label}:\n{options}"
-                        )
-                        return example
-
-                    split = split.map(_merge)
-                    cols_to_drop = [
-                        col
-                        for col in [input_column, choices_column]
-                        if col in split.column_names and col != "text"
-                    ]
-                    if cols_to_drop:
-                        split = split.remove_columns(cols_to_drop)
-            elif input_column is not None and input_column != "text":
-                if input_column in split.column_names:
-                    if "text" in split.column_names:
-                        split = split.remove_columns(["text"])
-                    split = split.rename_column(input_column, "text")
-
-            # Handle target column renaming
-            if (
-                std_target is not None
-                and target_column is not None
-                and target_column != std_target
-                and target_column in split.column_names
-            ):
-                if std_target in split.column_names:
-                    split = split.remove_columns([std_target])
-                split = split.rename_column(target_column, std_target)
-
-            dataset[split_name] = split
-
-        return dataset
-
-    return preprocessing_func
 
 
 class DatasetConfig:
@@ -620,7 +505,7 @@ class DatasetConfig:
             main_lang = self.languages[0] if self.languages else None
             lang_code = main_lang.code if main_lang is not None else "en"
             choices_label = CHOICES_MAPPING.get(lang_code, "Choices")
-            self.preprocessing_func = _build_preprocessing_func(
+            self.preprocessing_func = build_preprocessing_func(
                 dataset_name=name or "",
                 task_group=self.task.task_group,
                 input_column=input_column,

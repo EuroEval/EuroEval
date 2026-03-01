@@ -1,0 +1,176 @@
+"""Preprocessing utilities for custom dataset column mapping."""
+
+import collections.abc as c
+import typing as t
+
+from .enums import TaskGroup
+from .exceptions import InvalidBenchmark
+
+if t.TYPE_CHECKING:
+    from datasets import DatasetDict
+
+
+def build_preprocessing_func(
+    dataset_name: str,
+    task_group: "TaskGroup",
+    input_column: str | None,
+    target_column: str | None,
+    choices_column: str | None,
+    choices_label: str,
+) -> "c.Callable[[DatasetDict], DatasetDict]":
+    """Build a preprocessing function from column mapping arguments.
+
+    The returned function renames or merges columns in a DatasetDict to match the
+    framework's standard column names:
+
+    - If ``input_column`` is given (without ``choices_column``), it is renamed to
+      ``"text"``.
+    - If both ``input_column`` and ``choices_column`` are given, the two are merged
+      into a single ``"text"`` column formatted as::
+
+          <input_text>
+          <choices_label>:
+          a. <choice_0>
+          b. <choice_1>
+          ...
+
+    - If ``target_column`` is given, it is renamed to the task-group standard:
+      ``"labels"`` for token classification, ``"target_text"`` for text-to-text, and
+      ``"label"`` for everything else.
+
+    ``InvalidBenchmark`` is raised when the function is called if any configured column
+    is absent from all splits.
+
+    Args:
+        dataset_name:
+            The name of the dataset, used in error messages.
+        task_group:
+            The task group, used to determine the standard target column name.
+        input_column:
+            Column to rename to ``"text"``. When combined with ``choices_column``, the
+            two are merged into a formatted ``"text"`` column instead.
+        target_column:
+            Column to rename to the task-appropriate standard target column name.
+        choices_column:
+            Column with a list of answer-choice strings to merge with the input column.
+        choices_label:
+            The language-specific label for the choices section (e.g. ``"Choices"``).
+
+    Returns:
+        A callable that accepts a ``DatasetDict`` and returns a preprocessed
+        ``DatasetDict``.
+    """
+    # Determine the standard target column for the task group
+    if target_column is not None:
+        if task_group == TaskGroup.TOKEN_CLASSIFICATION:
+            std_target = "labels"
+        elif task_group == TaskGroup.TEXT_TO_TEXT:
+            std_target = "target_text"
+        else:
+            std_target = "label"
+    else:
+        std_target = None
+
+    def preprocessing_func(dataset: "DatasetDict") -> "DatasetDict":
+        """Apply column mapping and merging to all splits in the dataset.
+
+        Validates that configured columns exist in at least one split before
+        processing, then renames or merges columns according to the configuration
+        passed to :func:`build_preprocessing_func`.
+
+        Args:
+            dataset:
+                The dataset to preprocess.
+
+        Returns:
+            The preprocessed dataset with columns renamed or merged as configured.
+
+        Raises:
+            InvalidBenchmark:
+                If a configured input or target column is absent from all splits.
+        """
+        # Validate that the configured columns exist in at least one split
+        if input_column is not None:
+            input_found = any(
+                input_column in split.column_names for split in dataset.values()
+            )
+            if not input_found:
+                raise InvalidBenchmark(
+                    f"The dataset is configured with an input column "
+                    f"{input_column!r}, but this column was not found in any split "
+                    f"for the dataset {dataset_name!r}."
+                )
+        if target_column is not None:
+            target_found = any(
+                target_column in split.column_names for split in dataset.values()
+            )
+            if not target_found:
+                raise InvalidBenchmark(
+                    f"The dataset is configured with a target column "
+                    f"{target_column!r}, but this column was not found in any split "
+                    f"for the dataset {dataset_name!r}."
+                )
+
+        for split_name, split in dataset.items():
+            # Handle input column (optionally merging with choices)
+            if input_column is not None and choices_column is not None:
+                if (
+                    input_column in split.column_names
+                    and choices_column in split.column_names
+                ):
+
+                    def _merge(example: dict) -> dict:
+                        """Merge input text and choices into a single text field.
+
+                        Args:
+                            example:
+                                A single dataset example with at least the
+                                ``input_column`` and ``choices_column`` keys.
+
+                        Returns:
+                            The example with a new ``"text"`` key containing the
+                            merged input and formatted choices.
+                        """
+                        input_text = example[input_column].replace("\n", " ").strip()
+                        choices = example[choices_column]
+                        options = "\n".join(
+                            f"{letter}. {choice.replace('\n', ' ').strip()}"
+                            for letter, choice in zip(
+                                "abcdefghijklmnopqrstuvwxyz", choices
+                            )
+                        )
+                        example["text"] = (
+                            f"{input_text}\n{choices_label}:\n{options}"
+                        )
+                        return example
+
+                    split = split.map(_merge)
+                    cols_to_drop = [
+                        col
+                        for col in [input_column, choices_column]
+                        if col in split.column_names and col != "text"
+                    ]
+                    if cols_to_drop:
+                        split = split.remove_columns(cols_to_drop)
+            elif input_column is not None and input_column != "text":
+                if input_column in split.column_names:
+                    if "text" in split.column_names:
+                        split = split.remove_columns(["text"])
+                    split = split.rename_column(input_column, "text")
+
+            # Handle target column renaming
+            if (
+                std_target is not None
+                and target_column is not None
+                and target_column != std_target
+                and target_column in split.column_names
+            ):
+                if std_target in split.column_names:
+                    split = split.remove_columns([std_target])
+                split = split.rename_column(target_column, std_target)
+
+            dataset[split_name] = split
+
+        return dataset
+
+    return preprocessing_func
