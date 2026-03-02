@@ -63,7 +63,6 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
-from ..tasks import NER
 from ..tokenisation_utils import (
     apply_chat_template,
     get_bos_token,
@@ -431,8 +430,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                 If the dataset requires logprobs, but we could not get the first token
                 of each label in the dataset.
             InvalidTask:
-                If the task requires structured output, but either is not NER or
-                does not define an output structure.
+                If the task requires structured output, but it is not a token
+                classification task and does not define an output structure.
         """
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
@@ -496,11 +495,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                 structured_outputs = StructuredOutputsParams(
                     json=self.dataset_config.task.structured_output_format.model_json_schema()
                 )
-            elif self.dataset_config.task == NER:
-                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+            elif self.dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+                tag_names = list(self.dataset_config.prompt_label_mapping.values())
                 keys_and_their_types: dict[str, t.Any] = {
                     tag_name: (conlist(str, max_length=5), ...)
-                    for tag_name in ner_tag_names
+                    for tag_name in tag_names
                 }
                 answer_format_class = create_model(
                     "AnswerFormat", **keys_and_their_types
@@ -517,8 +516,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             else:
                 raise InvalidTask(
                     message=(
-                        "Task set to use structured out, but neither is an NER task "
-                        "nor defines an output structure "
+                        "Task set to use structured output, but it neither defines "
+                        "an output structure nor is a token classification task "
                         "- at least one of these must be true."
                     )
                 )

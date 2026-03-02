@@ -463,3 +463,54 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset multi-wiki-qa-fo
 ```
+
+
+## Grammatical Error Detection
+
+### Unofficial: GerLangMod-fo
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the Faroese Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.
+
+The split sizes are 1,024 / 256 / 2,048 samples for training, validation and testing,
+respectively.
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Niðanfyri eru setningar og JSON orðabøkur við málvillum, ið eru í givnu setningunni.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Setning: {text}
+  Málvillur: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Setning: {text}
+
+  Kenn aftur málvillurnar í setningunni. Tú skalt prenta hetta sum ein JSON orðabók við lyklinum 'villa'. Virðið skal vera listi yvir rangt sett orð, beint sum tey síggjast í setningunni.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `villa`
+  - `I-ERR` ➡️ `villa`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-fo
+```
