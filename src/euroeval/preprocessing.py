@@ -21,8 +21,8 @@ def merge_input_and_choices(
 
     Args:
         example:
-            A single dataset example with at least the ``input_column`` and the column(s)
-            named by ``choices_column``.
+            A single dataset example with at least the ``input_column`` and the
+            column(s) named by ``choices_column``.
         input_column:
             The name of the column containing the input text.
         choices_column:
@@ -98,11 +98,6 @@ def build_preprocessing_func(
     Returns:
         A callable that accepts a ``DatasetDict`` and returns a preprocessed
         ``DatasetDict``.
-
-    Raises:
-        InvalidBenchmark:
-            When the returned callable is called, if any configured column is absent
-            from all splits.
     """
     # Determine the standard target column for the task group
     if target_column is not None:
@@ -154,9 +149,7 @@ def build_preprocessing_func(
                 )
         if choices_cols is not None:
             for col in choices_cols:
-                col_found = all(
-                    col in split.column_names for split in dataset.values()
-                )
+                col_found = all(col in split.column_names for split in dataset.values())
                 if not col_found:
                     raise InvalidBenchmark(
                         f"The dataset is configured with a choices column "
