@@ -33,6 +33,20 @@ class InvalidModel(Exception):
         super().__init__(self.message)
 
 
+class InvalidTask(Exception):
+    """The task cannot be used for benchmarking using any model and dataset."""
+
+    def __init__(self, message: str = "The task is invalid.") -> None:
+        """Initialise the exception.
+
+        Args:
+            message:
+                The message to display.
+        """
+        self.message = message
+        super().__init__(self.message)
+
+
 class HuggingFaceHubDown(Exception):
     """The Hugging Face Hub seems to be down."""
 

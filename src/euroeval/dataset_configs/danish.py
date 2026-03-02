@@ -105,6 +105,15 @@ VALEU_DA_CONFIG = DatasetConfig(
 
 # Unofficial datasets ###
 
+DALA_CONFIG = DatasetConfig(
+    name="dala",
+    pretty_name="DaLA",
+    source="giannor/dala",
+    task=LA,
+    languages=[DANISH],
+    unofficial=True,
+)
+
 DANE_CONFIG = DatasetConfig(
     name="dane",
     pretty_name="DaNE",
