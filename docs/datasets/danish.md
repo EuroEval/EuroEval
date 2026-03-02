@@ -383,9 +383,8 @@ University of Copenhagen. Each sample pairs two Danish statements and asks wheth
 second statement follows from the first.
 
 The original dataset contains 319 usable samples after filtering. We use a split of
-64 / 64 / 190 samples for training, validation and testing, respectively (so 318 samples
-used in total after deduplication). The splits were created by randomly sampling from
-the full dataset.
+32 / 286 samples for training and testing, respectively (so 318 samples used in total
+after deduplication). The splits were created by randomly sampling from the full dataset.
 
 Here are a few examples from the training split:
 

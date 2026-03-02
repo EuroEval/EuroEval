@@ -66,26 +66,19 @@ def main() -> None:
     df = df[["text", "label"]].drop_duplicates().reset_index(drop=True)
 
     # Create splits. The dataset is small (318 samples after deduplication), so we
-    # use all available samples across train / val / test.
-    val_size = 64
-    train_size = 64
-    test_size = len(df) - val_size - train_size
+    # use a small training split and put most samples in test.
+    train_size = 32
 
-    val_df = df.sample(n=val_size, random_state=4242)
-    remaining_df = df.drop(val_df.index).reset_index(drop=True)
-
-    test_df = remaining_df.sample(n=test_size, random_state=4242)
-    train_df = remaining_df.drop(test_df.index).reset_index(drop=True)
+    train_df = df.sample(n=train_size, random_state=4242)
+    test_df = df.drop(train_df.index).reset_index(drop=True)
 
     train_df = train_df.reset_index(drop=True)
-    val_df = val_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
 
     # Collect datasets in a dataset dictionary
     dataset = DatasetDict(
         {
             "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
-            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
             "test": Dataset.from_pandas(test_df, split=Split.TEST),
         }
     )
