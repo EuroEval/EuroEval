@@ -97,8 +97,7 @@ def build_preprocessing_func(
 
     Returns:
         A callable that accepts a ``DatasetDict`` and returns a preprocessed
-        ``DatasetDict``. The callable raises ``InvalidBenchmark`` if any
-        configured column is absent from all splits.
+        ``DatasetDict``.
     """
     # Determine the standard target column for the task group
     if target_column is not None:

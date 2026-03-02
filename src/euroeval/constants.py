@@ -175,3 +175,9 @@ CHOICES_MAPPING: dict[str, str] = {
     "sv": "Svarsalternativ",
     "uk": "Варіанти",
 }
+
+# Constants for the tool-calling task
+TOOL_CALLING_CALLS_KEY = "tool_calls"
+TOOL_CALLING_FUNCTION_KEY = "function"
+TOOL_CALLING_ARGUMENTS_KEY = "arguments"
+TOOL_CALLING_KEYS = [TOOL_CALLING_FUNCTION_KEY, TOOL_CALLING_ARGUMENTS_KEY]
