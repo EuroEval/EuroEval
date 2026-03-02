@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Failed generative model instances are now tracked and included in
+  `euroeval_benchmark_results.jsonl`. Each per-iteration entry in `results.raw` now
+  contains a `failed_instances` list, where every item has a `sample_index` (the
+  0-based index of the sample in the batch) and an `error` message describing why the
+  instance failed (e.g. `"Could not parse JSON from model output"` for NER tasks or
+  `"No candidate label found in model output"` for classification tasks). The
+  `results.total` dict also gains a `num_failed_instances` key with the total count
+  across all iterations.
+- A task _Tool Calling_ and a dataset under this task _bfcl-v2 a subset of the
+  Berkeley Function Calling Leaderboard benchmark (v2). Currently only supported for
+  English. This was added by @harderj ✨
+- Added the new Danish linguistic acceptability dataset DaLA. It's marked as
+  unofficial for now. This was added by @N-essuno ✨
+- Added `--max-context-length` and `--vocabulary-size` CLI options (and corresponding
+  `max_context_length` and `vocabulary_size` arguments to `Benchmarker.__init__` and
+  `Benchmarker.benchmark`) to allow overriding the model metadata values that are
+  inferred automatically from the model. This is useful when the model does not have
+  the metadata specified, or has it specified incorrectly.
+- Added `input_column`, `target_column`, `choices_column`, and `preprocessing_func`
+  arguments to `DatasetConfig` to make it easier to use custom datasets with
+  non-standard column names. `input_column` specifies the column containing the input
+  text (defaults to `"text"`), `target_column` specifies the column containing the
+  label (renamed to the task-appropriate standard at load time), `choices_column`
+  specifies a column (or list of columns) containing answer choices for
+  multiple-choice tasks, and `preprocessing_func` is a fully custom preprocessing
+  function that takes precedence over the column arguments if both are provided.
+
+## [v16.16.1] - 2026-02-25
+
+### Fixed
+
+- LLM-as-a-judge outputs were not cached correctly - this has now been fixed.
+
+## [v16.16.0] - 2026-02-25
+
+### Added
+
 - We now add all metadata (including ground truth labels, if applicable) to the model
   cache when debug mode is enabled (with `--debug` or `debug=True`). We have added a
   [section in the
@@ -27,6 +64,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   only reliably verify official providers. This check is now skipped for custom
   endpoints, and we assume they support structured outputs. This was added by
   @viggo-gascou ✨
+- Fixed issue when evaluating models on custom inference APIs that the model ID would be
+  assigned the `openai/openai/` prefix. This should only happen if the model ID starts
+  with `openai/`, such as `openai/gpt-oss-20b`, for instance (this is because LiteLLM
+  attaches a special meaning to the `openai/` prefix). This has been fixed now.
+- When evaluating models on a custom inference API with a task that uses LLM-as-a-judge
+  metrics, an error caused the same model to be the judge. We now disallow judges to run
+  on custom inference APIs to solve this. Support for running local judges in this sense
+  could be supported in the future.
 
 ## [v16.15.0] - 2026-02-18
 
