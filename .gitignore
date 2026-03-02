@@ -128,3 +128,6 @@ generated_contracts/
 
 # Test config
 euroeval_config.py
+
+# Local debug scripts
+debug*.py
