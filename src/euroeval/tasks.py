@@ -178,6 +178,11 @@ TOOL_CALLING = Task(
     default_num_few_shot_examples=0,
     default_max_generated_tokens=500,
     default_labels=[],
+    default_allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
     requires_zero_shot=True,
     uses_structured_output=True,
     structured_output_format=ToolCallingResponse,

@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- A task _Tool Calling_ and a dataset under this task _bfcl-v2_ a subset of the
-Berkeley Function Calling Leaderboard benchmark (v4).
+- A task _Tool Calling_ and a dataset under this task _bfcl-v2 a subset of the
+Berkeley Function Calling Leaderboard benchmark (v2).
 Currently only supported for English.
 
 ## [v16.16.1] - 2026-02-25
