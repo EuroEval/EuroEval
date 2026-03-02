@@ -1366,7 +1366,7 @@ euroeval --model <model-id> --dataset valeu-da
 
 ## Word in Context
 
-### DanWiC
+### Unofficial: DanWiC
 
 This dataset was published in [this
 paper](https://doi.org/10.7146/nys.v1i65.143072) and is based on the semantic module of

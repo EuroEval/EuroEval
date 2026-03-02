@@ -103,14 +103,6 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
-DANWIC_CONFIG = DatasetConfig(
-    name="danwic",
-    pretty_name="DanWiC",
-    source="EuroEval/danwic",
-    task=WIC,
-    languages=[DANISH],
-)
-
 
 # Unofficial datasets ###
 
@@ -184,5 +176,14 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DANISH],
     labels=["a", "b"],
+    unofficial=True,
+)
+
+DANWIC_CONFIG = DatasetConfig(
+    name="danwic",
+    pretty_name="DanWiC",
+    source="EuroEval/danwic",
+    task=WIC,
+    languages=[DANISH],
     unofficial=True,
 )
