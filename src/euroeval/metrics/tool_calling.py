@@ -4,7 +4,7 @@ import collections.abc as c
 import json
 import typing as t
 
-from euroeval.logging_utils import log_once
+from ..logging_utils import log_once
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset

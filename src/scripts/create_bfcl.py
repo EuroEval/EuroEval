@@ -1,4 +1,4 @@
-"""Create the bfcl datasets and upload them to the HF Hub."""
+"""Create the BFCL-v2 dataset and upload it to the HF Hub."""
 
 import json
 import os
@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 
 def main() -> None:
-    """Create BFCL dataset (the part used by EuroEval) and push to hugging face."""
+    """Create BFCL-v2 dataset (the part used by EuroEval) and push to hugging face."""
     items: list = []
     for subset_name in [
         "live_multiple",
@@ -55,7 +55,7 @@ def main() -> None:
     load_dotenv()
     dataset_dict = _split_dataset_to_dict(items)
     dataset_dict.push_to_hub(
-        "EuroEval/bfcl-en", private=True, token=os.getenv("HF_TOKEN")
+        "EuroEval/bfcl-v2", private=True, token=os.getenv("HF_TOKEN")
     )
 
 

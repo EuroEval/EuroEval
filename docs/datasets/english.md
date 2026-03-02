@@ -1249,7 +1249,7 @@ euroeval --model <model-id> --dataset valeu-en
 
 ## Tool calling
 
-### BFCL
+### BFCL-v2
 
 This dataset is an excerpt from the
 [Berkeley Function Calling Leaderboard (v2) dataset](https://openreview.net/forum?id=2GmDdhBdDk),
@@ -1380,5 +1380,5 @@ Here is an example from the training split:
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset bfcl
+euroeval --model <model-id> --dataset bfcl-v2
 ```
