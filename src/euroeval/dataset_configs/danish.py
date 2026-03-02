@@ -14,6 +14,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    WIC,
 )
 
 # Official datasets ###
@@ -185,5 +186,14 @@ DANISH_ENTAILMENT_CONFIG = DatasetConfig(
     task=NLI,
     languages=[DANISH],
     val_split=None,
+    unofficial=True,
+)
+
+DANWIC_CONFIG = DatasetConfig(
+    name="danwic",
+    pretty_name="DanWiC",
+    source="EuroEval/danwic",
+    task=WIC,
+    languages=[DANISH],
     unofficial=True,
 )
