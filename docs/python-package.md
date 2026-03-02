@@ -528,6 +528,51 @@ euroeval --dataset my-sql-dataset --model <model-id>
 
 ## Analysing the results of generative models
 
+### Failed instances
+
+When evaluating a generative model, some samples may fail silently — for example when
+the model's output cannot be parsed as JSON (for NER tasks), or when no valid label can
+be matched to the model's output (for classification tasks). These failures are now
+recorded in `euroeval_benchmark_results.jsonl`.
+
+In `results.raw`, each per-iteration score dictionary contains a `failed_instances` key
+with a list of failed samples. Every item in the list has:
+
+- `sample_index` — the 0-based index of the sample within the bootstrapped batch for
+  that iteration.
+- `error` — a short description of why the sample failed (e.g.
+  `"Could not parse JSON from model output"` or
+  `"No candidate label found in model output"`).
+
+In `results.total`, the `num_failed_instances` key holds the total count of failed
+instances summed across all iterations.
+
+```json
+{
+  "results": {
+    "total": {
+      "test_micro_f1": 0.82,
+      "test_micro_f1_se": 0.01,
+      "num_failed_instances": 3.0
+    },
+    "raw": [
+      {
+        "micro_f1": 0.82,
+        "failed_instances": [
+          {"sample_index": 4, "error": "Could not parse JSON from model output"}
+        ]
+      }
+    ]
+  }
+}
+```
+
+If a model never fails (e.g. encoder/fine-tuned models, or a flawless generative run),
+`num_failed_instances` will be `0.0` and `failed_instances` will be an empty list for
+every iteration.
+
+### Detailed model outputs
+
 If you're evaluating a generative model and want to be able to analyse the model results
 more in-depth, you can run your evaluation with the `--debug` flag (or `debug=True` if
 using the `Benchmarker`), which will output all the model outputs and all the dataset
