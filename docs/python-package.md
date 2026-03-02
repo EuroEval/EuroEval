@@ -230,6 +230,33 @@ benchmarker.benchmark(
     support of adapters is important to you, please consider [opening an
     issue](https://github.com/EuroEval/EuroEval/issues).
 
+## Overriding model metadata
+
+Some models do not have metadata (maximum context length and vocabulary size) specified,
+or have it specified incorrectly. This leads to incorrect values on the leaderboards.
+To work around this you can manually override these values using the
+`--max-context-length` and `--vocabulary-size` arguments:
+
+/// tab | Using the command line
+
+```bash
+euroeval --model <model-id> --max-context-length 4096 --vocabulary-size 32000
+```
+
+///
+
+/// tab | Using a script
+
+```python
+>>> benchmarker.benchmark(
+...     model="<model-id>",
+...     max_context_length=4096,
+...     vocabulary_size=32000,
+... )
+```
+
+///
+
 ## Benchmarking custom datasets
 
 If you want to benchmark models on your own custom dataset, this is also possible.
