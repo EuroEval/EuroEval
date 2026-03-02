@@ -63,9 +63,12 @@ def log_scores(
             else f"- {metric.pretty_name}: {test_score_str}"
         )
         all_log_strs.append(log_str)
-    total_dict["num_failed_instances"] = float(
-        sum(len(dct.get("failed_instances", [])) for dct in scores)
-    )
+    num_failed = 0
+    for dct in scores:
+        v = dct.get("failed_instances", [])
+        if isinstance(v, list):
+            num_failed += len(v)
+    total_dict["num_failed_instances"] = float(num_failed)
     log("\n".join(all_log_strs), level=logging.INFO)
 
     return dict(raw=scores, total=total_dict)

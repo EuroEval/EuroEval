@@ -13,7 +13,7 @@ from transformers.models.auto.tokenization_auto import AutoTokenizer
 from euroeval.benchmark_modules.litellm import LiteLLMModel
 from euroeval.constants import MAX_CONTEXT_LENGTH
 from euroeval.data_loading import load_data, load_raw_data
-from euroeval.data_models import BenchmarkConfig, DatasetConfig
+from euroeval.data_models import BenchmarkConfig, DatasetConfig, Task
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.enums import GenerativeType
 from euroeval.exceptions import InvalidBenchmark
@@ -217,7 +217,7 @@ class TestPreprocessingFunc:
 
     def _config(
         self,
-        task,
+        task: Task,
         target_column: str | None = None,
         input_column: str = "text",
         choices_column: str | None = None,

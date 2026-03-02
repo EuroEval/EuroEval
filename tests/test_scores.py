@@ -7,7 +7,7 @@ import pytest
 
 from euroeval.metrics import Metric
 from euroeval.scores import aggregate_scores, log_scores
-from euroeval.types import ScoreDict
+from euroeval.types import FailedInstance, ScoreDict
 
 
 @pytest.fixture(scope="module")
@@ -90,11 +90,7 @@ class TestLogScores:
         total_dict = logged_scores["total"]
         assert isinstance(total_dict, dict)
         assert sorted(total_dict.keys()) == sorted(
-            [
-                f"test_{metric.name}",
-                f"test_{metric.name}_se",
-                "num_failed_instances",
-            ]
+            [f"test_{metric.name}", f"test_{metric.name}_se", "num_failed_instances"]
         )
 
     def test_total_scores_values_are_floats(self, logged_scores: ScoreDict) -> None:
@@ -122,30 +118,25 @@ class TestLogScores:
         assert isinstance(total_dict, dict)
         assert total_dict["num_failed_instances"] == 0.0
 
-    def test_num_failed_instances_sums_across_iterations(
-        self, metric: Metric
-    ) -> None:
+    def test_num_failed_instances_sums_across_iterations(self, metric: Metric) -> None:
         """Test that `log_scores` sums `num_failed_instances` across iterations."""
         scores_with_failures = [
             {
                 f"test_{metric.name}": 0.50,
                 "failed_instances": [
-                    {"sample_index": 0, "error": "err"},
-                    {"sample_index": 1, "error": "err"},
+                    FailedInstance(sample_index=0, error="err"),
+                    FailedInstance(sample_index=1, error="err"),
                 ],
             },
             {
                 f"test_{metric.name}": 0.55,
                 "failed_instances": [
-                    {"sample_index": 2, "error": "err"},
-                    {"sample_index": 3, "error": "err"},
-                    {"sample_index": 4, "error": "err"},
+                    FailedInstance(sample_index=2, error="err"),
+                    FailedInstance(sample_index=3, error="err"),
+                    FailedInstance(sample_index=4, error="err"),
                 ],
             },
-            {
-                f"test_{metric.name}": 0.60,
-                "failed_instances": [],
-            },
+            {f"test_{metric.name}": 0.60, "failed_instances": []},
         ]
         result = log_scores(
             dataset_name="dataset",

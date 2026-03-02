@@ -15,7 +15,11 @@ import torch
 from datasets import DatasetDict
 from transformers.generation.configuration_utils import GenerationConfig
 
-from .constants import ATTENTION_BACKENDS, CHOICES_MAPPING, MAX_NUMBER_OF_LOGGING_LANGUAGES
+from .constants import (
+    ATTENTION_BACKENDS,
+    CHOICES_MAPPING,
+    MAX_NUMBER_OF_LOGGING_LANGUAGES,
+)
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
 from .languages import (
@@ -484,7 +488,11 @@ class DatasetConfig:
 
         # Build or assign the preprocessing function
         column_args_set = any(
-            (input_column != "text", target_column is not None, choices_column is not None)
+            (
+                input_column != "text",
+                target_column is not None,
+                choices_column is not None,
+            )
         )
         if preprocessing_func is not None and column_args_set:
             log_once(
@@ -493,9 +501,9 @@ class DatasetConfig:
                 "takes precedence and the column arguments will be ignored.",
                 level=logging.WARNING,
             )
-            self.preprocessing_func: (
-                c.Callable[[DatasetDict], DatasetDict] | None
-            ) = preprocessing_func
+            self.preprocessing_func: c.Callable[[DatasetDict], DatasetDict] | None = (
+                preprocessing_func
+            )
         elif column_args_set:
             # Determine the language-specific choices label
             main_lang = self.languages[0] if self.languages else None

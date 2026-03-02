@@ -29,7 +29,7 @@ if t.TYPE_CHECKING:
         GenerativeModelOutput,
         ModelConfig,
     )
-    from .types import IterationScores
+    from .types import FailedInstance, IterationScores
 
 
 def generate(
@@ -144,7 +144,7 @@ def generate_single_iteration(
         non_cached_dataset = dataset
 
     all_preds: list[str] = list()
-    failed_instances: list[dict[str, str]] = list()
+    failed_instances: list["FailedInstance"] = list()
 
     if len(non_cached_dataset) > 0:
         itr: t.Iterable
@@ -288,12 +288,15 @@ def generate_single_iteration(
         )
         ground_truth = []
 
-    itr_scores: "IterationScores" = model.compute_metrics(
+    metrics_scores = model.compute_metrics(
         model_outputs_and_labels=(all_preds, ground_truth),
         dataset=dataset,
         benchmark_config=benchmark_config,
     )
-    itr_scores["failed_instances"] = failed_instances
+    itr_scores: "IterationScores" = {
+        **metrics_scores,
+        "failed_instances": failed_instances,
+    }
 
     return itr_scores
 

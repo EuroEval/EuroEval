@@ -35,10 +35,8 @@ class FailedInstance(t.TypedDict):
     error: str
 
 
-IterationScores: t.TypeAlias = dict[str, float | list[FailedInstance]]
-ScoreDict: t.TypeAlias = dict[
-    str, dict[str, float] | c.Sequence[IterationScores]
-]
+IterationScores: t.TypeAlias = c.Mapping[str, float | list[FailedInstance]]
+ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[IterationScores]]
 Predictions: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Labels: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Tokeniser: t.TypeAlias = PreTrainedTokenizer | MistralCommonTokenizer

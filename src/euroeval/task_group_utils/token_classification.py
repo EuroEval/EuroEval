@@ -214,10 +214,7 @@ def extract_labels_from_generation(
         prediction_dict = extract_json_dict_from_string(s=raw_prediction)
         if prediction_dict is None:
             model_output.failed_instances.append(
-                dict(
-                    sample_index=idx,
-                    error="Could not parse JSON from model output",
-                )
+                dict(sample_index=idx, error="Could not parse JSON from model output")
             )
             continue
 
