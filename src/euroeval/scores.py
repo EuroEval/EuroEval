@@ -93,9 +93,13 @@ def aggregate_scores(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
 
-        test_scores = [
-            dct[metric.name] if metric.name in dct else dct[f"test_{metric.name}"]
+        test_scores: list[float] = [
+            v
             for dct in scores
+            for v in [
+                dct[metric.name] if metric.name in dct else dct[f"test_{metric.name}"]
+            ]
+            if isinstance(v, float)
         ]
         test_score = np.mean(test_scores).item()
 
