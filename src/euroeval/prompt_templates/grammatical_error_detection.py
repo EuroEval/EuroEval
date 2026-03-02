@@ -221,8 +221,8 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="Vous trouverez ci-dessous des phrases et des "
         "dictionnaires JSON avec les erreurs grammaticales qui apparaissent dans "
         "la phrase donnée.",
-        default_prompt_template="Sentence: {text}\nErreurs grammaticales: {label}",
-        default_instruction_prompt="Sentence: {text}\n\nIdentifiez les erreurs "
+        default_prompt_template="Phrase : {text}\nErreurs grammaticales : {label}",
+        default_instruction_prompt="Phrase : {text}\n\nIdentifiez les erreurs "
         "grammaticales dans la phrase. Vous devez produire ceci sous forme de "
         "dictionnaire JSON avec la clé 'erreur'. La valeur doit être une liste des "
         "mots mal placés, exactement comme ils apparaissent dans la phrase.",
