@@ -9,7 +9,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
+- Failed generative model instances are now tracked and included in
+  `euroeval_benchmark_results.jsonl`. Each per-iteration entry in `results.raw` now
+  contains a `failed_instances` list, where every item has a `sample_index` (the
+  0-based index of the sample in the batch) and an `error` message describing why the
+  instance failed (e.g. `"Could not parse JSON from model output"` for NER tasks or
+  `"No candidate label found in model output"` for classification tasks). The
+  `results.total` dict also gains a `num_failed_instances` key with the total count
+  across all iterations.
+- A task _Tool Calling_ and a dataset under this task _bfcl-v2 a subset of the
+  Berkeley Function Calling Leaderboard benchmark (v2). Currently only supported for
+  English. This was added by @harderj ✨
+- Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
 - Added the Danish Lexical Inference dataset
   [danish-lexical-inference](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark/tree/main/inference),
@@ -17,6 +28,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   inference through the ability to determine whether a statement is true or false, given
   two true context statements. The split is given by 128 / 64 / 828 samples for train /
   val / test, respectively. It is marked as `unofficial` for now.
+- Added `--max-context-length` and `--vocabulary-size` CLI options (and corresponding
+  `max_context_length` and `vocabulary_size` arguments to `Benchmarker.__init__` and
+  `Benchmarker.benchmark`) to allow overriding the model metadata values that are
+  inferred automatically from the model. This is useful when the model does not have
+  the metadata specified, or has it specified incorrectly.
+- Added `input_column`, `target_column`, `choices_column`, and `preprocessing_func`
+  arguments to `DatasetConfig` to make it easier to use custom datasets with
+  non-standard column names. `input_column` specifies the column containing the input
+  text (defaults to `"text"`), `target_column` specifies the column containing the
+  label (renamed to the task-appropriate standard at load time), `choices_column`
+  specifies a column (or list of columns) containing answer choices for
+  multiple-choice tasks, and `preprocessing_func` is a fully custom preprocessing
+  function that takes precedence over the column arguments if both are provided.
 
 ## [v16.16.1] - 2026-02-25
 
