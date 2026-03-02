@@ -103,16 +103,6 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
-DANISH_ENTAILMENT_CONFIG = DatasetConfig(
-    name="danish-entailment",
-    pretty_name="The Danish Entailment Dataset",
-    source="EuroEval/danish-entailment",
-    task=NLI,
-    languages=[DANISH],
-    val_split=None,
-)
-
-
 # Unofficial datasets ###
 
 DALA_CONFIG = DatasetConfig(
@@ -185,5 +175,15 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DANISH],
     labels=["a", "b"],
+    unofficial=True,
+)
+
+DANISH_ENTAILMENT_CONFIG = DatasetConfig(
+    name="danish-entailment",
+    pretty_name="The Danish Entailment Dataset",
+    source="EuroEval/danish-entailment",
+    task=NLI,
+    languages=[DANISH],
+    val_split=None,
     unofficial=True,
 )

@@ -374,7 +374,7 @@ euroeval --model <model-id> --dataset dala
 
 ## Natural Language Inference
 
-### The Danish Entailment Dataset
+### Unofficial: The Danish Entailment Dataset
 
 This dataset was published in [this
 paper](https://aclanthology.org/2024.lrec-main.1421/) as part of the Danish Semantic
