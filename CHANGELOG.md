@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `Benchmarker.benchmark`) to allow overriding the model metadata values that are
   inferred automatically from the model. This is useful when the model does not have
   the metadata specified, or has it specified incorrectly.
+- Added `input_column`, `target_column`, `choices_column`, and `preprocessing_func`
+  arguments to `DatasetConfig` to make it easier to use custom datasets with
+  non-standard column names. `input_column` specifies the column containing the input
+  text (defaults to `"text"`), `target_column` specifies the column containing the
+  label (renamed to the task-appropriate standard at load time), `choices_column`
+  specifies a column (or list of columns) containing answer choices for
+  multiple-choice tasks, and `preprocessing_func` is a fully custom preprocessing
+  function that takes precedence over the column arguments if both are provided.
 
 ## [v16.16.1] - 2026-02-25
 

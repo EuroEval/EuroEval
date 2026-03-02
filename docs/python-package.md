@@ -261,14 +261,18 @@ euroeval --model <model-id> --max-context-length 4096 --vocabulary-size 32000
 
 If you want to benchmark models on your own custom dataset, this is also possible.
 First, you need to set up your dataset to be compatible with EuroEval. This means
-splitting up your dataset in a training, validation and test split, and ensuring that
-the column names are correct. We use `text` as the column name for the input text, and
-the output column name depends on the type of task:
+splitting up your dataset in a training, validation and test split. By default, EuroEval
+expects these standard column names:
 
-- **Text or multiple-choice classification**: `label`
-- **Token classification**: `labels`
-- **Reading comprehension**: `answers`
-- **Free-form text generation**: `target_text`
+- **Text or multiple-choice classification**: `text` and `label`
+- **Token classification**: `tokens` and `labels`
+- **Reading comprehension**: `text` and `answers`
+- **Free-form text generation**: `text` and `target_text`
+
+If your dataset uses different column names, you can specify the mapping via
+`input_column`, `target_column`, and `choices_column` in `DatasetConfig` (see
+[Custom column names](#custom-column-names) below) — no need to rename your columns
+beforehand.
 
 Text and multiple-choice classification tasks are by far the most common. Then you can
 decide whether your dataset should be accessible locally (good for testing, and good for
@@ -366,6 +370,81 @@ euroeval --dataset EuroEval/test_dataset --model <model-id> --trust-remote-code
 ```
 
 ///
+
+### Custom column names
+
+If your dataset uses column names that differ from EuroEval's expected names, you can
+specify a column mapping directly in `DatasetConfig` using the `input_column`,
+`target_column`, and `choices_column` arguments. EuroEval will rename (or merge) the
+columns at load time, so you don't need to preprocess your dataset beforehand.
+
+**`input_column`** — the name of the column containing the input text. Defaults to
+`"text"` (no rename). If set to a different value, that column is renamed to `"text"`.
+
+```python
+DatasetConfig(
+    name="my-dataset",
+    ...,
+    input_column="review",   # rename "review" → "text"
+)
+```
+
+**`target_column`** — the name of the column containing the label. If set, the column
+is renamed to the task-appropriate standard name (`"label"` for classification,
+`"labels"` for token classification, `"target_text"` for text-to-text).
+
+```python
+DatasetConfig(
+    name="my-dataset",
+    ...,
+    target_column="sentiment",   # rename "sentiment" → "label" (for classification)
+)
+```
+
+**`choices_column`** — for multiple-choice tasks, the column (or list of columns)
+containing the answer choices. A single string names a column that holds a *list* of
+choice strings. A list of strings names separate columns, each holding one choice
+string. When set, the input text and choices are automatically merged into the
+formatted `"text"` column that EuroEval expects.
+
+```python
+# Single column holding a list of choices
+DatasetConfig(
+    name="my-mcq-dataset",
+    ...,
+    choices_column="choices",
+    target_column="answer",
+)
+
+# Separate columns, one per choice
+DatasetConfig(
+    name="my-mcq-dataset",
+    ...,
+    input_column="question",
+    choices_column=["choice_a", "choice_b", "choice_c", "choice_d"],
+    target_column="answer",
+)
+```
+
+**`preprocessing_func`** — for full control, you can supply an arbitrary preprocessing
+function that receives a `DatasetDict` and returns a `DatasetDict`. If this argument
+is provided together with any of the column arguments above, `preprocessing_func` takes
+precedence and the column arguments are ignored (a warning is logged in this case).
+
+```python
+def my_preprocess(dataset):
+    for split_name, split in dataset.items():
+        split = split.rename_column("review", "text")
+        split = split.rename_column("stars", "label")
+        dataset[split_name] = split
+    return dataset
+
+DatasetConfig(
+    name="my-dataset",
+    ...,
+    preprocessing_func=my_preprocess,
+)
+```
 
 We have included three convenience tasks to make it easier to set up custom datasets:
 
