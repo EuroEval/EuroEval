@@ -565,7 +565,7 @@ pre-format the `text` column yourself, or use `choices_column` in `DatasetConfig
 have EuroEval merge a separate choices column (or per-choice columns) into `text`
 automatically. The merged format is:
 
-```
+```text
 <question>
 Choices:
 a. <choice 0>
