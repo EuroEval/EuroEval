@@ -71,13 +71,13 @@ WIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="A continuació es mostren exemples de paraules usades en "
         "dos contextos i si tenen el mateix significat.",
         default_prompt_template="{text}\nMateix significat: {label}",
-        default_instruction_prompt="{text}\n\nTé la paraula el mateix significat en els "
-        "dos contextos? Respon amb {labels_str}, i res més.",
+        default_instruction_prompt="{text}\n\nTé la paraula el mateix significat en "
+        "els dos contextos? Respon amb {labels_str}, i res més.",
     ),
     CROATIAN: PromptConfig(
         default_prompt_label_mapping=dict(same_sense="da", different_sense="ne"),
-        default_prompt_prefix="Sljedeći su primjeri riječi korištenih u dva konteksta i "
-        "imaju li isto značenje.",
+        default_prompt_prefix="Sljedeći su primjeri riječi korištenih u dva konteksta "
+        "i imaju li isto značenje.",
         default_prompt_template="{text}\nIsto značenje: {label}",
         default_instruction_prompt="{text}\n\nIma li riječ isto značenje u oba "
         "konteksta? Odgovorite s {labels_str}, i ništa drugo.",
@@ -100,16 +100,16 @@ WIC_TEMPLATES: dict["Language", PromptConfig] = {
     ),
     DUTCH: PromptConfig(
         default_prompt_label_mapping=dict(same_sense="ja", different_sense="nee"),
-        default_prompt_prefix="Hieronder staan voorbeelden van woorden in twee contexten "
-        "en of ze dezelfde betekenis hebben.",
+        default_prompt_prefix="Hieronder staan voorbeelden van woorden in twee "
+        "contexten en of ze dezelfde betekenis hebben.",
         default_prompt_template="{text}\nZelfde betekenis: {label}",
         default_instruction_prompt="{text}\n\nHeeft het woord dezelfde betekenis in "
         "beide contexten? Antwoord met {labels_str}, en verder niets.",
     ),
     ENGLISH: PromptConfig(
         default_prompt_label_mapping=dict(same_sense="yes", different_sense="no"),
-        default_prompt_prefix="The following are examples of words used in two contexts "
-        "and whether they have the same meaning.",
+        default_prompt_prefix="The following are examples of words used in two "
+        "contexts and whether they have the same meaning.",
         default_prompt_template="{text}\nSame meaning: {label}",
         default_instruction_prompt="{text}\n\nDoes the word have the same meaning in "
         "both contexts? Answer with {labels_str}, and nothing else.",
@@ -148,8 +148,8 @@ WIC_TEMPLATES: dict["Language", PromptConfig] = {
     ),
     GERMAN: PromptConfig(
         default_prompt_label_mapping=dict(same_sense="ja", different_sense="nein"),
-        default_prompt_prefix="Im Folgenden sind Beispiele für Wörter in zwei Kontexten "
-        "und ob sie die gleiche Bedeutung haben.",
+        default_prompt_prefix="Im Folgenden sind Beispiele für Wörter in zwei "
+        "Kontexten und ob sie die gleiche Bedeutung haben.",
         default_prompt_template="{text}\nGleiche Bedeutung: {label}",
         default_instruction_prompt="{text}\n\nHat das Wort in beiden Kontexten die "
         "gleiche Bedeutung? Antworten Sie mit {labels_str}, und nichts anderes.",
