@@ -135,6 +135,8 @@ def benchmark_config(
         run_with_cli=True,
         requires_safetensors=False,
         download_only=False,
+        max_context_length=None,
+        vocabulary_size=None,
     )
 
 
