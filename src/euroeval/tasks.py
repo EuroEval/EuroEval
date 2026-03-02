@@ -18,6 +18,7 @@ from .prompt_templates import (
     TRANSLATION_TEMPLATES,
     WIC_TEMPLATES,
 )
+from .prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES, ToolCallingResponse
 
 LA = Task(
     name="linguistic-acceptability",
@@ -167,6 +168,25 @@ EUROPEAN_VALUES = Task(
     requires_zero_shot=True,
     uses_logprobs=True,
     default_allow_invalid_model_outputs=False,
+)
+
+
+TOOL_CALLING = Task(
+    name="tool-calling",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=TOOL_CALLING_TEMPLATES,
+    metrics=[m.tool_calling_metric],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=500,
+    default_labels=[],
+    default_allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
+    requires_zero_shot=True,
+    uses_structured_output=True,
+    structured_output_format=ToolCallingResponse,
 )
 
 
