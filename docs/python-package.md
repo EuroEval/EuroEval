@@ -559,11 +559,22 @@ MY_DATASET = DatasetConfig(
 
 **Required dataset columns**: `text` (string), `label` (string)
 
-The `text` column must include both the question and the answer choices (e.g., `"a.
-Option 1\nb. Option 2\n..."`), and the `label` column should be the letter of the
-correct choice (e.g., `"a"`). All samples must have the same number of choices. You
-must provide the list of possible label letters in the `DatasetConfig` (e.g.,
-`["a", "b", "c", "d"]`).
+The `label` column should be the letter of the correct choice (e.g., `"a"`). The `text`
+column must include both the question and the formatted answer choices. You can either
+pre-format the `text` column yourself, or use `choices_column` in `DatasetConfig` to
+have EuroEval merge a separate choices column (or per-choice columns) into `text`
+automatically. The merged format is:
+
+```text
+<question>
+Choices:
+a. <choice 0>
+b. <choice 1>
+...
+```
+
+All samples must have the same number of choices. You must provide the list of possible
+label letters in the `DatasetConfig` (e.g., `["a", "b", "c", "d"]`).
 
 **Available placeholders** in `PromptConfig`:
 
@@ -599,6 +610,7 @@ my_multiple_choice_task = Task(
     uses_logprobs=True,
 )
 
+# If your dataset has a single column with a list of choices and a separate answer column:
 MY_DATASET = DatasetConfig(
     name="my-multiple-choice-dataset",
     pretty_name="My Multiple Choice Dataset",
@@ -606,6 +618,21 @@ MY_DATASET = DatasetConfig(
     task=my_multiple_choice_task,
     languages=[FRENCH],
     labels=["a", "b", "c", "d"],
+    choices_column="choices",   # column containing a list of choice strings
+    target_column="answer",     # column containing the correct answer letter
+)
+
+# Or if each choice is in its own column:
+MY_DATASET = DatasetConfig(
+    name="my-multiple-choice-dataset",
+    pretty_name="My Multiple Choice Dataset",
+    source=dict(train="train.csv", val="val.csv", test="test.csv"),
+    task=my_multiple_choice_task,
+    languages=[FRENCH],
+    labels=["a", "b", "c", "d"],
+    input_column="question",
+    choices_column=["choice_a", "choice_b", "choice_c", "choice_d"],
+    target_column="answer",
 )
 ```
 
