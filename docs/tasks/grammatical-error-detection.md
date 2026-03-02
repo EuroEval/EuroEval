@@ -13,14 +13,11 @@ task.
 
 ## 📊 Metrics
 
-The primary metric we use when evaluating the performance of a model on the grammatical
+The metric we use when evaluating the performance of a model on the grammatical
 error detection task is the [micro-average
-F1-score](https://en.wikipedia.org/wiki/F-score#Micro_F1) without MISC, computed as the
-total number of true positives for all (non-trivial) error tokens, divided by the total
-number of predicted error tokens.
-
-We also report the micro-average F1-score, computed the same way, but where we include
-all token labels. Since there are no MISC tags in this task, both metrics are identical.
+F1-score](https://en.wikipedia.org/wiki/F-score#Micro_F1), computed as the total
+number of true positives for all error tokens, divided by the total number of predicted
+error tokens.
 
 ## 🛠️ How to run
 
