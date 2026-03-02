@@ -139,3 +139,39 @@ ATTENTION_BACKENDS: list[str] = [
 # the languages. This is for instance the case for the speed benchmark, which has all
 # the languages. The threshold of 5 is somewhat arbitrary.
 MAX_NUMBER_OF_LOGGING_LANGUAGES = 5
+
+# Language-specific label for the choices section in multiple-choice datasets. The
+# keys are ISO 639-1 language codes.
+CHOICES_MAPPING: dict[str, str] = {
+    "ab": "Choices",
+    "bg": "Възможности",
+    "be": "Варыянты",
+    "ca": "Opcions",
+    "cs": "Výběr",
+    "da": "Svarmuligheder",
+    "de": "Antwortmöglichkeiten",
+    "el": "Επιλογές",
+    "en": "Choices",
+    "es": "Opciones",
+    "et": "Vastusevariandid",
+    "fi": "Vastausvaihtoehdot",
+    "fo": "Svarmøguleikar",
+    "fr": "Choix",
+    "hr": "Izbori",
+    "hu": "Válaszlehetőségek",
+    "is": "Svarmöguleikar",
+    "it": "Scelte",
+    "lt": "Pasirinkimai",
+    "lv": "Izvēles",
+    "nl": "Antwoordopties",
+    "no": "Svaralternativer",
+    "pl": "Opcje",
+    "pt": "Opções",
+    "ro": "Opțiuni",
+    "sk": "Možnosti",
+    "sl": "Možnosti",
+    "sq": "Opsione",
+    "sr": "Opcije",
+    "sv": "Svarsalternativ",
+    "uk": "Варіанти",
+}
