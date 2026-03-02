@@ -109,6 +109,7 @@ DANISH_ENTAILMENT_CONFIG = DatasetConfig(
     source="EuroEval/danish-entailment",
     task=NLI,
     languages=[DANISH],
+    val_split=None,
 )
 
 
