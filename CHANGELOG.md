@@ -9,14 +9,42 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added the new Danish linguistic acceptability dataset DaLA. It's marked as 
+- A new tool calling task has been added to the framework, including the English
+  Berkeley Function Calling Leaderboard benchmark - benchmark it with the ID `bfcl-v2`.
+  This was added by @harderj ✨
+- Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
+- A new natural language inference task has been added, including the Danish
+  Entailment Dataset (ID is `danish-entailment`)
+- Added the new Danish Word in Context dataset DanWiC. It's marked as unofficial for
+  now. This is based on the COR.SEM lexical resource and tests the ability to
+  distinguish word meanings/senses in context (ID is `danwic`).
 - Added the German knowledge dataset
   [einbuergerungstest](https://huggingface.co/datasets/EuroEval/einbuergerungstest),
   based on the official German citizenship test (Einbürgerungstest) published by BAMF.
   The questions were scraped from
   [einbuergerungstest-online.eu](https://www.einbuergerungstest-online.eu/fragen/). It
   is marked as `unofficial` for now.
+- Failed generative model instances are now tracked and included in
+  `euroeval_benchmark_results.jsonl`.
+- Added `--max-context-length` and `--vocabulary-size` CLI options (and corresponding
+  `max_context_length` and `vocabulary_size` arguments to `Benchmarker`) to allow
+  overriding the model metadata values that are inferred automatically from the model.
+  This is useful when the model does not have the metadata specified, or has it
+  specified incorrectly.
+- We now allow preprocessing on-the-fly when creating new dataset configs. This includes
+  setting different column names (via the `input_column`, `target_column` and
+  `choices_column` arguments), or alternatively any preprocessing function can be added
+  via the `preprocessing_func` argument. This is either-or: you cannot set both
+  different column names and also specify a custom preprocessing function.
+
+### Fixed
+
+- There was an issue with caching of answers by generative models when evaluating them
+  on NER tasks - this has now been fixed. This was fixed by @Rijgersberg ✨
+- Evaluating older OpenAI models, such as `gpt-3.5-turbo-1106`, crashed the evaluation
+  due to them not supporting structured generation - this is handled gracefully now.
+  This was fixed by @Rijgersberg ✨
 
 ## [v16.16.1] - 2026-02-25
 

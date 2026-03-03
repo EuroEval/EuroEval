@@ -29,6 +29,7 @@ if t.TYPE_CHECKING:
         GenerativeModelOutput,
         ModelConfig,
     )
+    from .types import FailedInstance, IterationScores
 
 
 def generate(
@@ -37,7 +38,7 @@ def generate(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
-) -> c.Sequence[dict[str, float]]:
+) -> c.Sequence["IterationScores"]:
     """Evaluate a model on a dataset through generation.
 
     Args:
@@ -79,7 +80,7 @@ def generate(
         indent_json_when_saving=benchmark_config.debug,
     )
 
-    scores: list[dict[str, float]] = list()
+    scores: list["IterationScores"] = list()
     for idx in get_pbar(
         iterable=range(len(datasets)),
         desc="Benchmarking",
@@ -108,7 +109,7 @@ def generate_single_iteration(
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
     cache: ModelCache,
-) -> dict[str, float]:
+) -> "IterationScores":
     """Evaluate a model on a dataset in a single iteration through generation.
 
     Args:
@@ -143,6 +144,7 @@ def generate_single_iteration(
         non_cached_dataset = dataset
 
     all_preds: list[str] = list()
+    failed_instances: list["FailedInstance"] = list()
 
     if len(non_cached_dataset) > 0:
         itr: t.Iterable
@@ -195,6 +197,7 @@ def generate_single_iteration(
             extracted_labels = model.extract_labels_from_generation(
                 input_batch=batch, model_output=model_output
             )
+            failed_instances += model_output.failed_instances
             if pred2extracted := dataset_config.prompt_label_mapping:
                 extracted_to_predicted = {
                     extracted: predicted
@@ -239,11 +242,21 @@ def generate_single_iteration(
         extracted_labels = model.extract_labels_from_generation(
             input_batch=cached_dataset[:], model_output=model_output
         )
+        failed_instances += model_output.failed_instances
         if model_output.predicted_labels is None:
-            model_output.predicted_labels = [
-                dataset_config.prompt_label_mapping.get(label, label).lower()
-                for label in extracted_labels
-            ]
+            if pred2extracted := dataset_config.prompt_label_mapping:
+                extracted_to_predicted = {
+                    extracted: predicted
+                    for predicted, extracted in pred2extracted.items()
+                }
+                model_output.predicted_labels = [
+                    extracted_to_predicted.get(label, label).lower()
+                    if isinstance(label, str)
+                    else [extracted_to_predicted.get(lbl, lbl).lower() for lbl in label]
+                    for label in extracted_labels
+                ]
+            else:
+                model_output.predicted_labels = extracted_labels
         all_preds.extend(extracted_labels)
 
     if "label" in non_cached_dataset.column_names:
@@ -284,11 +297,15 @@ def generate_single_iteration(
         )
         ground_truth = []
 
-    itr_scores: dict[str, float] = model.compute_metrics(
+    metrics_scores = model.compute_metrics(
         model_outputs_and_labels=(all_preds, ground_truth),
         dataset=dataset,
         benchmark_config=benchmark_config,
     )
+    itr_scores: "IterationScores" = {
+        **metrics_scores,
+        "failed_instances": failed_instances,
+    }
 
     return itr_scores
 

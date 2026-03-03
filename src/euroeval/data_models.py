@@ -12,9 +12,14 @@ from pathlib import Path
 
 import pydantic
 import torch
+from datasets import DatasetDict
 from transformers.generation.configuration_utils import GenerationConfig
 
-from .constants import ATTENTION_BACKENDS, MAX_NUMBER_OF_LOGGING_LANGUAGES
+from .constants import (
+    ATTENTION_BACKENDS,
+    CHOICES_MAPPING,
+    MAX_NUMBER_OF_LOGGING_LANGUAGES,
+)
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
 from .languages import (
@@ -28,7 +33,8 @@ from .languages import (
 )
 from .logging_utils import log_once
 from .metrics.base import Metric
-from .types import ScoreDict
+from .preprocessing import build_preprocessing_func
+from .types import FailedInstance, ScoreDict
 
 if t.TYPE_CHECKING:
     from .enums import InferenceBackend
@@ -108,6 +114,12 @@ class Task:
         uses_structured_output (optional):
             Whether the task uses structured output. If True, the task will return
             structured output (e.g., BIO tags for NER). Defaults to False.
+        structured_output_format (optional):
+            Schema to use for structured output as a (deserializable) JSON string.
+            Only used if `uses_structured_output` is True.
+            If None output structure will be determined by a default behavior
+            based on the task.
+            Defaults to None.
         uses_logprobs (optional):
             Whether the task uses log probabilities. If True, the task will return
             log probabilities for the generated tokens. Defaults to False.
@@ -143,6 +155,7 @@ class Task:
     default_labels: c.Sequence[str] | None = tuple()
     requires_zero_shot: bool = False
     uses_structured_output: bool = False
+    structured_output_format: pydantic.BaseModel | None = None
     uses_logprobs: bool = False
     requires_logprobs: bool = False
     default_allowed_model_types: c.Sequence[ModelType] = field(
@@ -160,6 +173,13 @@ class Task:
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
         self.uses_logprobs = self.uses_logprobs or self.requires_logprobs
+        if not self.uses_structured_output and self.structured_output_format:
+            log_once(
+                "`structured_output_format` is specified however "
+                "`uses_structured_output=False` "
+                "- thus this specified structure will not be used.",
+                level=logging.WARNING,
+            )
 
     def __hash__(self) -> int:
         """Return a hash of the task."""
@@ -191,6 +211,10 @@ class DatasetConfig:
         test_split: str = "test",
         bootstrap_samples: bool = True,
         unofficial: bool = False,
+        input_column: str = "text",
+        target_column: str | None = None,
+        choices_column: str | list[str] | None = None,
+        preprocessing_func: c.Callable[[DatasetDict], DatasetDict] | None = None,
         _prompt_prefix: str | None = None,
         _prompt_template: str | None = None,
         _instruction_prompt: str | None = None,
@@ -277,6 +301,28 @@ class DatasetConfig:
                 Whether to bootstrap the dataset samples. Defaults to True.
             unofficial (optional):
                 Whether the dataset is unofficial. Defaults to False.
+            input_column (optional):
+                The name of the column in the dataset that contains the input texts.
+                If different from "text", this column will be renamed to "text". If
+                `choices_column` is also set, the two columns are merged into a single
+                "text" column formatted as in the official dataset creation scripts.
+                Defaults to "text".
+            target_column (optional):
+                The name of the column in the dataset that contains the labels. If None,
+                the default column name for the task group is used ("label" for most
+                tasks, "labels" for token classification, "target_text" for text-to-text
+                tasks). Defaults to None.
+            choices_column (optional):
+                The name of the column (or list of column names) in the dataset that
+                contains the answer choices. If a single column name is provided, that
+                column must hold a list of answer-choice strings. If a list of column
+                names is provided, each column holds a single answer-choice string.
+                When set, the input text and choices are merged into a single "text"
+                column. Defaults to None.
+            preprocessing_func (optional):
+                A custom preprocessing function that takes a DatasetDict and returns a
+                DatasetDict. If set together with any of the column arguments, a warning
+                is logged and `preprocessing_func` takes precedence. Defaults to None.
             _prompt_prefix (optional):
                 This argument is deprecated. Please use `prompt_prefix` instead.
             _prompt_template (optional):
@@ -453,6 +499,40 @@ class DatasetConfig:
         self.test_split = test_split
         self.bootstrap_samples = bootstrap_samples
         self.unofficial = unofficial
+
+        # Build or assign the preprocessing function
+        column_args_set = any(
+            (
+                input_column != "text",
+                target_column is not None,
+                choices_column is not None,
+            )
+        )
+        if preprocessing_func is not None and column_args_set:
+            log_once(
+                "Both `preprocessing_func` and column arguments (`input_column`, "
+                "`target_column`, `choices_column`) are set. `preprocessing_func` "
+                "takes precedence and the column arguments will be ignored.",
+                level=logging.WARNING,
+            )
+            self.preprocessing_func: c.Callable[[DatasetDict], DatasetDict] | None = (
+                preprocessing_func
+            )
+        elif column_args_set:
+            # Determine the language-specific choices label
+            main_lang = self.languages[0] if self.languages else None
+            lang_code = main_lang.code if main_lang is not None else "en"
+            choices_label = CHOICES_MAPPING.get(lang_code, "Choices")
+            self.preprocessing_func = build_preprocessing_func(
+                dataset_name=name or "",
+                task_group=self.task.task_group,
+                input_column=input_column,
+                target_column=target_column,
+                choices_column=choices_column,
+                choices_label=choices_label,
+            )
+        else:
+            self.preprocessing_func = preprocessing_func  # None or user-provided
 
     @property
     def name(self) -> str:
@@ -736,6 +816,12 @@ class BenchmarkConfig:
             Whether to run the benchmark in debug mode.
         run_with_cli:
             Whether the benchmark is being run with the CLI.
+        max_context_length:
+            Override for the maximum context length of the model. If None, the value
+            will be inferred automatically from the model.
+        vocabulary_size:
+            Override for the vocabulary size of the model. If None, the value will be
+            inferred automatically from the model.
     """
 
     datasets: c.Sequence[DatasetConfig]
@@ -765,6 +851,8 @@ class BenchmarkConfig:
     verbose: bool
     debug: bool
     run_with_cli: bool
+    max_context_length: int | None
+    vocabulary_size: int | None
 
     @property
     def tasks(self) -> c.Sequence[Task]:
@@ -815,6 +903,8 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     verbose: bool
     debug: bool
     run_with_cli: bool
+    max_context_length: int | None
+    vocabulary_size: int | None
 
 
 class BenchmarkResult(pydantic.BaseModel):
@@ -979,12 +1069,17 @@ class GenerativeModelOutput:
         metadatas (optional):
             All the metadata fields for the samples, including ground truth labels (if
             applicable). Defaults to an empty list.
+        failed_instances (optional):
+            A list of dictionaries, one per failed instance, each containing
+            ``"sample_index"`` (the index of the sample in the batch) and ``"error"``
+            (a short description of why it failed). Defaults to an empty list.
     """
 
     sequences: c.Sequence[str]
     predicted_labels: c.Sequence | None = None
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
     metadatas: list["HashableDict | None"] = field(default_factory=list)
+    failed_instances: list["FailedInstance"] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Post-initialisation."""
