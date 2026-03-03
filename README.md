@@ -212,6 +212,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for N-essuno"
     />
 </a>
+<a href="https://github.com/harderj">
+    <img
+        src="https://avatars.githubusercontent.com/u/5573365"
+        width=50
+        alt="Contributor avatar for harderj"
+    />
+</a>
 
 ### Contribute to EuroEval
 
