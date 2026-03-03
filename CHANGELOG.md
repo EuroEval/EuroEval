@@ -43,6 +43,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Evaluating older OpenAI models, such as `gpt-3.5-turbo-1106`, crashed the evaluation
   due to them not supporting structured generation - this is handled gracefully now.
   This was fixed by @Rijgersberg ✨
+- The documentation incorrectly stated that the primary metric for the Reading
+  Comprehension task is the Exact Match score. This has been corrected to the
+  character-level F1-score. This was fixed by @Rijgersberg ✨
 
 ## [v16.16.1] - 2026-02-25
 
