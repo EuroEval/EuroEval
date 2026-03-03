@@ -10,9 +10,11 @@ from ..tasks import (
     LA,
     MCRC,
     NER,
+    NLI,
     RC,
     SENT,
     SUMM,
+    WIC,
 )
 
 # Official datasets ###
@@ -102,7 +104,6 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
-
 # Unofficial datasets ###
 
 DALA_CONFIG = DatasetConfig(
@@ -175,5 +176,24 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DANISH],
     labels=["a", "b"],
+    unofficial=True,
+)
+
+DANISH_ENTAILMENT_CONFIG = DatasetConfig(
+    name="danish-entailment",
+    pretty_name="The Danish Entailment Dataset",
+    source="EuroEval/danish-entailment",
+    task=NLI,
+    languages=[DANISH],
+    val_split=None,
+    unofficial=True,
+)
+
+DANWIC_CONFIG = DatasetConfig(
+    name="danwic",
+    pretty_name="DanWiC",
+    source="EuroEval/danwic",
+    task=WIC,
+    languages=[DANISH],
     unofficial=True,
 )

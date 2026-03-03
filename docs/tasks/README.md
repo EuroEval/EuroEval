@@ -26,6 +26,7 @@ models out there. The tasks in this category are:
 2. [Named Entity Recognition](named-entity-recognition.md)
 3. [Linguistic Acceptability](linguistic-acceptability.md)
 4. [Reading Comprehension](reading-comprehension.md)
+5. [Natural Language Inference](natural-language-inference.md)
 
 ### NLG Tasks
 
