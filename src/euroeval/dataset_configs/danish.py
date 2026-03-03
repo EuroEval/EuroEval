@@ -189,6 +189,16 @@ DANISH_ENTAILMENT_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+DANISH_LEXICAL_INFERENCE_CONFIG = DatasetConfig(
+    name="danish-lexical-inference",
+    pretty_name="Danish Lexical Inference",
+    source="EuroEval/danish-lexical-inference",
+    task=NLI,
+    languages=[DANISH],
+    labels=["entailment", "contradiction"],
+    unofficial=True,
+)
+
 DANWIC_CONFIG = DatasetConfig(
     name="danwic",
     pretty_name="DanWiC",

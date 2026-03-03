@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
 - A new natural language inference task has been added, including the Danish
-  Entailment Dataset (ID is `danish-entailment`)
+  Entailment Dataset (ID is `danish-entailment`) and the Danish Lexical Inference
+  Dataset (ID is `danish-lexical-inference`).
 - Added the new Danish Word in Context dataset DanWiC. It's marked as unofficial for
   now. This is based on the COR.SEM lexical resource and tests the ability to
   distinguish word meanings/senses in context (ID is `danwic`).
