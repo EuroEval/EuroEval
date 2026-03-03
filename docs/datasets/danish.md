@@ -390,22 +390,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Udsagn 1: Peter efterlod sig kone og tre små børn.\nUdsagn 2: Peter havde en kone og mindre børn.",
-  "label": "entailment"
+    "text": "Udsagn 1: Per forsømte sin have.\nUdsagn 2: Per holdt ikke sin have.",
+    "label": "entailment"
 }
 ```
 
 ```json
 {
-  "text": "Udsagn 1: Peter efterlod sig kone og tre små børn.\nUdsagn 2: Peter er stadig gift med sin kone.",
-  "label": "contradiction"
+    "text": "Udsagn 1: Per afbrød sine studier fordi han ikke havde råd til at fortsætte.\nUdsagn 2: Per studerede uden pause til han var færdiguddannet.",
+    "label": "contradiction"
 }
 ```
 
 ```json
 {
-  "text": "Udsagn 1: Regeringen afskaffede karaktergivning på de første tre klassetrin i grundskolen.\nUdsagn 2: Der gives ikke længere karakterer til eleverne på grundskolens mellemste klassetrin.",
-  "label": "neutral"
+    "text": "Udsagn 1: Regeringen afskaffede karaktergivning på de første tre klassetrin i grundskolen.\nUdsagn 2: Der gives ikke længere karakterer til eleverne på grundskolens mellemste klassetrin.",
+    "label": "neutral"
 }
 ```
 
@@ -445,31 +445,41 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset danish-entailment
 ```
 
-### Unofficial: Danish Lexical Inference
+## Word in Context
 
-This dataset is part of the [Danish Semantic Reasoning
-Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark). It
-measures word knowledge through lexical inference: given a context statement derived
-from a DanNet Qualia role (Agentive, Constitutive, Formal, or Telic), a model must
-determine whether a second statement is entailed by or contradicts the context.
+### Unofficial: DanWiC
 
-The original dataset consists of 1,020 samples across 17 sub-datasets. We use a 128 /
-64 / 828 split for training, validation and testing, respectively (so all 1,020 samples
-are used in total).
+This dataset was published in [this
+paper](https://doi.org/10.7146/nys.v1i65.143072) and is based on the semantic module of
+the [COR.SEM resource](https://corsem.dsl.dk/). The dataset measures the ability to
+distinguish word meanings/senses in context: given two sentences containing the same
+target word, the task is to determine whether the word carries the same sense in both
+sentences.
+
+The original full dataset consists of 1,098 polysemous samples with balanced labels.
+We use a split of 128 / 64 / 906 samples for training, validation and testing,
+respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Udsagn 1: træthed er en følelse; jegfølelse er en følelse\nUdsagn 2: Ferieminde er en følelse",
-  "label": "entailment"
+    "text": "Ord: briller\nKontekst 1: Karen tog sine briller af og pudsede dem. Uden brillerne var verden én stor tåge\nKontekst 2: Jeg blev altid drillet i skolen, fordi jeg havde briller og ikke var særlig køn",
+    "label": "same_sense"
 }
 ```
 
 ```json
 {
-  "text": "Udsagn 1: en armstol har armlæn; et glasbord har en glasplade\nUdsagn 2: En morgenbitter har ikke et afløb",
-  "label": "contradiction"
+    "text": "Ord: lag\nKontekst 1: Pladsens brosten var dækket af et fint lag snekrystaller\nKontekst 2: [de] fik indlagt tre lag glas i vinduerne for at holde larmen ude af stuerne",
+    "label": "same_sense"
+}
+```
+
+```json
+{
+    "text": "Ord: tjeneste\nKontekst 1: Han er jo aldrig kommet i kirken, når jeg havde tjenesten\nKontekst 2: Vil du ikke lige gøre mig den tjeneste at bestille en taxa",
+    "label": "different_sense"
 }
 ```
 
@@ -480,32 +490,32 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Følgende er par af udsagn og om det andet udsagn følger af det første, hvilket kan være 'sand' eller 'falsk'.
+  Følgende er eksempler på ord brugt i to kontekster og om de har samme betydning.
   ```
 
 - Base prompt template:
 
   ```text
-  Udsagn: {text}
-  Entailment: {label}
+  {text}
+  Samme betydning: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Udsagn: {text}
+  {text}
 
-  Bestem om det andet udsagn følger af det første udsagn. Svar kun med 'sand' eller 'falsk', og intet andet.
+  Har ordet den samme betydning i de to kontekster? Svar kun med 'ja' eller 'nej', og intet andet.
   ```
 
 - Label mapping:
-  - `entailment` ➡️ `sand`
-  - `contradiction` ➡️ `falsk`
+  - `same_sense` ➡️ `ja`
+  - `different_sense` ➡️ `nej`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset danish-lexical-inference
+euroeval --model <model-id> --dataset danwic
 ```
 
 ## Reading Comprehension
@@ -1498,77 +1508,4 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset valeu-da
-```
-
-## Word in Context
-
-### Unofficial: DanWiC
-
-This dataset was published in [this
-paper](https://doi.org/10.7146/nys.v1i65.143072) and is based on the semantic module of
-the [COR.SEM resource](https://corsem.dsl.dk/). The dataset measures the ability to
-distinguish word meanings/senses in context: given two sentences containing the same
-target word, the task is to determine whether the word carries the same sense in both
-sentences.
-
-The original full dataset consists of 1,098 polysemous samples with balanced labels.
-We use a split of 128 / 64 / 906 samples for training, validation and testing,
-respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Ord: klinik\nKontekst 1: Når vi møder unge i vores klinik, som tager snus, forklarer vi dem om skaderne på tænderne, men også om, hvordan det påvirker hjernen\nKontekst 2: hun er privatpraktiserende psykoterapeut i en klinik, der har lokale i centrum af Odense",
-  "label": "same_sense"
-}
-```
-
-```json
-{
-  "text": "Ord: spand\nKontekst 1: Den blå spand er til genbrugsaffald, såsom plastic, papir, metal m.v.\nKontekst 2: Den gamle spand af en Volvo startede først efter fire hostende forsøg med selvstarteren",
-  "label": "different_sense"
-}
-```
-
-```json
-{
-  "text": "Ord: arbejdstid\nKontekst 1: Min arbejdstid er 37 timer om ugen fordelt på 5 dage\nKontekst 2: Fra næste sommer skal lærernes arbejdstid lægges fuldstændig om og tælles op time for time",
-  "label": "same_sense"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 12
-- Prefix prompt:
-
-  ```text
-  Følgende er eksempler på ord brugt i to kontekster og om de har samme betydning.
-  ```
-
-- Base prompt template:
-
-  ```text
-  {text}
-  Samme betydning: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  {text}
-
-  Har ordet den samme betydning i de to kontekster? Svar kun med 'ja' eller 'nej', og intet andet.
-  ```
-
-- Label mapping:
-  - `same_sense` ➡️ `ja`
-  - `different_sense` ➡️ `nej`
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset danwic
 ```
