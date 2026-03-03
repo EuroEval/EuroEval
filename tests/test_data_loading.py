@@ -128,7 +128,7 @@ class TestAllDatasets:
         )
 
         for itr_idx in range(10):
-            if "train" in dataset_config.splits:
+            if dataset_config.train_split is not None:
                 few_shot_examples = (
                     extract_few_shot_examples(
                         dataset=dataset,
@@ -188,7 +188,18 @@ class TestAllDatasets:
             cache_dir=benchmark_config.cache_dir,
             api_key=benchmark_config.api_key,
         )
-        for split in dataset_config.splits:
+
+        splits = [
+            split
+            for split in [
+                dataset_config.train_split,
+                dataset_config.val_split,
+                dataset_config.test_split,
+            ]
+            if split is not None
+        ]
+
+        for split in splits:
             assert "id" in dataset[split].features, (
                 f"Dataset {dataset_config.name} is a reading comprehension dataset but "
                 f"the {split} split does not have an 'id' column."
