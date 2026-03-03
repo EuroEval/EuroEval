@@ -179,6 +179,20 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+DANISH_SENTIMENT_IN_CONTEXT_CONFIG = DatasetConfig(
+    name="danish-sentiment-in-context",
+    pretty_name="Danish Sentiment in Context",
+    source="EuroEval/danish-sentiment-in-context",
+    task=SENT,
+    languages=[DANISH],
+    prompt_prefix="Følgende er ord med kontekst og ordets sentiment, som kan være "
+    "{labels_str}.",
+    prompt_template="{text}\nSentiment: {label}",
+    instruction_prompt="{text}\n\nKlassificer sentimentet for det angivne ord i "
+    "konteksten. Svar kun med {labels_str}, og intet andet.",
+    unofficial=True,
+)
+
 DANISH_ENTAILMENT_CONFIG = DatasetConfig(
     name="danish-entailment",
     pretty_name="The Danish Entailment Dataset",

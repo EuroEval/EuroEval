@@ -37,9 +37,7 @@ def main() -> None:
     with ZipFile(file=io.BytesIO(initial_bytes=response.content)) as outer_zip:
         role_names = ["AGENTIVE", "CONSTITUTIVE", "FORMAL", "TELIC"]
         for role in role_names:
-            zip_path = (
-                f"danish-semantic-reasoning-benchmark-main/inference/{role}.zip"
-            )
+            zip_path = f"danish-semantic-reasoning-benchmark-main/inference/{role}.zip"
             inner_zip_data = outer_zip.read(zip_path)
             with ZipFile(file=io.BytesIO(initial_bytes=inner_zip_data)) as inner_zip:
                 inner_zip.setpassword(b"benchmark")

@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added the new Danish Word in Context dataset DanWiC. It's marked as unofficial for
   now. This is based on the COR.SEM lexical resource and tests the ability to
   distinguish word meanings/senses in context (ID is `danwic`).
+- Added the new Danish Sentiment in Context dataset, part of the [Danish Semantic
+  Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+  It measures the sentiment of individual words in context (ID is
+  `danish-sentiment-in-context`). It's marked as unofficial for now.
 - Failed generative model instances are now tracked and included in
   `euroeval_benchmark_results.jsonl`.
 - Added `--max-context-length` and `--vocabulary-size` CLI options (and corresponding
