@@ -445,6 +445,69 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset danish-entailment
 ```
 
+### Unofficial: Danish Lexical Inference
+
+This dataset is part of the [Danish Semantic Reasoning
+Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark). It
+measures word knowledge through lexical inference: given a context statement derived
+from a DanNet Qualia role (Agentive, Constitutive, Formal, or Telic), a model must
+determine whether a second statement is entailed by or contradicts the context.
+
+The original dataset consists of 1,020 samples across 17 sub-datasets. We use a 128 /
+64 / 828 split for training, validation and testing, respectively (so all 1,020 samples
+are used in total).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Udsagn 1: træthed er en følelse; jegfølelse er en følelse\nUdsagn 2: Ferieminde er en følelse",
+  "label": "entailment"
+}
+```
+
+```json
+{
+  "text": "Udsagn 1: en armstol har armlæn; et glasbord har en glasplade\nUdsagn 2: En morgenbitter har ikke et afløb",
+  "label": "contradiction"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er par af udsagn og om det andet udsagn følger af det første, hvilket kan være 'sand' eller 'falsk'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Udsagn: {text}
+  Entailment: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Udsagn: {text}
+
+  Bestem om det andet udsagn følger af det første udsagn. Svar kun med 'sand' eller 'falsk', og intet andet.
+  ```
+
+- Label mapping:
+  - `entailment` ➡️ `sand`
+  - `contradiction` ➡️ `falsk`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset danish-lexical-inference
+```
+
 ## Reading Comprehension
 
 ### MultiWikiQA-da

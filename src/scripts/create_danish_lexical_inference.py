@@ -151,17 +151,17 @@ def parse_line(line: str) -> dict[str, str] | None:
         return None
 
     if label_str.startswith("true"):
-        label = "correct"
+        label = "entailment"
     elif label_str.startswith("false"):
-        label = "incorrect"
+        label = "contradiction"
     else:
         return None
 
     if not context or not target:
         return None
 
-    # Combine context and target into a single text field
-    text = context.rstrip(".") + ". " + target[0].upper() + target[1:]
+    # Format text as an NLI pair
+    text = f"Udsagn 1: {context}\nUdsagn 2: {target[0].upper() + target[1:]}"
 
     return {"text": text, "label": label}
 
