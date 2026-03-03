@@ -73,10 +73,12 @@ def main() -> None:
     )
 
     # Create train and test splits
-    train_size = 128
+    train_size = 256
+    test_size = len(traintest_df) - train_size
     train_df, test_df = train_test_split(
         traintest_df,
         train_size=train_size,
+        test_size=test_size,
         random_state=4242,
         stratify=traintest_df["label"],
     )

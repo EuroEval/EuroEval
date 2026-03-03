@@ -89,7 +89,7 @@ the sentiment of the target word. The data is based on the semantic module of th
 lexicon](https://aclanthology.org/2022.lrec-1.6.pdf), a human-curated lexical-semantic
 resource developed by the Society for Danish Language and Literature.
 
-The original dataset consists of 1,041 samples. We use a 128 / 64 / 849 split for
+The original dataset consists of 1,041 samples. We use a 256 / 64 / 721 split for
 training, validation and testing, respectively (so 1,041 samples used in total).
 
 The sentiment labels from the original dataset are on a scale from -3 (very negative)
