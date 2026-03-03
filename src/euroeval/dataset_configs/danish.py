@@ -10,9 +10,11 @@ from ..tasks import (
     LA,
     MCRC,
     NER,
+    NLI,
     RC,
     SENT,
     SUMM,
+    WIC,
 )
 
 # Official datasets ###
@@ -102,7 +104,6 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
-
 # Unofficial datasets ###
 
 DALA_CONFIG = DatasetConfig(
@@ -178,17 +179,21 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-DANISH_LEXICAL_INFERENCE_CONFIG = DatasetConfig(
-    name="danish-lexical-inference",
-    pretty_name="Danish Lexical Inference",
-    source="EuroEval/danish-lexical-inference",
-    task=LA,
+DANISH_ENTAILMENT_CONFIG = DatasetConfig(
+    name="danish-entailment",
+    pretty_name="The Danish Entailment Dataset",
+    source="EuroEval/danish-entailment",
+    task=NLI,
     languages=[DANISH],
-    prompt_prefix="Følgende er udsagn og om de er sande.",
-    prompt_template="Udsagn: {text}\nSand: {label}",
-    instruction_prompt=(
-        "Udsagn: {text}\n\nBestem om det tredje udsagn er sandt, givet de to "
-        "foregående udsagn. Svar kun med {labels_str}, og intet andet."
-    ),
+    val_split=None,
+    unofficial=True,
+)
+
+DANWIC_CONFIG = DatasetConfig(
+    name="danwic",
+    pretty_name="DanWiC",
+    source="EuroEval/danwic",
+    task=WIC,
+    languages=[DANISH],
     unofficial=True,
 )

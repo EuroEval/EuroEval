@@ -9,38 +9,37 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Failed generative model instances are now tracked and included in
-  `euroeval_benchmark_results.jsonl`. Each per-iteration entry in `results.raw` now
-  contains a `failed_instances` list, where every item has a `sample_index` (the
-  0-based index of the sample in the batch) and an `error` message describing why the
-  instance failed (e.g. `"Could not parse JSON from model output"` for NER tasks or
-  `"No candidate label found in model output"` for classification tasks). The
-  `results.total` dict also gains a `num_failed_instances` key with the total count
-  across all iterations.
-- A task _Tool Calling_ and a dataset under this task _bfcl-v2 a subset of the
-  Berkeley Function Calling Leaderboard benchmark (v2). Currently only supported for
-  English. This was added by @harderj ✨
+- A new tool calling task has been added to the framework, including the English
+  Berkeley Function Calling Leaderboard benchmark - benchmark it with the ID `bfcl-v2`.
+  This was added by @harderj ✨
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
-- Added the Danish Lexical Inference dataset
-  [danish-lexical-inference](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark/tree/main/inference),
-  based on the Danish Semantic Reasoning Benchmark. The dataset measures lexical
-  inference through the ability to determine whether a statement is true or false, given
-  two true context statements. The split is given by 128 / 64 / 828 samples for train /
-  val / test, respectively. It is marked as `unofficial` for now.
+- A new natural language inference task has been added, including the Danish
+  Entailment Dataset (ID is `danish-entailment`) and the Danish Lexical Inference
+  Dataset (ID is `danish-lexical-inference`).
+- Added the new Danish Word in Context dataset DanWiC. It's marked as unofficial for
+  now. This is based on the COR.SEM lexical resource and tests the ability to
+  distinguish word meanings/senses in context (ID is `danwic`).
+- Failed generative model instances are now tracked and included in
+  `euroeval_benchmark_results.jsonl`.
 - Added `--max-context-length` and `--vocabulary-size` CLI options (and corresponding
-  `max_context_length` and `vocabulary_size` arguments to `Benchmarker.__init__` and
-  `Benchmarker.benchmark`) to allow overriding the model metadata values that are
-  inferred automatically from the model. This is useful when the model does not have
-  the metadata specified, or has it specified incorrectly.
-- Added `input_column`, `target_column`, `choices_column`, and `preprocessing_func`
-  arguments to `DatasetConfig` to make it easier to use custom datasets with
-  non-standard column names. `input_column` specifies the column containing the input
-  text (defaults to `"text"`), `target_column` specifies the column containing the
-  label (renamed to the task-appropriate standard at load time), `choices_column`
-  specifies a column (or list of columns) containing answer choices for
-  multiple-choice tasks, and `preprocessing_func` is a fully custom preprocessing
-  function that takes precedence over the column arguments if both are provided.
+  `max_context_length` and `vocabulary_size` arguments to `Benchmarker`) to allow
+  overriding the model metadata values that are inferred automatically from the model.
+  This is useful when the model does not have the metadata specified, or has it
+  specified incorrectly.
+- We now allow preprocessing on-the-fly when creating new dataset configs. This includes
+  setting different column names (via the `input_column`, `target_column` and
+  `choices_column` arguments), or alternatively any preprocessing function can be added
+  via the `preprocessing_func` argument. This is either-or: you cannot set both
+  different column names and also specify a custom preprocessing function.
+
+### Fixed
+
+- There was an issue with caching of answers by generative models when evaluating them
+  on NER tasks - this has now been fixed. This was fixed by @Rijgersberg ✨
+- Evaluating older OpenAI models, such as `gpt-3.5-turbo-1106`, crashed the evaluation
+  due to them not supporting structured generation - this is handled gracefully now.
+  This was fixed by @Rijgersberg ✨
 
 ## [v16.16.1] - 2026-02-25
 
