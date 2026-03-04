@@ -1691,6 +1691,7 @@ class LiteLLMModel(BenchmarkModule):
                     name=pydantic_class.__name__,
                     schema=pydantic_class.model_json_schema(),
                 ),
+                strict=True,
             )
             log_once(
                 "Enabling structured generation for model "
