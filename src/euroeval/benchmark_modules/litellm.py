@@ -631,14 +631,14 @@ class LiteLLMModel(BenchmarkModule):
                 tag_name: (c.Sequence[str], ...) for tag_name in ner_tag_names
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)  # type: ignore[no-matching-overload]
-            generation_kwargs["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": pydantic_class.__name__,
-                    "schema": pydantic_class.model_json_schema(),
-                    "strict": True,
-                },
-            }
+            generation_kwargs["response_format"] = dict(
+                type="json_schema",
+                json_schema=dict(
+                    name=pydantic_class.__name__,
+                    schema=pydantic_class.model_json_schema(),
+                ),
+                strict=True,
+            )
             return generation_kwargs, 0
         elif any(msg.lower() in error_msg for msg in no_json_schema_messages):
             log_once(
