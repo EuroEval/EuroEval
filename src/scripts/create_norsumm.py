@@ -73,21 +73,22 @@ def create_dataset(lang: str) -> DatasetDict:
             The language variant, either "nb" or "nn".
 
     Returns:
-        A DatasetDict with train, val, and test splits.
+        A DatasetDict with train and test splits.
     """
     dev_records = process_records(load_norsumm("dev"), lang=lang)
     test_records = process_records(load_norsumm("test"), lang=lang)
 
-    # Split the dev set into train and val
-    train_size = 14
+    # Use 8 samples from the dev set for training; combine the rest with test
+    train_size = 8
     train_records = dev_records[:train_size]
-    val_records = dev_records[train_size:]
+    remaining_dev_records = dev_records[train_size:]
 
     return DatasetDict(
         {
             "train": Dataset.from_list(train_records, split=Split.TRAIN),
-            "val": Dataset.from_list(val_records, split=Split.VALIDATION),
-            "test": Dataset.from_list(test_records, split=Split.TEST),
+            "test": Dataset.from_list(
+                remaining_dev_records + test_records, split=Split.TEST
+            ),
         }
     )
 

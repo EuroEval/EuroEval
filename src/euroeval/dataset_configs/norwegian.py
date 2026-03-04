@@ -219,6 +219,7 @@ NORSUMM_NB_CONFIG = DatasetConfig(
     task=SUMM,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
     unofficial=True,
+    val_split=None,
 )
 
 NORSUMM_NN_CONFIG = DatasetConfig(
@@ -228,4 +229,5 @@ NORSUMM_NN_CONFIG = DatasetConfig(
     task=SUMM,
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    val_split=None,
 )

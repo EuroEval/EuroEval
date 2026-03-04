@@ -1734,9 +1734,10 @@ articles are sourced from the Norwegian event extraction dataset
 [EDEN](https://aclanthology.org/2024.lrec-main.488/), and each article is accompanied by
 three distinct gold-standard summaries authored by native Norwegian speakers.
 
-The original dataset contains 30 development and 33 test articles. We use the development
-articles for training and validation, with 14 / 16 samples for train / val, and all 33
-test articles as the test split. Each sample contains up to three reference summaries.
+The original dataset contains 30 development and 33 test articles. We use 8 articles
+from the development set as the train split, and combine the remaining development
+articles with all 33 test articles as the test split. Each sample contains up to three
+reference summaries.
 
 Here are a few examples from the training split:
 
@@ -1812,9 +1813,10 @@ articles are sourced from the Norwegian event extraction dataset
 [EDEN](https://aclanthology.org/2024.lrec-main.488/), and each article is accompanied by
 three distinct gold-standard summaries authored by native Norwegian speakers.
 
-The original dataset contains 30 development and 33 test articles. We use the development
-articles for training and validation, with 14 / 16 samples for train / val, and all 33
-test articles as the test split. Each sample contains up to three reference summaries.
+The original dataset contains 30 development and 33 test articles. We use 8 articles
+from the development set as the train split, and combine the remaining development
+articles with all 33 test articles as the test split. Each sample contains up to three
+reference summaries.
 
 Here are a few examples from the training split:
 
