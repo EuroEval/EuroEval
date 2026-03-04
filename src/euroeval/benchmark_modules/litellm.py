@@ -87,6 +87,7 @@ from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokeniser
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
     from litellm.types.utils import ModelResponse
+    from pydantic import BaseModel
     from transformers.trainer import Trainer
 
 
@@ -630,7 +631,14 @@ class LiteLLMModel(BenchmarkModule):
                 tag_name: (c.Sequence[str], ...) for tag_name in ner_tag_names
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)  # type: ignore[no-matching-overload]
-            generation_kwargs["response_format"] = pydantic_class
+            generation_kwargs["response_format"] = dict(
+                type="json_schema",
+                json_schema=dict(
+                    name=pydantic_class.__name__,
+                    schema=pydantic_class.model_json_schema(),
+                ),
+                strict=True,
+            )
             return generation_kwargs, 0
         elif any(msg.lower() in error_msg for msg in no_json_schema_messages):
             log_once(
@@ -770,7 +778,7 @@ class LiteLLMModel(BenchmarkModule):
         ):
             log_once(
                 f"The API base {self.benchmark_config.api_base!r} is not valid. We "
-                "will try appending '/v1' to it and try again.",
+                f"will try appending '/v1' to it and try again. The error was {error}.",
                 level=logging.DEBUG,
             )
             self.benchmark_config.api_base += "/v1"
@@ -1623,6 +1631,7 @@ class LiteLLMModel(BenchmarkModule):
 
         # Set up the `response_format` generation argument if we are dealing with a task
         # using structured generation
+        pydantic_class: type["BaseModel"] | None = None
         if dataset_config.task.uses_structured_output:
             if self.generative_type == GenerativeType.REASONING:
                 log_once(
@@ -1633,26 +1642,11 @@ class LiteLLMModel(BenchmarkModule):
                 )
             elif dataset_config.task.structured_output_format is not None:
                 pydantic_class = dataset_config.task.structured_output_format
-                # TODO: here it would be nice to just input the pydantic class
-                # directly instead. However this caused problems with e.g.
-                # gpt-4o-mini (error: "additional_properties not defined")
-                generation_kwargs["response_format"] = {
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": pydantic_class.__class__.__name__,
-                        "schema": pydantic_class.model_json_schema(),
-                    },
-                }
-                log_once(
-                    "Enabling structured generation for model "
-                    f"{self.model_config.model_id!r} with response_format "
-                    f"{pydantic_class.model_json_schema()}.",
-                    level=logging.DEBUG,
-                )
-            # Skip litellm's support check when using a custom base_api URL, as
-            # litellm can only reliably verify support for their official API providers,
-            # not custom endpoints.
-            # We assume custom endpoint models support structured generation.
+
+            # Skip LiteLLM's support check when using a custom base_api URL, as LiteLLM
+            # can only reliably verify support for their official API providers, not
+            # custom endpoints. We assume custom endpoint models support structured
+            # generation.
             elif self.benchmark_config.api_base is not None or supports_response_schema(
                 model=self.model_config.model_id
             ):
@@ -1671,13 +1665,6 @@ class LiteLLMModel(BenchmarkModule):
                         "been implemented for this task yet. Please open an issue "
                         "at https://github.com/EuroEval/EuroEval/issues."
                     )
-                generation_kwargs["response_format"] = pydantic_class
-                log_once(
-                    "Enabling structured generation for model "
-                    f"{self.model_config.model_id!r} with the JSON schema "
-                    f"{pydantic_class.model_json_schema()}",
-                    level=logging.DEBUG,
-                )
             else:
                 generation_kwargs["response_format"] = dict(type="json_object")
                 log_once(
@@ -1696,7 +1683,22 @@ class LiteLLMModel(BenchmarkModule):
                 LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)  # type: ignore[invalid-literal]
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
-            generation_kwargs["response_format"] = pydantic_class
+
+        if pydantic_class is not None:
+            generation_kwargs["response_format"] = dict(
+                type="json_schema",
+                json_schema=dict(
+                    name=pydantic_class.__name__,
+                    schema=pydantic_class.model_json_schema(),
+                ),
+                strict=True,
+            )
+            log_once(
+                "Enabling structured generation for model "
+                f"{self.model_config.model_id!r} with response_format "
+                f"{pydantic_class.model_json_schema()}.",
+                level=logging.DEBUG,
+            )
 
         # If the model is an Ollama reasoning model, we ensure that thinking is enabled
         if self.is_ollama and self.generative_type == GenerativeType.REASONING:
