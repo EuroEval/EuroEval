@@ -12,11 +12,10 @@ This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2306.0
 The corpus consists of 79 manually selected datasets from over 350 datasets reported in
 the scientific literature based on strict quality criteria.
 
-The original dataset contains a single split with 77,594 Croatian samples.
-We use 1,024 / 256 / 2,048 samples for our training, validation, and test splits,
-respectively.
-We have employed stratified sampling based on the label column from the original
-dataset to ensure balanced splits.
+The original dataset contains a single split with 77,594 Croatian samples. We use 1,024
+/ 256 / 2,048 samples for our training, validation, and test splits, respectively. We
+have employed stratified sampling based on the label column from the original dataset to
+ensure balanced splits.
 
 Here are a few examples from the training split:
 
@@ -387,12 +386,15 @@ euroeval --model <model-id> --dataset mmlu-hr
 
 ### Unofficial: INCLUDE-hr
 
-This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a comprehensive
-knowledge- and reasoning-centric benchmark that evaluates multilingual LLMs across 44
-languages. It contains 4-option multiple-choice questions extracted from academic and
-professional exams, covering 57 topics including regional knowledge.
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
 
-The original dataset consists of a 'validation' split used as training data and a 'test' split from which val and test sets are sampled. The training split is capped at 1,024 samples from the validation split, while 256 and 2,048 samples are drawn from the test split for the val and test sets, respectively, with stratification based on the subject. The dataset is sourced from [CohereLabs/include-base-44](https://huggingface.co/datasets/CohereLabs/include-base-44).
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
 
 Here are a few examples from the dataset:
 

@@ -101,7 +101,7 @@ def make_splits(
     Returns:
         The final training, validation, and test dataframes.
     """
-    val_size = 256
+    val_size = 64
     test_size = 2048
 
     stratify_col = test_df["subject"] if "subject" in test_df.columns else None
@@ -156,7 +156,7 @@ def process_split(df: pd.DataFrame, lang_code: str) -> pd.DataFrame:
     Returns:
         The processed DataFrame.
     """
-    df["label"] = df["answer"].str.lower()
+    df["label"] = ["abcd"[int(label_index)] for label_index in df.answer]
     df = filter_by_length(df=df)
     df = filter_repetitive(df=df)
     df = add_text_column(df=df, lang_code=lang_code)
