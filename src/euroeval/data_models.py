@@ -155,7 +155,7 @@ class Task:
     default_labels: c.Sequence[str] | None = tuple()
     requires_zero_shot: bool = False
     uses_structured_output: bool = False
-    structured_output_format: pydantic.BaseModel | None = None
+    structured_output_format: type[pydantic.BaseModel] | None = None
     uses_logprobs: bool = False
     requires_logprobs: bool = False
     default_allowed_model_types: c.Sequence[ModelType] = field(
