@@ -11,12 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
-- Added the English, French and Spanish knowledge datasets
-  [MultiNRC-en](https://huggingface.co/datasets/EuroEval/multinrc-en),
-  [MultiNRC-fr](https://huggingface.co/datasets/EuroEval/multinrc-fr) and
-  [MultiNRC-es](https://huggingface.co/datasets/EuroEval/multinrc-es), based on the
-  native-authored reasoning benchmark
-  [ScaleAI/MultiNRC](https://huggingface.co/datasets/ScaleAI/MultiNRC). These are
+- Added the MultiNRC knowledge dataset for English, French and Spanish. These are
   marked as `unofficial` for now.
 
 ## [v16.16.1] - 2026-02-25
