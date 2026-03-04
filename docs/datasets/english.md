@@ -708,10 +708,11 @@ and is a more robust and challenging version of MMLU, featuring 12,032 complex q
 across various disciplines. Each question has 10 answer options instead of the usual 4.
 
 The original full dataset consists of 70 / 12,032 samples for validation and testing,
-respectively. We use a 1,024 / 256 / 2,048 split for training, validation and testing,
-respectively (so 3,328 samples used in total). These splits are new and there can thus be
-some overlap between the original validation and test sets and our validation and test
-sets.
+respectively. The original 70 validation samples are used as few-shot training examples
+and are all included in our training split. We use a 1,024 / 256 / 2,048 split for
+training, validation and testing, respectively (so 3,328 samples used in total). The
+remaining training samples, as well as all validation and test samples, are subsets of
+the original test split.
 
 Here are a few examples from the training split:
 
