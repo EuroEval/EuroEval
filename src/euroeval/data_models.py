@@ -115,11 +115,9 @@ class Task:
             Whether the task uses structured output. If True, the task will return
             structured output (e.g., BIO tags for NER). Defaults to False.
         structured_output_format (optional):
-            Schema to use for structured output as a (deserializable) JSON string.
-            Only used if `uses_structured_output` is True.
-            If None output structure will be determined by a default behavior
-            based on the task.
-            Defaults to None.
+            The Pydantic class to use for structured output. If None then the task will
+            return unstructured output (e.g., plain text for text generation). Defaults
+            to None.
         uses_logprobs (optional):
             Whether the task uses log probabilities. If True, the task will return
             log probabilities for the generated tokens. Defaults to False.
