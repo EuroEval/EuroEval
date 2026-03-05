@@ -107,6 +107,21 @@ SCHIBSTED_SV_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+SCHIBSTED_SEO_TITLE_SV_CONFIG = DatasetConfig(
+    name="svd-seo-title",
+    pretty_name="SVD SEO Title",
+    source="EuroEval/svd-seo-title",
+    task=SUMM,
+    languages=[SWEDISH],
+    unofficial=True,
+    max_generated_tokens=64,
+    prompt_prefix="Nedan följer artiklar med tillhörande SEO-rubriker.",
+    prompt_template="Artikel: {text}\nSEO-rubrik: {target_text}",
+    instruction_prompt=(
+        "Artikel: {text}\n\nSkriv en SEO-rubrik för ovanstående artikel."
+    ),
+)
+
 ARC_SV_CONFIG = DatasetConfig(
     name="arc-sv",
     pretty_name="ARC-sv",

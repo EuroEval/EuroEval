@@ -8,9 +8,10 @@ information about what these constitute.
 
 ### GuiaCat
 
-This dataset was published in [here](https://huggingface.co/datasets/projecte-aina/GuiaCat).
-The dataset consists of 5,750 restaurant reviews in Catalan, with five associated scores
-and a sentiment label. The data was provided by [GuiaCat](https://guiacat.cat/).
+This dataset was published in
+[here](https://huggingface.co/datasets/projecte-aina/GuiaCat). The dataset consists of
+5,750 restaurant reviews in Catalan, with five associated scores and a sentiment label.
+The data was provided by [GuiaCat](https://guiacat.cat/).
 
 The original full dataset consists of 4,750 / 500 / 500 samples for the training,
 validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our

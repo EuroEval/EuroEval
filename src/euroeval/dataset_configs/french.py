@@ -137,10 +137,10 @@ WINOGRANDE_FR_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-MULTINRC_FR_CONFIG = DatasetConfig(
-    name="multinrc-fr",
-    pretty_name="MultiNRC-fr",
-    source="EuroEval/multinrc-fr",
+INCLUDE_FR_CONFIG = DatasetConfig(
+    name="include-fr",
+    pretty_name="INCLUDE-fr",
+    source="EuroEval/include-fr-mini",
     task=KNOW,
     languages=[FRENCH],
     unofficial=True,

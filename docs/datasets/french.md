@@ -552,37 +552,41 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-fr
 ```
 
-### Unofficial: MultiNRC-fr
+### Unofficial: INCLUDE-fr
 
-This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2507.17476)
-and consists of native-authored reasoning questions designed to assess multilingual
-reasoning ability in French. Unlike benchmarks that simply translate English-centric
-content, the questions are crafted by native French speakers to capture linguistic and
-cultural nuances.
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
 
-The original dataset consists of over 1,000 reasoning questions. The exact split sizes
-depend on the number of samples available per language after filtering.
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {
-  "text": "Quelle est la capitale de la France?\nChoix:\na. Lyon\nb. Marseille\nc. Paris\nd. Bordeaux",
-  "label": "c"
+    "text": "Qui est le dernier Président de la IVème République ?\nChoix:\na. René Coty\nb. Félix Gaillard\nc. Charles de Gaulle\nd. Alain Poher",
+    "label": "a",
+    "subject": "History"
 }
 ```
 
 ```json
 {
-  "text": "Lequel des éléments suivants est un exemple de source d'énergie renouvelable?\nChoix:\na. Charbon\nb. Gaz naturel\nc. Énergie solaire\nd. Fission nucléaire",
-  "label": "c"
+    "text": "Qui a réalisé le film « Léon » ?\nChoix:\na. Costa-Gavras\nb. Luc Besson\nc. Martin Scorsese\nd. Steven Spielberg",
+    "label": "b",
+    "subject": "Culturology"
 }
 ```
 
 ```json
 {
-  "text": "Qu'est-ce qui caractérise principalement la démocratie représentative?\nChoix:\na. Les citoyens votent directement sur toutes les lois\nb. Les citoyens élisent des représentants pour prendre des décisions en leur nom\nc. Un seul parti politique détient le pouvoir\nd. Les décisions sont prises par des experts nommés",
-  "label": "b"
+    "text": "Pour consulter mon solde de points, je me rends sur le site internet :\nChoix:\na. Allopoints.\nb. Info-point.\nc. Telepoint.\nd. Point-permis.",
+    "label": "c",
+    "subject": "Driving License"
 }
 ```
 
@@ -600,11 +604,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Question: {text}
-  Choix:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
   Réponse: {label}
   ```
 
@@ -612,19 +611,14 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Question: {text}
-  Choix:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
 
-  Répondez à la question ci-dessus par 'a', 'b', 'c' ou 'd', et rien d'autre.
+  Répondez à la question ci-dessus par {labels_str}, et rien d'autre.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multinrc-fr
+euroeval --model <model-id> --dataset include-fr
 ```
 
 ## Common-sense Reasoning

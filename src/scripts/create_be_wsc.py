@@ -27,14 +27,7 @@ import textwrap
 from collections import Counter
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
-from dotenv import load_dotenv
-from huggingface_hub import HfApi
-from openai import OpenAI
-from openai.types.chat import ChatCompletionUserMessageParam
-from pydantic import BaseModel
-
-from .constants import (
+from constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -42,6 +35,12 @@ from .constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
+from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
+from dotenv import load_dotenv
+from huggingface_hub import HfApi
+from openai import OpenAI
+from openai.types.chat import ChatCompletionUserMessageParam
+from pydantic import BaseModel
 
 load_dotenv()
 

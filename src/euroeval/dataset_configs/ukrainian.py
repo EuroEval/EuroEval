@@ -72,3 +72,15 @@ IFEVAL_UK_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
 )
+
+
+# Unofficial datasets ###
+
+INCLUDE_UK_CONFIG = DatasetConfig(
+    name="include-uk",
+    pretty_name="INCLUDE-uk",
+    source="EuroEval/include-uk-mini",
+    task=KNOW,
+    languages=[UKRAINIAN],
+    unofficial=True,
+)
