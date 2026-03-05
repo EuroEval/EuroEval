@@ -1,7 +1,6 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "beautifulsoup4==4.12.3",
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
@@ -15,12 +14,10 @@
 import io
 import logging
 import re
-from urllib.parse import urljoin, urlparse
 
 import fitz
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
@@ -29,21 +26,249 @@ logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_icelandic_standardized_tests")
 
 
-# Year-specific pages listing exams and answer keys
-# "Prófhefti" = question booklet, "Matsreglur" = answer key / marking guidelines
-YEAR_PAGES: list[tuple[str, str]] = [
-    ("2013", "https://mms.is/prof-og-svor-2013"),
-    ("2014", "https://mms.is/prof-og-svor-2014"),
-    ("2015", "https://mms.is/prof-og-svor-2015"),
-    ("2016", "https://www.mms.is/prof-og-svor-2016"),
-    ("2017", "https://www.mms.is/prof-og-svor-2017"),
+# Each entry is (year, subject, [question_urls], answers_url).
+# subject: "is" for Icelandic language, "math" for mathematics.
+# Sources:
+#   2013: https://mms.is/prof-og-svor-2013
+#   2014: https://mms.is/prof-og-svor-2014
+#   2015: https://mms.is/prof-og-svor-2015
+#   2016: https://www.mms.is/prof-og-svor-2016
+#   2017: https://www.mms.is/prof-og-svor-2017
+TEST_PDFS: list[tuple[str, str, list[str], str]] = [
+    # ── 2013 ─────────────────────────────────────────────────────────────────
+    # Icelandic
+    (
+        "2013",
+        "is",
+        ["https://mms.is/sites/mms.is/files/1013_isl.pdf"],
+        "https://mms.is/sites/mms.is/files/mat_2013_isl.pdf",
+    ),
+    (
+        "2013",
+        "is",
+        [
+            "https://mms.is/sites/mms.is/files/0713_isl1.pdf",
+            "https://mms.is/sites/mms.is/files/0713_isl2.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/mat_2013_isl_7bekk.pdf",
+    ),
+    (
+        "2013",
+        "is",
+        [
+            "https://mms.is/sites/mms.is/files/0413_isl1.pdf",
+            "https://mms.is/sites/mms.is/files/0413_isl2.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/mat_2013_isl_4bekk.pdf",
+    ),
+    # Math
+    (
+        "2013",
+        "math",
+        ["https://mms.is/sites/mms.is/files/1013_sta.pdf"],
+        "https://mms.is/sites/mms.is/files/mat_2013_sta.pdf",
+    ),
+    (
+        "2013",
+        "math",
+        [
+            "https://mms.is/sites/mms.is/files/0713_sta1.pdf",
+            "https://mms.is/sites/mms.is/files/0713_sta2.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/mat_2013_sta_7bekk.pdf",
+    ),
+    (
+        "2013",
+        "math",
+        [
+            "https://mms.is/sites/mms.is/files/0413_sta1.pdf",
+            "https://mms.is/sites/mms.is/files/0413_sta2.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/mat_2013_sta_4bekk.pdf",
+    ),
+    # ── 2014 ─────────────────────────────────────────────────────────────────
+    # Icelandic
+    (
+        "2014",
+        "is",
+        ["https://mms.is/sites/mms.is/files/isl_10_2014_hefti.pdf"],
+        "https://mms.is/sites/mms.is/files/matsreglur_10_2014_isl_0.pdf",
+    ),
+    (
+        "2014",
+        "is",
+        [
+            "https://mms.is/sites/mms.is/files/isl_07_2014_1hefti.pdf",
+            "https://mms.is/sites/mms.is/files/isl_07_2014_2hefti.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/matsreglur_07_2014_isl.pdf",
+    ),
+    (
+        "2014",
+        "is",
+        [
+            "https://mms.is/sites/mms.is/files/isl_04_2014_1hefti.pdf",
+            "https://mms.is/sites/mms.is/files/isl_04_2014_2hefti.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/matsreglur_04_2014_isl.pdf",
+    ),
+    # Math
+    (
+        "2014",
+        "math",
+        ["https://mms.is/sites/mms.is/files/sta_10_2014_hefti.pdf"],
+        "https://mms.is/sites/mms.is/files/matsreglur_10_2014_sta.pdf.pdf",
+    ),
+    (
+        "2014",
+        "math",
+        [
+            "https://mms.is/sites/mms.is/files/sta_07_2014_1hefti.pdf",
+            "https://mms.is/sites/mms.is/files/sta_07_2014_2hefti.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/matsreglur_07_2014_sta.pdf.pdf",
+    ),
+    (
+        "2014",
+        "math",
+        [
+            "https://mms.is/sites/mms.is/files/sta_04_2014_1hefti.pdf",
+            "https://mms.is/sites/mms.is/files/sta_04_2014_2hefti.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/matsreglur_04_2014_sta.pdf",
+    ),
+    # ── 2015 ─────────────────────────────────────────────────────────────────
+    # Icelandic
+    (
+        "2015",
+        "is",
+        ["https://mms.is/sites/mms.is/files/isl_10_2015_heftid.pdf"],
+        "https://mms.is/sites/mms.is/files/10_isl_mat_2015.pdf",
+    ),
+    (
+        "2015",
+        "is",
+        [
+            "https://mms.is/sites/mms.is/files/isl_1_7_bekk_2015.pdf",
+            "https://mms.is/sites/mms.is/files/isl_2_7_bekk_2015.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/7_isl_mat_2015.pdf",
+    ),
+    (
+        "2015",
+        "is",
+        [
+            "https://mms.is/sites/mms.is/files/isl_04_2015_1hefti.pdf",
+            "https://mms.is/sites/mms.is/files/isl_04_2015_2hefti.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/4_isl_mat_2015.pdf",
+    ),
+    # Math
+    (
+        "2015",
+        "math",
+        ["https://mms.is/sites/mms.is/files/sta_10_2015_hefti.pdf"],
+        "https://mms.is/sites/mms.is/files/10_sta_mat_2015.pdf",
+    ),
+    (
+        "2015",
+        "math",
+        [
+            "https://mms.is/sites/mms.is/files/sta_07_2015_1hefti.pdf",
+            "https://mms.is/sites/mms.is/files/sta_07_2015_2hefti.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/7_sta_mat_2015.pdf",
+    ),
+    (
+        "2015",
+        "math",
+        [
+            "https://mms.is/sites/mms.is/files/sta_04_2015_1hefti.pdf",
+            "https://mms.is/sites/mms.is/files/sta_04_2015_2hefti.pdf",
+        ],
+        "https://mms.is/sites/mms.is/files/4_sta_mat_2015.pdf",
+    ),
+    # ── 2016 ─────────────────────────────────────────────────────────────────
+    # (PDF format changed this year; no 10th-grade tests available)
+    # Icelandic
+    (
+        "2016",
+        "is",
+        ["https://www.mms.is/sites/mms.is/files/isl7_2016.pdf"],
+        "https://www.mms.is/sites/mms.is/files/isl_7b_2016-nyrra.pdf",
+    ),
+    (
+        "2016",
+        "is",
+        ["https://www.mms.is/sites/mms.is/files/isl4_2016.pdf"],
+        "https://www.mms.is/sites/mms.is/files/isl_4b_2016_002.pdf",
+    ),
+    # Math
+    (
+        "2016",
+        "math",
+        ["https://www.mms.is/sites/mms.is/files/stae7_2016.pdf"],
+        "https://www.mms.is/sites/mms.is/files/stae_7b_2016.pdf",
+    ),
+    (
+        "2016",
+        "math",
+        ["https://www.mms.is/sites/mms.is/files/stae4_2016.pdf"],
+        "https://www.mms.is/sites/mms.is/files/stae_4b_2016-nyrra.pdf",
+    ),
+    # ── 2017 ─────────────────────────────────────────────────────────────────
+    # (Two alternative tests per grade: A and B)
+    # Icelandic
+    (
+        "2017",
+        "is",
+        ["https://www.mms.is/sites/mms.is/files/isl7a_5pr.pdf"],
+        "https://mms.is/sites/mms.is/files/isl_7b_a.pdf",
+    ),
+    (
+        "2017",
+        "is",
+        ["https://www.mms.is/sites/mms.is/files/isl7b_5pr.pdf"],
+        "https://mms.is/sites/mms.is/files/isl_7b_b.pdf",
+    ),
+    (
+        "2017",
+        "is",
+        ["https://www.mms.is/sites/mms.is/files/isl4a_5pr.pdf"],
+        "https://mms.is/sites/mms.is/files/isl_4b_a.pdf",
+    ),
+    (
+        "2017",
+        "is",
+        ["https://www.mms.is/sites/mms.is/files/isl4b_5pr.pdf"],
+        "https://mms.is/sites/mms.is/files/isl_4b_b.pdf",
+    ),
+    # Math
+    (
+        "2017",
+        "math",
+        ["https://www.mms.is/sites/mms.is/files/stae7a.pdf"],
+        "https://mms.is/sites/mms.is/files/stae_7b_a.pdf",
+    ),
+    (
+        "2017",
+        "math",
+        ["https://www.mms.is/sites/mms.is/files/stae7b.pdf"],
+        "https://mms.is/sites/mms.is/files/stae_7b_b.pdf",
+    ),
+    (
+        "2017",
+        "math",
+        ["https://www.mms.is/sites/mms.is/files/stae4a.pdf"],
+        "https://mms.is/sites/mms.is/files/stae_4b_a.pdf",
+    ),
+    (
+        "2017",
+        "math",
+        ["https://www.mms.is/sites/mms.is/files/stae4b.pdf"],
+        "https://mms.is/sites/mms.is/files/stae_4b_b.pdf",
+    ),
 ]
-
-# Keywords used to identify subjects in page headings (lowercase)
-SUBJECT_KEYWORDS: dict[str, list[str]] = {
-    "is": ["íslenska", "islenska", "íslensku"],
-    "math": ["stærðfræði", "staerdfraedi", "stærðfræðu", "stærðfr"],
-}
 
 LABEL_LETTERS = ["a", "b", "c", "d"]
 
@@ -53,59 +278,51 @@ def main() -> None:
     all_is_samples: list[dict] = []
     all_math_samples: list[dict] = []
 
-    for year, page_url in YEAR_PAGES:
-        logger.info(f"Fetching year page for {year}: {page_url}")
+    for year, subject, question_urls, answers_url in TEST_PDFS:
+        logger.info(
+            f"Processing {subject} test from {year} "
+            f"({len(question_urls)} question sheet(s))..."
+        )
         try:
-            pdf_links = fetch_pdf_links(year=year, page_url=page_url)
+            answers_pdf = download_pdf(url=answers_url)
         except Exception as e:
-            logger.warning(f"Failed to fetch PDF links for {year}: {e}")
+            logger.warning(
+                f"Failed to download answer key for {subject} {year} "
+                f"({answers_url}): {e}"
+            )
             continue
 
-        for subject, prof_urls, matsreglur_url in pdf_links:
-            logger.info(
-                f"Processing {subject} test from {year} "
-                f"({len(prof_urls)} question sheet(s))..."
-            )
+        combined_samples: list[dict] = []
+        for q_url in question_urls:
             try:
-                answers_pdf = download_pdf(url=matsreglur_url)
+                test_pdf = download_pdf(url=q_url)
             except Exception as e:
                 logger.warning(
-                    f"Failed to download answer key for {subject} {year}: {e}"
+                    f"Failed to download question sheet {q_url} "
+                    f"for {subject} {year}: {e}"
                 )
                 continue
+            try:
+                samples = extract_multiple_choice_questions(
+                    test_pdf=test_pdf,
+                    answers_pdf=answers_pdf,
+                    year=year,
+                    subject=subject,
+                )
+                combined_samples.extend(samples)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to extract questions from {subject} {year} ({q_url}): {e}"
+                )
 
-            combined_samples: list[dict] = []
-            for prof_url in prof_urls:
-                try:
-                    test_pdf = download_pdf(url=prof_url)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to download question sheet {prof_url} "
-                        f"for {subject} {year}: {e}"
-                    )
-                    continue
-                try:
-                    samples = extract_multiple_choice_questions(
-                        test_pdf=test_pdf,
-                        answers_pdf=answers_pdf,
-                        year=year,
-                        subject=subject,
-                    )
-                    combined_samples.extend(samples)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to extract questions from {subject} {year} "
-                        f"({prof_url}): {e}"
-                    )
+        if subject == "is":
+            all_is_samples.extend(combined_samples)
+        else:
+            all_math_samples.extend(combined_samples)
 
-            if subject == "is":
-                all_is_samples.extend(combined_samples)
-            else:
-                all_math_samples.extend(combined_samples)
-
-            logger.info(
-                f"Extracted {len(combined_samples)} questions from {subject} {year}."
-            )
+        logger.info(
+            f"Extracted {len(combined_samples)} questions from {subject} {year}."
+        )
 
     for subject, samples in [("is", all_is_samples), ("math", all_math_samples)]:
         if not samples:
@@ -173,96 +390,6 @@ def main() -> None:
         HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
         dataset_dict.push_to_hub(dataset_id, private=True)
         logger.info(f"Pushed {subject} dataset to {dataset_id}.")
-
-
-def fetch_pdf_links(year: str, page_url: str) -> list[tuple[str, list[str], str]]:
-    """Fetch "Prófhefti" and "Matsreglur" PDF links from a year page.
-
-    Scrapes the given year page and returns PDF link groups, one per subject
-    found. Each entry is (subject, [profhefti_url, ...], matsreglur_url).
-
-    Args:
-        year:
-            The year string (used only for logging).
-        page_url:
-            The URL of the year page listing the exams.
-
-    Returns:
-        A list of (subject, prof_urls, matsreglur_url) triples for each
-        subject found on the page. subject is "is" or "math".
-    """
-    response = requests.get(url=page_url, timeout=30)
-    response.raise_for_status()
-
-    soup = BeautifulSoup(response.text, "html.parser")
-    # Derive the base URL (scheme + host) from the page URL
-    parsed = urlparse(page_url)
-    url_base = f"{parsed.scheme}://{parsed.netloc}"
-
-    def resolve(href: str) -> str:
-        return urljoin(url_base, href)
-
-    def detect_subject(text: str, href: str = "") -> str | None:
-        """Return the subject key matching text/href, or None."""
-        for subj, keywords in SUBJECT_KEYWORDS.items():
-            if any(kw in text or kw in href for kw in keywords):
-                return subj
-        return None
-
-    # Walk through headings and links in document order, tracking subject context.
-    results: dict[str, dict[str, list[str]]] = {}
-    current_subject: str | None = None
-
-    heading_tags = ["h1", "h2", "h3", "h4", "h5", "h6"]
-    for element in soup.find_all(heading_tags + ["a"]):
-        text_lower = element.get_text(separator=" ", strip=True).lower()
-
-        # Detect subject headings
-        if element.name in heading_tags:
-            found = detect_subject(text_lower)
-            if found is not None:
-                current_subject = found
-                if found not in results:
-                    results[found] = {"profhefti": [], "matsreglur": []}
-
-        # Detect links
-        elif element.name == "a":
-            href = element.get("href", "")
-            if not href or not href.lower().endswith(".pdf"):
-                continue
-
-            link_text = element.get_text(strip=True).lower()
-            full_url = resolve(href)
-
-            # Fall back to detecting subject from link text / href
-            link_subject = current_subject or detect_subject(link_text, href.lower())
-            if link_subject is None:
-                continue
-
-            if link_subject not in results:
-                results[link_subject] = {"profhefti": [], "matsreglur": []}
-
-            if "prófhefti" in link_text or "profhefti" in link_text:
-                results[link_subject]["profhefti"].append(full_url)
-            elif "matsreglur" in link_text or "matsregl" in link_text:
-                results[link_subject]["matsreglur"].append(full_url)
-
-    output: list[tuple[str, list[str], str]] = []
-    for subj, links in results.items():
-        if not links["profhefti"] or not links["matsreglur"]:
-            logger.warning(
-                f"Incomplete links for subject={subj} year={year}: "
-                f"profhefti={links['profhefti']}, matsreglur={links['matsreglur']}"
-            )
-            continue
-        # Use the last matsreglur link if there are multiple (shouldn't happen)
-        output.append((subj, links["profhefti"], links["matsreglur"][-1]))
-
-    logger.info(
-        f"Found {len(output)} subject(s) on year page {year}: "
-        + ", ".join(s for s, _, _ in output)
-    )
-    return output
 
 
 def download_pdf(url: str) -> bytes:
