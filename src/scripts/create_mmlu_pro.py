@@ -141,7 +141,7 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
         + "\n"
         + f"{CHOICES_MAPPING['en']}:\n"
         + "\n".join(
-            f"{letter}. " + row[f"option_{letter}"].replace("\n", " ").strip()
+            f"{letter.lower()}. " + row[f"option_{letter}"].replace("\n", " ").strip()
             for letter in OPTION_LABELS
             if pd.notna(row[f"option_{letter}"])
         )
