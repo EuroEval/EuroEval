@@ -762,24 +762,15 @@ validation, and the rest for testing.
 Here are a few examples from the training split:
 
 ```json
-{
-  "text": "¿Cuál es el resultado de dividir 144 entre 12?\nOpciones:\na. 10\nb. 12\nc. 14\nd. 16",
-  "label": "b"
-}
+
 ```
 
 ```json
-{
-  "text": "¿Cuál es la capital de España?\nOpciones:\na. Barcelona\nb. Sevilla\nc. Madrid\nd. Valencia",
-  "label": "c"
-}
+
 ```
 
 ```json
-{
-  "text": "¿Cuántos lados tiene un hexágono?\nOpciones:\na. 4\nb. 5\nc. 6\nd. 8",
-  "label": "c"
-}
+
 ```
 
 When evaluating generative models, we use the following setup (see the
