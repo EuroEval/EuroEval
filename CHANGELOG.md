@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   [NorSumm dataset](https://github.com/SamiaTouileb/NorSumm). The splits are given by
   8 samples for train and the remaining articles for test, with no validation split.
   Both datasets are marked as `unofficial` for now.
+- Added the Norwegian dialect classification dataset NorDial. The split is given
+  by 848 / 106 / 110 samples for train / val / test, respectively. It is marked
+  as `unofficial` for now.
 - Added the English knowledge dataset MMLU-Pro, marked as unofficial. This is a more
   robust and challenging version of MMLU with 10 answer options per question.
 - Added the MultiNRC knowledge dataset for English, French and Spanish. These are

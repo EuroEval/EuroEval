@@ -2025,3 +2025,82 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-no
 ```
+
+## Miscellaneous Text Classification
+
+### Unofficial: NorDial
+
+This dataset was published in [this paper](https://aclanthology.org/2021.nodalida-main.51/)
+and consists of Norwegian tweets manually annotated for the writing form used: standard
+Bokmål, standard Nynorsk, dialectal Norwegian, or a mix of these.
+
+The original full dataset consists of 848 / 106 / 110 samples for training, validation
+and test, respectively. We use all available samples, resulting in the same 848 / 106 /
+110 split for training, validation and test, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "@jkBaltzersen @nitaSmartAnd @sgaarder Vi har en lokal revy (opp til flere, men en av dem har jeg sett), og de klarer hvert år å parodiere forskjellige personer som har en rolle i lokalsamfunnet eller stukket hodet frem i avisen. Ikke alle er maktpersoner, og ikke alt like morsomt. Samtidig er det humor.",
+    "label": "bokmål"
+}
+```
+
+```json
+{
+    "text": "@elfhybrid_ -Halda fram med spanskvedlikehald\n-Øva meir på andre språk eg kan litt, kanskje tysk eller russisk, og/eller byrja læra islandsk eller skotsk-gælisk som eg har hatt lyst å læra i årevis\n-Ha tantungar på overnatting oftare\n-Øva meg på å høyra etter når kroppen seier nei",
+    "label": "nynorsk"
+}
+```
+
+```json
+{
+    "text": "@FANTonsen @mimirk Æ ha egenhendig bygd to vindmøllparka.\nÅ kolles innvestorkapitaln trikse med skatt og tillskudd, imens vi gi dem våre ressursa.\nUnnskyld mæ, triksing med tall. Det by mæ imot.",
+    "label": "dialectal"
+}
+```
+
+```json
+{
+    "text": "@RekstadYvind Når ein har andre avvik så er det \"favorable genetic profile\", men når ei svart kvinne har det er det eit biologisk overtramp, eit hån mot sporten, og ho er eigentleg mann. Det er så dårleg skjult det dei driv med. https://t.co/fWRduJAloo",
+    "label": "mixed"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er norske tweets og hvilken skriftform de er skrevet på, som kan være 'bokmål', 'nynorsk', 'dialekt' eller 'blandet'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Tweet: {text}
+  Skriftform: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Tweet: {text}
+
+  Klassifiser skriftformen av tweeten. Svar med 'bokmål', 'nynorsk', 'dialekt' eller 'blandet', og ikke noe annet.
+  ```
+
+- Label mapping:
+  - `bokmål` ➡️ `bokmål`
+  - `nynorsk` ➡️ `nynorsk`
+  - `dialectal` ➡️ `dialekt`
+  - `mixed` ➡️ `blandet`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset nordial
+```
