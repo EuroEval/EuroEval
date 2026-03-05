@@ -1868,7 +1868,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset valeu-no
 ```
 
-## Dialect Classification
+## Miscellaneous Text Classification
 
 ### Unofficial: NorDial
 
