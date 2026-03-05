@@ -683,37 +683,38 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-es
 ```
 
-### Unofficial: MultiNRC-es
+### Unofficial: MultiLoKo-es
 
-This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2507.17476)
-and consists of native-authored reasoning questions designed to assess multilingual
-reasoning ability in Spanish. Unlike benchmarks that simply translate English-centric
-content, the questions are crafted by native Spanish speakers to capture linguistic and
-cultural nuances.
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Spanish
+questions are separately sourced and designed to target locally relevant topics for
+Spanish-speaking populations.
 
-The original dataset consists of over 1,000 reasoning questions. The exact split sizes
-depend on the number of samples available per language after filtering.
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "¿Cuál es la capital de España?\nOpciones:\na. Barcelona\nb. Sevilla\nc. Valencia\nd. Madrid",
-  "label": "d"
+    "text": "¿En qué país fue patentado el \"birome\" antecesor del actual bolígrafo?\nOpciones:\na. Argentina\nb. España\nc. Estados Unidos\nd. México",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "¿Cuál de los siguientes es un ejemplo de fuente de energía renovable?\nOpciones:\na. Carbón\nb. Gas natural\nc. Energía solar\nd. Fisión nuclear",
-  "label": "c"
+    "text": "¿En qué siglo viajó Isabel Zendal desde el puerto de La Coruña en La Real Expedición Filantrópica de la Vacuna, expedición que llevaría la vacuna de la viruela a América?\nOpciones:\na. Siglo XVIII\nb. Siglo XIX\nc. Siglo XVII\nd. Siglo XX",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "¿Qué caracteriza principalmente a la democracia representativa?\nOpciones:\na. Los ciudadanos votan directamente sobre todas las leyes\nb. Los ciudadanos eligen representantes para tomar decisiones en su nombre\nc. Un solo partido político ostenta el poder\nd. Las decisiones son tomadas por expertos designados",
-  "label": "b"
+    "text": "¿Quién es la madre del primer hijo de Camilo Echeverri?\nOpciones:\na. Greeicy Rendón\nb. Tini Stoessel\nc. Evaluna Montaner\nd. Karol G",
+    "label": "c"
 }
 ```
 
@@ -731,11 +732,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Pregunta: {text}
-  Opciones:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
   Respuesta: {label}
   ```
 
@@ -743,11 +739,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Pregunta: {text}
-  Opciones:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
 
   Responda la pregunta anterior usando solo 'a', 'b', 'c' o 'd', y nada más.
   ```
@@ -755,7 +746,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multinrc-es
+euroeval --model <model-id> --dataset multiloko-es
 ```
 
 ## Common-sense Reasoning

@@ -735,6 +735,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-nl
 ```
 
+### Unofficial: MultiLoKo-nl
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Dutch
+questions are separately sourced and designed to target locally relevant topics for
+Dutch-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Wanneer maakten Twan Huys en Mark Rutte een Nederlandse versie van het Correspondents' Dinner, in de Beurs van Berlage?\nAntwoordopties:\na. 10-02-2024\nb. 15 maart 2017\nc. 5 november 2018\nd. 22 januari 2015",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "Bij welke zender maakte Patrick Martens het programma Supernick tussen 2007 en 2011?\nAntwoordopties:\na. AVROTROS\nb. Nickelodeon\nc. RTL 4\nd. SBS6",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "Hoeveel doelpunten maakte Youri Mulder in zijn laatste seizoen voor FC Twente?\nAntwoordopties:\na. vier\nb. vijf\nc. Drie\nd. twee",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+
+  Beantwoord de bovenstaande vraag met 'a', 'b', 'c' of 'd', en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-nl
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-nl

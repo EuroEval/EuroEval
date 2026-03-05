@@ -621,37 +621,38 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-fr
 ```
 
-### Unofficial: MultiNRC-fr
+### Unofficial: MultiLoKo-fr
 
-This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2507.17476)
-and consists of native-authored reasoning questions designed to assess multilingual
-reasoning ability in French. Unlike benchmarks that simply translate English-centric
-content, the questions are crafted by native French speakers to capture linguistic and
-cultural nuances.
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The French
+questions are separately sourced and designed to target locally relevant topics for
+French-speaking populations.
 
-The original dataset consists of over 1,000 reasoning questions. The exact split sizes
-depend on the number of samples available per language after filtering.
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Quelle est la capitale de la France?\nChoix:\na. Lyon\nb. Marseille\nc. Paris\nd. Bordeaux",
-  "label": "c"
+    "text": "Quel est le métier de la seconde femme de Joseph Ferdinand Cheval?\nChoix:\na. tailleuse\nb. couturière\nc. institutrice\nd. boulangère",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Lequel des éléments suivants est un exemple de source d'énergie renouvelable?\nChoix:\na. Charbon\nb. Gaz naturel\nc. Énergie solaire\nd. Fission nucléaire",
-  "label": "c"
+    "text": "Qui est le père des quatre enfants de Mercotte ?\nChoix:\na. Cyril Lignac\nb. Mercorelli\nc. Bernard Laurance\nd. Philippe Etchebest",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Qu'est-ce qui caractérise principalement la démocratie représentative?\nChoix:\na. Les citoyens votent directement sur toutes les lois\nb. Les citoyens élisent des représentants pour prendre des décisions en leur nom\nc. Un seul parti politique détient le pouvoir\nd. Les décisions sont prises par des experts nommés",
-  "label": "b"
+    "text": "Dans le film de 2017120 Battements par minute, à quelle association sont rattachées les personnes qui répandent les cendres de Sean sur des petits-fours ?\nChoix:\na. AIDES\nb. SOS Homophobie\nc. Act Up– Paris\nd. Sidaction",
+    "label": "c"
 }
 ```
 
@@ -669,11 +670,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Question: {text}
-  Choix:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
   Réponse: {label}
   ```
 
@@ -681,11 +677,6 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Question: {text}
-  Choix:
-  a. {option_a}
-  b. {option_b}
-  c. {option_c}
-  d. {option_d}
 
   Répondez à la question ci-dessus par 'a', 'b', 'c' ou 'd', et rien d'autre.
   ```
@@ -693,7 +684,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multinrc-fr
+euroeval --model <model-id> --dataset multiloko-fr
 ```
 
 ## Common-sense Reasoning

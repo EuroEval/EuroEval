@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   unofficial for now. This was added by @N-essuno ✨
 - Added the MultiNRC knowledge dataset for English, French and Spanish. These are
   marked as `unofficial` for now.
+- Added the MultiLoKo multilingual local knowledge benchmark datasets for Dutch,
+  English, French, German, Italian, Portuguese, Spanish and Swedish. All datasets
+  are marked as `unofficial` for now.
 - Added the Schibsted front-page title and SEO title datasets, sourced from
   single newsrooms: `vg-front-title` features front-page titles from VG (Norwegian),
   and `svd-seo-title` features SEO titles from Svenska Dagbladet (Swedish). Both

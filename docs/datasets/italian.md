@@ -705,6 +705,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-it
 ```
 
+### Unofficial: MultiLoKo-it
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Italian
+questions are separately sourced and designed to target locally relevant topics for
+Italian-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Per quale squadra Leonardo Pavoletti ha segnato 24 gol nel campionato di Serie A 2013-2014?\nScelte:\na. Città di Varese SSD a RL\nb. US Sassuolo Calcio\nc. AS Livorno Calcio\nd. Modena FC",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "Chi era il presidente dei Giallorossi nel 1932?\nScelte:\na. Francesco Marini Dettina\nb. Renato Sacerdoti\nc. Italo Foschi\nd. Piero Boldrini",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "Quale è la candidatura di riconoscimento mondiale che Emma Marrone ha ricevuto durante la sua carriera musicale?\nScelte:\na. Grammy Award\nb. MTV Europe Music Award\nc. World Music Award\nd. Brit Award",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Le seguenti sono domande a scelta multipla (con risposte).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Domanda: {text}
+  Risposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Domanda: {text}
+
+  Rispondete alla domanda precedente con 'a', 'b', 'c' o 'd' e nient'altro.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-it
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-it
