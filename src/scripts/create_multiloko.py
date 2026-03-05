@@ -110,9 +110,7 @@ def build_dataset_with_llm(
         correct_answer = str(targets[0]).strip()
 
         if not correct_answer:
-            logger.warning(
-                "Empty correct answer for %s item %d, skipping.", language, i
-            )
+            logger.warning(f"Empty correct answer for {language} item {i}, skipping.")
             continue
 
         cache_key = f"{language}_{i}"
@@ -138,7 +136,7 @@ def build_dataset_with_llm(
             event = completion.choices[0].message.parsed
             if event is None:
                 logger.warning(
-                    "No response from OpenAI for %s item %d, skipping.", language, i
+                    f"No response from OpenAI for {language} item {i}, skipping."
                 )
                 continue
             cache[cache_key] = dict(event)
@@ -159,10 +157,7 @@ def build_dataset_with_llm(
 
         if len(set(options.values())) != 4:
             logger.warning(
-                "Options are not unique for %s item %d: %s. Skipping.",
-                language,
-                i,
-                options,
+                f"Options are not unique for {language} item {i}: {options}. Skipping."
             )
             continue
 
@@ -188,9 +183,8 @@ def build_dataset_with_llm(
             for j, choice_idx in enumerate(sorted(choice_idxs, reverse=True), start=1)
         ):
             logger.warning(
-                "Choices are not at the end of the text for %s item %d. Skipping.",
-                language,
-                i,
+                f"Choices are not at the end of the text for {language} item {i}."
+                " Skipping."
             )
             continue
 
@@ -239,11 +233,8 @@ def main() -> None:
 
         if len(result_df) < TRAIN_SIZE + 1:
             logger.warning(
-                "Skipping language %s: only %d samples after processing, "
-                "need at least %d.",
-                language,
-                len(result_df),
-                TRAIN_SIZE + 1,
+                f"Skipping language {language}: only {len(result_df)} samples after "
+                f"processing, need at least {TRAIN_SIZE + 1}."
             )
             continue
 
