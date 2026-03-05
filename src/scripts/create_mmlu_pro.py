@@ -17,14 +17,14 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
-# Bounds on the size of texts in multiple choice datasets
-MIN_NUM_CHARS_IN_INSTRUCTION = 30
-MAX_NUM_CHARS_IN_INSTRUCTION = 2000
-MIN_NUM_CHARS_IN_OPTION = 1
-MAX_NUM_CHARS_IN_OPTION = 1000
-MAX_REPETITIONS = 50
-
-CHOICES_LABEL = "Choices"
+from constants import (
+    CHOICES_MAPPING,
+    MAX_NUM_CHARS_IN_INSTRUCTION,
+    MAX_NUM_CHARS_IN_OPTION,
+    MAX_REPETITIONS,
+    MIN_NUM_CHARS_IN_INSTRUCTION,
+    MIN_NUM_CHARS_IN_OPTION,
+)
 
 NUM_OPTIONS = 10
 OPTION_LABELS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
@@ -151,7 +151,7 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     df["text"] = [
         row.instruction.replace("\n", " ").strip()
         + "\n"
-        + f"{CHOICES_LABEL}:\n"
+        + f"{CHOICES_MAPPING['en']}:\n"
         + "\n".join(
             f"{letter}. " + row[f"option_{letter}"].replace("\n", " ").strip()
             for letter in OPTION_LABELS
