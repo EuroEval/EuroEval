@@ -735,6 +735,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-nl
 ```
 
+### Unofficial: MultiLoKo-nl
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Dutch
+questions are separately sourced and designed to target locally relevant topics for
+Dutch-speaking populations.
+
+The original dataset only contains a test split. We merge all available splits, remove
+duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively (or smaller if fewer samples are
+available).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Wat is de hoofdstad van Nederland?\nAntwoordopties:\na. Rotterdam\nb. Amsterdam\nc. Den Haag\nd. Utrecht",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Welke rivier stroomt door Amsterdam?\nAntwoordopties:\na. De Rijn\nb. De Maas\nc. De Amstel\nd. De Schelde",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Wie schreef het boek 'De aanslag'?\nAntwoordopties:\na. Harry Mulisch\nb. W.F. Hermans\nc. Gerard Reve\nd. Multatuli",
+  "label": "a"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+
+  Beantwoord de bovenstaande vraag met 'a', 'b', 'c' of 'd', en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-nl
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-nl

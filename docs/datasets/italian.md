@@ -705,6 +705,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-it
 ```
 
+### Unofficial: MultiLoKo-it
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Italian
+questions are separately sourced and designed to target locally relevant topics for
+Italian-speaking populations.
+
+The original dataset only contains a test split. We merge all available splits, remove
+duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively (or smaller if fewer samples are
+available).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Qual è la capitale d'Italia?\nScelte:\na. Milano\nb. Napoli\nc. Roma\nd. Torino",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Quale fiume scorre attraverso Roma?\nScelte:\na. Po\nb. Arno\nc. Tevere\nd. Adige",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Chi ha scritto 'La Divina Commedia'?\nScelte:\na. Francesco Petrarca\nb. Giovanni Boccaccio\nc. Dante Alighieri\nd. Ludovico Ariosto",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Le seguenti sono domande a scelta multipla (con risposte).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Domanda: {text}
+  Risposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Domanda: {text}
+
+  Rispondete alla domanda precedente con 'a', 'b', 'c' o 'd' e nient'altro.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-it
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-it
