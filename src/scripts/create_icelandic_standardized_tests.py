@@ -18,6 +18,7 @@ import base64
 import io
 import logging
 import os
+from typing import Annotated
 
 import fitz
 import pandas as pd
@@ -27,14 +28,14 @@ from datasets import Dataset, DatasetDict, Split
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
 from openai import OpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, create_model
 
 load_dotenv()
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_icelandic_standardized_tests")
 
-GPT_MODEL = "gpt-4.1"
+GPT_MODEL = "gpt-5-mini"
 
 
 # Each entry is (year, subject, [question_urls], answers_url).
@@ -299,16 +300,23 @@ class McOption(BaseModel):
 class McQuestion(BaseModel):
     """A single multiple-choice question with four options."""
 
-    number: int
     question: str
     options: McOption
 
 
-class QuestionList(BaseModel):
-    """All multiple-choice questions extracted from a question booklet."""
+class GeneralReadingPassage(BaseModel):
+    """A long general reading passage."""
 
-    passage: str
-    questions: list[McQuestion]
+    id: int
+    text: Annotated[str, Field(min_length=100)]
+
+
+class McQuestionWithPassage(BaseModel):
+    """A single multiple-choice question with a passage and four options."""
+
+    passage_id: int
+    question: str
+    options: McOption
 
 
 class AnswerEntry(BaseModel):
@@ -367,7 +375,10 @@ def main() -> None:
                 continue
             try:
                 passage, questions = extract_questions(
-                    pdf_bytes=test_pdf, client=client, subject=subject
+                    pdf_bytes=test_pdf,
+                    client=client,
+                    subject=subject,
+                    ids=list(answer_key.keys()),
                 )
             except Exception as e:
                 logger.warning(
@@ -378,6 +389,10 @@ def main() -> None:
             for q in questions:
                 correct = answer_key.get(q.number, "")
                 if correct not in LABEL_LETTERS:
+                    logger.warning(
+                        f"Invalid answer for question {q.number} ({correct}) in "
+                        f"answer key for {subject} {year}"
+                    )
                     continue
                 question_text = q.question
                 if subject == "is" and passage:
@@ -392,6 +407,9 @@ def main() -> None:
                     },
                 )
                 if text is None:
+                    logger.warning(
+                        f"Failed to format question {q.number} for {subject} {year}"
+                    )
                     continue
                 combined_samples.append({"text": text, "label": correct, "year": year})
 
@@ -528,7 +546,7 @@ def _images_to_content(images: list[str]) -> list[dict]:
 
 
 def extract_questions(
-    pdf_bytes: bytes, client: OpenAI, subject: str
+    pdf_bytes: bytes, client: OpenAI, subject: str, ids: list[int]
 ) -> tuple[str, list[McQuestion]]:
     """Use GPT-4.1 vision to extract multiple-choice questions from a question booklet.
 
@@ -543,6 +561,8 @@ def extract_questions(
             An authenticated OpenAI client.
         subject:
             Subject code: ``"is"`` for Icelandic language, ``"math"`` for mathematics.
+        ids:
+            A list of question numbers to extract.
 
     Returns:
         A tuple of (passage, questions) where passage is the general reading text
@@ -553,34 +573,45 @@ def extract_questions(
 
     if subject == "is":
         passage_instruction = (
-            "The booklet contains a general reading passage (text) that all "
-            "questions refer to. Extract that passage in full and return it in "
-            "the 'passage' field. "
+            "Each question is associated with a long general reading passage that "
+            "precedes it (usually on the previous page). Include this in the "
+            "'passages' field, being a list of dictionaries with keys 'id' and 'text'. "
+            "Every question should have also have a `passage_id` field that refers to "
+            "the ID of the general reading passage it refers to. "
         )
     else:
-        passage_instruction = "Return an empty string for the 'passage' field. "
+        passage_instruction = ""
 
     content: list[dict] = [
         {
             "type": "text",
             "text": (
                 "These are pages from an Icelandic primary school exam booklet. "
+                "Please extract all multiple-choice questions. For each question "
+                "return the full question text, and the text of each option. "
                 f"{passage_instruction}"
-                "Please also extract all multiple-choice questions that have exactly "
-                "four options labelled a, b, c, and d. "
-                "For each question return its number, the full question text, "
-                "and the text of each option. "
-                "Ignore any questions that do not have exactly four options. "
                 "Preserve the original Icelandic text exactly."
             ),
         },
         *_images_to_content(images),
     ]
 
+    if subject == "is":
+        response_format = create_model(
+            "Questions",
+            passages=(list[GeneralReadingPassage], ...),
+            **{f"question_{i}": (McQuestionWithPassage, ...) for i in ids},
+        )
+    else:
+        response_format = create_model(
+            "Questions", **{f"question_{i}": (McQuestion, ...) for i in ids}
+        )
+
     completion = client.beta.chat.completions.parse(
         model=GPT_MODEL,
         messages=[{"role": "user", "content": content}],
-        response_format=QuestionList,
+        response_format=response_format,
+        max_completion_tokens=128_000,
     )
     result = completion.choices[0].message.parsed
     if result is None:
@@ -608,9 +639,10 @@ def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, str]:
             "text": (
                 "These are pages from an Icelandic primary school exam marking guide "
                 "(matsreglur). Please extract the answer key for all multiple-choice "
-                "questions. For each question return its number and the single correct "
-                "answer letter (a, b, c, or d). "
-                "Only include questions whose answer is a single letter a–d."
+                "questions. This is the numeric 'Reitur' column (values 1-4), "
+                "corresponding to a, b, c, or d. For each question return its "
+                "ID number and the single correct letter corresponding to the correct "
+                "answer."
             ),
         },
         *_images_to_content(images),
