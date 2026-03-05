@@ -621,6 +621,136 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-fr
 ```
 
+### Unofficial: MultiLoKo-fr
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The French
+questions are separately sourced and designed to target locally relevant topics for
+French-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Quel est le métier de la seconde femme de Joseph Ferdinand Cheval?\nChoix:\na. tailleuse\nb. couturière\nc. institutrice\nd. boulangère",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "Qui est le père des quatre enfants de Mercotte ?\nChoix:\na. Cyril Lignac\nb. Mercorelli\nc. Bernard Laurance\nd. Philippe Etchebest",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "Dans le film de 2017120 Battements par minute, à quelle association sont rattachées les personnes qui répandent les cendres de Sean sur des petits-fours ?\nChoix:\na. AIDES\nb. SOS Homophobie\nc. Act Up– Paris\nd. Sidaction",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Réponse: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Répondez à la question ci-dessus par 'a', 'b', 'c' ou 'd', et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-fr
+```
+
+### Unofficial: MultiNRC-fr
+
+This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2507.17476)
+and consists of native-authored reasoning questions designed to assess multilingual
+reasoning ability. Unlike benchmarks that simply translate English-centric content, the
+questions are crafted by native speakers to capture linguistic and cultural nuances.
+
+The original dataset only has a 'test' split. We use 64 samples for training, 128 for
+validation, and the rest for testing.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Mon premier est la même première lettre de l'alphabet d'un fruit royal. Mon deuxième se prononce comme le liquide indispensable au corps humain. Mon troisième est une lettre qui se prononce comme le mot qui est l'inverse du mot amour. Mon tout est quelque chose qui nous réjouit.\nChoix:\na. Don.\nb. Jouet\nc. Rire\nd. Roi",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "Mon frère souhaite célébrer la Saint Jean avec la famille de sa copine cette année. Il va passer son permis juste après la pentecôte et a 17 ans. Pourra-t-il conduire seul pour y aller?\nChoix:\na. Non, il doit attendre d'avoir 18 ans pour conduire seul.\nb. Oui, si il réussi l'examen du permis de conduire.\nc. Non, il doit obligatoirement être accompagné d'un adulte jusqu'à ses 21 ans.\nd. Oui, il pourra conduire seul, même sans passer l'examen du permis de conduire.",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "Si mon premier, ambulant, fait peur, mon second est, lui, délicieux, et mon tout boira le vin nouveau. Qui suis-je ?\nChoix:\na. squelette vineux\nb. fantôme gourmand\nc. cadavre exquis\nd. zombie friand",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Réponse: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Répondez à la question ci-dessus par {labels_str}, et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multinrc-fr
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-fr
