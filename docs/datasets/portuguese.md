@@ -502,38 +502,41 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-pt
 ```
 
-### Unofficial: MultiLoKo-pt
+### Unofficial: INCLUDE-pt
 
-This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
-Portuguese questions are separately sourced and designed to target locally relevant topics
-for Portuguese-speaking populations.
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
 
-The original dataset only contains a test split. We merge all available splits, remove
-duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
-split for training, validation and testing, respectively (or smaller if fewer samples are
-available).
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {
-  "text": "Qual é a capital de Portugal?\nOpções:\na. Porto\nb. Lisboa\nc. Braga\nd. Coimbra",
-  "label": "b"
+    "text": "Em 2014, num dado país, as famílias efetuaram uma poupança de 10% do seu rendimento disponível médio. No mesmo período, as famílias apresentaram como coeficientes orçamentais das despesas em alimentação e em transportes, respetivamente, 30% e 15%. Nestas condições, em 2014, por cada 100 euros do seu rendimento disponível, as famílias despenderam, em média,\nOpções:\na. 27 euros em alimentação e 13,5 euros em transportes\nb. 30 euros em alimentação e 15 euros em transportes\nc. 30 euros em alimentação e 13,5 euros em transportes\nd. 27 euros em alimentação e 15 euros em transportes",
+    "label": "a",
+    "subject": "Economics"
 }
 ```
 
 ```json
 {
-  "text": "Qual rio passa pela cidade do Porto?\nOpções:\na. Tejo\nb. Guadiana\nc. Douro\nd. Mondego",
-  "label": "c"
+    "text": "O combate às disparidades económicas e sociais nos países da UE foi assumido, pela primeira vez, no\nOpções:\na. Tratado de Maastricht, em 1957\nb. Tratado de Maastricht, em 1992\nc. Tratado de Roma, em 1957\nd. Tratado de Roma, em 1992",
+    "label": "b",
+    "subject": "Earth science"
 }
 ```
 
 ```json
 {
-  "text": "Quem escreveu Os Lusíadas?\nOpções:\na. Fernando Pessoa\nb. José Saramago\nc. Luís de Camões\nd. Eça de Queirós",
-  "label": "c"
+    "text": "Se o homem no estado de natureza é tão livre, conforme dissemos, se é senhor absoluto da sua própria pessoa e posses, igual ao maior e a ninguém sujeito, por que abrirá ele mão dessa liberdade, por que abandonará o seu império e sujeitar-se-á ao domínio e controle de qualquer outro poder? Ao que é óbvio responder que, embora no estado de natureza tenha tal direito, a fruição do mesmo é muito incerta e está constantemente exposta à invasão de terceiros porque, sendo todos reis tanto quanto ele, todo homem igual a ele, e na maior parte pouco observadores da equidade e da justiça, a fruição da propriedade que possui nesse estado é muito insegura, muito arriscada. Estas circunstâncias obrigam-no a abandonar uma condição que, embora livre, está cheia de temores e perigos constantes; e não é sem razão que procura de boa vontade juntar-se em sociedade com outros que estão já unidos, ou pretendem unir-se, para a mútua conservação da vida, da liberdade e dos bens a que chamo de “propriedade”.\\\nOpções:\na. A propriedade surge com a criação da sociedade.\nb. No estado de natureza, o homem é livre, mas desigual.\nc. O direito de propriedade é compatível com a sociedade.\nd. Devido à insegurança, os homens optam por viver sem direitos.",
+    "label": "c",
+    "subject": "Sociology"
 }
 ```
 
@@ -559,13 +562,13 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Pergunta: {text}
 
-  Responde à pergunta acima usando só 'a', 'b', 'c' ou 'd', e nada mais.
+  Responde à pergunta acima usando só {labels_str}, e nada mais.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multiloko-pt
+euroeval --model <model-id> --dataset include-pt
 ```
 
 ## Common-sense Reasoning

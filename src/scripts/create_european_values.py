@@ -16,6 +16,7 @@ import logging
 from collections import defaultdict
 
 import pandas as pd
+from constants import CHOICES_MAPPING
 from datasets import (
     Dataset,
     DatasetDict,
@@ -26,8 +27,6 @@ from datasets import (
 )
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
-
-from .constants import CHOICES_MAPPING
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_european_values")

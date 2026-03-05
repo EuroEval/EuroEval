@@ -16,15 +16,14 @@ from pathlib import Path
 
 import click
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split
-from huggingface_hub import HfApi
-
-from .constants import (
+from constants import (
     MAX_NUM_CHARS_IN_CONTEXT,
     MAX_NUM_CHARS_IN_QUESTION,
     MIN_NUM_CHARS_IN_CONTEXT,
     MIN_NUM_CHARS_IN_QUESTION,
 )
+from datasets import Dataset, DatasetDict, Split
+from huggingface_hub import HfApi
 
 
 @click.command(

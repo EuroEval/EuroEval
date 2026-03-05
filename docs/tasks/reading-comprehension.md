@@ -14,12 +14,12 @@ task.
 ## 📊 Metrics
 
 The primary metric we use when evaluating the performance of a model on the reading
-comprehension task is the exact match (EM) score, which is the percentage of questions
-for which the model provides the exact answer.
+comprehension task is the [F1-score](https://en.wikipedia.org/wiki/F1_score) on a
+character-basis.
 
-We also report the [F1-score](https://en.wikipedia.org/wiki/F1_score) on a
-character-basis, which is more lenient than the EM score, as it allows for small
-differences in the answer.
+We also report the exact match (EM) score, which is the percentage of questions
+for which the model provides the exact answer. It is less lenient than the EM score,
+as it does not allow for small differences in the answer.
 
 ## 🛠️ How to run
 

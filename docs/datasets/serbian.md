@@ -378,6 +378,75 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-sr
 ```
 
+### Unofficial: INCLUDE-sr
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Које се од наведених понашања уобичајено појављује на крају сензомоторичке фазе?\nOpcije:\na. Дете брише мрље од чоколаде с лица када у огледалу види трагове чоколаде.\nb. Дете се користи кухачом као мачем којим напада замишљене непријатеље.\nc. Дете зна да количина сока остаје иста без обзира на облик чаше.\nd. Дете игра улогу маме па лутку води у шетњу и пева јој.",
+    "label": "a",
+    "subject": "Psychology"
+}
+```
+
+```json
+{
+    "text": "Која од наведених супстанци није елементарна супстанца?\nOpcije:\na. арсен\nb. амалгам\nc. астат\nd. америциј",
+    "label": "b",
+    "subject": "Chemistry"
+}
+```
+
+```json
+{
+    "text": "Како се назива облик агресије којим се користи ученик који виче на свога пријатеља након што га је наставник неправедно оценио?\nOpcije:\na. физичка агресија\nb. директна агресија\nc. помакнута агресија\nd. пасивна агресија",
+    "label": "c",
+    "subject": "Psychology"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Slede pitanja višestrukog izbora (sa odgovorima).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pitanje: {text}
+  Odgovor: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pitanje: {text}
+
+  Odgovorite na navedeno pitanje koristeći {labels_str}, i ništa drugo.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-sr
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-sr

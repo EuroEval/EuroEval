@@ -666,38 +666,41 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc-nl
 ```
 
-### Unofficial: MultiLoKo-nl
+### Unofficial: INCLUDE-nl
 
-This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Dutch
-questions are separately sourced and designed to target locally relevant topics for the
-Dutch-speaking population.
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
 
-The original dataset only contains a test split. We merge all available splits, remove
-duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
-split for training, validation and testing, respectively (or smaller if fewer samples are
-available).
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {
-  "text": "Welke stad is de hoofdstad van Nederland?\nAntwoordopties:\na. Amsterdam\nb. Rotterdam\nc. Den Haag\nd. Utrecht",
-  "label": "a"
+    "text": "Je zit op kot (studentenkamer) met zes medestudenten. Omdat jullie de fietsen tegen de gevel van het huis plaatsen, zetten jullie de vuilniszakken tegen de gevel van de buurman, waar altijd plaats is. Op een morgen gebeurt dit weer. De buurman komt woedend naar buiten en hij scheldt jullie uit dat jullie grote egoïsten zijn. Welke reactie zal het conflict niet doen escaleren?\nAntwoordopties:\na. 'Sorry, we gingen er misschien te gemakkelijk van uit dat dit u niet hinderde.'\nb. 'Wie dat zegt? We hebben de voorbije maanden nooit een vriendelijk woord gekregen.'\nc. 'Wij egoïsten? Mochten er meer parkeerplaatsen zijn voor fietsen, dan was het opgelost.'\nd. 'Maak u toch niet zo druk. Het zijn maar vuilniszakken hoor, geen bompakketten.'",
+    "label": "a",
+    "subject": "Journalism, media studies, and communication"
 }
 ```
 
 ```json
 {
-  "text": "Welk schilderij is gemaakt door Rembrandt van Rijn?\nAntwoordopties:\na. De Nachtwacht\nb. De Zonnebloemen\nc. De Sterrennacht\nd. De Melkweg",
-  "label": "a"
+    "text": "Bij de Vrede van Versailles werd besloten dat Duitsland moest demilitariseren. Welke reden voor deze demilitarisatie is juist?\nAntwoordopties:\na. Duitsland moest economisch sterker worden.\nb. Frankrijk wilde geen Duits leger aan zijn grens hebben.\nc. Het Duitse leger was na de Eerste Wereldoorlog te klein geworden.\nd. Het Franse leger moest even sterk zijn als het Duitse leger.",
+    "label": "b",
+    "subject": "History"
 }
 ```
 
 ```json
 {
-  "text": "Welke rivier stroomt door Amsterdam?\nAntwoordopties:\na. De Rijn\nb. De Maas\nc. Het IJ\nd. De Amstel",
-  "label": "d"
+    "text": "In welke productiesector werkt een tandarts?\nAntwoordopties:\na. in de primaire sector\nb. in de secundaire sector\nc. in de tertiaire sector\nd. in de quartaire sector",
+    "label": "c",
+    "subject": "Economics"
 }
 ```
 
@@ -723,13 +726,13 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Vraag: {text}
 
-  Beantwoord de bovenstaande vraag met 'a', 'b', 'c' of 'd', en niets anders.
+  Beantwoord de bovenstaande vraag met {labels_str}, en niets anders.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multiloko-nl
+euroeval --model <model-id> --dataset include-nl
 ```
 
 ## Common-sense Reasoning

@@ -614,38 +614,41 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-es
 ```
 
-### Unofficial: MultiLoKo-es
+### Unofficial: INCLUDE-es
 
-This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Spanish
-questions are separately sourced and designed to target locally relevant topics for
-Spanish-speaking populations.
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
 
-The original dataset only contains a test split. We merge all available splits, remove
-duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
-split for training, validation and testing, respectively (or smaller if fewer samples are
-available).
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {
-  "text": "¿Cuál es la capital de España?\nOpciones:\na. Barcelona\nb. Sevilla\nc. Madrid\nd. Valencia",
-  "label": "c"
+    "text": "Hormona que actúa sobre el metabolismo de agua, sodio, potasio y cloruro de sodio:\nOpciones:\na. Aldosterona\nb. Cortisol\nc. Corticosterona\nd. Cortisona",
+    "label": "a",
+    "subject": "Medicine"
 }
 ```
 
 ```json
 {
-  "text": "¿Qué río atraviesa Madrid?\nOpciones:\na. Ebro\nb. Guadalquivir\nc. Manzanares\nd. Tajo",
-  "label": "c"
+    "text": "Nervio que inerva a los músculos esternocleidomastoideo y trapecio:\nOpciones:\na. Hipogloso\nb. Espinal\nc. Vago\nd. Acústico",
+    "label": "b",
+    "subject": "Medicine"
 }
 ```
 
 ```json
 {
-  "text": "¿Quién pintó Las Meninas?\nOpciones:\na. Francisco Goya\nb. El Greco\nc. Joan Miró\nd. Diego Velázquez",
-  "label": "d"
+    "text": "Si el precio del bien sustituto disminuye, la curva de la demanda se\nOpciones:\na. expandirá\nb. incrementará\nc. desplazará hacia la izquierda\nd. mantendrá constante",
+    "label": "c",
+    "subject": "Economics"
 }
 ```
 
@@ -671,13 +674,13 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Pregunta: {text}
 
-  Responda la pregunta anterior usando solo 'a', 'b', 'c' o 'd', y nada más.
+  Responda la pregunta anterior usando solo {labels_str}, y nada más.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multiloko-es
+euroeval --model <model-id> --dataset include-es
 ```
 
 ## Common-sense Reasoning

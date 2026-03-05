@@ -690,38 +690,41 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc-de
 ```
 
-### Unofficial: MultiLoKo-de
+### Unofficial: INCLUDE-de
 
-This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The German
-questions are separately sourced and designed to target locally relevant topics for
-German-speaking populations.
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
 
-The original dataset only contains a test split. We merge all available splits, remove
-duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
-split for training, validation and testing, respectively (or smaller if fewer samples are
-available).
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {
-  "text": "Was ist die Hauptstadt von Deutschland?\nAntwortmöglichkeiten:\na. Hamburg\nb. München\nc. Köln\nd. Berlin",
-  "label": "d"
+    "text": "Wann dürfen Sie in einem Tunnel Ihr Fahrzeug wenden?\nAntwortmöglichkeiten:\na. Wenn Einsatzkräfte das Wenden ausdrücklich anordnen\nb. Wenn ich aus einer Gefahrensituation flüchten möchte\nc. Wenn ich unter Zeitdruck bin und sich vor mir ein Stau gebildet hat\nd. Nur wenn ich mit meinem Fahrzeug in einem Zug umkehren kann",
+    "label": "a",
+    "subject": "Driving License"
 }
 ```
 
 ```json
 {
-  "text": "Welcher Fluss fließt durch Köln?\nAntwortmöglichkeiten:\na. Elbe\nb. Rhein\nc. Donau\nd. Main",
-  "label": "b"
+    "text": "Das Industrieland hat in einer Wirtschaftstätigkeit einen komparativen Vorteil, wenn\nAntwortmöglichkeiten:\na. in einer anderen Tätigkeit sein absoluter Vorteil größer ist.\nb. in dieser Tätigkeit sein absoluter Vorteil am größten ist.\nc. es keinen absoluten Vorteil hat.\nd. in dieser Tätigkeit sein absoluter Nachteil am geringsten ist.",
+    "label": "b",
+    "subject": "Economics"
 }
 ```
 
 ```json
 {
-  "text": "Wer schrieb Faust?\nAntwortmöglichkeiten:\na. Friedrich Schiller\nb. Heinrich Heine\nc. Johann Wolfgang von Goethe\nd. Thomas Mann",
-  "label": "c"
+    "text": "Ein Schiff fährt mit einer geradlinigen, gleichförmigen Bewegung auf dem offenen Meer. Zu gleicher Zeit fliegt auch ein Albatros mit einer in Bezug auf das Meer geradlinigen, gleichförmigen Bewegung in der Luft. Wie bewegt sich der Albatros in Bezug auf das Schiff?\nAntwortmöglichkeiten:\na. Die Bahn des Vogels ist geradlinig, aber seine Geschwindigkeit in Bezug auf das Schiff ist nicht konstant.\nb. Abhängig vom Winkel der zwei Geschwindigkeitsvektoren kann die Bahn des Vogels sowohl krummlinig, als auch geradlinig sein und auch seine Geschwindigkeit in Bezug auf das Schiff kann veränderlich sein.\nc. Der Vogel führt in Bezug auf das Schiff eine gleichförmige, geradlinige Bewegung aus.\nd. In bestimmten Fällen kann die Bahn des Vogels in Bezug auf das Schiff auch krummlinig sein, aber seine Geschwindigkeit hat einen konstanten Betrag.",
+    "label": "c",
+    "subject": "Physics"
 }
 ```
 
@@ -747,13 +750,13 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Frage: {text}
 
-  Beantworten Sie die obige Frage mit 'a', 'b', 'c' oder 'd', und nichts anderes.
+  Beantworten Sie die obige Frage mit {labels_str}, und nichts anderes.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multiloko-de
+euroeval --model <model-id> --dataset include-de
 ```
 
 ## Common-sense Reasoning

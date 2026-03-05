@@ -636,38 +636,41 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-it
 ```
 
-### Unofficial: MultiLoKo-it
+### Unofficial: INCLUDE-it
 
-This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Italian
-questions are separately sourced and designed to target locally relevant topics for
-Italian-speaking populations.
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
 
-The original dataset only contains a test split. We merge all available splits, remove
-duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
-split for training, validation and testing, respectively (or smaller if fewer samples are
-available).
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {
-  "text": "Qual è la capitale d'Italia?\nScelte:\na. Milano\nb. Roma\nc. Napoli\nd. Torino",
-  "label": "b"
+    "text": "Quale dei seguenti processi fisiologici distingue i vegetali dagli animali?\nScelte:\na. Fotosintesi\nb. Assorbimento di sostanze nutritive esogene\nc. Metabolismo anaerobico\nd. Fermentazione",
+    "label": "a",
+    "subject": "Medicine"
 }
 ```
 
 ```json
 {
-  "text": "Quale fiume attraversa Roma?\nScelte:\na. Po\nb. Tevere\nc. Arno\nd. Adige",
-  "label": "b"
+    "text": "Kojoj religiji pripada učenje o četirima plemenitim istinama i osmerostrukome putu oslobođenja od patnje?\nScelte:\na. kršćanstvu\nb. budizmu\nc. islamu\nd. židovstvu",
+    "label": "b",
+    "subject": "Philosophy"
 }
 ```
 
 ```json
 {
-  "text": "Chi ha dipinto la Cappella Sistina?\nScelte:\na. Leonardo da Vinci\nb. Raffaello\nc. Michelangelo\nd. Caravaggio",
-  "label": "c"
+    "text": "Conclusione, interpretazione e adempimento del contratto - Adempimento del contratto   Può il creditore rifiutare l'adempimento parziale di una prestazione pecuniaria divisibile?\nScelte:\na. No, a meno che la prestazione principale sia eseguita con gli interessi e la rivalutazione monetaria\nb. No, se si oppone il coniuge del creditore in regime di comunione legale\nc. Sì, salvo che la legge e gli usi dispongano diversamente\nd. No, mai",
+    "label": "c",
+    "subject": "Professional certification"
 }
 ```
 
@@ -693,13 +696,13 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Domanda: {text}
 
-  Rispondete alla domanda precedente con 'a', 'b', 'c' o 'd' e nient'altro.
+  Rispondete alla domanda precedente con {labels_str}, e nient'altro.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multiloko-it
+euroeval --model <model-id> --dataset include-it
 ```
 
 ## Common-sense Reasoning

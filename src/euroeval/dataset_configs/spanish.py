@@ -153,10 +153,10 @@ WINOGRANDE_ES_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-MULTILOKO_ES_CONFIG = DatasetConfig(
-    name="multiloko-es",
-    pretty_name="MultiLoKo-es",
-    source="EuroEval/multiloko-es-mini",
+INCLUDE_ES_CONFIG = DatasetConfig(
+    name="include-es",
+    pretty_name="INCLUDE-es",
+    source="EuroEval/include-es-mini",
     task=KNOW,
     languages=[SPANISH],
     unofficial=True,
