@@ -12,11 +12,10 @@ This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2306.0
 The corpus consists of 79 manually selected datasets from over 350 datasets reported in
 the scientific literature based on strict quality criteria.
 
-The original dataset contains a single split with 77,594 Croatian samples.
-We use 1,024 / 256 / 2,048 samples for our training, validation, and test splits,
-respectively.
-We have employed stratified sampling based on the label column from the original
-dataset to ensure balanced splits.
+The original dataset contains a single split with 77,594 Croatian samples. We use 1,024
+/ 256 / 2,048 samples for our training, validation, and test splits, respectively. We
+have employed stratified sampling based on the label column from the original dataset to
+ensure balanced splits.
 
 Here are a few examples from the training split:
 
@@ -383,6 +382,75 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset mmlu-hr
+```
+
+### Unofficial: INCLUDE-hr
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "U čemu se prema Ludwigu Wittgensteinu otkriva značenje riječi?\nIzbori:\na. u kritici metafizike\nb. u idealnome jeziku\nc. u upotrebi riječi\nd. u prinudnoj šutnji",
+    "label": "a",
+    "subject": "Philosophy"
+}
+```
+
+```json
+{
+    "text": "Na koji od navedenih uzročnika bolesti antibiotici neće djelovati?\nIzbori:\na. na Salmonella typhi\nb. na Herpes simplex\nc. na Streptococcus mutans\nd. na Escherichia coli",
+    "label": "b",
+    "subject": "Biology"
+}
+```
+
+```json
+{
+    "text": "Koje vrste veza prevladavaju između molekula metana?\nIzbori:\na. kovalentne\nb. vodikove\nc. van der Waalsove\nd. peptidne",
+    "label": "c",
+    "subject": "Chemistry"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Sljedeća su pitanja s višestrukim izborom (s odgovorima).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pitanje: {text}
+  Odgovor: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pitanje: {text}
+
+  Odgovorite na gornje pitanje koristeći {labels_str}, i ništa drugo.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-hr
 ```
 
 ## Common-sense Reasoning

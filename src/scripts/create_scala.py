@@ -16,13 +16,13 @@ import re
 import warnings
 
 import pandas as pd
+from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
 from pandas.errors import SettingWithCopyWarning
 from tqdm.auto import tqdm
 
-from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from .load_ud_pos import (
     load_bgdt_pos,
     load_cadt_pos,

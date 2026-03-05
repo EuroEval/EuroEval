@@ -385,6 +385,75 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-hu
 ```
 
+### Unofficial: INCLUDE-hu
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Melyik hormon szabályozza a tejleadást?\nVálaszlehetőségek:\na. az oxitocin\nb. a progeszteron\nc. az ösztrogén\nd. az adrenalin",
+    "label": "a",
+    "subject": "Agriculture"
+}
+```
+
+```json
+{
+    "text": "Melyik hazánk legszelesebb tája?\nVálaszlehetőségek:\na. Tiszántúl\nb. Kisalföld\nc. Északi-középhegység\nd. Duna−Tisza köze",
+    "label": "b",
+    "subject": "Environmental studies and forestry"
+}
+```
+
+```json
+{
+    "text": "Melyik igaz az alábbi állítások közül?\nVálaszlehetőségek:\na. Az RNS hidrolízise aldohexózt is eredményez.\nb. Az amidok vizes oldatban erős bázisként viselkednek.\nc. Az adenin, citozin és a guanin a DNS- és RNS-molekulák hidrolízisének termékei.\nd. A fehérjék savas hidrolízisében foszforsav is keletkezik.",
+    "label": "c",
+    "subject": "Chemistry"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Az alábbiakban több választási lehetőséget tartalmazó kérdések találhatók (válaszokkal együtt).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Kérdés: {text}
+  Válasz: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Kérdés: {text}
+
+  Válaszoljon a fenti kérdésre az elérhető lehetőségek közül {labels_str} használatával, és semmi mással.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-hu
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-hu

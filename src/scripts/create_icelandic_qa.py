@@ -16,6 +16,12 @@ import os
 import re
 
 import pandas as pd
+from constants import (
+    MAX_NUM_CHARS_IN_CONTEXT,
+    MAX_NUM_CHARS_IN_QUESTION,
+    MIN_NUM_CHARS_IN_CONTEXT,
+    MIN_NUM_CHARS_IN_QUESTION,
+)
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
@@ -23,13 +29,6 @@ from datasets.splits import Split
 from dotenv import load_dotenv
 from huggingface_hub.hf_api import HfApi
 from openai import OpenAI
-
-from .constants import (
-    MAX_NUM_CHARS_IN_CONTEXT,
-    MAX_NUM_CHARS_IN_QUESTION,
-    MIN_NUM_CHARS_IN_CONTEXT,
-    MIN_NUM_CHARS_IN_QUESTION,
-)
 
 load_dotenv()
 
