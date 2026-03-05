@@ -84,3 +84,12 @@ INCLUDE_EL_CONFIG = DatasetConfig(
     languages=[GREEK],
     unofficial=True,
 )
+
+GREEK_MMLU_CONFIG = DatasetConfig(
+    name="greek-mmlu",
+    pretty_name="GreekMMLU",
+    source="EuroEval/greek-mmlu-mini",
+    task=KNOW,
+    languages=[GREEK],
+    unofficial=True,
+)
