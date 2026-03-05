@@ -8,6 +8,7 @@
 #     "pydantic==2.6.0",
 #     "python-dotenv==1.0.1",
 #     "tqdm==4.67.1",
+#     "numpy==1.26.0",
 # ]
 # ///
 
@@ -19,6 +20,7 @@ import os
 import random
 import re
 
+import numpy as np
 import pandas as pd
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, load_dataset
@@ -100,6 +102,8 @@ def build_dataset_with_llm(
 
         # 'targets' is a list of acceptable answers; use the first one as correct
         targets = row["targets"]
+        if isinstance(targets, np.ndarray):
+            targets = targets.tolist()
         assert isinstance(targets, list) and len(targets) > 0, (
             f"Expected a non-empty list for 'targets', got {targets!r}"
         )
