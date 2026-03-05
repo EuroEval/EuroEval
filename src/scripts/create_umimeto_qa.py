@@ -15,10 +15,9 @@
 """Create umimeto-qa knowledge dataset."""
 
 import pandas as pd
+from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, concatenate_datasets, load_dataset
 from huggingface_hub import HfApi
-
-from .constants import CHOICES_MAPPING
 
 
 def main() -> None:

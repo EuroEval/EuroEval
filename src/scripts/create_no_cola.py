@@ -15,11 +15,10 @@ import logging
 
 import pandas as pd
 import requests
+from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
-
-from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_no_cola")

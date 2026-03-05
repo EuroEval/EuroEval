@@ -11,18 +11,17 @@
 """Create the SQuAD-nl-mini dataset and upload them to the HF Hub."""
 
 import pandas as pd
-from datasets.arrow_dataset import Dataset
-from datasets.dataset_dict import DatasetDict
-from datasets.load import load_dataset
-from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
-
-from .constants import (
+from constants import (
     MAX_NUM_CHARS_IN_CONTEXT,
     MAX_NUM_CHARS_IN_QUESTION,
     MIN_NUM_CHARS_IN_CONTEXT,
     MIN_NUM_CHARS_IN_QUESTION,
 )
+from datasets.arrow_dataset import Dataset
+from datasets.dataset_dict import DatasetDict
+from datasets.load import load_dataset
+from datasets.splits import Split
+from huggingface_hub.hf_api import HfApi
 
 
 def main() -> None:

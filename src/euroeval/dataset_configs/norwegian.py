@@ -150,6 +150,21 @@ SCHIBSTED_NO_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+SCHIBSTED_FRONT_TITLE_NO_CONFIG = DatasetConfig(
+    name="vg-front-title",
+    pretty_name="VG Front Title",
+    source="EuroEval/vg-front-title",
+    task=SUMM,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
+    unofficial=True,
+    max_generated_tokens=64,
+    prompt_prefix="Her følger nyhetsartikler med tilhørende titler.",
+    prompt_template="Nyhetsartikkel: {text}\nTittel: {target_text}",
+    instruction_prompt=(
+        "Nyhetsartikkel: {text}\n\nSkriv en tittel for den ovennevnte artikkelen."
+    ),
+)
+
 PERSONAL_SUM_CONFIG = DatasetConfig(
     name="personal-sum",
     pretty_name="Personal Sum",

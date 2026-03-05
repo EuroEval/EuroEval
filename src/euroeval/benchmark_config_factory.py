@@ -84,6 +84,8 @@ def build_benchmark_config(
         run_with_cli=benchmark_config_params.run_with_cli,
         requires_safetensors=benchmark_config_params.requires_safetensors,
         download_only=benchmark_config_params.download_only,
+        max_context_length=benchmark_config_params.max_context_length,
+        vocabulary_size=benchmark_config_params.vocabulary_size,
     )
 
 

@@ -12,17 +12,16 @@
 
 import pandas as pd
 import requests
-from datasets import Dataset
-from datasets.dataset_dict import DatasetDict
-from datasets.splits import Split
-from huggingface_hub.hf_api import HfApi
-
-from .constants import (
+from constants import (
     MAX_NUM_CHARS_IN_CONTEXT,
     MAX_NUM_CHARS_IN_QUESTION,
     MIN_NUM_CHARS_IN_CONTEXT,
     MIN_NUM_CHARS_IN_QUESTION,
 )
+from datasets import Dataset
+from datasets.dataset_dict import DatasetDict
+from datasets.splits import Split
+from huggingface_hub.hf_api import HfApi
 
 
 def main() -> None:
