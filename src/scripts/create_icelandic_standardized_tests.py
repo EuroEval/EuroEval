@@ -386,37 +386,43 @@ def main() -> None:
                 )
                 continue
 
-            questions: list[McQuestion] | list[McQuestionWithPassage] = [
-                getattr(output, f"question_{i}")
+            questions: dict[int, McQuestion | McQuestionWithPassage] = {
+                i: getattr(output, f"question_{i}")
                 for i in range(1, len(answer_key) + 1)
                 if hasattr(output, f"question_{i}")
-            ]
+            }
             if subject == "is":
                 passages: list[GeneralReadingPassage] = output.passages
-                for question in questions:
+                for question_id, question in questions.items():
                     passage = next((p for p in passages if p.id == question.passage_id))
                     question.question = f"{passage.text}\n\n{question.question}"
 
-            for q in questions:
-                correct = answer_key.get(q.number, "")
+            for question_id, question in questions.items():
+                if question_id not in answer_key:
+                    logger.warning(
+                        f"Question {question_id} not found in answer key for "
+                        f"{subject} {year}"
+                    )
+                    continue
+                correct = answer_key[question_id]
                 if correct not in LABEL_LETTERS:
                     logger.warning(
-                        f"Invalid answer for question {q.number} ({correct}) in "
+                        f"Invalid answer for question {question_id} ({correct}) in "
                         f"answer key for {subject} {year}"
                     )
                     continue
                 text = format_question_text(
-                    question=q.question,
+                    question=question.question,
                     options={
-                        "a": q.options.a,
-                        "b": q.options.b,
-                        "c": q.options.c,
-                        "d": q.options.d,
+                        "a": question.options.a,
+                        "b": question.options.b,
+                        "c": question.options.c,
+                        "d": question.options.d,
                     },
                 )
                 if text is None:
                     logger.warning(
-                        f"Failed to format question {q.number} for {subject} {year}"
+                        f"Failed to format question {question_id} for {subject} {year}"
                     )
                     continue
                 combined_samples.append({"text": text, "label": correct, "year": year})
