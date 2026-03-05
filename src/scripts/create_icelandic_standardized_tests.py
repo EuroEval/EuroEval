@@ -307,6 +307,7 @@ class McQuestion(BaseModel):
 class QuestionList(BaseModel):
     """All multiple-choice questions extracted from a question booklet."""
 
+    passage: str
     questions: list[McQuestion]
 
 
@@ -364,7 +365,9 @@ def main() -> None:
                 )
                 continue
             try:
-                questions = extract_questions(pdf_bytes=test_pdf, client=client)
+                passage, questions = extract_questions(
+                    pdf_bytes=test_pdf, client=client, subject=subject
+                )
             except Exception as e:
                 logger.warning(
                     f"Failed to extract questions from {subject} {year} ({q_url}): {e}"
@@ -375,8 +378,11 @@ def main() -> None:
                 correct = answer_key.get(q.number, "")
                 if correct not in LABEL_LETTERS:
                     continue
+                question_text = q.question
+                if subject == "is" and passage:
+                    question_text = f"{passage}\n\n{question_text}"
                 text = format_question_text(
-                    question=q.question,
+                    question=question_text,
                     options={
                         "a": q.options.a,
                         "b": q.options.b,
@@ -520,26 +526,46 @@ def _images_to_content(images: list[str]) -> list[dict]:
     ]
 
 
-def extract_questions(pdf_bytes: bytes, client: OpenAI) -> list[McQuestion]:
+def extract_questions(
+    pdf_bytes: bytes, client: OpenAI, subject: str
+) -> tuple[str, list[McQuestion]]:
     """Use GPT-4.1 vision to extract multiple-choice questions from a question booklet.
+
+    For Icelandic language booklets (subject ``"is"``) a general reading passage
+    accompanies all questions and is also extracted so it can be prepended to each
+    question text.
 
     Args:
         pdf_bytes:
             The PDF bytes of the question booklet.
         client:
             An authenticated OpenAI client.
+        subject:
+            Subject code: ``"is"`` for Icelandic language, ``"math"`` for mathematics.
 
     Returns:
-        A list of McQuestion objects extracted from the booklet.
+        A tuple of (passage, questions) where passage is the general reading text
+        (empty string for mathematics booklets) and questions is the list of
+        McQuestion objects extracted from the booklet.
     """
     images = pdf_to_images(pdf_bytes=pdf_bytes)
+
+    if subject == "is":
+        passage_instruction = (
+            "The booklet contains a general reading passage (text) that all "
+            "questions refer to. Extract that passage in full and return it in "
+            "the 'passage' field. "
+        )
+    else:
+        passage_instruction = "Return an empty string for the 'passage' field. "
 
     content: list[dict] = [
         {
             "type": "text",
             "text": (
                 "These are pages from an Icelandic primary school exam booklet. "
-                "Please extract all multiple-choice questions that have exactly "
+                f"{passage_instruction}"
+                "Please also extract all multiple-choice questions that have exactly "
                 "four options labelled a, b, c, and d. "
                 "For each question return its number, the full question text, "
                 "and the text of each option. "
@@ -557,8 +583,8 @@ def extract_questions(pdf_bytes: bytes, client: OpenAI) -> list[McQuestion]:
     )
     result = completion.choices[0].message.parsed
     if result is None:
-        return []
-    return result.questions
+        return "", []
+    return result.passage, result.questions
 
 
 def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, str]:
