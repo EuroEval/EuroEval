@@ -126,3 +126,12 @@ INCLUDE_PT_CONFIG = DatasetConfig(
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     unofficial=True,
 )
+
+MULTILOKO_PT_CONFIG = DatasetConfig(
+    name="multiloko-pt",
+    pretty_name="MultiLoKo-pt",
+    source="EuroEval/multiloko-pt-mini",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    unofficial=True,
+)

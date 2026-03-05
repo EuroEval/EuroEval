@@ -775,6 +775,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc
 ```
 
+### Unofficial: MultiLoKo-en
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The English
+questions are separately sourced and designed to target locally relevant topics for
+English-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "At age 16, what app was Jake Paul posting videos on?\nChoices:\na. Vine\nb. YouTube Shorts\nc. TikTok\nd. Instagram Reels",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "Which Fifty Shades book was published four months after the American film adaptation of the original novel?\nChoices:\na. Fifty Shades Darker\nb. Fifty Shades of Grey as Told by Christian\nc. Fifty Shades Freed\nd. Fifty Shades of Grey: The Official Movie Novelization",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "The first three seasons of \"The Grand Tour\" TV series was similar in format to which existing TV program at the time?\nChoices:\na. Fifth Gear\nb. Wheeler Dealers\nc. Top Gear\nd. MotorWeek",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are multiple choice questions (with answers).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Answer: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Answer the above question by replying with 'a', 'b', 'c' or 'd', and nothing else.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-en
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag

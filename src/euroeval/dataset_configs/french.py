@@ -145,3 +145,12 @@ INCLUDE_FR_CONFIG = DatasetConfig(
     languages=[FRENCH],
     unofficial=True,
 )
+
+MULTILOKO_FR_CONFIG = DatasetConfig(
+    name="multiloko-fr",
+    pretty_name="MultiLoKo-fr",
+    source="EuroEval/multiloko-fr-mini",
+    task=KNOW,
+    languages=[FRENCH],
+    unofficial=True,
+)
