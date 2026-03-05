@@ -30,6 +30,7 @@ from pydantic import BaseModel
 from tqdm.auto import tqdm
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger("create_multiloko")
 
 load_dotenv()
@@ -99,10 +100,10 @@ def build_dataset_with_llm(
 
         # 'targets' is a list of acceptable answers; use the first one as correct
         targets = row["targets"]
-        if isinstance(targets, list) and len(targets) > 0:
-            correct_answer = str(targets[0]).strip()
-        else:
-            correct_answer = str(targets).strip()
+        assert isinstance(targets, list) and len(targets) > 0, (
+            f"Expected a non-empty list for 'targets', got {targets!r}"
+        )
+        correct_answer = str(targets[0]).strip()
 
         if not correct_answer:
             logger.warning(
