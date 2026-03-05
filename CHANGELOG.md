@@ -14,8 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   This was added by @harderj ✨
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
-- Added the Norwegian dialect classification dataset NorDial. The split is given 
-  by 848 / 106 / 110 samples for train / val / test, respectively. It is marked 
+- Added the Norwegian dialect classification dataset NorDial. The split is given
+  by 848 / 106 / 110 samples for train / val / test, respectively. It is marked
   as `unofficial` for now.
 - Added the English knowledge dataset MMLU-Pro, marked as unofficial. This is a more
   robust and challenging version of MMLU with 10 answer options per question.
