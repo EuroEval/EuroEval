@@ -40,6 +40,7 @@ from ..constants import (
     LITELLM_CLASSIFICATION_OUTPUT_KEY,
     MAX_LITELLM_LOGPROBS,
     REASONING_MAX_TOKENS,
+    TOOL_CALLING_KEYS,
 )
 from ..data_models import (
     BenchmarkConfig,
@@ -522,7 +523,10 @@ class LiteLLMModel(BenchmarkModule):
             "Only temperature=1 is supported",
         ]
         max_items_messages = ["'maxItems' is not permitted."]
-        no_json_schema_messages = ["Property keys should match pattern"]
+        no_json_schema_messages = [
+            "Property keys should match pattern",
+            "'json_schema' is not supported",
+        ]
         thinking_budget_pattern = re.compile(
             r"the thinking budget [0-9]+ is invalid. please choose a value between "
             r"[0-9]+ and ([0-9]+)\."
@@ -533,6 +537,7 @@ class LiteLLMModel(BenchmarkModule):
             "got an unexpected keyword argument 'response_format'",
             "the model returned empty outputs",
             "'maxitems' is not supported",
+            "must contain the word 'json'",
         ]
 
         if (
@@ -944,8 +949,11 @@ class LiteLLMModel(BenchmarkModule):
             # In the case where we're dealing with a classification task, the model is
             # outputting a JSON dictionary, so we will extract the generated text from
             # within the dictionary
+            # This is not relevant for tooling and may cause problems there
             generation_dct: dict[str, t.Any] | None = None
-            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output:
+            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output and not all(
+                [k in generation_output for k in TOOL_CALLING_KEYS]
+            ):
                 try:
                     generation_dct = json.loads(generation_output)
                     assert isinstance(generation_dct, dict)
@@ -1119,6 +1127,8 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The vocabulary size of the model.
         """
+        if self.benchmark_config.vocabulary_size is not None:
+            return self.benchmark_config.vocabulary_size
         # Start by trying out the regex mapping, and use the value if it matches
         for key, value in VOCAB_SIZE_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
@@ -1174,6 +1184,8 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The maximum length of the model.
         """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
         # Start by trying out the regex mapping, and use the value if it matches
         for key, value in MODEL_MAX_LENGTH_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
@@ -1619,6 +1631,24 @@ class LiteLLMModel(BenchmarkModule):
                     "enable it.",
                     level=logging.DEBUG,
                 )
+            elif dataset_config.task.structured_output_format is not None:
+                pydantic_class = dataset_config.task.structured_output_format
+                # TODO: here it would be nice to just input the pydantic class
+                # directly instead. However this caused problems with e.g.
+                # gpt-4o-mini (error: "additional_properties not defined")
+                generation_kwargs["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": pydantic_class.__class__.__name__,
+                        "schema": pydantic_class.model_json_schema(),
+                    },
+                }
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with response_format "
+                    f"{pydantic_class.model_json_schema()}.",
+                    level=logging.DEBUG,
+                )
             # Skip litellm's support check when using a custom base_api URL, as
             # litellm can only reliably verify support for their official API providers,
             # not custom endpoints.
@@ -1656,6 +1686,7 @@ class LiteLLMModel(BenchmarkModule):
                     "the model does not support schemas.",
                     level=logging.DEBUG,
                 )
+
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             localised_labels = [
                 self.dataset_config.prompt_label_mapping[label]

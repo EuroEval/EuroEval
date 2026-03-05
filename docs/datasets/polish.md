@@ -478,6 +478,75 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset llmzszl
 ```
 
+### Unofficial: INCLUDE-pl
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Proces tłumaczenia kodu źródłowego pisanego przez programistę na zrozumiały dla komputera kod maszynowy to\nOpcje:\na. kompilowanie.\nb. debugowanie.\nc. uruchamianie.\nd. implementowanie.",
+    "label": "a",
+    "subject": "Professional certification"
+}
+```
+
+```json
+{
+    "text": "Dane są punkty 𝐾 = (−3, −7) oraz 𝑆 = (5, 3). Punkt 𝑆 jest środkiem odcinka 𝐾𝐿. Wtedy punkt 𝐿 ma współrzędne\nOpcje:\na. (13, 10)\nb. (13, 13)\nc. (1, −2)\nd. (7, −1)",
+    "label": "b",
+    "subject": "Math"
+}
+```
+
+```json
+{
+    "text": "Przepisy konstytucji jednego z państw Art. 9. Prezydent […] przewodniczy Radzie Ministrów. Art. 21. Premier kieruje działalnością Rządu. […] Art. 24.1. Parlament uchwala ustawy. Kontroluje działalność Rządu.  Ocenia jego politykę. 2. Parlament składa się ze Zgromadzenia Narodowego i Senatu. 3. Deputowani do Zgromadzenia Narodowego […] są wybierani w wyborach bezpośrednich. 4. Senat […] wybierany jest w wyborach pośrednich. […] Art. 39.1. Inicjatywa ustawodawcza przysługuje zarówno Premierowi, jak i członkom Parlamentu. 2. Rządowe projekty ustaw są rozpatrywane przez Radę Ministrów […] i wnoszone do prezydium jednej z izb. […] Art. 45.1. Każdy rządowy lub parlamentarny projekt ustawy jest rozpatrywany kolejno przez obie izby Parlamentu w celu przyjęcia tekstu w tym samym brzmieniu. […] biblioteka.sejm.gov.pl (tekst uwzględniający zmiany z 23 lipca 2008 r.). Zaznacz nazwę państwa, z którego ustawy zasadniczej pochodzą przytoczone przepisy prawne.\nOpcje:\na. Republika Włoska\nb. Federacja Rosyjska\nc. Republika Francuska\nd. Stany Zjednoczone Ameryki",
+    "label": "c",
+    "subject": "Sociology"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Poniżej znajdują się pytania wielokrotnego wyboru (z odpowiedziami).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pytanie: {text}
+  Odpowiedź: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pytanie: {text}
+
+  Odpowiedz na powyższe pytanie, używając {labels_str} i niczego więcej.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-pl
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-pl
