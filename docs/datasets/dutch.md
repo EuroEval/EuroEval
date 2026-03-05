@@ -666,6 +666,75 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc-nl
 ```
 
+### Unofficial: INCLUDE-nl
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Je zit op kot (studentenkamer) met zes medestudenten. Omdat jullie de fietsen tegen de gevel van het huis plaatsen, zetten jullie de vuilniszakken tegen de gevel van de buurman, waar altijd plaats is. Op een morgen gebeurt dit weer. De buurman komt woedend naar buiten en hij scheldt jullie uit dat jullie grote egoïsten zijn. Welke reactie zal het conflict niet doen escaleren?\nAntwoordopties:\na. 'Sorry, we gingen er misschien te gemakkelijk van uit dat dit u niet hinderde.'\nb. 'Wie dat zegt? We hebben de voorbije maanden nooit een vriendelijk woord gekregen.'\nc. 'Wij egoïsten? Mochten er meer parkeerplaatsen zijn voor fietsen, dan was het opgelost.'\nd. 'Maak u toch niet zo druk. Het zijn maar vuilniszakken hoor, geen bompakketten.'",
+    "label": "a",
+    "subject": "Journalism, media studies, and communication"
+}
+```
+
+```json
+{
+    "text": "Bij de Vrede van Versailles werd besloten dat Duitsland moest demilitariseren. Welke reden voor deze demilitarisatie is juist?\nAntwoordopties:\na. Duitsland moest economisch sterker worden.\nb. Frankrijk wilde geen Duits leger aan zijn grens hebben.\nc. Het Duitse leger was na de Eerste Wereldoorlog te klein geworden.\nd. Het Franse leger moest even sterk zijn als het Duitse leger.",
+    "label": "b",
+    "subject": "History"
+}
+```
+
+```json
+{
+    "text": "In welke productiesector werkt een tandarts?\nAntwoordopties:\na. in de primaire sector\nb. in de secundaire sector\nc. in de tertiaire sector\nd. in de quartaire sector",
+    "label": "c",
+    "subject": "Economics"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+
+  Beantwoord de bovenstaande vraag met {labels_str}, en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-nl
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-nl

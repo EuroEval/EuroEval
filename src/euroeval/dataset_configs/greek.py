@@ -73,12 +73,13 @@ IFEVAL_EL_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+
 # Unofficial datasets ###
 
-GREEK_MMLU_CONFIG = DatasetConfig(
-    name="greek-mmlu",
-    pretty_name="GreekMMLU",
-    source="EuroEval/greek-mmlu-mini",
+INCLUDE_EL_CONFIG = DatasetConfig(
+    name="include-el",
+    pretty_name="INCLUDE-el",
+    source="EuroEval/include-el-mini",
     task=KNOW,
     languages=[GREEK],
     unofficial=True,

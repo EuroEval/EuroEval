@@ -372,38 +372,41 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset global-mmlu-el
 ```
 
-### GreekMMLU
+### Unofficial: INCLUDE-el
 
-GreekMMLU was published in [this paper](https://doi.org/10.48550/arXiv.2602.05150) and
-is a native Greek benchmark for massive multitask language understanding, comprising
-multiple-choice questions across 45 subject areas sourced from academic, professional,
-and governmental exams in Greece. Unlike machine-translated benchmarks, all questions
-are originally authored or sourced in Greek.
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
 
-The publicly released dataset consists of 16,857 samples. We use 1,024 / 256 / 2,048
-samples for our training, validation and test splits, respectively (so 3,328 samples
-used in total).
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Ποια είναι η πρωτεύουσα της Ελλάδας;\nΕπιλογές:\na. Θεσσαλονίκη\nb. Αθήνα\nc. Πάτρα\nd. Ηράκλειο",
-    "label": "b"
+    "text": "45. Με ποιο είδος καρκίνου σχετίζεται η υπέρταση:\nΕπιλογές:\na. Καρκίνο ενδομητρίου\nb. Καρκίνο σάλπιγγας\nc. Καρκίνο ωοθηκών\nd. Καρκίνο αιδοίου",
+    "label": "a",
+    "subject": "Medical License"
 }
 ```
 
 ```json
 {
-    "text": "Ποιος φιλόσοφος έγραψε το έργο \"Πολιτεία\";\nΕπιλογές:\na. Αριστοτέλης\nb. Σωκράτης\nc. Πλάτων\nd. Ηράκλειτος",
-    "label": "c"
+    "text": "73. Σε ποιο από τα παρακάτω οστά εντοπίζεται το έξω σφυρό\nΕπιλογές:\na. Κνήμη\nb. Περόνη\nc. Αστράγαλος\nd. Πτέρνα",
+    "label": "b",
+    "subject": "Medicine"
 }
 ```
 
 ```json
 {
-    "text": "Ποιο είναι το χημικό σύμβολο του νατρίου;\nΕπιλογές:\na. Na\nb. N\nc. Ni\nd. Ns",
-    "label": "a"
+    "text": "Η συχνότητα ταλάντωσης μιας πηγής, που παράγει εγκάρσιο αρμονικό κύμα σε ένα ελαστικό μέσο, διπλασιάζεται χωρίς να μεταβληθεί το πλάτος της ταλάντωσης. Τότε\nΕπιλογές:\na. η ταχύτητα διάδοσης του κύματος διπλασιάζεται.\nb. το μήκος κύματος του αρμονικού κύματος διπλασιάζεται.\nc. το μήκος κύματος του αρμονικού κύματος υποδιπλασιάζεται.\nd. η ενέργεια ταλάντωσης ενός σημείου του ελαστικού μέσου στο οποίο διαδίδεται το κύμα διπλασιάζεται.",
+    "label": "c",
+    "subject": "Physics"
 }
 ```
 
@@ -429,13 +432,13 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Ερώτηση: {text}
 
-  Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας 'a', 'b', 'c' ή 'd', και τίποτα άλλο.
+  Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας {labels_str}, και τίποτα άλλο.
   ```
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset greek-mmlu
+euroeval --model <model-id> --dataset include-el
 ```
 
 ## Common-sense Reasoning

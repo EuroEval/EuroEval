@@ -382,6 +382,75 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset global-mmlu-lite-sq
 ```
 
+### Unofficial: INCLUDE-sq
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Në cilë teori sociologjike pohohet se stratifikimi është i arsyeshëm dhe i pashmangshëm dhe se kontribuon për barazpeshë në shoqëri?\nOpsione:\na. Teorinë funksionaliste.\nb. Teorinë e konflikteve.\nc. Teorinë Marksiste.\nd. Teorinë e Maks Veberit.",
+    "label": "a",
+    "subject": "Sociology"
+}
+```
+
+```json
+{
+    "text": "Cilët janë stilet kryesore të menaxhmentit?\nOpsione:\na. autoritar, demokratik dhe „qetësi në shtëpi“.\nb. autoritar, demokratik, fleksibil.\nc. Totalitar, demokratik, fleksibil.\nd. autoritar, fleksibil dhe „qetësi në shtëpi“.",
+    "label": "b",
+    "subject": "Business"
+}
+```
+
+```json
+{
+    "text": "Në cilën periudhë mbisundon kuptimi që bukuria ka prejardhje hyjnore?\nOpsione:\na. periudhën antike.\nb. post modernizëm.\nc. mesjetë.\nd. klasicizëm.",
+    "label": "c",
+    "subject": "Visual Arts"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Më poshtë janë pyetje me zgjedhje të shumëfishtë (me përgjigje).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pyetje: {text}
+  Përgjigje: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pyetje: {text}
+
+  Përgjigjuni pyetjes së mësipërme duke u përgjigjur me {labels_str}, dhe asgjë tjetër.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-sq
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-sq
