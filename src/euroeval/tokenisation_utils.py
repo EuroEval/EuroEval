@@ -456,6 +456,7 @@ def get_first_label_token_mapping(
             for label in local_labels
         ]
     else:
+        breakpoint()
         all_tokens = [
             tokeniser.convert_ids_to_tokens(
                 ids=apply_chat_template(  # type: ignore[no-matching-overload]
