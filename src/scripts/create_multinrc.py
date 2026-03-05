@@ -3,137 +3,74 @@
 # dependencies = [
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
+#     "openai==1.66.5",
 #     "pandas==2.2.0",
+#     "pydantic==2.6.0",
+#     "python-dotenv==1.0.1",
 #     "requests==2.32.3",
-#     "scikit-learn<1.6.0",
+#     "tqdm==4.67.1",
 # ]
 # ///
 
 """Create the MultiNRC datasets and upload them to the HF Hub."""
 
-from collections import Counter
+import json
+import logging
+import os
+import random
+import re
 
 import pandas as pd
+from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, load_dataset
+from dotenv import load_dotenv
 from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
+from openai import OpenAI
+from openai.types.chat import ChatCompletionUserMessageParam
+from pydantic import BaseModel
+from tqdm.auto import tqdm
 
-from .constants import (
-    CHOICES_MAPPING,
-    MAX_NUM_CHARS_IN_INSTRUCTION,
-    MAX_NUM_CHARS_IN_OPTION,
-    MAX_REPETITIONS,
-    MIN_NUM_CHARS_IN_INSTRUCTION,
-    MIN_NUM_CHARS_IN_OPTION,
-)
+logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_multinrc")
 
-LANGUAGES = ["en", "es", "fr"]
+load_dotenv()
 
-LANGUAGE_SUBSET_MAPPING = {"en": "english", "es": "spanish", "fr": "french"}
+
+class CandidateAnswers(BaseModel):
+    """Candidate answers from the OpenAI API."""
+
+    first: str
+    second: str
+    third: str
+
+
+LABELS = ["a", "b", "c", "d"]
+
+LANGUAGE_SUBSET_MAPPING = {"es": "spanish", "fr": "french"}
+
+LANGUAGE_NAME_MAPPING = {"es": "Spanish", "fr": "French"}
 
 
 def main() -> None:
     """Create the MultiNRC datasets and upload them to the HF Hub."""
     repo_id = "ScaleAI/MultiNRC"
 
-    for language in LANGUAGES:
+    for language in LANGUAGE_SUBSET_MAPPING.keys():
         subset = LANGUAGE_SUBSET_MAPPING[language]
 
-        # Load the dataset
-        dataset = load_dataset(path=repo_id, name=subset, token=True)
-        assert isinstance(dataset, DatasetDict)
+        # Load the dataset (only a test split is available)
+        dataset = load_dataset(path=repo_id, name=subset, split="test", token=True)
+        assert isinstance(dataset, Dataset)
 
-        # Concatenate all splits into a single dataframe
-        dfs = []
-        for split_name in dataset.keys():
-            split_df = dataset[split_name].to_pandas()
-            assert isinstance(split_df, pd.DataFrame)
-            dfs.append(split_df)
-        df = pd.concat(dfs, ignore_index=True)
+        # Build the multiple choice dataset using a language model
+        df = build_dataset_with_llm(dataset=dataset, language=language)
 
-        # Rename the columns to EuroEval format
-        df.rename(
-            columns=dict(
-                question="instruction",
-                A="option_a",
-                B="option_b",
-                C="option_c",
-                D="option_d",
-                answer="label",
-            ),
-            inplace=True,
-        )
+        # Create splits: 64 train, 128 val, rest test
+        train_df = df.sample(64, random_state=4242)
+        df = df.drop(train_df.index.tolist())
 
-        # Normalise the label column to lowercase letters (a, b, c, d)
-        df.label = df.label.str.strip().str.lower()
-
-        # Remove the samples with overly short or long texts
-        df = df[
-            (df.instruction.str.len() >= MIN_NUM_CHARS_IN_INSTRUCTION)
-            & (df.instruction.str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION)
-            & (df.option_a.str.len() >= MIN_NUM_CHARS_IN_OPTION)
-            & (df.option_a.str.len() <= MAX_NUM_CHARS_IN_OPTION)
-            & (df.option_b.str.len() >= MIN_NUM_CHARS_IN_OPTION)
-            & (df.option_b.str.len() <= MAX_NUM_CHARS_IN_OPTION)
-            & (df.option_c.str.len() >= MIN_NUM_CHARS_IN_OPTION)
-            & (df.option_c.str.len() <= MAX_NUM_CHARS_IN_OPTION)
-            & (df.option_d.str.len() >= MIN_NUM_CHARS_IN_OPTION)
-            & (df.option_d.str.len() <= MAX_NUM_CHARS_IN_OPTION)
-        ]
-
-        def is_repetitive(text: str) -> bool:
-            """Return True if the text is repetitive."""
-            max_repetitions = max(Counter(text.split()).values())
-            return max_repetitions > MAX_REPETITIONS
-
-        # Remove overly repetitive samples
-        df = df[
-            ~df.instruction.apply(is_repetitive)
-            & ~df.option_a.apply(is_repetitive)
-            & ~df.option_b.apply(is_repetitive)
-            & ~df.option_c.apply(is_repetitive)
-            & ~df.option_d.apply(is_repetitive)
-        ]
-        assert isinstance(df, pd.DataFrame)
-
-        # Make a `text` column with all the options in it
-        df["text"] = [
-            row.instruction.replace("\n", " ").strip() + "\n"
-            f"{CHOICES_MAPPING[language]}:\n"
-            "a. " + row.option_a.replace("\n", " ").strip() + "\n"
-            "b. " + row.option_b.replace("\n", " ").strip() + "\n"
-            "c. " + row.option_c.replace("\n", " ").strip() + "\n"
-            "d. " + row.option_d.replace("\n", " ").strip()
-            for _, row in df.iterrows()
-        ]
-
-        # Only keep the `text` and `label` columns
-        df = df[["text", "label"]]
-
-        # Remove duplicates
-        df.drop_duplicates(inplace=True)
-        df.reset_index(drop=True, inplace=True)
-
-        # Create validation split
-        val_size = min(256, len(df) // 8)
-        traintest_arr, val_arr = train_test_split(
-            df, test_size=val_size, random_state=4242
-        )
-        traintest_df = pd.DataFrame(traintest_arr, columns=df.columns)
-        val_df = pd.DataFrame(val_arr, columns=df.columns)
-
-        # Create test split
-        test_size = min(2048, len(traintest_df) * 2 // 3)
-        train_arr, test_arr = train_test_split(
-            traintest_df, test_size=test_size, random_state=4242
-        )
-        train_df = pd.DataFrame(train_arr, columns=df.columns)
-        test_df = pd.DataFrame(test_arr, columns=df.columns)
-
-        # Create train split
-        train_size = min(1024, len(train_df))
-        if len(train_df) > train_size:
-            train_df = train_df.sample(train_size, random_state=4242)
+        val_df = df.sample(128, random_state=4242)
+        test_df = df.drop(val_df.index.tolist())
 
         # Reset the index
         train_df = train_df.reset_index(drop=True)
@@ -157,6 +94,122 @@ def main() -> None:
 
         # Push the dataset to the Hugging Face Hub
         dataset.push_to_hub(dataset_id, private=True)
+
+
+def build_dataset_with_llm(dataset: Dataset, language: str) -> pd.DataFrame:
+    """Build the multiple choice dataset using a language model.
+
+    Args:
+        dataset:
+            The dataset containing the questions and correct answers.
+        language:
+            The ISO language code (e.g. "es", "fr").
+
+    Returns:
+        The multiple choice dataset as a DataFrame with 'text' and 'label' columns.
+    """
+    df = dataset.to_pandas()
+    assert isinstance(df, pd.DataFrame)
+
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+    cache_file = f"multinrc_{language}_cache.json"
+    if os.path.exists(cache_file):
+        with open(cache_file) as f:
+            cache = json.load(f)
+    else:
+        cache = {}
+
+    language_name = LANGUAGE_NAME_MAPPING[language]
+    texts: list[str] = []
+    correct_labels: list[str] = []
+    df_len = len(df)
+
+    for i, row in tqdm(
+        df.iterrows(), total=df_len, desc=f"Computing LLM responses ({language})"
+    ):
+        id_ = str(i)
+
+        if id_ not in cache:
+            logger.info(f"Processing id: {id_}/{df_len}")
+            messages: list[ChatCompletionUserMessageParam] = []
+
+            user_message = ChatCompletionUserMessageParam(
+                role="user",
+                content=(
+                    f"For the following {language_name} question: "
+                    f"'{row.i18n_prompt}' where the correct answer is: "
+                    f"'{row.i18n_gtfa}', please provide 3 plausible but incorrect "
+                    f"alternative answers in {language_name}. Return the alternatives "
+                    "in a JSON dictionary with keys 'first', 'second', and 'third'. "
+                    "The values should be the alternatives only, without any numbering "
+                    "or formatting. The alternatives should be unique and must not "
+                    "contain or repeat the correct answer."
+                ),
+            )
+            messages.append(user_message)
+
+            completion = client.beta.chat.completions.parse(
+                model="gpt-4.1", messages=messages, response_format=CandidateAnswers
+            )
+
+            event = completion.choices[0].message.parsed
+            assert event is not None, f"Expected a response, but got {event}."
+            cache[id_] = dict(event)
+            with open(cache_file, "w") as f:
+                json.dump(cache, f)
+
+        options_raw = cache[id_]
+        labels = LABELS.copy()
+        random.shuffle(labels)
+
+        correct_answer = str(row.i18n_gtfa)
+        options = {
+            labels[0]: re.sub(r"^[0-9]\. *", "", options_raw["first"]),
+            labels[1]: re.sub(r"^[0-9]\. *", "", options_raw["second"]),
+            labels[2]: re.sub(r"^[0-9]\. *", "", options_raw["third"]),
+            labels[3]: correct_answer,
+        }
+        options = dict(sorted(options.items()))
+
+        if len(set(options.values())) != 4:
+            logger.warning(
+                f"The options are not unique for question '{row.i18n_prompt}', got "
+                f"{options}. Skipping."
+            )
+            continue
+
+        correct_label = [k for k, v in options.items() if v == correct_answer][0]
+
+        text = (
+            str(row.i18n_prompt).replace("\n", " ").strip()
+            + f"\n{CHOICES_MAPPING[language]}:\n"
+            + f"a. {options['a']}\n"
+            + f"b. {options['b']}\n"
+            + f"c. {options['c']}\n"
+            + f"d. {options['d']}"
+        )
+
+        # Sanity check that the choices are at the end of the text
+        sections = text.split("\n")
+        choice_idxs = [
+            idx
+            for idx, section in enumerate(sections)
+            if re.match(pattern=r"^[a-e]\. ", string=section) is not None
+        ]
+        if not all(
+            choice_idx == len(sections) - i
+            for i, choice_idx in enumerate(sorted(choice_idxs, reverse=True), start=1)
+        ):
+            logger.warning(
+                f"Choices are not at the end of the document for '{text}'. Skipping."
+            )
+            continue
+
+        texts.append(text)
+        correct_labels.append(correct_label)
+
+    return pd.DataFrame({"text": texts, "label": correct_labels})
 
 
 if __name__ == "__main__":
