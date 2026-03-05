@@ -1199,6 +1199,53 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset schibsted-sv
 ```
 
+### Unofficial: SVD SEO Title
+
+This dataset was published
+[here](https://huggingface.co/datasets/Schibsted/svd-seo-title) and features
+SEO titles of news articles from Schibsted Media's Swedish newsroom, from
+Svenska Dagbladet (SVD).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "<article text>",
+  "target_text": "<SEO title>"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Nedan följer artiklar med tillhörande SEO-rubriker.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Artikel: {text}
+  SEO-rubrik: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Artikel: {text}
+
+  Skriv en SEO-rubrik för ovanstående artikel.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset svd-seo-title
+```
+
 ## Instruction-following
 
 ### IFEval-sv

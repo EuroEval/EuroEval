@@ -1658,6 +1658,53 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset schibsted-no
 ```
 
+### Unofficial: VG Front Title
+
+This dataset was published
+[here](https://huggingface.co/datasets/Schibsted/vg-front-title) and
+features front-page titles of news articles from Schibsted Media's Norwegian
+newsroom, VG.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "<article text>",
+  "target_text": "<front-page title>"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Her følger nyhetsartikler med tilhørende titler.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+  Tittel: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+
+  Skriv en tittel for den ovennevnte artikkelen.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset vg-front-title
+```
+
 ### Unofficial: Personal Sum
 
 This dataset was released [here](https://github.com/SmartmediaAI/PersonalSum) and
