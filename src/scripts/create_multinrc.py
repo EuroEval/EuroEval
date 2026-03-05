@@ -48,8 +48,6 @@ LABELS = ["a", "b", "c", "d"]
 
 LANGUAGE_SUBSET_MAPPING = {"es": "spanish", "fr": "french"}
 
-LANGUAGE_NAME_MAPPING = {"es": "Spanish", "fr": "French"}
-
 
 def main() -> None:
     """Create the MultiNRC datasets and upload them to the HF Hub."""
@@ -120,7 +118,7 @@ def build_dataset_with_llm(dataset: Dataset, language: str) -> pd.DataFrame:
     else:
         cache = {}
 
-    language_name = LANGUAGE_NAME_MAPPING[language]
+    language_name = LANGUAGE_SUBSET_MAPPING[language].capitalize()
     texts: list[str] = []
     correct_labels: list[str] = []
     df_len = len(df)
@@ -195,7 +193,7 @@ def build_dataset_with_llm(dataset: Dataset, language: str) -> pd.DataFrame:
         choice_idxs = [
             idx
             for idx, section in enumerate(sections)
-            if re.match(pattern=r"^[a-e]\. ", string=section) is not None
+            if re.match(pattern=r"^[a-d]\. ", string=section) is not None
         ]
         if not all(
             choice_idx == len(sections) - i
