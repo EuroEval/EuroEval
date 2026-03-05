@@ -161,3 +161,12 @@ INCLUDE_ES_CONFIG = DatasetConfig(
     languages=[SPANISH],
     unofficial=True,
 )
+
+MULTINRC_ES_CONFIG = DatasetConfig(
+    name="multinrc-es",
+    pretty_name="MultiNRC-es",
+    source="EuroEval/multinrc-es",
+    task=KNOW,
+    languages=[SPANISH],
+    unofficial=True,
+)
