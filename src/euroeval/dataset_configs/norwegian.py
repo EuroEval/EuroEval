@@ -140,9 +140,9 @@ SCHIBSTED_NO_CONFIG = DatasetConfig(
 )
 
 SCHIBSTED_FRONT_TITLE_NO_CONFIG = DatasetConfig(
-    name="schibsted-front-title-no",
-    pretty_name="Schibsted-front-title-no",
-    source="EuroEval/schibsted-front-page-titles-no",
+    name="vg-front-title",
+    pretty_name="VG Front Title",
+    source="EuroEval/vg-front-title",
     task=SUMM,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
@@ -151,21 +151,6 @@ SCHIBSTED_FRONT_TITLE_NO_CONFIG = DatasetConfig(
     prompt_template="Nyhetsartikkel: {text}\nTittel: {target_text}",
     instruction_prompt=(
         "Nyhetsartikkel: {text}\n\nSkriv en tittel for den ovennevnte artikkelen."
-    ),
-)
-
-SCHIBSTED_SEO_TITLE_NO_CONFIG = DatasetConfig(
-    name="schibsted-seo-title-no",
-    pretty_name="Schibsted-seo-title-no",
-    source="EuroEval/schibsted-seo-titles-no",
-    task=SUMM,
-    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
-    unofficial=True,
-    max_generated_tokens=64,
-    prompt_prefix="Her følger nyhetsartikler med tilhørende SEO-titler.",
-    prompt_template="Nyhetsartikkel: {text}\nSEO-tittel: {target_text}",
-    instruction_prompt=(
-        "Nyhetsartikkel: {text}\n\nSkriv en SEO-tittel for den ovennevnte artikkelen."
     ),
 )
 

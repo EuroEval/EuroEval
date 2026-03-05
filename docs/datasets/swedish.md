@@ -1133,58 +1133,12 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset schibsted-sv
 ```
 
-### Unofficial: Schibsted-front-title-sv
+### Unofficial: SVD SEO Title
 
 This dataset was published
-[here](https://huggingface.co/datasets/Schibsted/schibsted-front-page-titles) and
-features front-page titles of news articles from Schibsted Media's Swedish newsroom,
-from Aftonbladet.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "<article text>",
-  "target_text": "<front-page title>"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 1
-- Prefix prompt:
-
-  ```text
-  Nedan följer artiklar med tillhörande rubriker.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Artikel: {text}
-  Rubrik: {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Artikel: {text}
-
-  Skriv en rubrik för ovanstående artikel.
-  ```
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset schibsted-front-title-sv
-```
-
-### Unofficial: Schibsted-seo-title-sv
-
-This dataset was published
-[here](https://huggingface.co/datasets/Schibsted/schibsted-seo-titles) and features
-SEO titles of news articles from Schibsted Media's Swedish newsroom, from Aftonbladet.
+[here](https://huggingface.co/datasets/Schibsted/svd-seo-title) and features
+SEO titles of news articles from Schibsted Media's Swedish newsroom, from
+Svenska Dagbladet (SVD).
 
 Here are a few examples from the training split:
 
@@ -1223,7 +1177,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset schibsted-seo-title-sv
+euroeval --model <model-id> --dataset svd-seo-title
 ```
 
 ## Instruction-following

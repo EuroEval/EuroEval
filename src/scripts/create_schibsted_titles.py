@@ -15,115 +15,100 @@ from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
-NEWSROOM_TO_LANGUAGE = {
-    "sno-commercial": "no",
-    "vektklubb": "no",
-    "e24": "no",
-    "e24partnerstudio": "no",
-    "dinepenger": "no",
-    "vgpartnerstudio": "no",
-    "bt": "no",
-    "tekno": "no",
-    "vg": "no",
-    "ap": "no",
-    "randaberg24": "no",
-    "ab": "sv",
-    "sa": "no",
-}
+TRAIN_SIZE = 64
+VAL_SIZE = 128
+RANDOM_STATE = 4242
 
 
 def process_title_dataset(
     source_dataset_id: str,
     title_column: str,
-    euroeval_dataset_id_sv: str,
-    euroeval_dataset_id_no: str,
+    euroeval_dataset_id: str,
 ) -> None:
-    """Process a Schibsted title dataset and upload splits to HF Hub.
+    """Process a single-newsroom Schibsted title dataset and upload to HF Hub.
+
+    Samples 64 examples from the training split for the new training split.
+    Pools the remaining training samples with the validation split (and test split if
+    it exists), then samples 128 examples for the new validation split, and uses the
+    rest (~1k) as the new test split.
 
     Args:
         source_dataset_id:
             The Hugging Face dataset ID of the source dataset.
         title_column:
             The column name containing the title in the source dataset.
-        euroeval_dataset_id_sv:
-            The Hugging Face dataset ID for the Swedish EuroEval dataset.
-        euroeval_dataset_id_no:
-            The Hugging Face dataset ID for the Norwegian EuroEval dataset.
+        euroeval_dataset_id:
+            The Hugging Face dataset ID for the EuroEval dataset.
     """
     dataset = load_dataset(source_dataset_id, token=True)
     assert isinstance(dataset, DatasetDict)
 
-    # Rename validation split to val
-    if "validation" in dataset:
-        dataset["val"] = dataset.pop("validation")
-
     # Rename article text and title columns to text and target_text
     dataset = dataset.rename_columns(
-        column_mapping=dict(article_text_all="text", **{title_column: "target_text"})
+        column_mapping={"article_text_all": "text", title_column: "target_text"}
     )
 
-    # Ignore samples outside the bounds
+    # Convert to pandas and filter by article length
     train_df = dataset["train"].to_pandas()
-    val_df = dataset["val"].to_pandas()
-    test_df = dataset["test"].to_pandas()
+    val_key = "validation" if "validation" in dataset else "val"
+    val_df = dataset[val_key].to_pandas()
     assert isinstance(train_df, pd.DataFrame)
     assert isinstance(val_df, pd.DataFrame)
-    assert isinstance(test_df, pd.DataFrame)
 
-    # Only work with samples where the text is not very large or small
-    train_lengths = train_df.text.str.len()
-    val_lengths = val_df.text.str.len()
-    test_lengths = test_df.text.str.len()
     lower_bound = MIN_NUM_CHARS_IN_ARTICLE
     upper_bound = MAX_NUM_CHARS_IN_ARTICLE
-    train_df = train_df[train_lengths.between(lower_bound, upper_bound)]
-    val_df = val_df[val_lengths.between(lower_bound, upper_bound)]
-    test_df = test_df[test_lengths.between(lower_bound, upper_bound)]
-
+    train_df = train_df[train_df.text.str.len().between(lower_bound, upper_bound)]
+    val_df = val_df[val_df.text.str.len().between(lower_bound, upper_bound)]
     assert isinstance(train_df, pd.DataFrame)
     assert isinstance(val_df, pd.DataFrame)
-    assert isinstance(test_df, pd.DataFrame)
 
-    for df in [train_df, val_df, test_df]:
-        # make column language based on newsroom
-        df["language"] = df["newsroom"].map(NEWSROOM_TO_LANGUAGE)
+    # Sample 64 examples for the new training split
+    new_train_df = train_df.sample(n=TRAIN_SIZE, random_state=RANDOM_STATE)
+    remaining_train_df = train_df.drop(new_train_df.index)
 
-    dataset = DatasetDict(
+    # Pool: remaining train + validation + test (if it exists)
+    pool_parts = [remaining_train_df, val_df]
+    if "test" in dataset:
+        test_df = dataset["test"].to_pandas()
+        assert isinstance(test_df, pd.DataFrame)
+        test_df = test_df[test_df.text.str.len().between(lower_bound, upper_bound)]
+        assert isinstance(test_df, pd.DataFrame)
+        pool_parts.append(test_df)
+    pool_df = pd.concat(pool_parts, ignore_index=True)
+
+    # Sample 128 examples for the new validation split; rest becomes the test split
+    new_val_df = pool_df.sample(n=VAL_SIZE, random_state=RANDOM_STATE)
+    new_test_df = pool_df.drop(new_val_df.index).reset_index(drop=True)
+
+    new_train_df = new_train_df.reset_index(drop=True)
+    new_val_df = new_val_df.reset_index(drop=True)
+
+    result = DatasetDict(
         {
-            "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
-            "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            "test": Dataset.from_pandas(test_df, split=Split.TEST),
+            "train": Dataset.from_pandas(new_train_df, split=Split.TRAIN),
+            "val": Dataset.from_pandas(new_val_df, split=Split.VALIDATION),
+            "test": Dataset.from_pandas(new_test_df, split=Split.TEST),
         }
     )
 
-    # Dataset is a mix of Swedish and Norwegian articles.
-    # Make two separate datasets, one for each language.
-    dataset_sv = dataset.filter(lambda x: x["language"] == "sv")
-    dataset_no = dataset.filter(lambda x: x["language"] == "no")
-
-    for split_dataset, dataset_id in [
-        (dataset_sv, euroeval_dataset_id_sv),
-        (dataset_no, euroeval_dataset_id_no),
-    ]:
-        # Push the dataset to the Hugging Face Hub
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-        split_dataset.push_to_hub(dataset_id, private=True)
+    HfApi().delete_repo(euroeval_dataset_id, repo_type="dataset", missing_ok=True)
+    result.push_to_hub(euroeval_dataset_id, private=True)
 
 
 def main() -> None:
     """Create the Schibsted title datasets and upload to HF Hub."""
+    # Norwegian front-page title dataset (VG newsroom)
     process_title_dataset(
-        source_dataset_id="Schibsted/schibsted-front-page-titles",
+        source_dataset_id="Schibsted/vg-front-title",
         title_column="front_title",
-        euroeval_dataset_id_sv="EuroEval/schibsted-front-page-titles-sv",
-        euroeval_dataset_id_no="EuroEval/schibsted-front-page-titles-no",
+        euroeval_dataset_id="EuroEval/vg-front-title",
     )
 
+    # Swedish SEO title dataset (SVD newsroom)
     process_title_dataset(
-        source_dataset_id="Schibsted/schibsted-seo-titles",
+        source_dataset_id="Schibsted/svd-seo-title",
         title_column="seo_title",
-        euroeval_dataset_id_sv="EuroEval/schibsted-seo-titles-sv",
-        euroeval_dataset_id_no="EuroEval/schibsted-seo-titles-no",
+        euroeval_dataset_id="EuroEval/svd-seo-title",
     )
 
 
