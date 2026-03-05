@@ -450,8 +450,9 @@ and governmental exams in Greece. Unlike machine-translated benchmarks, all ques
 are originally authored or sourced in Greek.
 
 The publicly released dataset includes a 'dev' split and a 'test' split. We use the
-'dev' split as the training split (up to 1,024 samples), and sample 256 / 2,048 samples
-from the 'test' split for our validation and test splits, stratified by subject.
+'dev' split as the training split, which has 215 samples after filtering. We sample
+256 / 2,048 samples from the 'test' split for our validation and test splits,
+stratified by subject.
 
 Here are a few examples from the training split:
 

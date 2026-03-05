@@ -67,7 +67,7 @@ def main() -> None:
     )
     test_df = pd.DataFrame(test_df, columns=test_source_df.columns)
 
-    # Use the full dev split as training (capped at 1,024)
+    # Use the full dev split as training (it has ~215 samples after filtering)
     train_df = train_source_df.sample(
         n=min(1024, len(train_source_df)), random_state=4242
     )
