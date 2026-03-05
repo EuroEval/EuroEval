@@ -783,10 +783,10 @@ of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. Th
 questions are separately sourced and designed to target locally relevant topics for
 Swedish-speaking populations.
 
-The original dataset only contains a test split. We merge all available splits, remove
-duplicates and overly short/long or repetitive samples, then create a 1,024 / 256 / 2,048
-split for training, validation and testing, respectively (or smaller if fewer samples are
-available).
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
 
 Here are a few examples from the training split:
 
