@@ -1,6 +1,7 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
+#     "beautifulsoup4==4.12.3",
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
@@ -14,10 +15,12 @@
 import io
 import logging
 import re
+from urllib.parse import urljoin, urlparse
 
 import fitz
 import pandas as pd
 import requests
+from bs4 import BeautifulSoup
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
@@ -26,79 +29,21 @@ logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_icelandic_standardized_tests")
 
 
-# Base URL for the Icelandic standardized tests
-BASE_URL = "https://mms.is"
-
-# List of test PDF URLs from https://mms.is/eldri-prof-og-svor (2013–2017)
-# Each entry is (year, subject, test_url, answers_url)
-# subject: "is" for Icelandic language, "math" for mathematics
-TEST_PDFS: list[tuple[str, str, str, str]] = [
-    # 2017
-    (
-        "2017",
-        "is",
-        "https://mms.is/sites/mms.is/files/islenska_10_bekkur_2017_prof.pdf",
-        "https://mms.is/sites/mms.is/files/islenska_10_bekkur_2017_svor.pdf",
-    ),
-    (
-        "2017",
-        "math",
-        "https://mms.is/sites/mms.is/files/staerdfraedi_10_bekkur_2017_prof.pdf",
-        "https://mms.is/sites/mms.is/files/staerdfraedi_10_bekkur_2017_svor.pdf",
-    ),
-    # 2016
-    (
-        "2016",
-        "is",
-        "https://mms.is/sites/mms.is/files/islenska_10_bekkur_2016_prof.pdf",
-        "https://mms.is/sites/mms.is/files/islenska_10_bekkur_2016_svor.pdf",
-    ),
-    (
-        "2016",
-        "math",
-        "https://mms.is/sites/mms.is/files/staerdfraedi_10_bekkur_2016_prof.pdf",
-        "https://mms.is/sites/mms.is/files/staerdfraedi_10_bekkur_2016_svor.pdf",
-    ),
-    # 2015
-    (
-        "2015",
-        "is",
-        "https://mms.is/sites/mms.is/files/islenska_10_bekkur_2015_prof.pdf",
-        "https://mms.is/sites/mms.is/files/islenska_10_bekkur_2015_svor.pdf",
-    ),
-    (
-        "2015",
-        "math",
-        "https://mms.is/sites/mms.is/files/staerdfraedi_10_bekkur_2015_prof.pdf",
-        "https://mms.is/sites/mms.is/files/staerdfraedi_10_bekkur_2015_svor.pdf",
-    ),
-    # 2014
-    (
-        "2014",
-        "is",
-        "https://mms.is/sites/mms.is/files/islenska_10_bekkur_2014_prof.pdf",
-        "https://mms.is/sites/mms.is/files/islenska_10_bekkur_2014_svor.pdf",
-    ),
-    (
-        "2014",
-        "math",
-        "https://mms.is/sites/mms.is/files/staerdfraedi_10_bekkur_2014_prof.pdf",
-        "https://mms.is/sites/mms.is/files/staerdfraedi_10_bekkur_2014_svor.pdf",
-    ),
-    # 2013
-    (
-        "2013",
-        "is",
-        "https://mms.is/sites/mms.is/files/islenska_10_bekkur_2013_prof.pdf",
-        "https://mms.is/sites/mms.is/files/islenska_10_bekkur_2013_svor.pdf",
-    ),
-    (
-        "2013",
-        "math",
-        "https://mms.is/sites/mms.is/files/staerdfraedi_10_bekkur_2013_prof.pdf",
-        "https://mms.is/sites/mms.is/files/staerdfraedi_10_bekkur_2013_svor.pdf",
-    ),
+# Year-specific pages listing exams and answer keys
+# "Prófhefti" = question booklet, "Matsreglur" = answer key / marking guidelines
+YEAR_PAGES: list[tuple[str, str]] = [
+    ("2013", "https://mms.is/prof-og-svor-2013"),
+    ("2014", "https://mms.is/prof-og-svor-2014"),
+    ("2015", "https://mms.is/prof-og-svor-2015"),
+    ("2016", "https://www.mms.is/prof-og-svor-2016"),
+    ("2017", "https://www.mms.is/prof-og-svor-2017"),
 ]
+
+# Keywords used to identify subjects in page headings (lowercase)
+SUBJECT_KEYWORDS: dict[str, list[str]] = {
+    "is": ["íslenska", "islenska", "íslensku"],
+    "math": ["stærðfræði", "staerdfraedi", "stærðfræðu", "stærðfr"],
+}
 
 LABEL_LETTERS = ["a", "b", "c", "d"]
 
@@ -108,31 +53,59 @@ def main() -> None:
     all_is_samples: list[dict] = []
     all_math_samples: list[dict] = []
 
-    for year, subject, test_url, answers_url in TEST_PDFS:
-        logger.info(f"Processing {subject} test from {year}...")
+    for year, page_url in YEAR_PAGES:
+        logger.info(f"Fetching year page for {year}: {page_url}")
         try:
-            test_pdf = download_pdf(url=test_url)
-            answers_pdf = download_pdf(url=answers_url)
+            pdf_links = fetch_pdf_links(year=year, page_url=page_url)
         except Exception as e:
-            logger.warning(f"Failed to download {subject} test from {year}: {e}")
+            logger.warning(f"Failed to fetch PDF links for {year}: {e}")
             continue
 
-        try:
-            samples = extract_multiple_choice_questions(
-                test_pdf=test_pdf, answers_pdf=answers_pdf, year=year, subject=subject
+        for subject, prof_urls, matsreglur_url in pdf_links:
+            logger.info(
+                f"Processing {subject} test from {year} "
+                f"({len(prof_urls)} question sheet(s))..."
             )
-        except Exception as e:
-            logger.warning(
-                f"Failed to extract questions from {subject} test from {year}: {e}"
+            try:
+                answers_pdf = download_pdf(url=matsreglur_url)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to download answer key for {subject} {year}: {e}"
+                )
+                continue
+
+            combined_samples: list[dict] = []
+            for prof_url in prof_urls:
+                try:
+                    test_pdf = download_pdf(url=prof_url)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to download question sheet {prof_url} "
+                        f"for {subject} {year}: {e}"
+                    )
+                    continue
+                try:
+                    samples = extract_multiple_choice_questions(
+                        test_pdf=test_pdf,
+                        answers_pdf=answers_pdf,
+                        year=year,
+                        subject=subject,
+                    )
+                    combined_samples.extend(samples)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to extract questions from {subject} {year} "
+                        f"({prof_url}): {e}"
+                    )
+
+            if subject == "is":
+                all_is_samples.extend(combined_samples)
+            else:
+                all_math_samples.extend(combined_samples)
+
+            logger.info(
+                f"Extracted {len(combined_samples)} questions from {subject} {year}."
             )
-            continue
-
-        if subject == "is":
-            all_is_samples.extend(samples)
-        else:
-            all_math_samples.extend(samples)
-
-        logger.info(f"Extracted {len(samples)} questions from {subject} {year}.")
 
     for subject, samples in [("is", all_is_samples), ("math", all_math_samples)]:
         if not samples:
@@ -200,6 +173,96 @@ def main() -> None:
         HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
         dataset_dict.push_to_hub(dataset_id, private=True)
         logger.info(f"Pushed {subject} dataset to {dataset_id}.")
+
+
+def fetch_pdf_links(year: str, page_url: str) -> list[tuple[str, list[str], str]]:
+    """Fetch "Prófhefti" and "Matsreglur" PDF links from a year page.
+
+    Scrapes the given year page and returns PDF link groups, one per subject
+    found. Each entry is (subject, [profhefti_url, ...], matsreglur_url).
+
+    Args:
+        year:
+            The year string (used only for logging).
+        page_url:
+            The URL of the year page listing the exams.
+
+    Returns:
+        A list of (subject, prof_urls, matsreglur_url) triples for each
+        subject found on the page. subject is "is" or "math".
+    """
+    response = requests.get(url=page_url, timeout=30)
+    response.raise_for_status()
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    # Derive the base URL (scheme + host) from the page URL
+    parsed = urlparse(page_url)
+    url_base = f"{parsed.scheme}://{parsed.netloc}"
+
+    def resolve(href: str) -> str:
+        return urljoin(url_base, href)
+
+    def detect_subject(text: str, href: str = "") -> str | None:
+        """Return the subject key matching text/href, or None."""
+        for subj, keywords in SUBJECT_KEYWORDS.items():
+            if any(kw in text or kw in href for kw in keywords):
+                return subj
+        return None
+
+    # Walk through headings and links in document order, tracking subject context.
+    results: dict[str, dict[str, list[str]]] = {}
+    current_subject: str | None = None
+
+    heading_tags = ["h1", "h2", "h3", "h4", "h5", "h6"]
+    for element in soup.find_all(heading_tags + ["a"]):
+        text_lower = element.get_text(separator=" ", strip=True).lower()
+
+        # Detect subject headings
+        if element.name in heading_tags:
+            found = detect_subject(text_lower)
+            if found is not None:
+                current_subject = found
+                if found not in results:
+                    results[found] = {"profhefti": [], "matsreglur": []}
+
+        # Detect links
+        elif element.name == "a":
+            href = element.get("href", "")
+            if not href or not href.lower().endswith(".pdf"):
+                continue
+
+            link_text = element.get_text(strip=True).lower()
+            full_url = resolve(href)
+
+            # Fall back to detecting subject from link text / href
+            link_subject = current_subject or detect_subject(link_text, href.lower())
+            if link_subject is None:
+                continue
+
+            if link_subject not in results:
+                results[link_subject] = {"profhefti": [], "matsreglur": []}
+
+            if "prófhefti" in link_text or "profhefti" in link_text:
+                results[link_subject]["profhefti"].append(full_url)
+            elif "matsreglur" in link_text or "matsregl" in link_text:
+                results[link_subject]["matsreglur"].append(full_url)
+
+    output: list[tuple[str, list[str], str]] = []
+    for subj, links in results.items():
+        if not links["profhefti"] or not links["matsreglur"]:
+            logger.warning(
+                f"Incomplete links for subject={subj} year={year}: "
+                f"profhefti={links['profhefti']}, matsreglur={links['matsreglur']}"
+            )
+            continue
+        # Use the last matsreglur link if there are multiple (shouldn't happen)
+        output.append((subj, links["profhefti"], links["matsreglur"][-1]))
+
+    logger.info(
+        f"Found {len(output)} subject(s) on year page {year}: "
+        + ", ".join(s for s, _, _ in output)
+    )
+    return output
 
 
 def download_pdf(url: str) -> bytes:
