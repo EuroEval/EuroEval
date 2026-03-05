@@ -21,9 +21,7 @@ RANDOM_STATE = 4242
 
 
 def process_title_dataset(
-    source_dataset_id: str,
-    title_column: str,
-    euroeval_dataset_id: str,
+    source_dataset_id: str, title_column: str, euroeval_dataset_id: str
 ) -> None:
     """Process a single-newsroom Schibsted title dataset and upload to HF Hub.
 
