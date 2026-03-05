@@ -20,6 +20,43 @@ BASE_URL = (
 )
 
 
+def main() -> None:
+    """Create the NorSumm summarisation datasets and upload to the HF Hub."""
+    for lang in ("nb", "nn"):
+        dataset = create_dataset(lang=lang)
+        dataset_id = f"EuroEval/norsumm-{lang}"
+        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+        dataset.push_to_hub(dataset_id, private=True)
+
+
+def create_dataset(lang: str) -> DatasetDict:
+    """Create the NorSumm dataset for a given language variant.
+
+    Args:
+        lang:
+            The language variant, either "nb" or "nn".
+
+    Returns:
+        A DatasetDict with train and test splits.
+    """
+    dev_records = process_records(load_norsumm("dev"), lang=lang)
+    test_records = process_records(load_norsumm("test"), lang=lang)
+
+    # Use 8 samples from the dev set for training; combine the rest with test
+    train_size = 8
+    train_records = dev_records[:train_size]
+    remaining_dev_records = dev_records[train_size:]
+
+    return DatasetDict(
+        {
+            "train": Dataset.from_list(train_records, split=Split.TRAIN),
+            "test": Dataset.from_list(
+                remaining_dev_records + test_records, split=Split.TEST
+            ),
+        }
+    )
+
+
 def load_norsumm(split: str) -> list[dict]:
     """Load the raw NorSumm data for a given split.
 
@@ -63,43 +100,6 @@ def process_records(records: list[dict], lang: str) -> list[dict[str, str | list
         ]
         processed.append({"text": text, "target_text": summaries})
     return processed
-
-
-def create_dataset(lang: str) -> DatasetDict:
-    """Create the NorSumm dataset for a given language variant.
-
-    Args:
-        lang:
-            The language variant, either "nb" or "nn".
-
-    Returns:
-        A DatasetDict with train and test splits.
-    """
-    dev_records = process_records(load_norsumm("dev"), lang=lang)
-    test_records = process_records(load_norsumm("test"), lang=lang)
-
-    # Use 8 samples from the dev set for training; combine the rest with test
-    train_size = 8
-    train_records = dev_records[:train_size]
-    remaining_dev_records = dev_records[train_size:]
-
-    return DatasetDict(
-        {
-            "train": Dataset.from_list(train_records, split=Split.TRAIN),
-            "test": Dataset.from_list(
-                remaining_dev_records + test_records, split=Split.TEST
-            ),
-        }
-    )
-
-
-def main() -> None:
-    """Create the NorSumm summarisation datasets and upload to the HF Hub."""
-    for lang in ("nb", "nn"):
-        dataset = create_dataset(lang=lang)
-        dataset_id = f"EuroEval/norsumm-{lang}"
-        HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-        dataset.push_to_hub(dataset_id, private=True)
 
 
 if __name__ == "__main__":
