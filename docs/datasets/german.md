@@ -759,6 +759,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-de
 ```
 
+### Unofficial: MultiLoKo-de
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The German
+questions are separately sourced and designed to target locally relevant topics for
+German-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "In welchem Bereich sammelte Reiner Calmund erste berufliche und sportliche Erfahrungen, die später für seine Tätigkeit als Manager bei Bayer 04 Leverkusen relevant wurden?\nAntwortmöglichkeiten:\na. Trainer\nb. Spielerberater\nc. Physiotherapeut\nd. Sportjournalist",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "Wie lange war Malu Dreyer Mitglied der SPD, als sie zum ersten Mal Landespräsidentin für den Wahlkreis Trier wurde?\nAntwortmöglichkeiten:\na. vierzehn Jahre\nb. elf Jahre\nc. sieben Jahre\nd. zwanzig Jahre",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "Wie lautet der Name des Jungen, der in der vierten Staffel der Fernsehserie „Bettys Diagnose“ zu sehen ist und der der Hauptfigur in der Schule das Leben schwer macht?\nAntwortmöglichkeiten:\na. Tim Weigel\nb. Lukas Kramer\nc. Frank Stern\nd. Jonas Becker",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Frage: {text}
+  Antwort: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Frage: {text}
+
+  Beantworten Sie die obige Frage mit 'a', 'b', 'c' oder 'd', und nichts anderes.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-de
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-de

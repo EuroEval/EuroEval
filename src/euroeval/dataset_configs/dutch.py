@@ -189,3 +189,12 @@ INCLUDE_NL_CONFIG = DatasetConfig(
     languages=[DUTCH],
     unofficial=True,
 )
+
+MULTILOKO_NL_CONFIG = DatasetConfig(
+    name="multiloko-nl",
+    pretty_name="MultiLoKo-nl",
+    source="EuroEval/multiloko-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+    unofficial=True,
+)

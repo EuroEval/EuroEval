@@ -14,6 +14,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   This was added by @harderj ✨
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
+- Added the Norwegian summarisation datasets NorSumm-nb and NorSumm-nn, based on the
+  [NorSumm dataset](https://github.com/SamiaTouileb/NorSumm). The splits are given by
+  8 samples for train and the remaining articles for test, with no validation split.
+  Both datasets are marked as `unofficial` for now.
+- Added the Norwegian dialect classification dataset NorDial. The split is given
+  by 848 / 106 / 110 samples for train / val / test, respectively. It is marked
+  as `unofficial` for now.
+- Added the English knowledge dataset MMLU-Pro, marked as unofficial. This is a more
+  robust and challenging version of MMLU with 10 answer options per question.
+- Added the MultiNRC knowledge dataset for English, French and Spanish. These are
+  marked as `unofficial` for now.
+- Added the Greek knowledge dataset GreekMMLU. The split is
+  given by 1,024 / 256 / 2,048 samples for train / val / test, respectively.
+  It is marked as `unofficial` for now.
+- Added the MultiLoKo multilingual local knowledge benchmark datasets for Dutch,
+  English, French, German, Italian, Portuguese, Spanish and Swedish. All datasets
+  are marked as `unofficial` for now.
 - Added the Schibsted front-page title and SEO title datasets, sourced from
   single newsrooms: `vg-front-title` features front-page titles from VG (Norwegian),
   and `svd-seo-title` features SEO titles from Svenska Dagbladet (Swedish). Both
