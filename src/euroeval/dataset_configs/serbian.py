@@ -62,3 +62,15 @@ WINOGRANDE_SR_CONFIG = DatasetConfig(
     languages=[SERBIAN],
     labels=["a", "b"],
 )
+
+
+# Unofficial datasets ###
+
+INCLUDE_SR_CONFIG = DatasetConfig(
+    name="include-sr",
+    pretty_name="INCLUDE-sr",
+    source="EuroEval/include-sr-mini",
+    task=KNOW,
+    languages=[SERBIAN],
+    unofficial=True,
+)

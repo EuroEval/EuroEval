@@ -11,10 +11,9 @@
 
 from typing import MutableMapping
 
+from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, load_dataset
 from huggingface_hub import HfApi
-
-from .constants import CHOICES_MAPPING
 
 
 def main() -> None:

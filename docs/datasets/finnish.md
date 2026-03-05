@@ -465,6 +465,77 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multi-wiki-qa-fi
 ```
 
+## Knowledge
+
+### Unofficial: INCLUDE-fi
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Miten hermoimpulssin aikana tapahtuva K+-kanavien aukeaminen vaikuttaa hermosolun toimintaan?\nVastausvaihtoehdot:\na. Lepojännitteen palautuminen nopeutuu.\nb. Hermosolukalvon sähkönjohtavuus vähenee.\nc. Välittäjäaineen vapautuminen lisääntyy.\nd. Hermoimpulssin kesto pitenee.",
+    "label": "a",
+    "subject": "Medicine"
+}
+```
+
+```json
+{
+    "text": "Mikä vaihtoehdoista ei kuulu hyvin toimivien markkinoiden synnyttämiin hyötyihin?\nVastausvaihtoehdot:\na. Hyvin toimivat markkinat mahdollistavat erikoistumisen.\nb. Hyvin toimivat markkinat takaavat että tulot jakautuvat oikeudenmukaisesti.\nc. Hyvin toimivat markkinat mahdollistavat skaalaetujen hyödyntämisen.\nd. Hyvin toimivat markkinat takaavat että resurssit kohdentuvat sinne missä ne tuottavat parhaiten.",
+    "label": "b",
+    "subject": "Economics"
+}
+```
+
+```json
+{
+    "text": "Eräs professori totesi sijoittamisesta Viisas Raha -lehdessä 27.6.2023: ”Hajauttamisen laajuuteen vaikuttavat ennen kaikkea sijoittajan ikä ja riskinkantokyky. Mitä nuorempi henkilö ja pidempi sijoitushorisontti on kyseessä, sitä isommalla painolla voi olla mukana osakemarkkinoilla. Kun ikää tulee lisää, saattavat korkosijoitukset houkutella enemmän.” Mikä seuraavista väittämistä pitää paikkansa?\nVastausvaihtoehdot:\na. Hajauttamisella viitataan usein sanontaan laita kaikki munat samaan koriin. Maailman varakkaimmat henkilöt ovat tehneet juuri näin ja sen avulla luoneet suuria omaisuuksia.\nb. Perinteisten sijoitusperiaatteiden mukaan sijoitussalkun suhteellista riskiä kannattaa kasvattaa sijoittajan iän karttuessa. Selityksenä tähän on se, että palkka ja eläke yleensä nousevat iän myötä.\nc. Korkosijoituksia ovat esimerkiksi määräaikaiset talletukset, rahamarkkinarahastot ja obligaatiot. Riskiä pohtiessa kannattaa huomioida, että jo liikkeeseen lasketun kiinteäkorkoisen obligaation arvo laskee, jos korkotaso nousee.\nd. Riskinkantokyvyllä tarkoitetaan samaa kuin riskihalukkuudella. Mitä korkeampi riski, sitä korkeampi toteutunut tuotto.",
+    "label": "c",
+    "subject": "Economics"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Kysymys: {text}
+  Vastaus: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Kysymys: {text}
+
+  Vastaa yllä olevaan kysymykseen käyttämällä {labels_str}, äläkä mitään muuta.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-fi
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-fi

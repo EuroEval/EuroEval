@@ -17,17 +17,16 @@ import hashlib
 import os
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from dotenv import load_dotenv
-from huggingface_hub import HfApi
-from openai import OpenAI
-
-from .constants import (
+from constants import (
     MAX_NUM_CHARS_IN_CONTEXT,
     MAX_NUM_CHARS_IN_QUESTION,
     MIN_NUM_CHARS_IN_CONTEXT,
     MIN_NUM_CHARS_IN_QUESTION,
 )
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from dotenv import load_dotenv
+from huggingface_hub import HfApi
+from openai import OpenAI
 
 load_dotenv()
 
