@@ -28,7 +28,19 @@ from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 
-LANGUAGES = ["nl", "en", "fr", "de", "it", "pt", "es", "sv"]
+# Mapping from ISO 2-letter language codes to the config names used by facebook/multiloko
+LANGUAGE_CONFIG_NAMES = {
+    "nl": "dutch",
+    "en": "english",
+    "fr": "french",
+    "de": "german",
+    "it": "italian",
+    "pt": "portuguese",
+    "es": "spanish",
+    "sv": "swedish",
+}
+
+LANGUAGES = list(LANGUAGE_CONFIG_NAMES.keys())
 
 TARGET_TRAIN_SIZE = 1024
 TARGET_VAL_SIZE = 256
@@ -43,8 +55,14 @@ def main() -> None:
     repo_id = "facebook/multiloko"
 
     for language in LANGUAGES:
-        # Load the dataset - use the original-language subset for each language
-        dataset = load_dataset(path=repo_id, name=language, token=True)
+        # Load the dataset using the full language name required by facebook/multiloko
+        config_name = LANGUAGE_CONFIG_NAMES[language]
+        dataset = load_dataset(
+            path=repo_id,
+            name=config_name,
+            token=True,
+            trust_remote_code=True,  # required for facebook/multiloko's custom loading script
+        )
         assert isinstance(dataset, DatasetDict)
 
         # Convert the dataset splits to dataframes. MultiLoKo may only have a test
