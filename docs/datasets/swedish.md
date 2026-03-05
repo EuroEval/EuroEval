@@ -776,6 +776,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset swedish-facts
 ```
 
+### Unofficial: MultiLoKo-sv
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Swedish
+questions are separately sourced and designed to target locally relevant topics for
+Swedish-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Vilket språk talades när tv-serien Der Kommissar und das Meer visades i Sverige?\nSvarsalternativ:\na. Svenska\nb. Tyska\nc. Engelska\nd. Franska",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "Felix Sandman och Farah Abadi var programledare för musikhjälpen. Vem var den tredje som deltog?\nSvarsalternativ:\na. Molly Sandén\nb. Zackari\nc. Gina Dirawi\nd. Oscar Zia",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "Vilket var det tredje landet utanför Sverige där Robin Olsen spelade klubblagsfotboll?\nSvarsalternativ:\na. Spanien\nb. Frankrike\nc. Italien\nd. Tyskland",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Följande är flervalsfrågor (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Fråga: {text}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Fråga: {text}
+
+  Besvara följande fråga med 'a', 'b', 'c' eller 'd', och inget annat.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-sv
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-sv

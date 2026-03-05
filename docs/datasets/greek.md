@@ -441,6 +441,76 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-el
 ```
 
+### Unofficial: GreekMMLU
+
+GreekMMLU was published in [this paper](https://doi.org/10.48550/arXiv.2602.05150) and
+is a native Greek benchmark for massive multitask language understanding, comprising
+multiple-choice questions across 45 subject areas sourced from academic, professional,
+and governmental exams in Greece. Unlike machine-translated benchmarks, all questions
+are originally authored or sourced in Greek.
+
+The publicly released dataset includes a 'dev' split and a 'test' split. We use the
+'dev' split as the training split, which has 215 samples after filtering. We sample
+256 / 2,048 samples from the 'test' split for our validation and test splits,
+stratified by subject.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Ποια είναι η βαθύτερη λίμνη της Γης;\nΕπιλογές:\na. Βαϊκάλη\nb. Κασπία\nc. Βικτώρια\nd. Νεκρά Θάλασσα",
+    "label": "a",
+    "subject": "Geography"
+}
+```
+
+```json
+{
+    "text": "Στο CorelDraw για να κάνουμε zoom in στην απεικόνιση της οθόνης χρησιμοποιούμε τη συντόμευση \"Ctrl + +\".\nΕπιλογές:\na. Σωστό\nb. Λάθος",
+    "label": "b",
+    "subject": "Art"
+}
+```
+
+```json
+{
+    "text": "Ποιο είναι το αντίθετο του επιθέτου «ομαλός»;\nΕπιλογές:\na. λεία\nb. ομαλός\nc. ανώμαλος\nd. δυνατός",
+    "label": "c",
+    "subject": "Modern Greek Language"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Ακολουθούν ερωτήσεις πολλαπλών επιλογών (με απαντήσεις).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Ερώτηση: {text}
+  Απάντηση: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Ερώτηση: {text}
+
+  Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας 'a', 'b', 'c' ή 'd', και τίποτα άλλο.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset greek-mmlu
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-el
