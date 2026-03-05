@@ -10,10 +10,9 @@
 """Create the NorSumm summarisation dataset."""
 
 import requests
+from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
-
-from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 BASE_URL = (
     "https://raw.githubusercontent.com/SamiaTouileb/NorSumm/refs/heads/main/Data/"
