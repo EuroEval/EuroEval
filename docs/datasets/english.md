@@ -718,22 +718,25 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "What is the first step in the process of perception?\nChoices:\na. Organizing\nb. Interpreting\nc. Selecting\nd. Evaluating\ne. Encoding\nf. Memory\ng. Attention\nh. Sensation\ni. Integration\nj. Association",
-  "label": "h"
+    "text": "The coil of a moving coil meter has 100 turns, is 40 mm long and 30 mm wide. The control torque is 240*10-6 N-m on full scale. If magnetic flux density is 1Wb/m2 range of meter is\nChoices:\na. 2 mA.\nb. 5 mA.\nc. 1.5 mA.\nd. 0.5 mA.\ne. 6 mA.\nf. 4 mA.\ng. 3 mA.\nh. 1 mA.\ni. 2.5 mA.\nj. 3.5 mA.",
+    "label": "a",
+    "category": "engineering"
 }
 ```
 
 ```json
 {
-  "text": "In the Compton effect, when an X-ray photon collides with a free electron, which of the following is conserved?\nChoices:\na. The frequency of the photon only\nb. The wavelength of the photon only\nc. Both momentum and kinetic energy\nd. Momentum only\ne. Kinetic energy only\nf. The angle of scattering only\ng. Both momentum and total energy\nh. Total energy only\ni. Neither momentum nor energy\nj. The speed of the photon only",
-  "label": "g"
+    "text": "Predict the number of lines in the EPR spectrum of a solution of 13C-labelled methyl radical (13CH3•), assuming the lines do not overlap.\nChoices:\na. 10\nb. 8\nc. 4\nd. 20\ne. 12\nf. 3\ng. 16\nh. 5\ni. 24\nj. 6",
+    "label": "b",
+    "category": "chemistry"
 }
 ```
 
 ```json
 {
-  "text": "What is the term for the process by which a gene's sequence is used to synthesize a functional gene product?\nChoices:\na. Replication\nb. Mutation\nc. Recombination\nd. Translation\ne. Transcription\nf. Splicing\ng. Transduction\nh. Expression\ni. Transposition\nj. Conjugation",
-  "label": "h"
+    "text": "In an SR latch built from NOR gates, which condition is not allowed\nChoices:\na. S=0, R=2\nb. S=2, R=2\nc. S=1, R=1\nd. S=1, R=-1\ne. S=1, R=2\nf. S=0, R=0\ng. S=2, R=0\nh. S=1, R=0\ni. S=2, R=1\nj. S=0, R=1",
+    "label": "c",
+    "category": "engineering"
 }
 ```
 
