@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   This was added by @harderj ✨
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
+- Added the Schibsted front-page title and SEO title datasets, sourced from
+  single newsrooms: `vg-front-title` features front-page titles from VG (Norwegian),
+  and `svd-seo-title` features SEO titles from Svenska Dagbladet (Swedish). Both
+  datasets are marked as `unofficial` for now.
 - A new natural language inference task has been added, including the Danish
   Entailment Dataset (ID is `danish-entailment`) and the Danish Lexical Inference
   Dataset (ID is `danish-lexical-inference`). It is marked as unofficial for now.
