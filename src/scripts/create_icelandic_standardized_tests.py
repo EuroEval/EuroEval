@@ -18,10 +18,9 @@ import re
 import fitz
 import pandas as pd
 import requests
+from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
-
-from constants import CHOICES_MAPPING
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_icelandic_standardized_tests")
