@@ -687,6 +687,70 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multiloko-fr
 ```
 
+### Unofficial: MultiNRC-fr
+
+This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2507.17476)
+and consists of native-authored reasoning questions designed to assess multilingual
+reasoning ability. Unlike benchmarks that simply translate English-centric content, the
+questions are crafted by native speakers to capture linguistic and cultural nuances.
+
+The original dataset only has a 'test' split. We use 64 samples for training, 128 for
+validation, and the rest for testing.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Quel est le résultat de la division de 144 par 12 ?\nChoix:\na. 10\nb. 12\nc. 14\nd. 16",
+  "label": "b"
+}
+```
+
+```json
+{
+  "text": "Quelle est la capitale de la France ?\nChoix:\na. Lyon\nb. Marseille\nc. Paris\nd. Bordeaux",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Combien de côtés a un hexagone ?\nChoix:\na. 4\nb. 5\nc. 6\nd. 8",
+  "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Réponse: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Répondez à la question ci-dessus par {labels_str}, et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multinrc-fr
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-fr
