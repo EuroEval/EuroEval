@@ -26,7 +26,7 @@ from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 NUM_OPTIONS = 10
-OPTION_LABELS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+OPTION_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
 
 
 def main() -> None:
@@ -35,17 +35,18 @@ def main() -> None:
     dataset = load_dataset(path="TIGER-Lab/MMLU-Pro", token=True)
     assert isinstance(dataset, DatasetDict)
 
-    # The original validation split contains the few-shot training examples - process
-    # it separately to ensure all samples end up in the training split.
-    train_source_df = dataset["validation"].to_pandas()
+    # The original validation split contains the few-shot training examples - use it
+    # directly as our training split.
+    train_df = dataset["validation"].to_pandas()
     test_source_df = dataset["test"].to_pandas()
-    assert isinstance(train_source_df, pd.DataFrame)
+    assert isinstance(train_df, pd.DataFrame)
     assert isinstance(test_source_df, pd.DataFrame)
 
-    train_source_df = process_df(train_source_df)
+    train_df = process_df(train_df)
     test_source_df = process_df(test_source_df)
 
-    # Create our validation split from the original test split
+    # Split the original test split into val and test splits (256/2048), stratified on
+    # category.
     val_size = 256
     remaining_test_df, val_df = train_test_split(
         test_source_df,
@@ -54,26 +55,13 @@ def main() -> None:
         stratify=test_source_df.category,
     )
 
-    # Create our test split from the remaining original test split
     test_size = 2048
-    remaining_test_df, test_df = train_test_split(
+    _, test_df = train_test_split(
         remaining_test_df,
         test_size=test_size,
         random_state=4242,
         stratify=remaining_test_df.category,
     )
-
-    # Create our training split: all original validation samples (guaranteed) plus
-    # additional samples from the original test split to reach 1024 total.
-    additional_train_size = max(0, 1024 - len(train_source_df))
-    additional_train_size = min(additional_train_size, len(remaining_test_df))
-    if additional_train_size > 0:
-        additional_train_df = remaining_test_df.sample(
-            additional_train_size, random_state=4242
-        )
-        train_df = pd.concat([train_source_df, additional_train_df], ignore_index=True)
-    else:
-        train_df = train_source_df
 
     # Reset the index
     train_df = train_df.reset_index(drop=True)
@@ -112,8 +100,8 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     # Rename the columns
     df = df.rename(columns=dict(question="instruction"))
 
-    # Make the answer lowercase
-    df["label"] = df["answer"].str.lower()
+    # Make the answer uppercase
+    df["label"] = df["answer"].str.upper()
 
     # Only keep questions with exactly NUM_OPTIONS options
     df = df[df["options"].apply(len) == NUM_OPTIONS]
