@@ -72,7 +72,7 @@ def load_norsumm(split: str) -> list[dict]:
     return response.json()
 
 
-def process_records(records: list[dict], lang: str) -> list[dict[str, str | list[str]]]:
+def process_records(records: list[dict], lang: str) -> list[dict[str, str]]:
     """Process raw NorSumm records into EuroEval format.
 
     Args:
@@ -92,12 +92,14 @@ def process_records(records: list[dict], lang: str) -> list[dict[str, str | list
         # Only keep articles within reasonable length bounds for summarisation
         if text_len < MIN_NUM_CHARS_IN_ARTICLE or text_len > MAX_NUM_CHARS_IN_ARTICLE:
             continue
-        summaries = [
-            entry[f"summary{i + 1}"].strip()
-            for i, entry in enumerate(item[key])
-            if f"summary{i + 1}" in entry
-        ]
-        processed.append({"text": text, "target_text": summaries})
+        summaries = item[key]
+        if not summaries:
+            continue
+        first_summary_key = "summary1"
+        if first_summary_key not in summaries[0]:
+            continue
+        target_text = summaries[0][first_summary_key].strip()
+        processed.append({"text": text, "target_text": target_text})
     return processed
 
 
