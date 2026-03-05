@@ -386,15 +386,16 @@ def main() -> None:
                 )
                 continue
 
-            questions: list[McQuestion] | list[McQuestionWithPassage]
+            questions: list[McQuestion] | list[McQuestionWithPassage] = [
+                getattr(output, f"question_{i}")
+                for i in range(1, len(answer_key) + 1)
+                if hasattr(output, f"question_{i}")
+            ]
             if subject == "is":
                 passages: list[GeneralReadingPassage] = output.passages
-                questions = output.questions
                 for question in questions:
                     passage = next((p for p in passages if p.id == question.passage_id))
                     question.question = f"{passage.text}\n\n{question.question}"
-            else:
-                questions = output.questions
 
             for q in questions:
                 correct = answer_key.get(q.number, "")
