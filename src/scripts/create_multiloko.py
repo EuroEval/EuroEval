@@ -47,6 +47,7 @@ LANGUAGE_CONFIG_NAMES = {
 }
 
 REPO_ID = "facebook/multiloko"
+CACHE_FILE = "multiloko_cache.json"
 LANGUAGES = list(LANGUAGE_CONFIG_NAMES.keys())
 LABELS = ["a", "b", "c", "d"]
 TRAIN_SIZE = 16
@@ -198,9 +199,8 @@ def main() -> None:
     """Create the MultiLoKo-mini datasets and upload them to the HF Hub."""
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-    cache_file = "multiloko_cache.json"
-    if os.path.exists(cache_file):
-        with open(cache_file) as f:
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE) as f:
             cache = json.load(f)
     else:
         cache = {}
@@ -229,7 +229,7 @@ def main() -> None:
             language_display_name=language_display_name,
             client=client,
             cache=cache,
-            cache_file=cache_file,
+            cache_file=CACHE_FILE,
         )
 
         if len(result_df) < TRAIN_SIZE + 1:
