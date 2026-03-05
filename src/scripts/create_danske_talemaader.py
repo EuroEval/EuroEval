@@ -16,11 +16,10 @@ from zipfile import ZipFile
 
 import pandas as pd
 import requests as rq
+from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
-
-from .constants import CHOICES_MAPPING
 
 
 def main() -> None:

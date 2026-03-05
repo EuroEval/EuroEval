@@ -380,6 +380,75 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset global-mmlu-uk
 ```
 
+### Unofficial: INCLUDE-uk
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Яким органом влади в Україні є Верховна Рада України?\nВаріанти:\na. єдиним органом законодавчої влади в Україні\nb. вищим органом законодавчої влади в Україні\nc. найвищим органом публічної влади в Україні\nd. єдиним органом установчої влади в Україні",
+    "label": "a",
+    "subject": "Law"
+}
+```
+
+```json
+{
+    "text": "Метою здійснення психологічного аналізу уроку є\nВаріанти:\na. педагогічна атестація вчителя\nb. виявлення факторів ефективного розвитку і виховання учнів та рефлексія педагогічної майстерності вчителя\nc. висновок щодо рівня засвоєння учнями навчального матеріалу\nd. виявлення факторів оптимізації методології навчання",
+    "label": "b",
+    "subject": "Psychology"
+}
+```
+
+```json
+{
+    "text": "За чиїм підписом опубліковується закон, прийнятий Верховною Радою України під час повторного розгляду, якщо Президент України не підписав такий закон?\nВаріанти:\na. Голови Верховного Суду України\nb. Голови Конституційного Суду України\nc. Голови Верховної Ради України\nd. Першого заступника Голови Верховної Ради України",
+    "label": "c",
+    "subject": "Law"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Нижче наведено питання з кількома варіантами відповідей (з відповідями).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Питання: {text}
+  Відповідь: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Питання: {text}
+
+  Дайте відповідь на наведене вище питання, використовуючи {labels_str}, і нічого іншого.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-uk
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-uk

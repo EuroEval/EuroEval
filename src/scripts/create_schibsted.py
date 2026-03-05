@@ -11,10 +11,9 @@
 """Create the Schibsted summarisation dataset."""
 
 import pandas as pd
+from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
-
-from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 NEWSROOM_TO_LANGUAGE = {
     "sno-commercial": "no",

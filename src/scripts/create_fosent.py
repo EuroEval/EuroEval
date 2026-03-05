@@ -15,10 +15,9 @@ import logging
 from typing import Literal
 
 import pandas as pd
+from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
-
-from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("create_fosent")

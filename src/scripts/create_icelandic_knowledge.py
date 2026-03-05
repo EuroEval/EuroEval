@@ -21,6 +21,7 @@ import random
 import re
 
 import pandas as pd
+from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
@@ -28,8 +29,6 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletionUserMessageParam
 from pydantic import BaseModel
 from tqdm.auto import tqdm
-
-from .constants import CHOICES_MAPPING
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_icelandic_knowledge")
