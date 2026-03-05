@@ -36,18 +36,6 @@ load_dotenv()
 
 # Mapping from ISO 2-letter language codes to config names used by facebook/multiloko
 LANGUAGE_CONFIG_NAMES = {
-    "nl": "dutch",
-    "en": "english",
-    "fr": "french",
-    "de": "german",
-    "it": "italian",
-    "pt": "portuguese",
-    "es": "spanish",
-    "sv": "swedish",
-}
-
-# Human-readable language names used in the LLM prompt
-LANGUAGE_DISPLAY_NAMES = {
     "nl": "Dutch",
     "en": "English",
     "fr": "French",
@@ -58,6 +46,7 @@ LANGUAGE_DISPLAY_NAMES = {
     "sv": "Swedish",
 }
 
+REPO_ID = "facebook/multiloko"
 LANGUAGES = list(LANGUAGE_CONFIG_NAMES.keys())
 LABELS = ["a", "b", "c", "d"]
 TRAIN_SIZE = 16
@@ -207,7 +196,6 @@ def build_dataset_with_llm(
 
 def main() -> None:
     """Create the MultiLoKo-mini datasets and upload them to the HF Hub."""
-    repo_id = "facebook/multiloko"
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
     cache_file = "multiloko_cache.json"
@@ -218,13 +206,12 @@ def main() -> None:
         cache = {}
 
     for language in LANGUAGES:
-        config_name = LANGUAGE_CONFIG_NAMES[language]
-        language_display_name = LANGUAGE_DISPLAY_NAMES[language]
+        language_display_name = LANGUAGE_CONFIG_NAMES[language]
 
         # Load only the 'dev' split (250 samples per language)
         dev_dataset = load_dataset(
-            path=repo_id,
-            name=config_name,
+            path=REPO_ID,
+            name=language_display_name.lower(),
             split="dev",
             token=True,
             trust_remote_code=True,  # required for facebook/multiloko loading script
