@@ -775,22 +775,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Was ist die Hauptstadt von Deutschland?\nAntwortmöglichkeiten:\na. München\nb. Hamburg\nc. Berlin\nd. Frankfurt",
-  "label": "c"
+    "text": "In welchem Bereich sammelte Reiner Calmund erste berufliche und sportliche Erfahrungen, die später für seine Tätigkeit als Manager bei Bayer 04 Leverkusen relevant wurden?\nAntwortmöglichkeiten:\na. Trainer\nb. Spielerberater\nc. Physiotherapeut\nd. Sportjournalist",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Welcher Fluss fließt durch Berlin?\nAntwortmöglichkeiten:\na. Rhein\nb. Elbe\nc. Spree\nd. Donau",
-  "label": "c"
+    "text": "Wie lange war Malu Dreyer Mitglied der SPD, als sie zum ersten Mal Landespräsidentin für den Wahlkreis Trier wurde?\nAntwortmöglichkeiten:\na. vierzehn Jahre\nb. elf Jahre\nc. sieben Jahre\nd. zwanzig Jahre",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Wer schrieb 'Faust'?\nAntwortmöglichkeiten:\na. Friedrich Schiller\nb. Heinrich Heine\nc. Johann Wolfgang von Goethe\nd. Thomas Mann",
-  "label": "c"
+    "text": "Wie lautet der Name des Jungen, der in der vierten Staffel der Fernsehserie „Bettys Diagnose“ zu sehen ist und der der Hauptfigur in der Schule das Leben schwer macht?\nAntwortmöglichkeiten:\na. Tim Weigel\nb. Lukas Kramer\nc. Frank Stern\nd. Jonas Becker",
+    "label": "c"
 }
 ```
 

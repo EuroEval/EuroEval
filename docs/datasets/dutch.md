@@ -751,22 +751,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Wat is de hoofdstad van Nederland?\nAntwoordopties:\na. Rotterdam\nb. Amsterdam\nc. Den Haag\nd. Utrecht",
-  "label": "b"
+    "text": "Wanneer maakten Twan Huys en Mark Rutte een Nederlandse versie van het Correspondents' Dinner, in de Beurs van Berlage?\nAntwoordopties:\na. 10-02-2024\nb. 15 maart 2017\nc. 5 november 2018\nd. 22 januari 2015",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Welke rivier stroomt door Amsterdam?\nAntwoordopties:\na. De Rijn\nb. De Maas\nc. De Amstel\nd. De Schelde",
-  "label": "c"
+    "text": "Bij welke zender maakte Patrick Martens het programma Supernick tussen 2007 en 2011?\nAntwoordopties:\na. AVROTROS\nb. Nickelodeon\nc. RTL 4\nd. SBS6",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Wie schreef het boek 'De aanslag'?\nAntwoordopties:\na. Harry Mulisch\nb. W.F. Hermans\nc. Gerard Reve\nd. Multatuli",
-  "label": "a"
+    "text": "Hoeveel doelpunten maakte Youri Mulder in zijn laatste seizoen voor FC Twente?\nAntwoordopties:\na. vier\nb. vijf\nc. Drie\nd. twee",
+    "label": "c"
 }
 ```
 

@@ -721,22 +721,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Qual è la capitale d'Italia?\nScelte:\na. Milano\nb. Napoli\nc. Roma\nd. Torino",
-  "label": "c"
+    "text": "Per quale squadra Leonardo Pavoletti ha segnato 24 gol nel campionato di Serie A 2013-2014?\nScelte:\na. Città di Varese SSD a RL\nb. US Sassuolo Calcio\nc. AS Livorno Calcio\nd. Modena FC",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Quale fiume scorre attraverso Roma?\nScelte:\na. Po\nb. Arno\nc. Tevere\nd. Adige",
-  "label": "c"
+    "text": "Chi era il presidente dei Giallorossi nel 1932?\nScelte:\na. Francesco Marini Dettina\nb. Renato Sacerdoti\nc. Italo Foschi\nd. Piero Boldrini",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Chi ha scritto 'La Divina Commedia'?\nScelte:\na. Francesco Petrarca\nb. Giovanni Boccaccio\nc. Dante Alighieri\nd. Ludovico Ariosto",
-  "label": "c"
+    "text": "Quale è la candidatura di riconoscimento mondiale che Emma Marrone ha ricevuto durante la sua carriera musicale?\nScelte:\na. Grammy Award\nb. MTV Europe Music Award\nc. World Music Award\nd. Brit Award",
+    "label": "c"
 }
 ```
 

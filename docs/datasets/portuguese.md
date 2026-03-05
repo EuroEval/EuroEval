@@ -587,22 +587,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Qual é a capital de Portugal?\nOpções:\na. Porto\nb. Coimbra\nc. Lisboa\nd. Braga",
-  "label": "c"
+    "text": "Qual foi a primeira faixa de telenovelas da Globo a ter produção em cores?\nOpções:\na. 10\nb. 13 horas\nc. 15 horas\nd. 18 horas",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Qual rio passa por Lisboa?\nOpções:\na. Douro\nb. Tejo\nc. Mondego\nd. Guadiana",
-  "label": "b"
+    "text": "Houve no Brasil alguma loteria anterior à Mega-Sena?\nOpções:\na. não existia jogo de loteria no Brasil antes da Mega-Sena\nb. sim\nc. não, a Mega-Sena foi a primeira loteria do Brasil\nd. não houve outras loterias além da Mega-Sena",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Quem escreveu 'Os Lusíadas'?\nOpções:\na. Fernando Pessoa\nb. Eça de Queirós\nc. Luís de Camões\nd. José Saramago",
-  "label": "c"
+    "text": "Qual foi o nome da primeira mulher de Jorge Fernando?\nOpções:\na. Sônia Regina\nb. Patrícia Soares\nc. Lúcia\nd. Maria Helena",
+    "label": "c"
 }
 ```
 

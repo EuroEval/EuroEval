@@ -637,22 +637,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Quelle est la capitale de la France?\nChoix:\na. Lyon\nb. Marseille\nc. Paris\nd. Bordeaux",
-  "label": "c"
+    "text": "Quel est le métier de la seconde femme de Joseph Ferdinand Cheval?\nChoix:\na. tailleuse\nb. couturière\nc. institutrice\nd. boulangère",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Quel fleuve traverse Paris?\nChoix:\na. La Loire\nb. La Seine\nc. Le Rhône\nd. La Garonne",
-  "label": "b"
+    "text": "Qui est le père des quatre enfants de Mercotte ?\nChoix:\na. Cyril Lignac\nb. Mercorelli\nc. Bernard Laurance\nd. Philippe Etchebest",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Qui a écrit 'Les Misérables'?\nChoix:\na. Gustave Flaubert\nb. Émile Zola\nc. Victor Hugo\nd. Alexandre Dumas",
-  "label": "c"
+    "text": "Dans le film de 2017120 Battements par minute, à quelle association sont rattachées les personnes qui répandent les cendres de Sean sur des petits-fours ?\nChoix:\na. AIDES\nb. SOS Homophobie\nc. Act Up– Paris\nd. Sidaction",
+    "label": "c"
 }
 ```
 

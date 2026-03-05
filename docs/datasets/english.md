@@ -791,22 +791,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "What is the capital city of the United States?\nChoices:\na. New York City\nb. Los Angeles\nc. Washington, D.C.\nd. Chicago",
-  "label": "c"
+    "text": "At age 16, what app was Jake Paul posting videos on?\nChoices:\na. Vine\nb. YouTube Shorts\nc. TikTok\nd. Instagram Reels",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Which river flows through the Grand Canyon?\nChoices:\na. Mississippi River\nb. Colorado River\nc. Missouri River\nd. Rio Grande",
-  "label": "b"
+    "text": "Which Fifty Shades book was published four months after the American film adaptation of the original novel?\nChoices:\na. Fifty Shades Darker\nb. Fifty Shades of Grey as Told by Christian\nc. Fifty Shades Freed\nd. Fifty Shades of Grey: The Official Movie Novelization",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Who wrote the Declaration of Independence?\nChoices:\na. George Washington\nb. Benjamin Franklin\nc. Thomas Jefferson\nd. John Adams",
-  "label": "c"
+    "text": "The first three seasons of \"The Grand Tour\" TV series was similar in format to which existing TV program at the time?\nChoices:\na. Fifth Gear\nb. Wheeler Dealers\nc. Top Gear\nd. MotorWeek",
+    "label": "c"
 }
 ```
 

@@ -699,22 +699,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "¿Cuál es la capital de España?\nOpciones:\na. Barcelona\nb. Valencia\nc. Madrid\nd. Sevilla",
-  "label": "c"
+    "text": "¿En qué país fue patentado el \"birome\" antecesor del actual bolígrafo?\nOpciones:\na. Argentina\nb. España\nc. Estados Unidos\nd. México",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "¿Qué río atraviesa Madrid?\nOpciones:\na. Ebro\nb. Tajo\nc. Manzanares\nd. Guadalquivir",
-  "label": "c"
+    "text": "¿En qué siglo viajó Isabel Zendal desde el puerto de La Coruña en La Real Expedición Filantrópica de la Vacuna, expedición que llevaría la vacuna de la viruela a América?\nOpciones:\na. Siglo XVIII\nb. Siglo XIX\nc. Siglo XVII\nd. Siglo XX",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "¿Quién escribió 'Don Quijote de la Mancha'?\nOpciones:\na. Federico García Lorca\nb. Miguel de Cervantes\nc. Francisco de Quevedo\nd. Lope de Vega",
-  "label": "b"
+    "text": "¿Quién es la madre del primer hijo de Camilo Echeverri?\nOpciones:\na. Greeicy Rendón\nb. Tini Stoessel\nc. Evaluna Montaner\nd. Karol G",
+    "label": "c"
 }
 ```
 

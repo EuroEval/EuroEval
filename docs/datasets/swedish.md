@@ -792,22 +792,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Vilken stad är Sveriges huvudstad?\nSvarsalternativ:\na. Göteborg\nb. Malmö\nc. Stockholm\nd. Uppsala",
-  "label": "c"
+    "text": "Vilket språk talades när tv-serien Der Kommissar und das Meer visades i Sverige?\nSvarsalternativ:\na. Svenska\nb. Tyska\nc. Engelska\nd. Franska",
+    "label": "a"
 }
 ```
 
 ```json
 {
-  "text": "Vilken sjö är störst i Sverige?\nSvarsalternativ:\na. Vänern\nb. Vättern\nc. Mälaren\nd. Hjälmaren",
-  "label": "a"
+    "text": "Felix Sandman och Farah Abadi var programledare för musikhjälpen. Vem var den tredje som deltog?\nSvarsalternativ:\na. Molly Sandén\nb. Zackari\nc. Gina Dirawi\nd. Oscar Zia",
+    "label": "b"
 }
 ```
 
 ```json
 {
-  "text": "Vem skrev Pippi Långstrump?\nSvarsalternativ:\na. Selma Lagerlöf\nb. August Strindberg\nc. Astrid Lindgren\nd. Vilhelm Moberg",
-  "label": "c"
+    "text": "Vilket var det tredje landet utanför Sverige där Robin Olsen spelade klubblagsfotboll?\nSvarsalternativ:\na. Spanien\nb. Frankrike\nc. Italien\nd. Tyskland",
+    "label": "c"
 }
 ```
 
