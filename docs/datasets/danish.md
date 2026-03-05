@@ -100,22 +100,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Ord: brud\nKontekst: Der skete et brud på vandledningen.",
-  "label": "negative"
+    "text": "Ord: vinder\nKontekst: Umiddelbart efter lodtrækningen vil vinderne få gavekortet tilsendt",
+    "label": "positive"
 }
 ```
 
 ```json
 {
-  "text": "Ord: glæde\nKontekst: Hun følte stor glæde ved at se sine børn lege.",
-  "label": "positive"
+    "text": "Ord: nervebane\nKontekst: Næsten alle nervebaner krydser i den menneskelige hjernestamme",
+    "label": "neutral"
 }
 ```
 
 ```json
 {
-  "text": "Ord: hus\nKontekst: Vi bor i et hus på landet.",
-  "label": "neutral"
+    "text": "Ord: forrykt\nKontekst: Det er en forrykt situation. Det midaldrende par har tilbragt et år i et rum på seks kvadratmeter",
+    "label": "negative"
 }
 ```
 
