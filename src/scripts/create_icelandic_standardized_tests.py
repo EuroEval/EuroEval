@@ -3,27 +3,38 @@
 # dependencies = [
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
+#     "openai==1.66.5",
 #     "pandas==2.2.0",
 #     "pymupdf==1.25.3",
+#     "pydantic==2.6.0",
+#     "python-dotenv==1.0.1",
 #     "requests==2.32.3",
 # ]
 # ///
 
 """Create the Icelandic standardized tests datasets and upload to HF Hub."""
 
+import base64
 import io
 import logging
-import re
+import os
 
 import fitz
 import pandas as pd
 import requests
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split
+from dotenv import load_dotenv
 from huggingface_hub import HfApi
+from openai import OpenAI
+from pydantic import BaseModel
+
+load_dotenv()
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_icelandic_standardized_tests")
+
+GPT_MODEL = "gpt-4.1"
 
 
 # Each entry is (year, subject, [question_urls], answers_url).
@@ -273,8 +284,52 @@ TEST_PDFS: list[tuple[str, str, list[str], str]] = [
 LABEL_LETTERS = ["a", "b", "c", "d"]
 
 
+# Pydantic models for structured GPT output ---------------------------------
+
+
+class McOption(BaseModel):
+    """A single multiple-choice option."""
+
+    a: str
+    b: str
+    c: str
+    d: str
+
+
+class McQuestion(BaseModel):
+    """A single multiple-choice question with four options."""
+
+    number: int
+    question: str
+    options: McOption
+
+
+class QuestionList(BaseModel):
+    """All multiple-choice questions extracted from a question booklet."""
+
+    questions: list[McQuestion]
+
+
+class AnswerEntry(BaseModel):
+    """A single answer-key entry."""
+
+    number: int
+    answer: str
+
+
+class AnswerKey(BaseModel):
+    """Complete answer key extracted from a marking guide."""
+
+    answers: list[AnswerEntry]
+
+
+# ---------------------------------------------------------------------------
+
+
 def main() -> None:
     """Create the Icelandic standardized tests datasets and upload to HF Hub."""
+    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
     all_is_samples: list[dict] = []
     all_math_samples: list[dict] = []
 
@@ -292,6 +347,12 @@ def main() -> None:
             )
             continue
 
+        try:
+            answer_key = extract_answer_key(pdf_bytes=answers_pdf, client=client)
+        except Exception as e:
+            logger.warning(f"Failed to extract answer key for {subject} {year}: {e}")
+            continue
+
         combined_samples: list[dict] = []
         for q_url in question_urls:
             try:
@@ -303,17 +364,29 @@ def main() -> None:
                 )
                 continue
             try:
-                samples = extract_multiple_choice_questions(
-                    test_pdf=test_pdf,
-                    answers_pdf=answers_pdf,
-                    year=year,
-                    subject=subject,
-                )
-                combined_samples.extend(samples)
+                questions = extract_questions(pdf_bytes=test_pdf, client=client)
             except Exception as e:
                 logger.warning(
                     f"Failed to extract questions from {subject} {year} ({q_url}): {e}"
                 )
+                continue
+
+            for q in questions:
+                correct = answer_key.get(q.number, "")
+                if correct not in LABEL_LETTERS:
+                    continue
+                text = format_question_text(
+                    question=q.question,
+                    options={
+                        "a": q.options.a,
+                        "b": q.options.b,
+                        "c": q.options.c,
+                        "d": q.options.d,
+                    },
+                )
+                if text is None:
+                    continue
+                combined_samples.append({"text": text, "label": correct, "year": year})
 
         if subject == "is":
             all_is_samples.extend(combined_samples)
@@ -334,8 +407,7 @@ def main() -> None:
 
         logger.info(f"Total {subject} samples after deduplication: {len(df)}")
 
-        # Create splits (use all available data, keeping test years separate)
-        # Use the oldest year(s) for train, middle year(s) for val, newest for test
+        # Create splits based on year: oldest → train, middle → val, newest → test.
         years = sorted(df["year"].unique())
         test_years = years[-2:] if len(years) >= 3 else years[-1:]
         val_years = years[-3:-2] if len(years) >= 3 else []
@@ -347,7 +419,7 @@ def main() -> None:
             df[df["year"].isin(train_years)].copy() if train_years else pd.DataFrame()
         )
 
-        # If we don't have enough splits, fall back to random splitting
+        # Fall back to random splitting if year-based splits are incomplete.
         if len(train_df) == 0 or len(val_df) == 0:
             logger.warning(
                 f"Not enough years for clean splits for {subject}. "
@@ -364,7 +436,6 @@ def main() -> None:
                 test_size + val_size : test_size + val_size + train_size
             ].copy()
 
-        # Keep only the necessary columns
         train_df = train_df[["text", "label"]].reset_index(drop=True)
         val_df = val_df[["text", "label"]].reset_index(drop=True)
         test_df = test_df[["text", "label"]].reset_index(drop=True)
@@ -407,155 +478,126 @@ def download_pdf(url: str) -> bytes:
     return response.content
 
 
-def extract_multiple_choice_questions(
-    test_pdf: bytes, answers_pdf: bytes, year: str, subject: str
-) -> list[dict]:
-    """Extract multiple-choice questions from a test PDF and its answers PDF.
-
-    Args:
-        test_pdf:
-            The bytes of the test PDF.
-        answers_pdf:
-            The bytes of the answers PDF.
-        year:
-            The year of the test.
-        subject:
-            The subject of the test ("is" for Icelandic, "math" for mathematics).
-
-    Returns:
-        A list of dicts with keys "text", "label", and "year".
-    """
-    test_text = extract_text_from_pdf(pdf_bytes=test_pdf)
-    answers_text = extract_text_from_pdf(pdf_bytes=answers_pdf)
-
-    answer_key = parse_answer_key(answers_text=answers_text)
-    questions = parse_multiple_choice_questions(test_text=test_text)
-
-    samples = []
-    for q_num, question_data in questions.items():
-        if q_num not in answer_key:
-            continue
-        correct_answer = answer_key[q_num].lower()
-        if correct_answer not in LABEL_LETTERS:
-            continue
-        text = format_question_text(
-            question=question_data["question"], options=question_data["options"]
-        )
-        if text is None:
-            continue
-        samples.append({"text": text, "label": correct_answer, "year": year})
-
-    return samples
-
-
-def extract_text_from_pdf(pdf_bytes: bytes) -> str:
-    """Extract the text content from a PDF.
+def pdf_to_images(pdf_bytes: bytes, dpi: int = 150) -> list[str]:
+    """Render each page of a PDF as a base64-encoded PNG string.
 
     Args:
         pdf_bytes:
             The PDF content as bytes.
+        dpi:
+            Resolution for rendering (higher = better quality, larger payload).
 
     Returns:
-        The extracted text content.
+        A list of base64-encoded PNG strings, one per page.
     """
+    images: list[str] = []
+    zoom = dpi / 72  # fitz default is 72 dpi
+    mat = fitz.Matrix(zoom, zoom)
     with fitz.open(stream=io.BytesIO(pdf_bytes), filetype="pdf") as doc:
-        text_parts = []
         for page in doc:
-            text_parts.append(page.get_text())
-    return "\n".join(text_parts)
+            pix = page.get_pixmap(matrix=mat)
+            png_bytes = pix.tobytes("png")
+            images.append(base64.b64encode(png_bytes).decode("utf-8"))
+    return images
 
 
-def parse_answer_key(answers_text: str) -> dict[int, str]:
-    """Parse the answer key from the answers PDF text.
+def _images_to_content(images: list[str]) -> list[dict]:
+    """Build the image content blocks for an OpenAI vision message.
 
     Args:
-        answers_text:
-            The text extracted from the answers PDF.
+        images:
+            Base64-encoded PNG strings (one per PDF page).
 
     Returns:
-        A dict mapping question number to the correct answer letter.
+        A list of content dicts with type ``"image_url"``.
     """
-    answer_key: dict[int, str] = {}
-    # Match patterns like "1. a", "1) a", "1: a", "1 a", "1.a" etc.
-    # Also handles answers in tables or listed formats
-    patterns = [
-        r"(?:^|\n)\s*(\d+)[.):\s]+([a-dA-D])\b",
-        r"(?:^|\n)\s*(\d+)\s*[-–]\s*([a-dA-D])\b",
+    return [
+        {
+            "type": "image_url",
+            "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "high"},
+        }
+        for b64 in images
     ]
-    for pattern in patterns:
-        matches = re.findall(pattern=pattern, string=answers_text, flags=re.MULTILINE)
-        for q_num_str, answer in matches:
-            q_num = int(q_num_str)
-            if q_num not in answer_key:
-                answer_key[q_num] = answer.lower()
-    return answer_key
 
 
-def parse_multiple_choice_questions(test_text: str) -> dict[int, dict]:
-    """Parse multiple-choice questions from the test PDF text.
+def extract_questions(pdf_bytes: bytes, client: OpenAI) -> list[McQuestion]:
+    """Use GPT-4.1 vision to extract multiple-choice questions from a question booklet.
 
     Args:
-        test_text:
-            The text extracted from the test PDF.
+        pdf_bytes:
+            The PDF bytes of the question booklet.
+        client:
+            An authenticated OpenAI client.
 
     Returns:
-        A dict mapping question number to a dict with "question" and "options" keys.
+        A list of McQuestion objects extracted from the booklet.
     """
-    questions: dict[int, dict] = {}
+    images = pdf_to_images(pdf_bytes=pdf_bytes)
 
-    # Split the text into lines for easier processing
-    lines = test_text.split("\n")
-    lines = [line.strip() for line in lines if line.strip()]
+    content: list[dict] = [
+        {
+            "type": "text",
+            "text": (
+                "These are pages from an Icelandic primary school exam booklet. "
+                "Please extract all multiple-choice questions that have exactly "
+                "four options labelled a, b, c, and d. "
+                "For each question return its number, the full question text, "
+                "and the text of each option. "
+                "Ignore any questions that do not have exactly four options. "
+                "Preserve the original Icelandic text exactly."
+            ),
+        },
+        *_images_to_content(images),
+    ]
 
-    i = 0
-    while i < len(lines):
-        # Look for a question number at the start of a line
-        q_match = re.match(r"^(\d+)[.)]\s*(.+)$", lines[i])
-        if not q_match:
-            i += 1
-            continue
+    completion = client.beta.chat.completions.parse(
+        model=GPT_MODEL,
+        messages=[{"role": "user", "content": content}],
+        response_format=QuestionList,
+    )
+    result = completion.choices[0].message.parsed
+    if result is None:
+        return []
+    return result.questions
 
-        q_num = int(q_match.group(1))
-        question_text = q_match.group(2).strip()
 
-        # Collect additional question lines until we hit options
-        i += 1
-        while i < len(lines):
-            # Check if this line starts an option
-            if re.match(r"^[a-dA-D][.)]\s*", lines[i]):
-                break
-            # Check if this line starts a new question
-            if re.match(r"^\d+[.)]\s*", lines[i]):
-                break
-            question_text += " " + lines[i]
-            i += 1
+def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, str]:
+    """Use GPT-4.1 vision to extract the answer key from a marking guide PDF.
 
-        # Collect options (a, b, c, d)
-        options: dict[str, str] = {}
-        while i < len(lines):
-            opt_match = re.match(r"^([a-dA-D])[.)]\s*(.+)$", lines[i])
-            if not opt_match:
-                break
-            opt_letter = opt_match.group(1).lower()
-            opt_text = opt_match.group(2).strip()
+    Args:
+        pdf_bytes:
+            The PDF bytes of the marking guide.
+        client:
+            An authenticated OpenAI client.
 
-            # Collect continuation lines for this option
-            i += 1
-            while i < len(lines):
-                if re.match(r"^[a-dA-D][.)]\s*", lines[i]):
-                    break
-                if re.match(r"^\d+[.)]\s*", lines[i]):
-                    break
-                opt_text += " " + lines[i]
-                i += 1
+    Returns:
+        A dict mapping question number (int) to the correct answer letter (a–d).
+    """
+    images = pdf_to_images(pdf_bytes=pdf_bytes)
 
-            options[opt_letter] = opt_text
+    content: list[dict] = [
+        {
+            "type": "text",
+            "text": (
+                "These are pages from an Icelandic primary school exam marking guide "
+                "(matsreglur). Please extract the answer key for all multiple-choice "
+                "questions. For each question return its number and the single correct "
+                "answer letter (a, b, c, or d). "
+                "Only include questions whose answer is a single letter a–d."
+            ),
+        },
+        *_images_to_content(images),
+    ]
 
-        # Only keep questions with exactly 4 options (a, b, c, d)
-        if set(options.keys()) == {"a", "b", "c", "d"}:
-            questions[q_num] = {"question": question_text.strip(), "options": options}
-
-    return questions
+    completion = client.beta.chat.completions.parse(
+        model=GPT_MODEL,
+        messages=[{"role": "user", "content": content}],
+        response_format=AnswerKey,
+    )
+    result = completion.choices[0].message.parsed
+    if result is None:
+        return {}
+    return {entry.number: entry.answer.lower() for entry in result.answers}
 
 
 def format_question_text(question: str, options: dict[str, str]) -> str | None:
