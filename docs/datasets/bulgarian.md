@@ -388,6 +388,75 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset exams-bg
 ```
 
+### Unofficial: INCLUDE-bg
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Първият от два монохроматични източника на светлина излъчва сноп с дължина на вълната nm 630λ1 = , а вторият – с nm 450λ2 = . По тези данни можем да твърдим, че двата снопа са:\nВъзможности:\na. с различен цвят\nb. кохерентни\nc. с еднакъв цвят\nd. успоредни",
+    "label": "a",
+    "subject": "Physics"
+}
+```
+
+```json
+{
+    "text": "При кой тип стопанство решенията за производство се взимат в зависимост от  регулиращата роля на пазара, в условията на конкуренция и свободна лична   инициатива?\nВъзможности:\na. централизирано\nb. пазарно\nc. аграрно\nd. натурално",
+    "label": "b",
+    "subject": "Geography"
+}
+```
+
+```json
+{
+    "text": "Теорията, която приема генетичния фактор за основен при формирането на личността, наричаме:\nВъзможности:\na. социогенетична\nb. когнитивна\nc. биогенетична\nd. психогенегична",
+    "label": "c",
+    "subject": "Philosophy"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Следват въпроси с множествен избор (с отговори).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Въпрос: {text}
+  Отговор: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Въпрос: {text}
+
+  Отговорете на горния въпрос като отговорите с {labels_str}, и нищо друго.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-bg
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-bg

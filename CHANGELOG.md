@@ -16,10 +16,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   unofficial for now. This was added by @N-essuno ✨
 - A new natural language inference task has been added, including the Danish
   Entailment Dataset (ID is `danish-entailment`) and the Danish Lexical Inference
-  Dataset (ID is `danish-lexical-inference`).
-- Added the new Danish Word in Context dataset DanWiC. It's marked as unofficial for
-  now. This is based on the COR.SEM lexical resource and tests the ability to
-  distinguish word meanings/senses in context (ID is `danwic`).
+  Dataset (ID is `danish-lexical-inference`). It is marked as unofficial for now.
+- Added a new Word-in-Context task, and added the new Danish Word in Context
+  dataset DanWiC (ID is `danwic`). It is marked as unofficial for now.
+- Added the [INCLUDE](https://huggingface.co/datasets/CohereLabs/include-base-44)
+  knowledge dataset for 17 languages: Albanian, Bulgarian, Croatian, Dutch, Estonian,
+  Finnish, French, German, Greek, Hungarian, Italian, Lithuanian, Polish, Portuguese,
+  Serbian, Spanish, and Ukrainian. All are marked as unofficial for now.
 - Added the new Danish Sentiment in Context dataset, part of the [Danish Semantic
   Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
   It measures the sentiment of individual words in context (ID is
@@ -44,6 +47,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Evaluating older OpenAI models, such as `gpt-3.5-turbo-1106`, crashed the evaluation
   due to them not supporting structured generation - this is handled gracefully now.
   This was fixed by @Rijgersberg ✨
+- The documentation incorrectly stated that the primary metric for the Reading
+  Comprehension task is the Exact Match score. This has been corrected to the
+  character-level F1-score. This was fixed by @Rijgersberg ✨
 
 ## [v16.16.1] - 2026-02-25
 

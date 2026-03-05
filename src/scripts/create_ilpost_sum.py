@@ -11,11 +11,10 @@
 """Create the ilpost summarisation dataset."""
 
 import pandas as pd
+from constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 from datasets import Dataset, DatasetDict, Split
 from datasets.load import load_dataset
 from huggingface_hub import HfApi
-
-from .constants import MAX_NUM_CHARS_IN_ARTICLE, MIN_NUM_CHARS_IN_ARTICLE
 
 
 def main() -> None:

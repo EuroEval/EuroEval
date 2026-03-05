@@ -15,10 +15,7 @@ import re
 from collections import Counter
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
-from huggingface_hub import HfApi
-
-from .constants import (
+from constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -26,6 +23,8 @@ from .constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
+from datasets import Dataset, DatasetDict, Split, disable_progress_bars, load_dataset
+from huggingface_hub import HfApi
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger("create_winogrande")
