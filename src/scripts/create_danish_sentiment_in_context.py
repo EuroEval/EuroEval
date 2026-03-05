@@ -34,7 +34,7 @@ def main() -> None:
     # Extract the TSV file from the ZIP
     with ZipFile(file=io.BytesIO(initial_bytes=response.content)) as zip_file:
         tsv_files = [
-            zip_file.read(name=file_name)
+            zip_file.read(name=file_name, pwd=b"benchmark")
             for file_name in zip_file.namelist()
             if file_name.endswith(".tsv")
         ]
