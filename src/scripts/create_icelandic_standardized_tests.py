@@ -329,6 +329,7 @@ class AnswerKey(BaseModel):
 
 def main() -> None:
     """Create the Icelandic standardized tests datasets and upload to HF Hub."""
+    logging.getLogger("httpx").setLevel(logging.CRITICAL)
     client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
     all_is_samples: list[dict] = []
