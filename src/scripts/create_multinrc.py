@@ -53,11 +53,17 @@ def main() -> None:
     """Create the MultiNRC datasets and upload them to the HF Hub."""
     repo_id = "ScaleAI/MultiNRC"
 
-    for language in LANGUAGE_SUBSET_MAPPING.keys():
-        subset = LANGUAGE_SUBSET_MAPPING[language]
+    # The dataset has a single subset; load it once and filter per language
+    full_dataset = load_dataset(path=repo_id, split="test", token=True)
+    assert isinstance(full_dataset, Dataset)
 
-        # Load the dataset (only a test split is available)
-        dataset = load_dataset(path=repo_id, name=subset, split="test", token=True)
+    for language in LANGUAGE_SUBSET_MAPPING.keys():
+        language_name = LANGUAGE_SUBSET_MAPPING[language].capitalize()
+
+        # Filter by the 'language' column (values are e.g. 'Spanish', 'French')
+        dataset = full_dataset.filter(
+            lambda row, lang=language_name: row["language"] == lang
+        )
         assert isinstance(dataset, Dataset)
 
         # Build the multiple choice dataset using a language model
