@@ -1884,22 +1884,29 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "@olavelg @TrollkrittIda Om noen vet hvor på Torshov de har Tamarind Paste, si fra så jeg også kan bære med å leke.",
-  "label": "bokmål"
+    "text": "@jkBaltzersen @nitaSmartAnd @sgaarder Vi har en lokal revy (opp til flere, men en av dem har jeg sett), og de klarer hvert år å parodiere forskjellige personer som har en rolle i lokalsamfunnet eller stukket hodet frem i avisen. Ikke alle er maktpersoner, og ikke alt like morsomt. Samtidig er det humor.",
+    "label": "bokmål"
 }
 ```
 
 ```json
 {
-  "text": "@kiheger Eg skal bidra med 700 kroner i ekstra etter heving av frikortgrensa",
-  "label": "nynorsk"
+    "text": "@elfhybrid_ -Halda fram med spanskvedlikehald\n-Øva meir på andre språk eg kan litt, kanskje tysk eller russisk, og/eller byrja læra islandsk eller skotsk-gælisk som eg har hatt lyst å læra i årevis\n-Ha tantungar på overnatting oftare\n-Øva meg på å høyra etter når kroppen seier nei",
+    "label": "nynorsk"
 }
 ```
 
 ```json
 {
-  "text": "@Robert_Haug @PetterSateroy mest usannsynlige med denna videoen e hentydninga til at d e gangavstand mellom NÅN steda i Nord-Norge, smh.",
-  "label": "dialectal"
+    "text": "@FANTonsen @mimirk Æ ha egenhendig bygd to vindmøllparka.\nÅ kolles innvestorkapitaln trikse med skatt og tillskudd, imens vi gi dem våre ressursa.\nUnnskyld mæ, triksing med tall. Det by mæ imot.",
+    "label": "dialectal"
+}
+```
+
+```json
+{
+    "text": "@RekstadYvind Når ein har andre avvik så er det \"favorable genetic profile\", men når ei svart kvinne har det er det eit biologisk overtramp, eit hån mot sporten, og ho er eigentleg mann. Det er så dårleg skjult det dei driv med. https://t.co/fWRduJAloo",
+    "label": "mixed"
 }
 ```
 
