@@ -374,7 +374,7 @@ def main() -> None:
                 )
                 continue
             try:
-                passage, questions = extract_questions(
+                output = extract_questions(
                     pdf_bytes=test_pdf,
                     client=client,
                     subject=subject,
@@ -386,6 +386,16 @@ def main() -> None:
                 )
                 continue
 
+            questions: list[McQuestion] | list[McQuestionWithPassage]
+            if subject == "is":
+                passages: list[GeneralReadingPassage] = output.passages
+                questions = output.questions
+                for question in questions:
+                    passage = next((p for p in passages if p.id == question.passage_id))
+                    question.question = f"{passage.text}\n\n{question.question}"
+            else:
+                questions = output.questions
+
             for q in questions:
                 correct = answer_key.get(q.number, "")
                 if correct not in LABEL_LETTERS:
@@ -394,11 +404,8 @@ def main() -> None:
                         f"answer key for {subject} {year}"
                     )
                     continue
-                question_text = q.question
-                if subject == "is" and passage:
-                    question_text = f"{passage}\n\n{question_text}"
                 text = format_question_text(
-                    question=question_text,
+                    question=q.question,
                     options={
                         "a": q.options.a,
                         "b": q.options.b,
@@ -616,7 +623,7 @@ def extract_questions(
     result = completion.choices[0].message.parsed
     if result is None:
         return "", []
-    return result.passage, result.questions
+    return result
 
 
 def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, str]:
@@ -673,17 +680,10 @@ def format_question_text(question: str, options: dict[str, str]) -> str | None:
     """
     if not question or len(question) < 10:
         return None
-    if not all(options.get(letter) for letter in LABEL_LETTERS):
-        return None
 
     choices_label = CHOICES_MAPPING["is"]
-    text = (
-        f"{question}\n"
-        f"{choices_label}:\n"
-        f"a. {options['a']}\n"
-        f"b. {options['b']}\n"
-        f"c. {options['c']}\n"
-        f"d. {options['d']}"
+    text = f"{question}\n{choices_label}:\n\n".join(
+        [f"{letter}. {option}" for letter, option in options.items()]
     )
     return text
 
