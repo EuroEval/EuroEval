@@ -99,8 +99,8 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     # Rename the columns
     df = df.rename(columns=dict(question="instruction"))
 
-    # Make the answer uppercase
-    df["label"] = df["answer"].str.upper()
+    # Make the answer lowercase
+    df["label"] = df["answer"].str.lower()
 
     # Expand the options list into individual columns (fill None for missing options)
     for i, letter in enumerate(OPTION_LABELS):

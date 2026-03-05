@@ -149,7 +149,7 @@ MMLU_PRO_CONFIG = DatasetConfig(
     source="EuroEval/mmlu-pro-mini",
     task=KNOW,
     languages=[ENGLISH],
-    labels=["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
+    labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
     unofficial=True,
 )
 
