@@ -25,7 +25,6 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
-NUM_OPTIONS = 10
 OPTION_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]
 
 
@@ -103,12 +102,11 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     # Make the answer uppercase
     df["label"] = df["answer"].str.upper()
 
-    # Only keep questions with exactly NUM_OPTIONS options
-    df = df[df["options"].apply(len) == NUM_OPTIONS]
-
-    # Expand the options list into individual columns
+    # Expand the options list into individual columns (fill None for missing options)
     for i, letter in enumerate(OPTION_LABELS):
-        df[f"option_{letter}"] = df["options"].apply(lambda opts, idx=i: opts[idx])
+        df[f"option_{letter}"] = df["options"].apply(
+            lambda opts, idx=i: opts[idx] if idx < len(opts) else None
+        )
 
     # Remove the samples with overly short or long texts
     option_cols = [f"option_{letter}" for letter in OPTION_LABELS]
@@ -116,8 +114,10 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
         df.instruction.str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION
     )
     for col in option_cols:
-        length_filter &= (df[col].str.len() >= MIN_NUM_CHARS_IN_OPTION) & (
-            df[col].str.len() <= MAX_NUM_CHARS_IN_OPTION
+        present = df[col].notna()
+        length_filter &= ~present | (
+            (df[col].str.len() >= MIN_NUM_CHARS_IN_OPTION)
+            & (df[col].str.len() <= MAX_NUM_CHARS_IN_OPTION)
         )
     df = df[length_filter]
 
@@ -129,7 +129,10 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     # Remove overly repetitive samples
     repetition_filter = ~df.instruction.apply(is_repetitive)
     for col in option_cols:
-        repetition_filter &= ~df[col].apply(is_repetitive)
+        present = df[col].notna()
+        repetition_filter &= ~present | ~df[col].apply(
+            lambda x: is_repetitive(x) if pd.notna(x) else False
+        )
     df = df[repetition_filter]
 
     # Make a `text` column with all the options in it
@@ -140,6 +143,7 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
         + "\n".join(
             f"{letter}. " + row[f"option_{letter}"].replace("\n", " ").strip()
             for letter in OPTION_LABELS
+            if pd.notna(row[f"option_{letter}"])
         )
         for _, row in df.iterrows()
     ]
