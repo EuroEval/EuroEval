@@ -20,6 +20,23 @@ VAL_SIZE = 128
 RANDOM_STATE = 4242
 
 
+def main() -> None:
+    """Create the Schibsted title datasets and upload to HF Hub."""
+    # Norwegian front-page title dataset (VG newsroom)
+    process_title_dataset(
+        source_dataset_id="Schibsted/vg-front-title",
+        title_column="front_title",
+        euroeval_dataset_id="EuroEval/vg-front-title",
+    )
+
+    # Swedish SEO title dataset (SVD newsroom)
+    process_title_dataset(
+        source_dataset_id="Schibsted/svd-seo-title",
+        title_column="google_title",
+        euroeval_dataset_id="EuroEval/svd-seo-title",
+    )
+
+
 def process_title_dataset(
     source_dataset_id: str, title_column: str, euroeval_dataset_id: str
 ) -> None:
@@ -43,7 +60,7 @@ def process_title_dataset(
 
     # Rename article text and title columns to text and target_text
     dataset = dataset.rename_columns(
-        column_mapping={"article_text_all": "text", title_column: "target_text"}
+        column_mapping={"article_text": "text", title_column: "target_text"}
     )
 
     # Convert to pandas and filter by article length
@@ -91,23 +108,6 @@ def process_title_dataset(
 
     HfApi().delete_repo(euroeval_dataset_id, repo_type="dataset", missing_ok=True)
     result.push_to_hub(euroeval_dataset_id, private=True)
-
-
-def main() -> None:
-    """Create the Schibsted title datasets and upload to HF Hub."""
-    # Norwegian front-page title dataset (VG newsroom)
-    process_title_dataset(
-        source_dataset_id="Schibsted/vg-front-title",
-        title_column="front_title",
-        euroeval_dataset_id="EuroEval/vg-front-title",
-    )
-
-    # Swedish SEO title dataset (SVD newsroom)
-    process_title_dataset(
-        source_dataset_id="Schibsted/svd-seo-title",
-        title_column="seo_title",
-        euroeval_dataset_id="EuroEval/svd-seo-title",
-    )
 
 
 if __name__ == "__main__":
