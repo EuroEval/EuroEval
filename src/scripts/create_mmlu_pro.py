@@ -13,10 +13,6 @@
 from collections import Counter
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
-
 from constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
@@ -25,6 +21,9 @@ from constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
 
 NUM_OPTIONS = 10
 OPTION_LABELS = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
@@ -72,9 +71,7 @@ def main() -> None:
         additional_train_df = remaining_test_df.sample(
             additional_train_size, random_state=4242
         )
-        train_df = pd.concat(
-            [train_source_df, additional_train_df], ignore_index=True
-        )
+        train_df = pd.concat([train_source_df, additional_train_df], ignore_index=True)
     else:
         train_df = train_source_df
 
@@ -127,9 +124,9 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
 
     # Remove the samples with overly short or long texts
     option_cols = [f"option_{letter}" for letter in OPTION_LABELS]
-    length_filter = (
-        df.instruction.str.len() >= MIN_NUM_CHARS_IN_INSTRUCTION
-    ) & (df.instruction.str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION)
+    length_filter = (df.instruction.str.len() >= MIN_NUM_CHARS_IN_INSTRUCTION) & (
+        df.instruction.str.len() <= MAX_NUM_CHARS_IN_INSTRUCTION
+    )
     for col in option_cols:
         length_filter &= (df[col].str.len() >= MIN_NUM_CHARS_IN_OPTION) & (
             df[col].str.len() <= MAX_NUM_CHARS_IN_OPTION
