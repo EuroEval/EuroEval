@@ -11,13 +11,13 @@ from .logging_utils import log
 
 if t.TYPE_CHECKING:
     from .metrics import Metric
-    from .types import ScoreDict
+    from .types import IterationScores, ScoreDict
 
 
 def log_scores(
     dataset_name: str,
     metrics: c.Sequence["Metric"],
-    scores: c.Sequence[dict[str, float]],
+    scores: c.Sequence["IterationScores"],
     model_id: str,
     model_revision: str,
     model_param: str | None,
@@ -63,13 +63,19 @@ def log_scores(
             else f"- {metric.pretty_name}: {test_score_str}"
         )
         all_log_strs.append(log_str)
+    num_failed = 0
+    for dct in scores:
+        v = dct.get("failed_instances", [])
+        if isinstance(v, list):
+            num_failed += len(v)
+    total_dict["num_failed_instances"] = float(num_failed)
     log("\n".join(all_log_strs), level=logging.INFO)
 
     return dict(raw=scores, total=total_dict)
 
 
 def aggregate_scores(
-    scores: c.Sequence[dict[str, float]], metric: "Metric"
+    scores: c.Sequence["IterationScores"], metric: "Metric"
 ) -> tuple[float, float]:
     """Helper function to compute the mean with confidence intervals.
 
@@ -87,9 +93,13 @@ def aggregate_scores(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
 
-        test_scores = [
-            dct[metric.name] if metric.name in dct else dct[f"test_{metric.name}"]
+        test_scores: list[float] = [
+            v
             for dct in scores
+            for v in [
+                dct[metric.name] if metric.name in dct else dct[f"test_{metric.name}"]
+            ]
+            if isinstance(v, float)
         ]
         test_score = np.mean(test_scores).item()
 

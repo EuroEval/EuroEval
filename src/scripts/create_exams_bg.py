@@ -17,10 +17,9 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 import requests
+from constants import CHOICES_MAPPING  # noqa
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
-
-from .constants import CHOICES_MAPPING  # noqa
 
 
 def main() -> None:

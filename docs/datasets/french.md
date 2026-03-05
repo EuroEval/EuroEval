@@ -552,6 +552,75 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-fr
 ```
 
+### Unofficial: INCLUDE-fr
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Qui est le dernier Président de la IVème République ?\nChoix:\na. René Coty\nb. Félix Gaillard\nc. Charles de Gaulle\nd. Alain Poher",
+    "label": "a",
+    "subject": "History"
+}
+```
+
+```json
+{
+    "text": "Qui a réalisé le film « Léon » ?\nChoix:\na. Costa-Gavras\nb. Luc Besson\nc. Martin Scorsese\nd. Steven Spielberg",
+    "label": "b",
+    "subject": "Culturology"
+}
+```
+
+```json
+{
+    "text": "Pour consulter mon solde de points, je me rends sur le site internet :\nChoix:\na. Allopoints.\nb. Info-point.\nc. Telepoint.\nd. Point-permis.",
+    "label": "c",
+    "subject": "Driving License"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Les questions suivantes sont des questions à choix multiples (avec réponses).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Réponse: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Répondez à la question ci-dessus par {labels_str}, et rien d'autre.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-fr
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-fr

@@ -608,6 +608,75 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-et
 ```
 
+### Unofficial: INCLUDE-et
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Mis ülesandeid täidavad taimeorganid?  Seob taimeorganid ühtseks tervikuks\nVastusevariandid:\na. Vars\nb. Juur\nc. Leht\nd. Õis",
+    "label": "a",
+    "subject": "Biology"
+}
+```
+
+```json
+{
+    "text": "Vabariigi Valitsuse liikmed nimetab ametisse:\nVastusevariandid:\na. Riigikogu\nb. Vabariigi President\nc. õiguskantsler\nd. Riigikohus",
+    "label": "b",
+    "subject": "Public Administration"
+}
+```
+
+```json
+{
+    "text": "Vasta küsimustele.  Milline toodud väidetest iseloomustab kiltmaad?\nVastusevariandid:\na. Tasandik, kus madalikud vahelduvad kõrgustikega.\nb. Paikneb peamiselt mere või suure jõe ääres.\nc. Asub merepinnast kõrgemal kui 500 m.\nd. Tasandik, mille absoluutne kõrgus on kuni 200 m.",
+    "label": "c",
+    "subject": "Geography"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Järgnevad on vastusevariantidega küsimused (koos vastustega).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Küsimus: {text}
+  Vastus: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Küsimus: {text}
+
+  Vasta ülaltoodud küsimusele ainult {labels_str}, ja mitte millegi muuga.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-et
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-et
