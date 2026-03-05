@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   unofficial for now. This was added by @N-essuno ✨
 - Added the English knowledge dataset MMLU-Pro, marked as unofficial. This is a more
   robust and challenging version of MMLU with 10 answer options per question.
+- Added the MultiNRC knowledge dataset for English, French and Spanish. These are
+  marked as `unofficial` for now.
 - Added the Greek knowledge dataset GreekMMLU. The split is
   given by 1,024 / 256 / 2,048 samples for train / val / test, respectively.
   It is marked as `unofficial` for now.

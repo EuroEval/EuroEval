@@ -749,6 +749,61 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multiloko-es
 ```
 
+### Unofficial: MultiNRC-es
+
+This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2507.17476)
+and consists of native-authored reasoning questions designed to assess multilingual
+reasoning ability. Unlike benchmarks that simply translate English-centric content, the
+questions are crafted by native speakers to capture linguistic and cultural nuances.
+
+The original dataset only has a 'test' split. We use 64 samples for training, 128 for
+validation, and the rest for testing.
+
+Here are a few examples from the training split:
+
+```json
+
+```
+
+```json
+
+```
+
+```json
+
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pregunta: {text}
+  Respuesta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pregunta: {text}
+
+  Responda la pregunta anterior usando solo {labels_str}, y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multinrc-es
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-es
