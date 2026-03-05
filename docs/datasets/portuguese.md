@@ -571,6 +571,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset include-pt
 ```
 
+### Unofficial: MultiLoKo-pt
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
+Portuguese questions are separately sourced and designed to target locally relevant
+topics for Portuguese-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Qual foi a primeira faixa de telenovelas da Globo a ter produção em cores?\nOpções:\na. 10\nb. 13 horas\nc. 15 horas\nd. 18 horas",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "Houve no Brasil alguma loteria anterior à Mega-Sena?\nOpções:\na. não existia jogo de loteria no Brasil antes da Mega-Sena\nb. sim\nc. não, a Mega-Sena foi a primeira loteria do Brasil\nd. não houve outras loterias além da Mega-Sena",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "Qual foi o nome da primeira mulher de Jorge Fernando?\nOpções:\na. Sônia Regina\nb. Patrícia Soares\nc. Lúcia\nd. Maria Helena",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  As seguintes são perguntas de escolha múltipla (com respostas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pergunta: {text}
+  Resposta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pergunta: {text}
+
+  Responde à pergunta acima usando só 'a', 'b', 'c' ou 'd', e nada mais.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-pt
+```
+
 ## Common-sense Reasoning
 
 ### GoldenSwag-pt
