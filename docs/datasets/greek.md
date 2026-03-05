@@ -449,9 +449,9 @@ multiple-choice questions across 45 subject areas sourced from academic, profess
 and governmental exams in Greece. Unlike machine-translated benchmarks, all questions
 are originally authored or sourced in Greek.
 
-The publicly released dataset consists of 16,857 samples. We use 1,024 / 256 / 2,048
-samples for our training, validation and test splits, respectively (so 3,328 samples
-used in total).
+The publicly released dataset includes a 'dev' split and a 'test' split. We use the
+'dev' split as the training split (up to 1,024 samples), and sample 256 / 2,048 samples
+from the 'test' split for our validation and test splits, stratified by subject.
 
 Here are a few examples from the training split:
 
