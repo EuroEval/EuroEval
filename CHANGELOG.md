@@ -63,6 +63,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Evaluation on AMD/ROCm hardware (e.g., LUMI) was broken due to two NVIDIA-specific
+  checks being applied unconditionally. The `flash_attn` conflict check no longer
+  triggers `sys.exit` on ROCm, and the `nvcc` presence check is now skipped on ROCm
+  hardware since AMD uses HIP tooling instead.
 - There was an issue with caching of answers by generative models when evaluating them
   on NER tasks - this has now been fixed. This was fixed by @Rijgersberg ✨
 - Evaluating older OpenAI models, such as `gpt-3.5-turbo-1106`, crashed the evaluation
