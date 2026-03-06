@@ -171,7 +171,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
 
-        if torch.cuda.is_available() and torch.version.hip is None and shutil.which("nvcc") is None:
+        if (
+            torch.cuda.is_available()
+            and torch.version.hip is None
+            and shutil.which("nvcc") is None
+        ):
             raise NeedsSystemDependency(
                 dependency="nvcc",
                 instructions=(

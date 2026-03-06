@@ -33,9 +33,9 @@ logging.basicConfig(
 # STAGE 2 ###
 # Check for incompatible packages ###
 
-# Throw informative error if `flash_attn` is installed, but only on NVIDIA hardware.
-# On AMD/ROCm hardware the package does not cause the same conflicts, so we skip the
-# check to allow evaluation to proceed (vLLM will fall back to TRITON_ATTN there).
+# Throw informative error if `flash_attn` is installed on non-ROCm PyTorch builds.
+# On ROCm builds the package does not cause the same conflicts, so we skip this check
+# to allow evaluation to proceed (vLLM will fall back to TRITON_ATTN there).
 if importlib.util.find_spec("flash_attn") is not None:
     try:
         import torch as _torch
