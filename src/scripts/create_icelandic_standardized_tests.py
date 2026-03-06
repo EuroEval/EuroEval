@@ -604,6 +604,8 @@ def extract_questions(
                 "Please extract all multiple-choice questions. For each question "
                 "return the full question text, and the text of each option. "
                 f"{passage_instruction}"
+                "If a question has an associated image which is required to be able "
+                "to answer the question, skip the question. "
                 "Preserve the original Icelandic text exactly."
             ),
         },
