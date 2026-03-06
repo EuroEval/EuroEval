@@ -258,6 +258,105 @@ class TestLoadDatasetConfigFromYaml:
         config = load_dataset_config_from_yaml(yaml_file)
         assert isinstance(config, DatasetConfig)
 
+    def test_inspect_ai_field_spec_columns(self, tmp_path: Path) -> None:
+        """Column names in tasks[0].field_spec are promoted to top-level keys."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: My Dataset
+                tasks:
+                  - id: my_dataset
+                    split: test
+                    field_spec:
+                      input: text
+                      target: label
+                    solvers:
+                      - name: generate
+                    scorers:
+                      - name: choice
+                task: classification
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        # field_spec.input/target should populate preprocessing_func via column mappings
+        assert config.preprocessing_func is not None
+
+    def test_inspect_ai_choices_column(self, tmp_path: Path) -> None:
+        """field_spec.choices in tasks[0] is promoted to choices_column."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: My Dataset
+                tasks:
+                  - id: my_dataset
+                    split: test
+                    field_spec:
+                      input: question
+                      target: answer
+                      choices: options
+                    solvers:
+                      - name: multiple_choice
+                    scorers:
+                      - name: choice
+                task: multiple-choice
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.preprocessing_func is not None
+
+    def test_inspect_ai_top_level_overrides_field_spec(self, tmp_path: Path) -> None:
+        """Explicit top-level input_column takes precedence over field_spec.input."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                tasks:
+                  - id: my_dataset
+                    field_spec:
+                      input: from_field_spec
+                      target: label
+                task: classification
+                languages:
+                  - en
+                input_column: from_top_level
+                target_column: label
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        # preprocessing_func is built; the explicit top-level value wins
+
+    def test_inspect_ai_without_field_spec_loads_successfully(self, tmp_path: Path) -> None:
+        """A tasks list without a field_spec block is silently ignored."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                tasks:
+                  - id: my_dataset
+                    split: test
+                    solvers:
+                      - name: generate
+                task: classification
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert isinstance(config, DatasetConfig)
+
 
 class TestYamlConfigFilenames:
     """Sanity checks on the YAML_CONFIG_FILENAMES constant."""

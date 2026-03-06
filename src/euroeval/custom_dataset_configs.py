@@ -62,7 +62,15 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
     keys are optional and correspond to the parameters of
     :class:`~euroeval.data_models.DatasetConfig`.
 
-    Example YAML config::
+    The file can follow the `Inspect AI eval.yaml format
+    <https://inspect.aisi.org.uk/tasks.html#hugging-face>`_ — specifically, column
+    mappings may be specified via a ``tasks[0].field_spec`` block (using the
+    ``input``, ``target`` and ``choices`` sub-keys) in addition to the flat
+    ``input_column`` / ``target_column`` / ``choices_column`` syntax.  The
+    EuroEval-specific ``task`` and ``languages`` keys must always be present at the
+    top level; Inspect AI simply ignores keys it does not recognise.
+
+    Example — EuroEval flat format::
 
         task: classification
         languages:
@@ -70,6 +78,25 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
         labels:
           - positive
           - negative
+
+    Example — Inspect AI compatible format::
+
+        # eval.yaml (compatible with Inspect AI)
+        name: My Dataset
+        tasks:
+          - id: my_dataset
+            split: test
+            field_spec:
+              input: text
+              target: label
+            solvers:
+              - name: multiple_choice
+            scorers:
+              - name: choice
+        # EuroEval-specific keys (required; ignored by Inspect AI)
+        task: multiple-choice
+        languages:
+          - en
 
     Supported task names are the ``name`` attributes of all task objects defined in
     :mod:`euroeval.tasks` (e.g. ``classification``, ``sentiment-classification``,
@@ -119,6 +146,26 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
             level=logging.ERROR,
         )
         return None
+
+    # ------------------------------------------------------------------
+    # Inspect AI compatibility: promote column names from
+    # ``tasks[0].field_spec`` (input/target/choices) into top-level keys
+    # when they are not already explicitly set.  This lets the same file
+    # be parsed by both Inspect AI and EuroEval.
+    # ------------------------------------------------------------------
+    tasks_raw: Any = raw.get("tasks")
+    if isinstance(tasks_raw, list) and tasks_raw:
+        first_task = tasks_raw[0]
+        if isinstance(first_task, dict):
+            field_spec: Any = first_task.get("field_spec")
+            if isinstance(field_spec, dict):
+                for inspect_key, euroeval_key in (
+                    ("input", "input_column"),
+                    ("target", "target_column"),
+                    ("choices", "choices_column"),
+                ):
+                    if inspect_key in field_spec and euroeval_key not in raw:
+                        raw[euroeval_key] = field_spec[inspect_key]
 
     # --- required fields ---
 

@@ -359,6 +359,35 @@ prompt_label_mapping:
   negative: negative
 ```
 
+The `eval.yaml` format is also compatible with
+[Inspect AI](https://inspect.aisi.org.uk/tasks.html#hugging-face).  Column names can
+be supplied either as flat top-level keys (shown above) **or** inside a
+`tasks[0].field_spec` block using the Inspect AI `input` / `target` / `choices`
+sub-keys — whichever is present takes precedence.  The EuroEval-specific `task` and
+`languages` keys must always be present at the top level; Inspect AI silently ignores
+keys it does not recognise.
+
+```yaml title="eval.yaml"
+# Inspect AI compatible eval.yaml
+name: My Dataset
+description: My dataset description.
+tasks:
+  - id: my_dataset
+    split: test
+    field_spec:
+      input: text
+      target: label
+      choices: options
+    solvers:
+      - name: multiple_choice
+    scorers:
+      - name: choice
+# EuroEval-specific keys (required for EuroEval; ignored by Inspect AI)
+task: multiple-choice
+languages:
+  - en
+```
+
 You can then benchmark your custom dataset by simply running
 
 ```bash
