@@ -239,37 +239,61 @@ class TestBenchmarkResult:
     def test_append_to_results(
         self, benchmark_result: BenchmarkResult, results_path: Path
     ) -> None:
-        """Test that `BenchmarkResult.append_to_results` works as expected."""
+        """Test that `BenchmarkResult.append_to_results` writes valid EEE format."""
         results_path.unlink(missing_ok=True)
         results_path.touch(exist_ok=True)
 
         benchmark_result.append_to_results(results_path=results_path)
-        json_str = json.dumps(
-            dict(
-                dataset=benchmark_result.dataset,
-                task=benchmark_result.task,
-                languages=benchmark_result.languages,
-                model=benchmark_result.model,
-                results=benchmark_result.results,
-                num_model_parameters=benchmark_result.num_model_parameters,
-                max_sequence_length=benchmark_result.max_sequence_length,
-                vocabulary_size=benchmark_result.vocabulary_size,
-                merge=benchmark_result.merge,
-                generative=benchmark_result.generative,
-                generative_type=benchmark_result.generative_type,
-                few_shot=benchmark_result.few_shot,
-                validation_split=benchmark_result.validation_split,
-                euroeval_version=benchmark_result.euroeval_version,
-                transformers_version=benchmark_result.transformers_version,
-                torch_version=benchmark_result.torch_version,
-                vllm_version=benchmark_result.vllm_version,
-                xgrammar_version=benchmark_result.xgrammar_version,
-            )
-        )
-        assert results_path.read_text() == f"\n{json_str}"
+        content = results_path.read_text().strip()
+        eee_dict = json.loads(content)
 
+        # Check required top-level EEE fields
+        assert eee_dict["schema_version"] == "0.2.1"
+        assert "evaluation_id" in eee_dict
+        assert "retrieved_timestamp" in eee_dict
+        assert "source_metadata" in eee_dict
+        assert "model_info" in eee_dict
+        assert "eval_library" in eee_dict
+        assert "evaluation_results" in eee_dict
+
+        # Check source_metadata required fields
+        assert eee_dict["source_metadata"]["source_type"] == "evaluation_run"
+        assert eee_dict["source_metadata"]["source_organization_name"] == "EuroEval"
+        assert eee_dict["source_metadata"]["evaluator_relationship"] == "third_party"
+
+        # Check model_info
+        assert eee_dict["model_info"]["id"] == benchmark_result.model
+        assert eee_dict["model_info"]["name"] == benchmark_result.model
+
+        # Check eval_library
+        assert eee_dict["eval_library"]["name"] == "euroeval"
+        assert eee_dict["eval_library"]["version"] == (
+            benchmark_result.euroeval_version or "unknown"
+        )
+        additional = eee_dict["eval_library"]["additional_details"]
+        assert additional["dataset"] == benchmark_result.dataset
+        assert additional["task"] == benchmark_result.task
+        assert json.loads(additional["languages"]) == list(benchmark_result.languages)
+
+        # Verify round-trip: read back from EEE format gives original BenchmarkResult
+        restored = BenchmarkResult.from_dict(eee_dict)
+        assert restored.dataset == benchmark_result.dataset
+        assert restored.model == benchmark_result.model
+        assert restored.task == benchmark_result.task
+        assert list(restored.languages) == list(benchmark_result.languages)
+        assert restored.generative == benchmark_result.generative
+        assert restored.few_shot == benchmark_result.few_shot
+        assert restored.validation_split == benchmark_result.validation_split
+
+        # Verify two results can be appended
         benchmark_result.append_to_results(results_path=results_path)
-        assert results_path.read_text() == f"\n{json_str}\n{json_str}"
+        lines = [
+            line for line in results_path.read_text().splitlines() if line.strip()
+        ]
+        assert len(lines) == 2
+        for line in lines:
+            parsed = json.loads(line)
+            assert parsed["schema_version"] == "0.2.1"
 
         results_path.unlink(missing_ok=True)
 

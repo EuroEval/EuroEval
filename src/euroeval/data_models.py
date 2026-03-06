@@ -1,10 +1,13 @@
 """Data models used in EuroEval."""
 
 import collections.abc as c
+import datetime
 import importlib.metadata
 import json
 import logging
+import math
 import re
+import time
 import typing as t
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -940,6 +943,10 @@ class BenchmarkResult(pydantic.BaseModel):
         Returns:
             The benchmark result.
         """
+        # Detect Every Eval Ever format by the presence of schema_version
+        if "schema_version" in config:
+            return cls._from_eee_dict(config)
+
         # To be backwards compatible, we accept old results which changed the model
         # name with parameters rather than adding them as explicit parameters
         val_matches = re.search(r"\(.*val.*\)$", config["model"])
@@ -968,6 +975,259 @@ class BenchmarkResult(pydantic.BaseModel):
 
         return cls(**config)
 
+    @classmethod
+    def _from_eee_dict(cls, config: dict) -> "BenchmarkResult":
+        """Create a BenchmarkResult from an Every Eval Ever format dictionary.
+
+        Args:
+            config:
+                An EEE-format dictionary.
+
+        Returns:
+            The benchmark result.
+        """
+        model_info = config.get("model_info", {})
+        eval_library = config.get("eval_library", {})
+        evaluation_results = config.get("evaluation_results", [])
+
+        model = model_info.get("id", "")
+        model_additional = model_info.get("additional_details", {})
+        eval_lib_additional = eval_library.get("additional_details", {})
+
+        # Extract dataset name from evaluation_results or additional_details
+        if evaluation_results:
+            dataset = evaluation_results[0].get("source_data", {}).get(
+                "dataset_name", ""
+            )
+        else:
+            dataset = eval_lib_additional.get("dataset", "")
+
+        # Reconstruct raw results from stored JSON
+        raw_results_json = eval_lib_additional.get("raw_results", "[]")
+        try:
+            raw_results = json.loads(raw_results_json)
+        except json.JSONDecodeError:
+            raw_results = []
+
+        # Reconstruct total dict from evaluation_results
+        total_dict: dict[str, float] = {}
+        for eval_result in evaluation_results:
+            metric_name = eval_result.get("evaluation_name", "")
+            score_details = eval_result.get("score_details", {})
+            total_dict[metric_name] = score_details.get("score", 0.0)
+
+            uncertainty = score_details.get("uncertainty", {})
+            se_info = uncertainty.get("standard_error", {})
+            if "value" in se_info:
+                total_dict[f"{metric_name}_se"] = se_info["value"]
+
+            details = score_details.get("details", {})
+            if "num_failed_instances" in details and "num_failed_instances" not in total_dict:
+                total_dict["num_failed_instances"] = float(
+                    details["num_failed_instances"]
+                )
+
+        results: "ScoreDict" = {"raw": raw_results, "total": total_dict}
+
+        def _parse_optional_bool(value: str) -> bool | None:
+            if value == "null":
+                return None
+            return value.lower() == "true"
+
+        def _parse_optional_str(value: str) -> str | None:
+            return None if value == "null" else value
+
+        languages_json = eval_lib_additional.get("languages", "[]")
+        try:
+            languages: list[str] = json.loads(languages_json)
+        except json.JSONDecodeError:
+            languages = []
+
+        return cls(
+            dataset=dataset,
+            task=eval_lib_additional.get("task", ""),
+            languages=languages,
+            model=model,
+            results=results,
+            num_model_parameters=int(
+                model_additional.get("num_model_parameters", "0") or "0"
+            ),
+            max_sequence_length=int(
+                model_additional.get("max_sequence_length", "0") or "0"
+            ),
+            vocabulary_size=int(
+                model_additional.get("vocabulary_size", "0") or "0"
+            ),
+            merge=model_additional.get("merge", "false") == "true",
+            generative=model_additional.get("generative", "false") == "true",
+            generative_type=_parse_optional_str(
+                model_additional.get("generative_type", "null")
+            ),
+            few_shot=_parse_optional_bool(eval_lib_additional.get("few_shot", "null")),
+            validation_split=_parse_optional_bool(
+                eval_lib_additional.get("validation_split", "null")
+            ),
+            euroeval_version=_parse_optional_str(
+                eval_library.get("version", "null")
+                if eval_library.get("version") != "unknown"
+                else "null"
+            ),
+            transformers_version=_parse_optional_str(
+                eval_lib_additional.get("transformers_version", "null")
+            ),
+            torch_version=_parse_optional_str(
+                eval_lib_additional.get("torch_version", "null")
+            ),
+            vllm_version=_parse_optional_str(
+                eval_lib_additional.get("vllm_version", "null")
+            ),
+            xgrammar_version=_parse_optional_str(
+                eval_lib_additional.get("xgrammar_version", "null")
+            ),
+        )
+
+    def to_eee_dict(self) -> dict:
+        """Convert to Every Eval Ever (EEE) format.
+
+        Returns:
+            A dictionary matching the EEE JSON schema v0.2.1.
+        """
+        current_time = time.time()
+        retrieved_timestamp = str(int(current_time))
+        evaluation_timestamp = datetime.datetime.fromtimestamp(
+            current_time, tz=datetime.timezone.utc
+        ).isoformat()
+        evaluation_id = f"{self.dataset}/{self.model}/{retrieved_timestamp}"
+
+        # Parse metric results from the results dict
+        total_results: dict[str, float] = {}
+        raw_results: list = []
+        if isinstance(self.results, dict):
+            total_val = self.results.get("total", {})
+            if isinstance(total_val, dict):
+                total_results = total_val
+            raw_val = self.results.get("raw", [])
+            if isinstance(raw_val, (list, tuple)):
+                raw_results = list(raw_val)
+
+        num_samples = len(raw_results)
+
+        # Collect main metric names (exclude SE keys and num_failed_instances)
+        metric_names = [
+            k
+            for k in total_results
+            if not k.endswith("_se") and k != "num_failed_instances"
+        ]
+
+        num_failed = total_results.get("num_failed_instances", 0.0)
+
+        evaluation_results = []
+        for metric_name in metric_names:
+            score = total_results[metric_name]
+            se_value = total_results.get(f"{metric_name}_se", float("nan"))
+
+            score_details: dict = {
+                "score": score,
+                "details": {"num_failed_instances": str(num_failed)},
+            }
+
+            uncertainty: dict = {}
+            if not math.isnan(se_value):
+                uncertainty["standard_error"] = {
+                    "value": se_value,
+                    "method": "bootstrap",
+                }
+            if num_samples > 0:
+                uncertainty["num_samples"] = num_samples
+            if uncertainty:
+                score_details["uncertainty"] = uncertainty
+
+            evaluation_results.append(
+                {
+                    "evaluation_name": metric_name,
+                    "source_data": {
+                        "dataset_name": self.dataset,
+                        "source_type": "hf_dataset",
+                    },
+                    "metric_config": {
+                        "lower_is_better": False,
+                        "score_type": "continuous",
+                        "min_score": 0,
+                        "max_score": 100,
+                    },
+                    "score_details": score_details,
+                }
+            )
+
+        # Determine inference engine info
+        inference_engine: dict = {}
+        if self.vllm_version:
+            inference_engine = {"name": "vllm", "version": self.vllm_version}
+        elif self.transformers_version:
+            inference_engine = {
+                "name": "transformers",
+                "version": self.transformers_version,
+            }
+
+        model_info: dict = {
+            "name": self.model,
+            "id": self.model,
+            "additional_details": {
+                "num_model_parameters": str(self.num_model_parameters),
+                "max_sequence_length": str(self.max_sequence_length),
+                "vocabulary_size": str(self.vocabulary_size),
+                "merge": str(self.merge).lower(),
+                "generative": str(self.generative).lower(),
+                "generative_type": (
+                    self.generative_type
+                    if self.generative_type is not None
+                    else "null"
+                ),
+            },
+        }
+        if inference_engine:
+            model_info["inference_engine"] = inference_engine
+
+        eval_lib_additional_details = {
+            "dataset": self.dataset,
+            "languages": json.dumps(list(self.languages), ensure_ascii=False),
+            "task": self.task,
+            "few_shot": (
+                str(self.few_shot).lower() if self.few_shot is not None else "null"
+            ),
+            "validation_split": (
+                str(self.validation_split).lower()
+                if self.validation_split is not None
+                else "null"
+            ),
+            "transformers_version": self.transformers_version or "null",
+            "torch_version": self.torch_version or "null",
+            "vllm_version": self.vllm_version or "null",
+            "xgrammar_version": self.xgrammar_version or "null",
+            "raw_results": json.dumps(raw_results, ensure_ascii=False),
+        }
+
+        return {
+            "schema_version": "0.2.1",
+            "evaluation_id": evaluation_id,
+            "evaluation_timestamp": evaluation_timestamp,
+            "retrieved_timestamp": retrieved_timestamp,
+            "source_metadata": {
+                "source_name": "EuroEval",
+                "source_type": "evaluation_run",
+                "source_organization_name": "EuroEval",
+                "source_organization_url": "https://euroeval.com",
+                "evaluator_relationship": "third_party",
+            },
+            "model_info": model_info,
+            "eval_library": {
+                "name": "euroeval",
+                "version": self.euroeval_version or "unknown",
+                "additional_details": eval_lib_additional_details,
+            },
+            "evaluation_results": evaluation_results,
+        }
+
     def append_to_results(self, results_path: Path) -> None:
         """Append the benchmark result to the results file.
 
@@ -975,7 +1235,7 @@ class BenchmarkResult(pydantic.BaseModel):
             results_path:
                 The path to the results file.
         """
-        json_str = json.dumps(self.model_dump(), ensure_ascii=False)
+        json_str = json.dumps(self.to_eee_dict(), ensure_ascii=False)
         with results_path.open("a") as f:
             f.write("\n" + json_str)
 
