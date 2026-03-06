@@ -64,7 +64,7 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
 
     Example YAML config::
 
-        task: text-classification
+        task: classification
         languages:
           - en
         labels:
@@ -72,7 +72,7 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
           - negative
 
     Supported task names are the ``name`` attributes of all task objects defined in
-    :mod:`euroeval.tasks` (e.g. ``text-classification``, ``sentiment-classification``,
+    :mod:`euroeval.tasks` (e.g. ``classification``, ``sentiment-classification``,
     ``named-entity-recognition``, etc.).
 
     Args:
@@ -84,6 +84,7 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
         ``None`` if the file could not be parsed or contains invalid values.
     """
     # Import here to avoid circular imports at module level
+    from . import languages as all_languages
     from . import tasks as all_tasks
     from .data_models import Task
     from .languages import Language
@@ -96,8 +97,6 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
     }
 
     # Build a lookup table: ISO language code → Language object
-    import euroeval.languages as all_languages
-
     language_map: dict[str, Language] = {
         obj.code: obj
         for obj in vars(all_languages).values()
@@ -183,7 +182,7 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
     for int_field in ("num_few_shot_examples", "max_generated_tokens"):
         value = raw.get(int_field)
         if value is not None:
-            if not isinstance(value, int):
+            if isinstance(value, bool) or not isinstance(value, int):
                 log_once(
                     f"Field '{int_field}' in YAML config at {yaml_path} must be an "
                     "integer.",

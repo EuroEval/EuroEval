@@ -319,7 +319,7 @@ benchmarker.benchmark(model="<model-id>", dataset=MY_CONFIG)
 ///
 /// tab | Hugging Face Hub dataset (YAML config)
 
-The simplest and most secure way to add an EuroEval configuration to a Hugging Face Hub
+The simplest and most secure way to add a EuroEval configuration to a Hugging Face Hub
 dataset is via a YAML file. No Python code is written, so no `--trust-remote-code` flag
 is required.
 
