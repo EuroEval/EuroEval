@@ -44,6 +44,7 @@ dependencies = [
     "sacrebleu>=2.5.1",
     "nltk>=3.9.1",
     "langdetect>=1.0.9",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]

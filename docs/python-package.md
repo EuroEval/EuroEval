@@ -317,14 +317,73 @@ benchmarker.benchmark(model="<model-id>", dataset=MY_CONFIG)
 ```
 
 ///
-/// tab | Hugging Face Hub dataset
+/// tab | Hugging Face Hub dataset (YAML config)
 
-For a dataset that is accessible via the Hugging Face Hub, you simply need to create a
+The simplest and most secure way to add an EuroEval configuration to a Hugging Face Hub
+dataset is via a YAML file. No Python code is written, so no `--trust-remote-code` flag
+is required.
+
+Create a file called `euroeval_config.yaml` (or `eval.yaml`) in the root of your
+repository. The file must contain at least the `task` and `languages` keys:
+
+```yaml title="euroeval_config.yaml"
+task: classification
+languages:
+  - en
+labels:
+  - positive
+  - negative
+```
+
+The value of `task` must be one of the task names used in EuroEval
+(e.g. `text-classification`, `sentiment-classification`,
+`named-entity-recognition`, `multiple-choice`, etc.).  `languages` is a list of
+[ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) language codes.
+
+All other `DatasetConfig` arguments are optional and can be specified directly in the
+YAML file:
+
+```yaml title="euroeval_config.yaml"
+task: classification
+languages:
+  - en
+labels:
+  - positive
+  - negative
+num_few_shot_examples: 12
+max_generated_tokens: 5
+input_column: review
+target_column: sentiment
+prompt_label_mapping:
+  positive: positive
+  negative: negative
+```
+
+You can then benchmark your custom dataset by simply running
+
+```bash
+euroeval --dataset <org-id>/<repo-id> --model <model-id>
+```
+
+or from a Python script:
+
+```python
+from euroeval import Benchmarker
+
+benchmarker = Benchmarker()
+benchmarker.benchmark(model="<model-id>", dataset="<org-id>/<repo-id>")
+```
+
+///
+/// tab | Hugging Face Hub dataset (Python config)
+
+For a dataset that is accessible via the Hugging Face Hub, you can also create a
 file called `euroeval_config.py` in the root of your repository, in which you define
-the associated dataset configuration. Note that you don't need to specify the `name`,
-`pretty_name` or `source` arguments in this case, as these are automatically inferred
-from the repository name. Here is an example of a simple text classification
-dataset with two classes:
+the associated dataset configuration. This gives you full Python flexibility (e.g.
+custom preprocessing functions) but requires the `--trust-remote-code` flag.  Note
+that you don't need to specify the `name`, `pretty_name` or `source` arguments in this
+case, as these are automatically inferred from the repository name. Here is an example
+of a simple text classification dataset with two classes:
 
 ```python title="euroeval_config.py"
 from euroeval import DatasetConfig, TEXT_CLASSIFICATION
@@ -339,10 +398,11 @@ CONFIG = DatasetConfig(
 
 !!! note
 
-    To benchmark a dataset from the Hugging Face Hub, you always need to set the
-    `--trust-remote-code` flag (or `trust_remote_code=True` if using the `Benchmarker`),
-    as the dataset configuration is loaded from the remote code. We advise you to always
-    look at the code of the dataset configuration before running the benchmark.
+    To benchmark a dataset from the Hugging Face Hub using a Python config, you always
+    need to set the `--trust-remote-code` flag (or `trust_remote_code=True` if using
+    the `Benchmarker`), as the dataset configuration is loaded from the remote code.
+    We advise you to always look at the code of the dataset configuration before running
+    the benchmark.
 
 You can then benchmark your custom dataset by simply running
 
