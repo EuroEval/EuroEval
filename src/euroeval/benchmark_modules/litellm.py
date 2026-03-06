@@ -314,6 +314,8 @@ class LiteLLMModel(BenchmarkModule):
             type_ = GenerativeType.BASE
         elif supports_reasoning(model=self.model_config.model_id):
             type_ = GenerativeType.REASONING
+        elif self.buffer.get("response_based_generative_type") is not None:
+            type_ = self.buffer["response_based_generative_type"]
         else:
             type_ = GenerativeType.INSTRUCTION_TUNED
 
@@ -1748,8 +1750,9 @@ class LiteLLMModel(BenchmarkModule):
             test_input = [
                 litellm.ChatCompletionUserMessage(role="user", content="Test message")
             ]
+        test_successes: c.Sequence[tuple[int, "ModelResponse"]] = []
         for _ in range(num_attempts := 10):
-            _, failures = safe_run(
+            test_successes, failures = safe_run(
                 self._generate_async(
                     model_id=self.model_config.model_id,
                     inputs=[test_input],
@@ -1776,6 +1779,44 @@ class LiteLLMModel(BenchmarkModule):
                 "Failed to get a successful response from the model "
                 f"{self.model_config.model_id!r} after {num_attempts} attempts."
             )
+
+        # Detect if this is a reasoning model based on non-empty reasoning_content
+        # in the test response. This covers the case of models hosted on custom
+        # inference servers (e.g., vLLM with a reasoning parser) that are not
+        # in the known REASONING_MODELS list.
+        # Note: the `self.generative_type` check here reads from the buffer BEFORE it
+        # has been updated - so on the first call it correctly falls through to
+        # INSTRUCTION_TUNED and allows the detection to proceed. On subsequent calls
+        # (if the buffer was already set to REASONING), this check will be False and
+        # we skip re-detection, which is the desired behaviour.
+        if test_successes and self.generative_type != GenerativeType.REASONING:
+            test_response = test_successes[0][1]
+            if test_response.choices and isinstance(
+                test_response.choices[0], litellm.Choices
+            ):
+                test_message = test_response.choices[0].message
+                test_reasoning_content = getattr(
+                    test_message, "reasoning_content", None
+                )
+                if test_reasoning_content:
+                    self.buffer["response_based_generative_type"] = (
+                        GenerativeType.REASONING
+                    )
+                    log_once(
+                        f"Detected model {self.model_config.model_id!r} as a "
+                        "reasoning model based on non-empty reasoning_content in "
+                        "the response. Updating the generative type to REASONING.",
+                        level=logging.DEBUG,
+                    )
+                    # Fix up the generation kwargs for this call's return value, since
+                    # max_completion_tokens and response_format were set above based on
+                    # the then-current generative_type (INSTRUCTION_TUNED). The buffer
+                    # update above ensures future calls to get_generation_kwargs will
+                    # compute the correct initial values.
+                    generation_kwargs["max_completion_tokens"] = REASONING_MAX_TOKENS
+                    # Remove response_format as reasoning models don't support
+                    # structured generation
+                    generation_kwargs.pop("response_format", None)
 
         return generation_kwargs
 
