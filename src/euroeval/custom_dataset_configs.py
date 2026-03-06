@@ -15,8 +15,10 @@ from .logging_utils import log_once
 from .utils import get_hf_token
 
 # Names of the YAML config files that EuroEval recognises in a Hugging Face dataset
-# repository. The list is ordered by priority: the first match wins.
-YAML_CONFIG_FILENAMES = ["euroeval_config.yaml", "eval.yaml"]
+# repository. The list is ordered by priority: the first match wins. `eval.yaml` is the
+# standard name (aligned with the HuggingFace community-evals convention), while
+# `euroeval_config.yaml` is accepted as an alternative.
+YAML_CONFIG_FILENAMES = ["eval.yaml", "euroeval_config.yaml"]
 
 
 def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None:

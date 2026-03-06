@@ -270,8 +270,8 @@ class TestYamlConfigFilenames:
         """eval.yaml is in the recognised filenames list."""
         assert "eval.yaml" in YAML_CONFIG_FILENAMES
 
-    def test_euroeval_config_yaml_has_higher_priority(self) -> None:
-        """euroeval_config.yaml takes priority over eval.yaml."""
-        idx_euroeval = YAML_CONFIG_FILENAMES.index("euroeval_config.yaml")
+    def test_eval_yaml_has_higher_priority(self) -> None:
+        """eval.yaml takes priority over euroeval_config.yaml."""
         idx_eval = YAML_CONFIG_FILENAMES.index("eval.yaml")
-        assert idx_euroeval < idx_eval
+        idx_euroeval = YAML_CONFIG_FILENAMES.index("euroeval_config.yaml")
+        assert idx_eval < idx_euroeval

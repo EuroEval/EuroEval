@@ -323,10 +323,10 @@ The simplest and most secure way to add an EuroEval configuration to a Hugging F
 dataset is via a YAML file. No Python code is written, so no `--trust-remote-code` flag
 is required.
 
-Create a file called `euroeval_config.yaml` (or `eval.yaml`) in the root of your
+Create a file called `eval.yaml` (or `euroeval_config.yaml`) in the root of your
 repository. The file must contain at least the `task` and `languages` keys:
 
-```yaml title="euroeval_config.yaml"
+```yaml title="eval.yaml"
 task: classification
 languages:
   - en
@@ -336,14 +336,14 @@ labels:
 ```
 
 The value of `task` must be one of the task names used in EuroEval
-(e.g. `text-classification`, `sentiment-classification`,
+(e.g. `classification`, `sentiment-classification`,
 `named-entity-recognition`, `multiple-choice`, etc.).  `languages` is a list of
 [ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) language codes.
 
 All other `DatasetConfig` arguments are optional and can be specified directly in the
 YAML file:
 
-```yaml title="euroeval_config.yaml"
+```yaml title="eval.yaml"
 task: classification
 languages:
   - en
