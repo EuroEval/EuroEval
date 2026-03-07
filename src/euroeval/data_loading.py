@@ -64,17 +64,9 @@ def load_data(
         not benchmark_config.evaluate_test_split
         and dataset_config.val_split is not None
     ):
-        dataset[dataset_config.test_split] = dataset[dataset_config.val_split]
+        dataset["test"] = dataset["val"]
 
-    splits = [
-        split
-        for split in [
-            dataset_config.train_split,
-            dataset_config.val_split,
-            dataset_config.test_split,
-        ]
-        if split is not None
-    ]
+    splits = [split for split in ["train", "val", "test"] if split in dataset]
 
     # Remove empty examples from the datasets
     for text_feature in ["tokens", "text"]:
@@ -104,12 +96,8 @@ def load_data(
             DatasetDict(  # type: ignore[no-matching-overload]
                 {
                     split: bootstrapped_splits[split][idx]
-                    for split in [
-                        dataset_config.train_split,
-                        dataset_config.val_split,
-                        dataset_config.test_split,
-                    ]
-                    if split is not None
+                    for split in ["train", "val", "test"]
+                    if split in bootstrapped_splits
                 }
             )
             for idx in range(benchmark_config.num_iterations)
@@ -248,15 +236,18 @@ def load_raw_data(
             )
 
     assert isinstance(dataset, DatasetDict)
+    # Normalise the split keys to the standard names ("train", "val", "test")
+    # that the rest of the codebase expects.  Community datasets may use
+    # non-standard names such as "training", "validation", or "eval".
     dataset = DatasetDict(  # pyrefly: ignore[no-matching-overload]
         {
-            split: dataset[split]
-            for split in [
-                dataset_config.train_split,
-                dataset_config.val_split,
-                dataset_config.test_split,
+            standard_name: dataset[hf_name]
+            for standard_name, hf_name in [
+                ("train", dataset_config.train_split),
+                ("val", dataset_config.val_split),
+                ("test", dataset_config.test_split),
             ]
-            if split is not None
+            if hf_name is not None
         }
     )
 
