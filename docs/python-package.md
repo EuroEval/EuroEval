@@ -324,7 +324,7 @@ dataset is via a YAML file. No Python code is written, so no `--trust-remote-cod
 is required.
 
 Create a file called `eval.yaml` (or `euroeval_config.yaml`) in the root of your
-repository. The file must contain at least the `task` and `languages` keys:
+repository.
 
 ```yaml title="eval.yaml"
 task: classification
@@ -359,20 +359,42 @@ prompt_label_mapping:
   negative: negative
 ```
 
-The `eval.yaml` format is also compatible with
-[Inspect AI](https://inspect.aisi.org.uk/tasks.html#hugging-face).  Column names can
-be supplied either as flat top-level keys (shown above) **or** inside a
-`tasks[0].field_spec` block using the Inspect AI `input` / `target` / `choices`
-sub-keys — whichever is present takes precedence.  The EuroEval-specific `task` and
-`languages` keys must always be present at the top level; Inspect AI silently ignores
-keys it does not recognise.
+The `eval.yaml` format is fully compatible with
+[Inspect AI](https://inspect.aisi.org.uk/tasks.html#hugging-face), and the
+EuroEval-specific `task` and `languages` keys are **optional** — EuroEval will infer
+them automatically when they are not present:
 
-Note that Inspect AI also supports `field_spec.target` values such as `"literal:A"`
-(a hard-coded answer string) and bare integers (mapped to letters A, B, C … by Inspect
-AI); EuroEval silently ignores both of these forms because they are not column names.
+* **`task`** is inferred from the Inspect AI `tasks` block: a solver with
+  `name: multiple_choice` **or** a `field_spec.choices` entry both map to the
+  `multiple-choice` task.
+* **`languages`** are read from the Hugging Face Hub repository metadata
+  (the `language` field in the dataset card).
+
+This means a standard Inspect AI `eval.yaml` with no EuroEval-specific keys works
+out of the box, provided the dataset card declares at least one language:
 
 ```yaml title="eval.yaml"
-# Inspect AI compatible eval.yaml
+# Pure Inspect AI format — no EuroEval keys required
+name: My Dataset
+description: My dataset description.
+tasks:
+  - id: my_dataset
+    split: test
+    field_spec:
+      input: question
+      target: answer
+      choices: options
+    solvers:
+      - name: multiple_choice
+    scorers:
+      - name: choice
+```
+
+If you want to override the inferred values, or if the task cannot be inferred
+automatically, add the EuroEval-specific keys at the top level (they are silently
+ignored by Inspect AI):
+
+```yaml title="eval.yaml"
 name: My Dataset
 description: My dataset description.
 tasks:
@@ -381,16 +403,22 @@ tasks:
     field_spec:
       input: text
       target: label
-      choices: options
     solvers:
-      - name: multiple_choice
+      - name: generate
     scorers:
       - name: choice
-# EuroEval-specific keys (required for EuroEval; ignored by Inspect AI)
-task: multiple-choice
+# EuroEval-specific keys (optional; ignored by Inspect AI)
+task: classification
 languages:
   - en
 ```
+
+Column names can be supplied either as flat top-level keys (`input_column`,
+`target_column`, `choices_column`) or inside a `tasks[0].field_spec` block using the
+Inspect AI `input` / `target` / `choices` sub-keys; top-level keys take precedence.
+Note that Inspect AI also allows `field_spec.target` values such as `"literal:A"`
+(a hard-coded answer string) and bare integers (mapped to letters A, B, C … by Inspect
+AI); EuroEval silently ignores both forms because they are not column names.
 
 You can then benchmark your custom dataset by simply running
 

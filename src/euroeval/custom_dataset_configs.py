@@ -55,30 +55,80 @@ def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None
     return None
 
 
-def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
+def _infer_task_from_inspect_ai(
+    raw: dict[str, Any],
+    task_map: dict[str, Any],
+) -> Any | None:
+    """Try to infer the EuroEval task from Inspect AI YAML fields.
+
+    Currently detects:
+
+    * A solver with ``name: multiple_choice`` in ``tasks[0].solvers``
+      → ``multiple-choice``
+    * A ``choices`` key in ``tasks[0].field_spec`` → ``multiple-choice``
+
+    Returns a :class:`~euroeval.data_models.Task` object, or ``None`` when the task
+    cannot be determined from the Inspect AI hints.
+    """
+    tasks_raw = raw.get("tasks")
+    if not isinstance(tasks_raw, list) or not tasks_raw:
+        return None
+    first_task = tasks_raw[0]
+    if not isinstance(first_task, dict):
+        return None
+
+    # Multiple-choice: a solver whose name is "multiple_choice"
+    solvers: Any = first_task.get("solvers")
+    if isinstance(solvers, list):
+        for solver in solvers:
+            if isinstance(solver, dict) and solver.get("name") == "multiple_choice":
+                return task_map.get("multiple-choice")
+
+    # Multiple-choice: choices column declared in field_spec
+    field_spec: Any = first_task.get("field_spec")
+    if isinstance(field_spec, dict) and "choices" in field_spec:
+        return task_map.get("multiple-choice")
+
+    return None
+
+
+def load_dataset_config_from_yaml(
+    yaml_path: Path,
+    fallback_language_codes: list[str] | None = None,
+) -> DatasetConfig | None:
     """Load a dataset config from a YAML file.
 
-    The YAML file must contain at least the ``task`` and ``languages`` keys. All other
-    keys are optional and correspond to the parameters of
-    :class:`~euroeval.data_models.DatasetConfig`.
+    The file is fully compatible with the `Inspect AI eval.yaml format
+    <https://inspect.aisi.org.uk/tasks.html#hugging-face>`_.  The EuroEval-specific
+    ``task`` and ``languages`` keys are **optional**:
 
-    The file can follow the `Inspect AI eval.yaml format
-    <https://inspect.aisi.org.uk/tasks.html#hugging-face>`_ — specifically, column
-    mappings may be specified via a ``tasks[0].field_spec`` block (using the
-    ``input``, ``target`` and ``choices`` sub-keys) in addition to the flat
-    ``input_column`` / ``target_column`` / ``choices_column`` syntax.  The
-    EuroEval-specific ``task`` and ``languages`` keys must always be present at the
-    top level; Inspect AI simply ignores keys it does not recognise.
+    * **``task``** — if absent, the task is inferred from Inspect AI hints: a solver
+      with ``name: multiple_choice`` or a ``field_spec.choices`` entry both map to the
+      ``multiple-choice`` task.  If the task cannot be inferred an error is logged and
+      ``None`` is returned.
+    * **``languages``** — if absent, the ``fallback_language_codes`` argument (a list
+      of ISO 639-1 codes) is used.  When called from
+      :func:`try_get_dataset_config_from_repo`, the Hugging Face Hub repo metadata
+      supplies this fallback automatically.  If neither source provides a language list
+      an error is logged and ``None`` is returned.
+
+    Column mappings may be specified either as flat top-level keys
+    (``input_column`` / ``target_column`` / ``choices_column``) **or** via a
+    ``tasks[0].field_spec`` block using the Inspect AI ``input`` / ``target`` /
+    ``choices`` sub-keys.  Top-level keys take precedence when both are present.
 
     When reading ``field_spec``:
 
-    * ``field_spec.input`` is always used as ``input_column``.
+    * ``field_spec.input`` is used as ``input_column``.
     * ``field_spec.target`` is used as ``target_column`` **only when it is a plain
       column name**.  Inspect AI also allows ``"literal:<value>"`` (a hard-coded
-      answer string) and bare integers (which Inspect AI maps to letters
-      A, B, C …); both are silently skipped because they are not column names.
-    * ``field_spec.choices`` is used as ``choices_column`` (a single column name or
-      a list of column names).
+      answer string) and bare integers (which Inspect AI maps to letters A, B, C …);
+      both are silently skipped because they are not column names.
+    * ``field_spec.choices`` is used as ``choices_column`` (a single column name or a
+      list of column names).
+
+    Inspect AI silently ignores keys it does not recognise, so a single file can serve
+    both frameworks.
 
     Example — EuroEval flat format::
 
@@ -89,9 +139,25 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
           - positive
           - negative
 
-    Example — Inspect AI compatible format::
+    Example — pure Inspect AI format (task and languages are inferred automatically)::
 
-        # eval.yaml (compatible with Inspect AI)
+        # eval.yaml — no EuroEval-specific keys required
+        name: My Dataset
+        tasks:
+          - id: my_dataset
+            split: test
+            field_spec:
+              input: question
+              target: answer
+              choices: options
+            solvers:
+              - name: multiple_choice
+            scorers:
+              - name: choice
+
+    Example — Inspect AI format with optional EuroEval overrides::
+
+        # eval.yaml
         name: My Dataset
         tasks:
           - id: my_dataset
@@ -103,7 +169,7 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
               - name: multiple_choice
             scorers:
               - name: choice
-        # EuroEval-specific keys (required; ignored by Inspect AI)
+        # EuroEval-specific keys (optional; ignored by Inspect AI)
         task: multiple-choice
         languages:
           - en
@@ -115,6 +181,10 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
     Args:
         yaml_path:
             Path to the YAML config file.
+        fallback_language_codes:
+            ISO 639-1 language codes to use when the YAML file does not contain a
+            ``languages`` key.  Typically supplied from HuggingFace Hub repo metadata
+            by :func:`try_get_dataset_config_from_repo`.
 
     Returns:
         A :class:`~euroeval.data_models.DatasetConfig` built from the YAML data, or
@@ -190,35 +260,56 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
                 if "choices" in field_spec and "choices_column" not in raw:
                     raw["choices_column"] = field_spec["choices"]
 
-    # --- required fields ---
+    # --- task (optional; inferred from Inspect AI hints when absent) ---
 
     task_name: Any = raw.get("task")
-    if not isinstance(task_name, str):
+    if isinstance(task_name, str):
+        task_obj = task_map.get(task_name)
+        if task_obj is None:
+            log_once(
+                f"Unknown task '{task_name}' in YAML config at {yaml_path}. "
+                f"Valid task names are: {sorted(task_map)}.",
+                level=logging.ERROR,
+            )
+            return None
+    else:
+        # Try to infer from Inspect AI YAML structure
+        task_obj = _infer_task_from_inspect_ai(raw, task_map)
+        if task_obj is None:
+            log_once(
+                f"YAML config at {yaml_path} does not contain a 'task' field and the "
+                "task could not be inferred from the Inspect AI 'tasks' block. "
+                "Add a top-level 'task' key (e.g. 'task: classification') or include "
+                "a 'multiple_choice' solver / a 'choices' field_spec entry so that "
+                "the task can be detected automatically.",
+                level=logging.ERROR,
+            )
+            return None
+
+    # --- languages (optional; falls back to repo metadata) ---
+
+    raw_languages: Any = raw.get("languages")
+    if isinstance(raw_languages, list) and raw_languages:
+        language_codes: list[str] = [str(c) for c in raw_languages]
+    elif fallback_language_codes:
         log_once(
-            f"YAML config at {yaml_path} must contain a string 'task' field.",
-            level=logging.ERROR,
+            f"YAML config at {yaml_path} does not contain a 'languages' key. "
+            f"Using language(s) from the repository metadata: {fallback_language_codes}.",
+            level=logging.INFO,
         )
-        return None
-    task_obj = task_map.get(task_name)
-    if task_obj is None:
+        language_codes = fallback_language_codes
+    else:
         log_once(
-            f"Unknown task '{task_name}' in YAML config at {yaml_path}. "
-            f"Valid task names are: {sorted(task_map)}.",
+            f"YAML config at {yaml_path} does not contain a 'languages' key and no "
+            "language metadata is available for this repository. Add a top-level "
+            "'languages' key to the YAML file (e.g. 'languages:\\n  - en').",
             level=logging.ERROR,
         )
         return None
 
-    raw_languages: Any = raw.get("languages")
-    if not isinstance(raw_languages, list) or not raw_languages:
-        log_once(
-            f"YAML config at {yaml_path} must contain a non-empty list of language "
-            "codes under the 'languages' key.",
-            level=logging.ERROR,
-        )
-        return None
     language_objs: list[Language] = []
-    for code in raw_languages:
-        lang = language_map.get(str(code))
+    for code in language_codes:
+        lang = language_map.get(code)
         if lang is None:
             log_once(
                 f"Unknown language code '{code}' in YAML config at {yaml_path}.",
@@ -388,8 +479,22 @@ def try_get_dataset_config_from_repo(
             local_dir=external_config_path,
             local_dir_use_symlinks=False,
         )
+
+        # Fetch repo metadata once; use it for language fallback *and* split detection
+        repo_dataset_info = hf_api.dataset_info(repo_id=dataset_id)
+
+        # Extract ISO 639-1 language codes from the repository card metadata so that
+        # a pure Inspect AI eval.yaml (with no EuroEval-specific 'languages' key) can
+        # still produce a valid DatasetConfig.
+        fallback_language_codes: list[str] | None = None
+        if repo_dataset_info.card_data is not None:
+            lang_meta = getattr(repo_dataset_info.card_data, "language", None)
+            if isinstance(lang_meta, list) and lang_meta:
+                fallback_language_codes = [str(c) for c in lang_meta if c]
+
         repo_dataset_config = load_dataset_config_from_yaml(
-            yaml_path=external_config_path / yaml_filename
+            yaml_path=external_config_path / yaml_filename,
+            fallback_language_codes=fallback_language_codes,
         )
         if repo_dataset_config is None:
             return None

@@ -196,7 +196,7 @@ class TestLoadDatasetConfigFromYaml:
         assert config is None
 
     def test_missing_task_key_returns_none(self, tmp_path: Path) -> None:
-        """A YAML file without 'task' key returns None."""
+        """A YAML file without 'task' key and no Inspect AI hints returns None."""
         yaml_file = tmp_path / "euroeval_config.yaml"
         yaml_file.write_text(
             textwrap.dedent(
@@ -210,7 +210,7 @@ class TestLoadDatasetConfigFromYaml:
         assert config is None
 
     def test_missing_languages_key_returns_none(self, tmp_path: Path) -> None:
-        """A YAML file without 'languages' key returns None."""
+        """A YAML file without 'languages' key and no fallback returns None."""
         yaml_file = tmp_path / "euroeval_config.yaml"
         yaml_file.write_text(
             textwrap.dedent(
@@ -223,7 +223,7 @@ class TestLoadDatasetConfigFromYaml:
         assert config is None
 
     def test_empty_languages_list_returns_none(self, tmp_path: Path) -> None:
-        """A YAML file with an empty languages list returns None."""
+        """A YAML file with an empty languages list and no fallback returns None."""
         yaml_file = tmp_path / "euroeval_config.yaml"
         yaml_file.write_text(
             textwrap.dedent(
@@ -403,6 +403,200 @@ class TestLoadDatasetConfigFromYaml:
         # and return None; now it should be silently ignored.
         assert config is not None
         assert config.preprocessing_func is None
+
+    # ------------------------------------------------------------------ #
+    # Task inference from Inspect AI hints                                #
+    # ------------------------------------------------------------------ #
+
+    def test_task_inferred_from_multiple_choice_solver(self, tmp_path: Path) -> None:
+        """A 'multiple_choice' solver in tasks[0].solvers infers multiple-choice task."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: My MC Dataset
+                tasks:
+                  - id: my_dataset
+                    split: test
+                    field_spec:
+                      input: question
+                      target: answer
+                    solvers:
+                      - name: multiple_choice
+                    scorers:
+                      - name: choice
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "multiple-choice"
+
+    def test_task_inferred_from_field_spec_choices(self, tmp_path: Path) -> None:
+        """A 'choices' entry in field_spec infers multiple-choice task."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: My MC Dataset
+                tasks:
+                  - id: my_dataset
+                    field_spec:
+                      input: question
+                      target: answer
+                      choices: options
+                    solvers:
+                      - name: generate
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "multiple-choice"
+
+    def test_missing_task_no_hints_returns_none(self, tmp_path: Path) -> None:
+        """No 'task' key and no Inspect AI hints (solver/choices) returns None."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: My Dataset
+                tasks:
+                  - id: my_dataset
+                    field_spec:
+                      input: text
+                      target: label
+                    solvers:
+                      - name: generate
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is None
+
+    def test_explicit_task_overrides_inference(self, tmp_path: Path) -> None:
+        """An explicit top-level 'task' key overrides any Inspect AI inference."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                tasks:
+                  - id: my_dataset
+                    solvers:
+                      - name: multiple_choice
+                task: classification
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        # Explicit task wins over inference
+        assert config.task.name == "classification"
+
+    # ------------------------------------------------------------------ #
+    # Language fallback from repo metadata                                #
+    # ------------------------------------------------------------------ #
+
+    def test_fallback_language_codes_used_when_no_languages_key(
+        self, tmp_path: Path
+    ) -> None:
+        """fallback_language_codes is used when 'languages' is absent from YAML."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: classification
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file, fallback_language_codes=["en"])
+        assert config is not None
+        assert len(config.languages) == 1
+        assert config.languages[0].code == "en"
+
+    def test_yaml_languages_take_precedence_over_fallback(
+        self, tmp_path: Path
+    ) -> None:
+        """Explicit 'languages' in YAML overrides fallback_language_codes."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: classification
+                languages:
+                  - da
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file, fallback_language_codes=["en"])
+        assert config is not None
+        assert config.languages[0].code == "da"
+
+    def test_missing_languages_no_fallback_returns_none(self, tmp_path: Path) -> None:
+        """No 'languages' key and no fallback_language_codes returns None."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: classification
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is None
+
+    def test_fallback_invalid_language_code_returns_none(self, tmp_path: Path) -> None:
+        """An unknown language code in fallback_language_codes returns None."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: classification
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(
+            yaml_file, fallback_language_codes=["xx_NOT_REAL"]
+        )
+        assert config is None
+
+    def test_pure_inspect_ai_file_with_fallback_language(
+        self, tmp_path: Path
+    ) -> None:
+        """A pure Inspect AI eval.yaml (no EuroEval keys) succeeds with fallback."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: My MC Dataset
+                tasks:
+                  - id: my_dataset
+                    split: test
+                    field_spec:
+                      input: question
+                      target: answer
+                      choices: options
+                    solvers:
+                      - name: multiple_choice
+                    scorers:
+                      - name: choice
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(
+            yaml_file, fallback_language_codes=["en"]
+        )
+        assert config is not None
+        assert config.task.name == "multiple-choice"
+        assert config.languages[0].code == "en"
 
 
 class TestYamlConfigFilenames:
