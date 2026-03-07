@@ -35,7 +35,7 @@ load_dotenv()
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger("create_icelandic_standardized_tests")
 
-GPT_MODEL = "gpt-5-mini"
+GPT_MODEL = "gpt-4.1-mini"
 
 
 AnswerKeyType = (
@@ -613,7 +613,7 @@ def extract_questions(
         model=GPT_MODEL,
         messages=[{"role": "user", "content": content}],
         response_format=response_format,
-        max_completion_tokens=128_000,
+        max_completion_tokens=32_768,
         temperature=0.0,
     )
     result = completion.choices[0].message.parsed
@@ -679,7 +679,7 @@ def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, AnswerKeyT
         model=GPT_MODEL,
         messages=[{"role": "user", "content": content}],
         response_format=AnswerKey,
-        max_completion_tokens=128_000,
+        max_completion_tokens=32_768,
         temperature=0.0,
     )
     result = completion.choices[0].message.parsed
