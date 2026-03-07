@@ -914,7 +914,8 @@ from euroeval.data_models import BenchmarkResult
 
 with open("euroeval_benchmark_results.jsonl") as f:
     for line in f:
-        result = BenchmarkResult.from_dict(json.loads(line))
+        if line.strip():
+            result = BenchmarkResult.from_dict(json.loads(line))
 ```
 
 ## Analysing the results of generative models
