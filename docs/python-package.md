@@ -815,6 +815,109 @@ With any of these custom tasks you can then benchmark your dataset by running
 euroeval --dataset <dataset-name> --model <model-id>
 ```
 
+## Output format: Every Eval Ever (EEE)
+
+Each entry written to `euroeval_benchmark_results.jsonl` conforms to the
+[Every Eval Ever (EEE) JSON schema v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json),
+a community-standard format for evaluation reporting.  The file can therefore be
+consumed directly by any tool that understands the EEE schema.
+
+Every line is a self-contained JSON object with the following top-level structure:
+
+| Field | Description |
+|---|---|
+| `schema_version` | EEE schema version (`"0.2.1"`) |
+| `evaluation_id` | Unique run identifier in `dataset/model/timestamp` format |
+| `evaluation_timestamp` | ISO 8601 timestamp of when the evaluation ran |
+| `retrieved_timestamp` | Unix epoch timestamp of when the record was written |
+| `source_metadata` | EuroEval organisation info and evaluator relationship |
+| `model_info` | Model identifier and EuroEval-specific metadata |
+| `eval_library` | Library name/version and evaluation context |
+| `evaluation_results` | Array of per-metric scores with uncertainty estimates |
+
+Here is an abbreviated example:
+
+```json
+{
+  "schema_version": "0.2.1",
+  "evaluation_id": "angry-tweets/meta-llama/Llama-3.1-8B-Instruct/1741260000",
+  "evaluation_timestamp": "2025-03-06T11:00:00+00:00",
+  "retrieved_timestamp": "1741260000",
+  "source_metadata": {
+    "source_name": "EuroEval",
+    "source_type": "evaluation_run",
+    "source_organization_name": "EuroEval",
+    "source_organization_url": "https://euroeval.com",
+    "evaluator_relationship": "third_party"
+  },
+  "model_info": {
+    "id": "meta-llama/Llama-3.1-8B-Instruct",
+    "name": "meta-llama/Llama-3.1-8B-Instruct",
+    "additional_details": {
+      "num_model_parameters": "8000000000",
+      "max_sequence_length": "131072",
+      "vocabulary_size": "128256",
+      "generative": "true",
+      "generative_type": "instruction_tuned"
+    }
+  },
+  "eval_library": {
+    "name": "euroeval",
+    "version": "16.16.1",
+    "additional_details": {
+      "task": "sentiment-classification",
+      "languages": "[\"da\"]",
+      "few_shot": "true",
+      "raw_results": "[{\"test_mcc\": 0.40}, {\"test_mcc\": 0.45}]"
+    }
+  },
+  "evaluation_results": [
+    {
+      "evaluation_name": "test_mcc",
+      "source_data": { "dataset_name": "angry-tweets", "source_type": "hf_dataset" },
+      "metric_config": {
+        "lower_is_better": false,
+        "score_type": "continuous",
+        "min_score": 0,
+        "max_score": 100
+      },
+      "score_details": {
+        "score": 42.5,
+        "details": { "num_failed_instances": "0.0" },
+        "uncertainty": {
+          "confidence_interval": {
+            "lower": 41.3,
+            "upper": 43.7,
+            "confidence_level": 0.95,
+            "method": "bootstrap"
+          },
+          "num_samples": 10
+        }
+      }
+    }
+  ]
+}
+```
+
+!!! note
+    The `_se` values stored internally are 95 % confidence interval half-widths
+    (`1.96 × SE`).  They are exposed in the EEE output as a
+    `confidence_interval { lower, upper, confidence_level: 0.95 }`, which is the
+    correct EEE field for this statistic.
+
+The EEE format can be read back into a `BenchmarkResult` object without any loss of
+information:
+
+```python
+import json
+from euroeval.data_models import BenchmarkResult
+
+with open("euroeval_benchmark_results.jsonl") as f:
+    for line in f:
+        if line.strip():
+            result = BenchmarkResult.from_dict(json.loads(line))
+```
+
 ## Analysing the results of generative models
 
 ### Failed instances
