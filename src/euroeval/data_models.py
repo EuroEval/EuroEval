@@ -1017,9 +1017,10 @@ class BenchmarkResult(pydantic.BaseModel):
             total_dict[metric_name] = score_details.get("score", 0.0)
 
             uncertainty = score_details.get("uncertainty", {})
-            se_info = uncertainty.get("standard_error", {})
-            if "value" in se_info:
-                total_dict[f"{metric_name}_se"] = se_info["value"]
+            ci_info = uncertainty.get("confidence_interval", {})
+            if "lower" in ci_info and "upper" in ci_info:
+                ci_half_width = (ci_info["upper"] - ci_info["lower"]) / 2
+                total_dict[f"{metric_name}_se"] = ci_half_width
 
             details = score_details.get("details", {})
             if "num_failed_instances" in details and "num_failed_instances" not in total_dict:
@@ -1124,7 +1125,9 @@ class BenchmarkResult(pydantic.BaseModel):
         evaluation_results = []
         for metric_name in metric_names:
             score = total_results[metric_name]
-            se_value = total_results.get(f"{metric_name}_se", float("nan"))
+            # The _se values stored in total_dict are 95% CI half-widths
+            # (1.96 * SE, scaled by postprocessing_fn). Use confidence_interval.
+            ci_half_width = total_results.get(f"{metric_name}_se", float("nan"))
 
             score_details: dict = {
                 "score": score,
@@ -1132,15 +1135,26 @@ class BenchmarkResult(pydantic.BaseModel):
             }
 
             uncertainty: dict = {}
-            if not math.isnan(se_value):
-                uncertainty["standard_error"] = {
-                    "value": se_value,
+            if not math.isnan(ci_half_width):
+                uncertainty["confidence_interval"] = {
+                    "lower": score - ci_half_width,
+                    "upper": score + ci_half_width,
+                    "confidence_level": 0.95,
                     "method": "bootstrap",
                 }
             if num_samples > 0:
                 uncertainty["num_samples"] = num_samples
             if uncertainty:
                 score_details["uncertainty"] = uncertainty
+
+            # Only add score_type/min_score/max_score for non-speed metrics since
+            # speed is measured in tokens/second with no upper bound
+            is_speed_metric = "speed" in metric_name
+            metric_config: dict = {"lower_is_better": False}
+            if not is_speed_metric:
+                metric_config["score_type"] = "continuous"
+                metric_config["min_score"] = 0
+                metric_config["max_score"] = 100
 
             evaluation_results.append(
                 {
@@ -1149,12 +1163,7 @@ class BenchmarkResult(pydantic.BaseModel):
                         "dataset_name": self.dataset,
                         "source_type": "hf_dataset",
                     },
-                    "metric_config": {
-                        "lower_is_better": False,
-                        "score_type": "continuous",
-                        "min_score": 0,
-                        "max_score": 100,
-                    },
+                    "metric_config": metric_config,
                     "score_details": score_details,
                 }
             )
