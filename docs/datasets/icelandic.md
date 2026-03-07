@@ -935,6 +935,108 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-is
 ```
 
+### Unofficial: Icelandic Language Tests
+
+This dataset is based on the old Icelandic standardized tests held from 2013 to 2017,
+available at [mms.is](https://mms.is/eldri-prof-og-svor). The tests were administered at
+the primary school level (10th grade) and cover the Icelandic language. Only the
+multiple-choice questions from the tests have been included.
+
+The split sizes depend on the number of multiple-choice questions available across the
+test years, using older years for training and newer years for testing.
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Eftirfarandi eru fjölvalsspurningar (með svörum).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svara: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Svaraðu eftirfarandi spurningum með 'a', 'b', 'c' eða 'd', og engu öðru.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset icelandic-lang-tests
+```
+
+### Unofficial: Icelandic Mathematics Tests
+
+This dataset is based on the old Icelandic standardized tests held from 2013 to 2017,
+available at [mms.is](https://mms.is/eldri-prof-og-svor). The tests were administered at
+the primary school level (10th grade) and cover mathematics. Only the multiple-choice
+questions from the tests have been included.
+
+The split sizes depend on the number of multiple-choice questions available across the
+test years, using older years for training and newer years for testing.
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Eftirfarandi eru fjölvalsspurningar (með svörum).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svara: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Svaraðu eftirfarandi spurningum með 'a', 'b', 'c' eða 'd', og engu öðru.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset icelandic-math-tests
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-is
