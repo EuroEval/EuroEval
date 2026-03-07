@@ -614,7 +614,7 @@ def extract_questions(
         messages=[{"role": "user", "content": content}],
         response_format=response_format,
         max_completion_tokens=128_000,
-        temperature=0.0,
+        temperature=1.0,  # Required for gpt-5-mini
     )
     result = completion.choices[0].message.parsed
     assert result is not None, f"Failed to parse completion for {subject}."
@@ -680,7 +680,7 @@ def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, AnswerKeyT
         messages=[{"role": "user", "content": content}],
         response_format=AnswerKey,
         max_completion_tokens=128_000,
-        temperature=0.0,
+        temperature=1.0,  # Required for gpt-5-mini
     )
     result = completion.choices[0].message.parsed
     if result is None:
