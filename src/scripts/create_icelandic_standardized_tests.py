@@ -38,6 +38,12 @@ logger = logging.getLogger("create_icelandic_standardized_tests")
 GPT_MODEL = "gpt-5-mini"
 
 
+AnswerKeyType = (
+    Annotated[int, Field(ge=1, le=4)]
+    | Annotated[str, Field(min_length=1, max_length=1)]
+)
+
+
 # Each entry is (year, subject, [question_urls], answers_url).
 # subject: "is" for Icelandic language, "math" for mathematics.
 # Sources:
@@ -282,26 +288,23 @@ TEST_PDFS: list[tuple[str, str, list[str], str]] = [
     ),
 ]
 
-LABEL_LETTERS = ["a", "b", "c", "d"]
-
 
 # Pydantic models for structured GPT output ---------------------------------
 
 
-class McOption(BaseModel):
-    """A single multiple-choice option."""
+class Option(BaseModel):
+    """A single multiple-choice question with four options."""
 
-    a: str
-    b: str
-    c: str
-    d: str
+    answer_key: AnswerKeyType
+    answer: str
 
 
 class McQuestion(BaseModel):
     """A single multiple-choice question with four options."""
 
-    question: str
-    options: McOption
+    question: Annotated[str, Field(min_length=10)]
+    options: list[Option]
+    skip: bool = False
 
 
 class GeneralReadingPassage(BaseModel):
@@ -315,15 +318,21 @@ class McQuestionWithPassage(BaseModel):
     """A single multiple-choice question with a passage and four options."""
 
     passage_id: int
-    question: str
-    options: McOption
+    question: Annotated[str, Field(min_length=10)]
+    options: list[Option]
+    skip: bool = False
 
 
 class AnswerEntry(BaseModel):
     """A single answer-key entry."""
 
-    number: int
-    answer: str
+    question_id: int
+    answer_key: AnswerKeyType
+
+    def model_post_init(self, __context: dict) -> None:
+        """Post-processing for AnswerEntry."""
+        if isinstance(self.answer_key, str):
+            self.answer_key = self.answer_key.upper()
 
 
 class AnswerKey(BaseModel):
@@ -374,7 +383,7 @@ def main() -> None:
                 )
                 continue
             try:
-                output = extract_questions(
+                questions = extract_questions(
                     pdf_bytes=test_pdf,
                     client=client,
                     subject=subject,
@@ -386,17 +395,6 @@ def main() -> None:
                 )
                 continue
 
-            questions: dict[int, McQuestion | McQuestionWithPassage] = {
-                i: getattr(output, f"question_{i}")
-                for i in range(1, len(answer_key) + 1)
-                if hasattr(output, f"question_{i}")
-            }
-            if subject == "is":
-                passages: list[GeneralReadingPassage] = output.passages
-                for question_id, question in questions.items():
-                    passage = next((p for p in passages if p.id == question.passage_id))
-                    question.question = f"{passage.text}\n\n{question.question}"
-
             for question_id, question in questions.items():
                 if question_id not in answer_key:
                     logger.warning(
@@ -404,28 +402,38 @@ def main() -> None:
                         f"{subject} {year}"
                     )
                     continue
-                correct = answer_key[question_id]
-                if correct not in LABEL_LETTERS:
-                    logger.warning(
-                        f"Invalid answer for question {question_id} ({correct}) in "
-                        f"answer key for {subject} {year}"
-                    )
-                    continue
+
                 text = format_question_text(
                     question=question.question,
                     options={
-                        "a": question.options.a,
-                        "b": question.options.b,
-                        "c": question.options.c,
-                        "d": question.options.d,
+                        letter: option.answer
+                        for letter, option in zip(
+                            "abcd", sorted(question.options, key=lambda x: x.answer_key)
+                        )
                     },
                 )
+
+                answer_key_to_letter = {
+                    option.answer_key: letter
+                    for option, letter in zip(
+                        sorted(question.options, key=lambda x: x.answer_key), "abcd"
+                    )
+                }
+                try:
+                    label = answer_key_to_letter[answer_key[question_id]]
+                except KeyError:
+                    logger.warning(
+                        f"Answer key for question {question_id} not found in answer "
+                        f"key for {subject} {year}"
+                    )
+                    continue
+
                 if text is None:
                     logger.warning(
                         f"Failed to format question {question_id} for {subject} {year}"
                     )
                     continue
-                combined_samples.append({"text": text, "label": correct, "year": year})
+                combined_samples.append({"text": text, "label": label, "year": year})
 
         if subject == "is":
             all_is_samples.extend(combined_samples)
@@ -446,42 +454,22 @@ def main() -> None:
 
         logger.info(f"Total {subject} samples after deduplication: {len(df)}")
 
+        train_samples = 64
+        val_samples = 128
+
         # Create splits based on year: oldest → train, middle → val, newest → test.
-        years = sorted(df["year"].unique())
-        test_years = years[-2:] if len(years) >= 3 else years[-1:]
-        val_years = years[-3:-2] if len(years) >= 3 else []
-        train_years = [y for y in years if y not in test_years and y not in val_years]
-
-        test_df = df[df["year"].isin(test_years)].copy()
-        val_df = df[df["year"].isin(val_years)].copy() if val_years else pd.DataFrame()
-        train_df = (
-            df[df["year"].isin(train_years)].copy() if train_years else pd.DataFrame()
+        df = df.sort_values(by="year")
+        train_df = df.iloc[:train_samples].copy().reset_index(drop=True)
+        val_df = (
+            df.iloc[train_samples : train_samples + val_samples]
+            .copy()
+            .reset_index(drop=True)
         )
-
-        # Fall back to random splitting if year-based splits are incomplete.
-        if len(train_df) == 0 or len(val_df) == 0:
-            logger.warning(
-                f"Not enough years for clean splits for {subject}. "
-                "Using random splitting."
-            )
-            df_shuffled = df.sample(frac=1, random_state=4242).reset_index(drop=True)
-            n = len(df_shuffled)
-            test_size = min(n // 2, 2048)
-            val_size = min(n // 4, 256)
-            train_size = min(max(0, n - test_size - val_size), 1024)
-            test_df = df_shuffled.iloc[:test_size].copy()
-            val_df = df_shuffled.iloc[test_size : test_size + val_size].copy()
-            train_df = df_shuffled.iloc[
-                test_size + val_size : test_size + val_size + train_size
-            ].copy()
-
-        train_df = train_df[["text", "label"]].reset_index(drop=True)
-        val_df = val_df[["text", "label"]].reset_index(drop=True)
-        test_df = test_df[["text", "label"]].reset_index(drop=True)
+        test_df = df.iloc[train_samples + val_samples :].copy().reset_index(drop=True)
 
         logger.info(
-            f"Split sizes for {subject}: train={len(train_df)}, "
-            f"val={len(val_df)}, test={len(test_df)}"
+            f"Split sizes for {subject}: train={len(train_df)}, val={len(val_df)}, "
+            f"test={len(test_df)}"
         )
 
         dataset_dict = DatasetDict(
@@ -561,7 +549,7 @@ def _images_to_content(images: list[str]) -> list[dict]:
 
 def extract_questions(
     pdf_bytes: bytes, client: OpenAI, subject: str, ids: list[int]
-) -> tuple[str, list[McQuestion]]:
+) -> dict[int, McQuestion | McQuestionWithPassage]:
     """Use GPT-4.1 vision to extract multiple-choice questions from a question booklet.
 
     For Icelandic language booklets (subject ``"is"``) a general reading passage
@@ -579,9 +567,7 @@ def extract_questions(
             A list of question numbers to extract.
 
     Returns:
-        A tuple of (passage, questions) where passage is the general reading text
-        (empty string for mathematics booklets) and questions is the list of
-        McQuestion objects extracted from the booklet.
+        A dict mapping question numbers to the extracted questions.
     """
     images = pdf_to_images(pdf_bytes=pdf_bytes)
 
@@ -630,12 +616,36 @@ def extract_questions(
         max_completion_tokens=128_000,
     )
     result = completion.choices[0].message.parsed
-    if result is None:
-        return "", []
-    return result
+    assert result is not None, f"Failed to parse completion for {subject}."
+
+    questions: dict[int, McQuestion | McQuestionWithPassage] = {
+        i: getattr(result, f"question_{i}")
+        for i in range(1, len(ids) + 1)
+        if hasattr(result, f"question_{i}")
+        and not getattr(result, f"question_{i}").skip
+    }
+
+    if subject == "is":
+        questions_to_drop: list[int] = list()
+        passages: list[GeneralReadingPassage] = result.passages
+        for question_id, question in questions.items():
+            passage_candidates = [p for p in passages if p.id == question.passage_id]
+            if not passage_candidates:
+                logger.warning(
+                    f"Passage {question.passage_id} not found for {subject}. Removing "
+                    "the question."
+                )
+                questions_to_drop.append(question_id)
+            else:
+                passage = passage_candidates[0]
+                question.question = f"{passage.text}\n\n{question.question}"
+        for question_id in questions_to_drop:
+            del questions[question_id]
+
+    return questions
 
 
-def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, str]:
+def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, AnswerKeyType]:
     """Use GPT-4.1 vision to extract the answer key from a marking guide PDF.
 
     Args:
@@ -645,7 +655,7 @@ def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, str]:
             An authenticated OpenAI client.
 
     Returns:
-        A dict mapping question number (int) to the correct answer letter (a–d).
+        A dict mapping question number (int) to the correct answer key.
     """
     images = pdf_to_images(pdf_bytes=pdf_bytes)
 
@@ -655,10 +665,10 @@ def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, str]:
             "text": (
                 "These are pages from an Icelandic primary school exam marking guide "
                 "(matsreglur). Please extract the answer key for all multiple-choice "
-                "questions. This is the numeric 'Reitur' column (values 1-4), "
-                "corresponding to a, b, c, or d. For each question return its "
-                "ID number and the single correct letter corresponding to the correct "
-                "answer."
+                "questions. These can be either upper case letters, or numerals. If "
+                "both are present, prefer the letter. For each question return its "
+                "ID key and the single correct answer key corresponding to the "
+                "correct answer."
             ),
         },
         *_images_to_content(images),
@@ -672,10 +682,10 @@ def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, str]:
     result = completion.choices[0].message.parsed
     if result is None:
         return {}
-    return {entry.number: entry.answer.lower() for entry in result.answers}
+    return {entry.question_id: entry.answer_key for entry in result.answers}
 
 
-def format_question_text(question: str, options: dict[str, str]) -> str | None:
+def format_question_text(question: str, options: dict[str, str]) -> str:
     """Format a multiple-choice question as a text string for EuroEval.
 
     Args:
@@ -685,13 +695,10 @@ def format_question_text(question: str, options: dict[str, str]) -> str | None:
             A dict mapping option letters to their text.
 
     Returns:
-        The formatted text string, or None if the question is invalid.
+        The formatted text string.
     """
-    if not question or len(question) < 10:
-        return None
-
     choices_label = CHOICES_MAPPING["is"]
-    text = f"{question}\n{choices_label}:\n\n".join(
+    text = f"{question}\n{choices_label}:\n" + "\n".join(
         [f"{letter}. {option}" for letter, option in options.items()]
     )
     return text
