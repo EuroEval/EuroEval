@@ -109,8 +109,8 @@ def load_dataset_config_from_yaml(
     * **``languages``** — if absent, the ``fallback_language_codes`` argument (a list
       of ISO 639-1 codes) is used.  When called from
       :func:`try_get_dataset_config_from_repo`, the Hugging Face Hub repo metadata
-      supplies this fallback automatically.  If neither source provides a language list
-      an error is logged and ``None`` is returned.
+      supplies this fallback automatically.  If neither source provides a language list,
+      English (``"en"``) is used as the final fallback and a warning is logged.
 
     Column mappings may be specified either as flat top-level keys
     (``input_column`` / ``target_column`` / ``choices_column``) **or** via a
@@ -301,11 +301,12 @@ def load_dataset_config_from_yaml(
     else:
         log_once(
             f"YAML config at {yaml_path} does not contain a 'languages' key and no "
-            "language metadata is available for this repository. Add a top-level "
-            "'languages' key to the YAML file (e.g. 'languages:\\n  - en').",
-            level=logging.ERROR,
+            "language metadata could be found for this repository. Defaulting to "
+            "English. Add a top-level 'languages' key to the YAML file "
+            "(e.g. 'languages:\\n  - en') to override this.",
+            level=logging.WARNING,
         )
-        return None
+        language_codes = ["en"]
 
     language_objs: list[Language] = []
     for code in language_codes:

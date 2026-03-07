@@ -209,8 +209,8 @@ class TestLoadDatasetConfigFromYaml:
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is None
 
-    def test_missing_languages_key_returns_none(self, tmp_path: Path) -> None:
-        """A YAML file without 'languages' key and no fallback returns None."""
+    def test_missing_languages_key_defaults_to_english(self, tmp_path: Path) -> None:
+        """A YAML file without 'languages' key and no fallback defaults to English."""
         yaml_file = tmp_path / "euroeval_config.yaml"
         yaml_file.write_text(
             textwrap.dedent(
@@ -220,10 +220,12 @@ class TestLoadDatasetConfigFromYaml:
             )
         )
         config = load_dataset_config_from_yaml(yaml_file)
-        assert config is None
+        assert config is not None
+        assert len(config.languages) == 1
+        assert config.languages[0].code == "en"
 
-    def test_empty_languages_list_returns_none(self, tmp_path: Path) -> None:
-        """A YAML file with an empty languages list and no fallback returns None."""
+    def test_empty_languages_list_defaults_to_english(self, tmp_path: Path) -> None:
+        """A YAML file with an empty languages list and no fallback defaults to English."""
         yaml_file = tmp_path / "euroeval_config.yaml"
         yaml_file.write_text(
             textwrap.dedent(
@@ -234,7 +236,8 @@ class TestLoadDatasetConfigFromYaml:
             )
         )
         config = load_dataset_config_from_yaml(yaml_file)
-        assert config is None
+        assert config is not None
+        assert config.languages[0].code == "en"
 
     def test_malformed_yaml_returns_none(self, tmp_path: Path) -> None:
         """A syntactically broken YAML file returns None."""
@@ -540,8 +543,10 @@ class TestLoadDatasetConfigFromYaml:
         assert config is not None
         assert config.languages[0].code == "da"
 
-    def test_missing_languages_no_fallback_returns_none(self, tmp_path: Path) -> None:
-        """No 'languages' key and no fallback_language_codes returns None."""
+    def test_missing_languages_no_fallback_defaults_to_english(
+        self, tmp_path: Path
+    ) -> None:
+        """No 'languages' key and no fallback_language_codes defaults to English."""
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             textwrap.dedent(
@@ -551,7 +556,8 @@ class TestLoadDatasetConfigFromYaml:
             )
         )
         config = load_dataset_config_from_yaml(yaml_file)
-        assert config is None
+        assert config is not None
+        assert config.languages[0].code == "en"
 
     def test_fallback_invalid_language_code_returns_none(self, tmp_path: Path) -> None:
         """An unknown language code in fallback_language_codes returns None."""
@@ -568,10 +574,10 @@ class TestLoadDatasetConfigFromYaml:
         )
         assert config is None
 
-    def test_pure_inspect_ai_file_with_fallback_language(
+    def test_pure_inspect_ai_file_defaults_to_english(
         self, tmp_path: Path
     ) -> None:
-        """A pure Inspect AI eval.yaml (no EuroEval keys) succeeds with fallback."""
+        """A pure Inspect AI eval.yaml (no EuroEval keys) succeeds, defaulting to English."""
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             textwrap.dedent(
@@ -591,9 +597,7 @@ class TestLoadDatasetConfigFromYaml:
                 """
             )
         )
-        config = load_dataset_config_from_yaml(
-            yaml_file, fallback_language_codes=["en"]
-        )
+        config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
         assert config.task.name == "multiple-choice"
         assert config.languages[0].code == "en"
