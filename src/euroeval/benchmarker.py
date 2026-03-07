@@ -253,6 +253,8 @@ class Benchmarker:
         if os.getenv("FULL_LOG", "0") == "1":
             verbose = True
 
+        adjust_logging_level(verbose=verbose)
+
         self.benchmark_config_default_params = BenchmarkConfigParams(
             task=task,
             dataset=dataset,
