@@ -97,7 +97,7 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
     if hasattr(vllm.config, "attention"):
-        from vllm.config.attention import AttentionConfig
+        pass
 
     from vllm import LLM, SamplingParams
     from vllm.distributed.parallel_state import (
@@ -1150,8 +1150,8 @@ def load_model_and_tokeniser(
 
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
-    if hasattr(vllm.config, "attention"):
-        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)
+    # if hasattr(vllm.config, "attention"):
+    #     vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)
 
     clear_vllm()
 
