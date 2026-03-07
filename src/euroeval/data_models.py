@@ -800,8 +800,9 @@ class BenchmarkConfig:
             this if you are running out of GPU memory. Only relevant if the model is
             generative.
         attention_backend:
-            The attention backend to use for vLLM. Defaults to FLASHINFER. Only
-            relevant if the model is generative.
+            The attention backend to use for vLLM. Only relevant if the model is
+            generative. If None then vLLM will automatically select the best attention
+            backend.
         requires_safetensors:
             Whether to only allow models that use the safetensors format.
         generative_type:
@@ -844,9 +845,12 @@ class BenchmarkConfig:
     few_shot: bool
     num_iterations: int
     gpu_memory_utilization: float
-    attention_backend: t.Literal[
-        *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-    ]
+    attention_backend: (
+        t.Literal[
+            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+        ]
+        | None
+    )
     requires_safetensors: bool
     generative_type: GenerativeType | None
     download_only: bool
@@ -897,9 +901,12 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     requires_safetensors: bool
     download_only: bool
     gpu_memory_utilization: float
-    attention_backend: t.Literal[
-        *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-    ]
+    attention_backend: (
+        t.Literal[
+            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+        ]
+        | None
+    )
     generative_type: GenerativeType | None
     custom_datasets_file: Path
     force: bool
