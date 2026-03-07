@@ -3,20 +3,21 @@
 import importlib.util
 import logging
 import sys
+import typing as t
 from pathlib import Path
 from types import ModuleType
+
 import yaml
 from huggingface_hub import HfApi
 
 from .data_models import DatasetConfig, Task
+from .languages import Language, get_all_languages
 from .logging_utils import log_once
+from .tasks import get_all_tasks
 from .utils import get_hf_token
 
-# Names of the YAML config files that EuroEval recognises in a Hugging Face dataset
-# repository. The list is ordered by priority: the first match wins. `eval.yaml` is the
-# standard name (aligned with the HuggingFace community-evals convention), while
-# `euroeval_config.yaml` is accepted as an alternative.
-YAML_CONFIG_FILENAMES = ["eval.yaml", "euroeval_config.yaml"]
+if t.TYPE_CHECKING:
+    from .data_models import Task
 
 
 def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None:
@@ -54,8 +55,7 @@ def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None
 
 
 def infer_task_from_inspect_ai(
-    raw: dict[str, object],
-    task_map: dict[str, Task],
+    raw: dict[str, object], task_map: dict[str, Task]
 ) -> Task | None:
     """Try to infer the EuroEval task from Inspect AI YAML fields.
 
@@ -67,6 +67,15 @@ def infer_task_from_inspect_ai(
 
     Returns a `Task` object, or `None` when the task cannot be determined from
     the Inspect AI hints.
+
+    Args:
+        raw:
+            The raw YAML data.
+        task_map:
+            The mapping from task names to task objects.
+
+    Returns:
+        The inferred task, or None if the task cannot be inferred.
     """
     tasks_raw = raw.get("tasks")
     if not isinstance(tasks_raw, list) or not tasks_raw:
@@ -91,8 +100,7 @@ def infer_task_from_inspect_ai(
 
 
 def load_dataset_config_from_yaml(
-    yaml_path: Path,
-    fallback_language_codes: list[str] | None = None,
+    yaml_path: Path, fallback_language_codes: list[str] | None = None
 ) -> DatasetConfig | None:
     """Load a dataset config from a YAML file.
 
@@ -193,33 +201,15 @@ def load_dataset_config_from_yaml(
         A `DatasetConfig` built from the YAML data, or `None` if the file could not
         be parsed or contains invalid values.
     """
-    # Import here to avoid circular imports at module level
-    from . import languages as all_languages
-    from . import tasks as all_tasks
-    from .data_models import Task
-    from .languages import Language
-
-    # Build a lookup table: task name → Task object
-    task_map: dict[str, Task] = {
-        obj.name: obj
-        for obj in vars(all_tasks).values()
-        if isinstance(obj, Task)
-    }
-
-    # Build a lookup table: ISO language code → Language object
-    language_map: dict[str, Language] = {
-        obj.code: obj
-        for obj in vars(all_languages).values()
-        if isinstance(obj, Language)
-    }
+    task_map = get_all_tasks()
+    language_map = get_all_languages()
 
     try:
         with yaml_path.open(encoding="utf-8") as fh:
             raw = yaml.safe_load(fh)
     except yaml.YAMLError as exc:
         log_once(
-            f"Could not parse YAML config from {yaml_path}: {exc}",
-            level=logging.ERROR,
+            f"Could not parse YAML config from {yaml_path}: {exc}", level=logging.ERROR
         )
         return None
 
@@ -305,8 +295,9 @@ def load_dataset_config_from_yaml(
     elif fallback_language_codes:
         log_once(
             f"YAML config at {yaml_path} does not contain a 'languages' key. "
-            f"Using language(s) from the repository metadata: {fallback_language_codes}.",
-            level=logging.INFO,
+            "Using language(s) from the repository metadata: "
+            f"{fallback_language_codes}.",
+            level=logging.DEBUG,
         )
         language_codes = fallback_language_codes
     else:
@@ -402,7 +393,11 @@ def load_dataset_config_from_yaml(
             )
             return None
 
-    return DatasetConfig(task=task_obj, languages=language_objs, **kwargs)
+    return DatasetConfig(
+        task=task_obj,
+        languages=language_objs,
+        **kwargs,  # pyrefly: ignore[bad-argument-type]
+    )
 
 
 def find_split(splits: list[str], keyword: str) -> str | None:
@@ -412,8 +407,7 @@ def find_split(splits: list[str], keyword: str) -> str | None:
 
 
 def get_repo_splits(
-    hf_api: HfApi,
-    dataset_id: str,
+    hf_api: HfApi, dataset_id: str
 ) -> tuple[str | None, str | None, str | None]:
     """Return the (train, val, test) split names for a Hugging Face dataset repo.
 
@@ -471,24 +465,19 @@ def try_get_dataset_config_from_repo(
         return None
 
     repo_files = list(
-        hf_api.list_repo_files(
-            repo_id=dataset_id, repo_type="dataset", revision="main"
-        )
+        hf_api.list_repo_files(repo_id=dataset_id, repo_type="dataset", revision="main")
     )
 
     # ------------------------------------------------------------------
     # 1. Try YAML configs first — no trust_remote_code needed.
     # ------------------------------------------------------------------
-    yaml_filename: str | None = next(
-        (fn for fn in YAML_CONFIG_FILENAMES if fn in repo_files), None
-    )
-    if yaml_filename is not None:
+    if "eval.yaml" in repo_files:
         external_config_path = cache_dir / "external_dataset_configs" / dataset_id
         external_config_path.mkdir(parents=True, exist_ok=True)
         hf_api.hf_hub_download(
             repo_id=dataset_id,
             repo_type="dataset",
-            filename=yaml_filename,
+            filename="eval.yaml",
             local_dir=external_config_path,
             local_dir_use_symlinks=False,
         )
@@ -513,7 +502,7 @@ def try_get_dataset_config_from_repo(
         # Note: the YAML is also parsed inside load_dataset_config_from_yaml() below.
         # The files are very small so the cost of reading twice is negligible; this
         # keeps the public signature of load_dataset_config_from_yaml() clean.
-        yaml_file_path = external_config_path / yaml_filename
+        yaml_file_path = external_config_path / "eval.yaml"
         inspect_ai_config: str | None = None
         inspect_ai_split: str | None = None
         try:
@@ -534,17 +523,19 @@ def try_get_dataset_config_from_repo(
             pass  # errors will be handled inside load_dataset_config_from_yaml()
 
         repo_dataset_config = load_dataset_config_from_yaml(
-            yaml_path=yaml_file_path,
-            fallback_language_codes=fallback_language_codes,
+            yaml_path=yaml_file_path, fallback_language_codes=fallback_language_codes
         )
         if repo_dataset_config is None:
             return None
 
         # Detect train/val splits from the repo; for test, prefer the Inspect AI
-        # tasks[0].split value (already baked into the config by load_dataset_config_from_yaml)
-        # over the auto-detected one, since the YAML author knows the correct split name.
+        # tasks[0].split value (already baked into the config by
+        # load_dataset_config_from_yaml) over the auto-detected one, since the YAML
+        # author knows the correct split name.
         train_split, val_split, auto_test_split = get_repo_splits(hf_api, dataset_id)
-        test_split = inspect_ai_split if inspect_ai_split is not None else auto_test_split
+        test_split = (
+            inspect_ai_split if inspect_ai_split is not None else auto_test_split
+        )
         if test_split is None:
             log_once(
                 f"Dataset {dataset_id} does not have a test split, so we cannot load "
@@ -560,7 +551,7 @@ def try_get_dataset_config_from_repo(
             log_once(
                 f"Dataset {dataset_id!r} has no training split. Using the validation "
                 f"split {val_split!r} as the training split instead.",
-                level=logging.INFO,
+                level=logging.DEBUG,
             )
             train_split = val_split
             val_split = None
@@ -569,7 +560,9 @@ def try_get_dataset_config_from_repo(
         # tasks[0].config is present (uses the "{path}::{config}" convention that the
         # data loading layer splits on "::" to pass as the `name` argument to
         # load_dataset(), selecting the appropriate HuggingFace dataset config/subset).
-        source = f"{dataset_id}::{inspect_ai_config}" if inspect_ai_config else dataset_id
+        source = (
+            f"{dataset_id}::{inspect_ai_config}" if inspect_ai_config else dataset_id
+        )
 
         repo_dataset_config.name = dataset_id
         repo_dataset_config.pretty_name = dataset_id
@@ -654,7 +647,7 @@ def try_get_dataset_config_from_repo(
         log_once(
             f"Dataset {dataset_id!r} has no training split. Using the validation "
             f"split {val_split!r} as the training split instead.",
-            level=logging.INFO,
+            level=logging.DEBUG,
         )
         train_split = val_split
         val_split = None

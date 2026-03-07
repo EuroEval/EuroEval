@@ -21,6 +21,16 @@ from .prompt_templates import (
 )
 from .prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES, ToolCallingResponse
 
+
+def get_all_tasks() -> dict[str, "Task"]:
+    """Get a list of all the tasks.
+
+    Returns:
+        A mapping between task names and their configurations.
+    """
+    return {cfg.name: cfg for cfg in globals().values() if isinstance(cfg, Task)}
+
+
 LA = Task(
     name="linguistic-acceptability",
     task_group=TaskGroup.SEQUENCE_CLASSIFICATION,

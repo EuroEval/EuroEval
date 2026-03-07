@@ -3,10 +3,7 @@
 import textwrap
 from pathlib import Path
 
-from euroeval.custom_dataset_configs import (
-    YAML_CONFIG_FILENAMES,
-    load_dataset_config_from_yaml,
-)
+from euroeval.custom_dataset_configs import load_dataset_config_from_yaml
 from euroeval.data_models import DatasetConfig
 
 
@@ -225,7 +222,7 @@ class TestLoadDatasetConfigFromYaml:
         assert config.languages[0].code == "en"
 
     def test_empty_languages_list_defaults_to_english(self, tmp_path: Path) -> None:
-        """A YAML file with an empty languages list and no fallback defaults to English."""
+        """A YAML file with empty languages list and no fallback defaults to English."""
         yaml_file = tmp_path / "euroeval_config.yaml"
         yaml_file.write_text(
             textwrap.dedent(
@@ -340,7 +337,9 @@ class TestLoadDatasetConfigFromYaml:
         assert config is not None
         # preprocessing_func is built; the explicit top-level value wins
 
-    def test_inspect_ai_without_field_spec_loads_successfully(self, tmp_path: Path) -> None:
+    def test_inspect_ai_without_field_spec_loads_successfully(
+        self, tmp_path: Path
+    ) -> None:
         """A tasks list without a field_spec block is silently ignored."""
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
@@ -412,7 +411,7 @@ class TestLoadDatasetConfigFromYaml:
     # ------------------------------------------------------------------ #
 
     def test_task_inferred_from_multiple_choice_solver(self, tmp_path: Path) -> None:
-        """A 'multiple_choice' solver in tasks[0].solvers infers multiple-choice task."""
+        """A 'multiple_choice' solver in tasks[0].solvers infers MC task."""
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             textwrap.dedent(
@@ -520,14 +519,14 @@ class TestLoadDatasetConfigFromYaml:
                 """
             )
         )
-        config = load_dataset_config_from_yaml(yaml_file, fallback_language_codes=["en"])
+        config = load_dataset_config_from_yaml(
+            yaml_file, fallback_language_codes=["en"]
+        )
         assert config is not None
         assert len(config.languages) == 1
         assert config.languages[0].code == "en"
 
-    def test_yaml_languages_take_precedence_over_fallback(
-        self, tmp_path: Path
-    ) -> None:
+    def test_yaml_languages_take_precedence_over_fallback(self, tmp_path: Path) -> None:
         """Explicit 'languages' in YAML overrides fallback_language_codes."""
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
@@ -539,7 +538,9 @@ class TestLoadDatasetConfigFromYaml:
                 """
             )
         )
-        config = load_dataset_config_from_yaml(yaml_file, fallback_language_codes=["en"])
+        config = load_dataset_config_from_yaml(
+            yaml_file, fallback_language_codes=["en"]
+        )
         assert config is not None
         assert config.languages[0].code == "da"
 
@@ -574,10 +575,8 @@ class TestLoadDatasetConfigFromYaml:
         )
         assert config is None
 
-    def test_pure_inspect_ai_file_defaults_to_english(
-        self, tmp_path: Path
-    ) -> None:
-        """A pure Inspect AI eval.yaml (no EuroEval keys) succeeds, defaulting to English."""
+    def test_pure_inspect_ai_file_defaults_to_english(self, tmp_path: Path) -> None:
+        """A pure Inspect AI eval.yaml (no EuroEval keys) succeeds, defaults to en."""
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             textwrap.dedent(
@@ -665,21 +664,3 @@ class TestLoadDatasetConfigFromYaml:
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
         assert config.test_split == "test"
-
-
-class TestYamlConfigFilenames:
-    """Sanity checks on the YAML_CONFIG_FILENAMES constant."""
-
-    def test_euroeval_config_yaml_in_filenames(self) -> None:
-        """euroeval_config.yaml is in the recognised filenames list."""
-        assert "euroeval_config.yaml" in YAML_CONFIG_FILENAMES
-
-    def test_eval_yaml_in_filenames(self) -> None:
-        """eval.yaml is in the recognised filenames list."""
-        assert "eval.yaml" in YAML_CONFIG_FILENAMES
-
-    def test_eval_yaml_has_higher_priority(self) -> None:
-        """eval.yaml takes priority over euroeval_config.yaml."""
-        idx_eval = YAML_CONFIG_FILENAMES.index("eval.yaml")
-        idx_euroeval = YAML_CONFIG_FILENAMES.index("euroeval_config.yaml")
-        assert idx_eval < idx_euroeval
