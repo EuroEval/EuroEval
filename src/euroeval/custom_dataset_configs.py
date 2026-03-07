@@ -555,6 +555,13 @@ def try_get_dataset_config_from_repo(
             )
             return None
 
+        # When there is no training split, promote the validation split to training
+        # and leave no validation split (avoids having nothing to sample few-shot
+        # examples from while still allowing zero-shot evaluation).
+        if train_split is None and val_split is not None:
+            train_split = val_split
+            val_split = None
+
         # Build the source string, appending the HuggingFace config/subset name when
         # tasks[0].config is present (uses the "{path}::{config}" convention that the
         # data loading layer splits on "::" to pass as the `name` argument to
@@ -637,6 +644,12 @@ def try_get_dataset_config_from_repo(
             level=logging.ERROR,
         )
         return None
+
+    # When there is no training split, promote the validation split to training
+    # and leave no validation split.
+    if train_split is None and val_split is not None:
+        train_split = val_split
+        val_split = None
 
     # Set up the config with the repo information
     repo_dataset_config = repo_dataset_configs[0]
