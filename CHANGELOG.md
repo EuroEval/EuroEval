@@ -61,6 +61,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   via the `preprocessing_func` argument. This is either-or: you cannot set both
   different column names and also specify a custom preprocessing function.
 
+### Changed
+
+- We now default to selecting vLLM's default attention backend for the given model, since
+  it now automatically selects the most efficient backend for the given model. It is
+  still possible to override this by setting the `--attention-backend` CLI option or the
+  `attention_backend` argument to `Benchmarker`.
+- We now do not explicitly set the vLLM V1 engine via the `VLLM_USE_V1` environment
+  variable, as it is now always set by default.
+
 ### Fixed
 
 - There was an issue with caching of answers by generative models when evaluating them
