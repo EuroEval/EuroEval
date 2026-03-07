@@ -538,7 +538,7 @@ class Benchmarker:
                 If we're offline benchmarking an adapter model, or if model loading
                 failed.
         """
-        log(
+        log_once(
             "Started EuroEval run. Run with `--verbose` for more information.",
             level=logging.INFO,
         )
