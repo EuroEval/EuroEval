@@ -423,6 +423,13 @@ top-level keys take precedence when both are present.  Note that Inspect AI allo
 bare integers (mapped to letters A, B, C … by Inspect AI); EuroEval silently ignores
 both forms because they are not column names.
 
+The standard Inspect AI task keys are also used directly by EuroEval:
+
+* **`tasks[0].split`** — the evaluation split to use (e.g. `test`, `validation`).
+  EuroEval uses this as the test split, so no separate EuroEval key is needed.
+* **`tasks[0].config`** — the Hugging Face dataset config/subset name (e.g. `main`,
+  `default`).  EuroEval automatically appends it when loading the dataset.
+
 You can then benchmark your custom dataset by simply running
 
 ```bash

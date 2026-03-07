@@ -602,6 +602,70 @@ class TestLoadDatasetConfigFromYaml:
         assert config.task.name == "multiple-choice"
         assert config.languages[0].code == "en"
 
+    def test_inspect_ai_split_used_as_test_split(self, tmp_path: Path) -> None:
+        """tasks[0].split is used as the test_split (standard Inspect AI key)."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: My Dataset
+                tasks:
+                  - id: my_dataset
+                    split: validation
+                    field_spec:
+                      input: question
+                      choices: options
+                    solvers:
+                      - name: multiple_choice
+                    scorers:
+                      - name: choice
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.test_split == "validation"
+
+    def test_inspect_ai_split_default_test(self, tmp_path: Path) -> None:
+        """tasks[0].split: test sets test_split to 'test' (standard name)."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                tasks:
+                  - id: my_dataset
+                    split: test
+                    field_spec:
+                      input: question
+                      choices: options
+                    solvers:
+                      - name: multiple_choice
+                task: multiple-choice
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.test_split == "test"
+
+    def test_no_inspect_ai_split_defaults_to_test(self, tmp_path: Path) -> None:
+        """When tasks[0].split is absent, test_split defaults to 'test'."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: classification
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.test_split == "test"
+
 
 class TestYamlConfigFilenames:
     """Sanity checks on the YAML_CONFIG_FILENAMES constant."""

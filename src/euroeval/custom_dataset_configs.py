@@ -117,6 +117,11 @@ def load_dataset_config_from_yaml(
     ``tasks[0].field_spec`` block using the Inspect AI ``input`` / ``target`` /
     ``choices`` sub-keys.  Top-level keys take precedence when both are present.
 
+    ``tasks[0].split`` is used as the test split, replacing the default ``"test"``
+    value.  ``try_get_dataset_config_from_repo`` still auto-detects the train and val
+    splits from the repository, and also uses ``tasks[0].config`` as the HuggingFace
+    dataset config/subset name when loading the dataset.
+
     When reading ``field_spec``:
 
     * ``field_spec.input`` is used as ``input_column``.
@@ -260,6 +265,14 @@ def load_dataset_config_from_yaml(
                 if "choices" in field_spec and "choices_column" not in raw:
                     raw["choices_column"] = field_spec["choices"]
 
+            # tasks[0].split → test_split
+            # Inspect AI uses this to specify which dataset split to evaluate on.
+            # When present, use it as the test split so the same file works for
+            # both Inspect AI and EuroEval without requiring an extra EuroEval key.
+            split_val: Any = first_task.get("split")
+            if isinstance(split_val, str) and split_val and "test_split" not in raw:
+                raw["test_split"] = split_val
+
     # --- task (optional; inferred from Inspect AI hints when absent) ---
 
     task_name: Any = raw.get("task")
@@ -329,6 +342,7 @@ def load_dataset_config_from_yaml(
         "instruction_prompt",
         "input_column",
         "target_column",
+        "test_split",
     ):
         value = raw.get(str_field)
         if value is not None:
@@ -493,14 +507,46 @@ def try_get_dataset_config_from_repo(
             if isinstance(lang_meta, list) and lang_meta:
                 fallback_language_codes = [str(c) for c in lang_meta if c]
 
+        # Peek at the raw YAML to extract standard Inspect AI fields that need
+        # dataset-level context:
+        #   - tasks[0].config → HuggingFace dataset config/subset name
+        #   - tasks[0].split  → evaluation split (used to decide if auto-detection
+        #                        should be skipped for the test split)
+        # Note: the YAML is also parsed inside load_dataset_config_from_yaml() below.
+        # The files are very small so the cost of reading twice is negligible; this
+        # keeps the public signature of load_dataset_config_from_yaml() clean.
+        yaml_file_path = external_config_path / yaml_filename
+        inspect_ai_config: str | None = None
+        inspect_ai_split: str | None = None
+        try:
+            with yaml_file_path.open(encoding="utf-8") as fh:
+                raw_peek: Any = yaml.safe_load(fh)
+            if isinstance(raw_peek, dict):
+                tasks_peek: Any = raw_peek.get("tasks")
+                if isinstance(tasks_peek, list) and tasks_peek:
+                    first_task_peek = tasks_peek[0]
+                    if isinstance(first_task_peek, dict):
+                        config_val: Any = first_task_peek.get("config")
+                        if isinstance(config_val, str) and config_val:
+                            inspect_ai_config = config_val
+                        split_val: Any = first_task_peek.get("split")
+                        if isinstance(split_val, str) and split_val:
+                            inspect_ai_split = split_val
+        except (yaml.YAMLError, OSError):
+            pass  # errors will be handled inside load_dataset_config_from_yaml()
+
         repo_dataset_config = load_dataset_config_from_yaml(
-            yaml_path=external_config_path / yaml_filename,
+            yaml_path=yaml_file_path,
             fallback_language_codes=fallback_language_codes,
         )
         if repo_dataset_config is None:
             return None
 
-        train_split, val_split, test_split = _get_repo_splits(hf_api, dataset_id)
+        # Detect train/val splits from the repo; for test, prefer the Inspect AI
+        # tasks[0].split value (already baked into the config by load_dataset_config_from_yaml)
+        # over the auto-detected one, since the YAML author knows the correct split name.
+        train_split, val_split, auto_test_split = _get_repo_splits(hf_api, dataset_id)
+        test_split = inspect_ai_split if inspect_ai_split is not None else auto_test_split
         if test_split is None:
             log_once(
                 f"Dataset {dataset_id} does not have a test split, so we cannot load "
@@ -509,9 +555,15 @@ def try_get_dataset_config_from_repo(
             )
             return None
 
+        # Build the source string, appending the HuggingFace config/subset name when
+        # tasks[0].config is present (uses the "{path}::{config}" convention that the
+        # data loading layer splits on "::" to pass as the `name` argument to
+        # load_dataset(), selecting the appropriate HuggingFace dataset config/subset).
+        source = f"{dataset_id}::{inspect_ai_config}" if inspect_ai_config else dataset_id
+
         repo_dataset_config.name = dataset_id
         repo_dataset_config.pretty_name = dataset_id
-        repo_dataset_config.source = dataset_id
+        repo_dataset_config.source = source
         repo_dataset_config.train_split = train_split
         repo_dataset_config.val_split = val_split
         repo_dataset_config.test_split = test_split
