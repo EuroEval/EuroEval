@@ -175,7 +175,7 @@ from .languages import get_all_languages
     "--attention-backend",
     default=None,
     show_default=True,
-    type=click.Choice(ATTENTION_BACKENDS + [None], case_sensitive=True),
+    type=click.Choice(ATTENTION_BACKENDS, case_sensitive=True),
     help="The attention backend to use for vLLM. Only relevant if the model is "
     "generative. If None then the attention backend will be selected automatically.",
 )
