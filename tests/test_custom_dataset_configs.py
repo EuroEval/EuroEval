@@ -1,10 +1,10 @@
-"""Tests for the `custom_dataset_configs` module."""
+"""Tests for the `yaml_config` module."""
 
 import textwrap
 from pathlib import Path
 
-from euroeval.custom_dataset_configs import load_dataset_config_from_yaml
 from euroeval.data_models import DatasetConfig
+from euroeval.yaml_config import load_dataset_config_from_yaml
 
 
 class TestLoadDatasetConfigFromYaml:
