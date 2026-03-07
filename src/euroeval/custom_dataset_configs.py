@@ -559,6 +559,11 @@ def try_get_dataset_config_from_repo(
         # and leave no validation split (avoids having nothing to sample few-shot
         # examples from while still allowing zero-shot evaluation).
         if train_split is None and val_split is not None:
+            log_once(
+                f"Dataset {dataset_id!r} has no training split. Using the validation "
+                f"split {val_split!r} as the training split instead.",
+                level=logging.INFO,
+            )
             train_split = val_split
             val_split = None
 
@@ -648,6 +653,11 @@ def try_get_dataset_config_from_repo(
     # When there is no training split, promote the validation split to training
     # and leave no validation split.
     if train_split is None and val_split is not None:
+        log_once(
+            f"Dataset {dataset_id!r} has no training split. Using the validation "
+            f"split {val_split!r} as the training split instead.",
+            level=logging.INFO,
+        )
         train_split = val_split
         val_split = None
 
