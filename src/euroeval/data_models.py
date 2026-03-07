@@ -945,7 +945,7 @@ class BenchmarkResult(pydantic.BaseModel):
         """
         # Detect Every Eval Ever format by the presence of schema_version
         if "schema_version" in config:
-            return cls._from_eee_dict(config)
+            return cls.from_eee_dict(config)
 
         # To be backwards compatible, we accept old results which changed the model
         # name with parameters rather than adding them as explicit parameters
@@ -976,15 +976,21 @@ class BenchmarkResult(pydantic.BaseModel):
         return cls(**config)
 
     @classmethod
-    def _from_eee_dict(cls, config: dict) -> "BenchmarkResult":
+    def from_eee_dict(cls, config: dict) -> "BenchmarkResult":
         """Create a BenchmarkResult from an Every Eval Ever format dictionary.
+
+        Reconstructs a full ``BenchmarkResult`` from a dictionary conforming to the
+        Every Eval Ever (EEE) JSON schema v0.2.1.  The method is the inverse of
+        :meth:`to_eee_dict` and enables lossless round-trips via
+        :meth:`from_dict`.
 
         Args:
             config:
-                An EEE-format dictionary.
+                A dictionary conforming to the EEE JSON schema v0.2.1, as produced
+                by :meth:`to_eee_dict`.
 
         Returns:
-            The benchmark result.
+            The reconstructed benchmark result.
         """
         model_info = config.get("model_info", {})
         eval_library = config.get("eval_library", {})
@@ -1030,12 +1036,31 @@ class BenchmarkResult(pydantic.BaseModel):
 
         results: "ScoreDict" = {"raw": raw_results, "total": total_dict}
 
-        def _parse_optional_bool(value: str) -> bool | None:
+        def parse_optional_bool(value: str) -> bool | None:
+            """Parse a string-encoded optional boolean value.
+
+            Args:
+                value:
+                    The string to parse.  ``"null"`` maps to ``None``; any other
+                    value is compared case-insensitively to ``"true"``.
+
+            Returns:
+                ``None`` if *value* is ``"null"``, otherwise a boolean.
+            """
             if value == "null":
                 return None
             return value.lower() == "true"
 
-        def _parse_optional_str(value: str) -> str | None:
+        def parse_optional_str(value: str) -> str | None:
+            """Parse a string-encoded optional string value.
+
+            Args:
+                value:
+                    The string to parse.  ``"null"`` maps to ``None``.
+
+            Returns:
+                ``None`` if *value* is ``"null"``, otherwise the original string.
+            """
             return None if value == "null" else value
 
         languages_json = eval_lib_additional.get("languages", "[]")
@@ -1061,34 +1086,57 @@ class BenchmarkResult(pydantic.BaseModel):
             ),
             merge=model_additional.get("merge", "false") == "true",
             generative=model_additional.get("generative", "false") == "true",
-            generative_type=_parse_optional_str(
+            generative_type=parse_optional_str(
                 model_additional.get("generative_type", "null")
             ),
-            few_shot=_parse_optional_bool(eval_lib_additional.get("few_shot", "null")),
-            validation_split=_parse_optional_bool(
+            few_shot=parse_optional_bool(eval_lib_additional.get("few_shot", "null")),
+            validation_split=parse_optional_bool(
                 eval_lib_additional.get("validation_split", "null")
             ),
-            euroeval_version=_parse_optional_str(
+            euroeval_version=parse_optional_str(
                 eval_library.get("version", "null")
                 if eval_library.get("version") != "unknown"
                 else "null"
             ),
-            transformers_version=_parse_optional_str(
+            transformers_version=parse_optional_str(
                 eval_lib_additional.get("transformers_version", "null")
             ),
-            torch_version=_parse_optional_str(
+            torch_version=parse_optional_str(
                 eval_lib_additional.get("torch_version", "null")
             ),
-            vllm_version=_parse_optional_str(
+            vllm_version=parse_optional_str(
                 eval_lib_additional.get("vllm_version", "null")
             ),
-            xgrammar_version=_parse_optional_str(
+            xgrammar_version=parse_optional_str(
                 eval_lib_additional.get("xgrammar_version", "null")
             ),
         )
 
     def to_eee_dict(self) -> dict:
-        """Convert to Every Eval Ever (EEE) format.
+        """Convert this benchmark result to the Every Eval Ever (EEE) format.
+
+        Produces a dictionary conforming to the Every Eval Ever JSON schema v0.2.1
+        (https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json).
+        The resulting dict can be written directly to
+        ``euroeval_benchmark_results.jsonl`` and later reconstructed without loss
+        via :meth:`from_eee_dict` (or :meth:`from_dict`).
+
+        The mapping is as follows:
+
+        * **Top-level fields**: ``schema_version``, ``evaluation_id``,
+          ``evaluation_timestamp``, ``retrieved_timestamp``, ``source_metadata``.
+        * **model_info**: model ``id``/``name`` plus EuroEval-specific details
+          (``num_model_parameters``, ``max_sequence_length``, ``vocabulary_size``,
+          ``merge``, ``generative``, ``generative_type``) in ``additional_details``.
+        * **eval_library**: ``name="euroeval"``, library version, and evaluation
+          context (languages, task, shot config, library versions, raw per-iteration
+          scores) in ``additional_details``.
+        * **evaluation_results**: one entry per metric.  The 95 % confidence interval
+          half-width stored in the ``_se`` keys is exposed as a
+          ``confidence_interval`` with ``confidence_level: 0.95``.  Speed metrics
+          (``test_speed``, ``test_speed_short``) do not include ``score_type``,
+          ``min_score``, or ``max_score`` because tokens-per-second has no fixed
+          upper bound.
 
         Returns:
             A dictionary matching the EEE JSON schema v0.2.1.
