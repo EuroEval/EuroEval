@@ -105,11 +105,6 @@ os.environ["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "1"
 os.environ["DISABLE_AIOHTTP_TRANSPORT"] = "True"
 
 
-# Enable the newer vLLM V1 engine, which is faster and offers more compatibility with
-# newer models
-os.environ["VLLM_USE_V1"] = "1"
-
-
 # Set the HF_TOKEN env var to copy the HUGGINGFACE_API_KEY env var, as vLLM uses the
 # former and LiteLLM uses the latter
 if os.getenv("HUGGINGFACE_API_KEY"):
