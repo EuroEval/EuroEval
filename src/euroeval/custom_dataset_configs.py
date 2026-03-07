@@ -5,12 +5,10 @@ import logging
 import sys
 from pathlib import Path
 from types import ModuleType
-from typing import Any
-
 import yaml
 from huggingface_hub import HfApi
 
-from .data_models import DatasetConfig
+from .data_models import DatasetConfig, Task
 from .logging_utils import log_once
 from .utils import get_hf_token
 
@@ -55,20 +53,20 @@ def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None
     return None
 
 
-def _infer_task_from_inspect_ai(
-    raw: dict[str, Any],
-    task_map: dict[str, Any],
-) -> Any | None:
+def infer_task_from_inspect_ai(
+    raw: dict[str, object],
+    task_map: dict[str, Task],
+) -> Task | None:
     """Try to infer the EuroEval task from Inspect AI YAML fields.
 
     Currently detects:
 
-    * A solver with ``name: multiple_choice`` in ``tasks[0].solvers``
-      → ``multiple-choice``
-    * A ``choices`` key in ``tasks[0].field_spec`` → ``multiple-choice``
+    * A solver with `name: multiple_choice` in `tasks[0].solvers`
+      → `multiple-choice`
+    * A `choices` key in `tasks[0].field_spec` → `multiple-choice`
 
-    Returns a :class:`~euroeval.data_models.Task` object, or ``None`` when the task
-    cannot be determined from the Inspect AI hints.
+    Returns a `Task` object, or `None` when the task cannot be determined from
+    the Inspect AI hints.
     """
     tasks_raw = raw.get("tasks")
     if not isinstance(tasks_raw, list) or not tasks_raw:
@@ -78,14 +76,14 @@ def _infer_task_from_inspect_ai(
         return None
 
     # Multiple-choice: a solver whose name is "multiple_choice"
-    solvers: Any = first_task.get("solvers")
+    solvers = first_task.get("solvers")
     if isinstance(solvers, list):
         for solver in solvers:
             if isinstance(solver, dict) and solver.get("name") == "multiple_choice":
                 return task_map.get("multiple-choice")
 
     # Multiple-choice: choices column declared in field_spec
-    field_spec: Any = first_task.get("field_spec")
+    field_spec = first_task.get("field_spec")
     if isinstance(field_spec, dict) and "choices" in field_spec:
         return task_map.get("multiple-choice")
 
@@ -100,36 +98,36 @@ def load_dataset_config_from_yaml(
 
     The file is fully compatible with the `Inspect AI eval.yaml format
     <https://inspect.aisi.org.uk/tasks.html#hugging-face>`_.  The EuroEval-specific
-    ``task`` and ``languages`` keys are **optional**:
+    `task` and `languages` keys are **optional**:
 
-    * **``task``** — if absent, the task is inferred from Inspect AI hints: a solver
-      with ``name: multiple_choice`` or a ``field_spec.choices`` entry both map to the
-      ``multiple-choice`` task.  If the task cannot be inferred an error is logged and
-      ``None`` is returned.
-    * **``languages``** — if absent, the ``fallback_language_codes`` argument (a list
+    * **`task`** — if absent, the task is inferred from Inspect AI hints: a solver
+      with `name: multiple_choice` or a `field_spec.choices` entry both map to the
+      `multiple-choice` task.  If the task cannot be inferred an error is logged and
+      `None` is returned.
+    * **`languages`** — if absent, the `fallback_language_codes` argument (a list
       of ISO 639-1 codes) is used.  When called from
-      :func:`try_get_dataset_config_from_repo`, the Hugging Face Hub repo metadata
+      `try_get_dataset_config_from_repo`, the Hugging Face Hub repo metadata
       supplies this fallback automatically.  If neither source provides a language list,
-      English (``"en"``) is used as the final fallback and a warning is logged.
+      English (`"en"`) is used as the final fallback and a warning is logged.
 
     Column mappings may be specified either as flat top-level keys
-    (``input_column`` / ``target_column`` / ``choices_column``) **or** via a
-    ``tasks[0].field_spec`` block using the Inspect AI ``input`` / ``target`` /
-    ``choices`` sub-keys.  Top-level keys take precedence when both are present.
+    (`input_column` / `target_column` / `choices_column`) **or** via a
+    `tasks[0].field_spec` block using the Inspect AI `input` / `target` /
+    `choices` sub-keys.  Top-level keys take precedence when both are present.
 
-    ``tasks[0].split`` is used as the test split, replacing the default ``"test"``
-    value.  ``try_get_dataset_config_from_repo`` still auto-detects the train and val
-    splits from the repository, and also uses ``tasks[0].config`` as the HuggingFace
+    `tasks[0].split` is used as the test split, replacing the default `"test"`
+    value.  `try_get_dataset_config_from_repo` still auto-detects the train and val
+    splits from the repository, and also uses `tasks[0].config` as the HuggingFace
     dataset config/subset name when loading the dataset.
 
-    When reading ``field_spec``:
+    When reading `field_spec`:
 
-    * ``field_spec.input`` is used as ``input_column``.
-    * ``field_spec.target`` is used as ``target_column`` **only when it is a plain
-      column name**.  Inspect AI also allows ``"literal:<value>"`` (a hard-coded
+    * `field_spec.input` is used as `input_column`.
+    * `field_spec.target` is used as `target_column` **only when it is a plain
+      column name**.  Inspect AI also allows `"literal:<value>"` (a hard-coded
       answer string) and bare integers (which Inspect AI maps to letters A, B, C …);
       both are silently skipped because they are not column names.
-    * ``field_spec.choices`` is used as ``choices_column`` (a single column name or a
+    * `field_spec.choices` is used as `choices_column` (a single column name or a
       list of column names).
 
     Inspect AI silently ignores keys it does not recognise, so a single file can serve
@@ -179,21 +177,21 @@ def load_dataset_config_from_yaml(
         languages:
           - en
 
-    Supported task names are the ``name`` attributes of all task objects defined in
-    :mod:`euroeval.tasks` (e.g. ``classification``, ``sentiment-classification``,
-    ``named-entity-recognition``, etc.).
+    Supported task names are the `name` attributes of all task objects defined in
+    `euroeval.tasks` (e.g. `classification`, `sentiment-classification`,
+    `named-entity-recognition`, etc.).
 
     Args:
         yaml_path:
             Path to the YAML config file.
         fallback_language_codes:
             ISO 639-1 language codes to use when the YAML file does not contain a
-            ``languages`` key.  Typically supplied from HuggingFace Hub repo metadata
-            by :func:`try_get_dataset_config_from_repo`.
+            `languages` key.  Typically supplied from HuggingFace Hub repo metadata
+            by `try_get_dataset_config_from_repo`.
 
     Returns:
-        A :class:`~euroeval.data_models.DatasetConfig` built from the YAML data, or
-        ``None`` if the file could not be parsed or contains invalid values.
+        A `DatasetConfig` built from the YAML data, or `None` if the file could not
+        be parsed or contains invalid values.
     """
     # Import here to avoid circular imports at module level
     from . import languages as all_languages
@@ -217,7 +215,7 @@ def load_dataset_config_from_yaml(
 
     try:
         with yaml_path.open(encoding="utf-8") as fh:
-            raw: Any = yaml.safe_load(fh)
+            raw = yaml.safe_load(fh)
     except yaml.YAMLError as exc:
         log_once(
             f"Could not parse YAML config from {yaml_path}: {exc}",
@@ -234,21 +232,21 @@ def load_dataset_config_from_yaml(
 
     # ------------------------------------------------------------------
     # Inspect AI compatibility: promote column names from
-    # ``tasks[0].field_spec`` (input/target/choices) into top-level keys
+    # `tasks[0].field_spec` (input/target/choices) into top-level keys
     # when they are not already explicitly set.  This lets the same file
     # be parsed by both Inspect AI and EuroEval.
     #
     # Special cases from the Inspect AI spec that we ignore:
-    # - ``field_spec.target = "literal:<value>"`` is a literal answer value,
+    # - `field_spec.target = "literal:<value>"` is a literal answer value,
     #   not a column name.
-    # - ``field_spec.target = <int>`` (e.g. 0, 1, 2) means Inspect AI maps
+    # - `field_spec.target = <int>` (e.g. 0, 1, 2) means Inspect AI maps
     #   the integer to a letter (A, B, C…) — again not a column name.
     # ------------------------------------------------------------------
-    tasks_raw: Any = raw.get("tasks")
+    tasks_raw = raw.get("tasks")
     if isinstance(tasks_raw, list) and tasks_raw:
         first_task = tasks_raw[0]
         if isinstance(first_task, dict):
-            field_spec: Any = first_task.get("field_spec")
+            field_spec = first_task.get("field_spec")
             if isinstance(field_spec, dict):
                 # input → input_column
                 if "input" in field_spec and "input_column" not in raw:
@@ -269,13 +267,13 @@ def load_dataset_config_from_yaml(
             # Inspect AI uses this to specify which dataset split to evaluate on.
             # When present, use it as the test split so the same file works for
             # both Inspect AI and EuroEval without requiring an extra EuroEval key.
-            split_val: Any = first_task.get("split")
+            split_val = first_task.get("split")
             if isinstance(split_val, str) and split_val and "test_split" not in raw:
                 raw["test_split"] = split_val
 
     # --- task (optional; inferred from Inspect AI hints when absent) ---
 
-    task_name: Any = raw.get("task")
+    task_name = raw.get("task")
     if isinstance(task_name, str):
         task_obj = task_map.get(task_name)
         if task_obj is None:
@@ -287,7 +285,7 @@ def load_dataset_config_from_yaml(
             return None
     else:
         # Try to infer from Inspect AI YAML structure
-        task_obj = _infer_task_from_inspect_ai(raw, task_map)
+        task_obj = infer_task_from_inspect_ai(raw, task_map)
         if task_obj is None:
             log_once(
                 f"YAML config at {yaml_path} does not contain a 'task' field and the "
@@ -301,7 +299,7 @@ def load_dataset_config_from_yaml(
 
     # --- languages (optional; falls back to repo metadata) ---
 
-    raw_languages: Any = raw.get("languages")
+    raw_languages = raw.get("languages")
     if isinstance(raw_languages, list) and raw_languages:
         language_codes: list[str] = [str(c) for c in raw_languages]
     elif fallback_language_codes:
@@ -334,7 +332,7 @@ def load_dataset_config_from_yaml(
 
     # --- optional fields ---
 
-    kwargs: dict[str, Any] = {}
+    kwargs: dict[str, str | int | list[str] | dict[str, str]] = {}
 
     for str_field in (
         "prompt_prefix",
@@ -367,7 +365,7 @@ def load_dataset_config_from_yaml(
                 return None
             kwargs[int_field] = value
 
-    labels_raw: Any = raw.get("labels")
+    labels_raw = raw.get("labels")
     if labels_raw is not None:
         if not isinstance(labels_raw, list):
             log_once(
@@ -377,7 +375,7 @@ def load_dataset_config_from_yaml(
             return None
         kwargs["labels"] = [str(lbl) for lbl in labels_raw]
 
-    prompt_label_mapping_raw: Any = raw.get("prompt_label_mapping")
+    prompt_label_mapping_raw = raw.get("prompt_label_mapping")
     if prompt_label_mapping_raw is not None:
         if not isinstance(prompt_label_mapping_raw, dict):
             log_once(
@@ -390,7 +388,7 @@ def load_dataset_config_from_yaml(
             str(k): str(v) for k, v in prompt_label_mapping_raw.items()
         }
 
-    choices_column_raw: Any = raw.get("choices_column")
+    choices_column_raw = raw.get("choices_column")
     if choices_column_raw is not None:
         if isinstance(choices_column_raw, list):
             kwargs["choices_column"] = [str(c) for c in choices_column_raw]
@@ -407,20 +405,20 @@ def load_dataset_config_from_yaml(
     return DatasetConfig(task=task_obj, languages=language_objs, **kwargs)
 
 
-def _find_split(splits: list[str], keyword: str) -> str | None:
-    """Return the shortest split name containing ``keyword``, or ``None``."""
+def find_split(splits: list[str], keyword: str) -> str | None:
+    """Return the shortest split name containing `keyword`, or `None`."""
     candidates = sorted([s for s in splits if keyword in s.lower()], key=len)
     return candidates[0] if candidates else None
 
 
-def _get_repo_splits(
+def get_repo_splits(
     hf_api: HfApi,
     dataset_id: str,
 ) -> tuple[str | None, str | None, str | None]:
     """Return the (train, val, test) split names for a Hugging Face dataset repo.
 
-    Returns a 3-tuple ``(train_split, val_split, test_split)`` where each element is
-    either the name of the matching split or ``None`` if no such split exists.
+    Returns a 3-tuple `(train_split, val_split, test_split)` where each element is
+    either the name of the matching split or `None` if no such split exists.
     """
     splits = [
         split["name"]
@@ -429,9 +427,9 @@ def _get_repo_splits(
         ]
     ]
     return (
-        _find_split(splits, "train"),
-        _find_split(splits, "val"),
-        _find_split(splits, "test"),
+        find_split(splits, "train"),
+        find_split(splits, "val"),
+        find_split(splits, "test"),
     )
 
 
@@ -444,10 +442,10 @@ def try_get_dataset_config_from_repo(
 ) -> DatasetConfig | None:
     """Try to get a dataset config from a Hugging Face dataset repository.
 
-    The function first looks for a YAML config file (``euroeval_config.yaml`` or
-    ``eval.yaml``) which can be loaded without executing any remote code.  If neither
-    YAML file is present the function falls back to ``euroeval_config.py``, which
-    requires ``trust_remote_code=True``.
+    The function first looks for a YAML config file (`euroeval_config.yaml` or
+    `eval.yaml`) which can be loaded without executing any remote code.  If neither
+    YAML file is present the function falls back to `euroeval_config.py`, which
+    requires `trust_remote_code=True`.
 
     Args:
         dataset_id:
@@ -459,7 +457,7 @@ def try_get_dataset_config_from_repo(
             The directory to store the cache in.
         trust_remote_code:
             Whether to trust remote code. Only required when loading a Python config
-            (``euroeval_config.py``).  YAML configs never require this flag.
+            (`euroeval_config.py`).  YAML configs never require this flag.
         run_with_cli:
             Whether the code is being run with the CLI.
 
@@ -520,16 +518,16 @@ def try_get_dataset_config_from_repo(
         inspect_ai_split: str | None = None
         try:
             with yaml_file_path.open(encoding="utf-8") as fh:
-                raw_peek: Any = yaml.safe_load(fh)
+                raw_peek = yaml.safe_load(fh)
             if isinstance(raw_peek, dict):
-                tasks_peek: Any = raw_peek.get("tasks")
+                tasks_peek = raw_peek.get("tasks")
                 if isinstance(tasks_peek, list) and tasks_peek:
                     first_task_peek = tasks_peek[0]
                     if isinstance(first_task_peek, dict):
-                        config_val: Any = first_task_peek.get("config")
+                        config_val = first_task_peek.get("config")
                         if isinstance(config_val, str) and config_val:
                             inspect_ai_config = config_val
-                        split_val: Any = first_task_peek.get("split")
+                        split_val = first_task_peek.get("split")
                         if isinstance(split_val, str) and split_val:
                             inspect_ai_split = split_val
         except (yaml.YAMLError, OSError):
@@ -545,7 +543,7 @@ def try_get_dataset_config_from_repo(
         # Detect train/val splits from the repo; for test, prefer the Inspect AI
         # tasks[0].split value (already baked into the config by load_dataset_config_from_yaml)
         # over the auto-detected one, since the YAML author knows the correct split name.
-        train_split, val_split, auto_test_split = _get_repo_splits(hf_api, dataset_id)
+        train_split, val_split, auto_test_split = get_repo_splits(hf_api, dataset_id)
         test_split = inspect_ai_split if inspect_ai_split is not None else auto_test_split
         if test_split is None:
             log_once(
@@ -641,7 +639,7 @@ def try_get_dataset_config_from_repo(
         )
         return None
 
-    train_split, val_split, test_split = _get_repo_splits(hf_api, dataset_id)
+    train_split, val_split, test_split = get_repo_splits(hf_api, dataset_id)
     if test_split is None:
         log_once(
             f"Dataset {dataset_id} does not have a test split, so we cannot load it. "
