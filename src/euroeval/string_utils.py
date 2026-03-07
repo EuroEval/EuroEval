@@ -118,7 +118,9 @@ def extract_multiple_choice_labels(
     # For community datasets with variable-length choices the label list may be empty.
     # In that case scan against the full alphabet so we pick up whatever letters the
     # preprocessing placed in the prompt (a. , b. , c. , …).
-    effective_candidates = candidate_labels if candidate_labels else list("abcdefghijklmnopqrstuvwxyz")
+    effective_candidates = (
+        candidate_labels if candidate_labels else list("abcdefghijklmnopqrstuvwxyz")
+    )
     sample_candidate_labels: list[str] = list()
     for candidate_label in effective_candidates:
         candidate_label_match = re.search(

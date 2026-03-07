@@ -389,10 +389,10 @@ prompt_label_mapping:
 The EuroEval-specific `task` and `languages` keys are **optional** — EuroEval will
 infer them automatically when they are absent:
 
-* **`task`** is inferred from the Inspect AI `tasks` block: a solver with
+- **`task`** is inferred from the Inspect AI `tasks` block: a solver with
   `name: multiple_choice` **or** a `field_spec.choices` entry both map to the
   `multiple-choice` task.
-* **`languages`** are read from the Hugging Face Hub repository metadata
+- **`languages`** are read from the Hugging Face Hub repository metadata
   (the `language` field in the dataset card).  If the language cannot be determined,
   EuroEval defaults to English and logs a warning.
 
@@ -425,9 +425,9 @@ both forms because they are not column names.
 
 The standard Inspect AI task keys are also used directly by EuroEval:
 
-* **`tasks[0].split`** — the evaluation split to use (e.g. `test`, `validation`).
+- **`tasks[0].split`** — the evaluation split to use (e.g. `test`, `validation`).
   EuroEval uses this as the test split, so no separate EuroEval key is needed.
-* **`tasks[0].config`** — the Hugging Face dataset config/subset name (e.g. `main`,
+- **`tasks[0].config`** — the Hugging Face dataset config/subset name (e.g. `main`,
   `default`).  EuroEval automatically appends it when loading the dataset.
 
 You can then benchmark your custom dataset by simply running
