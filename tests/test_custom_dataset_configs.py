@@ -357,6 +357,53 @@ class TestLoadDatasetConfigFromYaml:
         config = load_dataset_config_from_yaml(yaml_file)
         assert isinstance(config, DatasetConfig)
 
+    def test_inspect_ai_literal_target_is_ignored(self, tmp_path: Path) -> None:
+        """field_spec.target with 'literal:' prefix is not used as target_column."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                tasks:
+                  - id: my_dataset
+                    field_spec:
+                      input: text
+                      target: "literal:A"
+                task: classification
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        # input_column="text" (the default) and no target_column → no preprocessing_func
+        # if "literal:A" had been passed as target_column, column_args_set would be True
+        # and preprocessing_func would be built; so None here proves it was ignored.
+        assert config.preprocessing_func is None
+
+    def test_inspect_ai_integer_target_is_ignored(self, tmp_path: Path) -> None:
+        """field_spec.target as an integer (Inspect AI letter-index) is skipped."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                tasks:
+                  - id: my_dataset
+                    field_spec:
+                      input: text
+                      target: 0
+                task: classification
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        # Before this fix, an integer target_column would trigger a validation error
+        # and return None; now it should be silently ignored.
+        assert config is not None
+        assert config.preprocessing_func is None
+
 
 class TestYamlConfigFilenames:
     """Sanity checks on the YAML_CONFIG_FILENAMES constant."""

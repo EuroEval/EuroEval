@@ -70,6 +70,16 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
     EuroEval-specific ``task`` and ``languages`` keys must always be present at the
     top level; Inspect AI simply ignores keys it does not recognise.
 
+    When reading ``field_spec``:
+
+    * ``field_spec.input`` is always used as ``input_column``.
+    * ``field_spec.target`` is used as ``target_column`` **only when it is a plain
+      column name**.  Inspect AI also allows ``"literal:<value>"`` (a hard-coded
+      answer string) and bare integers (which Inspect AI maps to letters
+      A, B, C …); both are silently skipped because they are not column names.
+    * ``field_spec.choices`` is used as ``choices_column`` (a single column name or
+      a list of column names).
+
     Example — EuroEval flat format::
 
         task: classification
@@ -152,6 +162,12 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
     # ``tasks[0].field_spec`` (input/target/choices) into top-level keys
     # when they are not already explicitly set.  This lets the same file
     # be parsed by both Inspect AI and EuroEval.
+    #
+    # Special cases from the Inspect AI spec that we ignore:
+    # - ``field_spec.target = "literal:<value>"`` is a literal answer value,
+    #   not a column name.
+    # - ``field_spec.target = <int>`` (e.g. 0, 1, 2) means Inspect AI maps
+    #   the integer to a letter (A, B, C…) — again not a column name.
     # ------------------------------------------------------------------
     tasks_raw: Any = raw.get("tasks")
     if isinstance(tasks_raw, list) and tasks_raw:
@@ -159,13 +175,20 @@ def load_dataset_config_from_yaml(yaml_path: Path) -> DatasetConfig | None:
         if isinstance(first_task, dict):
             field_spec: Any = first_task.get("field_spec")
             if isinstance(field_spec, dict):
-                for inspect_key, euroeval_key in (
-                    ("input", "input_column"),
-                    ("target", "target_column"),
-                    ("choices", "choices_column"),
-                ):
-                    if inspect_key in field_spec and euroeval_key not in raw:
-                        raw[euroeval_key] = field_spec[inspect_key]
+                # input → input_column
+                if "input" in field_spec and "input_column" not in raw:
+                    raw["input_column"] = field_spec["input"]
+
+                # target → target_column, but only when it is a plain column name
+                if "target" in field_spec and "target_column" not in raw:
+                    target = field_spec["target"]
+                    if isinstance(target, str) and not target.startswith("literal:"):
+                        raw["target_column"] = target
+                    # integer values (0, 1, 2 → A, B, C in Inspect AI) are skipped
+
+                # choices → choices_column
+                if "choices" in field_spec and "choices_column" not in raw:
+                    raw["choices_column"] = field_spec["choices"]
 
     # --- required fields ---
 

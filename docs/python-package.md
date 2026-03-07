@@ -367,6 +367,10 @@ sub-keys — whichever is present takes precedence.  The EuroEval-specific `task
 `languages` keys must always be present at the top level; Inspect AI silently ignores
 keys it does not recognise.
 
+Note that Inspect AI also supports `field_spec.target` values such as `"literal:A"`
+(a hard-coded answer string) and bare integers (mapped to letters A, B, C … by Inspect
+AI); EuroEval silently ignores both of these forms because they are not column names.
+
 ```yaml title="eval.yaml"
 # Inspect AI compatible eval.yaml
 name: My Dataset
