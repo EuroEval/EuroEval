@@ -701,6 +701,76 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu
 ```
 
+### Unofficial: MMLU-Pro
+
+This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2406.01574)
+and is a more robust and challenging version of MMLU, featuring 12,032 complex questions
+across various disciplines. Each question has 10 answer options instead of the usual 4.
+
+The original full dataset consists of 70 / 12,032 samples for validation and testing,
+respectively. The original 70 validation samples are used as few-shot training examples
+and are all included in our training split. We use a 1,024 / 256 / 2,048 split for
+training, validation and testing, respectively (so 3,328 samples used in total). The
+remaining training samples, as well as all validation and test samples, are subsets of
+the original test split.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "The coil of a moving coil meter has 100 turns, is 40 mm long and 30 mm wide. The control torque is 240*10-6 N-m on full scale. If magnetic flux density is 1Wb/m2 range of meter is\nChoices:\na. 2 mA.\nb. 5 mA.\nc. 1.5 mA.\nd. 0.5 mA.\ne. 6 mA.\nf. 4 mA.\ng. 3 mA.\nh. 1 mA.\ni. 2.5 mA.\nj. 3.5 mA.",
+    "label": "a",
+    "category": "engineering"
+}
+```
+
+```json
+{
+    "text": "Predict the number of lines in the EPR spectrum of a solution of 13C-labelled methyl radical (13CH3•), assuming the lines do not overlap.\nChoices:\na. 10\nb. 8\nc. 4\nd. 20\ne. 12\nf. 3\ng. 16\nh. 5\ni. 24\nj. 6",
+    "label": "b",
+    "category": "chemistry"
+}
+```
+
+```json
+{
+    "text": "In an SR latch built from NOR gates, which condition is not allowed\nChoices:\na. S=0, R=2\nb. S=2, R=2\nc. S=1, R=1\nd. S=1, R=-1\ne. S=1, R=2\nf. S=0, R=0\ng. S=2, R=0\nh. S=1, R=0\ni. S=2, R=1\nj. S=0, R=1",
+    "label": "c",
+    "category": "engineering"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are multiple choice questions (with answers).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Answer: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Answer the above question by replying with 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i' or 'j', and nothing else.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset mmlu-pro
+```
+
 ### Unofficial: ARC
 
 This dataset was published [in this paper](https://doi.org/10.48550/arXiv.1803.05457)
@@ -773,6 +843,72 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset arc
+```
+
+### Unofficial: MultiLoKo-en
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The English
+questions are separately sourced and designed to target locally relevant topics for
+English-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "At age 16, what app was Jake Paul posting videos on?\nChoices:\na. Vine\nb. YouTube Shorts\nc. TikTok\nd. Instagram Reels",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "Which Fifty Shades book was published four months after the American film adaptation of the original novel?\nChoices:\na. Fifty Shades Darker\nb. Fifty Shades of Grey as Told by Christian\nc. Fifty Shades Freed\nd. Fifty Shades of Grey: The Official Movie Novelization",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "The first three seasons of \"The Grand Tour\" TV series was similar in format to which existing TV program at the time?\nChoices:\na. Fifth Gear\nb. Wheeler Dealers\nc. Top Gear\nd. MotorWeek",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are multiple choice questions (with answers).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Question: {text}
+  Answer: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Question: {text}
+
+  Answer the above question by replying with 'a', 'b', 'c' or 'd', and nothing else.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-en
 ```
 
 ## Common-sense Reasoning
@@ -984,6 +1120,102 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset cnn-dailymail
 ```
 
+## Translation
+
+### WMT24++
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2502.12404)
+and is an extension of the original WMT24 dataset. They cover translation pairs from
+English to 55 languages, where 9 of them are post-edited from the original dataset.
+These are all manually translated.
+
+The original full dataset consists of 998 samples for each language. A small portion of
+the samples where marked as bad, however, and we exclude those. We use 64 samples for
+the training split, 128 samples for the validation split, and the rest for the test
+split.
+
+We use the following target languages from the dataset:
+
+- Bulgarian (bg)
+- Catalan (ca)
+- Czech (cs)
+- Danish (da)
+- Dutch (nl)
+- Estonian (et)
+- Finnish (fi)
+- French (fr)
+- German (de)
+- Greek (el)
+- Hungarian (hu)
+- Icelandic (is)
+- Italian (it)
+- Latvian (lv)
+- Lithuanian (lt)
+- Norwegian (no)
+- Polish (pl)
+- Portuguese (pt)
+- Romanian (ro)
+- Serbian (sr)
+- Slovak (sk)
+- Slovene (sl)
+- Spanish (es)
+- Swedish (sv)
+- Ukrainian (uk)
+
+Here are a few examples from some of the training splits:
+
+```json
+{
+    "text": "Still to do; hallway floor, all the skirtings. Decorator is coming in a month, so it’s bare plaster chic for us for now",
+    "target_text": "Vi mangler gulvet i gangen og alle fodlister. Maleren kommer om en måned, så det er et pænt råpuds for os indtil videre."
+}
+```
+
+```json
+{
+    "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
+    "target_text": "У мене немає телеметрії для акумулятора. Це те, що я, можливо, додам у майбутній версії."
+}
+```
+
+```json
+{
+    "text": "\"You mean... the horrible god monster thing that we... helped kill?\" Tenuk stuttered.",
+    "target_text": "\"Vols dir… l'horrible deïtat monstruosa que hem… ajudat a matar?\", Tanuk tartamudejà."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  The following are English texts with corresponding {target_language} translations.
+  ```
+
+- Base prompt template:
+
+  ```text
+  English text: {text}
+  {target_language} translation: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  English text: {text}
+
+  Translate the above text into {target_language}.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wmt24pp-en-{target_language_code}
+```
+
 ## Instruction-following
 
 ### IFEval
@@ -1149,4 +1381,140 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset valeu-en
+```
+
+## Tool calling
+
+### BFCL-v2
+
+This dataset is an excerpt from the
+[Berkeley Function Calling Leaderboard (v2) dataset](https://openreview.net/forum?id=2GmDdhBdDk),
+containing the following subsets (n.o. samples in the parentheses):
+
+- live_multiple (1053)
+- live_parallel_multiple (24)
+- live_parallel (16)
+- live_simple (258)
+- multiple (200)
+- parallel_multiple (200)
+- parallel (200)
+- simple_java (100)
+- simple_javascript (50)
+- simple_python (400)
+
+In total 2501 out of the 5088 samples in the score-contributing part of BFCL
+([reference](https://gorilla.cs.berkeley.edu/blogs/15_bfcl_v4_web_search.html)).
+
+We use only zero-shot evaluation on this dataset.
+
+Here is an example from the training split:
+
+```json
+{
+    "id": "live_multiple_295-130-4",
+    "question": [
+        [
+            {
+                "role": "user",
+                "content": "Hotel room are so costly , I need a house to stay . I am travelling to LAX."
+            }
+        ]
+    ],
+    "function": [
+        {
+            "name": "Hotels_2_BookHouse",
+            "description": "Books a selected house for a specified duration and number of adults.",
+            "parameters": {
+                "type": "dict",
+                "required": [
+                    "where_to",
+                    "number_of_adults",
+                    "check_in_date",
+                    "check_out_date"
+                ],
+                "properties": {
+                    "where_to": {
+                        "type": "string",
+                        "description": "The location of the house to book, in the format of 'City, State', such as 'San Francisco, CA'."
+                    },
+                    "number_of_adults": {
+                        "type": "integer",
+                        "description": "The number of adults to include in the reservation."
+                    },
+                    "check_in_date": {
+                        "type": "string",
+                        "description": "The check-in date for the reservation in the format 'MM/DD/YYYY'."
+                    },
+                    "check_out_date": {
+                        "type": "string",
+                        "description": "The check-out date for the reservation in the format 'MM/DD/YYYY'."
+                    }
+                }
+            }
+        },
+        {
+            "name": "Hotels_2_SearchHouse",
+            "description": "Search for a house accommodation at a specific location, optionally filtering by laundry service availability, number of adults, and review rating.",
+            "parameters": {
+                "type": "dict",
+                "required": [
+                    "where_to"
+                ],
+                "properties": {
+                    "where_to": {
+                        "type": "string",
+                        "description": "The destination where the house is searched for, in the format of 'City, State', such as 'Austin, TX' or 'San Francisco, CA'. State has to be abbrieviated"
+                    },
+                    "has_laundry_service": {
+                        "type": "string",
+                        "description": "Indicates if the house should have laundry service available.",
+                        "enum": [
+                            "True",
+                            "False",
+                            "dontcare"
+                        ],
+                        "default": "dontcare"
+                    },
+                    "number_of_adults": {
+                        "type": "integer",
+                        "description": "The number of adults for the reservation. Use 0 to indicate 'dontcare'.",
+                        "default": 0
+                    },
+                    "rating": {
+                        "type": "float",
+                        "description": "The minimum review rating of the house on a scale from 1.0 to 5.0, with 5.0 being the highest. Use 0 to indicate 'dontcare'.",
+                        "default": 0.0
+                    }
+                }
+            }
+        }
+    ],
+    "ground_truth": [
+        {
+            "Hotels_2_SearchHouse": {
+                "where_to": [
+                    "Los Angeles, CA"
+                ],
+                "has_laundry_service": [
+                    "",
+                    "dontcare"
+                ],
+                "number_of_adults": [
+                    "",
+                    0
+                ],
+                "rating": [
+                    "",
+                    0.0
+                ]
+            }
+        }
+    ]
+}
+```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset bfcl-v2
 ```

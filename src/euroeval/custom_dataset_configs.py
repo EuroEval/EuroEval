@@ -2,6 +2,7 @@
 
 import importlib.util
 import logging
+import sys
 from pathlib import Path
 from types import ModuleType
 
@@ -47,7 +48,11 @@ def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None
 
 
 def try_get_dataset_config_from_repo(
-    dataset_id: str, api_key: str | None, cache_dir: Path
+    dataset_id: str,
+    api_key: str | None,
+    cache_dir: Path,
+    trust_remote_code: bool,
+    run_with_cli: bool,
 ) -> DatasetConfig | None:
     """Try to get a dataset config from a Hugging Face dataset repository.
 
@@ -59,6 +64,11 @@ def try_get_dataset_config_from_repo(
             dataset configs.
         cache_dir:
             The directory to store the cache in.
+        trust_remote_code:
+            Whether to trust remote code. If this is not set to True, then we will not
+            load the dataset config.
+        run_with_cli:
+            Whether the code is being run with the CLI.
 
     Returns:
         The dataset config if it exists, otherwise None.
@@ -80,6 +90,24 @@ def try_get_dataset_config_from_repo(
             level=logging.WARNING,
         )
         return None
+
+    # At this point we know that the config exists in the repo, so we now check if the
+    # user has allowed running code from remote repositories, and abort if not. We abort
+    # the entire evaluation here to avoid a double error message, and since it requires
+    # the user to explicitly allow it before continuing.
+    if not trust_remote_code:
+        rerunning_msg = (
+            "the --trust-remote-code flag"
+            if run_with_cli
+            else "`trust_remote_code=True`"
+        )
+        log_once(
+            f"The dataset {dataset_id} exists on the Hugging Face Hub and has a "
+            "euroeval_config.py file, but remote code is not allowed. Please rerun "
+            f"this with {rerunning_msg} if you trust the code in this repository.",
+            level=logging.ERROR,
+        )
+        sys.exit(1)
 
     # Fetch the euroeval_config.py file, abort if loading failed
     external_config_path = cache_dir / "external_dataset_configs" / dataset_id

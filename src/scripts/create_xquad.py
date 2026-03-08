@@ -11,14 +11,13 @@
 """Create the XQuAD datasets and upload them to the HF Hub."""
 
 import pandas as pd
+from constants import MAX_NUM_CHARS_IN_CONTEXT, MIN_NUM_CHARS_IN_CONTEXT
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from datasets.load import load_dataset
 from datasets.splits import Split
 from huggingface_hub.hf_api import HfApi
 from tqdm.auto import tqdm
-
-from .constants import MAX_NUM_CHARS_IN_CONTEXT, MIN_NUM_CHARS_IN_CONTEXT
 
 LANGUAGES = ["de", "en", "es"]
 

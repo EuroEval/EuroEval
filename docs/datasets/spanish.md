@@ -614,6 +614,205 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-es
 ```
 
+### Unofficial: INCLUDE-es
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Hormona que actúa sobre el metabolismo de agua, sodio, potasio y cloruro de sodio:\nOpciones:\na. Aldosterona\nb. Cortisol\nc. Corticosterona\nd. Cortisona",
+    "label": "a",
+    "subject": "Medicine"
+}
+```
+
+```json
+{
+    "text": "Nervio que inerva a los músculos esternocleidomastoideo y trapecio:\nOpciones:\na. Hipogloso\nb. Espinal\nc. Vago\nd. Acústico",
+    "label": "b",
+    "subject": "Medicine"
+}
+```
+
+```json
+{
+    "text": "Si el precio del bien sustituto disminuye, la curva de la demanda se\nOpciones:\na. expandirá\nb. incrementará\nc. desplazará hacia la izquierda\nd. mantendrá constante",
+    "label": "c",
+    "subject": "Economics"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pregunta: {text}
+  Respuesta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pregunta: {text}
+
+  Responda la pregunta anterior usando solo {labels_str}, y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-es
+```
+
+### Unofficial: MultiLoKo-es
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Spanish
+questions are separately sourced and designed to target locally relevant topics for
+Spanish-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "¿En qué país fue patentado el \"birome\" antecesor del actual bolígrafo?\nOpciones:\na. Argentina\nb. España\nc. Estados Unidos\nd. México",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "¿En qué siglo viajó Isabel Zendal desde el puerto de La Coruña en La Real Expedición Filantrópica de la Vacuna, expedición que llevaría la vacuna de la viruela a América?\nOpciones:\na. Siglo XVIII\nb. Siglo XIX\nc. Siglo XVII\nd. Siglo XX",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "¿Quién es la madre del primer hijo de Camilo Echeverri?\nOpciones:\na. Greeicy Rendón\nb. Tini Stoessel\nc. Evaluna Montaner\nd. Karol G",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pregunta: {text}
+  Respuesta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pregunta: {text}
+
+  Responda la pregunta anterior usando solo 'a', 'b', 'c' o 'd', y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-es
+```
+
+### Unofficial: MultiNRC-es
+
+This dataset was published [in this paper](https://doi.org/10.48550/arXiv.2507.17476)
+and consists of native-authored reasoning questions designed to assess multilingual
+reasoning ability. Unlike benchmarks that simply translate English-centric content, the
+questions are crafted by native speakers to capture linguistic and cultural nuances.
+
+The original dataset only has a 'test' split. We use 64 samples for training, 128 for
+validation, and the rest for testing.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Estaba limpiando mi clóset y que me aparece una cajita allá escondida detrás de los suéteres. Con sorpresa vi que era una colección de timbres postales que empecé a juntar cuando era adolescente y ni me acordaba. Había unas estampillas emitidas a mediados de 1986 en México: 10 de color rojo oscuro, 8 de color verde oscuro y 5 de color azul marino. De acuerdo a los valores con que fueron emitidos, ¿cuántos centavos de antaño tengo en estampillas?\nOpciones:\na. 76 centavos.\nb. 82 centavos.\nc. 68 centavos.\nd. 91 centavos.",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "Mi bisabuelo nació en 1910, un día después que cumplía año el que era presidente de Venezuela, cuando se disolvió el Gran Estado Falcón Zulia. ¿Podrías decirme que día era el cumpleaños de mi bisabuelo?\nOpciones:\na. 22 de enero\nb. 7 de febrero\nc. 15 de abril\nd. 3 de marzo",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "Lupita le pidió un paro a Manuel, que le prestará 3 000 baros. Él le dijo que andaba bruja, pero que vería si en la tienda de sus abuelos había algo de baro, que ya después vería como lo jineteaba. Manuel reviso y encontró 10 de los del ajolote, pero también 7 Sor Juanas y en morralla nada. Al final ¿Cuánto dinero le presto Manuel a Lupita?\nOpciones:\na. 1 700 pesos\nb. 2 000 pesos\nc. 1 900 pesos\nd. 1 300 pesos",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Las siguientes son preguntas de opción múltiple (con respuestas).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Pregunta: {text}
+  Respuesta: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Pregunta: {text}
+
+  Responda la pregunta anterior usando solo {labels_str}, y nada más.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multinrc-es
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-es

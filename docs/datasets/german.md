@@ -690,6 +690,141 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc-de
 ```
 
+### Unofficial: INCLUDE-de
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Wann dürfen Sie in einem Tunnel Ihr Fahrzeug wenden?\nAntwortmöglichkeiten:\na. Wenn Einsatzkräfte das Wenden ausdrücklich anordnen\nb. Wenn ich aus einer Gefahrensituation flüchten möchte\nc. Wenn ich unter Zeitdruck bin und sich vor mir ein Stau gebildet hat\nd. Nur wenn ich mit meinem Fahrzeug in einem Zug umkehren kann",
+    "label": "a",
+    "subject": "Driving License"
+}
+```
+
+```json
+{
+    "text": "Das Industrieland hat in einer Wirtschaftstätigkeit einen komparativen Vorteil, wenn\nAntwortmöglichkeiten:\na. in einer anderen Tätigkeit sein absoluter Vorteil größer ist.\nb. in dieser Tätigkeit sein absoluter Vorteil am größten ist.\nc. es keinen absoluten Vorteil hat.\nd. in dieser Tätigkeit sein absoluter Nachteil am geringsten ist.",
+    "label": "b",
+    "subject": "Economics"
+}
+```
+
+```json
+{
+    "text": "Ein Schiff fährt mit einer geradlinigen, gleichförmigen Bewegung auf dem offenen Meer. Zu gleicher Zeit fliegt auch ein Albatros mit einer in Bezug auf das Meer geradlinigen, gleichförmigen Bewegung in der Luft. Wie bewegt sich der Albatros in Bezug auf das Schiff?\nAntwortmöglichkeiten:\na. Die Bahn des Vogels ist geradlinig, aber seine Geschwindigkeit in Bezug auf das Schiff ist nicht konstant.\nb. Abhängig vom Winkel der zwei Geschwindigkeitsvektoren kann die Bahn des Vogels sowohl krummlinig, als auch geradlinig sein und auch seine Geschwindigkeit in Bezug auf das Schiff kann veränderlich sein.\nc. Der Vogel führt in Bezug auf das Schiff eine gleichförmige, geradlinige Bewegung aus.\nd. In bestimmten Fällen kann die Bahn des Vogels in Bezug auf das Schiff auch krummlinig sein, aber seine Geschwindigkeit hat einen konstanten Betrag.",
+    "label": "c",
+    "subject": "Physics"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Frage: {text}
+  Antwort: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Frage: {text}
+
+  Beantworten Sie die obige Frage mit {labels_str}, und nichts anderes.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-de
+```
+
+### Unofficial: MultiLoKo-de
+
+This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The German
+questions are separately sourced and designed to target locally relevant topics for
+German-speaking populations.
+
+We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "In welchem Bereich sammelte Reiner Calmund erste berufliche und sportliche Erfahrungen, die später für seine Tätigkeit als Manager bei Bayer 04 Leverkusen relevant wurden?\nAntwortmöglichkeiten:\na. Trainer\nb. Spielerberater\nc. Physiotherapeut\nd. Sportjournalist",
+    "label": "a"
+}
+```
+
+```json
+{
+    "text": "Wie lange war Malu Dreyer Mitglied der SPD, als sie zum ersten Mal Landespräsidentin für den Wahlkreis Trier wurde?\nAntwortmöglichkeiten:\na. vierzehn Jahre\nb. elf Jahre\nc. sieben Jahre\nd. zwanzig Jahre",
+    "label": "b"
+}
+```
+
+```json
+{
+    "text": "Wie lautet der Name des Jungen, der in der vierten Staffel der Fernsehserie „Bettys Diagnose“ zu sehen ist und der der Hauptfigur in der Schule das Leben schwer macht?\nAntwortmöglichkeiten:\na. Tim Weigel\nb. Lukas Kramer\nc. Frank Stern\nd. Jonas Becker",
+    "label": "c"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Die folgenden Fragen sind Multiple-Choice-Fragen (mit Antworten).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Frage: {text}
+  Antwort: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Frage: {text}
+
+  Beantworten Sie die obige Frage mit 'a', 'b', 'c' oder 'd', und nichts anderes.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multiloko-de
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-de

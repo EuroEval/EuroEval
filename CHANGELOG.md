@@ -7,16 +7,144 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- A new tool calling task has been added to the framework, including the English
+  Berkeley Function Calling Leaderboard benchmark - benchmark it with the ID `bfcl-v2`.
+  This was added by @harderj ✨
+- Added the new Danish linguistic acceptability dataset DaLA. It's marked as
+  unofficial for now. This was added by @N-essuno ✨
+- Added the Norwegian summarisation datasets NorSumm-nb and NorSumm-nn, based on the
+  [NorSumm dataset](https://github.com/SamiaTouileb/NorSumm). The splits are given by
+  8 samples for train and the remaining articles for test, with no validation split.
+  Both datasets are marked as `unofficial` for now.
+- Added the Norwegian dialect classification dataset NorDial. The split is given
+  by 848 / 106 / 110 samples for train / val / test, respectively. It is marked
+  as `unofficial` for now.
+- Added the English knowledge dataset MMLU-Pro, marked as unofficial. This is a more
+  robust and challenging version of MMLU with 10 answer options per question.
+- Added the MultiNRC knowledge dataset for English, French and Spanish. These are
+  marked as `unofficial` for now.
+- Added the Greek knowledge dataset GreekMMLU. The split is
+  given by 1,024 / 256 / 2,048 samples for train / val / test, respectively.
+  It is marked as `unofficial` for now.
+- Added the MultiLoKo multilingual local knowledge benchmark datasets for Dutch,
+  English, French, German, Italian, Portuguese, Spanish and Swedish. All datasets
+  are marked as `unofficial` for now.
+- Added the Schibsted front-page title and SEO title datasets, sourced from
+  single newsrooms: `vg-front-title` features front-page titles from VG (Norwegian),
+  and `svd-seo-title` features SEO titles from Svenska Dagbladet (Swedish). Both
+  datasets are marked as `unofficial` for now.
+- A new natural language inference task has been added, including the Danish
+  Entailment Dataset (ID is `danish-entailment`) and the Danish Lexical Inference
+  Dataset (ID is `danish-lexical-inference`). It is marked as unofficial for now.
+- Added a new Word-in-Context task, and added the new Danish Word in Context
+  dataset DanWiC (ID is `danwic`). It is marked as unofficial for now.
+- Added the [INCLUDE](https://huggingface.co/datasets/CohereLabs/include-base-44)
+  knowledge dataset for 17 languages: Albanian, Bulgarian, Croatian, Dutch, Estonian,
+  Finnish, French, German, Greek, Hungarian, Italian, Lithuanian, Polish, Portuguese,
+  Serbian, Spanish, and Ukrainian. All are marked as unofficial for now.
+- Added the new Danish Sentiment in Context dataset, part of the [Danish Semantic
+  Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+  It measures the sentiment of individual words in context (ID is
+  `danish-sentiment-in-context`). It's marked as unofficial for now.
+- Failed generative model instances are now tracked and included in
+  `euroeval_benchmark_results.jsonl`.
+- Added `--max-context-length` and `--vocabulary-size` CLI options (and corresponding
+  `max_context_length` and `vocabulary_size` arguments to `Benchmarker`) to allow
+  overriding the model metadata values that are inferred automatically from the model.
+  This is useful when the model does not have the metadata specified, or has it
+  specified incorrectly.
+- We now allow preprocessing on-the-fly when creating new dataset configs. This includes
+  setting different column names (via the `input_column`, `target_column` and
+  `choices_column` arguments), or alternatively any preprocessing function can be added
+  via the `preprocessing_func` argument. This is either-or: you cannot set both
+  different column names and also specify a custom preprocessing function.
+
 ### Changed
 
 - Changed the primary summarisation metric from BERTScore to ChrF3++, as it has better
   correlation with human judgements, and has the upside of being model-agnostic,
   reducing potential biases against low-resource languages.
+- We now default to selecting vLLM's default attention backend for the given model, since
+  it now automatically selects the most efficient backend for the given model. It is
+  still possible to override this by setting the `--attention-backend` CLI option or the
+  `attention_backend` argument to `Benchmarker`.
+- We now do not explicitly set the vLLM V1 engine via the `VLLM_USE_V1` environment
+  variable, as it is now always set by default.
+
+### Fixed
+
+- Models that predict an out-of-range choice index for a European Values question no
+  longer crash the evaluation. The invalid prediction is now logged as a warning and
+  defaults to the first valid index instead.
+- There was an issue with caching of answers by generative models when evaluating them
+  on NER tasks - this has now been fixed. This was fixed by @Rijgersberg ✨
+- Evaluating older OpenAI models, such as `gpt-3.5-turbo-1106`, crashed the evaluation
+  due to them not supporting structured generation - this is handled gracefully now.
+  This was fixed by @Rijgersberg ✨
+- The documentation incorrectly stated that the primary metric for the Reading
+  Comprehension task is the Exact Match score. This has been corrected to the
+  character-level F1-score. This was fixed by @Rijgersberg ✨
+
+## [v16.16.1] - 2026-02-25
+
+### Fixed
+
+- LLM-as-a-judge outputs were not cached correctly - this has now been fixed.
+
+## [v16.16.0] - 2026-02-25
+
+### Added
+
+- We now add all metadata (including ground truth labels, if applicable) to the model
+  cache when debug mode is enabled (with `--debug` or `debug=True`). We have added a
+  [section in the
+  documentation](https://euroeval.com/python-package/#analysing-the-results) on how to
+  use this feature.
+- When evaluating community evaluation datasets from the Hugging Face Hub, we now
+  require that the user actively set `--trust-remote-code` (or `trust_remote_code=True`
+  if running with the `Benchmarker` class). This is to prevent accidental execution of
+  malicious code.
+
+### Fixed
+
+- v16.15.0 introduced an error related to the parsing of safetensors metadata from
+  adapter models. This has now been fixed.
+- LiteLLM's structured output support check was failing for custom API URLs, as it can
+  only reliably verify official providers. This check is now skipped for custom
+  endpoints, and we assume they support structured outputs. This was added by
+  @viggo-gascou ✨
+- Fixed issue when evaluating models on custom inference APIs that the model ID would be
+  assigned the `openai/openai/` prefix. This should only happen if the model ID starts
+  with `openai/`, such as `openai/gpt-oss-20b`, for instance (this is because LiteLLM
+  attaches a special meaning to the `openai/` prefix). This has been fixed now.
+- When evaluating models on a custom inference API with a task that uses LLM-as-a-judge
+  metrics, an error caused the same model to be the judge. We now disallow judges to run
+  on custom inference APIs to solve this. Support for running local judges in this sense
+  could be supported in the future.
+
+## [v16.15.0] - 2026-02-18
+
+### Added
+
+- Added a new `translation` task. This uses BERTScore and ROUGE-L as metrics, just like
+  the `summarization` task. This was added by @oliverkinch ✨
+- Added 25 translation datasets from the WMT24++ dataset. These all translate from
+  English to the target language. It's added as unofficial for now.
+- Now supports the `detectable_format:constrained_response_with_argument` IFEval
+  constraint, being the same as `detectable_format:constrained_response` but with
+  a list of options to check for, rather than a hardcoded list of English options.
+
+>>>>>>> main
 
 ### Fixed
 
 - The `huggingface_hub` safetensors API has changed, so we did not fetch the number of
   model parameters correctly - this has now been fixed.
+- For the French, Spanish and Catalan instruction-following datasets, the
+  `detectable_format:constrained_response` constraint was not being applied correctly,
+  so this has now been fixed.
 
 ## [v16.14.0] - 2026-02-13
 

@@ -469,6 +469,75 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset lt-history
 ```
 
+### Unofficial: INCLUDE-lt
+
+This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.
+
+The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.
+
+Here are a few examples from the dataset:
+
+```json
+{
+    "text": "Kur, kopdami į aukščiausias kalnų viršūnes, pereitumėte daugiausia vertikaliųjų1 geografinių zonų?\nPasirinkimai:\na. Anduose Ekvadore\nb. Alpėse Vokietijoje\nc. Skandinavijos kalnuose Norvegijoje\nd. Karpatuose Slovakijoje",
+    "label": "a",
+    "subject": "Earth science"
+}
+```
+
+```json
+{
+    "text": "Kuriame Eurazijos regione būna šalčiausios žiemos?\nPasirinkimai:\na. Šiaurės Europoje\nb. Rytų Sibire\nc. Vakarų Azijoje\nd. Rytų Europoje",
+    "label": "b",
+    "subject": "Earth science"
+}
+```
+
+```json
+{
+    "text": "Kokios yra įstatymų numatytos atsakomybės?\nPasirinkimai:\na. Pastaba, papeikimas, atleidimas iš darbo.\nb. Moralinė, religinė, ekonominė.\nc. Administracinė, drausminė, baudžiamoji, materialinė.\nd. Nematerialinė, socialinė.",
+    "label": "c",
+    "subject": "Professional certification"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Toliau pateikti daugiavariančiai klausimai (su atsakymais).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Klausimas: {text}
+  Atsakymas: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Klausimas: {text}
+
+  Atsakykite į aukščiau pateiktą klausimą atsakydami {labels_str}, ir nieko daugiau.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset include-lt
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-lt

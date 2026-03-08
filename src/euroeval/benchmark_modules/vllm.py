@@ -43,6 +43,7 @@ from ..enums import (
 from ..exceptions import (
     InvalidBenchmark,
     InvalidModel,
+    InvalidTask,
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
     NeedsSystemDependency,
@@ -62,6 +63,7 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
+from ..tasks import NER
 from ..tokenisation_utils import (
     apply_chat_template,
     get_bos_token,
@@ -114,17 +116,6 @@ if t.TYPE_CHECKING:
     from transformers.trainer import Trainer
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
-
-
-MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[
-    re.Pattern, t.Literal[*ATTENTION_BACKENDS]  # pyrefly: ignore[invalid-literal]
-] = {
-    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE): "TRITON_ATTN",
-}
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -198,24 +189,11 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        # Determine the attention backend to use:
-        # Override for models that require a specific backend, otherwise use user's
-        # choice from CLI (defaults to FLASHINFER)
-        if hasattr(vllm.config, "attention"):
-            for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
-                if re.search(pattern=pattern, string=model_config.model_id):
-                    attention_backend = backend
-                    break
-            else:
-                attention_backend = benchmark_config.attention_backend
-        else:
-            attention_backend = benchmark_config.attention_backend
-
         with no_terminal_output(disable=benchmark_config.verbose):
             model, tokeniser = load_model_and_tokeniser(
                 model_config=model_config,
                 benchmark_config=benchmark_config,
-                attention_backend=attention_backend,
+                attention_backend=benchmark_config.attention_backend,
             )
         self._model: "LLM" = model
         self._tokeniser: Tokeniser = tokeniser
@@ -428,6 +406,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             InvalidBenchmark:
                 If the dataset requires logprobs, but we could not get the first token
                 of each label in the dataset.
+            InvalidTask:
+                If the task requires structured output, but either is not NER or
+                does not define an output structure.
         """
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
@@ -487,21 +468,36 @@ class VLLMModel(HuggingFaceEncoderModel):
                 level=logging.DEBUG,
             )
         elif self.dataset_config.task.uses_structured_output:
-            ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
-            keys_and_their_types: dict[str, t.Any] = {
-                tag_name: (conlist(str, max_length=5), ...)
-                for tag_name in ner_tag_names
-            }
-            answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
-            structured_generation_schema = answer_format_class.model_json_schema()
-            log_once(
-                "Using structured generation with the JSON schema: "
-                f"{json.dumps(structured_generation_schema)}",
-                level=logging.DEBUG,
-            )
-            structured_outputs = StructuredOutputsParams(
-                json=structured_generation_schema
-            )
+            if self.dataset_config.task.structured_output_format is not None:
+                structured_outputs = StructuredOutputsParams(
+                    json=self.dataset_config.task.structured_output_format.model_json_schema()
+                )
+            elif self.dataset_config.task == NER:
+                ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+                keys_and_their_types: dict[str, t.Any] = {
+                    tag_name: (conlist(str, max_length=5), ...)
+                    for tag_name in ner_tag_names
+                }
+                answer_format_class = create_model(
+                    "AnswerFormat", **keys_and_their_types
+                )
+                structured_generation_schema = answer_format_class.model_json_schema()
+                log_once(
+                    "Using structured generation with the JSON schema: "
+                    f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
+                    level=logging.DEBUG,
+                )
+                structured_outputs = StructuredOutputsParams(
+                    json=structured_generation_schema
+                )
+            else:
+                raise InvalidTask(
+                    message=(
+                        "Task set to use structured out, but neither is an NER task "
+                        "nor defines an output structure "
+                        "- at least one of these must be true."
+                    )
+                )
         elif (
             self.dataset_config.task.uses_logprobs
             and self.dataset_config.labels
@@ -990,7 +986,8 @@ def load_model_and_tokeniser(
     benchmark_config: "BenchmarkConfig",
     attention_backend: t.Literal[
         *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-    ],
+    ]
+    | None,
 ) -> tuple["LLM", Tokeniser]:
     """Load the model and tokeniser.
 
@@ -1000,7 +997,7 @@ def load_model_and_tokeniser(
         benchmark_config:
             The benchmark configuration.
         attention_backend:
-            The attention backend to use.
+            The attention backend to use, or None to use the vLLM default.
 
     Returns:
         A pair (model, tokeniser), with the loaded model and tokeniser
@@ -1130,7 +1127,7 @@ def load_model_and_tokeniser(
 
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
-    if hasattr(vllm.config, "attention"):
+    if hasattr(vllm.config, "attention") and attention_backend is not None:
         vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)
 
     clear_vllm()

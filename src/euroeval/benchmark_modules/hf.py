@@ -123,6 +123,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
+        # This is already set when calling `super().__init__`, but we need it to get
+        # the correct value from `self.model_max_length`, so we set it here as well.
+        self.benchmark_config = benchmark_config
+
         model, tokeniser = load_model_and_tokeniser(
             model_config=model_config,
             dataset_config=dataset_config,
@@ -152,15 +156,15 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The number of parameters in the model.
         """
-        # No need to try to use the API if we have no internet.
-        if internet_connection_available():
-            num_params_or_none = get_num_params_from_safetensors_metadata(
-                model_id=self.model_config.model_id,
-                revision=self.model_config.revision,
-                api_key=self.benchmark_config.api_key,
-            )
-            if num_params_or_none is not None:
-                return num_params_or_none
+        num_params_or_none = get_num_params_from_safetensors_metadata(
+            model_id=(
+                self.model_config.adapter_base_model_id or self.model_config.model_id
+            ),
+            revision=self.model_config.revision,
+            api_key=self.benchmark_config.api_key,
+        )
+        if num_params_or_none is not None:
+            return num_params_or_none
 
         if (
             hasattr(self._model.config, "num_params")
@@ -186,6 +190,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The vocabulary size of the model.
         """
+        if self.benchmark_config.vocabulary_size is not None:
+            return self.benchmark_config.vocabulary_size
         if (
             hasattr(self._model.config, "vocab_size")
             and self._model.config.vocab_size is not None
@@ -207,6 +213,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The maximum context length of the model.
         """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
         all_max_lengths: list[int] = list()
 
         # Add the registered max length of the tokeniser

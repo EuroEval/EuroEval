@@ -77,7 +77,8 @@ class Benchmarker:
         gpu_memory_utilization: float = 0.8,
         attention_backend: t.Literal[
             *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-        ] = "FLASHINFER",
+        ]
+        | None = None,
         generative_type: GenerativeType | None = None,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
@@ -87,6 +88,8 @@ class Benchmarker:
         model_language: str | c.Sequence[str] | None = None,
         dataset_language: str | c.Sequence[str] | None = None,
         batch_size: int | None = None,
+        max_context_length: int | None = None,
+        vocabulary_size: int | None = None,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -149,8 +152,9 @@ class Benchmarker:
                 the risk of running out of GPU memory. Only reduce this if you are
                 running out of GPU memory. Defaults to 0.9.
             attention_backend:
-                The attention backend to use for vLLM. Defaults to FLASHINFER. Only
-                relevant if the model is generative.
+                The attention backend to use for vLLM. Only relevant if the model is
+                generative. If None then vLLM will automatically choose the best
+                backend. Defaults to None.
             generative_type:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
@@ -175,6 +179,12 @@ class Benchmarker:
                 Deprecated argument. Please use `language` instead.
             batch_size:
                 Deprecated argument. Please use `finetuning_batch_size` instead.
+            max_context_length:
+                Override for the maximum context length of the model. If None, the value
+                will be inferred automatically from the model. Defaults to None.
+            vocabulary_size:
+                Override for the vocabulary size of the model. If None, the value will
+                be inferred automatically from the model. Defaults to None.
 
         Raises:
             ValueError:
@@ -271,6 +281,8 @@ class Benchmarker:
             force=force,
             debug=debug,
             run_with_cli=run_with_cli,
+            max_context_length=max_context_length,
+            vocabulary_size=vocabulary_size,
         )
 
         self.benchmark_config = build_benchmark_config(
@@ -399,6 +411,8 @@ class Benchmarker:
         model_language: str | c.Sequence[str] | None = None,
         dataset_language: str | c.Sequence[str] | None = None,
         batch_size: int | None = None,
+        max_context_length: int | None = None,
+        vocabulary_size: int | None = None,
     ) -> c.Sequence[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -507,6 +521,14 @@ class Benchmarker:
                 Deprecated argument. Please use `language` instead.
             batch_size:
                 Deprecated argument. Please use `finetuning_batch_size` instead.
+            max_context_length:
+                Override for the maximum context length of the model. If None, the
+                value will be inferred automatically from the model. Defaults to the
+                value specified when initialising the benchmarker.
+            vocabulary_size:
+                Override for the vocabulary size of the model. If None, the value will
+                be inferred automatically from the model. Defaults to the value
+                specified when initialising the benchmarker.
 
         Returns:
             A list of benchmark results.
@@ -518,7 +540,7 @@ class Benchmarker:
                 If we're offline benchmarking an adapter model, or if model loading
                 failed.
         """
-        log(
+        log_once(
             "Started EuroEval run. Run with `--verbose` for more information.",
             level=logging.INFO,
         )
@@ -683,6 +705,16 @@ class Benchmarker:
                 else self.benchmark_config_default_params.debug
             ),
             run_with_cli=self.benchmark_config_default_params.run_with_cli,
+            max_context_length=(
+                max_context_length
+                if max_context_length is not None
+                else self.benchmark_config_default_params.max_context_length
+            ),
+            vocabulary_size=(
+                vocabulary_size
+                if vocabulary_size is not None
+                else self.benchmark_config_default_params.vocabulary_size
+            ),
         )
         benchmark_config = build_benchmark_config(
             benchmark_config_params=benchmark_config_params
@@ -780,7 +812,7 @@ class Benchmarker:
                     raise InvalidModel(
                         "Offline benchmarking of models with adapters is not currently "
                         "supported. An active internet connection is required. "
-                        "{open_issue_msg}"
+                        f"{open_issue_msg}"
                     )
                 elif benchmark_config.download_only:
                     log_once(
@@ -822,6 +854,15 @@ class Benchmarker:
                     )
                     benchmark_params_to_revert["few_shot"] = True
                     benchmark_config.few_shot = False
+
+                if benchmark_config.download_only:
+                    self._download(
+                        dataset_config=dataset_config,
+                        model_config=model_config,
+                        benchmark_config=benchmark_config,
+                    )
+                    num_finished_benchmarks += 1
+                    continue
 
                 # We do not re-initialise generative models as their architecture is not
                 # customised to specific datasets

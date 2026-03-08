@@ -42,6 +42,8 @@ def all_official_dataset_configs() -> Generator[list[DatasetConfig], None, None]
             dataset_ids=[],
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         ).values()
         if not cfg.unofficial
     ]
@@ -61,6 +63,8 @@ def all_official_la_dataset_configs() -> Generator[list[DatasetConfig], None, No
             dataset_ids=[],
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         ).values()
         if LA == cfg.task and not cfg.unofficial
     ]
@@ -226,6 +230,8 @@ def test_prepare_dataset_configs(
         custom_datasets_file=Path("custom_datasets.py"),
         api_key=os.getenv("HF_TOKEN"),
         cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=True,
+        run_with_cli=True,
     )
     assert set(prepared_dataset_configs) == set(expected_dataset_configs)
 
@@ -240,6 +246,8 @@ def test_prepare_dataset_configs_invalid_task() -> None:
             custom_datasets_file=Path("custom_datasets.py"),
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         )
     assert exc_info.value.code == 1
 
@@ -254,6 +262,8 @@ def test_prepare_dataset_configs_invalid_dataset() -> None:
             custom_datasets_file=Path("custom_datasets.py"),
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         )
     assert exc_info.value.code == 1
 

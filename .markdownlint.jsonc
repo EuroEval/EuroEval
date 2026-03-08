@@ -6,5 +6,6 @@
     },  // Set maximum line length to 88 characters, except in code blocks and tables
     "MD024": false,  // Allow duplicate headings
     "MD033": false,  // Allow inline HTML
+    "MD046": false,  // Allow indented code blocks (used for admonitions)
     "MD059": false  // Allow non-descriptive link text
 }

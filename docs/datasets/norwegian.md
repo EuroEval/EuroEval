@@ -1658,6 +1658,70 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset schibsted-no
 ```
 
+### Unofficial: VG Front Title
+
+This dataset was published
+[here](https://huggingface.co/datasets/Schibsted/vg-front-title) and
+features front-page titles of news articles from Schibsted Media's Norwegian
+newsroom, VG.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "article_id": "jabrGq",
+    "text": "Donald Trump og co klarte ikke endre valgresultatet med sine påstander om juks i 2020-valget, men nå mener mange at de legger grunnarbeidet for å kunne klare det i 2024 – dersom «nødvendig». Fremdeles er det uvisst om Donald Trump kommer til å stille til presidentvalg igjen i 2024, men dersom han gjør det – og taper en gang til – tror de flere eksperter at han igjen vil hevde at valget har blitt stjålet fra ham. Slik han gjorde – uten å legge frem bevis for påstandene om juks – etter valget i november 2020. Noe som to måneder senere endte med stormingen av Kongressen. – Skulle han stille og tape i 2024 så vil han aldri innrømme det, sier Civita-rådgiver og USA-ekspert Eirik Løkke, som påpeker at han både i 2016 – da han vant – og i 2020 hevdet valget var rigget. Da Trump tapte i 2020 forsøkte han legge press på en rekke ulike personer i håp om å snu tapet til seier.  Som da han ringte den republikanske administrasjonsministeren i Georgia, Brad Raffensperger, og ba ham «finne» 11.780 ekstra stemmer for Trump. Men Trumps forsøk lyktes ikke. Raffensperger bøyde ikke etter for Trumps krav, men sørget for at den med flest stemmer ble erklært som vinner I Georgia. Han, og flere andre både i Georgia og i andre vippestater der Trump hevdet juks hadde pågått, var lojale til grunnloven, demokratiet og folkets vilje. Ikke til sitt eget parti og sin egen kandidat.  For det ble de først belønnet av Trump-lojalister med utskjelling og drapstrusler. Og nå med kampanjer for å få dem fjernet fra sine posisjoner. – Mye større sjanse I disse dager pågår nemlig et intenst arbeid i kulissene der Trump og hans allierte jobber med å få installert håndplukkede lojalister i de rollene ute i delstatene som har makt til å godkjenne, eller avvise, valgresultater.  Lykkes de med å få valgt inn «sine» folk i de viktige vippestatene vil det dermed være langt flere der ute som vil være villige til å gjøre det Trump ber dem om.  – Da er det grunn til å tro at Trump har mye større sjanse til å lykkes med å endre et valgresultat, sier Løkke. USA-eksperten minner om at presidentvalget i USA i realiteten er 50 forskjellige valg – alle med egne regler. Han mener det er særlig to forhold som kan gjøre det enklere for Trump å lykkes i 2024: – Det første forholdet er en endring av hvem som kan godkjenne stemmer avgitt i enkelte delstater. I Georiga er det nå flyttet fra de lokale valgdistriktene til en sentral kommisjon utnevnt av delstatens republikanske flertall. Det innebærer for eksempel at den kommisjonen har makt til å underkjenne stemmer i storbyen Atlanta, hvor demokratene henter mesteparten av sine stemmer, forklarer Løkke, som legger til at dette også har skjedd i andre delstater. – Den andre forholdet er at Trump i stor grad forsøker å få lojale folk valgt i avgjørende posisjoner hva gjelder å godkjenne valgene i viktige delstater, fortsetter han. Hadde disse personene vært i posisjon i avgjærende vippestater som Georgia, Arizona og Michigan i 2020, så kunne det blitt mye mer dramatisk enn det ble, mener Løkke. Støttet Trump - får hans støtte Ifølge Washington Post har rundt en tredjedel av de 390 republikanerne som rundt i landet har vist interesse for å stille til valg til ulike delstatsposisjoner i det kommende mellomvalget offentlig støttet at partiet bør granske valgresultatet fra 2020, bagatellisert angrepet på Kongressen for et år siden, eller beint fram stilt spørsmål ved legitimiteten av Joe Bidens seier i 2020.  Dette inkluderer 10 kandidater som stiller til den viktige rollen som administrasjonsminister i delstatene, en posisjon som i mange stater har ansvaret for å godkjenne valgresultater.  Mark Finchem, for eksempel, stiller som valg til den rollen i Arizona. I en twittermelding i høst krevde han arrestasjoner og skrev at Bidens seier i hans delstat bør erklæres ugyldig.  Trump har denne gang gitt støtteerklæringer til flere som stiller til slike valg. Noe han ikke drev med før han selv tapte et valg",
+    "target_text": "Nå får Trump-lojalister mer makt:  «Ringer i alle alarmklokker»"
+}
+```
+
+```json
+{
+    "article_id": "kRVOgA",
+    "text": "En pensjonert mann ble liggende død i ni år før noen fant ham. – I en storby som Oslo er det dessverre mange som lever anonyme og ofte ensomme liv, sier sosialbyråden.  – Det er veldig trist å få høre om enkeltmennesker som dør alene uten pårørende som etterlyser dem, skriver sosialbyråd i Oslo Rina Mariann Hansen (Ap) i en e-post til VG.  Lørdag publiserte NRK en sak om en eldre mann som ble liggende død i leiligheten sin i hele ni år før han ble funnet. Mannen var pensjonert og bodde i en blokk øst i Oslo.  Mannen døde i 2011 – av naturlige årsaker. I de ni årene som gikk trodde naboer ifølge NRK at han var på en institusjon eller at han hadde flyttet.  Mannen er ikke alene om å ha blitt liggende uoppdaget i lang tid etter sin død.  Ifølge NRK lå i fjor 27 mennesker i Oslo, Asker og Bærum døde i over syv dager før de ble funnet. I 2019 gjaldt det 32 mennesker – blant dem en kvinne som ble funnet død i sin leilighet på Grünerløkka i Oslo. Da hadde hun ligget der i fem måneder.  – I en storby som Oslo er det dessverre mange som lever anonyme og ofte ensomme liv, noen ganger selvvalgt. Det travle storbylivet gjør kanskje at vi som medmennesker lettere glemmer å bry oss, sier sosialbyråd Hansen.  – Jeg tror vi må bry oss mer i hverdagen, bry oss om hvem som er naboene våre og hvordan de har det. Kanskje spørre litt oftere hvordan det går med dem. Mellom 2013 og 2017 var det 140 mennesker i Oslo som lå døde i mer enn en uke, ifølge en oversikt Aftenposten lagde i 2018.  Sosialbyråden mener saken viser at alle osloborgere må bidra til å gjøre hovedstaden til en by der folk føler tilhørighet og fellesskap.  – Vi kan alle gjøre vårt for at Oslo skal bli en varmere og mer inkluderende by. – Pandemien har lært oss noe om hva mangel på menneskelig kontakt i hverdagslige settinger gjør med oss. Kanskje de erfaringene vi gjør oss nå under pandemien gjør at vi som samfunn evner å ta bedre vare på hverandre. Byråd for helse, eldre og innbyggertjenester i Oslo, Robert Steen (Ap), hadde ikke anledning til å kommentere saken lørdag. ",
+    "target_text": "Funnet død etter ni år:  - Veldig trist"
+}
+```
+
+```json
+{
+    "article_id": "MLe9mK",
+    "text": "Han var Russlands rikeste. Nå advarer den tidligere oligarken Mikhail Khodorkovskij (58) mot å tro at Putin vil stoppe ved Ukrainas grenser. Mikhail Khodorkovskij (58) var Russlands rikeste oligark, og posisjonen som leder for landets største oljeselskap ga han direkte tilgang til president Putin.  Det tok brått slutt da Khodorkovskij snakket høyt om korrupsjon i Russland.  Oligarken sonet ti år i fengsel for det som menneskerettsorganisasjoner betegner som en straff for å ha kritisert Kreml. Mikhael Khodorkovskij er av dem som vet best hva Putin er kapabel til. Da VG snakker med ham på videolinje fra russerens selvpålagte eksil i London, har han et klart budskap om Russlands krig i Ukraina: Ikke tro at du kan forhandle med Putin.  – Til den dag i dag ser jeg ingen andre utveier enn å vise Putin tydelig at han taper. Frem til Putin forsvinner, kommer Europa til å ha store og seriøse problemer, sier han.  Vestens misforståelse Khodorkovskij var på 90-og starten av 2000-tallet kjent som både kompromissløs og kynisk. Som mange andre oligarker har han blitt kritisert for skruppelløst å ha utnyttet den sårbare økonomiske situasjonen Russland var i ved Sovjetunionens sammenbrudd.  Han som nå er en 58 år gammel forretningsmann, har siden han slapp ut av fengsel i 2013, jobbet fra London med å forsøke å endre styret i Russland gjennom organisasjonen Åpent Russland.  Khodorkovskij mener Vesten har misforstått noe vesentlig om Putins krig. – Dere tenker at Putin fortsatt ikke har krysset over landegrensene til de vestlige landene. Men for Putin, har han allerede det. Det er krystallklart fra Putins propaganda at han allerede er i krig med Nato og USA, mener Khodorkovskij.  – Valget dere nå må ta er enten å beseire Putin på Ukrainas territorium, eller så må dere kjempe mot han på territoriet til et Nato-land. Da står vi overfor noe mye verre, sier han til VG.  Vestens «alvorlige feil» Khodorkovskij kjenner godt maktens innerste ganger i hjemlandet, fordi han eide oljeprodusenten Yukos, noe som gjorde ham til Russlands rikeste i 2003 med en formue på svimlende 120 milliarder kroner. Olje er også stikkordet når den tidligere oligarken snakker om den alvorlige feilen han mener vestlige land gjorde for ti år siden, nemlig å gjøre seg avhengig av russisk olje og gass. – Allerede da burde vestlige land sett hvilken vei Putin tok Russland, og startet en omlegging til å sikre seg energi fra andre kilder. Vel, bedre sent enn aldri. I dag betaler Vesten for å ha vært sen, mener russeren.  Vesten er nå avhengig av et autoritært regime, og Putin bruker dette som et pressmiddel, oppsummerer regimekritikeren til VG. Hvis Europa sluttet helt å kjøpe olje og gass fra Russland, hvor fort ville landets økonomi kollapse, ble Khodorkovskij nylig spurt i programmet Hard Talk. – Hvis Putin må omdirigere olje og gass til det asiatiske markedet, vil han miste halvparten av inntekten. Det er halvparten av statsbudsjettet. Ville han klart å fortsette krigen under slike omstendigheter? Det er vanskelig for meg å si, jeg er ingen militærekspert. Men det ville etter mitt syn vært et alvorlig tilbakeslag, svarte Khodorkovskij. «Ble selv lurt» av Putin Et videoopptak av president Putins umiddelbare reaksjon på korrupsjonsanklagene Khodokovskij kom med i 2003, er brukt i dokumentarfilmen Citizen K fra 2019.  Der vises Putins umiddelbare, sammenbitte reaksjon på anklagene. Ti år i fengsel i Sibir stoppet altså likevel ikke Khodorkovskij. Den tidligere oligarken sier til VG at han ikke vil refse vestligere statsledere for ikke å ha sett hvilken fare Putin var, fordi han « ble selv lurt» da han i årene fra slutten av 90-tallet til 2003 møtte presidenten mange ganger.  – Putin er dyktig til å tilpasse seg til det folk ønsker å se i han. Det vet jeg fordi jeg selv opplevde det. Jeg ville gjerne se en ung, demokratisk leder av det nye Russland, og han demonstrerte med glede dette. Har han endret seg? Jeg tror vel egentlig at han bare var god til å late som, sier han til VG",
+    "target_text": "Eks-oligark:  - Ser ingen andre utveier"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Her følger nyhetsartikler med tilhørende titler.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+  Tittel: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+
+  Skriv en tittel for den ovennevnte artikkelen.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset vg-front-title
+```
+
 ### Unofficial: Personal Sum
 
 This dataset was released [here](https://github.com/SmartmediaAI/PersonalSum) and
@@ -1724,6 +1788,140 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset personal-sum
+```
+
+### Unofficial: NorSumm-nb
+
+This dataset was released in [this paper](https://doi.org/10.48550/arXiv.2501.07718) and
+features manually annotated summaries of Norwegian news articles written in Bokmål. The
+articles are sourced from the Norwegian event extraction dataset
+[EDEN](https://aclanthology.org/2024.lrec-main.488/), and each article has three
+manually annotated summaries. We use the first summary as the target.
+
+The original dataset contains 30 development and 33 test articles. We use 8 articles
+from the development set as the train split, and combine the remaining development
+articles with all 33 test articles as the test split. Each sample contains a single
+reference summary (the first annotated summary).
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Dødssyke Hannah får oppfylt sitt siste ønske likevel | Forsikringsselskapet lar henne dra til Disneyland. Får dø hjemme: Kreftsyke Hannah Jones (13) overbeviste britiske helsemyndigheter om å få slippe en hjertetransplantasjon. Hun vil heller tilbringe de siste månedene av sitt liv hjemme hos familien. Liker Disney: Hannah var i Euro Disney for flere år siden. Nå får hun oppfylt drømmen om å dra til Disneyland i USA. Overbeviste med sin modenhet: Hannah Jones fikk selv velge at hun ikke skal få et nytt hjerte. Historien om Hannah har fått stor oppmerksomhet i britiske medier, blant annet Sky News. Dødssyke Hannah Jones (13) har sagt nei til et nytt hjerte. Hun orker ikke en ny operasjon, og vil heller dø hjemme. Hannah ønsker å få tilbringe sine siste dager hjemme sammen med foreldrene og søsknene Oliver (11), Lucy (10) og Phoebe (4). Samtidig har hun en siste drøm: Å få reise til Disneyland i Orlando i USA. Fikk ikke reiseforsikring | 13-åringenes foreldre forsøkte å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av veldedige Caudwell Children. Alle barna fikk reiseforsikring. Men ikke Hannah, selv om familien prøvde hos en rekke selskaper. Det så ut til at det aldri skulle bli noe av turen. Men nå har et selskap meldt seg og sagt seg villig til å forsikre 13-åringen, melder Sky News. - Jeg er henrykt og overveldet, sier hun til TV-kanalen. - En uke vekk fra rutinene på sykehuset vil være en fin avkobling for meg og familien min, vi vil være som en vanlig familie en liten stund, sier hun. - Gleder oss | Navnet på selskapet som oppfyller Hannahs drøm er ikke kjent. Hannahs far, Andrew Jones, taker nå alle som har hjulpet familien. - Vi er veldig glade for at vi får til dette, og gleder oss til å se smilet hennes når vi kommer dit, sier han. Hannah Jones fikk konstatert leukemi da hun var fem år, og har gått på tunge medisiner i flere år. Til slutt førte medisinene til en alvorlig hjertefeil, og Hannah har i dag et hull i hjertet. Da legene foreslo en hjertetransplantasjon svarte jenta nei. Hun ville heller få lov å avslutte livet sammen med sine aller nærmeste, noe som kan bety at hun bare har seks måneder igjen å leve.",
+    "target_text": "Hannah Jones (13) fikk konstatert leukemi da hun var fem år gammel og har gått på tunge medisiner i flere år. \n\n Til slutt førte medisinene til en alvorlig hjertefeil, og Hanna har i dag et hull i hjerte. \n\n Hannah har en siste drøm om å dra til Disneyland i USA. \n\n Foreldrene prøvde å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av Caudwell Children. \n\n Alle barna fikk reiseforsikring bortsett fra Hannah og det så ut som at hun ikke kunne reise likevel. \n\n Men nå har et selskap sagt seg villig til å forsikre Hannah slik at hun og familien kan dra likevel, melder Sky News."
+}
+```
+
+```json
+{
+    "text": "Tvisynt ombudsmann | Stappfulle esker. Forsvarsskrift. Ombudsmannen | Borten-biografi. Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. Ingen av Per Bortens uttalelser gjennom mer enn 50 år som lokalpolitiker, stortingsrepresentant, statsminister og politisk kårkall er blitt så legendarisk som da han ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. Men uttalelsen passet bedre på situasjonen enn på personen som kom med den. Per Borten ble valgt som statsminister etter den borgerlige valgseieren i 1965 fordi flertallet i Høyres stortingsgruppe mente at han kunne bli den mest samlende regjeringssjefen. Det varte bare noen få år. Da Regjeringen gikk i gradvis indre oppløsning etter den nye valgseieren i 1969, var statsministerens uforutsigbare og ustrukturerte arbeidsstil en del av forklaringen, men langt fra hele. Den altoverskyggende årsak var at de politiske motsetningene mellom regjeringspartiene, først og fremst i EF-saken, tæret så hardt på tillitsforholdet partiene imellom at samarbeidet ikke lenger var liv laga. Bortens tabbe med å skjule for sin regjering at han hadde vist fortrolige dokumenter til ledelsen i Folkebevegelsen mot norsk medlemskap i EEC, avgjorde bare tidspunktet for og omstendighetene rundt et regjeringssammenbrudd som ville ha kommet uansett. Historikeren Harald Berntsen konstaterer med rette at toneangivende kretser på begge sider i den uforsonlige EF-kampen mente deres sak var best tjent med at Borten-regjeringen gikk av. En koalisjon dannet som et samlende svar på et langvarig og maktfullkomment Ap-styre, møtte sin skjebne fordi det etter hvert ble tyngre saker som splittet partiene enn som bandt dem sammen. Berntsen har påtatt seg en både viktig og vanskelig oppgave. Ikke bare har det vært et problem, som han selv skriver i forordet, å bli klok på Borten. På toppen av dette kom de metodiske utfordringer. De fleste andre ledende norske politikere i de første etterkrigstiårene, som Einar Gerhardsen, John Lyng, Trygve Bratteli og Kåre Willoch, har skrevet memoarer som danner gode utgangspunkt for andres kritiske granskning. Det var en fremmed tanke for Borten. Statsministeren i Norges første brede og varige borgerlige koalisjonsregjering etterlot seg timelange radiointervjuer med tidligere Dagsnytt-redaktør Per Bøhn og 70-80 stappfulle esker med usorterte papirer på loft og i kjeller hjemme på gården i Flå. De fleste som kom i kontakt med Borten i hans tid som aktiv politiker, eller i den lange kårkallsperioden, skjønner hvorfor det ble slik. Med få unntak var Borten ingen handlingens mann. Og evnen til systematikk var ingen fremtredende egenskap ved hans personlighet. Han var mer opptatt av å lytte, filosofere og diskutere enn av å bidra til sitt eget ettermæle i form av en arbeidskrevende skriftlig fremstilling. Hans fascinerende blanding av intellektuell nysgjerrighet, bondeful folkelighet og politisk uforutsigbarhet gjorde ham til en spennende samtalepartner både for politisk interesserte og folk flest. Berntsens største fortjeneste ligger i systematiseringen av det enorme kildematerialet. Men det at han i så stor grad har måttet begynne på bar bakke, er kanskje også en del av forklaringen på at deler av boken bærer mer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand. Av og til kan leseren få inntrykk av at Berntsen analyserer Borten litt for mye i lys av sin egen politiske fortid på venstresiden. Et eksempel på det er forfatterens overraskelse over Bortens sterke engasjement mot de mange ulovlige streikene det siste året av hans statsministertid. Et annet er hans forsøk på å omtale Borten som en sannere sosialdemokrat enn Aps egne ledere. At Borten som statsminister videreførte og videreutviklet viktige sosiale reformer som Folketrygden, viser mer om verdifellesskapet over de partipolitiske skillelinjene i 1960-årenes Norge enn om Bortens eget politiske ståsted. Fra statsministertiden nevner Berntsen offentlighetsloven og oppreisningen til krigsseilerne som viktige saker for Borten. Og fra årene etterpå fremstår kampen mot politisk overvåking som den tydeligste delen av hans samfunnsvirke. Engasjementet i disse tre sakene representerer kanskje den mest konsekvente linje i Per Bortens motsetningsfylte politiske liv. Han fremsto som en ombudsmann for enkeltmennesker overfor et maktapparat det i egenskap av statsminister i fem og et halvt år falt i hans lodd å være den fremste representant for.",
+    "target_text": "Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. \n\n Tittelen refererer til da Borten ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. \n\n Berntsen skriver selv i forordet at det har vært et problem og metodiske utfordringer med å bli klok på Borten da Borten ikke hadde skrevet en memoar. \n\n Det at Berntsen i så stor grad har måttet starte på bar bakke er kanskje en del av forklaringen på at deler av boken bærer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand."
+}
+```
+
+```json
+{
+    "text": "Tvisynt ombudsmann | Stappfulle esker. Forsvarsskrift. Ombudsmannen | Borten-biografi. Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. Ingen av Per Bortens uttalelser gjennom mer enn 50 år som lokalpolitiker, stortingsrepresentant, statsminister og politisk kårkall er blitt så legendarisk som da han ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. Men uttalelsen passet bedre på situasjonen enn på personen som kom med den. Per Borten ble valgt som statsminister etter den borgerlige valgseieren i 1965 fordi flertallet i Høyres stortingsgruppe mente at han kunne bli den mest samlende regjeringssjefen. Det varte bare noen få år. Da Regjeringen gikk i gradvis indre oppløsning etter den nye valgseieren i 1969, var statsministerens uforutsigbare og ustrukturerte arbeidsstil en del av forklaringen, men langt fra hele. Den altoverskyggende årsak var at de politiske motsetningene mellom regjeringspartiene, først og fremst i EF-saken, tæret så hardt på tillitsforholdet partiene imellom at samarbeidet ikke lenger var liv laga. Bortens tabbe med å skjule for sin regjering at han hadde vist fortrolige dokumenter til ledelsen i Folkebevegelsen mot norsk medlemskap i EEC, avgjorde bare tidspunktet for og omstendighetene rundt et regjeringssammenbrudd som ville ha kommet uansett. Historikeren Harald Berntsen konstaterer med rette at toneangivende kretser på begge sider i den uforsonlige EF-kampen mente deres sak var best tjent med at Borten-regjeringen gikk av. En koalisjon dannet som et samlende svar på et langvarig og maktfullkomment Ap-styre, møtte sin skjebne fordi det etter hvert ble tyngre saker som splittet partiene enn som bandt dem sammen. Berntsen har påtatt seg en både viktig og vanskelig oppgave. Ikke bare har det vært et problem, som han selv skriver i forordet, å bli klok på Borten. På toppen av dette kom de metodiske utfordringer. De fleste andre ledende norske politikere i de første etterkrigstiårene, som Einar Gerhardsen, John Lyng, Trygve Bratteli og Kåre Willoch, har skrevet memoarer som danner gode utgangspunkt for andres kritiske granskning. Det var en fremmed tanke for Borten. Statsministeren i Norges første brede og varige borgerlige koalisjonsregjering etterlot seg timelange radiointervjuer med tidligere Dagsnytt-redaktør Per Bøhn og 70-80 stappfulle esker med usorterte papirer på loft og i kjeller hjemme på gården i Flå. De fleste som kom i kontakt med Borten i hans tid som aktiv politiker, eller i den lange kårkallsperioden, skjønner hvorfor det ble slik. Med få unntak var Borten ingen handlingens mann. Og evnen til systematikk var ingen fremtredende egenskap ved hans personlighet. Han var mer opptatt av å lytte, filosofere og diskutere enn av å bidra til sitt eget ettermæle i form av en arbeidskrevende skriftlig fremstilling. Hans fascinerende blanding av intellektuell nysgjerrighet, bondeful folkelighet og politisk uforutsigbarhet gjorde ham til en spennende samtalepartner både for politisk interesserte og folk flest. Berntsens største fortjeneste ligger i systematiseringen av det enorme kildematerialet. Men det at han i så stor grad har måttet begynne på bar bakke, er kanskje også en del av forklaringen på at deler av boken bærer mer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand. Av og til kan leseren få inntrykk av at Berntsen analyserer Borten litt for mye i lys av sin egen politiske fortid på venstresiden. Et eksempel på det er forfatterens overraskelse over Bortens sterke engasjement mot de mange ulovlige streikene det siste året av hans statsministertid. Et annet er hans forsøk på å omtale Borten som en sannere sosialdemokrat enn Aps egne ledere. At Borten som statsminister videreførte og videreutviklet viktige sosiale reformer som Folketrygden, viser mer om verdifellesskapet over de partipolitiske skillelinjene i 1960-årenes Norge enn om Bortens eget politiske ståsted. Fra statsministertiden nevner Berntsen offentlighetsloven og oppreisningen til krigsseilerne som viktige saker for Borten. Og fra årene etterpå fremstår kampen mot politisk overvåking som den tydeligste delen av hans samfunnsvirke. Engasjementet i disse tre sakene representerer kanskje den mest konsekvente linje i Per Bortens motsetningsfylte politiske liv. Han fremsto som en ombudsmann for enkeltmennesker overfor et maktapparat det i egenskap av statsminister i fem og et halvt år falt i hans lodd å være den fremste representant for.",
+    "target_text": "Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. \n\n Tittelen refererer til da Borten ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. \n\n Berntsen skriver selv i forordet at det har vært et problem og metodiske utfordringer med å bli klok på Borten da Borten ikke hadde skrevet en memoar. \n\n Det at Berntsen i så stor grad har måttet starte på bar bakke er kanskje en del av forklaringen på at deler av boken bærer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Her følger nyhetsartikler med tilhørende sammendrag.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+  Sammendrag: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+
+  Skriv et sammendrag av den ovennevnte artikkelen.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset norsumm-nb
+```
+
+### Unofficial: NorSumm-nn
+
+This dataset was released in [this paper](https://doi.org/10.48550/arXiv.2501.07718) and
+features manually annotated summaries of Norwegian news articles written in Nynorsk. The
+articles are sourced from the Norwegian event extraction dataset
+[EDEN](https://aclanthology.org/2024.lrec-main.488/), and each article has three
+manually annotated summaries. We use the first summary as the target.
+
+The original dataset contains 30 development and 33 test articles. We use 8 articles
+from the development set as the train split, and combine the remaining development
+articles with all 33 test articles as the test split. Each sample contains a single
+reference summary (the first annotated summary).
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Dødssyke Hannah får oppfylt sitt siste ønske likevel | Forsikringsselskapet lar henne dra til Disneyland. Får dø hjemme: Kreftsyke Hannah Jones (13) overbeviste britiske helsemyndigheter om å få slippe en hjertetransplantasjon. Hun vil heller tilbringe de siste månedene av sitt liv hjemme hos familien. Liker Disney: Hannah var i Euro Disney for flere år siden. Nå får hun oppfylt drømmen om å dra til Disneyland i USA. Overbeviste med sin modenhet: Hannah Jones fikk selv velge at hun ikke skal få et nytt hjerte. Historien om Hannah har fått stor oppmerksomhet i britiske medier, blant annet Sky News. Dødssyke Hannah Jones (13) har sagt nei til et nytt hjerte. Hun orker ikke en ny operasjon, og vil heller dø hjemme. Hannah ønsker å få tilbringe sine siste dager hjemme sammen med foreldrene og søsknene Oliver (11), Lucy (10) og Phoebe (4). Samtidig har hun en siste drøm: Å få reise til Disneyland i Orlando i USA. Fikk ikke reiseforsikring | 13-åringenes foreldre forsøkte å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av veldedige Caudwell Children. Alle barna fikk reiseforsikring. Men ikke Hannah, selv om familien prøvde hos en rekke selskaper. Det så ut til at det aldri skulle bli noe av turen. Men nå har et selskap meldt seg og sagt seg villig til å forsikre 13-åringen, melder Sky News. - Jeg er henrykt og overveldet, sier hun til TV-kanalen. - En uke vekk fra rutinene på sykehuset vil være en fin avkobling for meg og familien min, vi vil være som en vanlig familie en liten stund, sier hun. - Gleder oss | Navnet på selskapet som oppfyller Hannahs drøm er ikke kjent. Hannahs far, Andrew Jones, taker nå alle som har hjulpet familien. - Vi er veldig glade for at vi får til dette, og gleder oss til å se smilet hennes når vi kommer dit, sier han. Hannah Jones fikk konstatert leukemi da hun var fem år, og har gått på tunge medisiner i flere år. Til slutt førte medisinene til en alvorlig hjertefeil, og Hannah har i dag et hull i hjertet. Da legene foreslo en hjertetransplantasjon svarte jenta nei. Hun ville heller få lov å avslutte livet sammen med sine aller nærmeste, noe som kan bety at hun bare har seks måneder igjen å leve.",
+    "target_text": "Hannah Jones (13) fekk konstatert leukemi då ho var fem år gamal og har gått på tunge medisinar i fleire år. \n\n Til slutt førte medisinane til ein alvorleg hjertefeil, og Hanna har i dag et hol i hjarta. \n\n Hannah har ein siste draum om å reisa til Disneyland i USA. \n\n Foreldrene prøvde å få ho med på ein gruppetur med 40 andre sjuke eller funksjonshemma ungar, arrangert av Caudwell Children. \n\n Alle ungane fekk reiseforsikring bortsett frå Hannah og det såg ut som at ho ikkje kunne reisa likevel. \n\n Men no har et selskap sagt seg villig til å forsikra Hannah slik at ho og familien kan reisa likevel, melder Sky News."
+}
+```
+
+```json
+{
+    "text": "Fordømmer pågripelsen av Malis statsminister | Brøt seg inn | Sharia | Vakuum | Skepsis | FNs sikkerhetsråd fordømmer pågripelsen av Malis statsminister Cheick Modibo Diarra, som har gått av etter å ha blitt pågrepet soldater som var sendt av den tidligere kupplederen Amadou Sanogo. I en kort tale på Malis statlige fjernsyn sa Diarra tirsdag at han går av med hele sin regjering. Sikkerhetsrådet fordømmer pågripelsen av Diarra og advarer om at hæren i landet er i ferd med å undergrave de internasjonale forsøkene på å slå ned det islamistiske opprøret nord i landet. Sikkerhetsrådet varsler også om at det kan bli aktuelt å innføre sanksjoner mot Mali. Ifølge en av Diarras livvakter var det rundt 20 soldater som mandag kom fra en militærleir utenfor hovedstaden Bamako, som er hovedkvarteret til Sanogo og de tidligere kuppmakerne. Livvakter forteller at soldatene slo inn døra for å ta seg inn i Diarras hjem, og at de hadde behandlet ham ganske røft. Ifølge en talsmann for de militære ble Diarra arrestert fordi han prøvde å reise fra landet. Diarra skulle mandag reist til Frankrike for en legeundersøkelse, men han avlyste reisen da han fikk vite at bagasjen hans var tatt av flyet han skulle reist med. Diarra har mange ganger gjort det klart at han ønsker en rask militæraksjon for å drive islamistene som har tatt kontrollen over det nordlige Mali, bort. Islamistene har innført sharialov i gamle kulturbyer som Timbuktu. Blant annet straffer de tyver ved å kappe hendene av dem, de tvinger kvinner til å dekke seg til, og de har forbudt aktiviteter som fotball. Diarra ble utnevnt til statsminister i en interimsregjering noen uker etter et kupp i mars som kastet det tidligere stabile landet ut i kaos. Dioncounda Traore sitter fortsatt som interimspresident i landet. Ifølge militærregimet vil en ny statsminister snart bli utnevnt. - Dette er ikke et statskupp, forsikrer militærtalsmann Bakary Mariko overfor fjernsynskanalen France 24. Kaptein Sanogo gjennomførte kuppet mot den sittende presidenten Amadou Toure på grunn av skuffelse over at regjeringen ikke gjorde mer for å stanse et opprør blant tuaregene i nord. Men kuppet skapte et vakuum som gjorde at tuaregene og deres islamistiske allierte kunne ta kontrollen over de nordligste to tredelene av landet. Siden kastet islamistene ut tuaregene og tok makten alene. Vestafrikanske land har lagt planer for en militær intervensjon og har bedt FN godkjenne planene, som støttes av Frankrike. Tyskland og USA har lovet å bidra med opplæring og logistisk støtte. Vesten frykter at det nordlige Mali skal bli et nytt støttepunkt for islamistiske terrorgrupper, ettersom noen av islamistene der har forbindelser til al-Qaida. Men det er fortsatt stor internasjonal skepsis mot planen om å sette inn 3.300 vestafrikanske soldater. Mange av Malis naboer foretrekker å prøve å få til en forhandlingsløsning, og både FN og USA ber om tilbakeholdenhet. USAs FN-ambassadør Susan Rice sa i forrige uke at de vestafrikanske soldatene er dårlig egnet til å krige i ørkenen mot grupper som Ansar Dine, al-Qaida i Maghreb (Aqim) og MUJAO. En bekymring er også at regjeringen i Bamako er svak og ennå ikke har begynt å planlegge nye valg for å erstatte interimsregjeringen med en demokratisk valgt regjering. Django Cissoko er utnevnt til ny statsminister i Mali etter at forgjengeren Cheick Modibo Diarra ble tvunget til å gå av. Cissoko ble utnevnt av landets midlertidige president Dioncounda Traore tirsdag kveld.",
+    "target_text": "I ein kort tale på statleg fjernsyn i landet sa Mali sin statsminister Cheick Modibo Diarra tysdag at han går av med heile sin regjering. \n\n Han har gått av etter å ha blitt pågripen av soldatar som var sendt av den tidlegare kuppleiaren Amadou Sanogo. \n\n Ifølge en talsmann for de militære blei Diarra arrestert fordi han prøva å reise frå landet. \n\n FN sitt sikkerheitsråd fordømmer pågripinga av Diarra og åtvarar om at hæren i landet er i ferd med å undergrava dei internasjonale forsøka på å slå ned det islamistiske opprøret nord i landet. \n\n Sikkerhetsrådet varslar om at det kan bli aktuelt å innføra sanksjonar mot Mali. \n\n Ifølge militærregimet vil ein ny statsminister snart bli utnemnt."
+}
+```
+
+```json
+{
+    "text": "Fordømmer pågripelsen av Malis statsminister | Brøt seg inn | Sharia | Vakuum | Skepsis | FNs sikkerhetsråd fordømmer pågripelsen av Malis statsminister Cheick Modibo Diarra, som har gått av etter å ha blitt pågrepet soldater som var sendt av den tidligere kupplederen Amadou Sanogo. I en kort tale på Malis statlige fjernsyn sa Diarra tirsdag at han går av med hele sin regjering. Sikkerhetsrådet fordømmer pågripelsen av Diarra og advarer om at hæren i landet er i ferd med å undergrave de internasjonale forsøkene på å slå ned det islamistiske opprøret nord i landet. Sikkerhetsrådet varsler også om at det kan bli aktuelt å innføre sanksjoner mot Mali. Ifølge en av Diarras livvakter var det rundt 20 soldater som mandag kom fra en militærleir utenfor hovedstaden Bamako, som er hovedkvarteret til Sanogo og de tidligere kuppmakerne. Livvakter forteller at soldatene slo inn døra for å ta seg inn i Diarras hjem, og at de hadde behandlet ham ganske røft. Ifølge en talsmann for de militære ble Diarra arrestert fordi han prøvde å reise fra landet. Diarra skulle mandag reist til Frankrike for en legeundersøkelse, men han avlyste reisen da han fikk vite at bagasjen hans var tatt av flyet han skulle reist med. Diarra har mange ganger gjort det klart at han ønsker en rask militæraksjon for å drive islamistene som har tatt kontrollen over det nordlige Mali, bort. Islamistene har innført sharialov i gamle kulturbyer som Timbuktu. Blant annet straffer de tyver ved å kappe hendene av dem, de tvinger kvinner til å dekke seg til, og de har forbudt aktiviteter som fotball. Diarra ble utnevnt til statsminister i en interimsregjering noen uker etter et kupp i mars som kastet det tidligere stabile landet ut i kaos. Dioncounda Traore sitter fortsatt som interimspresident i landet. Ifølge militærregimet vil en ny statsminister snart bli utnevnt. - Dette er ikke et statskupp, forsikrer militærtalsmann Bakary Mariko overfor fjernsynskanalen France 24. Kaptein Sanogo gjennomførte kuppet mot den sittende presidenten Amadou Toure på grunn av skuffelse over at regjeringen ikke gjorde mer for å stanse et opprør blant tuaregene i nord. Men kuppet skapte et vakuum som gjorde at tuaregene og deres islamistiske allierte kunne ta kontrollen over de nordligste to tredelene av landet. Siden kastet islamistene ut tuaregene og tok makten alene. Vestafrikanske land har lagt planer for en militær intervensjon og har bedt FN godkjenne planene, som støttes av Frankrike. Tyskland og USA har lovet å bidra med opplæring og logistisk støtte. Vesten frykter at det nordlige Mali skal bli et nytt støttepunkt for islamistiske terrorgrupper, ettersom noen av islamistene der har forbindelser til al-Qaida. Men det er fortsatt stor internasjonal skepsis mot planen om å sette inn 3.300 vestafrikanske soldater. Mange av Malis naboer foretrekker å prøve å få til en forhandlingsløsning, og både FN og USA ber om tilbakeholdenhet. USAs FN-ambassadør Susan Rice sa i forrige uke at de vestafrikanske soldatene er dårlig egnet til å krige i ørkenen mot grupper som Ansar Dine, al-Qaida i Maghreb (Aqim) og MUJAO. En bekymring er også at regjeringen i Bamako er svak og ennå ikke har begynt å planlegge nye valg for å erstatte interimsregjeringen med en demokratisk valgt regjering. Django Cissoko er utnevnt til ny statsminister i Mali etter at forgjengeren Cheick Modibo Diarra ble tvunget til å gå av. Cissoko ble utnevnt av landets midlertidige president Dioncounda Traore tirsdag kveld.",
+    "target_text": "I ein kort tale på statleg fjernsyn i landet sa Mali sin statsminister Cheick Modibo Diarra tysdag at han går av med heile sin regjering. \n\n Han har gått av etter å ha blitt pågripen av soldatar som var sendt av den tidlegare kuppleiaren Amadou Sanogo. \n\n Ifølge en talsmann for de militære blei Diarra arrestert fordi han prøva å reise frå landet. \n\n FN sitt sikkerheitsråd fordømmer pågripinga av Diarra og åtvarar om at hæren i landet er i ferd med å undergrava dei internasjonale forsøka på å slå ned det islamistiske opprøret nord i landet. \n\n Sikkerhetsrådet varslar om at det kan bli aktuelt å innføra sanksjonar mot Mali. \n\n Ifølge militærregimet vil ein ny statsminister snart bli utnemnt."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 1
+- Prefix prompt:
+
+  ```text
+  Her følger nyhetsartikler med tilhørende sammendrag.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+  Sammendrag: {target_text}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Nyhetsartikkel: {text}
+
+  Skriv et sammendrag av den ovennevnte artikkelen.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset norsumm-nn
 ```
 
 ## European Values
@@ -1802,4 +2000,83 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset valeu-no
+```
+
+## Miscellaneous Text Classification
+
+### Unofficial: NorDial
+
+This dataset was published in [this paper](https://aclanthology.org/2021.nodalida-main.51/)
+and consists of Norwegian tweets manually annotated for the writing form used: standard
+Bokmål, standard Nynorsk, dialectal Norwegian, or a mix of these.
+
+The original full dataset consists of 848 / 106 / 110 samples for training, validation
+and test, respectively. We use all available samples, resulting in the same 848 / 106 /
+110 split for training, validation and test, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "@jkBaltzersen @nitaSmartAnd @sgaarder Vi har en lokal revy (opp til flere, men en av dem har jeg sett), og de klarer hvert år å parodiere forskjellige personer som har en rolle i lokalsamfunnet eller stukket hodet frem i avisen. Ikke alle er maktpersoner, og ikke alt like morsomt. Samtidig er det humor.",
+    "label": "bokmål"
+}
+```
+
+```json
+{
+    "text": "@elfhybrid_ -Halda fram med spanskvedlikehald\n-Øva meir på andre språk eg kan litt, kanskje tysk eller russisk, og/eller byrja læra islandsk eller skotsk-gælisk som eg har hatt lyst å læra i årevis\n-Ha tantungar på overnatting oftare\n-Øva meg på å høyra etter når kroppen seier nei",
+    "label": "nynorsk"
+}
+```
+
+```json
+{
+    "text": "@FANTonsen @mimirk Æ ha egenhendig bygd to vindmøllparka.\nÅ kolles innvestorkapitaln trikse med skatt og tillskudd, imens vi gi dem våre ressursa.\nUnnskyld mæ, triksing med tall. Det by mæ imot.",
+    "label": "dialectal"
+}
+```
+
+```json
+{
+    "text": "@RekstadYvind Når ein har andre avvik så er det \"favorable genetic profile\", men når ei svart kvinne har det er det eit biologisk overtramp, eit hån mot sporten, og ho er eigentleg mann. Det er så dårleg skjult det dei driv med. https://t.co/fWRduJAloo",
+    "label": "mixed"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er norske tweets og hvilken skriftform de er skrevet på, som kan være 'bokmål', 'nynorsk', 'dialekt' eller 'blandet'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Tweet: {text}
+  Skriftform: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Tweet: {text}
+
+  Klassifiser skriftformen av tweeten. Svar med 'bokmål', 'nynorsk', 'dialekt' eller 'blandet', og ikke noe annet.
+  ```
+
+- Label mapping:
+  - `bokmål` ➡️ `bokmål`
+  - `nynorsk` ➡️ `nynorsk`
+  - `dialectal` ➡️ `dialekt`
+  - `mixed` ➡️ `blandet`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset nordial
 ```

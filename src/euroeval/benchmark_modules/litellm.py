@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import typing as t
+from copy import deepcopy
 from functools import cached_property, partial
 from time import sleep
 
@@ -33,14 +34,13 @@ from litellm.utils import supports_reasoning, supports_response_schema
 from pydantic import ValidationError, conlist, create_model
 from tqdm.asyncio import tqdm as tqdm_async
 
-from euroeval.safetensors_utils import get_num_params_from_safetensors_metadata
-
 from ..async_utils import add_semaphore_and_catch_exception, safe_run
 from ..constants import (
     JSON_STRIP_CHARACTERS,
     LITELLM_CLASSIFICATION_OUTPUT_KEY,
     MAX_LITELLM_LOGPROBS,
     REASONING_MAX_TOKENS,
+    TOOL_CALLING_KEYS,
 )
 from ..data_models import (
     BenchmarkConfig,
@@ -70,6 +70,7 @@ from ..generation_utils import (
 )
 from ..logging_utils import get_pbar, log, log_once
 from ..model_cache import create_model_cache_dir
+from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import split_model_id
 from ..task_group_utils import (
     question_answering,
@@ -187,7 +188,6 @@ CUSTOM_INFERENCE_API_PREFIXES = [
     "llamafile/",
     "litellm_proxy/",
     "lm_studio/",
-    "openai/",
 ]
 
 UNOFFICIAL_INFERENCE_API_PREFIXES = ["ordbogen/"]
@@ -374,10 +374,7 @@ class LiteLLMModel(BenchmarkModule):
             batch_indices, batch_inputs = zip(*inputs_to_run)
             successes, failures = safe_run(
                 self._generate_async(
-                    model_id=clean_model_id(
-                        model_id=self.model_config.model_id,
-                        benchmark_config=self.benchmark_config,
-                    ),
+                    model_id=self.model_config.model_id,
                     inputs=list(batch_inputs),
                     max_concurrent_calls=self.buffer["max_concurrent_calls"],
                     **generation_kwargs,
@@ -526,7 +523,10 @@ class LiteLLMModel(BenchmarkModule):
             "Only temperature=1 is supported",
         ]
         max_items_messages = ["'maxItems' is not permitted."]
-        no_json_schema_messages = ["Property keys should match pattern"]
+        no_json_schema_messages = [
+            "Property keys should match pattern",
+            "'json_schema' is not supported",
+        ]
         thinking_budget_pattern = re.compile(
             r"the thinking budget [0-9]+ is invalid. please choose a value between "
             r"[0-9]+ and ([0-9]+)\."
@@ -537,6 +537,7 @@ class LiteLLMModel(BenchmarkModule):
             "got an unexpected keyword argument 'response_format'",
             "the model returned empty outputs",
             "'maxitems' is not supported",
+            "must contain the word 'json'",
         ]
 
         if (
@@ -810,13 +811,19 @@ class LiteLLMModel(BenchmarkModule):
             InvalidBenchmark:
                 If the model input is invalid.
         """
+        cleaned_model_id = clean_model_id(
+            model_id=model_id, benchmark_config=self.benchmark_config
+        )
+
         # Create a LiteLLM router, which will ensure that we only use a single client
         # for all the requests, preventing "too many open files" errors
         router = Router(
             model_list=[
                 litellm.DeploymentTypedDict(
-                    model_name=self.model_config.model_id,
-                    litellm_params=litellm.LiteLLMParamsTypedDict(model=model_id),
+                    model_name=cleaned_model_id,
+                    litellm_params=litellm.LiteLLMParamsTypedDict(
+                        model=cleaned_model_id
+                    ),
                 )
             ]
         )
@@ -831,11 +838,7 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.atext_completion(
-                        model=clean_model_id(
-                            model_id=model_id, benchmark_config=self.benchmark_config
-                        ),
-                        prompt=input_,
-                        **generation_kwargs,
+                        model=cleaned_model_id, prompt=input_, **generation_kwargs
                     ),
                     semaphore=semaphore,
                 )
@@ -851,11 +854,7 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.acompletion(
-                        model=clean_model_id(
-                            model_id=model_id, benchmark_config=self.benchmark_config
-                        ),
-                        messages=input_,
-                        **generation_kwargs,
+                        model=cleaned_model_id, messages=input_, **generation_kwargs
                     ),
                     semaphore=semaphore,
                 )
@@ -950,8 +949,11 @@ class LiteLLMModel(BenchmarkModule):
             # In the case where we're dealing with a classification task, the model is
             # outputting a JSON dictionary, so we will extract the generated text from
             # within the dictionary
+            # This is not relevant for tooling and may cause problems there
             generation_dct: dict[str, t.Any] | None = None
-            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output:
+            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output and not all(
+                [k in generation_output for k in TOOL_CALLING_KEYS]
+            ):
                 try:
                     generation_dct = json.loads(generation_output)
                     assert isinstance(generation_dct, dict)
@@ -1125,6 +1127,8 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The vocabulary size of the model.
         """
+        if self.benchmark_config.vocabulary_size is not None:
+            return self.benchmark_config.vocabulary_size
         # Start by trying out the regex mapping, and use the value if it matches
         for key, value in VOCAB_SIZE_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
@@ -1180,6 +1184,8 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The maximum length of the model.
         """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
         # Start by trying out the regex mapping, and use the value if it matches
         for key, value in MODEL_MAX_LENGTH_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
@@ -1625,7 +1631,31 @@ class LiteLLMModel(BenchmarkModule):
                     "enable it.",
                     level=logging.DEBUG,
                 )
-            elif supports_response_schema(model=self.model_config.model_id):
+            elif dataset_config.task.structured_output_format is not None:
+                pydantic_class = dataset_config.task.structured_output_format
+                # TODO: here it would be nice to just input the pydantic class
+                # directly instead. However this caused problems with e.g.
+                # gpt-4o-mini (error: "additional_properties not defined")
+                generation_kwargs["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": pydantic_class.__class__.__name__,
+                        "schema": pydantic_class.model_json_schema(),
+                    },
+                }
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with response_format "
+                    f"{pydantic_class.model_json_schema()}.",
+                    level=logging.DEBUG,
+                )
+            # Skip litellm's support check when using a custom base_api URL, as
+            # litellm can only reliably verify support for their official API providers,
+            # not custom endpoints.
+            # We assume custom endpoint models support structured generation.
+            elif self.benchmark_config.api_base is not None or supports_response_schema(
+                model=self.model_config.model_id
+            ):
                 if dataset_config.task == NER:
                     ner_tag_names = list(dataset_config.prompt_label_mapping.values())
                     keys_and_their_types: dict[str, t.Any] = {
@@ -1656,6 +1686,7 @@ class LiteLLMModel(BenchmarkModule):
                     "the model does not support schemas.",
                     level=logging.DEBUG,
                 )
+
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             localised_labels = [
                 self.dataset_config.prompt_label_mapping[label]
@@ -1720,10 +1751,7 @@ class LiteLLMModel(BenchmarkModule):
         for _ in range(num_attempts := 10):
             _, failures = safe_run(
                 self._generate_async(
-                    model_id=clean_model_id(
-                        model_id=self.model_config.model_id,
-                        benchmark_config=self.benchmark_config,
-                    ),
+                    model_id=self.model_config.model_id,
                     inputs=[test_input],
                     max_concurrent_calls=1,
                     **generation_kwargs,
@@ -1869,29 +1897,31 @@ def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
     Returns:
         The cleaned model ID.
     """
+    new_model_id = deepcopy(model_id)
+
     # Remove unofficial prefixes
     for unofficial_prefix in UNOFFICIAL_INFERENCE_API_PREFIXES:
-        model_id = re.sub(
-            pattern=rf"^{re.escape(unofficial_prefix)}", repl="", string=model_id
+        new_model_id = re.sub(
+            pattern=rf"^{re.escape(unofficial_prefix)}", repl="", string=new_model_id
         )
 
     if benchmark_config.api_base is not None and not any(
-        model_id.startswith(prefix) for prefix in CUSTOM_INFERENCE_API_PREFIXES
+        new_model_id.startswith(prefix) for prefix in CUSTOM_INFERENCE_API_PREFIXES
     ):
         if benchmark_config.generative_type == GenerativeType.BASE:
             prefix = "text-completion-openai/"
         else:
             prefix = "openai/"
-        model_id = prefix + model_id
+        new_model_id = prefix + new_model_id
 
     # When we want to evaluate an OpenAI model on a custom inference server, such as HF
     # inference endpoints, LiteLLM gets confused since it's already using the `openai/`
     # prefix. We thus have to add it twice, and this hack here is to ensure that we
     # don't store the results with model ID `openai/openai/...`.
-    elif benchmark_config.api_base is not None and model_id.startswith("openai/"):
-        model_id = "openai/openai/" + re.sub(r"(openai/)*", "", model_id)
+    elif benchmark_config.api_base is not None and new_model_id.startswith("openai/"):
+        new_model_id = "openai/openai/" + re.sub(r"(openai/)*", "", new_model_id)
 
-    return model_id
+    return new_model_id
 
 
 def set_up_benchmark_config_for_model(
