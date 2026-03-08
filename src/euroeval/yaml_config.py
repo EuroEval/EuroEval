@@ -5,6 +5,7 @@ configurations, including Inspect AI-compatible `eval.yaml` files from
 Hugging Face Hub repositories.
 """
 
+import dataclasses
 import logging
 from pathlib import Path
 
@@ -14,7 +15,8 @@ from huggingface_hub import HfApi
 from .data_models import DatasetConfig, Task
 from .languages import Language, get_all_languages
 from .logging_utils import log_once
-from .tasks import get_all_tasks
+from .metrics.llm_as_a_judge import create_model_graded_fact_metric
+from .tasks import OPEN_ENDED_QA, get_all_tasks
 
 
 def infer_task_from_inspect_ai(
@@ -27,6 +29,10 @@ def infer_task_from_inspect_ai(
     * A solver with `name: multiple_choice` in `tasks[0].solvers`
       -> `multiple-choice`
     * A `choices` key in `tasks[0].field_spec` -> `multiple-choice`
+    * A scorer with `name: model_graded_fact` in `tasks[0].scorers`
+      -> `open-ended-qa` task with an LLM-as-a-judge metric.
+      The judge model is read from `scorers[0].args.model`; when absent, the
+      default judge defined in `OPEN_ENDED_QA` is used.
 
     Args:
         raw:
@@ -49,6 +55,21 @@ def infer_task_from_inspect_ai(
         for solver in solvers:
             if isinstance(solver, dict) and solver.get("name") == "multiple_choice":
                 return task_map.get("multiple-choice")
+
+    scorers = first_task.get("scorers")
+    if isinstance(scorers, list):
+        for scorer in scorers:
+            if isinstance(scorer, dict) and scorer.get("name") == "model_graded_fact":
+                judge_id: str | None = None
+                args = scorer.get("args")
+                if isinstance(args, dict):
+                    model_val = args.get("model")
+                    if isinstance(model_val, str) and model_val:
+                        judge_id = model_val
+                if judge_id is not None:
+                    metric = create_model_graded_fact_metric(judge_id=judge_id)
+                    return dataclasses.replace(OPEN_ENDED_QA, metrics=[metric])
+                return OPEN_ENDED_QA
 
     field_spec = first_task.get("field_spec")
     if isinstance(field_spec, dict) and "choices" in field_spec:

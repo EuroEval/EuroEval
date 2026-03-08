@@ -331,3 +331,47 @@ fluency_metric = LLMAsAJudgeMetric(
     response_format=Fluency,
     scoring_fn=lambda output: (output.fluency - 1) / 4.0,
 )
+
+
+# Model-graded fact metric ###
+
+
+class FactCorrectness(BaseModel):
+    """Response format for the model-graded fact metric.
+
+    Attributes:
+        correct:
+            Whether the prediction is factually correct given the reference answer.
+    """
+
+    correct: bool
+
+
+def create_model_graded_fact_metric(judge_id: str) -> LLMAsAJudgeMetric:
+    """Create a model-graded fact metric that uses a given judge model.
+
+    This corresponds to Inspect AI's `model_graded_fact` scorer, which checks
+    whether the model's answer is factually consistent with the reference answer.
+
+    Args:
+        judge_id:
+            The model ID of the LLM to use as a judge (e.g. `openai/o3-mini`).
+
+    Returns:
+        An `LLMAsAJudgeMetric` configured for factual-correctness grading.
+    """
+    return LLMAsAJudgeMetric(
+        name="model_graded_fact",
+        pretty_name="Model-Graded Fact",
+        judge_id=judge_id,
+        judge_kwargs=dict(temperature=0.0),
+        user_prompt=(
+            "You are evaluating whether a model's answer is factually correct.\n\n"
+            "Reference answer: {condition}\n\n"
+            "Model's answer: {prediction}\n\n"
+            "Is the model's answer factually correct? "
+            "Output a JSON object with a single key 'correct' (true or false)."
+        ),
+        response_format=FactCorrectness,
+        scoring_fn=lambda output: 1.0 if output.correct else 0.0,
+    )

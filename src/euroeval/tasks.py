@@ -316,3 +316,21 @@ MULTIPLE_CHOICE = Task(
     default_allowed_model_types=[ModelType.GENERATIVE],
     uses_logprobs=True,
 )
+
+
+OPEN_ENDED_QA = Task(
+    name="open-ended-qa",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=EMPTY_TEMPLATES,
+    metrics=[m.fluency_metric],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=2048,
+    default_labels=None,
+    default_allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
+    requires_zero_shot=True,
+    uses_logprobs=False,
+)

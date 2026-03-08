@@ -734,13 +734,11 @@ class TestRealWorldYamlConfigs:
         assert len(config.languages) == 1
         assert config.languages[0].code == "en"
 
-    def test_gsm8k_format_without_task_returns_none(
-        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        """The GSM8K eval.yaml has no 'multiple_choice' solver or 'choices' field.
+    def test_gsm8k_format_infers_open_ended_qa(self, tmp_path: Path) -> None:
+        """The GSM8K eval.yaml with model_graded_fact scorer yields open-ended-qa.
 
-        Without a top-level 'task' key the task cannot be inferred, so None is
-        returned and an error is logged to tell the user what happened.
+        GSM8K uses the `model_graded_fact` scorer without an explicit `task` key.
+        EuroEval detects the scorer and infers the `open-ended-qa` task.
         Source: https://huggingface.co/datasets/openai/gsm8k/blob/main/eval.yaml
         """
         yaml_file = tmp_path / "eval.yaml"
@@ -767,6 +765,42 @@ class TestRealWorldYamlConfigs:
                       - name: generate
                     scorers:
                       - name: model_graded_fact
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "open-ended-qa"
+        assert config.test_split == "test"
+
+    def test_gsm8k_format_no_task_no_scorer_returns_none(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """When neither task nor a recognised scorer is present, None is returned.
+
+        An error is logged to inform the user.
+        """
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                # yaml file for compatibility with inspect-ai
+                name: GSM8K
+                description: >
+                  GSM8K is a dataset of 8,000+ high-quality arithmetic word problems.
+                tasks:
+                  - id: gsm8k
+                    config: main
+                    split: test
+                    field_spec:
+                      input: question
+                      target: answer
+                    solvers:
+                      - name: generate
+                    scorers:
+                      - name: exact_match
                 """
             )
         )
@@ -986,3 +1020,82 @@ class TestRealWorldYamlConfigs:
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
         assert config.task.name == "multiple-choice"
+
+    def test_hle_model_graded_fact_format(self, tmp_path: Path) -> None:
+        """The HLE eval.yaml format with model_graded_fact scorer is parsed correctly.
+
+        Source: https://huggingface.co/datasets/cais/hle/blob/main/eval.yaml
+        Notable features: `model_graded_fact` scorer with a judge model ID, which
+        triggers the `open-ended-qa` task with an LLM-as-a-judge metric.
+        """
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: Humanity's Last Exam
+                description: >
+                  Humanity's Last Exam (HLE) is a multi-modal benchmark at the frontier
+                  of human knowledge, designed to be the final closed-ended academic
+                  benchmark of its kind with broad subject coverage.
+
+                tasks:
+                  - id: hle
+                    config: default
+                    split: test
+
+                    field_spec:
+                      input: question
+                      target: answer
+
+                    solvers:
+                      - name: system_message
+                        args:
+                          template: |
+                            Your response should be in the following format:
+
+                            Explanation: {your explanation for your answer choice}
+                            Answer: {your chosen answer}
+                            Confidence: {your confidence score between 0% and 100%}
+                      - name: generate
+
+                    scorers:
+                      - name: model_graded_fact
+                        args:
+                          model: openai/o3-mini
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "open-ended-qa"
+        assert len(config.task.metrics) == 1
+        assert config.task.metrics[0].name == "model_graded_fact"
+        assert config.task.metrics[0].judge_id == "openai/o3-mini"
+        assert config.test_split == "test"
+
+    def test_hle_model_graded_fact_without_judge_model(self, tmp_path: Path) -> None:
+        """model_graded_fact without a judge model uses the OPEN_ENDED_QA default."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                tasks:
+                  - id: hle
+                    split: test
+                    field_spec:
+                      input: question
+                      target: answer
+                    solvers:
+                      - name: generate
+                    scorers:
+                      - name: model_graded_fact
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "open-ended-qa"
