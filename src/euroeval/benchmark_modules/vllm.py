@@ -118,17 +118,6 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
 
-MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[
-    re.Pattern, t.Literal[*ATTENTION_BACKENDS]  # pyrefly: ignore[invalid-literal]
-] = {
-    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE): "TRITON_ATTN",
-}
-
-
 class VLLMModel(HuggingFaceEncoderModel):
     """A generative model using the vLLM inference framework."""
 
@@ -204,24 +193,11 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        # Determine the attention backend to use:
-        # Override for models that require a specific backend, otherwise use user's
-        # choice from CLI (defaults to FLASHINFER)
-        if hasattr(vllm.config, "attention"):
-            for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
-                if re.search(pattern=pattern, string=model_config.model_id):
-                    attention_backend = backend
-                    break
-            else:
-                attention_backend = benchmark_config.attention_backend
-        else:
-            attention_backend = benchmark_config.attention_backend
-
         with no_terminal_output(disable=benchmark_config.verbose):
             model, tokeniser = load_model_and_tokeniser(
                 model_config=model_config,
                 benchmark_config=benchmark_config,
-                attention_backend=attention_backend,
+                attention_backend=benchmark_config.attention_backend,
             )
         self._model: "LLM" = model
         self._tokeniser: Tokeniser = tokeniser
@@ -1014,7 +990,8 @@ def load_model_and_tokeniser(
     benchmark_config: "BenchmarkConfig",
     attention_backend: t.Literal[
         *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-    ],
+    ]
+    | None,
 ) -> tuple["LLM", Tokeniser]:
     """Load the model and tokeniser.
 
@@ -1024,7 +1001,7 @@ def load_model_and_tokeniser(
         benchmark_config:
             The benchmark configuration.
         attention_backend:
-            The attention backend to use.
+            The attention backend to use, or None to use the vLLM default.
 
     Returns:
         A pair (model, tokeniser), with the loaded model and tokeniser
@@ -1154,7 +1131,7 @@ def load_model_and_tokeniser(
 
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
-    if hasattr(vllm.config, "attention"):
+    if hasattr(vllm.config, "attention") and attention_backend is not None:
         vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)
 
     clear_vllm()
