@@ -181,6 +181,10 @@ def european_values_preprocessing_fn(
         The preprocessed model predictions, a sequence of integers representing the
         final predicted choices for each question after any necessary aggregation and
         mapping.
+
+    Raises:
+        InvalidBenchmark:
+            If the question has no valid choices (all choices were None).
     """
     num_questions = 53
     num_phrasings_per_question = 5

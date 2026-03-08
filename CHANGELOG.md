@@ -63,6 +63,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Changed the primary summarisation metric from BERTScore to ChrF3++, as it has better
+  correlation with human judgements, and has the upside of being model-agnostic,
+  reducing potential biases against low-resource languages.
+- Changed the translation metric from BERTScore to ChrF3++, to align with the
+  summarisation task and provide consistent evaluation across text-to-text tasks.
 - We now default to selecting vLLM's default attention backend for the given model, since
   it now automatically selects the most efficient backend for the given model. It is
   still possible to override this by setting the `--attention-backend` CLI option or the
