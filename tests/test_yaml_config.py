@@ -1,7 +1,10 @@
 """Tests for the `yaml_config` module."""
 
+import logging
 import textwrap
 from pathlib import Path
+
+import pytest
 
 from euroeval.data_models import DatasetConfig
 from euroeval.yaml_config import load_dataset_config_from_yaml
@@ -731,11 +734,14 @@ class TestRealWorldYamlConfigs:
         assert len(config.languages) == 1
         assert config.languages[0].code == "en"
 
-    def test_gsm8k_format_without_task_returns_none(self, tmp_path: Path) -> None:
+    def test_gsm8k_format_without_task_returns_none(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
         """The GSM8K eval.yaml has no 'multiple_choice' solver or 'choices' field.
 
         Without a top-level 'task' key the task cannot be inferred, so None is
-        returned. Source: https://huggingface.co/datasets/openai/gsm8k/blob/main/eval.yaml
+        returned and an error is logged to tell the user what happened.
+        Source: https://huggingface.co/datasets/openai/gsm8k/blob/main/eval.yaml
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
@@ -764,8 +770,12 @@ class TestRealWorldYamlConfigs:
                 """
             )
         )
-        config = load_dataset_config_from_yaml(yaml_file)
+        with caplog.at_level(logging.ERROR, logger="euroeval"):
+            config = load_dataset_config_from_yaml(yaml_file)
         assert config is None
+        assert any(
+            "task" in record.message.lower() for record in caplog.records
+        ), "Expected an error log about the missing task"
 
     def test_gsm8k_format_with_explicit_task(self, tmp_path: Path) -> None:
         """The GSM8K eval.yaml works when a top-level 'task' key is added."""
@@ -796,31 +806,97 @@ class TestRealWorldYamlConfigs:
         assert config.task.name == "knowledge"
         assert config.test_split == "test"
 
-    def test_gpqa_style_format(self, tmp_path: Path) -> None:
-        """A GPQA-style eval.yaml (multiple-choice with list choices) is parsed.
+    def test_gpqa_format(self, tmp_path: Path) -> None:
+        """The actual GPQA eval.yaml is parsed correctly.
 
-        The GPQA dataset (https://huggingface.co/datasets/Idavidrein/gpqa) is
-        gated. This test uses a representative format based on the known dataset
-        structure: multiple-choice questions with four answer columns.
+        Source: https://huggingface.co/datasets/Idavidrein/gpqa/blob/main/eval.yaml
+        Notable features: multiple tasks each with list-style choices and a
+        'literal:D' target (which is silently ignored as it is not a column
+        name). Only the first task entry is used to infer config parameters.
         """
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             textwrap.dedent(
                 """\
+                # yaml file for compatibility with inspect-ai
+
                 name: GPQA
+                description: >
+                  GPQA is a multiple-choice, Q&A dataset of very hard questions written
+                  and validated by experts in biology, physics, and chemistry.
+
+                evaluation_framework: inspect-ai
+
                 tasks:
-                  - id: gpqa
-                    config: gpqa_main
+                  - id: diamond
+                    config: gpqa_diamond
                     split: train
+
+                    epochs: 4
+                    epoch_reducer: pass_at_1
+
+                    shuffle_choices: true
+
                     field_spec:
                       input: Question
+                      target: "literal:D"
                       choices:
-                        - Correct Answer
-                        - Incorrect Answer 1
-                        - Incorrect Answer 2
-                        - Incorrect Answer 3
+                        - "Incorrect Answer 1"
+                        - "Incorrect Answer 2"
+                        - "Incorrect Answer 3"
+                        - "Correct Answer"
+
                     solvers:
                       - name: multiple_choice
+
+                    scorers:
+                      - name: choice
+
+                  - id: main
+                    config: gpqa_main
+                    split: train
+
+                    epochs: 4
+                    epoch_reducer: pass_at_1
+
+                    shuffle_choices: true
+
+                    field_spec:
+                      input: Question
+                      target: "literal:D"
+                      choices:
+                        - "Incorrect Answer 1"
+                        - "Incorrect Answer 2"
+                        - "Incorrect Answer 3"
+                        - "Correct Answer"
+
+                    solvers:
+                      - name: multiple_choice
+
+                    scorers:
+                      - name: choice
+
+                  - id: extended
+                    config: gpqa_extended
+                    split: train
+
+                    epochs: 4
+                    epoch_reducer: pass_at_1
+
+                    shuffle_choices: true
+
+                    field_spec:
+                      input: Question
+                      target: "literal:D"
+                      choices:
+                        - "Incorrect Answer 1"
+                        - "Incorrect Answer 2"
+                        - "Incorrect Answer 3"
+                        - "Correct Answer"
+
+                    solvers:
+                      - name: multiple_choice
+
                     scorers:
                       - name: choice
                 """
@@ -886,7 +962,7 @@ class TestRealWorldYamlConfigs:
     def test_evasionbench_unknown_evaluation_framework_key_is_ignored(
         self, tmp_path: Path
     ) -> None:
-        """The 'evaluation_framework' key is not a EuroEval field and is silently ignored."""
+        """The 'evaluation_framework' key is not a EuroEval field and is ignored."""
         yaml_file = tmp_path / "eval.yaml"
         yaml_file.write_text(
             textwrap.dedent(
