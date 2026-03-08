@@ -107,6 +107,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   if running with the `Benchmarker` class). This is to prevent accidental execution of
   malicious code.
 
+### Changed
+
+- Changed the primary summarisation metric from BERTScore to ChrF3++, as it has better
+  correlation with human judgements, and has the upside of being model-agnostic,
+  reducing potential biases against low-resource languages.
+
 ### Fixed
 
 - v16.15.0 introduced an error related to the parsing of safetensors metadata from
@@ -135,8 +141,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now supports the `detectable_format:constrained_response_with_argument` IFEval
   constraint, being the same as `detectable_format:constrained_response` but with
   a list of options to check for, rather than a hardcoded list of English options.
+<<<<<<< HEAD
 
 >>>>>>> main
+=======
+>>>>>>> 87fd631f4f774692d5c447ab5cc724de5ec4defa
 
 ### Fixed
 
