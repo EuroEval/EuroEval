@@ -11,7 +11,7 @@ import numpy as np
 from scipy.special import expit as sigmoid
 
 from ..exceptions import InvalidBenchmark
-from ..logging_utils import log, no_terminal_output
+from ..logging_utils import log, log_once, no_terminal_output
 from ..string_utils import unscramble
 from .base import Metric
 
@@ -181,10 +181,6 @@ def european_values_preprocessing_fn(
         The preprocessed model predictions, a sequence of integers representing the
         final predicted choices for each question after any necessary aggregation and
         mapping.
-
-    Raises:
-        InvalidBenchmark:
-            If the predictions are not valid for the European Values metric.
     """
     num_questions = 53
     num_phrasings_per_question = 5
@@ -198,10 +194,14 @@ def european_values_preprocessing_fn(
             if choice is not None
         }
         if prediction not in idx_to_choice:
-            raise InvalidBenchmark(
-                f"The prediction {prediction} is not a valid index for the "
-                f"question with choices {idx_to_choice}."
+            first_valid_idx = min(idx_to_choice.keys())
+            log_once(
+                f"The prediction {prediction} is not a valid index for the question "
+                f"with choices {idx_to_choice}. Defaulting to the first valid index "
+                f"({first_valid_idx}).",
+                level=logging.WARNING,
             )
+            prediction = first_valid_idx
         integer_prediction = idx_to_choice[prediction]
         integer_predictions.append(integer_prediction)
 
