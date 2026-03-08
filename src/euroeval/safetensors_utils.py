@@ -42,13 +42,20 @@ def get_num_params_from_safetensors_metadata(
         metadata = get_safetensors_metadata(
             repo_id=model_id, revision=revision, token=get_hf_token(api_key=api_key)
         )
-    except (NotASafetensorsRepoError, SafetensorsParsingError):
+    except NotASafetensorsRepoError:
         log_once(
             "The number of parameters could not be determined for the model "
             f"{model_id}, since the model is not stored in the safetensors format. "
             "If this is your own model, then you can use this Hugging Face Space to "
             "convert your model to the safetensors format: "
             "https://huggingface.co/spaces/safetensors/convert.",
+            level=logging.WARNING,
+        )
+        return None
+    except SafetensorsParsingError:
+        log_once(
+            f"The safetensors metadata for the model {model_id} could not be parsed. "
+            "Please report this issue at https://github.com/EuroEval/EuroEval/issues.",
             level=logging.WARNING,
         )
         return None
