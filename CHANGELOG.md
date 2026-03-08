@@ -72,6 +72,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Models that predict an out-of-range choice index for a European Values question no
+  longer crash the evaluation. The invalid prediction is now logged as a warning and
+  defaults to the first valid index instead.
 - There was an issue with caching of answers by generative models when evaluating them
   on NER tasks - this has now been fixed. This was fixed by @Rijgersberg ✨
 - Evaluating older OpenAI models, such as `gpt-3.5-turbo-1106`, crashed the evaluation

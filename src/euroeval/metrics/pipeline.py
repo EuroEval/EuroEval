@@ -193,6 +193,12 @@ def european_values_preprocessing_fn(
             for idx, choice in idx_to_choice.items()
             if choice is not None
         }
+        if not idx_to_choice:
+            raise InvalidBenchmark(
+                "The question has no valid choices (all choices were None), which "
+                "should never happen. Please report this issue to the EuroEval team "
+                "at github.com/EuroEval/EuroEval/issues."
+            )
         if prediction not in idx_to_choice:
             first_valid_idx = min(idx_to_choice.keys())
             log_once(
