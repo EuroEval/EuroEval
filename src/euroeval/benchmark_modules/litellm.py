@@ -327,6 +327,37 @@ class LiteLLMModel(BenchmarkModule):
             )
         return type_
 
+    def _set_generative_type_from_response(
+        self, response: "litellm.ModelResponse"
+    ) -> bool:
+        """Detect if a response indicates a reasoning model and update the buffer.
+
+        Args:
+            response:
+                The model response to inspect.
+
+        Returns:
+            True if a reasoning model was detected, False otherwise.
+        """
+        if (
+            self.generative_type == GenerativeType.REASONING
+            or not response.choices
+            or not isinstance(response.choices[0], litellm.Choices)
+        ):
+            return False
+        reasoning_content = getattr(
+            response.choices[0].message, "reasoning_content", None
+        )
+        if not reasoning_content:
+            return False
+        self.buffer["response_based_generative_type"] = GenerativeType.REASONING
+        log_once(
+            f"Detected {self.model_config.model_id!r} as a reasoning model via "
+            "response reasoning_content.",
+            level=logging.DEBUG,
+        )
+        return True
+
     def generate(self, inputs: dict) -> GenerativeModelOutput:
         """Generate outputs from the model.
 
@@ -1780,43 +1811,12 @@ class LiteLLMModel(BenchmarkModule):
                 f"{self.model_config.model_id!r} after {num_attempts} attempts."
             )
 
-        # Detect if this is a reasoning model based on non-empty reasoning_content
-        # in the test response. This covers the case of models hosted on custom
-        # inference servers (e.g., vLLM with a reasoning parser) that are not
-        # in the known REASONING_MODELS list.
-        # Note: the `self.generative_type` check here reads from the buffer BEFORE it
-        # has been updated - so on the first call it correctly falls through to
-        # INSTRUCTION_TUNED and allows the detection to proceed. On subsequent calls
-        # (if the buffer was already set to REASONING), this check will be False and
-        # we skip re-detection, which is the desired behaviour.
-        if test_successes and self.generative_type != GenerativeType.REASONING:
-            test_response = test_successes[0][1]
-            if test_response.choices and isinstance(
-                test_response.choices[0], litellm.Choices
-            ):
-                test_message = test_response.choices[0].message
-                test_reasoning_content = getattr(
-                    test_message, "reasoning_content", None
-                )
-                if test_reasoning_content:
-                    self.buffer["response_based_generative_type"] = (
-                        GenerativeType.REASONING
-                    )
-                    log_once(
-                        f"Detected model {self.model_config.model_id!r} as a "
-                        "reasoning model based on non-empty reasoning_content in "
-                        "the response. Updating the generative type to REASONING.",
-                        level=logging.DEBUG,
-                    )
-                    # Fix up the generation kwargs for this call's return value, since
-                    # max_completion_tokens and response_format were set above based on
-                    # the then-current generative_type (INSTRUCTION_TUNED). The buffer
-                    # update above ensures future calls to get_generation_kwargs will
-                    # compute the correct initial values.
-                    generation_kwargs["max_completion_tokens"] = REASONING_MAX_TOKENS
-                    # Remove response_format as reasoning models don't support
-                    # structured generation
-                    generation_kwargs.pop("response_format", None)
+        # Auto-detect reasoning models from test response reasoning_content.
+        if test_successes and self._set_generative_type_from_response(
+            test_successes[0][1]
+        ):
+            generation_kwargs["max_completion_tokens"] = REASONING_MAX_TOKENS
+            generation_kwargs.pop("response_format", None)
 
         return generation_kwargs
 
