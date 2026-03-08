@@ -77,7 +77,8 @@ class Benchmarker:
         gpu_memory_utilization: float = 0.8,
         attention_backend: t.Literal[
             *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-        ] = "FLASHINFER",
+        ]
+        | None = None,
         generative_type: GenerativeType | None = None,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
@@ -151,8 +152,9 @@ class Benchmarker:
                 the risk of running out of GPU memory. Only reduce this if you are
                 running out of GPU memory. Defaults to 0.9.
             attention_backend:
-                The attention backend to use for vLLM. Defaults to FLASHINFER. Only
-                relevant if the model is generative.
+                The attention backend to use for vLLM. Only relevant if the model is
+                generative. If None then vLLM will automatically choose the best
+                backend. Defaults to None.
             generative_type:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
@@ -538,7 +540,7 @@ class Benchmarker:
                 If we're offline benchmarking an adapter model, or if model loading
                 failed.
         """
-        log(
+        log_once(
             "Started EuroEval run. Run with `--verbose` for more information.",
             level=logging.INFO,
         )
