@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 import torch
 
+from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.exceptions import NeedsSystemDependency
 
 
@@ -54,9 +55,9 @@ class TestNvccCheck:
 
     def test_nvcc_check_raises_on_nvidia_without_nvcc(
         self,
-        model_config,
-        dataset_config,
-        benchmark_config,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
     ) -> None:
         """Test that NeedsSystemDependency is raised on NVIDIA CUDA without nvcc."""
         import importlib
@@ -88,9 +89,9 @@ class TestNvccCheck:
 
     def test_nvcc_check_skipped_on_rocm(
         self,
-        model_config,
-        dataset_config,
-        benchmark_config,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
     ) -> None:
         """Test that NeedsSystemDependency is not raised on ROCm without nvcc."""
         import importlib

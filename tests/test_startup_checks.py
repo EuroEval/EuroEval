@@ -27,10 +27,7 @@ class TestFlashAttnCheck:
         ],
     )
     def test_flash_attn_check(
-        self,
-        flash_attn_installed: bool,
-        hip_version: str | None,
-        expect_exit: bool,
+        self, flash_attn_installed: bool, hip_version: str | None, expect_exit: bool
     ) -> None:
         """Test that flash_attn check exits only on non-ROCm PyTorch builds."""
         find_spec_result = MagicMock() if flash_attn_installed else None
