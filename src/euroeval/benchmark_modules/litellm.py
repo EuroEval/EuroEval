@@ -314,8 +314,8 @@ class LiteLLMModel(BenchmarkModule):
             type_ = GenerativeType.BASE
         elif supports_reasoning(model=self.model_config.model_id):
             type_ = GenerativeType.REASONING
-        elif self.buffer.get("response_based_generative_type") is not None:
-            type_ = self.buffer["response_based_generative_type"]
+        elif self._test_response_has_reasoning_content():
+            type_ = GenerativeType.REASONING
         else:
             type_ = GenerativeType.INSTRUCTION_TUNED
 
@@ -327,36 +327,16 @@ class LiteLLMModel(BenchmarkModule):
             )
         return type_
 
-    def _set_generative_type_from_response(
-        self, response: "litellm.ModelResponse"
-    ) -> bool:
-        """Detect if a response indicates a reasoning model and update the buffer.
-
-        Args:
-            response:
-                The model response to inspect.
-
-        Returns:
-            True if a reasoning model was detected, False otherwise.
-        """
-        if (
-            self.generative_type == GenerativeType.REASONING
-            or not response.choices
-            or not isinstance(response.choices[0], litellm.Choices)
-        ):
+    def _test_response_has_reasoning_content(self) -> bool:
+        """Return True if the buffered test response has non-empty reasoning_content."""
+        response: "litellm.ModelResponse | None" = self.buffer.get("test_response")
+        if not response or not response.choices:
             return False
-        reasoning_content = getattr(
-            response.choices[0].message, "reasoning_content", None
-        )
-        if not reasoning_content:
+        if not isinstance(response.choices[0], litellm.Choices):
             return False
-        self.buffer["response_based_generative_type"] = GenerativeType.REASONING
-        log_once(
-            f"Detected {self.model_config.model_id!r} as a reasoning model via "
-            "response reasoning_content.",
-            level=logging.DEBUG,
+        return bool(
+            getattr(response.choices[0].message, "reasoning_content", None)
         )
-        return True
 
     def generate(self, inputs: dict) -> GenerativeModelOutput:
         """Generate outputs from the model.
@@ -1812,11 +1792,17 @@ class LiteLLMModel(BenchmarkModule):
             )
 
         # Auto-detect reasoning models from test response reasoning_content.
-        if test_successes and self._set_generative_type_from_response(
-            test_successes[0][1]
-        ):
-            generation_kwargs["max_completion_tokens"] = REASONING_MAX_TOKENS
-            generation_kwargs.pop("response_format", None)
+        if test_successes:
+            was_already_reasoning = self.generative_type == GenerativeType.REASONING
+            self.buffer["test_response"] = test_successes[0][1]
+            if not was_already_reasoning and self.generative_type == GenerativeType.REASONING:
+                log_once(
+                    f"Detected {self.model_config.model_id!r} as a reasoning model "
+                    "via response reasoning_content.",
+                    level=logging.DEBUG,
+                )
+                generation_kwargs["max_completion_tokens"] = REASONING_MAX_TOKENS
+                generation_kwargs.pop("response_format", None)
 
         return generation_kwargs
 

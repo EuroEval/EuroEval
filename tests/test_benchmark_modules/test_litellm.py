@@ -69,8 +69,7 @@ class TestReasoningContentDetection:
         litellm_model: LiteLLMModel,
         dataset_config: DatasetConfig,
     ) -> None:
-        """buffer["response_based_generative_type"] is set when reasoning_content is
-        non-empty."""
+        """buffer["test_response"] is set after get_generation_kwargs with reasoning."""
         response = _make_model_response(reasoning_content="I am thinking deeply...")
 
         async def mock_generate_async(*args, **kwargs):
@@ -81,10 +80,7 @@ class TestReasoningContentDetection:
         ):
             litellm_model.get_generation_kwargs(dataset_config=dataset_config)
 
-        assert (
-            litellm_model.buffer.get("response_based_generative_type")
-            == GenerativeType.REASONING
-        )
+        assert litellm_model.buffer.get("test_response") is response
 
     def test_reasoning_content_updates_generative_type(
         self,
@@ -165,7 +161,6 @@ class TestReasoningContentDetection:
         ):
             litellm_model.get_generation_kwargs(dataset_config=dataset_config)
 
-        assert litellm_model.buffer.get("response_based_generative_type") is None
         assert litellm_model.generative_type == GenerativeType.INSTRUCTION_TUNED
 
     def test_empty_reasoning_content_keeps_instruction_tuned(
@@ -184,5 +179,4 @@ class TestReasoningContentDetection:
         ):
             litellm_model.get_generation_kwargs(dataset_config=dataset_config)
 
-        assert litellm_model.buffer.get("response_based_generative_type") is None
         assert litellm_model.generative_type == GenerativeType.INSTRUCTION_TUNED
