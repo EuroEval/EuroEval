@@ -137,12 +137,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now supports the `detectable_format:constrained_response_with_argument` IFEval
   constraint, being the same as `detectable_format:constrained_response` but with
   a list of options to check for, rather than a hardcoded list of English options.
-<<<<<<< HEAD
-
->>>>>>> main
-=======
->>>>>>> 87fd631f4f774692d5c447ab5cc724de5ec4defa
-
 ### Fixed
 
 - The `huggingface_hub` safetensors API has changed, so we did not fetch the number of
