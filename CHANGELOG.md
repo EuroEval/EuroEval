@@ -109,12 +109,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   if running with the `Benchmarker` class). This is to prevent accidental execution of
   malicious code.
 
-### Changed
-
-- Changed the primary summarisation metric from BERTScore to ChrF3++, as it has better
-  correlation with human judgements, and has the upside of being model-agnostic,
-  reducing potential biases against low-resource languages.
-
 ### Fixed
 
 - v16.15.0 introduced an error related to the parsing of safetensors metadata from
