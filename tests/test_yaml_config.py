@@ -773,9 +773,9 @@ class TestRealWorldYamlConfigs:
         with caplog.at_level(logging.ERROR, logger="euroeval"):
             config = load_dataset_config_from_yaml(yaml_file)
         assert config is None
-        assert any(
-            "task" in record.message.lower() for record in caplog.records
-        ), "Expected an error log about the missing task"
+        assert any("task" in record.message.lower() for record in caplog.records), (
+            "Expected an error log about the missing task"
+        )
 
     def test_gsm8k_format_with_explicit_task(self, tmp_path: Path) -> None:
         """The GSM8K eval.yaml works when a top-level 'task' key is added."""
