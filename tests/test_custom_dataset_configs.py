@@ -664,3 +664,249 @@ class TestLoadDatasetConfigFromYaml:
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
         assert config.test_split == "test"
+
+
+class TestRealWorldYamlConfigs:
+    """Tests using eval.yaml content from real public HuggingFace datasets."""
+
+    def test_mmlu_pro_format(self, tmp_path: Path) -> None:
+        """The MMLU-Pro eval.yaml format is parsed correctly.
+
+        Source: https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro/blob/main/eval.yaml
+        """
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                # yaml file for compatibility with inspect-ai
+                name: MMLU-Pro
+                description: >
+                  MMLU-Pro dataset is a more robust and challenging massive multi-task
+                  understanding dataset.
+                tasks:
+                  - id: mmlu_pro
+                    config: default
+                    split: test
+                    field_spec:
+                      input: question
+                      target: answer
+                      choices: options
+                    solvers:
+                      - name: multiple_choice
+                    scorers:
+                      - name: choice
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "multiple-choice"
+        assert config.test_split == "test"
+        assert config.preprocessing_func is not None
+
+    def test_mmlu_pro_format_defaults_to_english(self, tmp_path: Path) -> None:
+        """The MMLU-Pro eval.yaml has no 'languages' key, so English is used."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: MMLU-Pro
+                tasks:
+                  - id: mmlu_pro
+                    config: default
+                    split: test
+                    field_spec:
+                      input: question
+                      target: answer
+                      choices: options
+                    solvers:
+                      - name: multiple_choice
+                    scorers:
+                      - name: choice
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert len(config.languages) == 1
+        assert config.languages[0].code == "en"
+
+    def test_gsm8k_format_without_task_returns_none(self, tmp_path: Path) -> None:
+        """The GSM8K eval.yaml has no 'multiple_choice' solver or 'choices' field.
+
+        Without a top-level 'task' key the task cannot be inferred, so None is
+        returned. Source: https://huggingface.co/datasets/openai/gsm8k/blob/main/eval.yaml
+        """
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                # yaml file for compatibility with inspect-ai
+                name: GSM8K
+                description: >
+                  GSM8K is a dataset of 8,000+ high-quality arithmetic word problems.
+                tasks:
+                  - id: gsm8k
+                    config: main
+                    split: test
+                    epochs: 4
+                    epoch_reducer: pass_at_1
+                    field_spec:
+                      input: question
+                      target: answer
+                    solvers:
+                      - name: prompt_template
+                        args:
+                          template: "Solve the following math problem. {prompt}"
+                      - name: generate
+                    scorers:
+                      - name: model_graded_fact
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is None
+
+    def test_gsm8k_format_with_explicit_task(self, tmp_path: Path) -> None:
+        """The GSM8K eval.yaml works when a top-level 'task' key is added."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: GSM8K
+                tasks:
+                  - id: gsm8k
+                    config: main
+                    split: test
+                    field_spec:
+                      input: question
+                      target: answer
+                    solvers:
+                      - name: generate
+                    scorers:
+                      - name: model_graded_fact
+                task: knowledge
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "knowledge"
+        assert config.test_split == "test"
+
+    def test_gpqa_style_format(self, tmp_path: Path) -> None:
+        """A GPQA-style eval.yaml (multiple-choice with list choices) is parsed.
+
+        The GPQA dataset (https://huggingface.co/datasets/Idavidrein/gpqa) is
+        gated. This test uses a representative format based on the known dataset
+        structure: multiple-choice questions with four answer columns.
+        """
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: GPQA
+                tasks:
+                  - id: gpqa
+                    config: gpqa_main
+                    split: train
+                    field_spec:
+                      input: Question
+                      choices:
+                        - Correct Answer
+                        - Incorrect Answer 1
+                        - Incorrect Answer 2
+                        - Incorrect Answer 3
+                    solvers:
+                      - name: multiple_choice
+                    scorers:
+                      - name: choice
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "multiple-choice"
+        assert config.test_split == "train"
+        assert config.preprocessing_func is not None
+
+    def test_evasionbench_format(self, tmp_path: Path) -> None:
+        """The EvasionBench eval.yaml format is parsed correctly.
+
+        Source: https://huggingface.co/datasets/FutureMa/EvasionBench/blob/main/eval.yaml
+        Notable features: 'evaluation_framework: inspect-ai' key, split=train,
+        two solvers, and shuffled choices.
+        """
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                name: Evasion Bench
+                description: >
+                  EvasionBench is a benchmark dataset for detecting evasive answers
+                  in earnings call Q&A sessions.
+                evaluation_framework: inspect-ai
+                tasks:
+                  - id: evasion_bench
+                    config: default
+                    split: train
+                    epochs: 1
+                    shuffle_choices: true
+                    field_spec:
+                      input: question
+                      target: eva4b_label_letter
+                      choices: choices
+                      metadata:
+                        - answer
+                    solvers:
+                      - name: prompt_template
+                        args:
+                          template: |
+                            Question: {prompt}
+                            Answer: {answer}
+                      - name: multiple_choice
+                        args:
+                          template: |
+                            You are a financial analyst.
+                            {question}
+                            {choices}
+                    scorers:
+                      - name: choice
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "multiple-choice"
+        assert config.test_split == "train"
+        assert config.preprocessing_func is not None
+
+    def test_evasionbench_unknown_evaluation_framework_key_is_ignored(
+        self, tmp_path: Path
+    ) -> None:
+        """The 'evaluation_framework' key is not a EuroEval field and is silently ignored."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                evaluation_framework: inspect-ai
+                tasks:
+                  - id: my_task
+                    split: test
+                    field_spec:
+                      input: question
+                      choices: options
+                    solvers:
+                      - name: multiple_choice
+                    scorers:
+                      - name: choice
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "multiple-choice"
