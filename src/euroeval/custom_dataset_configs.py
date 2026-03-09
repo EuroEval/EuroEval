@@ -15,8 +15,9 @@ from huggingface_hub import HfApi
 
 from .data_models import DatasetConfig
 from .logging_utils import log_once
+from .split_utils import get_repo_splits
 from .utils import get_hf_token
-from .yaml_config import get_repo_splits, load_yaml_config
+from .yaml_config import load_yaml_config
 
 
 def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None:

@@ -386,8 +386,11 @@ def create_model_graded_fact_metric(
     if response_format is None:
         response_format = create_model("FactCorrectness", correct=(bool, ...))
 
+    def default_scoring_fn(output: BaseModel) -> float:
+        return 1.0 if output.correct else 0.0  # type: ignore[union-attr]
+
     if scoring_fn is None:
-        scoring_fn = lambda output: 1.0 if output.correct else 0.0  # noqa: E731
+        scoring_fn = default_scoring_fn
 
     return LLMAsAJudgeMetric(
         name="model_graded_fact",
