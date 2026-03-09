@@ -6,7 +6,7 @@ import typing as t
 from copy import deepcopy
 from pathlib import Path
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, create_model
 
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
@@ -335,19 +335,25 @@ fluency_metric = LLMAsAJudgeMetric(
 
 # Model-graded fact metric ###
 
+_DEFAULT_MODEL_GRADED_FACT_USER_PROMPT = (
+    "You are evaluating whether a model's answer is factually correct.\n\n"
+    "Reference answer: {condition}\n\n"
+    "Model's answer: {prediction}\n\n"
+    "Is the model's answer factually correct? "
+    "Output a JSON object with a single key 'correct' (true or false)."
+)
 
-class FactCorrectness(BaseModel):
-    """Response format for the model-graded fact metric.
-
-    Attributes:
-        correct:
-            Whether the prediction is factually correct given the reference answer.
-    """
-
-    correct: bool
+_DEFAULT_MODEL_GRADED_FACT_JUDGE_ID = "gpt-4o"
 
 
-def create_model_graded_fact_metric(judge_id: str) -> LLMAsAJudgeMetric:
+def create_model_graded_fact_metric(
+    judge_id: str = _DEFAULT_MODEL_GRADED_FACT_JUDGE_ID,
+    user_prompt: str = _DEFAULT_MODEL_GRADED_FACT_USER_PROMPT,
+    system_prompt: str | None = None,
+    temperature: float = 0.0,
+    response_format: type[BaseModel] | None = None,
+    scoring_fn: ScoringFunction | None = None,
+) -> LLMAsAJudgeMetric:
     """Create a model-graded fact metric that uses a given judge model.
 
     This corresponds to Inspect AI's `model_graded_fact` scorer, which checks
@@ -356,22 +362,40 @@ def create_model_graded_fact_metric(judge_id: str) -> LLMAsAJudgeMetric:
     Args:
         judge_id:
             The model ID of the LLM to use as a judge (e.g. `openai/o3-mini`).
+            Defaults to `gpt-4o`.
+        user_prompt:
+            The user prompt template passed to the judge. Must contain
+            `{prediction}` and `{condition}` placeholders. Defaults to a
+            prompt that asks whether the model's answer is factually correct.
+        system_prompt:
+            An optional system prompt for the judge. Defaults to None.
+        temperature:
+            Sampling temperature for the judge. Defaults to 0.0.
+        response_format:
+            A Pydantic model class that defines the expected JSON structure
+            of the judge's response. The model must have a single boolean
+            field named `correct`. If not provided, a model with that shape
+            is created automatically via `pydantic.create_model`.
+        scoring_fn:
+            A function mapping the judge's parsed response to a scalar score
+            in [0, 1]. Defaults to 1.0 when `correct` is True, 0.0 otherwise.
 
     Returns:
         An `LLMAsAJudgeMetric` configured for factual-correctness grading.
     """
+    if response_format is None:
+        response_format = create_model("FactCorrectness", correct=(bool, ...))
+
+    if scoring_fn is None:
+        scoring_fn = lambda output: 1.0 if output.correct else 0.0  # noqa: E731
+
     return LLMAsAJudgeMetric(
         name="model_graded_fact",
         pretty_name="Model-Graded Fact",
         judge_id=judge_id,
-        judge_kwargs=dict(temperature=0.0),
-        user_prompt=(
-            "You are evaluating whether a model's answer is factually correct.\n\n"
-            "Reference answer: {condition}\n\n"
-            "Model's answer: {prediction}\n\n"
-            "Is the model's answer factually correct? "
-            "Output a JSON object with a single key 'correct' (true or false)."
-        ),
-        response_format=FactCorrectness,
-        scoring_fn=lambda output: 1.0 if output.correct else 0.0,
+        judge_kwargs=dict(temperature=temperature),
+        user_prompt=user_prompt,
+        system_prompt=system_prompt,
+        response_format=response_format,
+        scoring_fn=scoring_fn,
     )

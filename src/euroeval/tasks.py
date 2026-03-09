@@ -4,6 +4,7 @@ from . import metrics as m
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import Task
 from .enums import GenerativeType, ModelType, TaskGroup
+from .metrics.llm_as_a_judge import create_model_graded_fact_metric
 from .prompt_templates import (
     CLASSIFICATION_TEMPLATES,
     EMPTY_TEMPLATES,
@@ -322,7 +323,7 @@ OPEN_ENDED_QA = Task(
     name="open-ended-qa",
     task_group=TaskGroup.TEXT_TO_TEXT,
     template_dict=EMPTY_TEMPLATES,
-    metrics=[m.fluency_metric],
+    metrics=[create_model_graded_fact_metric()],
     default_num_few_shot_examples=0,
     default_max_generated_tokens=2048,
     default_labels=None,
