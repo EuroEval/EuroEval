@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Evaluation on AMD/ROCm hardware (e.g., LUMI) was broken due to two NVIDIA-specific
+  checks being applied unconditionally. The `flash_attn` conflict check no longer
+  triggers `sys.exit` on ROCm, and the `nvcc` presence check is now skipped on ROCm
+  hardware since AMD uses HIP tooling instead.
+
 ## [v16.17.0] - 2026-03-09
 
 ### Added
@@ -81,10 +88,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Evaluation on AMD/ROCm hardware (e.g., LUMI) was broken due to two NVIDIA-specific
-  checks being applied unconditionally. The `flash_attn` conflict check no longer
-  triggers `sys.exit` on ROCm, and the `nvcc` presence check is now skipped on ROCm
-  hardware since AMD uses HIP tooling instead.
 - Models that predict an out-of-range choice index for a European Values question no
   longer crash the evaluation. The invalid prediction is now logged as a warning and
   defaults to the first valid index instead.
