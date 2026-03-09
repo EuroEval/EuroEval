@@ -329,7 +329,7 @@ def create_model_graded_fact_metric(
         "Output a JSON object with a single key 'correct' (true or false)."
     ),
     system_prompt: str | None = None,
-    temperature: float = 0.0,
+    temperature: float = 1.0,
     response_format: type[BaseModel] | None = None,
     scoring_fn: ScoringFunction | None = None,
 ) -> LLMAsAJudgeMetric:
@@ -349,7 +349,7 @@ def create_model_graded_fact_metric(
         system_prompt (optional):
             An optional system prompt for the judge. Defaults to None.
         temperature:
-            Sampling temperature for the judge. Defaults to 0.0.
+            Sampling temperature for the judge. Defaults to 1.0.
         response_format (optional):
             A Pydantic model class that defines the expected JSON structure
             of the judge's response. The model must have a single boolean
