@@ -6,7 +6,7 @@ import typing as t
 from copy import deepcopy
 from pathlib import Path
 
-from pydantic import BaseModel, Field, ValidationError, create_model
+from pydantic import BaseModel, Field, ValidationError
 
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
@@ -335,6 +335,18 @@ fluency_metric = LLMAsAJudgeMetric(
 
 # Model-graded fact metric ###
 
+
+class FactCorrectness(BaseModel):
+    """Response format for the model-graded fact metric.
+
+    Attributes:
+        correct:
+            Whether the model's answer is factually correct.
+    """
+
+    correct: bool
+
+
 _DEFAULT_MODEL_GRADED_FACT_USER_PROMPT = (
     "You are evaluating whether a model's answer is factually correct.\n\n"
     "Reference answer: {condition}\n\n"
@@ -374,8 +386,7 @@ def create_model_graded_fact_metric(
         response_format:
             A Pydantic model class that defines the expected JSON structure
             of the judge's response. The model must have a single boolean
-            field named `correct`. If not provided, a model with that shape
-            is created automatically via `pydantic.create_model`.
+            field named `correct`. If not provided, `FactCorrectness` is used.
         scoring_fn:
             A function mapping the judge's parsed response to a scalar score
             in [0, 1]. Defaults to 1.0 when `correct` is True, 0.0 otherwise.
@@ -384,7 +395,7 @@ def create_model_graded_fact_metric(
         An `LLMAsAJudgeMetric` configured for factual-correctness grading.
     """
     if response_format is None:
-        response_format = create_model("FactCorrectness", correct=(bool, ...))
+        response_format = FactCorrectness
 
     def default_scoring_fn(output: BaseModel) -> float:
         return 1.0 if output.correct else 0.0  # type: ignore[union-attr]
