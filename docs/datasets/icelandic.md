@@ -1230,7 +1230,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset valeu-is
 ```
 
-
 ## Grammatical Error Detection
 
 ### Unofficial: GerLangMod-is

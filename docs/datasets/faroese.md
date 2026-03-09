@@ -464,7 +464,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset multi-wiki-qa-fo
 ```
 
-
 ## Grammatical Error Detection
 
 ### Unofficial: GerLangMod-fo

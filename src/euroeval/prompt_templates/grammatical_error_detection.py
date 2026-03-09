@@ -45,10 +45,7 @@ if t.TYPE_CHECKING:
 
 GED_TEMPLATES: dict["Language", PromptConfig] = {
     ALBANIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "gabim",
-            "i-err": "gabim",
-        },
+        default_prompt_label_mapping={"b-err": "gabim", "i-err": "gabim"},
         default_prompt_prefix="Më poshtë janë fjali dhe fjalorë JSON me gabimet "
         "gramatikore që shfaqen në fjalinë e dhënë.",
         default_prompt_template="Fjali: {text}\nGabime gramatikore: {label}",
@@ -58,10 +55,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "shfaqen në fjali.",
     ),
     BELARUSIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "памылка",
-            "i-err": "памылка",
-        },
+        default_prompt_label_mapping={"b-err": "памылка", "i-err": "памылка"},
         default_prompt_prefix="Ніжэй прыведзены сказы і JSON-слоўнікі з граматычнымі "
         "памылкамі, якія прысутнічаюць у дадзеным сказе.",
         default_prompt_template="Сказ: {text}\nГраматычныя памылкі: {label}",
@@ -71,10 +65,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "як яны з'яўляюцца ў сказе.",
     ),
     BOSNIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "greška",
-            "i-err": "greška",
-        },
+        default_prompt_label_mapping={"b-err": "greška", "i-err": "greška"},
         default_prompt_prefix="Slijede rečenice i JSON riječnici s gramatičkim "
         "greškama koje se pojavljuju u danoj rečenici.",
         default_prompt_template="Rečenica: {text}\nGramatičke greške: {label}",
@@ -84,36 +75,27 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "pojavljuju u rečenici.",
     ),
     BULGARIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "грешка",
-            "i-err": "грешка",
-        },
+        default_prompt_label_mapping={"b-err": "грешка", "i-err": "грешка"},
         default_prompt_prefix="По-долу са изречения и JSON речници с граматическите "
         "грешки, които се срещат в дадените изречения.",
         default_prompt_template="Изречение: {text}\nГраматически грешки: {label}",
-        default_instruction_prompt="Изречение: {text}\n\nИдентифицирайте граматическите "
-        "грешки в изречението. Трябва да изведете това като JSON речник с ключа "
-        "'грешка'. Стойностите трябва да бъдат списъци на неправилно поставените думи, "
-        "точно както се появяват в изречението.",
+        default_instruction_prompt="Изречение: {text}\n\nИдентифицирайте "
+        "граматическите грешки в изречението. Трябва да изведете това като JSON "
+        "речник с ключа 'грешка'. Стойностите трябва да бъдат списъци на неправилно "
+        "поставените думи, точно както се появяват в изречението.",
     ),
     CATALAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "error",
-            "i-err": "error",
-        },
+        default_prompt_label_mapping={"b-err": "error", "i-err": "error"},
         default_prompt_prefix="Aquestes són frases i diccionaris JSON amb els errors "
         "gramaticals que apareixen en la frase donada.",
         default_prompt_template="Frase: {text}\nErrors gramaticals: {label}",
-        default_instruction_prompt="Frase: {text}\n\nIdentifiqueu els errors gramaticals "
-        "en la frase. Mostreu-los com a diccionari JSON amb la clau 'error'. Els valors "
-        "han de ser les llistes de les paraules mal col·locades, tal com apareixen en "
-        "la frase.",
+        default_instruction_prompt="Frase: {text}\n\nIdentifiqueu els errors "
+        "gramaticals en la frase. Mostreu-los com a diccionari JSON amb la clau "
+        "'error'. Els valors han de ser les llistes de les paraules mal col·locades, "
+        "tal com apareixen en la frase.",
     ),
     CROATIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "greška",
-            "i-err": "greška",
-        },
+        default_prompt_label_mapping={"b-err": "greška", "i-err": "greška"},
         default_prompt_prefix="Sljedeće su rečenice i JSON rječnici s gramatičkim "
         "greškama koje se pojavljuju u danoj rečenici.",
         default_prompt_template="Rečenica: {text}\nGramatičke greške: {label}",
@@ -123,10 +105,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "pojavljuju u rečenici.",
     ),
     CZECH: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "chyba",
-            "i-err": "chyba",
-        },
+        default_prompt_label_mapping={"b-err": "chyba", "i-err": "chyba"},
         default_prompt_prefix="Následující jsou věty a JSON slovníky s gramatickými "
         "chybami, které se v dané větě vyskytují.",
         default_prompt_template="Věta: {text}\nGramatické chyby: {label}",
@@ -136,10 +115,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "větě.",
     ),
     DANISH: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "fejl",
-            "i-err": "fejl",
-        },
+        default_prompt_label_mapping={"b-err": "fejl", "i-err": "fejl"},
         default_prompt_prefix="Nedenstående er sætninger og JSON-ordbøger med de "
         "grammatiske fejl, der forekommer i den givne sætning.",
         default_prompt_template="Sætning: {text}\nGrammatiske fejl: {label}",
@@ -149,10 +125,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "som de forekommer i sætningen.",
     ),
     DUTCH: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "fout",
-            "i-err": "fout",
-        },
+        default_prompt_label_mapping={"b-err": "fout", "i-err": "fout"},
         default_prompt_prefix="Hieronder staan zinnen en JSON-woordenboeken met de "
         "grammaticale fouten die in de gegeven zin voorkomen.",
         default_prompt_template="Zin: {text}\nGrammaticale fouten: {label}",
@@ -162,10 +135,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "woorden, precies zoals ze in de zin voorkomen.",
     ),
     ENGLISH: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "error",
-            "i-err": "error",
-        },
+        default_prompt_label_mapping={"b-err": "error", "i-err": "error"},
         default_prompt_prefix="Below are sentences and JSON dictionaries with the "
         "grammatical errors that occur in the given sentence.",
         default_prompt_template="Sentence: {text}\nGrammatical errors: {label}",
@@ -175,10 +145,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "they appear in the sentence.",
     ),
     ESTONIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "viga",
-            "i-err": "viga",
-        },
+        default_prompt_label_mapping={"b-err": "viga", "i-err": "viga"},
         default_prompt_prefix="Allpool on laused ja JSON-sõnastikud, mis sisaldavad "
         "antud lauses esinevaid grammatilisi vigu.",
         default_prompt_template="Lause: {text}\nGrammatilised vead: {label}",
@@ -188,10 +155,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "lauses esinevad.",
     ),
     FAROESE: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "villa",
-            "i-err": "villa",
-        },
+        default_prompt_label_mapping={"b-err": "villa", "i-err": "villa"},
         default_prompt_prefix="Niðanfyri eru setningar og JSON orðabøkur við "
         "málvillum, ið eru í givnu setningunni.",
         default_prompt_template="Setning: {text}\nMálvillur: {label}",
@@ -201,10 +165,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "síggjast í setningunni.",
     ),
     FINNISH: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "virhe",
-            "i-err": "virhe",
-        },
+        default_prompt_label_mapping={"b-err": "virhe", "i-err": "virhe"},
         default_prompt_prefix="Seuraavassa on lauseita ja JSON-sanakirjoja, jotka "
         "sisältävät annetussa lauseessa esiintyvät kieliopilliset virheet.",
         default_prompt_template="Lause: {text}\nKieliopilliset virheet: {label}",
@@ -214,10 +175,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "muodossa kuin ne esiintyvät lauseessa.",
     ),
     FRENCH: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "erreur",
-            "i-err": "erreur",
-        },
+        default_prompt_label_mapping={"b-err": "erreur", "i-err": "erreur"},
         default_prompt_prefix="Vous trouverez ci-dessous des phrases et des "
         "dictionnaires JSON avec les erreurs grammaticales qui apparaissent dans "
         "la phrase donnée.",
@@ -228,23 +186,17 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "mots mal placés, exactement comme ils apparaissent dans la phrase.",
     ),
     GERMAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "fehler",
-            "i-err": "fehler",
-        },
+        default_prompt_label_mapping={"b-err": "fehler", "i-err": "fehler"},
         default_prompt_prefix="Unten sind Sätze und JSON-Wörterbücher mit den "
         "grammatischen Fehlern, die im jeweiligen Satz vorkommen.",
         default_prompt_template="Satz: {text}\nGrammatische Fehler: {label}",
-        default_instruction_prompt="Satz: {text}\n\nIdentifizieren Sie die grammatischen "
-        "Fehler im Satz. Sie sollten dies als JSON-Wörterbuch mit dem Schlüssel "
-        "'fehler' ausgeben. Der Wert soll eine Liste der falsch platzierten Wörter "
-        "sein, genau so, wie sie im Satz erscheinen.",
+        default_instruction_prompt="Satz: {text}\n\nIdentifizieren Sie die "
+        "grammatischen Fehler im Satz. Sie sollten dies als JSON-Wörterbuch mit dem "
+        "Schlüssel 'fehler' ausgeben. Der Wert soll eine Liste der falsch platzierten "
+        "Wörter sein, genau so, wie sie im Satz erscheinen.",
     ),
     GREEK: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "σφάλμα",
-            "i-err": "σφάλμα",
-        },
+        default_prompt_label_mapping={"b-err": "σφάλμα", "i-err": "σφάλμα"},
         default_prompt_prefix="Ακολουθούν προτάσεις και λεξικά JSON με τα γραμματικά "
         "σφάλματα που εμφανίζονται στην δεδομένη πρόταση.",
         default_prompt_template="Πρόταση: {text}\nΓραμματικά σφάλματα: {label}",
@@ -254,10 +206,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "λανθασμένα τοποθετημένες, ακριβώς όπως εμφανίζονται στην πρόταση.",
     ),
     HUNGARIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "hiba",
-            "i-err": "hiba",
-        },
+        default_prompt_label_mapping={"b-err": "hiba", "i-err": "hiba"},
         default_prompt_prefix="Az alábbiakban mondatok és JSON szótárak találhatók "
         "az adott mondatokban előforduló nyelvtani hibákkal.",
         default_prompt_template="Mondat: {text}\nNyelvtani hibák: {label}",
@@ -267,10 +216,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "megjelennek a mondatban.",
     ),
     ICELANDIC: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "villa",
-            "i-err": "villa",
-        },
+        default_prompt_label_mapping={"b-err": "villa", "i-err": "villa"},
         default_prompt_prefix="Hér fyrir neðan eru setningar og JSON orðabækur með "
         "málfræðilegum villum sem koma fyrir í viðkomandi setningu.",
         default_prompt_template="Setning: {text}\nMálfræðilegar villur: {label}",
@@ -280,10 +226,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "koma fyrir í setningunni.",
     ),
     ITALIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "errore",
-            "i-err": "errore",
-        },
+        default_prompt_label_mapping={"b-err": "errore", "i-err": "errore"},
         default_prompt_prefix="Di seguito sono riportate le frasi e i dizionari JSON "
         "con gli errori grammaticali presenti nella frase data.",
         default_prompt_template="Frase: {text}\nErrori grammaticali: {label}",
@@ -293,10 +236,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "posizionate, esattamente come appaiono nella frase.",
     ),
     LATVIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "kļūda",
-            "i-err": "kļūda",
-        },
+        default_prompt_label_mapping={"b-err": "kļūda", "i-err": "kļūda"},
         default_prompt_prefix="Tālāk ir teikumi un JSON vārdnīcas ar gramatiskajām "
         "kļūdām, kas parādās dotajā teikumā.",
         default_prompt_template="Teikums: {text}\nGramatiskās kļūdas: {label}",
@@ -306,10 +246,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "tie parādās teikumā.",
     ),
     LITHUANIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "klaida",
-            "i-err": "klaida",
-        },
+        default_prompt_label_mapping={"b-err": "klaida", "i-err": "klaida"},
         default_prompt_prefix="Toliau pateikti sakiniai ir JSON žodynai su "
         "gramatinėmis klaidomis, kurios pateikiame sakinyje.",
         default_prompt_template="Sakinys: {text}\nGramatinės klaidos: {label}",
@@ -319,10 +256,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "taip, kaip jie rodomi sakinyje.",
     ),
     NORWEGIAN_BOKMÅL: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "feil",
-            "i-err": "feil",
-        },
+        default_prompt_label_mapping={"b-err": "feil", "i-err": "feil"},
         default_prompt_prefix="Nedenfor er setninger og JSON-ordbøker med de "
         "grammatiske feilene som forekommer i den gitte setningen.",
         default_prompt_template="Setning: {text}\nGrammatiske feil: {label}",
@@ -332,10 +266,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "som de vises i setningen.",
     ),
     NORWEGIAN_NYNORSK: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "feil",
-            "i-err": "feil",
-        },
+        default_prompt_label_mapping={"b-err": "feil", "i-err": "feil"},
         default_prompt_prefix="Nedanfor er setningar og JSON-ordbøker med dei "
         "grammatiske feila som førekjem i den gitte setninga.",
         default_prompt_template="Setning: {text}\nGrammatiske feil: {label}",
@@ -345,10 +276,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "viser seg i setninga.",
     ),
     NORWEGIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "feil",
-            "i-err": "feil",
-        },
+        default_prompt_label_mapping={"b-err": "feil", "i-err": "feil"},
         default_prompt_prefix="Nedenfor er setninger og JSON-ordbøker med de "
         "grammatiske feilene som forekommer i den gitte setningen.",
         default_prompt_template="Setning: {text}\nGrammatiske feil: {label}",
@@ -358,10 +286,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "som de vises i setningen.",
     ),
     POLISH: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "błąd",
-            "i-err": "błąd",
-        },
+        default_prompt_label_mapping={"b-err": "błąd", "i-err": "błąd"},
         default_prompt_prefix="Poniżej znajdują się zdania i słowniki JSON z błędami "
         "gramatycznymi, które występują w danym zdaniu.",
         default_prompt_template="Zdanie: {text}\nBłędy gramatyczne: {label}",
@@ -371,10 +296,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "zdaniu.",
     ),
     PORTUGUESE: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "erro",
-            "i-err": "erro",
-        },
+        default_prompt_label_mapping={"b-err": "erro", "i-err": "erro"},
         default_prompt_prefix="Seguem-se frases e dicionários JSON com os erros "
         "gramaticais presentes na frase indicada.",
         default_prompt_template="Frase: {text}\nErros gramaticais: {label}",
@@ -383,10 +305,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "ser uma lista das palavras mal colocadas, tal como ocorrem na frase.",
     ),
     ROMANIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "eroare",
-            "i-err": "eroare",
-        },
+        default_prompt_label_mapping={"b-err": "eroare", "i-err": "eroare"},
         default_prompt_prefix="Mai jos sunt propoziții și dicționare JSON cu erorile "
         "gramaticale care apar în propoziția dată.",
         default_prompt_template="Propoziție: {text}\nErori gramaticale: {label}",
@@ -396,10 +315,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "exact cum apar în propoziție.",
     ),
     SERBIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "greška",
-            "i-err": "greška",
-        },
+        default_prompt_label_mapping={"b-err": "greška", "i-err": "greška"},
         default_prompt_prefix="Sledeće su rečenice i JSON rečnici sa gramatičkim "
         "greškama koji se pojavljuju u datoj rečenici.",
         default_prompt_template="Rečenica: {text}\nGramatičke greške: {label}",
@@ -409,10 +325,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "onako kako se pojavljuju u rečenici.",
     ),
     SLOVAK: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "chyba",
-            "i-err": "chyba",
-        },
+        default_prompt_label_mapping={"b-err": "chyba", "i-err": "chyba"},
         default_prompt_prefix="Nasledujúce sú vety a JSON-objekty s gramatickými "
         "chybami, ktoré sa nachádzajú v danej vete.",
         default_prompt_template="Veta: {text}\nGramatické chyby: {label}",
@@ -422,10 +335,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "vo vete.",
     ),
     SLOVENE: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "napaka",
-            "i-err": "napaka",
-        },
+        default_prompt_label_mapping={"b-err": "napaka", "i-err": "napaka"},
         default_prompt_prefix="Naslednje so povedi in JSON slovarji z gramatičnimi "
         "napakami, ki se pojavijo v dani povedi.",
         default_prompt_template="Poved: {text}\nGramatične napake: {label}",
@@ -434,10 +344,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "mora biti seznam napačno postavljenih besed, tako kot se pojavijo v povedi.",
     ),
     SPANISH: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "error",
-            "i-err": "error",
-        },
+        default_prompt_label_mapping={"b-err": "error", "i-err": "error"},
         default_prompt_prefix="Lo siguiente son oraciones y diccionarios JSON con los "
         "errores gramaticales que aparecen en la oración dada.",
         default_prompt_template="Oración: {text}\nErrores gramaticales: {label}",
@@ -447,10 +354,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "exactamente como aparecen en la oración.",
     ),
     SWEDISH: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "fel",
-            "i-err": "fel",
-        },
+        default_prompt_label_mapping={"b-err": "fel", "i-err": "fel"},
         default_prompt_prefix="Nedan är meningar och JSON-ordböcker med de "
         "grammatiska fel som förekommer i den givna meningen.",
         default_prompt_template="Mening: {text}\nGrammatiska fel: {label}",
@@ -460,10 +364,7 @@ GED_TEMPLATES: dict["Language", PromptConfig] = {
         "visas i meningen.",
     ),
     UKRAINIAN: PromptConfig(
-        default_prompt_label_mapping={
-            "b-err": "помилка",
-            "i-err": "помилка",
-        },
+        default_prompt_label_mapping={"b-err": "помилка", "i-err": "помилка"},
         default_prompt_prefix="Нижче наведені речення та JSON-словники з "
         "граматичними помилками, які присутні у даному реченні.",
         default_prompt_template="Речення: {text}\nГраматичні помилки: {label}",

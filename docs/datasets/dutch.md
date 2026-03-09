@@ -1271,7 +1271,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset valeu-nl
 ```
 
-
 ## Grammatical Error Detection
 
 ### Unofficial: GerLangMod-nl

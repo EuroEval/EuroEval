@@ -1804,7 +1804,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset valeu-no
 ```
 
-
 ## Grammatical Error Detection
 
 ### Unofficial: GerLangMod-nb

@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ICELANDIC
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, GED, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    GED,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 

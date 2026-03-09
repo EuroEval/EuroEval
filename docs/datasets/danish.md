@@ -1364,7 +1364,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset valeu-da
 ```
 
-
 ## Grammatical Error Detection
 
 ### Unofficial: GerLangMod-da
