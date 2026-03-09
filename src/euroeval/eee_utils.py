@@ -252,9 +252,7 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
 
     # Extract dataset name from evaluation_results or additional_details
     if evaluation_results:
-        dataset = (
-            evaluation_results[0].get("source_data", {}).get("dataset_name", "")
-        )
+        dataset = evaluation_results[0].get("source_data", {}).get("dataset_name", "")
     else:
         dataset = eval_lib_additional.get("dataset", "")
 
@@ -283,9 +281,7 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
             "num_failed_instances" in details
             and "num_failed_instances" not in total_dict
         ):
-            total_dict["num_failed_instances"] = float(
-                details["num_failed_instances"]
-            )
+            total_dict["num_failed_instances"] = float(details["num_failed_instances"])
 
     results = {"raw": raw_results, "total": total_dict}
 
