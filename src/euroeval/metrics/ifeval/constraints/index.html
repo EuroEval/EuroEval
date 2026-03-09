@@ -3752,7 +3752,7 @@
 <span class="sd">        True if the response contains no accents, False otherwise.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">accented_chars</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
-        <span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;[àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ]&quot;</span>
+        <span class="n">pattern</span><span class="o">=</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ]&quot;</span><span class="p">)</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">accented_chars</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">response</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
 
@@ -3769,7 +3769,7 @@
 <span class="sd">        True if the response contains accents, False otherwise.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">accented_chars</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
-        <span class="n">pattern</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;[àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ]&quot;</span>
+        <span class="n">pattern</span><span class="o">=</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ]&quot;</span><span class="p">)</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">accented_chars</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">response</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 

@@ -1781,7 +1781,15 @@
 <span class="normal">730</span>
 <span class="normal">731</span>
 <span class="normal">732</span>
-<span class="normal">733</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the question-answering task group.&quot;&quot;&quot;</span>
+<span class="normal">733</span>
+<span class="normal">734</span>
+<span class="normal">735</span>
+<span class="normal">736</span>
+<span class="normal">737</span>
+<span class="normal">738</span>
+<span class="normal">739</span>
+<span class="normal">740</span>
+<span class="normal">741</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the question-answering task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -1874,7 +1882,8 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The metrics computed on the evaluation dataset.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">eval_dataloader</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_eval_dataloader</span><span class="p">(</span><span class="n">eval_dataset</span><span class="p">)</span>  <span class="c1"># type: ignore[bad-argument-type]</span>
+        <span class="c1"># type: ignore[bad-argument-type]</span>
+        <span class="n">eval_dataloader</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_eval_dataloader</span><span class="p">(</span><span class="n">eval_dataset</span><span class="p">)</span>
 
         <span class="c1"># Temporarily disable metric computation, we will do it in the loop here.</span>
         <span class="n">compute_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_metrics</span>  <span class="c1"># type: ignore[has-type]</span>
@@ -1903,7 +1912,8 @@
 
         <span class="k">if</span> <span class="n">orig_eval_dataset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">eval_dataset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">preds_and_labels</span> <span class="o">=</span> <span class="n">postprocess_predictions_and_labels</span><span class="p">(</span>
-                <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span>  <span class="c1"># type: ignore[arg-type]</span>
+                <span class="c1"># type: ignore[arg-type]</span>
+                <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span>
                 <span class="n">dataset</span><span class="o">=</span><span class="n">orig_eval_dataset</span><span class="p">,</span>
                 <span class="n">prepared_dataset</span><span class="o">=</span><span class="n">eval_dataset</span><span class="p">,</span>
                 <span class="n">cls_token_index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cls_token_id</span><span class="p">,</span>
@@ -1958,7 +1968,8 @@
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_outputs</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_outputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
         <span class="n">model_outputs</span> <span class="o">=</span> <span class="n">model_outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="n">raise_if_model_output_contains_nan_values</span><span class="p">(</span><span class="n">model_output</span><span class="o">=</span><span class="n">model_outputs</span><span class="p">)</span>  <span class="c1"># type: ignore[bad-argument-type]</span>
+    <span class="c1"># type: ignore[bad-argument-type]</span>
+    <span class="n">raise_if_model_output_contains_nan_values</span><span class="p">(</span><span class="n">model_output</span><span class="o">=</span><span class="n">model_outputs</span><span class="p">)</span>
 
     <span class="n">model_output_dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">model_outputs</span><span class="p">)</span><span class="o">.</span><span class="n">dtype</span>
     <span class="k">if</span> <span class="n">model_output_dtype</span> <span class="ow">in</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
@@ -2024,7 +2035,8 @@
     <span class="c1"># Some of the questions have lots of whitespace on the left, which is not useful</span>
     <span class="c1"># and will make the truncation of the context fail (the tokenized question will</span>
     <span class="c1"># take a lots of space). So we remove that left whitespace</span>
-    <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]]</span>  <span class="c1"># type: ignore[not-iterable]</span>
+    <span class="c1"># type: ignore[not-iterable]</span>
+    <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]]</span>
 
     <span class="c1"># Extract special token metadata from the tokeniser</span>
     <span class="n">special_token_metadata</span> <span class="o">=</span> <span class="n">get_special_token_metadata</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">)</span>
@@ -2039,7 +2051,8 @@
         <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cls_token</span><span class="si">}{</span><span class="n">q</span><span class="si">}{</span><span class="n">sep_token</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span>
         <span class="p">]</span>
-        <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}{</span><span class="n">sep_token</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">]]</span>  <span class="c1"># type: ignore[not-iterable]</span>
+        <span class="c1"># type: ignore[not-iterable]</span>
+        <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}{</span><span class="n">sep_token</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">]]</span>
 
     <span class="c1"># Set the stride used during tokenisation, when the context is long enough to be</span>
     <span class="c1"># split into several features. Since we are always keeping the question tokens, we</span>
@@ -2187,7 +2200,8 @@
     <span class="c1"># Some of the questions have lots of whitespace on the left, which is not useful</span>
     <span class="c1"># and will make the truncation of the context fail (the tokenised question will</span>
     <span class="c1"># take a lots of space). So we remove that left whitespace</span>
-    <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]]</span>  <span class="c1"># type: ignore[not-iterable]</span>
+    <span class="c1"># type: ignore[not-iterable]</span>
+    <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]]</span>
 
     <span class="c1"># Extract special token metadata from the tokeniser</span>
     <span class="n">special_token_metadata</span> <span class="o">=</span> <span class="n">get_special_token_metadata</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">)</span>
@@ -2201,7 +2215,8 @@
         <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cls_token</span><span class="si">}{</span><span class="n">q</span><span class="si">}{</span><span class="n">sep_token</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span>
         <span class="p">]</span>
-        <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}{</span><span class="n">sep_token</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">]]</span>  <span class="c1"># type: ignore[not-iterable]</span>
+        <span class="c1"># type: ignore[not-iterable]</span>
+        <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="si">}{</span><span class="n">sep_token</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;context&quot;</span><span class="p">]]</span>
 
     <span class="c1"># Set the stride used during tokenisation, when the context is long enough to be</span>
     <span class="c1"># split into several features. Since we are always keeping the question tokens, we</span>
@@ -2250,7 +2265,8 @@
         <span class="c1"># One example can give several spans, this is the index of the example</span>
         <span class="c1"># containing this span of text.</span>
         <span class="n">sample_index</span> <span class="o">=</span> <span class="n">sample_mapping</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="n">tokenised_examples</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">][</span><span class="n">sample_index</span><span class="p">])</span>  <span class="c1"># type: ignore[bad-index]</span>
+        <span class="c1"># type: ignore[bad-index]</span>
+        <span class="n">tokenised_examples</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">examples</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">][</span><span class="n">sample_index</span><span class="p">])</span>
 
         <span class="c1"># Set to (-1, -1) the offset_mapping that are not part of the context so it&#39;s</span>
         <span class="c1"># easy to determine if a token position is part of the context or not.</span>

@@ -1204,7 +1204,11 @@
 <span class="normal">208</span>
 <span class="normal">209</span>
 <span class="normal">210</span>
-<span class="normal">211</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the multiple-choice classification task group.&quot;&quot;&quot;</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the multiple-choice classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -1247,7 +1251,8 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The metrics computed on the evaluation dataset.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">eval_dataloader</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_eval_dataloader</span><span class="p">(</span><span class="n">eval_dataset</span><span class="p">)</span>  <span class="c1"># type: ignore[bad-argument-type]</span>
+        <span class="c1"># type: ignore[bad-argument-type]</span>
+        <span class="n">eval_dataloader</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_eval_dataloader</span><span class="p">(</span><span class="n">eval_dataset</span><span class="p">)</span>
 
         <span class="n">eval_loop</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">prediction_loop</span>
@@ -1274,11 +1279,12 @@
             <span class="k">assert</span> <span class="n">eval_dataset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span>
                 <span class="s2">&quot;eval_dataset must be provided when metric_key_prefix is &#39;test&#39;.&quot;</span>
             <span class="p">)</span>
+            <span class="c1"># type: ignore[arg-type]</span>
             <span class="n">preds_and_labels</span> <span class="o">=</span> <span class="n">postprocess_predictions_and_labels</span><span class="p">(</span>
                 <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">eval_dataset</span>
             <span class="p">)</span>
             <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_metrics</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="n">new_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">(</span><span class="n">preds_and_labels</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+            <span class="n">new_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">(</span><span class="n">preds_and_labels</span><span class="p">)</span>
             <span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">new_metrics</span><span class="p">)</span>
 
             <span class="c1"># Prefix all keys with metric_key_prefix + &#39;_&#39;</span>
@@ -1351,7 +1357,8 @@
         <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">new_examples</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="nb">int</span><span class="p">(</span><span class="n">choice</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">letter</span><span class="si">}</span><span class="s2">. &quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">letter</span> <span class="o">==</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># type: ignore[bad-index]</span>
+        <span class="c1"># type: ignore[bad-index]</span>
+        <span class="nb">int</span><span class="p">(</span><span class="n">choice</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">letter</span><span class="si">}</span><span class="s2">. &quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">letter</span> <span class="o">==</span> <span class="n">examples</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
         <span class="k">for</span> <span class="n">letter</span><span class="p">,</span> <span class="n">choice</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="s2">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span><span class="p">,</span> <span class="n">choices</span><span class="p">)</span>
     <span class="p">]</span>
     <span class="n">new_examples</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">doc</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">choices</span><span class="p">)</span>
@@ -1390,7 +1397,8 @@
 
     <span class="n">pred_label_dict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">pred_arr</span><span class="p">,</span> <span class="n">example</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
-        <span class="n">pred_label_dict</span><span class="p">[</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pred_arr</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]))</span>  <span class="c1"># type: ignore[bad-index]</span>
+        <span class="c1"># type: ignore[bad-index]</span>
+        <span class="n">pred_label_dict</span><span class="p">[</span><span class="n">example</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">pred_arr</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]))</span>
 
     <span class="c1"># Compute the final predictions and labels</span>
     <span class="k">for</span> <span class="n">id_</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]):</span>
