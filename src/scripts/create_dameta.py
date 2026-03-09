@@ -37,19 +37,14 @@ def main() -> None:
 
     # Extract the TSV file from the password-protected ZIP
     with pyzipper.AESZipFile(file=io.BytesIO(initial_bytes=response.content)) as zf:
-        tsv_file_names = [
-            name for name in zf.namelist() if name.endswith(".tsv")
-        ]
+        tsv_file_names = [name for name in zf.namelist() if name.endswith(".tsv")]
         assert len(tsv_file_names) == 1, (
             f"Expected exactly one TSV file, found: {tsv_file_names}"
         )
         tsv_content = zf.read(tsv_file_names[0], pwd=ZIP_PASSWORD)
 
     # Load the TSV data into a dataframe
-    df = pd.read_csv(
-        filepath_or_buffer=io.BytesIO(tsv_content),
-        delimiter="\t",
-    )
+    df = pd.read_csv(filepath_or_buffer=io.BytesIO(tsv_content), delimiter="\t")
 
     # Build the `text` column combining the word, sentence and answer options
     df["text"] = [
@@ -59,10 +54,17 @@ def main() -> None:
         + row.sentence.replace("\n", " ").strip()
         + "'\n"
         + f"{CHOICES_MAPPING['da']}:\n"
-        + "a. " + row.A.replace("\n", " ").strip() + "\n"
-        + "b. " + row.B.replace("\n", " ").strip() + "\n"
-        + "c. " + row.C.replace("\n", " ").strip() + "\n"
-        + "d. " + row.D.replace("\n", " ").strip()
+        + "a. "
+        + row.A.replace("\n", " ").strip()
+        + "\n"
+        + "b. "
+        + row.B.replace("\n", " ").strip()
+        + "\n"
+        + "c. "
+        + row.C.replace("\n", " ").strip()
+        + "\n"
+        + "d. "
+        + row.D.replace("\n", " ").strip()
         for _, row in df.iterrows()
     ]
 
