@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   (2013–2017) from mms.is, covering Icelandic language and mathematics, respectively.
   Both are marked as `unofficial` for now.
 
+### Fixed
+
+- Evaluation on AMD/ROCm hardware (e.g., LUMI) was broken due to two NVIDIA-specific
+  checks being applied unconditionally. The `flash_attn` conflict check no longer
+  triggers `sys.exit` on ROCm, and the `nvcc` presence check is now skipped on ROCm
+  hardware since AMD uses HIP tooling instead.
+
 ## [v16.17.0] - 2026-03-09
 
 ### Added
