@@ -1,11 +1,13 @@
 """Unit tests for the `vllm` module."""
 
+import importlib.util
 import shutil
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import torch
 
+from euroeval.benchmark_modules.vllm import VLLMModel
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.exceptions import NeedsSystemDependency
 
@@ -60,14 +62,10 @@ class TestNvccCheck:
         benchmark_config: BenchmarkConfig,
     ) -> None:
         """Test that NeedsSystemDependency is raised on NVIDIA CUDA without nvcc."""
-        import importlib
-
         original_find_spec = importlib.util.find_spec
 
         def mock_find_spec(name: str) -> object:
             if name == "vllm":
-                from unittest.mock import MagicMock
-
                 return MagicMock()
             return original_find_spec(name)
 
@@ -77,8 +75,6 @@ class TestNvccCheck:
             patch.object(torch.version, "hip", new=None),
             patch.object(shutil, "which", return_value=None),
         ):
-            from euroeval.benchmark_modules.vllm import VLLMModel
-
             with pytest.raises(NeedsSystemDependency):
                 VLLMModel(
                     model_config=model_config,
@@ -94,14 +90,10 @@ class TestNvccCheck:
         benchmark_config: BenchmarkConfig,
     ) -> None:
         """Test that NeedsSystemDependency is not raised on ROCm without nvcc."""
-        import importlib
-
         original_find_spec = importlib.util.find_spec
 
         def mock_find_spec(name: str) -> object:
             if name == "vllm":
-                from unittest.mock import MagicMock
-
                 return MagicMock()
             return original_find_spec(name)
 
@@ -111,8 +103,6 @@ class TestNvccCheck:
             patch.object(torch.version, "hip", new="5.7.0"),
             patch.object(shutil, "which", return_value=None),
         ):
-            from euroeval.benchmark_modules.vllm import VLLMModel
-
             try:
                 VLLMModel(
                     model_config=model_config,
