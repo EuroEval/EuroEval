@@ -14,12 +14,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   The split is given by 64 / 128 / 723 samples for train / val / test, respectively.
   It is marked as `unofficial` for now.
 - Benchmark results written to `euroeval_benchmark_results.jsonl` now conform to the
-  [Every Eval Ever (EEE) JSON schema v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json).
-  The new format structures results into standardised sections (`source_metadata`,
+  [Every Eval Ever (EEE) JSON schema
+  v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json). The
+  new format structures results into standardised sections (`source_metadata`,
   `model_info`, `eval_library`, `evaluation_results`) and supports lossless round-trips
   via `BenchmarkResult.from_dict()`.  Old flat-format entries are still read correctly
   for backward compatibility.
-  
+- Added the Icelandic standardised tests datasets icelandic-lang-tests and
+  icelandic-math-tests, based on old Icelandic primary school standardised tests
+  (2013–2017) from mms.is, covering Icelandic language and mathematics, respectively.
+  Both are marked as `unofficial` for now.
+
 ### Fixed
 
 - Evaluation on AMD/ROCm hardware (e.g., LUMI) was broken due to two NVIDIA-specific
