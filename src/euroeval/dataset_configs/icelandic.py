@@ -166,6 +166,7 @@ ICELANDIC_LANG_TESTS_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[ICELANDIC],
     unofficial=True,
+    val_split=None,
 )
 
 ICELANDIC_MATH_TESTS_CONFIG = DatasetConfig(
@@ -175,4 +176,5 @@ ICELANDIC_MATH_TESTS_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[ICELANDIC],
     unofficial=True,
+    val_split=None,
 )
