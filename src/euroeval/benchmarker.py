@@ -17,8 +17,8 @@ from torch.distributed import destroy_process_group
 from .benchmark_config_factory import build_benchmark_config
 from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data, load_raw_data
-from .data_models import BenchmarkConfigParams, BenchmarkResult
-from .enums import Device, GenerativeType, ModelType
+from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
+from .enums import Device, GenerativeType, InferenceBackend, ModelType
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
@@ -1137,6 +1137,16 @@ class Benchmarker:
                         None
                         if dataset_config.val_split is None
                         else not benchmark_config.evaluate_test_split
+                    ),
+                    vllm_version=(
+                        get_package_version("vllm")
+                        if model_config.inference_backend == InferenceBackend.VLLM
+                        else None
+                    ),
+                    litellm_version=(
+                        get_package_version("litellm")
+                        if model_config.inference_backend == InferenceBackend.LITELLM
+                        else None
                     ),
                 )
                 log(f"Results:\n{results}", level=logging.DEBUG)

@@ -939,6 +939,7 @@ class BenchmarkResult(pydantic.BaseModel):
     torch_version: str | None = get_package_version("torch")
     vllm_version: str | None = get_package_version("vllm")
     xgrammar_version: str | None = get_package_version("xgrammar")
+    litellm_version: str | None = None
 
     @classmethod
     def from_dict(cls, config: dict) -> "BenchmarkResult":
@@ -1118,6 +1119,9 @@ class BenchmarkResult(pydantic.BaseModel):
             xgrammar_version=parse_optional_str(
                 eval_lib_additional.get("xgrammar_version", "null")
             ),
+            litellm_version=parse_optional_str(
+                eval_lib_additional.get("litellm_version", "null")
+            ),
         )
 
     def to_eee_dict(self) -> dict:
@@ -1226,7 +1230,9 @@ class BenchmarkResult(pydantic.BaseModel):
 
         # Determine inference engine info
         inference_engine: dict = {}
-        if self.vllm_version:
+        if self.litellm_version:
+            inference_engine = {"name": "litellm", "version": self.litellm_version}
+        elif self.vllm_version:
             inference_engine = {"name": "vllm", "version": self.vllm_version}
         elif self.transformers_version:
             inference_engine = {
@@ -1267,6 +1273,7 @@ class BenchmarkResult(pydantic.BaseModel):
             "torch_version": self.torch_version or "null",
             "vllm_version": self.vllm_version or "null",
             "xgrammar_version": self.xgrammar_version or "null",
+            "litellm_version": self.litellm_version or "null",
             "raw_results": json.dumps(raw_results, ensure_ascii=False),
         }
 
