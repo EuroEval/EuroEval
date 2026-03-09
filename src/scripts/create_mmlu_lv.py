@@ -11,8 +11,8 @@
 
 """Create the MMLU-LV (Latvian) dataset from VTI-Data and upload to HF Hub."""
 
+import typing as t
 from collections import Counter
-from typing import Any
 
 import pandas as pd
 import requests
@@ -177,7 +177,7 @@ def get_mmlu_subjects_from_github() -> list[dict[str, str]]:
     return sorted(json_files, key=lambda x: x["name"])
 
 
-def download_subject_data(subject_info: dict[str, str]) -> list[dict[str, Any]]:
+def download_subject_data(subject_info: dict[str, str]) -> list[dict[str, t.Any]]:
     """Download and parse data for a specific MMLU subject.
 
     Args:
@@ -197,7 +197,7 @@ def download_subject_data(subject_info: dict[str, str]) -> list[dict[str, Any]]:
     return data
 
 
-def process_mmlu_data(data: list[dict[str, Any]]) -> pd.DataFrame:
+def process_mmlu_data(data: list[dict[str, t.Any]]) -> pd.DataFrame:
     """Process raw MMLU data into the expected format.
 
     Args:

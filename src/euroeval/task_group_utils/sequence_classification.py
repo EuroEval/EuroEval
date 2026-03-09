@@ -71,6 +71,21 @@ def compute_metrics(
         prompt_label: label
         for label, prompt_label in dataset_config.prompt_label_mapping.items()
     }
+
+    # For datasets with dynamic labels (e.g. community multiple-choice with
+    # default_labels=None), both label2id and prompt_label_to_label_mapping are
+    # empty.  Build a temporary mapping from the observed predictions and ground
+    # truth so that the metrics can still be computed.
+    if not label2id:
+        all_observed = sorted(
+            {
+                v.lower() if isinstance(v, str) else str(v)
+                for v in list(predictions) + list(labels)  # type: ignore[operator]
+            }
+        )
+        label2id = {lbl: idx for idx, lbl in enumerate(all_observed)}
+        prompt_label_to_label_mapping = {lbl: lbl for lbl in all_observed}
+
     predictions = [
         (
             label2id[prompt_label_to_label_mapping[pred.lower()]]

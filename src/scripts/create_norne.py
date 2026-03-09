@@ -12,8 +12,8 @@
 """Create the NorNE-mini NER datasets and upload them to the HF Hub."""
 
 import re
+import typing as t
 from collections import defaultdict
-from typing import Dict, List, Union
 
 import pandas as pd
 import requests
@@ -80,7 +80,7 @@ def main() -> None:
             for split, lines in data.items():
                 # Initialise the records, data dictionary and document
                 records = list()
-                data_dict: Dict[str, List[Union[int, str]]] = defaultdict(list)
+                data_dict: t.Dict[str, t.List[t.Union[int, str]]] = defaultdict(list)
                 doc = ""
 
                 # Iterate over the data for the given split
@@ -96,7 +96,9 @@ def main() -> None:
                     # Otherwise, if we have reached the end of an entry then store it
                     # to the list of records and reset the data dictionary and document
                     elif line == "":
-                        merged_data_dict: Dict[str, Union[str, List[Union[int, str]]]]
+                        merged_data_dict: t.Dict[
+                            str, t.Union[str, t.List[t.Union[int, str]]]
+                        ]
                         if len(data_dict["tokens"]) > 0:
                             merged_data_dict = {**data_dict, "doc": doc}
                             records.append(merged_data_dict)

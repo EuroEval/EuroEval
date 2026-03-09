@@ -92,33 +92,52 @@ def extract_few_shot_examples(
                     "Could not find enough short examples for few-shot learning."
                 )
 
-            labels = it.cycle(dataset_config.labels)
-            labels_with_no_samples: set[str] = set()
-            while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
-                if len(labels_with_no_samples) == len(dataset_config.labels):
-                    raise InvalidBenchmark(
-                        "Could not find enough examples for few-shot learning. "
-                        "Please check the dataset and the labels."
+            if dataset_config.labels:
+                labels = it.cycle(dataset_config.labels)
+                labels_with_no_samples: set[str] = set()
+                while (
+                    len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0
+                ):
+                    if len(labels_with_no_samples) == len(dataset_config.labels):
+                        raise InvalidBenchmark(
+                            "Could not find enough examples for few-shot learning. "
+                            "Please check the dataset and the labels."
+                        )
+                    label = next(labels)
+                    possible_examples = shuffled_train.filter(
+                        lambda x: str(x["label"]).lower() == label.lower()
                     )
-                label = next(labels)
-                possible_examples = shuffled_train.filter(
-                    lambda x: str(x["label"]).lower() == label.lower()
-                )
-                assert isinstance(possible_examples, Dataset), (
-                    f"Expected `possible_examples` to be a Dataset, but got "
-                    f"{type(possible_examples)} instead."
-                )
-                if len(possible_examples) == 0:
-                    labels_with_no_samples.add(label)
-                    continue
-                example = possible_examples.select(range(1))[0]
-                assert isinstance(example, dict), (
-                    f"Expected `example` to be a dict, but got {type(example)} instead."
-                )
-                few_shot_examples.append(example)
-                shuffled_train = shuffled_train.filter(
-                    lambda x: x["text"] != example["text"]
-                )
+                    assert isinstance(possible_examples, Dataset), (
+                        f"Expected `possible_examples` to be a Dataset, but got "
+                        f"{type(possible_examples)} instead."
+                    )
+                    if len(possible_examples) == 0:
+                        labels_with_no_samples.add(label)
+                        continue
+                    example = possible_examples.select(range(1))[0]
+                    assert isinstance(example, dict), (
+                        f"Expected `example` to be a dict, but got "
+                        f"{type(example)} instead."
+                    )
+                    few_shot_examples.append(example)
+                    shuffled_train = shuffled_train.filter(
+                        lambda x: x["text"] != example["text"]
+                    )
+            else:
+                # No labels defined (e.g. community datasets with variable number of
+                # choices) — fall back to random sampling.
+                while (
+                    len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0
+                ):
+                    example = shuffled_train.select(range(1))[0]
+                    assert isinstance(example, dict), (
+                        f"Expected `example` to be a dict, but got "
+                        f"{type(example)} instead."
+                    )
+                    few_shot_examples.append(example)
+                    shuffled_train = shuffled_train.filter(
+                        lambda x: x["text"] != example["text"]
+                    )
 
         case TaskGroup.TEXT_TO_TEXT:
             while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:

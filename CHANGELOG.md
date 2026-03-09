@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v16.17.0] - 2026-03-09
+
 ### Added
 
 - A new tool calling task has been added to the framework, including the English
@@ -14,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   This was added by @harderj ✨
 - Added the new Danish linguistic acceptability dataset DaLA. It's marked as
   unofficial for now. This was added by @N-essuno ✨
+- It is now possible to benchmark datasets on the Hugging Face Hub using the `eval.yaml`
+  configuration files, fully compatible with the Inspect AI format.
 - Added the Norwegian summarisation datasets NorSumm-nb and NorSumm-nn, based on the
   [NorSumm dataset](https://github.com/SamiaTouileb/NorSumm). The splits are given by
   8 samples for train and the remaining articles for test, with no validation split.
@@ -23,8 +27,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   as `unofficial` for now.
 - Added the English knowledge dataset MMLU-Pro, marked as unofficial. This is a more
   robust and challenging version of MMLU with 10 answer options per question.
-- Added the MultiNRC knowledge dataset for English, French and Spanish. These are
-  marked as `unofficial` for now.
+- Added the MultiNRC knowledge dataset for French and Spanish. These are marked as
+  `unofficial` for now.
 - Added the Greek knowledge dataset GreekMMLU. The split is
   given by 1,024 / 256 / 2,048 samples for train / val / test, respectively.
   It is marked as `unofficial` for now.
@@ -63,6 +67,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Changed the primary summarisation metric from BERTScore to ChrF3++, as it has better
+  correlation with human judgements, and has the upside of being model-agnostic,
+  reducing potential biases against low-resource languages.
+- Changed the translation metric from BERTScore to ChrF3++, to align with the
+  summarisation task and provide consistent evaluation across text-to-text tasks.
 - We now default to selecting vLLM's default attention backend for the given model, since
   it now automatically selects the most efficient backend for the given model. It is
   still possible to override this by setting the `--attention-backend` CLI option or the
@@ -72,6 +81,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Models that predict an out-of-range choice index for a European Values question no
+  longer crash the evaluation. The invalid prediction is now logged as a warning and
+  defaults to the first valid index instead.
 - There was an issue with caching of answers by generative models when evaluating them
   on NER tasks - this has now been fixed. This was fixed by @Rijgersberg ✨
 - Evaluating older OpenAI models, such as `gpt-3.5-turbo-1106`, crashed the evaluation
