@@ -154,7 +154,7 @@ def _create_uniform_dataset_distribution(
     min_size = min(len(dataset_df) for dataset_df in dataset_dfs)
 
     # Resample each class to the size of the smallest class
-    resampled_dfs: list[pd.DataFrame] = [
+    resampled_dfs: list[pd.DataFrame] = [  # pyrefly: ignore[bad-assignment]
         resample(
             dataset_df, replace=False, n_samples=min_size, random_state=random_state
         )

@@ -143,7 +143,7 @@ def block_terminal_output() -> None:
     logging.getLogger("LiteLLM Proxy").setLevel(logging.CRITICAL)
     logging.getLogger("openai").setLevel(logging.CRITICAL)
     logging.getLogger("httpx").setLevel(logging.CRITICAL)
-    litellm.suppress_debug_info = True  # type: ignore[bad-assignment]
+    litellm.suppress_debug_info = True  # pyrefly: ignore[bad-assignment]
     litellm.turn_off_message_logging = True
 
     # Disable vLLM logging
@@ -172,7 +172,7 @@ def block_terminal_output() -> None:
     disable_evaluate_progress_bar()
 
     # Disable most of the `transformers` logging
-    tf_logging._default_log_level = logging.CRITICAL  # type: ignore[bad-assignment]
+    tf_logging._default_log_level = logging.CRITICAL  # pyrefly: ignore[bad-assignment]
     tf_logging.set_verbosity(logging.CRITICAL)
     logging.getLogger("transformers.trainer").setLevel(logging.CRITICAL)
     logging.getLogger("accelerate").setLevel(logging.CRITICAL)

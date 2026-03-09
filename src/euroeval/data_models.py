@@ -1476,6 +1476,6 @@ class ModelIdComponents:
 class HashableDict(dict):
     """A hashable dictionary."""
 
-    def __hash__(self) -> int:  # type: ignore[override]
+    def __hash__(self) -> int:  # pyrefly: ignore[override]
         """Return the hash of the dictionary."""
         return hash(frozenset(self.items()))

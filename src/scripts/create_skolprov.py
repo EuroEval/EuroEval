@@ -99,7 +99,9 @@ def main() -> None:
     assert isinstance(df, pd.DataFrame)
 
     # Create category from test_id and section
-    df["category"] = df["test_id"] + "_" + df["section"].fillna("unknown")
+    df["category"] = (
+        df["test_id"].astype(str) + "_" + df["section"].fillna("unknown")
+    )  # pyrefly: ignore[unsupported-operation]
 
     # Make a `text` column with all the options in it
     def create_text(row: pd.Series) -> str:

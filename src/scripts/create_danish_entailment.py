@@ -60,7 +60,12 @@ def main() -> None:
     df["label"] = df["label"].map(label_mapping)
 
     # Build the combined `text` field used by the EuroEval evaluation framework
-    df["text"] = "Udsagn 1: " + df["premise"] + "\nUdsagn 2: " + df["hypothesis"]
+    df["text"] = (
+        "Udsagn 1: "
+        + df["premise"].astype(str)
+        + "\nUdsagn 2: "
+        + df["hypothesis"].astype(str)
+    )  # pyrefly: ignore[unsupported-operation]
 
     # Keep only the columns needed for evaluation
     df = df[["text", "label"]].drop_duplicates().reset_index(drop=True)

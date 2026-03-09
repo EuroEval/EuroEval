@@ -21,7 +21,7 @@ if t.TYPE_CHECKING:
 class MultipleChoiceClassificationTrainer(Trainer):
     """Trainer subclass for multiple-choice classification tasks."""
 
-    def evaluate(  # type: ignore[override]
+    def evaluate(  # pyrefly: ignore[override]  # pyrefly: ignore[bad-override]
         self,
         eval_dataset: "Dataset | None" = None,
         ignore_keys: list[str] | None = None,
@@ -41,7 +41,8 @@ class MultipleChoiceClassificationTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
-        eval_dataloader = self.get_eval_dataloader(eval_dataset)  # type: ignore[bad-argument-type]
+        # pyrefly: ignore[bad-argument-type]
+        eval_dataloader = self.get_eval_dataloader(eval_dataset)
 
         eval_loop = (
             self.prediction_loop
@@ -68,11 +69,14 @@ class MultipleChoiceClassificationTrainer(Trainer):
             assert eval_dataset is not None, (
                 "eval_dataset must be provided when metric_key_prefix is 'test'."
             )
+            # pyrefly: ignore[arg-type]
             preds_and_labels = postprocess_predictions_and_labels(
                 predictions=predictions, dataset=eval_dataset
             )
             assert self.compute_metrics is not None
-            new_metrics = self.compute_metrics(preds_and_labels)  # type: ignore[arg-type]
+            new_metrics = self.compute_metrics(  # pyrefly: ignore[bad-argument-type]
+                preds_and_labels  # pyrefly: ignore[bad-argument-type]
+            )
             metrics.update(new_metrics)
 
             # Prefix all keys with metric_key_prefix + '_'
@@ -87,7 +91,7 @@ class MultipleChoiceClassificationTrainer(Trainer):
         self.control = self.callback_handler.on_evaluate(
             self.args,
             self.state,
-            self.control,  # type: ignore[has-type]
+            self.control,  # pyrefly: ignore[has-type]
             output.metrics,
         )
         return metrics
@@ -107,7 +111,7 @@ def prepare_examples(
     Returns:
         The prepared examples.
     """
-    doc: str = examples["text"][0]  # type: ignore[bad-index]
+    doc: str = examples["text"][0]  # pyrefly: ignore[bad-index]
     sections = doc.split("\n")
 
     candidate_choice_idxs = [
@@ -145,7 +149,8 @@ def prepare_examples(
         truncation=True,
     )
     new_examples["label"] = [
-        int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])  # type: ignore[bad-index]
+        # pyrefly: ignore[bad-index]
+        int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])
         for letter, choice in zip("abcdefghijklmnopqrstuvwxyz", choices)
     ]
     new_examples["id"] = [hashlib.md5(string=doc.encode()).hexdigest()] * len(choices)
@@ -184,7 +189,8 @@ def postprocess_predictions_and_labels(
 
     pred_label_dict = defaultdict(list)
     for pred_arr, example in zip(predictions, dataset):
-        pred_label_dict[example["id"]].append((pred_arr[1], example["label"]))  # type: ignore[bad-index]
+        # pyrefly: ignore[bad-index]
+        pred_label_dict[example["id"]].append((pred_arr[1], example["label"]))
 
     # Compute the final predictions and labels
     for id_ in set(dataset["id"]):
