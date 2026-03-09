@@ -1,9 +1,4 @@
-"""Utility functions for the Every Eval Ever (EEE) output format.
-
-This module provides standalone functions for serialising and deserialising
-`BenchmarkResult` objects to and from the Every Eval Ever JSON schema v0.2.1
-(https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json).
-"""
+"""Utility functions for the Every Eval Ever (EEE) output format."""
 
 import collections.abc as c
 import datetime
@@ -16,35 +11,6 @@ from .constants import EEE_SCHEMA_VERSION
 
 if t.TYPE_CHECKING:
     from .data_models import BenchmarkResult
-
-
-def parse_optional_bool(value: str) -> bool | None:
-    """Parse a string-encoded optional boolean value.
-
-    Args:
-        value:
-            The string to parse.  `"null"` maps to `None`; any other value is
-            compared case-insensitively to `"true"`.
-
-    Returns:
-        `None` if value is `"null"`, otherwise a boolean.
-    """
-    if value == "null":
-        return None
-    return value.lower() == "true"
-
-
-def parse_optional_str(value: str) -> str | None:
-    """Parse a string-encoded optional string value.
-
-    Args:
-        value:
-            The string to parse.  `"null"` maps to `None`.
-
-    Returns:
-        `None` if value is `"null"`, otherwise the original string.
-    """
-    return None if value == "null" else value
 
 
 def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
@@ -86,20 +52,16 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
     ).isoformat()
     evaluation_id = f"{result.dataset}/{result.model}/{retrieved_timestamp}"
 
-    # Parse metric results from the results dict
     total_results: dict[str, float] = {}
-    raw_results: list = []
+    raw_results: list[str] = []
     if isinstance(result.results, dict):
-        total_val = result.results.get("total", {})
-        if isinstance(total_val, dict):
-            total_results = total_val
-        raw_val = result.results.get("raw", [])
-        if isinstance(raw_val, (list, tuple)):
-            raw_results = list(raw_val)
+        if "total" in result.results and isinstance(result.results["total"], dict):
+            total_results = result.results["total"]
+        if "raw" in result.results:
+            raw_results = list(result.results["raw"])
 
     num_samples = len(raw_results)
 
-    # Collect main metric names (exclude SE keys and num_failed_instances)
     metric_names = [
         k
         for k in total_results
@@ -111,8 +73,6 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
     evaluation_results = []
     for metric_name in metric_names:
         score = total_results[metric_name]
-        # The _se values stored in total_dict are 95% CI half-widths
-        # (1.96 * SE, scaled by postprocessing_fn). Use confidence_interval.
         ci_half_width = total_results.get(f"{metric_name}_se", float("nan"))
 
         score_details: dict = {
@@ -133,8 +93,6 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         if uncertainty:
             score_details["uncertainty"] = uncertainty
 
-        # Only add score_type/min_score/max_score for non-speed metrics since
-        # speed is measured in tokens/second with no upper bound
         is_speed_metric = "speed" in metric_name
         metric_config: dict = {"lower_is_better": False}
         if not is_speed_metric:
@@ -154,7 +112,6 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
             }
         )
 
-    # Determine inference engine info
     inference_engine: dict = {}
     if result.litellm_version:
         inference_engine = {"name": "litellm", "version": result.litellm_version}
@@ -175,9 +132,9 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
             "vocabulary_size": str(result.vocabulary_size),
             "merge": str(result.merge).lower(),
             "generative": str(result.generative).lower(),
-            "generative_type": (
-                result.generative_type if result.generative_type is not None else "null"
-            ),
+            "generative_type": result.generative_type
+            if result.generative_type is not None
+            else None,
         },
     }
     if inference_engine:
@@ -187,19 +144,17 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         "dataset": result.dataset,
         "languages": json.dumps(list(result.languages), ensure_ascii=False),
         "task": result.task,
-        "few_shot": (
-            str(result.few_shot).lower() if result.few_shot is not None else "null"
-        ),
-        "validation_split": (
-            str(result.validation_split).lower()
-            if result.validation_split is not None
-            else "null"
-        ),
-        "transformers_version": result.transformers_version or "null",
-        "torch_version": result.torch_version or "null",
-        "vllm_version": result.vllm_version or "null",
-        "xgrammar_version": result.xgrammar_version or "null",
-        "litellm_version": result.litellm_version or "null",
+        "few_shot": str(result.few_shot).lower()
+        if result.few_shot is not None
+        else None,
+        "validation_split": str(result.validation_split).lower()
+        if result.validation_split is not None
+        else None,
+        "transformers_version": result.transformers_version or None,
+        "torch_version": result.torch_version or None,
+        "vllm_version": result.vllm_version or None,
+        "xgrammar_version": result.xgrammar_version or None,
+        "litellm_version": result.litellm_version or None,
         "raw_results": json.dumps(raw_results, ensure_ascii=False),
     }
 
@@ -240,7 +195,8 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
     Returns:
         The reconstructed benchmark result.
     """
-    from .data_models import BenchmarkResult
+    # Importing here to avoid circular imports
+    from .data_models import BenchmarkResult  # noqa: PLC0415
 
     model_info = config.get("model_info", {})
     eval_library = config.get("eval_library", {})
@@ -250,20 +206,17 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
     model_additional = model_info.get("additional_details", {})
     eval_lib_additional = eval_library.get("additional_details", {})
 
-    # Extract dataset name from evaluation_results or additional_details
     if evaluation_results:
         dataset = evaluation_results[0].get("source_data", {}).get("dataset_name", "")
     else:
         dataset = eval_lib_additional.get("dataset", "")
 
-    # Reconstruct raw results from stored JSON
     raw_results_json = eval_lib_additional.get("raw_results", "[]")
     try:
         raw_results = json.loads(raw_results_json)
     except json.JSONDecodeError:
         raw_results = []
 
-    # Reconstruct total dict from evaluation_results
     total_dict: dict[str, float] = {}
     for eval_result in evaluation_results:
         metric_name = eval_result.get("evaluation_name", "")
@@ -306,31 +259,52 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
         vocabulary_size=int(model_additional.get("vocabulary_size", "0") or "0"),
         merge=model_additional.get("merge", "false") == "true",
         generative=model_additional.get("generative", "false") == "true",
-        generative_type=parse_optional_str(
-            model_additional.get("generative_type", "null")
-        ),
-        few_shot=parse_optional_bool(eval_lib_additional.get("few_shot", "null")),
+        generative_type=parse_optional_str(model_additional.get("generative_type")),
+        few_shot=parse_optional_bool(eval_lib_additional.get("few_shot")),
         validation_split=parse_optional_bool(
-            eval_lib_additional.get("validation_split", "null")
+            eval_lib_additional.get("validation_split")
         ),
         euroeval_version=parse_optional_str(
-            eval_library.get("version", "null")
-            if eval_library.get("version") != "unknown"
-            else "null"
+            None
+            if eval_library.get("version") == "unknown"
+            else eval_library.get("version")
         ),
         transformers_version=parse_optional_str(
-            eval_lib_additional.get("transformers_version", "null")
+            eval_lib_additional.get("transformers_version")
         ),
-        torch_version=parse_optional_str(
-            eval_lib_additional.get("torch_version", "null")
-        ),
-        vllm_version=parse_optional_str(
-            eval_lib_additional.get("vllm_version", "null")
-        ),
+        torch_version=parse_optional_str(eval_lib_additional.get("torch_version")),
+        vllm_version=parse_optional_str(eval_lib_additional.get("vllm_version")),
         xgrammar_version=parse_optional_str(
-            eval_lib_additional.get("xgrammar_version", "null")
+            eval_lib_additional.get("xgrammar_version")
         ),
-        litellm_version=parse_optional_str(
-            eval_lib_additional.get("litellm_version", "null")
-        ),
+        litellm_version=parse_optional_str(eval_lib_additional.get("litellm_version")),
     )
+
+
+def parse_optional_str(value: str | None) -> str | None:
+    """Parse a string-encoded optional string value.
+
+    Args:
+        value:
+            The string to parse.  `None` maps to `None`.
+
+    Returns:
+        `None` if value is `None`, otherwise the original string.
+    """
+    return None if value is None else value
+
+
+def parse_optional_bool(value: str | None) -> bool | None:
+    """Parse a string-encoded optional boolean value.
+
+    Args:
+        value:
+            The string to parse. `None` maps to `None`; any other value is
+            compared case-insensitively to `"true"`.
+
+    Returns:
+        `None` if value is `None`, otherwise a boolean.
+    """
+    if value is None:
+        return None
+    return value.lower() == "true"

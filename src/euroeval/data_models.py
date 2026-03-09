@@ -671,7 +671,7 @@ class DatasetConfig:
                 If the dataset has no languages.
         """
         # Importing here to avoid circular imports
-        from .tasks import TRANSLATION
+        from .tasks import TRANSLATION  # noqa: PLC0415
 
         # Special case for datasets with multiple languages
         if self.task == TRANSLATION:

@@ -143,8 +143,9 @@ skip-magic-trailing-comma = true
 [tool.ruff.lint]
 preview = true
 select = [
-    # isort (imports)
+    # Imports
     "I",
+    "PLC0415",
     # Docstrings
     "D",
     "DOC",

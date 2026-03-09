@@ -5,7 +5,7 @@ import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
-import torch
+import torch.version
 
 
 class TestFlashAttnCheck:
@@ -40,9 +40,7 @@ class TestFlashAttnCheck:
             # Re-run the check logic from __init__.py under mocked conditions
             if importlib.util.find_spec("flash_attn") is not None:
                 try:
-                    import torch as _torch
-
-                    _is_rocm = _torch.version.hip is not None
+                    _is_rocm = torch.version.hip is not None
                 except (ImportError, AttributeError):
                     _is_rocm = False
                 if not _is_rocm:
