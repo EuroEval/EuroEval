@@ -1212,22 +1212,67 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Hvad er den korrekte fortolkning af ordet 'brænde' i følgende sætning?\n'Pigen brændte for at blive læge.'\nSvarmuligheder:\na. Pigen ønskede stærkt at blive læge\nb. Pigen var fysisk omgivet af flammer\nc. Pigen var ligeglad med at blive læge\nd. Pigen ønskede at blive brandmand",
-  "label": "a"
+    "ID": "b049",
+    "word": "lægning",
+    "sentence": "De kan færdes uantastede blandt ellers dybt mistænksomme personager af skurkagtig lægning",
+    "A": "De kan færdes uantastede blandt ellers dybt mistænksomme personager med en skurkagtig forhistorie",
+    "B": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som har lagt mange kartofler",
+    "C": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som har mistet besindelsen",
+    "D": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som ser smukke ud",
+    "label": "a",
+    "lit_dis": "B",
+    "fig_dis": "C",
+    "con_dis": "D",
+    "type": "3",
+    "domain": "-",
+    "DDO_sense_number": "-",
+    "source": "adhoc from news",
+    "annotator": "BSP",
+    "text": "Hvad er den korrekte fortolkning af ordet 'lægning' i følgende sætning?\n'De kan færdes uantastede blandt ellers dybt mistænksomme personager af skurkagtig lægning'\nSvarmuligheder:\na. De kan færdes uantastede blandt ellers dybt mistænksomme personager med en skurkagtig forhistorie\nb. De kan færdes uantastede blandt ellers dybt mistænksomme personager som har lagt mange kartofler\nc. De kan færdes uantastede blandt ellers dybt mistænksomme personager som har mistet besindelsen\nd. De kan færdes uantastede blandt ellers dybt mistænksomme personager som ser smukke ud"
 }
 ```
 
 ```json
 {
-  "text": "Hvad er den korrekte fortolkning af ordet 'falde' i følgende sætning?\n'Priserne faldt kraftigt i løbet af ugen.'\nSvarmuligheder:\na. Priserne bevægede sig fysisk nedad\nb. Priserne steg markant i perioden\nc. Priserne blev reduceret betydeligt\nd. Priserne var uændrede hele ugen",
-  "label": "c"
+    "ID": "n088",
+    "word": "forhøje",
+    "sentence": "Der er tale om forhøjede niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "A": "Der er tale om at fremme niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "B": "Der er tale om ekstra høje niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "C": "Der er tale om at øge højden på stueplan med såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "D": "Der er tale om ret lave niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "label": "b",
+    "lit_dis": "C",
+    "fig_dis": "A",
+    "con_dis": "D",
+    "type": "1",
+    "domain": "-",
+    "DDO_sense_number": "1a",
+    "source": "dafig",
+    "annotator": "SOL",
+    "text": "Hvad er den korrekte fortolkning af ordet 'forhøje' i følgende sætning?\n'Der er tale om forhøjede niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.'\nSvarmuligheder:\na. Der er tale om at fremme niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nb. Der er tale om ekstra høje niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nc. Der er tale om at øge højden på stueplan med såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nd. Der er tale om ret lave niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse."
 }
 ```
 
 ```json
 {
-  "text": "Hvad er den korrekte fortolkning af ordet 'bygge' i følgende sætning?\n'Politikerne byggede bro mellem de to partier.'\nSvarmuligheder:\na. Politikerne opbyggede en fysisk bro\nb. Politikerne skabte forbindelser og forsoning\nc. Politikerne ødelagde forholdet mellem partierne\nd. Politikerne byggede en bro til et nyt land",
-  "label": "b"
+    "ID": "n291",
+    "word": "rulle",
+    "sentence": "Og det kan være, at der snart ruller millioner ind i statskassen fra vanvidsbilisme.",
+    "A": "Og det kan være, at der snart triller millioner af mønter ind i statskassen fra vanvidsbilisme.",
+    "B": "Og det kan være, at der snart kan spenderes millioner af statskassen fra vanvidsbilisme.",
+    "C": "Og det kan være, at der snart kommer millioner ind i statskassen fra vanvidsbilisme.",
+    "D": "Og det kan være, at der snart er millioner i omløb i statskassen fra vanvidsbilisme.",
+    "label": "c",
+    "lit_dis": "A",
+    "fig_dis": "D",
+    "con_dis": "B",
+    "type": "1",
+    "domain": "-",
+    "DDO_sense_number": "1c",
+    "source": "dafig",
+    "annotator": "SOL",
+    "text": "Hvad er den korrekte fortolkning af ordet 'rulle' i følgende sætning?\n'Og det kan være, at der snart ruller millioner ind i statskassen fra vanvidsbilisme.'\nSvarmuligheder:\na. Og det kan være, at der snart triller millioner af mønter ind i statskassen fra vanvidsbilisme.\nb. Og det kan være, at der snart kan spenderes millioner af statskassen fra vanvidsbilisme.\nc. Og det kan være, at der snart kommer millioner ind i statskassen fra vanvidsbilisme.\nd. Og det kan være, at der snart er millioner i omløb i statskassen fra vanvidsbilisme."
 }
 ```
 

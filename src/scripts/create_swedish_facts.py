@@ -86,7 +86,7 @@ def main() -> None:
     test_df = test_df.reset_index(drop=True)
 
     # Collect datasets in a dataset dictionary
-    dataset_dict = DatasetDict(
+    dataset_dict = DatasetDict(  # pyrefly: ignore[no-matching-overload]
         train=Dataset.from_pandas(train_df, split=Split.TRAIN),
         val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
         test=Dataset.from_pandas(test_df, split=Split.TEST),

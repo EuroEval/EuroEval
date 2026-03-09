@@ -85,11 +85,15 @@ from ..utils import (
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 
 try:
-    from transformers.tokenization_mistral_common import MistralCommonTokenizer
+    from transformers.tokenization_mistral_common import (
+        MistralCommonTokenizer,  # pyrefly: ignore[missing-module-attribute]
+    )
 except ImportError:
     from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MistralCommonTokenizer,
+        MistralCommonBackend as MCB,  # pyrefly: ignore[missing-module-attribute]
     )
+
+    MistralCommonTokenizer = MCB  # pyrefly: ignore[assignment]
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     import vllm.config
@@ -195,7 +199,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 benchmark_config=benchmark_config,
                 attention_backend=benchmark_config.attention_backend,
             )
-        self._model: "LLM" = model
+        self._model: t.Any = model  # pyrefly: ignore[bad-override]
         self._tokeniser: Tokeniser = tokeniser
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
@@ -375,7 +379,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         else:
             few_shot_examples = list()
 
-        dataset["test"] = dataset["test"].map(  # type: ignore[unsupported-operation]
+        dataset["test"] = dataset["test"].map(  # pyrefly: ignore[unsupported-operation]
             partial(
                 apply_prompt,
                 few_shot_examples=few_shot_examples,
@@ -1385,7 +1389,9 @@ def get_end_of_reasoning_token(
     output = model.generate(
         prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
     )[0]
-    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
+    completion = tokeniser.decode(
+        token_ids=list(output.outputs[0].token_ids)
+    )  # pyrefly: ignore[bad-argument-type]
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
@@ -1418,7 +1424,9 @@ def get_end_of_reasoning_token(
         sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
+    completion = tokeniser.decode(
+        token_ids=list(output.outputs[0].token_ids)
+    )  # pyrefly: ignore[bad-argument-type]
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
@@ -1510,7 +1518,9 @@ def get_custom_stop_tokens(
         sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
+    completion = tokeniser.decode(
+        token_ids=list(output.outputs[0].token_ids)
+    )  # pyrefly: ignore[bad-argument-type]
 
     stop_tokens = [
         stop_token

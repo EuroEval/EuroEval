@@ -117,7 +117,13 @@ def test_accuracy_ambig_accepts_numpy_ints(
     """Accept numpy integer predictions."""
     ds = make_dataset("ambig", [1, 2, 0], None, 3)
     preds = np.array([0, 0, 0], dtype=np.int64)
-    assert accuracy_ambig_metric(preds, [], ds, None, None) == pytest.approx(1.0)
+    assert accuracy_ambig_metric(
+        predictions=preds,  # pyrefly: ignore[bad-argument-type]
+        references=[],
+        dataset=ds,
+        dataset_config=None,  # pyrefly: ignore[bad-argument-type]
+        benchmark_config=None,  # pyrefly: ignore[bad-argument-type]
+    ) == pytest.approx(1.0)
 
 
 # --- Bias-adjusted accuracy metrics ---

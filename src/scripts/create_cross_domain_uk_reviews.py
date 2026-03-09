@@ -110,7 +110,9 @@ def create_uniform_label_distribution(
     ]
 
     # Combine the resampled dataframes
-    balanced_df = pd.concat(resampled_dfs, ignore_index=True)
+    balanced_df = pd.concat(  # pyrefly: ignore[no-matching-overload]
+        resampled_dfs, ignore_index=True
+    )
 
     # Shuffle the dataframe
     balanced_df = balanced_df.sample(frac=1, random_state=random_state).reset_index(

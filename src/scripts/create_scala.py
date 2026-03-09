@@ -463,7 +463,7 @@ def prepare_df(df: pd.DataFrame, split: str) -> Dataset:
     df = df.sample(frac=1.0, random_state=4242).reset_index(drop=True)
 
     # Convert the dataframe to a Hugging Face Dataset and return it
-    return Dataset.from_pandas(df, split=split)  # type: ignore[bad-argument-type]
+    return Dataset.from_pandas(df, split=split)  # pyrefly: ignore[bad-argument-type]
 
 
 def make_splits(

@@ -71,8 +71,6 @@ def main() -> None:
     # Lowercase the label (A -> a, B -> b, etc.)
     df["label"] = df["label"].str.lower()
 
-    df = df[["text", "label"]]
-
     # Remove duplicates
     df.drop_duplicates(inplace=True)
     df.reset_index(drop=True, inplace=True)

@@ -46,7 +46,9 @@ def main() -> None:
         )
 
     # Build the 'text' column by combining the target word and context
-    df["text"] = "Ord: " + df["target"] + "\nKontekst: " + df["context"]
+    df["text"] = (
+        "Ord: " + df["target"].astype(str) + "\nKontekst: " + df["context"].astype(str)
+    )  # pyrefly: ignore[unsupported-operation]
 
     # Map the sentiment scale (-3 to +3) to positive/neutral/negative labels
     def map_label(score: int) -> str:

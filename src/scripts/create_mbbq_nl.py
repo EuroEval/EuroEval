@@ -143,7 +143,7 @@ def format_row(row: dict[str, t.Any]) -> dict[str, t.Any]:
 
 def extract_bias_indices(
     answer_info: dict[str, list[t.Any]], additional_metadata: dict[str, t.Any]
-) -> tuple[t.Optional[int], t.Optional[int], t.Optional[int]]:
+) -> tuple[int | None, int | None, int | None]:
     """Determine the bias indices from one MBBQ row.
 
     From one MBBQ row, determine:
