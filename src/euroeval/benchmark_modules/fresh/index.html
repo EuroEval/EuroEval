@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1345,7 +1349,12 @@
 <span class="normal">320</span>
 <span class="normal">321</span>
 <span class="normal">322</span>
-<span class="normal">323</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Freshly initialised encoder models.&quot;&quot;&quot;</span>
+<span class="normal">323</span>
+<span class="normal">324</span>
+<span class="normal">325</span>
+<span class="normal">326</span>
+<span class="normal">327</span>
+<span class="normal">328</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Freshly initialised encoder models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -1420,9 +1429,10 @@
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">allowed_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allowed_params</span>
         <span class="p">)</span>
 
-        <span class="c1"># This is already set when calling `super.__init__`, but we need it to get a</span>
-        <span class="c1"># value from `self.model_max_length`, so we set it here as well.</span>
+        <span class="c1"># These are already set when calling `super().__init__`, but we need them to get</span>
+        <span class="c1"># values from `self.model_max_length`, so we set them here as well.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span> <span class="o">=</span> <span class="n">model_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span> <span class="o">=</span> <span class="n">benchmark_config</span>
 
         <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_model_and_tokeniser</span><span class="p">(</span>
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
@@ -1474,6 +1484,8 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The vocabulary size of the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">vocabulary_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">vocabulary_size</span>
         <span class="k">match</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">:</span>
             <span class="k">case</span> <span class="s2">&quot;fresh-xlm-roberta-base&quot;</span><span class="p">:</span>
                 <span class="k">return</span> <span class="mi">250_002</span>
@@ -1492,6 +1504,8 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The maximum context length of the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">max_context_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">max_context_length</span>
         <span class="k">match</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">:</span>
             <span class="k">case</span> <span class="s2">&quot;fresh-xlm-roberta-base&quot;</span><span class="p">:</span>
                 <span class="k">return</span> <span class="mi">512</span>

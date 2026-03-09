@@ -573,6 +573,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1280,6 +1284,34 @@
     <span class="md-ellipsis">
       
         Unofficial: MultiWikiQA-fi
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Knowledge
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Knowledge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-include-fi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-fi
       
     </span>
   </a>
@@ -2250,6 +2282,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#knowledge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Knowledge
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Knowledge">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-include-fi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-fi
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#common-sense-reasoning" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2812,6 +2872,59 @@ Kysymys: {question}
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multi-wiki-qa-fi
+</code></pre></div>
+<h2 id="knowledge">Knowledge<a class="headerlink" href="#knowledge" title="Permanent link">&para;</a></h2>
+<h3 id="unofficial-include-fi">Unofficial: INCLUDE-fi<a class="headerlink" href="#unofficial-include-fi" title="Permanent link">&para;</a></h3>
+<p>This dataset is part of <a href="https://doi.org/10.48550/arXiv.2411.19799">INCLUDE</a>, a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.</p>
+<p>The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.</p>
+<p>Here are a few examples from the dataset:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Miten hermoimpulssin aikana tapahtuva K+-kanavien aukeaminen vaikuttaa hermosolun toimintaan?\nVastausvaihtoehdot:\na. Lepojännitteen palautuminen nopeutuu.\nb. Hermosolukalvon sähkönjohtavuus vähenee.\nc. Välittäjäaineen vapautuminen lisääntyy.\nd. Hermoimpulssin kesto pitenee.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Medicine&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mikä vaihtoehdoista ei kuulu hyvin toimivien markkinoiden synnyttämiin hyötyihin?\nVastausvaihtoehdot:\na. Hyvin toimivat markkinat mahdollistavat erikoistumisen.\nb. Hyvin toimivat markkinat takaavat että tulot jakautuvat oikeudenmukaisesti.\nc. Hyvin toimivat markkinat mahdollistavat skaalaetujen hyödyntämisen.\nd. Hyvin toimivat markkinat takaavat että resurssit kohdentuvat sinne missä ne tuottavat parhaiten.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Economics&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Eräs professori totesi sijoittamisesta Viisas Raha -lehdessä 27.6.2023: ”Hajauttamisen laajuuteen vaikuttavat ennen kaikkea sijoittajan ikä ja riskinkantokyky. Mitä nuorempi henkilö ja pidempi sijoitushorisontti on kyseessä, sitä isommalla painolla voi olla mukana osakemarkkinoilla. Kun ikää tulee lisää, saattavat korkosijoitukset houkutella enemmän.” Mikä seuraavista väittämistä pitää paikkansa?\nVastausvaihtoehdot:\na. Hajauttamisella viitataan usein sanontaan laita kaikki munat samaan koriin. Maailman varakkaimmat henkilöt ovat tehneet juuri näin ja sen avulla luoneet suuria omaisuuksia.\nb. Perinteisten sijoitusperiaatteiden mukaan sijoitussalkun suhteellista riskiä kannattaa kasvattaa sijoittajan iän karttuessa. Selityksenä tähän on se, että palkka ja eläke yleensä nousevat iän myötä.\nc. Korkosijoituksia ovat esimerkiksi määräaikaiset talletukset, rahamarkkinarahastot ja obligaatiot. Riskiä pohtiessa kannattaa huomioida, että jo liikkeeseen lasketun kiinteäkorkoisen obligaation arvo laskee, jos korkotaso nousee.\nd. Riskinkantokyvyllä tarkoitetaan samaa kuin riskihalukkuudella. Mitä korkeampi riski, sitä korkeampi toteutunut tuotto.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Economics&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Seuraavat ovat monivalintakysymyksiä (vastauksineen).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Kysymys: {text}
+Vastaus: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Kysymys: {text}
+
+Vastaa yllä olevaan kysymykseen käyttämällä {labels_str}, äläkä mitään muuta.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>include-fi
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
 <h3 id="hellaswag-fi">HellaSwag-fi<a class="headerlink" href="#hellaswag-fi" title="Permanent link">&para;</a></h3>

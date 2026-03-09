@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1005,10 +1009,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.metrics.Fluency" class="md-nav__link">
+  <a href="#euroeval.metrics.create_model_graded_fact_metric" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fluency
+        create_model_graded_fact_metric
       
     </span>
   </a>
@@ -1060,10 +1064,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.metrics.ChrF" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ChrF
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.metrics.SpeedMetric" class="md-nav__link">
     <span class="md-ellipsis">
       
         SpeedMetric
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.metrics.ToolCallingAccuracy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ToolCallingAccuracy
       
     </span>
   </a>
@@ -1106,21 +1132,25 @@
 </span><span class="mkapi-object-kind">package</span>
 <span class="mkapi-object-name"><a href="./#euroeval.metrics" title="euroeval.metrics">euroeval.metrics</a></span>
 </p>
-<div class="mkapi-source no-copy highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span>
-<span class="normal">6</span>
-<span class="normal">7</span>
-<span class="normal">8</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All the metrics used in EuroEval.&quot;&quot;&quot;</span>
+<div class="mkapi-source no-copy highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 1</span>
+<span class="normal"> 2</span>
+<span class="normal"> 3</span>
+<span class="normal"> 4</span>
+<span class="normal"> 5</span>
+<span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All the metrics used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.bias</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.huggingface</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.ifeval</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.llm_as_a_judge</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.sacrebleu</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.speed</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.tool_calling</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>  <span class="c1"># noqa: F403</span>
 </code></pre></div></td></tr></table></div>
 
 

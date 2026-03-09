@@ -575,6 +575,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -924,6 +928,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#overriding-model-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overriding model metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#benchmarking-custom-datasets" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -934,6 +949,17 @@
   
     <nav class="md-nav" aria-label="Benchmarking custom datasets">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-column-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom column names
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#creating-your-own-custom-task" class="md-nav__link">
@@ -959,6 +985,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Analysing the results of generative models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#failed-instances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failed instances
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detailed-model-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detailed model outputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1123,6 +1177,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#overriding-model-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overriding model metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#benchmarking-custom-datasets" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1133,6 +1198,17 @@
   
     <nav class="md-nav" aria-label="Benchmarking custom datasets">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-column-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom column names
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#creating-your-own-custom-task" class="md-nav__link">
@@ -1158,6 +1234,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Analysing the results of generative models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#failed-instances" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failed instances
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#detailed-model-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detailed model outputs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1347,23 +1451,47 @@ still require an internet connection during the evaluation of these. If offline
 support of adapters is important to you, please consider <a href="https://github.com/EuroEval/EuroEval/issues">opening an
 issue</a>.</p>
 </div>
+<h2 id="overriding-model-metadata">Overriding model metadata<a class="headerlink" href="#overriding-model-metadata" title="Permanent link">&para;</a></h2>
+<p>Some models do not have metadata (maximum context length and vocabulary size) specified,
+or have it specified incorrectly. This leads to incorrect values on the leaderboards.
+To work around this you can manually override these values using the
+<code>--max-context-length</code> and <code>--vocabulary-size</code> arguments:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Using the command line</label><label for="__tabbed_3_2">Using a script</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--max-context-length<span class="w"> </span><span class="m">4096</span><span class="w"> </span>--vocabulary-size<span class="w"> </span><span class="m">32000</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">benchmarker</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span>
+<span class="o">...</span>     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;&lt;model-id&gt;&quot;</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">max_context_length</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span>
+<span class="o">...</span>     <span class="n">vocabulary_size</span><span class="o">=</span><span class="mi">32000</span><span class="p">,</span>
+<span class="o">...</span> <span class="p">)</span>
+</code></pre></div>
+</div>
+</div>
+</div>
 <h2 id="benchmarking-custom-datasets">Benchmarking custom datasets<a class="headerlink" href="#benchmarking-custom-datasets" title="Permanent link">&para;</a></h2>
 <p>If you want to benchmark models on your own custom dataset, this is also possible.
 First, you need to set up your dataset to be compatible with EuroEval. This means
-splitting up your dataset in a training, validation and test split, and ensuring that
-the column names are correct. We use <code>text</code> as the column name for the input text, and
-the output column name depends on the type of task:</p>
+splitting up your dataset in a training, validation and test split. By default, EuroEval
+expects these standard column names:</p>
 <ul>
-<li><strong>Text or multiple-choice classification</strong>: <code>label</code></li>
-<li><strong>Token classification</strong>: <code>labels</code></li>
-<li><strong>Reading comprehension</strong>: <code>answers</code></li>
-<li><strong>Free-form text generation</strong>: <code>target_text</code></li>
+<li><strong>Text or multiple-choice classification</strong>: <code>text</code> and <code>label</code></li>
+<li><strong>Token classification</strong>: <code>tokens</code> and <code>labels</code></li>
+<li><strong>Reading comprehension</strong>: <code>text</code> and <code>answers</code></li>
+<li><strong>Free-form text generation</strong>: <code>text</code> and <code>target_text</code></li>
 </ul>
+<p>If your dataset uses different column names, you can specify the mapping via
+<code>input_column</code>, <code>target_column</code>, and <code>choices_column</code> in <code>DatasetConfig</code> (see
+<a href="#custom-column-names">Custom column names</a> below) — no need to rename your columns
+beforehand.</p>
 <p>Text and multiple-choice classification tasks are by far the most common. Then you can
 decide whether your dataset should be accessible locally (good for testing, and good for
 sensitive datasets), or accessible via the Hugging Face Hub (good for allowing others to
 benchmark on your dataset).</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Local dataset</label><label for="__tabbed_3_2">Hugging Face Hub dataset</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:3"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><input id="__tabbed_4_3" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Local dataset</label><label for="__tabbed_4_2">Hugging Face Hub dataset (YAML config)</label><label for="__tabbed_4_3">Hugging Face Hub dataset (Python config)</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>For a local dataset, you store your three dataset splits as three different CSV files
@@ -1394,12 +1522,122 @@ dataset configuration directly into the <code>benchmark</code> method:</p>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<p>For a dataset that is accessible via the Hugging Face Hub, you simply need to create a
+<p>The simplest and most secure way to add a EuroEval configuration to a Hugging Face Hub
+dataset is via a YAML file. No Python code is written, so no <code>--trust-remote-code</code> flag
+is required.</p>
+<p>Create a file called <code>eval.yaml</code> in the root of your dataset repository. The file
+follows the <a href="https://inspect.aisi.org.uk/tasks.html#hugging-face">Inspect AI <code>eval.yaml</code> format</a>
+and works with both Inspect AI and EuroEval:</p>
+<div class="highlight"><span class="filename">eval.yaml</span><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">My Dataset</span>
+<span class="nt">tasks</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_dataset</span>
+<span class="w">    </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<span class="w">    </span><span class="nt">field_spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">input</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">review</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sentiment</span>
+<span class="w">    </span><span class="nt">solvers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate</span>
+<span class="w">    </span><span class="nt">scorers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">choice</span>
+<span class="c1"># EuroEval-specific keys (optional; ignored by Inspect AI)</span>
+<span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">classification</span>
+<span class="nt">languages</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">en</span>
+<span class="nt">labels</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">positive</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">negative</span>
+</code></pre></div>
+<p>The EuroEval-specific keys (<code>task</code>, <code>languages</code>, <code>labels</code>, and all other
+<code>DatasetConfig</code> arguments) are placed at the top level alongside the standard Inspect
+AI <code>tasks</code> block.  Inspect AI silently ignores keys it does not recognise, so the same
+file works for both frameworks.</p>
+<p>The value of <code>task</code> must be one of the task names used in EuroEval
+(e.g. <code>classification</code>, <code>sentiment-classification</code>,
+<code>named-entity-recognition</code>, <code>multiple-choice</code>, etc.).  <code>languages</code> is a list of
+<a href="https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes">ISO 639-1</a> language codes.</p>
+<p>All other <code>DatasetConfig</code> arguments are also supported:</p>
+<div class="highlight"><span class="filename">eval.yaml</span><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">My Dataset</span>
+<span class="nt">tasks</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_dataset</span>
+<span class="w">    </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<span class="w">    </span><span class="nt">field_spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">input</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">review</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sentiment</span>
+<span class="w">    </span><span class="nt">solvers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">generate</span>
+<span class="w">    </span><span class="nt">scorers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">choice</span>
+<span class="c1"># EuroEval-specific keys (optional; ignored by Inspect AI)</span>
+<span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">classification</span>
+<span class="nt">languages</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">en</span>
+<span class="nt">labels</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">positive</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">negative</span>
+<span class="nt">num_few_shot_examples</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12</span>
+<span class="nt">max_generated_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="nt">prompt_label_mapping</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">positive</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">positive</span>
+<span class="w">  </span><span class="nt">negative</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">negative</span>
+</code></pre></div>
+<p>The EuroEval-specific <code>task</code> and <code>languages</code> keys are <strong>optional</strong> — EuroEval will
+infer them automatically when they are absent:</p>
+<ul>
+<li><strong><code>task</code></strong> is inferred from the Inspect AI <code>tasks</code> block: a solver with
+  <code>name: multiple_choice</code> <strong>or</strong> a <code>field_spec.choices</code> entry both map to the
+  <code>multiple-choice</code> task.</li>
+<li><strong><code>languages</code></strong> are read from the Hugging Face Hub repository metadata
+  (the <code>language</code> field in the dataset card).  If the language cannot be determined,
+  EuroEval defaults to English and logs a warning.</li>
+</ul>
+<p>This means a standard Inspect AI <code>eval.yaml</code> with no EuroEval-specific keys works
+out of the box:</p>
+<div class="highlight"><span class="filename">eval.yaml</span><pre><span></span><code><span class="c1"># Pure Inspect AI format — no EuroEval keys required</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">My Dataset</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">My dataset description.</span>
+<span class="nt">tasks</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_dataset</span>
+<span class="w">    </span><span class="nt">split</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test</span>
+<span class="w">    </span><span class="nt">field_spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">input</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">question</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">answer</span>
+<span class="w">      </span><span class="nt">choices</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">options</span>
+<span class="w">    </span><span class="nt">solvers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">multiple_choice</span>
+<span class="w">    </span><span class="nt">scorers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">choice</span>
+</code></pre></div>
+<p>Column names can also be supplied as flat top-level keys (<code>input_column</code>,
+<code>target_column</code>, <code>choices_column</code>) instead of inside the <code>field_spec</code> block;
+top-level keys take precedence when both are present.  Note that Inspect AI allows
+<code>field_spec.target</code> values such as <code>"literal:A"</code> (a hard-coded answer string) and
+bare integers (mapped to letters A, B, C … by Inspect AI); EuroEval silently ignores
+both forms because they are not column names.</p>
+<p>The standard Inspect AI task keys are also used directly by EuroEval:</p>
+<ul>
+<li><strong><code>tasks[0].split</code></strong> — the evaluation split to use (e.g. <code>test</code>, <code>validation</code>).
+  EuroEval uses this as the test split, so no separate EuroEval key is needed.</li>
+<li><strong><code>tasks[0].config</code></strong> — the Hugging Face dataset config/subset name (e.g. <code>main</code>,
+  <code>default</code>).  EuroEval automatically appends it when loading the dataset.</li>
+</ul>
+<p>You can then benchmark your custom dataset by simply running</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--dataset<span class="w"> </span>&lt;org-id&gt;/&lt;repo-id&gt;<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;
+</code></pre></div>
+<p>or from a Python script:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">Benchmarker</span>
+
+<span class="n">benchmarker</span> <span class="o">=</span> <span class="n">Benchmarker</span><span class="p">()</span>
+<span class="n">benchmarker</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;&lt;model-id&gt;&quot;</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="s2">&quot;&lt;org-id&gt;/&lt;repo-id&gt;&quot;</span><span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>For a dataset that is accessible via the Hugging Face Hub, you can also create a
 file called <code>euroeval_config.py</code> in the root of your repository, in which you define
-the associated dataset configuration. Note that you don't need to specify the <code>name</code>,
-<code>pretty_name</code> or <code>source</code> arguments in this case, as these are automatically inferred
-from the repository name. Here is an example of a simple text classification
-dataset with two classes:</p>
+the associated dataset configuration. This gives you full Python flexibility (e.g.
+custom preprocessing functions) but requires the <code>--trust-remote-code</code> flag.  Note
+that you don't need to specify the <code>name</code>, <code>pretty_name</code> or <code>source</code> arguments in this
+case, as these are automatically inferred from the repository name. Here is an example
+of a simple text classification dataset with two classes:</p>
 <div class="highlight"><span class="filename">euroeval_config.py</span><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">TEXT_CLASSIFICATION</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">ENGLISH</span>
 
@@ -1411,10 +1649,11 @@ dataset with two classes:</p>
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>To benchmark a dataset from the Hugging Face Hub, you always need to set the
-<code>--trust-remote-code</code> flag (or <code>trust_remote_code=True</code> if using the <code>Benchmarker</code>),
-as the dataset configuration is loaded from the remote code. We advise you to always
-look at the code of the dataset configuration before running the benchmark.</p>
+<p>To benchmark a dataset from the Hugging Face Hub using a Python config, you always
+need to set the <code>--trust-remote-code</code> flag (or <code>trust_remote_code=True</code> if using
+the <code>Benchmarker</code>), as the dataset configuration is loaded from the remote code.
+We advise you to always look at the code of the dataset configuration before running
+the benchmark.</p>
 </div>
 <p>You can then benchmark your custom dataset by simply running</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--dataset<span class="w"> </span>&lt;org-id&gt;/&lt;repo-id&gt;<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--trust-remote-code
@@ -1435,6 +1674,67 @@ dataset</a>:</p>
 </div>
 </div>
 </div>
+<h3 id="custom-column-names">Custom column names<a class="headerlink" href="#custom-column-names" title="Permanent link">&para;</a></h3>
+<p>If your dataset uses column names that differ from EuroEval's expected names, you can
+specify a column mapping directly in <code>DatasetConfig</code> using the <code>input_column</code>,
+<code>target_column</code>, and <code>choices_column</code> arguments. EuroEval will rename (or merge) the
+columns at load time, so you don't need to preprocess your dataset beforehand.</p>
+<p><strong><code>input_column</code></strong> — the name of the column containing the input text. Defaults to
+<code>"text"</code> (no rename). If set to a different value, that column is renamed to <code>"text"</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-dataset&quot;</span><span class="p">,</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">input_column</span><span class="o">=</span><span class="s2">&quot;review&quot;</span><span class="p">,</span>   <span class="c1"># rename &quot;review&quot; → &quot;text&quot;</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><strong><code>target_column</code></strong> — the name of the column containing the label. If set, the column
+is renamed to the task-appropriate standard name (<code>"label"</code> for classification,
+<code>"labels"</code> for token classification, <code>"target_text"</code> for text-to-text).</p>
+<div class="highlight"><pre><span></span><code><span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-dataset&quot;</span><span class="p">,</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">target_column</span><span class="o">=</span><span class="s2">&quot;sentiment&quot;</span><span class="p">,</span>   <span class="c1"># rename &quot;sentiment&quot; → &quot;label&quot; (for classification)</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><strong><code>choices_column</code></strong> — for multiple-choice tasks, the column (or list of columns)
+containing the answer choices. A single string names a column that holds a <em>list</em> of
+choice strings. A list of strings names separate columns, each holding one choice
+string. When set, the input text and choices are automatically merged into the
+formatted <code>"text"</code> column that EuroEval expects.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Single column holding a list of choices</span>
+<span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-mcq-dataset&quot;</span><span class="p">,</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">choices_column</span><span class="o">=</span><span class="s2">&quot;choices&quot;</span><span class="p">,</span>
+    <span class="n">target_column</span><span class="o">=</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Separate columns, one per choice</span>
+<span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-mcq-dataset&quot;</span><span class="p">,</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">input_column</span><span class="o">=</span><span class="s2">&quot;question&quot;</span><span class="p">,</span>
+    <span class="n">choices_column</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;choice_a&quot;</span><span class="p">,</span> <span class="s2">&quot;choice_b&quot;</span><span class="p">,</span> <span class="s2">&quot;choice_c&quot;</span><span class="p">,</span> <span class="s2">&quot;choice_d&quot;</span><span class="p">],</span>
+    <span class="n">target_column</span><span class="o">=</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><strong><code>preprocessing_func</code></strong> — for full control, you can supply an arbitrary preprocessing
+function that receives a <code>DatasetDict</code> and returns a <code>DatasetDict</code>. If this argument
+is provided together with any of the column arguments above, <code>preprocessing_func</code> takes
+precedence and the column arguments are ignored (a warning is logged in this case).</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">my_preprocess</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">split_name</span><span class="p">,</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">split</span> <span class="o">=</span> <span class="n">split</span><span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s2">&quot;review&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">)</span>
+        <span class="n">split</span> <span class="o">=</span> <span class="n">split</span><span class="o">.</span><span class="n">rename_column</span><span class="p">(</span><span class="s2">&quot;stars&quot;</span><span class="p">,</span> <span class="s2">&quot;label&quot;</span><span class="p">)</span>
+        <span class="n">dataset</span><span class="p">[</span><span class="n">split_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">split</span>
+    <span class="k">return</span> <span class="n">dataset</span>
+
+<span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-dataset&quot;</span><span class="p">,</span>
+    <span class="o">...</span><span class="p">,</span>
+    <span class="n">preprocessing_func</span><span class="o">=</span><span class="n">my_preprocess</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
 <p>We have included three convenience tasks to make it easier to set up custom datasets:</p>
 <ul>
 <li><code>TEXT_CLASSIFICATION</code>, which is used for text classification tasks. This requires you
@@ -1467,9 +1767,266 @@ your own bespoke dataset:</p>
 <p>These can all be imported from <code>euroeval.tasks</code> module.</p>
 <h3 id="creating-your-own-custom-task">Creating your own custom task<a class="headerlink" href="#creating-your-own-custom-task" title="Permanent link">&para;</a></h3>
 <p>You are of course also free to define your own task from scratch, which allows you to
-customise the prompts used when evaluating generative models, for instance. Here is an
-example of a custom free-form text generation task, where the goal for the model is to
-generate a SQL query based on a natural language input:</p>
+customise the prompts used when evaluating generative models, for instance. When
+creating a custom task you need to specify a <code>task_group</code>, which determines the overall
+type of task and the required dataset columns. Below are examples for each supported
+task group.</p>
+<p>The <code>PromptConfig</code> object defines the prompts used for evaluation and accepts the
+following arguments:</p>
+<ul>
+<li><code>default_prompt_prefix</code>: Introductory text shown before the few-shot examples (only
+  required for base decoders).</li>
+<li><code>default_prompt_template</code>: Template used to format each example in few-shot
+  evaluation (only required for base decoders). Available placeholders depend on the
+  task group (see examples below).</li>
+<li><code>default_instruction_prompt</code>: Template used for instruction-tuned models (zero-shot
+  or instruction-style evaluation). Available placeholders depend on the task group (see
+  examples below).</li>
+<li><code>default_prompt_label_mapping</code>: A mapping from label strings to human-readable
+  phrases used in the prompts (e.g., <code>{"b-per": "person"}</code>). Set to <code>"auto"</code> for a 1:1
+  mapping or to an empty <code>dict()</code> for tasks that don't use labels in prompts.</li>
+</ul>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:5"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><input id="__tabbed_5_3" name="__tabbed_5" type="radio" /><input id="__tabbed_5_4" name="__tabbed_5" type="radio" /><input id="__tabbed_5_5" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Sequence classification</label><label for="__tabbed_5_2">Multiple-choice classification</label><label for="__tabbed_5_3">Token classification</label><label for="__tabbed_5_4">Question answering</label><label for="__tabbed_5_5">Text-to-text</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><strong>Task group</strong>: <code>TaskGroup.SEQUENCE_CLASSIFICATION</code></p>
+<p><strong>Required dataset columns</strong>: <code>text</code> (string), <code>label</code> (string)</p>
+<p>The <code>label</code> column should contain the class label as a string. You must provide the
+list of possible labels in the <code>DatasetConfig</code>.</p>
+<p><strong>Available placeholders</strong> in <code>PromptConfig</code>:</p>
+<ul>
+<li><code>{text}</code>: The input text.</li>
+<li><code>{label}</code>: The label for the example (empty string for the new sample).</li>
+<li><code>{labels_str}</code>: A formatted string listing all possible labels.</li>
+</ul>
+<div class="highlight"><span class="filename">custom_datasets.py</span><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span><span class="p">,</span> <span class="n">PromptConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DANISH</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mcc_metric</span><span class="p">,</span> <span class="n">macro_f1_metric</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span>
+
+<span class="n">my_classification_task</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-classification&quot;</span><span class="p">,</span>
+    <span class="n">task_group</span><span class="o">=</span><span class="n">TaskGroup</span><span class="o">.</span><span class="n">SEQUENCE_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">template_dict</span><span class="o">=</span><span class="p">{</span>
+        <span class="n">DANISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+            <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;The following are texts and their categories, which &quot;</span>
+            <span class="s2">&quot;can be </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
+            <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Category: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Classify the text into one of &quot;</span>
+            <span class="s2">&quot;the categories </span><span class="si">{labels_str}</span><span class="s2">, and answer with only the category.&quot;</span><span class="p">,</span>
+            <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">},</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">mcc_metric</span><span class="p">,</span> <span class="n">macro_f1_metric</span><span class="p">],</span>
+    <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">uses_logprobs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">MY_DATASET</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-classification-dataset&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;My Classification Dataset&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">train</span><span class="o">=</span><span class="s2">&quot;train.csv&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="s2">&quot;val.csv&quot;</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="s2">&quot;test.csv&quot;</span><span class="p">),</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">my_classification_task</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DANISH</span><span class="p">],</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sports&quot;</span><span class="p">,</span> <span class="s2">&quot;politics&quot;</span><span class="p">,</span> <span class="s2">&quot;entertainment&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p><strong>Task group</strong>: <code>TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION</code></p>
+<p><strong>Required dataset columns</strong>: <code>text</code> (string), <code>label</code> (string)</p>
+<p>The <code>label</code> column should be the letter of the correct choice (e.g., <code>"a"</code>). The <code>text</code>
+column must include both the question and the formatted answer choices. You can either
+pre-format the <code>text</code> column yourself, or use <code>choices_column</code> in <code>DatasetConfig</code> to
+have EuroEval merge a separate choices column (or per-choice columns) into <code>text</code>
+automatically. The merged format is:</p>
+<div class="highlight"><pre><span></span><code>&lt;question&gt;
+Choices:
+a. &lt;choice 0&gt;
+b. &lt;choice 1&gt;
+...
+</code></pre></div>
+<p>All samples must have the same number of choices. You must provide the list of possible
+label letters in the <code>DatasetConfig</code> (e.g., <code>["a", "b", "c", "d"]</code>).</p>
+<p><strong>Available placeholders</strong> in <code>PromptConfig</code>:</p>
+<ul>
+<li><code>{text}</code>: The full question text including choices.</li>
+<li><code>{label}</code>: The correct answer letter (empty string for the new sample).</li>
+<li><code>{labels_str}</code>: A formatted string listing all possible answer letters.</li>
+</ul>
+<div class="highlight"><span class="filename">custom_datasets.py</span><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span><span class="p">,</span> <span class="n">PromptConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span><span class="p">,</span> <span class="n">ModelType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">FRENCH</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mcc_metric</span><span class="p">,</span> <span class="n">accuracy_metric</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span>
+
+<span class="n">my_multiple_choice_task</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-multiple-choice&quot;</span><span class="p">,</span>
+    <span class="n">task_group</span><span class="o">=</span><span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">template_dict</span><span class="o">=</span><span class="p">{</span>
+        <span class="n">FRENCH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+            <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;The following are multiple-choice questions &quot;</span>
+            <span class="s2">&quot;(with answers).&quot;</span><span class="p">,</span>
+            <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Question: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Answer: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Question: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Answer the question above &quot;</span>
+            <span class="s2">&quot;by replying with </span><span class="si">{labels_str}</span><span class="s2">, and nothing else.&quot;</span><span class="p">,</span>
+            <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">},</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">mcc_metric</span><span class="p">,</span> <span class="n">accuracy_metric</span><span class="p">],</span>
+    <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="n">NUM_GENERATION_TOKENS_FOR_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">default_allowed_model_types</span><span class="o">=</span><span class="p">[</span><span class="n">ModelType</span><span class="o">.</span><span class="n">GENERATIVE</span><span class="p">],</span>
+    <span class="n">uses_logprobs</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># If your dataset has a single column with a list of choices and a separate answer column:</span>
+<span class="n">MY_DATASET</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-multiple-choice-dataset&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;My Multiple Choice Dataset&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">train</span><span class="o">=</span><span class="s2">&quot;train.csv&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="s2">&quot;val.csv&quot;</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="s2">&quot;test.csv&quot;</span><span class="p">),</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">my_multiple_choice_task</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FRENCH</span><span class="p">],</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">],</span>
+    <span class="n">choices_column</span><span class="o">=</span><span class="s2">&quot;choices&quot;</span><span class="p">,</span>   <span class="c1"># column containing a list of choice strings</span>
+    <span class="n">target_column</span><span class="o">=</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span>     <span class="c1"># column containing the correct answer letter</span>
+<span class="p">)</span>
+
+<span class="c1"># Or if each choice is in its own column:</span>
+<span class="n">MY_DATASET</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-multiple-choice-dataset&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;My Multiple Choice Dataset&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">train</span><span class="o">=</span><span class="s2">&quot;train.csv&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="s2">&quot;val.csv&quot;</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="s2">&quot;test.csv&quot;</span><span class="p">),</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">my_multiple_choice_task</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">FRENCH</span><span class="p">],</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span><span class="p">],</span>
+    <span class="n">input_column</span><span class="o">=</span><span class="s2">&quot;question&quot;</span><span class="p">,</span>
+    <span class="n">choices_column</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;choice_a&quot;</span><span class="p">,</span> <span class="s2">&quot;choice_b&quot;</span><span class="p">,</span> <span class="s2">&quot;choice_c&quot;</span><span class="p">,</span> <span class="s2">&quot;choice_d&quot;</span><span class="p">],</span>
+    <span class="n">target_column</span><span class="o">=</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p><strong>Task group</strong>: <code>TaskGroup.TOKEN_CLASSIFICATION</code></p>
+<p><strong>Required dataset columns</strong>: <code>tokens</code> (list of strings), <code>labels</code> (list of strings)</p>
+<p>The <code>tokens</code> column is a list of word tokens in the text, and the <code>labels</code> column is a
+list of corresponding BIO tags (e.g., <code>["o", "b-per", "i-per", "o"]</code>). The two lists
+must have the same length. You must provide the full list of possible labels (including
+<code>"o"</code>) in the <code>DatasetConfig</code>. The <code>default_prompt_label_mapping</code> should map BIO labels
+to human-readable category names, and for each entity type both <code>b-X</code> and <code>i-X</code> must map
+to the same category string (e.g., <code>{"b-per": "person", "i-per": "person"}</code>).</p>
+<p><strong>Available placeholders</strong> in <code>PromptConfig</code>:</p>
+<ul>
+<li><code>{text}</code>: The tokens joined into a string.</li>
+<li><code>{label}</code>: A JSON dictionary mapping category names to lists of matching spans
+  (empty string for the new sample).</li>
+<li><code>{labels_str}</code>: A formatted string listing all category names from the label mapping.</li>
+</ul>
+<div class="highlight"><span class="filename">custom_datasets.py</span><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span><span class="p">,</span> <span class="n">PromptConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">GERMAN</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">micro_f1_metric</span>
+
+<span class="n">my_token_classification_task</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-token-classification&quot;</span><span class="p">,</span>
+    <span class="n">task_group</span><span class="o">=</span><span class="n">TaskGroup</span><span class="o">.</span><span class="n">TOKEN_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">template_dict</span><span class="o">=</span><span class="p">{</span>
+        <span class="n">GERMAN</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+            <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Below are texts and JSON dictionaries with the &quot;</span>
+            <span class="s2">&quot;categories that appear in the given text.&quot;</span><span class="p">,</span>
+            <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Categories: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Identify the categories in &quot;</span>
+            <span class="s2">&quot;the text. Print this as a JSON dictionary with the keys being &quot;</span>
+            <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">. The values should be lists of the spans of that category, &quot;</span>
+            <span class="s2">&quot;exactly as they appear in the text.&quot;</span><span class="p">,</span>
+            <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;b-product&quot;</span><span class="p">:</span> <span class="s2">&quot;product&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;i-product&quot;</span><span class="p">:</span> <span class="s2">&quot;product&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;b-company&quot;</span><span class="p">:</span> <span class="s2">&quot;company&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;i-company&quot;</span><span class="p">:</span> <span class="s2">&quot;company&quot;</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+    <span class="p">},</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">micro_f1_metric</span><span class="p">],</span>
+    <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+    <span class="n">uses_structured_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">MY_DATASET</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-token-classification-dataset&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;My Token Classification Dataset&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">train</span><span class="o">=</span><span class="s2">&quot;train.csv&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="s2">&quot;val.csv&quot;</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="s2">&quot;test.csv&quot;</span><span class="p">),</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">my_token_classification_task</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">GERMAN</span><span class="p">],</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="s2">&quot;b-product&quot;</span><span class="p">,</span> <span class="s2">&quot;i-product&quot;</span><span class="p">,</span> <span class="s2">&quot;b-company&quot;</span><span class="p">,</span> <span class="s2">&quot;i-company&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p><strong>Task group</strong>: <code>TaskGroup.QUESTION_ANSWERING</code></p>
+<p><strong>Required dataset columns</strong>: <code>context</code> (string), <code>question</code> (string), <code>answers</code> (dict)</p>
+<p>The <code>context</code> column is the passage to read, <code>question</code> is the question to answer, and
+<code>answers</code> is a dict with <code>"text"</code> (a list of answer strings) and <code>"answer_start"</code> (a
+list of character-level start positions of those answers in the context). This follows
+the SQuAD format.</p>
+<p><strong>Available placeholders</strong> in <code>PromptConfig</code>:</p>
+<ul>
+<li><code>{text}</code>: The context passage.</li>
+<li><code>{question}</code>: The question.</li>
+<li><code>{label}</code>: The answer text (empty string for the new sample).</li>
+</ul>
+<div class="highlight"><span class="filename">custom_datasets.py</span><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span><span class="p">,</span> <span class="n">PromptConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">SWEDISH</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">f1_metric</span><span class="p">,</span> <span class="n">em_metric</span>
+
+<span class="n">my_qa_task</span> <span class="o">=</span> <span class="n">Task</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-reading-comprehension&quot;</span><span class="p">,</span>
+    <span class="n">task_group</span><span class="o">=</span><span class="n">TaskGroup</span><span class="o">.</span><span class="n">QUESTION_ANSWERING</span><span class="p">,</span>
+    <span class="n">template_dict</span><span class="o">=</span><span class="p">{</span>
+        <span class="n">SWEDISH</span><span class="p">:</span> <span class="n">PromptConfig</span><span class="p">(</span>
+            <span class="n">default_prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Below are texts with questions and answers.&quot;</span><span class="p">,</span>
+            <span class="n">default_prompt_template</span><span class="o">=</span><span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Question: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Answer in &quot;</span>
+            <span class="s2">&quot;max 3 words: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">default_instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Text: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Answer the following question &quot;</span>
+            <span class="s2">&quot;about the text above in max 3 words.</span><span class="se">\n\n</span><span class="s2">Question: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">default_prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(),</span>
+        <span class="p">),</span>
+    <span class="p">},</span>
+    <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="n">f1_metric</span><span class="p">,</span> <span class="n">em_metric</span><span class="p">],</span>
+    <span class="n">default_num_few_shot_examples</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">default_max_generated_tokens</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">MY_DATASET</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-reading-comprehension-dataset&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;My Reading Comprehension Dataset&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">train</span><span class="o">=</span><span class="s2">&quot;train.csv&quot;</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="s2">&quot;val.csv&quot;</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="s2">&quot;test.csv&quot;</span><span class="p">),</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">my_qa_task</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<p><strong>Task group</strong>: <code>TaskGroup.TEXT_TO_TEXT</code></p>
+<p><strong>Required dataset columns</strong>: <code>text</code> (string), <code>target_text</code> (string)</p>
+<p>The <code>text</code> column is the input to the model, and <code>target_text</code> is the expected output.
+This covers tasks such as summarization, translation, simplification, and free-form text
+generation.</p>
+<p><strong>Available placeholders</strong> in <code>PromptConfig</code>:</p>
+<ul>
+<li><code>{text}</code>: The input text.</li>
+<li><code>{target_text}</code>: The expected output text (empty string for the new sample).</li>
+</ul>
+<p>Here is an example of a custom text-to-text task where the goal is to generate a SQL
+query from a natural language input:</p>
 <div class="highlight"><span class="filename">custom_datasets.py</span><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">euroeval</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Task</span><span class="p">,</span> <span class="n">PromptConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span><span class="p">,</span> <span class="n">ModelType</span>
@@ -1504,10 +2061,51 @@ generate a SQL query based on a natural language input:</p>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">ENGLISH</span><span class="p">],</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>Again, with this you can benchmark your custom dataset by simply running</p>
-<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--dataset<span class="w"> </span>my-sql-dataset<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;
+</div>
+</div>
+</div>
+<p>With any of these custom tasks you can then benchmark your dataset by running</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--dataset<span class="w"> </span>&lt;dataset-name&gt;<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;
 </code></pre></div>
 <h2 id="analysing-the-results-of-generative-models">Analysing the results of generative models<a class="headerlink" href="#analysing-the-results-of-generative-models" title="Permanent link">&para;</a></h2>
+<h3 id="failed-instances">Failed instances<a class="headerlink" href="#failed-instances" title="Permanent link">&para;</a></h3>
+<p>When evaluating a generative model, some samples may fail silently — for example when
+the model's output cannot be parsed as JSON (for NER tasks), or when no valid label can
+be matched to the model's output (for classification tasks). These failures are now
+recorded in <code>euroeval_benchmark_results.jsonl</code>.</p>
+<p>In <code>results.raw</code>, each per-iteration score dictionary contains a <code>failed_instances</code> key
+with a list of failed samples. Every item in the list has:</p>
+<ul>
+<li><code>sample_index</code> — the 0-based index of the sample within the bootstrapped batch for
+  that iteration.</li>
+<li><code>error</code> — a short description of why the sample failed (e.g.
+  <code>"Could not parse JSON from model output"</code> or
+  <code>"No candidate label found in model output"</code>).</li>
+</ul>
+<p>In <code>results.total</code>, the <code>num_failed_instances</code> key holds the total count of failed
+instances summed across all iterations.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;results&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;test_micro_f1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.82</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;test_micro_f1_se&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;num_failed_instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.0</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;raw&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;micro_f1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.82</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;failed_instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="p">{</span><span class="nt">&quot;sample_index&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Could not parse JSON from model output&quot;</span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>If a model never fails (e.g. encoder/fine-tuned models, or a flawless generative run),
+<code>num_failed_instances</code> will be <code>0.0</code> and <code>failed_instances</code> will be an empty list for
+every iteration.</p>
+<h3 id="detailed-model-outputs">Detailed model outputs<a class="headerlink" href="#detailed-model-outputs" title="Permanent link">&para;</a></h3>
 <p>If you're evaluating a generative model and want to be able to analyse the model results
 more in-depth, you can run your evaluation with the <code>--debug</code> flag (or <code>debug=True</code> if
 using the <code>Benchmarker</code>), which will output all the model outputs and all the dataset

@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1358,7 +1362,25 @@
 <span class="normal">383</span>
 <span class="normal">384</span>
 <span class="normal">385</span>
-<span class="normal">386</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span>
+<span class="normal">393</span>
+<span class="normal">394</span>
+<span class="normal">395</span>
+<span class="normal">396</span>
+<span class="normal">397</span>
+<span class="normal">398</span>
+<span class="normal">399</span>
+<span class="normal">400</span>
+<span class="normal">401</span>
+<span class="normal">402</span>
+<span class="normal">403</span>
+<span class="normal">404</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to the sequence-classification task group.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1431,6 +1453,21 @@
         <span class="n">prompt_label</span><span class="p">:</span> <span class="n">label</span>
         <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">prompt_label</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
     <span class="p">}</span>
+
+    <span class="c1"># For datasets with dynamic labels (e.g. community multiple-choice with</span>
+    <span class="c1"># default_labels=None), both label2id and prompt_label_to_label_mapping are</span>
+    <span class="c1"># empty.  Build a temporary mapping from the observed predictions and ground</span>
+    <span class="c1"># truth so that the metrics can still be computed.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">label2id</span><span class="p">:</span>
+        <span class="n">all_observed</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="n">v</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>  <span class="c1"># type: ignore[operator]</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">label2id</span> <span class="o">=</span> <span class="p">{</span><span class="n">lbl</span><span class="p">:</span> <span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">all_observed</span><span class="p">)}</span>
+        <span class="n">prompt_label_to_label_mapping</span> <span class="o">=</span> <span class="p">{</span><span class="n">lbl</span><span class="p">:</span> <span class="n">lbl</span> <span class="k">for</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="n">all_observed</span><span class="p">}</span>
+
     <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span>
         <span class="p">(</span>
             <span class="n">label2id</span><span class="p">[</span><span class="n">prompt_label_to_label_mapping</span><span class="p">[</span><span class="n">pred</span><span class="o">.</span><span class="n">lower</span><span class="p">()]]</span>
@@ -1571,6 +1608,9 @@
         <span class="c1"># allowed), or we raise an error</span>
         <span class="k">if</span> <span class="n">closest_distance</span> <span class="o">&gt;=</span> <span class="mi">1000</span><span class="p">:</span>
             <span class="n">num_predictions_being_very_off</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">model_output</span><span class="o">.</span><span class="n">failed_instances</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">sample_index</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="s2">&quot;No candidate label found in model output&quot;</span><span class="p">)</span>
+            <span class="p">)</span>
 
         <span class="n">new_predicted_labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">best_candidate_label</span><span class="p">)</span>
 

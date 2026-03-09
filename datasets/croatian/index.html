@@ -573,6 +573,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1090,6 +1094,17 @@
     <span class="md-ellipsis">
       
         MMLU-hr
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-include-hr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-hr
       
     </span>
   </a>
@@ -2150,6 +2165,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-include-hr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-hr
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2260,11 +2286,10 @@ information about what these constitute.</p>
 <p>This dataset was published in <a href="https://doi.org/10.48550/arXiv.2306.07902">this paper</a>.
 The corpus consists of 79 manually selected datasets from over 350 datasets reported in
 the scientific literature based on strict quality criteria.</p>
-<p>The original dataset contains a single split with 77,594 Croatian samples.
-We use 1,024 / 256 / 2,048 samples for our training, validation, and test splits,
-respectively.
-We have employed stratified sampling based on the label column from the original
-dataset to ensure balanced splits.</p>
+<p>The original dataset contains a single split with 77,594 Croatian samples. We use 1,024
+/ 256 / 2,048 samples for our training, validation, and test splits, respectively. We
+have employed stratified sampling based on the label column from the original dataset to
+ensure balanced splits.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ali kako mozete biti ovako trijezni u ovo doba ajde molim vas&quot;</span><span class="p">,</span>
@@ -2548,6 +2573,58 @@ Odgovorite na gornje pitanje koristeći &#39;a&#39;, &#39;b&#39;, &#39;c&#39; il
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-hr
+</code></pre></div>
+<h3 id="unofficial-include-hr">Unofficial: INCLUDE-hr<a class="headerlink" href="#unofficial-include-hr" title="Permanent link">&para;</a></h3>
+<p>This dataset is part of <a href="https://doi.org/10.48550/arXiv.2411.19799">INCLUDE</a>, a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.</p>
+<p>The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.</p>
+<p>Here are a few examples from the dataset:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;U čemu se prema Ludwigu Wittgensteinu otkriva značenje riječi?\nIzbori:\na. u kritici metafizike\nb. u idealnome jeziku\nc. u upotrebi riječi\nd. u prinudnoj šutnji&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Philosophy&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Na koji od navedenih uzročnika bolesti antibiotici neće djelovati?\nIzbori:\na. na Salmonella typhi\nb. na Herpes simplex\nc. na Streptococcus mutans\nd. na Escherichia coli&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Biology&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Koje vrste veza prevladavaju između molekula metana?\nIzbori:\na. kovalentne\nb. vodikove\nc. van der Waalsove\nd. peptidne&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Chemistry&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sljedeća su pitanja s višestrukim izborom (s odgovorima).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pitanje: {text}
+Odgovor: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pitanje: {text}
+
+Odgovorite na gornje pitanje koristeći {labels_str}, i ništa drugo.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>include-hr
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
 <h3 id="winogrande-hr">Winogrande-hr<a class="headerlink" href="#winogrande-hr" title="Permanent link">&para;</a></h3>

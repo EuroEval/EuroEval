@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1144,11 +1148,86 @@
 <span class="normal">210</span>
 <span class="normal">211</span>
 <span class="normal">212</span>
-<span class="normal">213</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Norwegian dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span>
+<span class="normal">277</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Norwegian dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">NORWEGIAN</span><span class="p">,</span> <span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span> <span class="n">NORWEGIAN_NYNORSK</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">COMMON_SENSE</span><span class="p">,</span> <span class="n">EUROPEAN_VALUES</span><span class="p">,</span> <span class="n">KNOW</span><span class="p">,</span> <span class="n">LA</span><span class="p">,</span> <span class="n">MCRC</span><span class="p">,</span> <span class="n">NER</span><span class="p">,</span> <span class="n">RC</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">SUMM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">COMMON_SENSE</span><span class="p">,</span>
+    <span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
+    <span class="n">KNOW</span><span class="p">,</span>
+    <span class="n">LA</span><span class="p">,</span>
+    <span class="n">MCRC</span><span class="p">,</span>
+    <span class="n">NER</span><span class="p">,</span>
+    <span class="n">RC</span><span class="p">,</span>
+    <span class="n">SENT</span><span class="p">,</span>
+    <span class="n">SUMM</span><span class="p">,</span>
+    <span class="n">TEXT_CLASSIFICATION</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1"># Official datasets ###</span>
 
@@ -1285,6 +1364,21 @@
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
+<span class="n">SCHIBSTED_FRONT_TITLE_NO_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;vg-front-title&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;VG Front Title&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/vg-front-title&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span> <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span> <span class="n">NORWEGIAN</span><span class="p">],</span>
+    <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">max_generated_tokens</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+    <span class="n">prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Her følger nyhetsartikler med tilhørende titler.&quot;</span><span class="p">,</span>
+    <span class="n">prompt_template</span><span class="o">=</span><span class="s2">&quot;Nyhetsartikkel: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Tittel: </span><span class="si">{target_text}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">instruction_prompt</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">&quot;Nyhetsartikkel: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Skriv en tittel for den ovennevnte artikkelen.&quot;</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
 <span class="n">PERSONAL_SUM_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;personal-sum&quot;</span><span class="p">,</span>
     <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;Personal Sum&quot;</span><span class="p">,</span>
@@ -1356,6 +1450,44 @@
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span> <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span> <span class="n">NORWEGIAN</span><span class="p">],</span>
     <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">NORDIAL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;nordial&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;NorDial&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/nordial&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">TEXT_CLASSIFICATION</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span> <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span> <span class="n">NORWEGIAN</span><span class="p">],</span>
+    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;bokmål&quot;</span><span class="p">,</span> <span class="s2">&quot;nynorsk&quot;</span><span class="p">,</span> <span class="s2">&quot;dialectal&quot;</span><span class="p">,</span> <span class="s2">&quot;mixed&quot;</span><span class="p">],</span>
+    <span class="n">prompt_prefix</span><span class="o">=</span><span class="s2">&quot;Følgende er norske tweets og hvilken skriftform de er skrevet på, &quot;</span>
+    <span class="s2">&quot;som kan være </span><span class="si">{labels_str}</span><span class="s2">.&quot;</span><span class="p">,</span>
+    <span class="n">prompt_template</span><span class="o">=</span><span class="s2">&quot;Tweet: </span><span class="si">{text}</span><span class="se">\n</span><span class="s2">Skriftform: </span><span class="si">{label}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">instruction_prompt</span><span class="o">=</span><span class="s2">&quot;Tweet: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">Klassifiser skriftformen av tweeten. Svar med &quot;</span>
+    <span class="s2">&quot;</span><span class="si">{labels_str}</span><span class="s2">, og ikke noe annet.&quot;</span><span class="p">,</span>
+    <span class="n">prompt_label_mapping</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+        <span class="n">bokmål</span><span class="o">=</span><span class="s2">&quot;bokmål&quot;</span><span class="p">,</span> <span class="n">nynorsk</span><span class="o">=</span><span class="s2">&quot;nynorsk&quot;</span><span class="p">,</span> <span class="n">dialectal</span><span class="o">=</span><span class="s2">&quot;dialekt&quot;</span><span class="p">,</span> <span class="n">mixed</span><span class="o">=</span><span class="s2">&quot;blandet&quot;</span>
+    <span class="p">),</span>
+    <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">NORSUMM_NB_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;norsumm-nb&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;NorSumm-nb&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/norsumm-nb&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span> <span class="n">NORWEGIAN</span><span class="p">],</span>
+    <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">val_split</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">NORSUMM_NN_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;norsumm-nn&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;NorSumm-nn&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/norsumm-nn&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">SUMM</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span> <span class="n">NORWEGIAN</span><span class="p">],</span>
+    <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">val_split</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 

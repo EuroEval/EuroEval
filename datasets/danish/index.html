@@ -573,6 +573,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1040,6 +1044,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-danish-sentiment-in-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: Danish Sentiment in Context
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1101,6 +1116,84 @@
     <span class="md-ellipsis">
       
         ScaLA-da
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-dala" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: DaLA
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#natural-language-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Natural Language Inference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Natural Language Inference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-the-danish-entailment-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: The Danish Entailment Dataset
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-danish-lexical-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: Danish Lexical Inference
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#word-in-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word in Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Word in Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-danwic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: DanWiC
       
     </span>
   </a>
@@ -2210,6 +2303,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-danish-sentiment-in-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: Danish Sentiment in Context
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2271,6 +2375,84 @@
     <span class="md-ellipsis">
       
         ScaLA-da
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-dala" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: DaLA
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#natural-language-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Natural Language Inference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Natural Language Inference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-the-danish-entailment-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: The Danish Entailment Dataset
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-danish-lexical-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: Danish Lexical Inference
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#word-in-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word in Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Word in Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-danwic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: DanWiC
       
     </span>
   </a>
@@ -2656,6 +2838,66 @@ Klassificer sentimentet i tweetet. Svar kun med &#39;positiv&#39;, &#39;neutral&
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>angry-tweets
 </code></pre></div>
+<h3 id="unofficial-danish-sentiment-in-context">Unofficial: Danish Sentiment in Context<a class="headerlink" href="#unofficial-danish-sentiment-in-context" title="Permanent link">&para;</a></h3>
+<p>This dataset was published in <a href="https://doi.org/10.7146/nys.v1i65.143072">this
+paper</a> and is part of the <a href="https://github.com/kuhumcst/danish-semantic-reasoning-benchmark">Danish Semantic
+Reasoning Benchmark</a>.
+It differs from other sentiment datasets by measuring the sentiment of an individual
+word given its context, meaning the sentiment of the surrounding text may differ from
+the sentiment of the target word. The data is based on the semantic module of the <a href="https://aclanthology.org/2022.lrec-1.6.pdf">COR
+lexicon</a>, a human-curated lexical-semantic
+resource developed by the Society for Danish Language and Literature.</p>
+<p>The original dataset consists of 1,041 samples. We use a 256 / 64 / 721 split for
+training, validation and testing, respectively (so 1,041 samples used in total).</p>
+<p>The sentiment labels from the original dataset are on a scale from -3 (very negative)
+to +3 (very positive), which we map to <code>negative</code> (&lt; 0), <code>neutral</code> (= 0), and
+<code>positive</code> (&gt; 0).</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: vinder\nKontekst: Umiddelbart efter lodtrækningen vil vinderne få gavekortet tilsendt&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;positive&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: nervebane\nKontekst: Næsten alle nervebaner krydser i den menneskelige hjernestamme&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neutral&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: forrykt\nKontekst: Det er en forrykt situation. Det midaldrende par har tilbragt et år i et rum på seks kvadratmeter&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;negative&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 12</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er ord med kontekst og ordets sentiment, som kan være &#39;positiv&#39;, &#39;neutral&#39; eller &#39;negativ&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+Sentiment: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+
+Klassificer sentimentet for det angivne ord i konteksten. Svar kun med &#39;positiv&#39;, &#39;neutral&#39; eller &#39;negativ&#39;, og intet andet.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>positive</code> ➡️ <code>positiv</code></li>
+<li><code>neutral</code> ➡️ <code>neutral</code></li>
+<li><code>negative</code> ➡️ <code>negativ</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>danish-sentiment-in-context
+</code></pre></div>
 <h2 id="named-entity-recognition">Named Entity Recognition<a class="headerlink" href="#named-entity-recognition" title="Permanent link">&para;</a></h2>
 <h3 id="dansk">DANSK<a class="headerlink" href="#dansk" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://doi.org/10.3384/nejlt.2000-1533.2024.5249">this
@@ -2823,6 +3065,232 @@ Bestem om sætningen er grammatisk korrekt eller ej. Svar med &#39;ja&#39;, hvis
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-da
+</code></pre></div>
+<h3 id="unofficial-dala">Unofficial: DaLA<a class="headerlink" href="#unofficial-dala" title="Permanent link">&para;</a></h3>
+<p>This dataset was published in <a href="https://arxiv.org/abs/2512.04799">this paper</a> and,
+similarly to ScaLA, was automatically created from the
+<a href="https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master">Danish Universal Dependencies treebank</a>
+by assuming that the documents in the treebank are correct, and corrupting the
+samples to create grammatically incorrect samples.</p>
+<p>This is an extension of ScaLA-da based on an analysis of most common errors made
+by Danish speakers. It adds 12 new linguistically grounded error types on top of
+the existing 2 from ScaLA-da, the corruption type applied to each sentence is also
+indicated in the dataset (<code>corruption_type</code> column). The corruptions have been based
+on linguistic features (e.g. POS tags, morphology features etc.) so to both ground
+them on linguistic rules and ensure the unacceptability of the corrupted sentences.
+The corruption quality has been both automatically and manually validated as
+detailed in the paper.</p>
+<p>Like ScaLA-da, the original dataset consists of 5,512 samples, from which we use
+1,024 / 256 / 2,048 samples for training, validation and testing, respectively
+(so 3,328 samples used in total).</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Det gøres bedst i en enhedsskole med differentieret undervisning.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;correct&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;corruption_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Endelig er også inspektionsskiben Fylla til salg.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;corruption_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;flip_en_et_suffix&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Men trods betalingen har kreditorene jo stadig haft milliontab på sagen?&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;corruption_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;corrupt_ende_ene&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 12</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er sætninger og om de er grammatisk korrekte.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sætning: {text}
+Grammatisk korrekt: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sætning: {text}
+
+Bestem om sætningen er grammatisk korrekt eller ej. Svar med &#39;ja&#39;, hvis sætningen er korrekt, og &#39;nej&#39;, hvis den ikke er.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>correct</code> ➡️ <code>ja</code></li>
+<li><code>incorrect</code> ➡️ <code>nej</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>dala
+</code></pre></div>
+<h2 id="natural-language-inference">Natural Language Inference<a class="headerlink" href="#natural-language-inference" title="Permanent link">&para;</a></h2>
+<h3 id="unofficial-the-danish-entailment-dataset">Unofficial: The Danish Entailment Dataset<a class="headerlink" href="#unofficial-the-danish-entailment-dataset" title="Permanent link">&para;</a></h3>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.lrec-main.1421/">this
+paper</a> as part of the Danish Semantic
+Reasoning Benchmark and was developed at the Centre for Language Technology at the
+University of Copenhagen. Each sample pairs two Danish statements and asks whether the
+second statement follows from the first.</p>
+<p>The original dataset contains 319 usable samples after filtering. We use a split of
+32 / 286 samples for training and testing, respectively (so 318 samples used in total
+after deduplication). The splits were created by randomly sampling from the full dataset.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Udsagn 1: Per forsømte sin have.\nUdsagn 2: Per holdt ikke sin have.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;entailment&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Udsagn 1: Per afbrød sine studier fordi han ikke havde råd til at fortsætte.\nUdsagn 2: Per studerede uden pause til han var færdiguddannet.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;contradiction&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Udsagn 1: Regeringen afskaffede karaktergivning på de første tre klassetrin i grundskolen.\nUdsagn 2: Der gives ikke længere karakterer til eleverne på grundskolens mellemste klassetrin.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neutral&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 12</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er par af udsagn og om det andet udsagn følger af det første, hvilket kan være &#39;sand&#39;, &#39;neutral&#39; eller &#39;falsk&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Udsagn: {text}
+Entailment: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Udsagn: {text}
+
+Bestem om det andet udsagn følger af det første udsagn. Svar kun med &#39;sand&#39;, &#39;neutral&#39; eller &#39;falsk&#39;, og intet andet.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>entailment</code> ➡️ <code>sand</code></li>
+<li><code>neutral</code> ➡️ <code>neutral</code></li>
+<li><code>contradiction</code> ➡️ <code>falsk</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>danish-entailment
+</code></pre></div>
+<h3 id="unofficial-danish-lexical-inference">Unofficial: Danish Lexical Inference<a class="headerlink" href="#unofficial-danish-lexical-inference" title="Permanent link">&para;</a></h3>
+<p>This dataset is part of the <a href="https://github.com/kuhumcst/danish-semantic-reasoning-benchmark">Danish Semantic Reasoning
+Benchmark</a>. It
+measures word knowledge through lexical inference: given a context statement derived
+from a DanNet Qualia role (Agentive, Constitutive, Formal, or Telic), a model must
+determine whether a second statement is entailed by or contradicts the context.</p>
+<p>The original dataset consists of 1,020 samples across 17 sub-datasets. We use a 128 /
+64 / 828 split for training, validation and testing, respectively (so all 1,020 samples
+are used in total).</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Udsagn 1: træthed er en følelse; jegfølelse er en følelse\nUdsagn 2: Ferieminde er en følelse&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;entailment&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Udsagn 1: en armstol har armlæn; et glasbord har en glasplade\nUdsagn 2: En morgenbitter har ikke et afløb&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;contradiction&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 12</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er par af udsagn og om det andet udsagn følger af det første, hvilket kan være &#39;sand&#39; eller &#39;falsk&#39;.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Udsagn: {text}
+Entailment: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Udsagn: {text}
+
+Bestem om det andet udsagn følger af det første udsagn. Svar kun med &#39;sand&#39; eller &#39;falsk&#39;, og intet andet.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>entailment</code> ➡️ <code>sand</code></li>
+<li><code>contradiction</code> ➡️ <code>falsk</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>danish-lexical-inference
+</code></pre></div>
+<h2 id="word-in-context">Word in Context<a class="headerlink" href="#word-in-context" title="Permanent link">&para;</a></h2>
+<h3 id="unofficial-danwic">Unofficial: DanWiC<a class="headerlink" href="#unofficial-danwic" title="Permanent link">&para;</a></h3>
+<p>This dataset was published in <a href="https://doi.org/10.7146/nys.v1i65.143072">this
+paper</a> and is based on the semantic module of
+the <a href="https://corsem.dsl.dk/">COR.SEM resource</a>. The dataset measures the ability to
+distinguish word meanings/senses in context: given two sentences containing the same
+target word, the task is to determine whether the word carries the same sense in both
+sentences.</p>
+<p>The original full dataset consists of 1,098 polysemous samples with balanced labels.
+We use a split of 128 / 64 / 906 samples for training, validation and testing,
+respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: briller\nKontekst 1: Karen tog sine briller af og pudsede dem. Uden brillerne var verden én stor tåge\nKontekst 2: Jeg blev altid drillet i skolen, fordi jeg havde briller og ikke var særlig køn&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same_sense&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: lag\nKontekst 1: Pladsens brosten var dækket af et fint lag snekrystaller\nKontekst 2: [de] fik indlagt tre lag glas i vinduerne for at holde larmen ude af stuerne&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same_sense&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: tjeneste\nKontekst 1: Han er jo aldrig kommet i kirken, når jeg havde tjenesten\nKontekst 2: Vil du ikke lige gøre mig den tjeneste at bestille en taxa&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;different_sense&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 12</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Følgende er eksempler på ord brugt i to kontekster og om de har samme betydning.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+Samme betydning: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+
+Har ordet den samme betydning i de to kontekster? Svar kun med &#39;ja&#39; eller &#39;nej&#39;, og intet andet.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>same_sense</code> ➡️ <code>ja</code></li>
+<li><code>different_sense</code> ➡️ <code>nej</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>danwic
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
 <h3 id="multiwikiqa-da">MultiWikiQA-da<a class="headerlink" href="#multiwikiqa-da" title="Permanent link">&para;</a></h3>

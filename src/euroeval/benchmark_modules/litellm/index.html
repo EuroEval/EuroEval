@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3030,7 +3034,38 @@
 <span class="normal">1906</span>
 <span class="normal">1907</span>
 <span class="normal">1908</span>
-<span class="normal">1909</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1909</span>
+<span class="normal">1910</span>
+<span class="normal">1911</span>
+<span class="normal">1912</span>
+<span class="normal">1913</span>
+<span class="normal">1914</span>
+<span class="normal">1915</span>
+<span class="normal">1916</span>
+<span class="normal">1917</span>
+<span class="normal">1918</span>
+<span class="normal">1919</span>
+<span class="normal">1920</span>
+<span class="normal">1921</span>
+<span class="normal">1922</span>
+<span class="normal">1923</span>
+<span class="normal">1924</span>
+<span class="normal">1925</span>
+<span class="normal">1926</span>
+<span class="normal">1927</span>
+<span class="normal">1928</span>
+<span class="normal">1929</span>
+<span class="normal">1930</span>
+<span class="normal">1931</span>
+<span class="normal">1932</span>
+<span class="normal">1933</span>
+<span class="normal">1934</span>
+<span class="normal">1935</span>
+<span class="normal">1936</span>
+<span class="normal">1937</span>
+<span class="normal">1938</span>
+<span class="normal">1939</span>
+<span class="normal">1940</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
@@ -3072,6 +3107,7 @@
     <span class="n">LITELLM_CLASSIFICATION_OUTPUT_KEY</span><span class="p">,</span>
     <span class="n">MAX_LITELLM_LOGPROBS</span><span class="p">,</span>
     <span class="n">REASONING_MAX_TOKENS</span><span class="p">,</span>
+    <span class="n">TOOL_CALLING_KEYS</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">BenchmarkConfig</span><span class="p">,</span>
@@ -3554,7 +3590,10 @@
             <span class="s2">&quot;Only temperature=1 is supported&quot;</span><span class="p">,</span>
         <span class="p">]</span>
         <span class="n">max_items_messages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&#39;maxItems&#39; is not permitted.&quot;</span><span class="p">]</span>
-        <span class="n">no_json_schema_messages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Property keys should match pattern&quot;</span><span class="p">]</span>
+        <span class="n">no_json_schema_messages</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;Property keys should match pattern&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;&#39;json_schema&#39; is not supported&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
         <span class="n">thinking_budget_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
             <span class="sa">r</span><span class="s2">&quot;the thinking budget [0-9]+ is invalid. please choose a value between &quot;</span>
             <span class="sa">r</span><span class="s2">&quot;[0-9]+ and ([0-9]+)\.&quot;</span>
@@ -3565,6 +3604,7 @@
             <span class="s2">&quot;got an unexpected keyword argument &#39;response_format&#39;&quot;</span><span class="p">,</span>
             <span class="s2">&quot;the model returned empty outputs&quot;</span><span class="p">,</span>
             <span class="s2">&quot;&#39;maxitems&#39; is not supported&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;must contain the word &#39;json&#39;&quot;</span><span class="p">,</span>
         <span class="p">]</span>
 
         <span class="k">if</span> <span class="p">(</span>
@@ -3976,8 +4016,11 @@
             <span class="c1"># In the case where we&#39;re dealing with a classification task, the model is</span>
             <span class="c1"># outputting a JSON dictionary, so we will extract the generated text from</span>
             <span class="c1"># within the dictionary</span>
+            <span class="c1"># This is not relevant for tooling and may cause problems there</span>
             <span class="n">generation_dct</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">if</span> <span class="n">LITELLM_CLASSIFICATION_OUTPUT_KEY</span> <span class="ow">in</span> <span class="n">generation_output</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">LITELLM_CLASSIFICATION_OUTPUT_KEY</span> <span class="ow">in</span> <span class="n">generation_output</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">k</span> <span class="ow">in</span> <span class="n">generation_output</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">TOOL_CALLING_KEYS</span><span class="p">]</span>
+            <span class="p">):</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">generation_dct</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">generation_output</span><span class="p">)</span>
                     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">generation_dct</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
@@ -4151,6 +4194,8 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The vocabulary size of the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">vocabulary_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">vocabulary_size</span>
         <span class="c1"># Start by trying out the regex mapping, and use the value if it matches</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">VOCAB_SIZE_MAPPING</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -4206,6 +4251,8 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The maximum length of the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">max_context_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">max_context_length</span>
         <span class="c1"># Start by trying out the regex mapping, and use the value if it matches</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">MODEL_MAX_LENGTH_MAPPING</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -4651,6 +4698,24 @@
                     <span class="s2">&quot;enable it.&quot;</span><span class="p">,</span>
                     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">structured_output_format</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">pydantic_class</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">structured_output_format</span>
+                <span class="c1"># TODO: here it would be nice to just input the pydantic class</span>
+                <span class="c1"># directly instead. However this caused problems with e.g.</span>
+                <span class="c1"># gpt-4o-mini (error: &quot;additional_properties not defined&quot;)</span>
+                <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;response_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;json_schema&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;json_schema&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">pydantic_class</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                        <span class="s2">&quot;schema&quot;</span><span class="p">:</span> <span class="n">pydantic_class</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">(),</span>
+                    <span class="p">},</span>
+                <span class="p">}</span>
+                <span class="n">log_once</span><span class="p">(</span>
+                    <span class="s2">&quot;Enabling structured generation for model &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> with response_format &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pydantic_class</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
             <span class="c1"># Skip litellm&#39;s support check when using a custom base_api URL, as</span>
             <span class="c1"># litellm can only reliably verify support for their official API providers,</span>
             <span class="c1"># not custom endpoints.</span>
@@ -4688,6 +4753,7 @@
                     <span class="s2">&quot;the model does not support schemas.&quot;</span><span class="p">,</span>
                     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
                 <span class="p">)</span>
+
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_logprobs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
             <span class="n">localised_labels</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>

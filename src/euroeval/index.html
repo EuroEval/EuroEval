@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1216,12 +1220,7 @@
 <span class="normal">108</span>
 <span class="normal">109</span>
 <span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
+<span class="normal">111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
 
 <span class="c1"># STAGE 1 ###</span>
 <span class="c1"># Block unwanted terminal output that happens on importing external modules ###</span>
@@ -1326,11 +1325,6 @@
 <span class="c1"># use of `httpx` instead.</span>
 <span class="c1"># Link: https://github.com/BerriAI/litellm/issues/11657#issuecomment-3038984975</span>
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;DISABLE_AIOHTTP_TRANSPORT&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;True&quot;</span>
-
-
-<span class="c1"># Enable the newer vLLM V1 engine, which is faster and offers more compatibility with</span>
-<span class="c1"># newer models</span>
-<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;VLLM_USE_V1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
 
 
 <span class="c1"># Set the HF_TOKEN env var to copy the HUGGINGFACE_API_KEY env var, as vLLM uses the</span>

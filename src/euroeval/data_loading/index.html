@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1215,10 +1219,7 @@
 <span class="normal">251</span>
 <span class="normal">252</span>
 <span class="normal">253</span>
-<span class="normal">254</span>
-<span class="normal">255</span>
-<span class="normal">256</span>
-<span class="normal">257</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
+<span class="normal">254</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the loading of the data.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1265,6 +1266,10 @@
         <span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
     <span class="p">)</span>
 
+    <span class="c1"># Apply custom preprocessing function if configured</span>
+    <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">preprocessing_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">preprocessing_func</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
     <span class="c1"># Always add an index column to the dataset, so that we can easily identify which</span>
     <span class="c1"># example is which when we&#39;re bootstrapping</span>
     <span class="k">for</span> <span class="n">split_name</span><span class="p">,</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -1280,17 +1285,9 @@
         <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span>
         <span class="ow">and</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
     <span class="p">):</span>
-        <span class="n">dataset</span><span class="p">[</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">test_split</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span><span class="p">]</span>
+        <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;val&quot;</span><span class="p">]</span>
 
-    <span class="n">splits</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">split</span>
-        <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">[</span>
-            <span class="n">dataset_config</span><span class="o">.</span><span class="n">train_split</span><span class="p">,</span>
-            <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span><span class="p">,</span>
-            <span class="n">dataset_config</span><span class="o">.</span><span class="n">test_split</span><span class="p">,</span>
-        <span class="p">]</span>
-        <span class="k">if</span> <span class="n">split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-    <span class="p">]</span>
+    <span class="n">splits</span> <span class="o">=</span> <span class="p">[</span><span class="n">split</span> <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset</span><span class="p">]</span>
 
     <span class="c1"># Remove empty examples from the datasets</span>
     <span class="k">for</span> <span class="n">text_feature</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;tokens&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">]:</span>
@@ -1320,12 +1317,8 @@
             <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># type: ignore[no-matching-overload]</span>
                 <span class="p">{</span>
                     <span class="n">split</span><span class="p">:</span> <span class="n">bootstrapped_splits</span><span class="p">[</span><span class="n">split</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
-                    <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">[</span>
-                        <span class="n">dataset_config</span><span class="o">.</span><span class="n">train_split</span><span class="p">,</span>
-                        <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span><span class="p">,</span>
-                        <span class="n">dataset_config</span><span class="o">.</span><span class="n">test_split</span><span class="p">,</span>
-                    <span class="p">]</span>
-                    <span class="k">if</span> <span class="n">split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">bootstrapped_splits</span>
                 <span class="p">}</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">num_iterations</span><span class="p">)</span>
@@ -1464,17 +1457,22 @@
             <span class="p">)</span>
 
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">DatasetDict</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[no-matching-overload]</span>
+    <span class="c1"># Normalise the split keys to the standard names (&quot;train&quot;, &quot;val&quot;, &quot;test&quot;)</span>
+    <span class="c1"># that the rest of the codebase expects.  Community datasets may use</span>
+    <span class="c1"># non-standard names such as &quot;training&quot;, &quot;validation&quot;, or &quot;eval&quot;.</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[no-matching-overload]</span>
         <span class="p">{</span>
-            <span class="n">split</span><span class="p">:</span> <span class="n">dataset</span><span class="p">[</span><span class="n">split</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="p">[</span>
-                <span class="n">dataset_config</span><span class="o">.</span><span class="n">train_split</span><span class="p">,</span>
-                <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span><span class="p">,</span>
-                <span class="n">dataset_config</span><span class="o">.</span><span class="n">test_split</span><span class="p">,</span>
+            <span class="n">standard_name</span><span class="p">:</span> <span class="n">dataset</span><span class="p">[</span><span class="n">hf_name</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">standard_name</span><span class="p">,</span> <span class="n">hf_name</span> <span class="ow">in</span> <span class="p">[</span>
+                <span class="p">(</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">train_split</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;val&quot;</span><span class="p">,</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">test_split</span><span class="p">),</span>
             <span class="p">]</span>
-            <span class="k">if</span> <span class="n">split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">hf_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">}</span>
     <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">dataset</span>
 </code></pre></div></td></tr></table></div>
 
 

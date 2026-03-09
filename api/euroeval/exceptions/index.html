@@ -575,6 +575,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -969,6 +973,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1249,6 +1259,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1307,6 +1321,12 @@
       
         
           
+        
+      
+        
+      
+        
+      
         
       
         
@@ -1871,6 +1891,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#euroeval.exceptions.InvalidTask" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        InvalidTask
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#euroeval.exceptions.HuggingFaceHubDown" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2198,6 +2229,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../preprocessing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.preprocessing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../safetensors_utils/" class="md-nav__link">
         
   
@@ -2262,6 +2321,34 @@
     
   
     euroeval.speed_benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../split_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.split_utils
   
 
     
@@ -2415,6 +2502,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../yaml_config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.yaml_config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2472,6 +2587,17 @@
     <span class="md-ellipsis">
       
         InvalidModel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.exceptions.InvalidTask" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        InvalidTask
       
     </span>
   </a>
@@ -2691,6 +2817,11 @@ The (model, dataset) combination cannot be benchmarked.</p>
 The model cannot be benchmarked on any datasets.</p>
 </li>
 <li>
+<p><span class="mkapi-item-name"><a href="./#euroeval.exceptions.InvalidTask" title="euroeval.exceptions.InvalidTask">InvalidTask</a></span>
+ <span class="mkapi-dash">&mdash;</span>
+The task cannot be used for benchmarking using any model and dataset.</p>
+</li>
+<li>
 <p><span class="mkapi-item-name"><a href="./#euroeval.exceptions.HuggingFaceHubDown" title="euroeval.exceptions.HuggingFaceHubDown">HuggingFaceHubDown</a></span>
  <span class="mkapi-dash">&mdash;</span>
 The Hugging Face Hub seems to be down.</p>
@@ -2782,6 +2913,40 @@ The message to display.</p>
 <p class="mkapi-bases">Bases :
 <span class="mkapi-base">Exception</span></p>
 <p>The model cannot be benchmarked on any datasets.</p>
+<p>Initialise the exception.</p>
+<p class="mkapi-section">
+<span class="mkapi-object-link">
+<span class="mkapi-section-toggle" title="Toggle parameters">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span>
+<span class="mkapi-section-name">Parameters</span>
+</p>
+<div class="mkapi-section-content">
+<ul class="mkapi-item-list">
+<li>
+<p><span class="mkapi-item-name">message</span> : 
+<span class="mkapi-item-type">str</span> <span class="mkapi-dash">&mdash;</span>
+The message to display.</p>
+</li>
+</ul>
+</div>
+</div>
+<p class="mkapi-object mkapi-page-source" id="euroeval.exceptions.InvalidTask">
+<span class="mkapi-object-link">
+
+
+<a href="../../../src/euroeval/exceptions/#euroeval.exceptions.InvalidTask" title="Go to source">source</a>
+<span class="mkapi-document-toggle" title="Toggle all docs">
+<i class="fa-regular fa-square-minus"></i>
+</span>
+</span><span class="mkapi-object-kind">class</span>
+<span class="mkapi-object-name"><a href="./#euroeval.exceptions.InvalidTask" title="euroeval.exceptions.InvalidTask">InvalidTask</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">message</span><span class="mkapi-colon">: </span><span class="mkapi-ann">str</span><span class="mkapi-equal"> = </span><span class="mkapi-default">'The task is invalid.'</span><span class="mkapi-paren">)</span></span>
+</p>
+<div class="mkapi-document">
+<p class="mkapi-bases">Bases :
+<span class="mkapi-base">Exception</span></p>
+<p>The task cannot be used for benchmarking using any model and dataset.</p>
 <p>Initialise the exception.</p>
 <p class="mkapi-section">
 <span class="mkapi-object-link">

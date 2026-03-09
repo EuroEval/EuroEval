@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1487,7 +1491,26 @@
 <span class="normal">512</span>
 <span class="normal">513</span>
 <span class="normal">514</span>
-<span class="normal">515</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
+<span class="normal">515</span>
+<span class="normal">516</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span>
+<span class="normal">522</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span>
+<span class="normal">526</span>
+<span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to generative models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">it</span>
@@ -1581,33 +1604,52 @@
                     <span class="s2">&quot;Could not find enough short examples for few-shot learning.&quot;</span>
                 <span class="p">)</span>
 
-            <span class="n">labels</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">cycle</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">)</span>
-            <span class="n">labels_with_no_samples</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">few_shot_examples</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">num_few_shots</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">shuffled_train</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels_with_no_samples</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">):</span>
-                    <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
-                        <span class="s2">&quot;Could not find enough examples for few-shot learning. &quot;</span>
-                        <span class="s2">&quot;Please check the dataset and the labels.&quot;</span>
+            <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">:</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">cycle</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">)</span>
+                <span class="n">labels_with_no_samples</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                <span class="k">while</span> <span class="p">(</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">few_shot_examples</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">num_few_shots</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">shuffled_train</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels_with_no_samples</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                            <span class="s2">&quot;Could not find enough examples for few-shot learning. &quot;</span>
+                            <span class="s2">&quot;Please check the dataset and the labels.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+                    <span class="n">possible_examples</span> <span class="o">=</span> <span class="n">shuffled_train</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                        <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
                     <span class="p">)</span>
-                <span class="n">label</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
-                <span class="n">possible_examples</span> <span class="o">=</span> <span class="n">shuffled_train</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
-                    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">label</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-                <span class="p">)</span>
-                <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">possible_examples</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">),</span> <span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Expected `possible_examples` to be a Dataset, but got &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">possible_examples</span><span class="p">)</span><span class="si">}</span><span class="s2"> instead.&quot;</span>
-                <span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">possible_examples</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">labels_with_no_samples</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
-                    <span class="k">continue</span>
-                <span class="n">example</span> <span class="o">=</span> <span class="n">possible_examples</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
-                <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="nb">dict</span><span class="p">),</span> <span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Expected `example` to be a dict, but got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">example</span><span class="p">)</span><span class="si">}</span><span class="s2"> instead.&quot;</span>
-                <span class="p">)</span>
-                <span class="n">few_shot_examples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
-                <span class="n">shuffled_train</span> <span class="o">=</span> <span class="n">shuffled_train</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
-                    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
-                <span class="p">)</span>
+                    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">possible_examples</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">),</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Expected `possible_examples` to be a Dataset, but got &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">possible_examples</span><span class="p">)</span><span class="si">}</span><span class="s2"> instead.&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">possible_examples</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">labels_with_no_samples</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+                        <span class="k">continue</span>
+                    <span class="n">example</span> <span class="o">=</span> <span class="n">possible_examples</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="nb">dict</span><span class="p">),</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Expected `example` to be a dict, but got &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">example</span><span class="p">)</span><span class="si">}</span><span class="s2"> instead.&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">few_shot_examples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
+                    <span class="n">shuffled_train</span> <span class="o">=</span> <span class="n">shuffled_train</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                        <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># No labels defined (e.g. community datasets with variable number of</span>
+                <span class="c1"># choices) — fall back to random sampling.</span>
+                <span class="k">while</span> <span class="p">(</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">few_shot_examples</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">num_few_shots</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">shuffled_train</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="p">):</span>
+                    <span class="n">example</span> <span class="o">=</span> <span class="n">shuffled_train</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">,</span> <span class="nb">dict</span><span class="p">),</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Expected `example` to be a dict, but got &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">example</span><span class="p">)</span><span class="si">}</span><span class="s2"> instead.&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">few_shot_examples</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">example</span><span class="p">)</span>
+                    <span class="n">shuffled_train</span> <span class="o">=</span> <span class="n">shuffled_train</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+                        <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">example</span><span class="p">[</span><span class="s2">&quot;text&quot;</span><span class="p">]</span>
+                    <span class="p">)</span>
 
         <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">TEXT_TO_TEXT</span><span class="p">:</span>
             <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">few_shot_examples</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">num_few_shots</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">shuffled_train</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>

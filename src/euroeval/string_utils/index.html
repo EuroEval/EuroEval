@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1156,7 +1160,16 @@
 <span class="normal">159</span>
 <span class="normal">160</span>
 <span class="normal">161</span>
-<span class="normal">162</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to string manipulation or structuring.&quot;&quot;&quot;</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to string manipulation or structuring.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1261,7 +1274,10 @@
 <span class="sd">        prompt:</span>
 <span class="sd">            The prompt to extract the labels from.</span>
 <span class="sd">        candidate_labels:</span>
-<span class="sd">            The candidate labels to look for in the prompt.</span>
+<span class="sd">            The candidate labels to look for in the prompt. If empty, the full</span>
+<span class="sd">            alphabet is used as the candidate set so that community datasets with a</span>
+<span class="sd">            variable number of choices (where no fixed label list is defined) still</span>
+<span class="sd">            work correctly.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The extracted labels.</span>
@@ -1270,8 +1286,14 @@
 <span class="sd">        InvalidBenchmark:</span>
 <span class="sd">            If no candidate labels could be found in the prompt.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># For community datasets with variable-length choices the label list may be empty.</span>
+    <span class="c1"># In that case scan against the full alphabet so we pick up whatever letters the</span>
+    <span class="c1"># preprocessing placed in the prompt (a. , b. , c. , …).</span>
+    <span class="n">effective_candidates</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">candidate_labels</span> <span class="k">if</span> <span class="n">candidate_labels</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="s2">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
     <span class="n">sample_candidate_labels</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">candidate_labels</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">candidate_label</span> <span class="ow">in</span> <span class="n">effective_candidates</span><span class="p">:</span>
         <span class="n">candidate_label_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
             <span class="n">pattern</span><span class="o">=</span><span class="sa">rf</span><span class="s2">&quot;\b</span><span class="si">{</span><span class="n">candidate_label</span><span class="si">}</span><span class="s2">\. &quot;</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span>
         <span class="p">)</span>
@@ -1282,7 +1304,7 @@
             <span class="s2">&quot;Could not extract any candidate labels from the prompt. Please ensure &quot;</span>
             <span class="s2">&quot;that the candidate labels are present in the prompt, each followed by a &quot;</span>
             <span class="s2">&quot;dot and a space (e.g., &#39;a. &#39;). The candidate labels are: &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">candidate_labels</span><span class="p">)</span><span class="si">}</span><span class="s2">. Here is the prompt: </span><span class="si">{</span><span class="n">prompt</span><span class="si">!r}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">effective_candidates</span><span class="p">)</span><span class="si">}</span><span class="s2">. Here is the prompt: </span><span class="si">{</span><span class="n">prompt</span><span class="si">!r}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">sample_candidate_labels</span>
 

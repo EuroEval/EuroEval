@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -916,10 +920,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.metrics.llm_as_a_judge.Fluency" class="md-nav__link">
+  <a href="#euroeval.metrics.llm_as_a_judge.create_model_graded_fact_metric" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Fluency
+        create_model_graded_fact_metric
       
     </span>
   </a>
@@ -1294,7 +1298,66 @@
 <span class="normal">330</span>
 <span class="normal">331</span>
 <span class="normal">332</span>
-<span class="normal">333</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on LLM-as-a-judge.&quot;&quot;&quot;</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span>
+<span class="normal">351</span>
+<span class="normal">352</span>
+<span class="normal">353</span>
+<span class="normal">354</span>
+<span class="normal">355</span>
+<span class="normal">356</span>
+<span class="normal">357</span>
+<span class="normal">358</span>
+<span class="normal">359</span>
+<span class="normal">360</span>
+<span class="normal">361</span>
+<span class="normal">362</span>
+<span class="normal">363</span>
+<span class="normal">364</span>
+<span class="normal">365</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span>
+<span class="normal">387</span>
+<span class="normal">388</span>
+<span class="normal">389</span>
+<span class="normal">390</span>
+<span class="normal">391</span>
+<span class="normal">392</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on LLM-as-a-judge.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1302,7 +1365,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">ValidationError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">ValidationError</span><span class="p">,</span> <span class="n">create_model</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
@@ -1596,20 +1659,6 @@
         <span class="p">)</span>
 
 
-<span class="c1"># Fluency metric ###</span>
-
-
-<span class="k">class</span><span class="w"> </span><span class="nc">Fluency</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.metrics.llm_as_a_judge.Fluency"><a href="../../../../api/euroeval/metrics/llm_as_a_judge/#euroeval.metrics.llm_as_a_judge.Fluency" title="Go to docs">[docs]</a></div>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Response format for the fluency metric.</span>
-
-<span class="sd">    Attributes:</span>
-<span class="sd">        fluency:</span>
-<span class="sd">            The fluency rating, an integer between 1 and 5.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">fluency</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">5</span><span class="p">)]</span>
-
-
 <span class="n">fluency_metric</span> <span class="o">=</span> <span class="n">LLMAsAJudgeMetric</span><span class="p">(</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fluency&quot;</span><span class="p">,</span>
     <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;Fluency&quot;</span><span class="p">,</span>
@@ -1624,9 +1673,82 @@
     <span class="s2">&quot;- 5: Excellent fluency, no grammatical errors and sounds natural</span><span class="se">\n\n</span><span class="s2">&quot;</span>
     <span class="s2">&quot;Text: </span><span class="si">{prediction!r}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
     <span class="s2">&quot;Output your rating as a JSON object with a single key &#39;fluency&#39;.&quot;</span><span class="p">,</span>
-    <span class="n">response_format</span><span class="o">=</span><span class="n">Fluency</span><span class="p">,</span>
+    <span class="n">response_format</span><span class="o">=</span><span class="n">create_model</span><span class="p">(</span><span class="s2">&quot;Fluency&quot;</span><span class="p">,</span> <span class="n">fluency</span><span class="o">=</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">Field</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">5</span><span class="p">))),</span>
     <span class="n">scoring_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">output</span><span class="p">:</span> <span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">fluency</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mf">4.0</span><span class="p">,</span>
 <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">create_model_graded_fact_metric</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.metrics.llm_as_a_judge.create_model_graded_fact_metric"><a href="../../../../api/euroeval/metrics/llm_as_a_judge/#euroeval.metrics.llm_as_a_judge.create_model_graded_fact_metric" title="Go to docs">[docs]</a></div>
+    <span class="n">judge_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;gpt-5-mini&quot;</span><span class="p">,</span>
+    <span class="n">user_prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;You are evaluating whether a model&#39;s answer is factually correct.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;Reference answer: </span><span class="si">{condition}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;Model&#39;s answer: </span><span class="si">{prediction}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="s2">&quot;Is the model&#39;s answer factually correct? &quot;</span>
+        <span class="s2">&quot;Output a JSON object with a single key &#39;correct&#39; (true or false).&quot;</span>
+    <span class="p">),</span>
+    <span class="n">system_prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">response_format</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">scoring_fn</span><span class="p">:</span> <span class="n">ScoringFunction</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LLMAsAJudgeMetric</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a model-graded fact metric that uses a given judge model.</span>
+
+<span class="sd">    This corresponds to Inspect AI&#39;s `model_graded_fact` scorer, which checks</span>
+<span class="sd">    whether the model&#39;s answer is factually consistent with the reference answer.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        judge_id (optional):</span>
+<span class="sd">            The model ID of the LLM to use as a judge (e.g. `openai/o3-mini`).</span>
+<span class="sd">            Defaults to `gpt-5-mini`.</span>
+<span class="sd">        user_prompt (optional):</span>
+<span class="sd">            The user prompt template passed to the judge. Must contain</span>
+<span class="sd">            `{prediction}` and `{condition}` placeholders. Defaults to a</span>
+<span class="sd">            prompt that asks whether the model&#39;s answer is factually correct.</span>
+<span class="sd">        system_prompt (optional):</span>
+<span class="sd">            An optional system prompt for the judge. Defaults to None.</span>
+<span class="sd">        temperature:</span>
+<span class="sd">            Sampling temperature for the judge. Defaults to 1.0.</span>
+<span class="sd">        response_format (optional):</span>
+<span class="sd">            A Pydantic model class that defines the expected JSON structure</span>
+<span class="sd">            of the judge&#39;s response. The model must have a single boolean</span>
+<span class="sd">            field named `correct`. If not provided, a model with that shape</span>
+<span class="sd">            is created automatically via `pydantic.create_model`.</span>
+<span class="sd">        scoring_fn (optional):</span>
+<span class="sd">            A function mapping the judge&#39;s parsed response to a scalar score</span>
+<span class="sd">            in [0, 1]. Defaults to 1.0 when `correct` is True, 0.0 otherwise.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        An `LLMAsAJudgeMetric` configured for factual-correctness grading.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">response_format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">response_format</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="s2">&quot;FactCorrectness&quot;</span><span class="p">,</span> <span class="n">correct</span><span class="o">=</span><span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="o">...</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">default_scoring_fn</span><span class="p">(</span><span class="n">output</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Default scoring function for the model-graded fact metric.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            output:</span>
+<span class="sd">                The parsed judge output containing the &#39;correct&#39; field.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            1.0 if the output is correct, 0.0 otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">correct</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+    <span class="k">if</span> <span class="n">scoring_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">scoring_fn</span> <span class="o">=</span> <span class="n">default_scoring_fn</span>
+
+    <span class="k">return</span> <span class="n">LLMAsAJudgeMetric</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;model_graded_fact&quot;</span><span class="p">,</span>
+        <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;Model-Graded Fact&quot;</span><span class="p">,</span>
+        <span class="n">judge_id</span><span class="o">=</span><span class="n">judge_id</span><span class="p">,</span>
+        <span class="n">judge_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">),</span>
+        <span class="n">user_prompt</span><span class="o">=</span><span class="n">user_prompt</span><span class="p">,</span>
+        <span class="n">system_prompt</span><span class="o">=</span><span class="n">system_prompt</span><span class="p">,</span>
+        <span class="n">response_format</span><span class="o">=</span><span class="n">response_format</span><span class="p">,</span>
+        <span class="n">scoring_fn</span><span class="o">=</span><span class="n">scoring_fn</span><span class="p">,</span>
+    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 
 

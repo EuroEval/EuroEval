@@ -573,6 +573,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1336,6 +1340,39 @@
     <span class="md-ellipsis">
       
         MMLU-fr
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-include-fr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-fr
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-multiloko-fr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: MultiLoKo-fr
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-multinrc-fr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: MultiNRC-fr
       
     </span>
   </a>
@@ -2300,6 +2337,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-include-fr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-fr
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-multiloko-fr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: MultiLoKo-fr
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-multinrc-fr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: MultiNRC-fr
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2936,6 +3006,154 @@ Répondez à la question ci-dessus par &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ou 
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-fr
+</code></pre></div>
+<h3 id="unofficial-include-fr">Unofficial: INCLUDE-fr<a class="headerlink" href="#unofficial-include-fr" title="Permanent link">&para;</a></h3>
+<p>This dataset is part of <a href="https://doi.org/10.48550/arXiv.2411.19799">INCLUDE</a>, a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.</p>
+<p>The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.</p>
+<p>Here are a few examples from the dataset:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Qui est le dernier Président de la IVème République ?\nChoix:\na. René Coty\nb. Félix Gaillard\nc. Charles de Gaulle\nd. Alain Poher&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;History&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Qui a réalisé le film « Léon » ?\nChoix:\na. Costa-Gavras\nb. Luc Besson\nc. Martin Scorsese\nd. Steven Spielberg&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Culturology&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Pour consulter mon solde de points, je me rends sur le site internet :\nChoix:\na. Allopoints.\nb. Info-point.\nc. Telepoint.\nd. Point-permis.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Driving License&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
+Réponse: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
+
+Répondez à la question ci-dessus par {labels_str}, et rien d&#39;autre.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>include-fr
+</code></pre></div>
+<h3 id="unofficial-multiloko-fr">Unofficial: MultiLoKo-fr<a class="headerlink" href="#unofficial-multiloko-fr" title="Permanent link">&para;</a></h3>
+<p>This dataset was published in <a href="https://arxiv.org/abs/2504.10356">this paper</a> and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The French
+questions are separately sourced and designed to target locally relevant topics for
+French-speaking populations.</p>
+<p>We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Quel est le métier de la seconde femme de Joseph Ferdinand Cheval?\nChoix:\na. tailleuse\nb. couturière\nc. institutrice\nd. boulangère&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Qui est le père des quatre enfants de Mercotte ?\nChoix:\na. Cyril Lignac\nb. Mercorelli\nc. Bernard Laurance\nd. Philippe Etchebest&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Dans le film de 2017120 Battements par minute, à quelle association sont rattachées les personnes qui répandent les cendres de Sean sur des petits-fours ?\nChoix:\na. AIDES\nb. SOS Homophobie\nc. Act Up– Paris\nd. Sidaction&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
+Réponse: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
+
+Répondez à la question ci-dessus par &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ou &#39;d&#39;, et rien d&#39;autre.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multiloko-fr
+</code></pre></div>
+<h3 id="unofficial-multinrc-fr">Unofficial: MultiNRC-fr<a class="headerlink" href="#unofficial-multinrc-fr" title="Permanent link">&para;</a></h3>
+<p>This dataset was published <a href="https://doi.org/10.48550/arXiv.2507.17476">in this paper</a>
+and consists of native-authored reasoning questions designed to assess multilingual
+reasoning ability. Unlike benchmarks that simply translate English-centric content, the
+questions are crafted by native speakers to capture linguistic and cultural nuances.</p>
+<p>The original dataset only has a 'test' split. We use 64 samples for training, 128 for
+validation, and the rest for testing.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mon premier est la même première lettre de l&#39;alphabet d&#39;un fruit royal. Mon deuxième se prononce comme le liquide indispensable au corps humain. Mon troisième est une lettre qui se prononce comme le mot qui est l&#39;inverse du mot amour. Mon tout est quelque chose qui nous réjouit.\nChoix:\na. Don.\nb. Jouet\nc. Rire\nd. Roi&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Mon frère souhaite célébrer la Saint Jean avec la famille de sa copine cette année. Il va passer son permis juste après la pentecôte et a 17 ans. Pourra-t-il conduire seul pour y aller?\nChoix:\na. Non, il doit attendre d&#39;avoir 18 ans pour conduire seul.\nb. Oui, si il réussi l&#39;examen du permis de conduire.\nc. Non, il doit obligatoirement être accompagné d&#39;un adulte jusqu&#39;à ses 21 ans.\nd. Oui, il pourra conduire seul, même sans passer l&#39;examen du permis de conduire.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Si mon premier, ambulant, fait peur, mon second est, lui, délicieux, et mon tout boira le vin nouveau. Qui suis-je ?\nChoix:\na. squelette vineux\nb. fantôme gourmand\nc. cadavre exquis\nd. zombie friand&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Les questions suivantes sont des questions à choix multiples (avec réponses).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
+Réponse: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Question: {text}
+
+Répondez à la question ci-dessus par {labels_str}, et rien d&#39;autre.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multinrc-fr
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
 <h3 id="hellaswag-fr">HellaSwag-fr<a class="headerlink" href="#hellaswag-fr" title="Permanent link">&para;</a></h3>

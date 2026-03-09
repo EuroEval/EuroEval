@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../named-entity-recognition/">
+        <link rel="prev" href="../natural-language-inference/">
       
       
         <link rel="next" href="../sentiment-classification/">
@@ -575,6 +575,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -834,6 +838,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../natural-language-inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Natural Language Inference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1037,6 +1069,34 @@
     
   
     Summarization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tool-calling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool calling
   
 
     
@@ -1488,11 +1548,11 @@ generative model is used to answer a question based on one or more retrieved doc
 task.</p>
 <h2 id="metrics">📊 Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h2>
 <p>The primary metric we use when evaluating the performance of a model on the reading
-comprehension task is the exact match (EM) score, which is the percentage of questions
-for which the model provides the exact answer.</p>
-<p>We also report the <a href="https://en.wikipedia.org/wiki/F1_score">F1-score</a> on a
-character-basis, which is more lenient than the EM score, as it allows for small
-differences in the answer.</p>
+comprehension task is the <a href="https://en.wikipedia.org/wiki/F1_score">F1-score</a> on a
+character-basis.</p>
+<p>We also report the exact match (EM) score, which is the percentage of questions
+for which the model provides the exact answer. It is less lenient than the EM score,
+as it does not allow for small differences in the answer.</p>
 <h2 id="how-to-run">🛠️ How to run<a class="headerlink" href="#how-to-run" title="Permanent link">&para;</a></h2>
 <p>In the command line interface of the <a href="/python-package">EuroEval Python package</a>, you
 can benchmark your favorite model on the reading comprehension task like so:</p>

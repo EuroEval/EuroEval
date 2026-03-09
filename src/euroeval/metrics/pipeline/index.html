@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1280,7 +1284,17 @@
 <span class="normal">294</span>
 <span class="normal">295</span>
 <span class="normal">296</span>
-<span class="normal">297</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on a scikit-learn Pipeline.&quot;&quot;&quot;</span>
+<span class="normal">297</span>
+<span class="normal">298</span>
+<span class="normal">299</span>
+<span class="normal">300</span>
+<span class="normal">301</span>
+<span class="normal">302</span>
+<span class="normal">303</span>
+<span class="normal">304</span>
+<span class="normal">305</span>
+<span class="normal">306</span>
+<span class="normal">307</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics based on a scikit-learn Pipeline.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1293,7 +1307,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.special</span><span class="w"> </span><span class="kn">import</span> <span class="n">expit</span> <span class="k">as</span> <span class="n">sigmoid</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">no_terminal_output</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">log_once</span><span class="p">,</span> <span class="n">no_terminal_output</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..string_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">unscramble</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
 
@@ -1466,7 +1480,7 @@
 
 <span class="sd">    Raises:</span>
 <span class="sd">        InvalidBenchmark:</span>
-<span class="sd">            If the predictions are not valid for the European Values metric.</span>
+<span class="sd">            If the question has no valid choices (all choices were None).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">num_questions</span> <span class="o">=</span> <span class="mi">53</span>
     <span class="n">num_phrasings_per_question</span> <span class="o">=</span> <span class="mi">5</span>
@@ -1479,11 +1493,21 @@
             <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">choice</span> <span class="ow">in</span> <span class="n">idx_to_choice</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">choice</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">}</span>
-        <span class="k">if</span> <span class="n">prediction</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">idx_to_choice</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">idx_to_choice</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;The prediction </span><span class="si">{</span><span class="n">prediction</span><span class="si">}</span><span class="s2"> is not a valid index for the &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;question with choices </span><span class="si">{</span><span class="n">idx_to_choice</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="s2">&quot;The question has no valid choices (all choices were None), which &quot;</span>
+                <span class="s2">&quot;should never happen. Please report this issue to the EuroEval team &quot;</span>
+                <span class="s2">&quot;at github.com/EuroEval/EuroEval/issues.&quot;</span>
             <span class="p">)</span>
+        <span class="k">if</span> <span class="n">prediction</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">idx_to_choice</span><span class="p">:</span>
+            <span class="n">first_valid_idx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">idx_to_choice</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The prediction </span><span class="si">{</span><span class="n">prediction</span><span class="si">}</span><span class="s2"> is not a valid index for the question &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;with choices </span><span class="si">{</span><span class="n">idx_to_choice</span><span class="si">}</span><span class="s2">. Defaulting to the first valid index &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">first_valid_idx</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">prediction</span> <span class="o">=</span> <span class="n">first_valid_idx</span>
         <span class="n">integer_prediction</span> <span class="o">=</span> <span class="n">idx_to_choice</span><span class="p">[</span><span class="n">prediction</span><span class="p">]</span>
         <span class="n">integer_predictions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">integer_prediction</span><span class="p">)</span>
 

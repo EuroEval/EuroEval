@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2289,7 +2293,50 @@
 <span class="normal">1275</span>
 <span class="normal">1276</span>
 <span class="normal">1277</span>
-<span class="normal">1278</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1278</span>
+<span class="normal">1279</span>
+<span class="normal">1280</span>
+<span class="normal">1281</span>
+<span class="normal">1282</span>
+<span class="normal">1283</span>
+<span class="normal">1284</span>
+<span class="normal">1285</span>
+<span class="normal">1286</span>
+<span class="normal">1287</span>
+<span class="normal">1288</span>
+<span class="normal">1289</span>
+<span class="normal">1290</span>
+<span class="normal">1291</span>
+<span class="normal">1292</span>
+<span class="normal">1293</span>
+<span class="normal">1294</span>
+<span class="normal">1295</span>
+<span class="normal">1296</span>
+<span class="normal">1297</span>
+<span class="normal">1298</span>
+<span class="normal">1299</span>
+<span class="normal">1300</span>
+<span class="normal">1301</span>
+<span class="normal">1302</span>
+<span class="normal">1303</span>
+<span class="normal">1304</span>
+<span class="normal">1305</span>
+<span class="normal">1306</span>
+<span class="normal">1307</span>
+<span class="normal">1308</span>
+<span class="normal">1309</span>
+<span class="normal">1310</span>
+<span class="normal">1311</span>
+<span class="normal">1312</span>
+<span class="normal">1313</span>
+<span class="normal">1314</span>
+<span class="normal">1315</span>
+<span class="normal">1316</span>
+<span class="normal">1317</span>
+<span class="normal">1318</span>
+<span class="normal">1319</span>
+<span class="normal">1320</span>
+<span class="normal">1321</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2368,7 +2415,8 @@
         <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">,</span>
         <span class="n">attention_backend</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span>
             <span class="o">*</span><span class="n">ATTENTION_BACKENDS</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
-        <span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;FLASHINFER&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">generative_type</span><span class="p">:</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">custom_datasets_file</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;custom_datasets.py&quot;</span><span class="p">),</span>
         <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -2378,6 +2426,8 @@
         <span class="n">model_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_context_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">vocabulary_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the benchmarker.</span>
 
@@ -2440,8 +2490,9 @@
 <span class="sd">                the risk of running out of GPU memory. Only reduce this if you are</span>
 <span class="sd">                running out of GPU memory. Defaults to 0.9.</span>
 <span class="sd">            attention_backend:</span>
-<span class="sd">                The attention backend to use for vLLM. Defaults to FLASHINFER. Only</span>
-<span class="sd">                relevant if the model is generative.</span>
+<span class="sd">                The attention backend to use for vLLM. Only relevant if the model is</span>
+<span class="sd">                generative. If None then vLLM will automatically choose the best</span>
+<span class="sd">                backend. Defaults to None.</span>
 <span class="sd">            generative_type:</span>
 <span class="sd">                The type of generative model to benchmark. Only relevant if the model is</span>
 <span class="sd">                generative. If not specified, then the type will be inferred based on</span>
@@ -2466,6 +2517,12 @@
 <span class="sd">                Deprecated argument. Please use `language` instead.</span>
 <span class="sd">            batch_size:</span>
 <span class="sd">                Deprecated argument. Please use `finetuning_batch_size` instead.</span>
+<span class="sd">            max_context_length:</span>
+<span class="sd">                Override for the maximum context length of the model. If None, the value</span>
+<span class="sd">                will be inferred automatically from the model. Defaults to None.</span>
+<span class="sd">            vocabulary_size:</span>
+<span class="sd">                Override for the vocabulary size of the model. If None, the value will</span>
+<span class="sd">                be inferred automatically from the model. Defaults to None.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError:</span>
@@ -2534,6 +2591,8 @@
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;FULL_LOG&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
             <span class="n">verbose</span> <span class="o">=</span> <span class="kc">True</span>
 
+        <span class="n">adjust_logging_level</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config_default_params</span> <span class="o">=</span> <span class="n">BenchmarkConfigParams</span><span class="p">(</span>
             <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">,</span>
             <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
@@ -2562,6 +2621,8 @@
             <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">,</span>
             <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
             <span class="n">run_with_cli</span><span class="o">=</span><span class="n">run_with_cli</span><span class="p">,</span>
+            <span class="n">max_context_length</span><span class="o">=</span><span class="n">max_context_length</span><span class="p">,</span>
+            <span class="n">vocabulary_size</span><span class="o">=</span><span class="n">vocabulary_size</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span> <span class="o">=</span> <span class="n">build_benchmark_config</span><span class="p">(</span>
@@ -2690,6 +2751,8 @@
         <span class="n">model_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_context_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">vocabulary_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Benchmarks models on datasets.</span>
 
@@ -2798,6 +2861,14 @@
 <span class="sd">                Deprecated argument. Please use `language` instead.</span>
 <span class="sd">            batch_size:</span>
 <span class="sd">                Deprecated argument. Please use `finetuning_batch_size` instead.</span>
+<span class="sd">            max_context_length:</span>
+<span class="sd">                Override for the maximum context length of the model. If None, the</span>
+<span class="sd">                value will be inferred automatically from the model. Defaults to the</span>
+<span class="sd">                value specified when initialising the benchmarker.</span>
+<span class="sd">            vocabulary_size:</span>
+<span class="sd">                Override for the vocabulary size of the model. If None, the value will</span>
+<span class="sd">                be inferred automatically from the model. Defaults to the value</span>
+<span class="sd">                specified when initialising the benchmarker.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of benchmark results.</span>
@@ -2809,7 +2880,7 @@
 <span class="sd">                If we&#39;re offline benchmarking an adapter model, or if model loading</span>
 <span class="sd">                failed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">log</span><span class="p">(</span>
+        <span class="n">log_once</span><span class="p">(</span>
             <span class="s2">&quot;Started EuroEval run. Run with `--verbose` for more information.&quot;</span><span class="p">,</span>
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
         <span class="p">)</span>
@@ -2974,6 +3045,16 @@
                 <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config_default_params</span><span class="o">.</span><span class="n">debug</span>
             <span class="p">),</span>
             <span class="n">run_with_cli</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config_default_params</span><span class="o">.</span><span class="n">run_with_cli</span><span class="p">,</span>
+            <span class="n">max_context_length</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">max_context_length</span>
+                <span class="k">if</span> <span class="n">max_context_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config_default_params</span><span class="o">.</span><span class="n">max_context_length</span>
+            <span class="p">),</span>
+            <span class="n">vocabulary_size</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">vocabulary_size</span>
+                <span class="k">if</span> <span class="n">vocabulary_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config_default_params</span><span class="o">.</span><span class="n">vocabulary_size</span>
+            <span class="p">),</span>
         <span class="p">)</span>
         <span class="n">benchmark_config</span> <span class="o">=</span> <span class="n">build_benchmark_config</span><span class="p">(</span>
             <span class="n">benchmark_config_params</span><span class="o">=</span><span class="n">benchmark_config_params</span>
@@ -3071,7 +3152,7 @@
                     <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
                         <span class="s2">&quot;Offline benchmarking of models with adapters is not currently &quot;</span>
                         <span class="s2">&quot;supported. An active internet connection is required. &quot;</span>
-                        <span class="s2">&quot;</span><span class="si">{open_issue_msg}</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">open_issue_msg</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="p">)</span>
                 <span class="k">elif</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">download_only</span><span class="p">:</span>
                     <span class="n">log_once</span><span class="p">(</span>
@@ -3113,6 +3194,15 @@
                     <span class="p">)</span>
                     <span class="n">benchmark_params_to_revert</span><span class="p">[</span><span class="s2">&quot;few_shot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="n">benchmark_config</span><span class="o">.</span><span class="n">few_shot</span> <span class="o">=</span> <span class="kc">False</span>
+
+                <span class="k">if</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">download_only</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_download</span><span class="p">(</span>
+                        <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span><span class="p">,</span>
+                        <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
+                        <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">num_finished_benchmarks</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">continue</span>
 
                 <span class="c1"># We do not re-initialise generative models as their architecture is not</span>
                 <span class="c1"># customised to specific datasets</span>

@@ -573,6 +573,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1370,6 +1374,28 @@
     <span class="md-ellipsis">
       
         Global-MMLU-el
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-include-el" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-el
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-greekmmlu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: GreekMMLU
       
     </span>
   </a>
@@ -2206,6 +2232,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-include-el" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-el
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-greekmmlu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: GreekMMLU
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2647,6 +2695,111 @@ sets are sampled from the test set.</p>
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>global-mmlu-el
+</code></pre></div>
+<h3 id="unofficial-include-el">Unofficial: INCLUDE-el<a class="headerlink" href="#unofficial-include-el" title="Permanent link">&para;</a></h3>
+<p>This dataset is part of <a href="https://doi.org/10.48550/arXiv.2411.19799">INCLUDE</a>, a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.</p>
+<p>The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.</p>
+<p>Here are a few examples from the dataset:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;45. Με ποιο είδος καρκίνου σχετίζεται η υπέρταση:\nΕπιλογές:\na. Καρκίνο ενδομητρίου\nb. Καρκίνο σάλπιγγας\nc. Καρκίνο ωοθηκών\nd. Καρκίνο αιδοίου&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Medical License&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;73. Σε ποιο από τα παρακάτω οστά εντοπίζεται το έξω σφυρό\nΕπιλογές:\na. Κνήμη\nb. Περόνη\nc. Αστράγαλος\nd. Πτέρνα&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Medicine&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Η συχνότητα ταλάντωσης μιας πηγής, που παράγει εγκάρσιο αρμονικό κύμα σε ένα ελαστικό μέσο, διπλασιάζεται χωρίς να μεταβληθεί το πλάτος της ταλάντωσης. Τότε\nΕπιλογές:\na. η ταχύτητα διάδοσης του κύματος διπλασιάζεται.\nb. το μήκος κύματος του αρμονικού κύματος διπλασιάζεται.\nc. το μήκος κύματος του αρμονικού κύματος υποδιπλασιάζεται.\nd. η ενέργεια ταλάντωσης ενός σημείου του ελαστικού μέσου στο οποίο διαδίδεται το κύμα διπλασιάζεται.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Physics&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Ακολουθούν ερωτήσεις πολλαπλών επιλογών (με απαντήσεις).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Ερώτηση: {text}
+Απάντηση: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Ερώτηση: {text}
+
+Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας {labels_str}, και τίποτα άλλο.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>include-el
+</code></pre></div>
+<h3 id="unofficial-greekmmlu">Unofficial: GreekMMLU<a class="headerlink" href="#unofficial-greekmmlu" title="Permanent link">&para;</a></h3>
+<p>GreekMMLU was published in <a href="https://doi.org/10.48550/arXiv.2602.05150">this paper</a> and
+is a native Greek benchmark for massive multitask language understanding, comprising
+multiple-choice questions across 45 subject areas sourced from academic, professional,
+and governmental exams in Greece. Unlike machine-translated benchmarks, all questions
+are originally authored or sourced in Greek.</p>
+<p>The publicly released dataset includes a 'dev' split and a 'test' split. We use the
+'dev' split as the training split, which has 215 samples after filtering. We sample
+256 / 2,048 samples from the 'test' split for our validation and test splits,
+stratified by subject.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ποια είναι η βαθύτερη λίμνη της Γης;\nΕπιλογές:\na. Βαϊκάλη\nb. Κασπία\nc. Βικτώρια\nd. Νεκρά Θάλασσα&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Geography&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Στο CorelDraw για να κάνουμε zoom in στην απεικόνιση της οθόνης χρησιμοποιούμε τη συντόμευση \&quot;Ctrl + +\&quot;.\nΕπιλογές:\na. Σωστό\nb. Λάθος&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Art&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ποιο είναι το αντίθετο του επιθέτου «ομαλός»;\nΕπιλογές:\na. λεία\nb. ομαλός\nc. ανώμαλος\nd. δυνατός&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Modern Greek Language&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Ακολουθούν ερωτήσεις πολλαπλών επιλογών (με απαντήσεις).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Ερώτηση: {text}
+Απάντηση: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Ερώτηση: {text}
+
+Απαντήστε στην παραπάνω ερώτηση χρησιμοποιώντας &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ή &#39;d&#39;, και τίποτα άλλο.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>greek-mmlu
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
 <h3 id="winogrande-el">Winogrande-el<a class="headerlink" href="#winogrande-el" title="Permanent link">&para;</a></h3>

@@ -573,6 +573,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1656,6 +1660,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-include-sr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-sr
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2178,6 +2193,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-include-sr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-sr
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2597,6 +2623,58 @@ Odgovorite na navedeno pitanje koristeći &#39;a&#39;, &#39;b&#39;, &#39;c&#39; 
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-sr
+</code></pre></div>
+<h3 id="unofficial-include-sr">Unofficial: INCLUDE-sr<a class="headerlink" href="#unofficial-include-sr" title="Permanent link">&para;</a></h3>
+<p>This dataset is part of <a href="https://doi.org/10.48550/arXiv.2411.19799">INCLUDE</a>, a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.</p>
+<p>The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.</p>
+<p>Here are a few examples from the dataset:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Које се од наведених понашања уобичајено појављује на крају сензомоторичке фазе?\nOpcije:\na. Дете брише мрље од чоколаде с лица када у огледалу види трагове чоколаде.\nb. Дете се користи кухачом као мачем којим напада замишљене непријатеље.\nc. Дете зна да количина сока остаје иста без обзира на облик чаше.\nd. Дете игра улогу маме па лутку води у шетњу и пева јој.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Psychology&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Која од наведених супстанци није елементарна супстанца?\nOpcije:\na. арсен\nb. амалгам\nc. астат\nd. америциј&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Chemistry&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Како се назива облик агресије којим се користи ученик који виче на свога пријатеља након што га је наставник неправедно оценио?\nOpcije:\na. физичка агресија\nb. директна агресија\nc. помакнута агресија\nd. пасивна агресија&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Psychology&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Slede pitanja višestrukog izbora (sa odgovorima).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pitanje: {text}
+Odgovor: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pitanje: {text}
+
+Odgovorite na navedeno pitanje koristeći {labels_str}, i ništa drugo.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>include-sr
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
 <h3 id="winogrande-sr">Winogrande-sr<a class="headerlink" href="#winogrande-sr" title="Permanent link">&para;</a></h3>

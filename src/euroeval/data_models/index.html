@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2305,7 +2309,109 @@
 <span class="normal">1059</span>
 <span class="normal">1060</span>
 <span class="normal">1061</span>
-<span class="normal">1062</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">1062</span>
+<span class="normal">1063</span>
+<span class="normal">1064</span>
+<span class="normal">1065</span>
+<span class="normal">1066</span>
+<span class="normal">1067</span>
+<span class="normal">1068</span>
+<span class="normal">1069</span>
+<span class="normal">1070</span>
+<span class="normal">1071</span>
+<span class="normal">1072</span>
+<span class="normal">1073</span>
+<span class="normal">1074</span>
+<span class="normal">1075</span>
+<span class="normal">1076</span>
+<span class="normal">1077</span>
+<span class="normal">1078</span>
+<span class="normal">1079</span>
+<span class="normal">1080</span>
+<span class="normal">1081</span>
+<span class="normal">1082</span>
+<span class="normal">1083</span>
+<span class="normal">1084</span>
+<span class="normal">1085</span>
+<span class="normal">1086</span>
+<span class="normal">1087</span>
+<span class="normal">1088</span>
+<span class="normal">1089</span>
+<span class="normal">1090</span>
+<span class="normal">1091</span>
+<span class="normal">1092</span>
+<span class="normal">1093</span>
+<span class="normal">1094</span>
+<span class="normal">1095</span>
+<span class="normal">1096</span>
+<span class="normal">1097</span>
+<span class="normal">1098</span>
+<span class="normal">1099</span>
+<span class="normal">1100</span>
+<span class="normal">1101</span>
+<span class="normal">1102</span>
+<span class="normal">1103</span>
+<span class="normal">1104</span>
+<span class="normal">1105</span>
+<span class="normal">1106</span>
+<span class="normal">1107</span>
+<span class="normal">1108</span>
+<span class="normal">1109</span>
+<span class="normal">1110</span>
+<span class="normal">1111</span>
+<span class="normal">1112</span>
+<span class="normal">1113</span>
+<span class="normal">1114</span>
+<span class="normal">1115</span>
+<span class="normal">1116</span>
+<span class="normal">1117</span>
+<span class="normal">1118</span>
+<span class="normal">1119</span>
+<span class="normal">1120</span>
+<span class="normal">1121</span>
+<span class="normal">1122</span>
+<span class="normal">1123</span>
+<span class="normal">1124</span>
+<span class="normal">1125</span>
+<span class="normal">1126</span>
+<span class="normal">1127</span>
+<span class="normal">1128</span>
+<span class="normal">1129</span>
+<span class="normal">1130</span>
+<span class="normal">1131</span>
+<span class="normal">1132</span>
+<span class="normal">1133</span>
+<span class="normal">1134</span>
+<span class="normal">1135</span>
+<span class="normal">1136</span>
+<span class="normal">1137</span>
+<span class="normal">1138</span>
+<span class="normal">1139</span>
+<span class="normal">1140</span>
+<span class="normal">1141</span>
+<span class="normal">1142</span>
+<span class="normal">1143</span>
+<span class="normal">1144</span>
+<span class="normal">1145</span>
+<span class="normal">1146</span>
+<span class="normal">1147</span>
+<span class="normal">1148</span>
+<span class="normal">1149</span>
+<span class="normal">1150</span>
+<span class="normal">1151</span>
+<span class="normal">1152</span>
+<span class="normal">1153</span>
+<span class="normal">1154</span>
+<span class="normal">1155</span>
+<span class="normal">1156</span>
+<span class="normal">1157</span>
+<span class="normal">1158</span>
+<span class="normal">1159</span>
+<span class="normal">1160</span>
+<span class="normal">1161</span>
+<span class="normal">1162</span>
+<span class="normal">1163</span>
+<span class="normal">1164</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Data models used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.metadata</span>
@@ -2319,9 +2425,14 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">pydantic</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.generation.configuration_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationConfig</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">ATTENTION_BACKENDS</span><span class="p">,</span> <span class="n">MAX_NUMBER_OF_LOGGING_LANGUAGES</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ATTENTION_BACKENDS</span><span class="p">,</span>
+    <span class="n">CHOICES_MAPPING</span><span class="p">,</span>
+    <span class="n">MAX_NUMBER_OF_LOGGING_LANGUAGES</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">ModelType</span><span class="p">,</span> <span class="n">TaskGroup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidBenchmark</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -2335,7 +2446,8 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.metrics.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ScoreDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_preprocessing_func</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">FailedInstance</span><span class="p">,</span> <span class="n">ScoreDict</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceBackend</span>
@@ -2415,6 +2527,12 @@
 <span class="sd">        uses_structured_output (optional):</span>
 <span class="sd">            Whether the task uses structured output. If True, the task will return</span>
 <span class="sd">            structured output (e.g., BIO tags for NER). Defaults to False.</span>
+<span class="sd">        structured_output_format (optional):</span>
+<span class="sd">            Schema to use for structured output as a (deserializable) JSON string.</span>
+<span class="sd">            Only used if `uses_structured_output` is True.</span>
+<span class="sd">            If None output structure will be determined by a default behavior</span>
+<span class="sd">            based on the task.</span>
+<span class="sd">            Defaults to None.</span>
 <span class="sd">        uses_logprobs (optional):</span>
 <span class="sd">            Whether the task uses log probabilities. If True, the task will return</span>
 <span class="sd">            log probabilities for the generated tokens. Defaults to False.</span>
@@ -2450,6 +2568,7 @@
     <span class="n">default_labels</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
     <span class="n">requires_zero_shot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">uses_structured_output</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">structured_output_format</span><span class="p">:</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">uses_logprobs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">requires_logprobs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">default_allowed_model_types</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ModelType</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
@@ -2467,6 +2586,13 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Post-initialisation checks.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">uses_logprobs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_logprobs</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">requires_logprobs</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_structured_output</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">structured_output_format</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;`structured_output_format` is specified however &quot;</span>
+                <span class="s2">&quot;`uses_structured_output=False` &quot;</span>
+                <span class="s2">&quot;- thus this specified structure will not be used.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a hash of the task.&quot;&quot;&quot;</span>
@@ -2498,6 +2624,10 @@
         <span class="n">test_split</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span>
         <span class="n">bootstrap_samples</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">unofficial</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">input_column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span>
+        <span class="n">target_column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">choices_column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">preprocessing_func</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">DatasetDict</span><span class="p">],</span> <span class="n">DatasetDict</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">_prompt_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">_prompt_template</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">_instruction_prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2584,6 +2714,28 @@
 <span class="sd">                Whether to bootstrap the dataset samples. Defaults to True.</span>
 <span class="sd">            unofficial (optional):</span>
 <span class="sd">                Whether the dataset is unofficial. Defaults to False.</span>
+<span class="sd">            input_column (optional):</span>
+<span class="sd">                The name of the column in the dataset that contains the input texts.</span>
+<span class="sd">                If different from &quot;text&quot;, this column will be renamed to &quot;text&quot;. If</span>
+<span class="sd">                `choices_column` is also set, the two columns are merged into a single</span>
+<span class="sd">                &quot;text&quot; column formatted as in the official dataset creation scripts.</span>
+<span class="sd">                Defaults to &quot;text&quot;.</span>
+<span class="sd">            target_column (optional):</span>
+<span class="sd">                The name of the column in the dataset that contains the labels. If None,</span>
+<span class="sd">                the default column name for the task group is used (&quot;label&quot; for most</span>
+<span class="sd">                tasks, &quot;labels&quot; for token classification, &quot;target_text&quot; for text-to-text</span>
+<span class="sd">                tasks). Defaults to None.</span>
+<span class="sd">            choices_column (optional):</span>
+<span class="sd">                The name of the column (or list of column names) in the dataset that</span>
+<span class="sd">                contains the answer choices. If a single column name is provided, that</span>
+<span class="sd">                column must hold a list of answer-choice strings. If a list of column</span>
+<span class="sd">                names is provided, each column holds a single answer-choice string.</span>
+<span class="sd">                When set, the input text and choices are merged into a single &quot;text&quot;</span>
+<span class="sd">                column. Defaults to None.</span>
+<span class="sd">            preprocessing_func (optional):</span>
+<span class="sd">                A custom preprocessing function that takes a DatasetDict and returns a</span>
+<span class="sd">                DatasetDict. If set together with any of the column arguments, a warning</span>
+<span class="sd">                is logged and `preprocessing_func` takes precedence. Defaults to None.</span>
 <span class="sd">            _prompt_prefix (optional):</span>
 <span class="sd">                This argument is deprecated. Please use `prompt_prefix` instead.</span>
 <span class="sd">            _prompt_template (optional):</span>
@@ -2760,6 +2912,40 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">test_split</span> <span class="o">=</span> <span class="n">test_split</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bootstrap_samples</span> <span class="o">=</span> <span class="n">bootstrap_samples</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">unofficial</span> <span class="o">=</span> <span class="n">unofficial</span>
+
+        <span class="c1"># Build or assign the preprocessing function</span>
+        <span class="n">column_args_set</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">input_column</span> <span class="o">!=</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span>
+                <span class="n">target_column</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">choices_column</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">preprocessing_func</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">column_args_set</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;Both `preprocessing_func` and column arguments (`input_column`, &quot;</span>
+                <span class="s2">&quot;`target_column`, `choices_column`) are set. `preprocessing_func` &quot;</span>
+                <span class="s2">&quot;takes precedence and the column arguments will be ignored.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing_func</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">DatasetDict</span><span class="p">],</span> <span class="n">DatasetDict</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">preprocessing_func</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">column_args_set</span><span class="p">:</span>
+            <span class="c1"># Determine the language-specific choices label</span>
+            <span class="n">main_lang</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">languages</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">lang_code</span> <span class="o">=</span> <span class="n">main_lang</span><span class="o">.</span><span class="n">code</span> <span class="k">if</span> <span class="n">main_lang</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;en&quot;</span>
+            <span class="n">choices_label</span> <span class="o">=</span> <span class="n">CHOICES_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lang_code</span><span class="p">,</span> <span class="s2">&quot;Choices&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing_func</span> <span class="o">=</span> <span class="n">build_preprocessing_func</span><span class="p">(</span>
+                <span class="n">dataset_name</span><span class="o">=</span><span class="n">name</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="n">task_group</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span><span class="p">,</span>
+                <span class="n">input_column</span><span class="o">=</span><span class="n">input_column</span><span class="p">,</span>
+                <span class="n">target_column</span><span class="o">=</span><span class="n">target_column</span><span class="p">,</span>
+                <span class="n">choices_column</span><span class="o">=</span><span class="n">choices_column</span><span class="p">,</span>
+                <span class="n">choices_label</span><span class="o">=</span><span class="n">choices_label</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">preprocessing_func</span> <span class="o">=</span> <span class="n">preprocessing_func</span>  <span class="c1"># None or user-provided</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.data_models.DatasetConfig.name"><a href="../../../api/euroeval/data_models/#euroeval.data_models.DatasetConfig.name" title="Go to docs">[docs]</a></div>
@@ -3024,8 +3210,9 @@
 <span class="sd">            this if you are running out of GPU memory. Only relevant if the model is</span>
 <span class="sd">            generative.</span>
 <span class="sd">        attention_backend:</span>
-<span class="sd">            The attention backend to use for vLLM. Defaults to FLASHINFER. Only</span>
-<span class="sd">            relevant if the model is generative.</span>
+<span class="sd">            The attention backend to use for vLLM. Only relevant if the model is</span>
+<span class="sd">            generative. If None then vLLM will automatically select the best attention</span>
+<span class="sd">            backend.</span>
 <span class="sd">        requires_safetensors:</span>
 <span class="sd">            Whether to only allow models that use the safetensors format.</span>
 <span class="sd">        generative_type:</span>
@@ -3043,6 +3230,12 @@
 <span class="sd">            Whether to run the benchmark in debug mode.</span>
 <span class="sd">        run_with_cli:</span>
 <span class="sd">            Whether the benchmark is being run with the CLI.</span>
+<span class="sd">        max_context_length:</span>
+<span class="sd">            Override for the maximum context length of the model. If None, the value</span>
+<span class="sd">            will be inferred automatically from the model.</span>
+<span class="sd">        vocabulary_size:</span>
+<span class="sd">            Override for the vocabulary size of the model. If None, the value will be</span>
+<span class="sd">            inferred automatically from the model.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">datasets</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">DatasetConfig</span><span class="p">]</span>
@@ -3062,9 +3255,12 @@
     <span class="n">few_shot</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">num_iterations</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">attention_backend</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span>
-        <span class="o">*</span><span class="n">ATTENTION_BACKENDS</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
-    <span class="p">]</span>
+    <span class="n">attention_backend</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span>
+            <span class="o">*</span><span class="n">ATTENTION_BACKENDS</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
+        <span class="p">]</span>
+        <span class="o">|</span> <span class="kc">None</span>
+    <span class="p">)</span>
     <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">generative_type</span><span class="p">:</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span>
@@ -3072,6 +3268,8 @@
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">max_context_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">vocabulary_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Task</span><span class="p">]:</span><div class="mkapi-source-link" id="euroeval.data_models.BenchmarkConfig.tasks"><a href="../../../api/euroeval/data_models/#euroeval.data_models.BenchmarkConfig.tasks" title="Go to docs">[docs]</a></div>
@@ -3113,15 +3311,20 @@
     <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">gpu_memory_utilization</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">attention_backend</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span>
-        <span class="o">*</span><span class="n">ATTENTION_BACKENDS</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
-    <span class="p">]</span>
+    <span class="n">attention_backend</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span>
+            <span class="o">*</span><span class="n">ATTENTION_BACKENDS</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
+        <span class="p">]</span>
+        <span class="o">|</span> <span class="kc">None</span>
+    <span class="p">)</span>
     <span class="n">generative_type</span><span class="p">:</span> <span class="n">GenerativeType</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">custom_datasets_file</span><span class="p">:</span> <span class="n">Path</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">max_context_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">vocabulary_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">BenchmarkResult</span><span class="p">(</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.data_models.BenchmarkResult"><a href="../../../api/euroeval/data_models/#euroeval.data_models.BenchmarkResult" title="Go to docs">[docs]</a></div>
@@ -3286,12 +3489,17 @@
 <span class="sd">        metadatas (optional):</span>
 <span class="sd">            All the metadata fields for the samples, including ground truth labels (if</span>
 <span class="sd">            applicable). Defaults to an empty list.</span>
+<span class="sd">        failed_instances (optional):</span>
+<span class="sd">            A list of dictionaries, one per failed instance, each containing</span>
+<span class="sd">            ``&quot;sample_index&quot;`` (the index of the sample in the batch) and ``&quot;error&quot;``</span>
+<span class="sd">            (a short description of why it failed). Defaults to an empty list.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">sequences</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="n">predicted_labels</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">scores</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">metadatas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;HashableDict | None&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">failed_instances</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;FailedInstance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Post-initialisation.&quot;&quot;&quot;</span>

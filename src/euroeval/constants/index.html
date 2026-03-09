@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1072,15 +1076,57 @@
 <span class="normal">138</span>
 <span class="normal">139</span>
 <span class="normal">140</span>
-<span class="normal">141</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Constants used throughout the project.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeVar</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskGroup</span>
 
 <span class="c1"># Type variable used for generic typing</span>
-<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
 
 <span class="c1"># This is used as input to generative models; it cannot be a special token</span>
 <span class="n">DUMMY_FILL_VALUE</span> <span class="o">=</span> <span class="mi">100</span>
@@ -1213,6 +1259,48 @@
 <span class="c1"># the languages. This is for instance the case for the speed benchmark, which has all</span>
 <span class="c1"># the languages. The threshold of 5 is somewhat arbitrary.</span>
 <span class="n">MAX_NUMBER_OF_LOGGING_LANGUAGES</span> <span class="o">=</span> <span class="mi">5</span>
+
+<span class="c1"># Language-specific label for the choices section in multiple-choice datasets. The</span>
+<span class="c1"># keys are ISO 639-1 language codes.</span>
+<span class="n">CHOICES_MAPPING</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;ab&quot;</span><span class="p">:</span> <span class="s2">&quot;Choices&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bg&quot;</span><span class="p">:</span> <span class="s2">&quot;Възможности&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;be&quot;</span><span class="p">:</span> <span class="s2">&quot;Варыянты&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ca&quot;</span><span class="p">:</span> <span class="s2">&quot;Opcions&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cs&quot;</span><span class="p">:</span> <span class="s2">&quot;Výběr&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;da&quot;</span><span class="p">:</span> <span class="s2">&quot;Svarmuligheder&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;de&quot;</span><span class="p">:</span> <span class="s2">&quot;Antwortmöglichkeiten&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;el&quot;</span><span class="p">:</span> <span class="s2">&quot;Επιλογές&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;en&quot;</span><span class="p">:</span> <span class="s2">&quot;Choices&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;es&quot;</span><span class="p">:</span> <span class="s2">&quot;Opciones&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;et&quot;</span><span class="p">:</span> <span class="s2">&quot;Vastusevariandid&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fi&quot;</span><span class="p">:</span> <span class="s2">&quot;Vastausvaihtoehdot&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fo&quot;</span><span class="p">:</span> <span class="s2">&quot;Svarmøguleikar&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fr&quot;</span><span class="p">:</span> <span class="s2">&quot;Choix&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hr&quot;</span><span class="p">:</span> <span class="s2">&quot;Izbori&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hu&quot;</span><span class="p">:</span> <span class="s2">&quot;Válaszlehetőségek&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;is&quot;</span><span class="p">:</span> <span class="s2">&quot;Svarmöguleikar&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;it&quot;</span><span class="p">:</span> <span class="s2">&quot;Scelte&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lt&quot;</span><span class="p">:</span> <span class="s2">&quot;Pasirinkimai&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lv&quot;</span><span class="p">:</span> <span class="s2">&quot;Izvēles&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;nl&quot;</span><span class="p">:</span> <span class="s2">&quot;Antwoordopties&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;no&quot;</span><span class="p">:</span> <span class="s2">&quot;Svaralternativer&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pl&quot;</span><span class="p">:</span> <span class="s2">&quot;Opcje&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pt&quot;</span><span class="p">:</span> <span class="s2">&quot;Opções&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ro&quot;</span><span class="p">:</span> <span class="s2">&quot;Opțiuni&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sk&quot;</span><span class="p">:</span> <span class="s2">&quot;Možnosti&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sl&quot;</span><span class="p">:</span> <span class="s2">&quot;Možnosti&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sq&quot;</span><span class="p">:</span> <span class="s2">&quot;Opsione&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sr&quot;</span><span class="p">:</span> <span class="s2">&quot;Opcije&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sv&quot;</span><span class="p">:</span> <span class="s2">&quot;Svarsalternativ&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;uk&quot;</span><span class="p">:</span> <span class="s2">&quot;Варіанти&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># Constants for the tool-calling task</span>
+<span class="n">TOOL_CALLING_CALLS_KEY</span> <span class="o">=</span> <span class="s2">&quot;tool_calls&quot;</span>
+<span class="n">TOOL_CALLING_FUNCTION_KEY</span> <span class="o">=</span> <span class="s2">&quot;function&quot;</span>
+<span class="n">TOOL_CALLING_ARGUMENTS_KEY</span> <span class="o">=</span> <span class="s2">&quot;arguments&quot;</span>
+<span class="n">TOOL_CALLING_KEYS</span> <span class="o">=</span> <span class="p">[</span><span class="n">TOOL_CALLING_FUNCTION_KEY</span><span class="p">,</span> <span class="n">TOOL_CALLING_ARGUMENTS_KEY</span><span class="p">]</span>
 </code></pre></div></td></tr></table></div>
 
 

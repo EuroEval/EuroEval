@@ -573,6 +573,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1611,6 +1615,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-include-pt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-pt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-multiloko-pt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: MultiLoKo-pt
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2267,6 +2293,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-include-pt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: INCLUDE-pt
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-multiloko-pt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: MultiLoKo-pt
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2854,6 +2902,107 @@ Responde à pergunta acima usando só &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ou &
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-pt
+</code></pre></div>
+<h3 id="unofficial-include-pt">Unofficial: INCLUDE-pt<a class="headerlink" href="#unofficial-include-pt" title="Permanent link">&para;</a></h3>
+<p>This dataset is part of <a href="https://doi.org/10.48550/arXiv.2411.19799">INCLUDE</a>, a
+comprehensive knowledge- and reasoning-centric benchmark that evaluates multilingual
+LLMs across 44 languages. It contains 4-option multiple-choice questions extracted from
+academic and professional exams, covering 57 topics including regional knowledge.</p>
+<p>The original dataset consists of a 'validation' split used as training data and a 'test'
+split. We use the 'validation' split as the training split, which has 25 samples. We
+sample 64 samples from the 'test' split for the validation split, and use the remaining
+512 samples for the test split. The sampling is done stratified by the subject column.</p>
+<p>Here are a few examples from the dataset:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Em 2014, num dado país, as famílias efetuaram uma poupança de 10% do seu rendimento disponível médio. No mesmo período, as famílias apresentaram como coeficientes orçamentais das despesas em alimentação e em transportes, respetivamente, 30% e 15%. Nestas condições, em 2014, por cada 100 euros do seu rendimento disponível, as famílias despenderam, em média,\nOpções:\na. 27 euros em alimentação e 13,5 euros em transportes\nb. 30 euros em alimentação e 15 euros em transportes\nc. 30 euros em alimentação e 13,5 euros em transportes\nd. 27 euros em alimentação e 15 euros em transportes&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Economics&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;O combate às disparidades económicas e sociais nos países da UE foi assumido, pela primeira vez, no\nOpções:\na. Tratado de Maastricht, em 1957\nb. Tratado de Maastricht, em 1992\nc. Tratado de Roma, em 1957\nd. Tratado de Roma, em 1992&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Earth science&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Se o homem no estado de natureza é tão livre, conforme dissemos, se é senhor absoluto da sua própria pessoa e posses, igual ao maior e a ninguém sujeito, por que abrirá ele mão dessa liberdade, por que abandonará o seu império e sujeitar-se-á ao domínio e controle de qualquer outro poder? Ao que é óbvio responder que, embora no estado de natureza tenha tal direito, a fruição do mesmo é muito incerta e está constantemente exposta à invasão de terceiros porque, sendo todos reis tanto quanto ele, todo homem igual a ele, e na maior parte pouco observadores da equidade e da justiça, a fruição da propriedade que possui nesse estado é muito insegura, muito arriscada. Estas circunstâncias obrigam-no a abandonar uma condição que, embora livre, está cheia de temores e perigos constantes; e não é sem razão que procura de boa vontade juntar-se em sociedade com outros que estão já unidos, ou pretendem unir-se, para a mútua conservação da vida, da liberdade e dos bens a que chamo de “propriedade”.\\\nOpções:\na. A propriedade surge com a criação da sociedade.\nb. No estado de natureza, o homem é livre, mas desigual.\nc. O direito de propriedade é compatível com a sociedade.\nd. Devido à insegurança, os homens optam por viver sem direitos.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sociology&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>As seguintes são perguntas de escolha múltipla (com respostas).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pergunta: {text}
+Resposta: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pergunta: {text}
+
+Responde à pergunta acima usando só {labels_str}, e nada mais.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>include-pt
+</code></pre></div>
+<h3 id="unofficial-multiloko-pt">Unofficial: MultiLoKo-pt<a class="headerlink" href="#unofficial-multiloko-pt" title="Permanent link">&para;</a></h3>
+<p>This dataset was published in <a href="https://arxiv.org/abs/2504.10356">this paper</a> and is part
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
+Portuguese questions are separately sourced and designed to target locally relevant
+topics for Portuguese-speaking populations.</p>
+<p>We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
+questions with correct answers in the 'targets' column. We use the first target answer as
+the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
+question. We create a 16 / 234 split for training and testing, respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Qual foi a primeira faixa de telenovelas da Globo a ter produção em cores?\nOpções:\na. 10\nb. 13 horas\nc. 15 horas\nd. 18 horas&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Houve no Brasil alguma loteria anterior à Mega-Sena?\nOpções:\na. não existia jogo de loteria no Brasil antes da Mega-Sena\nb. sim\nc. não, a Mega-Sena foi a primeira loteria do Brasil\nd. não houve outras loterias além da Mega-Sena&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Qual foi o nome da primeira mulher de Jorge Fernando?\nOpções:\na. Sônia Regina\nb. Patrícia Soares\nc. Lúcia\nd. Maria Helena&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>As seguintes são perguntas de escolha múltipla (com respostas).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pergunta: {text}
+Resposta: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Pergunta: {text}
+
+Responde à pergunta acima usando só &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ou &#39;d&#39;, e nada mais.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>multiloko-pt
 </code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
 <h3 id="goldenswag-pt">GoldenSwag-pt<a class="headerlink" href="#goldenswag-pt" title="Permanent link">&para;</a></h3>

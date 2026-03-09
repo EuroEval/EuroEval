@@ -9,7 +9,7 @@
       
       
       
-        <link rel="prev" href="../speed_benchmark/">
+        <link rel="prev" href="../split_utils/">
       
       
         <link rel="next" href="../tasks/">
@@ -575,6 +575,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -969,6 +973,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -1249,6 +1259,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -1307,6 +1321,12 @@
       
         
           
+        
+      
+        
+      
+        
+      
         
       
         
@@ -2041,6 +2061,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../preprocessing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.preprocessing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../safetensors_utils/" class="md-nav__link">
         
   
@@ -2105,6 +2153,34 @@
     
   
     euroeval.speed_benchmark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../split_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.split_utils
   
 
     
@@ -2347,6 +2423,34 @@
     
   
     euroeval.utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../yaml_config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.yaml_config
   
 
     
@@ -2770,7 +2874,10 @@ The prompt to extract the labels from.</p>
 <li>
 <p><span class="mkapi-item-name">candidate_labels</span> : 
 <span class="mkapi-item-type"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[str]</span> <span class="mkapi-dash">&mdash;</span>
-The candidate labels to look for in the prompt.</p>
+The candidate labels to look for in the prompt. If empty, the full
+alphabet is used as the candidate set so that community datasets with a
+variable number of choices (where no fixed label list is defined) still
+work correctly.</p>
 </li>
 </ul>
 </div>

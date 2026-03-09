@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -2743,10 +2747,7 @@
 <span class="normal">1619</span>
 <span class="normal">1620</span>
 <span class="normal">1621</span>
-<span class="normal">1622</span>
-<span class="normal">1623</span>
-<span class="normal">1624</span>
-<span class="normal">1625</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1622</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2791,6 +2792,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">..exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">InvalidBenchmark</span><span class="p">,</span>
     <span class="n">InvalidModel</span><span class="p">,</span>
+    <span class="n">InvalidTask</span><span class="p">,</span>
     <span class="n">NeedsEnvironmentVariable</span><span class="p">,</span>
     <span class="n">NeedsExtraInstalled</span><span class="p">,</span>
     <span class="n">NeedsSystemDependency</span><span class="p">,</span>
@@ -2810,6 +2812,7 @@
     <span class="n">text_to_text</span><span class="p">,</span>
     <span class="n">token_classification</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NER</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tokenisation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">apply_chat_template</span><span class="p">,</span>
     <span class="n">get_bos_token</span><span class="p">,</span>
@@ -2862,17 +2865,6 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">Task</span>
-
-
-<span class="n">MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span>
-    <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span><span class="o">*</span><span class="n">ATTENTION_BACKENDS</span><span class="p">]</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
-<span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;.*gpt-oss.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
-    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;google/gemma-3-1b.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
-    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;google/gemma-3n.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
-    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;google/gemma-3-(4|12|27)b.*&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
-    <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;PleIAs/Pleias-3b-Preview&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">):</span> <span class="s2">&quot;TRITON_ATTN&quot;</span><span class="p">,</span>
-<span class="p">}</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">VLLMModel</span><span class="p">(</span><span class="n">HuggingFaceEncoderModel</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel" title="Go to docs">[docs]</a></div>
@@ -2946,24 +2938,11 @@
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">allowed_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allowed_params</span>
         <span class="p">)</span>
 
-        <span class="c1"># Determine the attention backend to use:</span>
-        <span class="c1"># Override for models that require a specific backend, otherwise use user&#39;s</span>
-        <span class="c1"># choice from CLI (defaults to FLASHINFER)</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">vllm</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;attention&quot;</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">backend</span> <span class="ow">in</span> <span class="n">MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="n">pattern</span><span class="p">,</span> <span class="n">string</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">):</span>
-                    <span class="n">attention_backend</span> <span class="o">=</span> <span class="n">backend</span>
-                    <span class="k">break</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">attention_backend</span> <span class="o">=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">attention_backend</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">attention_backend</span> <span class="o">=</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">attention_backend</span>
-
         <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">(</span><span class="n">disable</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
             <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_model_and_tokeniser</span><span class="p">(</span>
                 <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
                 <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
-                <span class="n">attention_backend</span><span class="o">=</span><span class="n">attention_backend</span><span class="p">,</span>
+                <span class="n">attention_backend</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">attention_backend</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">:</span> <span class="n">Tokeniser</span> <span class="o">=</span> <span class="n">tokeniser</span>
@@ -3176,6 +3155,9 @@
 <span class="sd">            InvalidBenchmark:</span>
 <span class="sd">                If the dataset requires logprobs, but we could not get the first token</span>
 <span class="sd">                of each label in the dataset.</span>
+<span class="sd">            InvalidTask:</span>
+<span class="sd">                If the task requires structured output, but either is not NER or</span>
+<span class="sd">                does not define an output structure.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Get stopping tokens</span>
         <span class="n">stop_tokens</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_stop_tokens</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -3235,21 +3217,36 @@
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_structured_output</span><span class="p">:</span>
-            <span class="n">ner_tag_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-            <span class="n">keys_and_their_types</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">tag_name</span><span class="p">:</span> <span class="p">(</span><span class="n">conlist</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="o">...</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">tag_name</span> <span class="ow">in</span> <span class="n">ner_tag_names</span>
-            <span class="p">}</span>
-            <span class="n">answer_format_class</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span><span class="s2">&quot;AnswerFormat&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">keys_and_their_types</span><span class="p">)</span>
-            <span class="n">structured_generation_schema</span> <span class="o">=</span> <span class="n">answer_format_class</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">()</span>
-            <span class="n">log_once</span><span class="p">(</span>
-                <span class="s2">&quot;Using structured generation with the JSON schema: &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">structured_generation_schema</span><span class="p">,</span><span class="w"> </span><span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">structured_outputs</span> <span class="o">=</span> <span class="n">StructuredOutputsParams</span><span class="p">(</span>
-                <span class="n">json</span><span class="o">=</span><span class="n">structured_generation_schema</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">structured_output_format</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">structured_outputs</span> <span class="o">=</span> <span class="n">StructuredOutputsParams</span><span class="p">(</span>
+                    <span class="n">json</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">structured_output_format</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">()</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span> <span class="o">==</span> <span class="n">NER</span><span class="p">:</span>
+                <span class="n">ner_tag_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+                <span class="n">keys_and_their_types</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="n">tag_name</span><span class="p">:</span> <span class="p">(</span><span class="n">conlist</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="o">...</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">tag_name</span> <span class="ow">in</span> <span class="n">ner_tag_names</span>
+                <span class="p">}</span>
+                <span class="n">answer_format_class</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span>
+                    <span class="s2">&quot;AnswerFormat&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">keys_and_their_types</span>
+                <span class="p">)</span>
+                <span class="n">structured_generation_schema</span> <span class="o">=</span> <span class="n">answer_format_class</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">()</span>
+                <span class="n">log_once</span><span class="p">(</span>
+                    <span class="s2">&quot;Using structured generation with the JSON schema: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">structured_generation_schema</span><span class="p">,</span><span class="w"> </span><span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">structured_outputs</span> <span class="o">=</span> <span class="n">StructuredOutputsParams</span><span class="p">(</span>
+                    <span class="n">json</span><span class="o">=</span><span class="n">structured_generation_schema</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">InvalidTask</span><span class="p">(</span>
+                    <span class="n">message</span><span class="o">=</span><span class="p">(</span>
+                        <span class="s2">&quot;Task set to use structured out, but neither is an NER task &quot;</span>
+                        <span class="s2">&quot;nor defines an output structure &quot;</span>
+                        <span class="s2">&quot;- at least one of these must be true.&quot;</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
         <span class="k">elif</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_logprobs</span>
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span>
@@ -3738,7 +3735,8 @@
     <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
     <span class="n">attention_backend</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span>
         <span class="o">*</span><span class="n">ATTENTION_BACKENDS</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
-    <span class="p">],</span>
+    <span class="p">]</span>
+    <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="s2">&quot;LLM&quot;</span><span class="p">,</span> <span class="n">Tokeniser</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the model and tokeniser.</span>
 
@@ -3748,7 +3746,7 @@
 <span class="sd">        benchmark_config:</span>
 <span class="sd">            The benchmark configuration.</span>
 <span class="sd">        attention_backend:</span>
-<span class="sd">            The attention backend to use.</span>
+<span class="sd">            The attention backend to use, or None to use the vLLM default.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A pair (model, tokeniser), with the loaded model and tokeniser</span>
@@ -3878,7 +3876,7 @@
 
     <span class="c1"># MacOS/CPU installs an older version of vLLM, which doesn&#39;t have the attention</span>
     <span class="c1"># config</span>
-    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">vllm</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;attention&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">vllm</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;attention&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">attention_backend</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">vllm_params</span><span class="p">[</span><span class="s2">&quot;attention_config&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">AttentionConfig</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">attention_backend</span><span class="p">)</span>
 
     <span class="n">clear_vllm</span><span class="p">()</span>

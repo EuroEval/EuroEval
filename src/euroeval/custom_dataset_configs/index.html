@@ -567,6 +567,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -926,6 +930,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.custom_dataset_configs.load_python_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        load_python_config
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1140,7 +1155,67 @@
 <span class="normal">176</span>
 <span class="normal">177</span>
 <span class="normal">178</span>
-<span class="normal">179</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Load custom dataset configs.&quot;&quot;&quot;</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span>
+<span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Load custom dataset configs.</span>
+
+<span class="sd">This module provides the main entry point for loading dataset configurations from</span>
+<span class="sd">Hugging Face repositories, including Python-based configs. YAML-specific loading</span>
+<span class="sd">logic lives in the `yaml_config` module.</span>
+<span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1152,7 +1227,9 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.split_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_repo_splits</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_hf_token</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.yaml_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_yaml_config</span>
 
 <div class="mkapi-source-link" id="euroeval.custom_dataset_configs.load_custom_datasets_module"><a href="../../../api/euroeval/custom_dataset_configs/#euroeval.custom_dataset_configs.load_custom_datasets_module" title="Go to docs">[docs]</a></div>
 <span class="k">def</span><span class="w"> </span><span class="nf">load_custom_datasets_module</span><span class="p">(</span><span class="n">custom_datasets_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ModuleType</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
@@ -1171,16 +1248,20 @@
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">log_once</span><span class="p">(</span>
-                <span class="s2">&quot;Could not load the spec for the custom datasets file from &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">custom_datasets_file</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="p">(</span>
+                    <span class="s2">&quot;Could not load the spec for the custom datasets file from &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">custom_datasets_file</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">module_from_spec</span><span class="p">(</span><span class="n">spec</span><span class="o">=</span><span class="n">spec</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">loader</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">log_once</span><span class="p">(</span>
-                <span class="s2">&quot;Could not load the module for the custom datasets file from &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">custom_datasets_file</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="p">(</span>
+                    <span class="s2">&quot;Could not load the module for the custom datasets file from &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">custom_datasets_file</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
@@ -1198,45 +1279,89 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetConfig</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Try to get a dataset config from a Hugging Face dataset repository.</span>
 
+<span class="sd">    The function first looks for a YAML config file (`eval.yaml`) which can be</span>
+<span class="sd">    loaded without executing any remote code. If no YAML file is present the</span>
+<span class="sd">    function falls back to `euroeval_config.py`, which requires</span>
+<span class="sd">    `trust_remote_code=True`.</span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        dataset_id:</span>
 <span class="sd">            The ID of the dataset to get the config for.</span>
 <span class="sd">        api_key:</span>
-<span class="sd">            The Hugging Face API key to use to check if the repositories have custom</span>
-<span class="sd">            dataset configs.</span>
+<span class="sd">            The Hugging Face API key to use to check if the repositories have</span>
+<span class="sd">            custom dataset configs.</span>
 <span class="sd">        cache_dir:</span>
 <span class="sd">            The directory to store the cache in.</span>
 <span class="sd">        trust_remote_code:</span>
-<span class="sd">            Whether to trust remote code. If this is not set to True, then we will not</span>
-<span class="sd">            load the dataset config.</span>
+<span class="sd">            Whether to trust remote code. Only required when loading a Python</span>
+<span class="sd">            config (`euroeval_config.py`). YAML configs never require this flag.</span>
 <span class="sd">        run_with_cli:</span>
 <span class="sd">            Whether the code is being run with the CLI.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The dataset config if it exists, otherwise None.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Check if the dataset ID is a Hugging Face dataset ID, abort if it isn&#39;t</span>
     <span class="n">token</span> <span class="o">=</span> <span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">)</span>
     <span class="n">hf_api</span> <span class="o">=</span> <span class="n">HfApi</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">repo_exists</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">,</span> <span class="n">repo_type</span><span class="o">=</span><span class="s2">&quot;dataset&quot;</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="c1"># Check if the repository has a euroeval_config.py file, abort if it doesn&#39;t</span>
-    <span class="n">repo_files</span> <span class="o">=</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">list_repo_files</span><span class="p">(</span>
-        <span class="n">repo_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">,</span> <span class="n">repo_type</span><span class="o">=</span><span class="s2">&quot;dataset&quot;</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="s2">&quot;main&quot;</span>
+    <span class="n">repo_files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="n">hf_api</span><span class="o">.</span><span class="n">list_repo_files</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">,</span> <span class="n">repo_type</span><span class="o">=</span><span class="s2">&quot;dataset&quot;</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
     <span class="p">)</span>
+
+    <span class="k">if</span> <span class="s2">&quot;eval.yaml&quot;</span> <span class="ow">in</span> <span class="n">repo_files</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">load_yaml_config</span><span class="p">(</span>
+            <span class="n">hf_api</span><span class="o">=</span><span class="n">hf_api</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">load_python_config</span><span class="p">(</span>
+        <span class="n">hf_api</span><span class="o">=</span><span class="n">hf_api</span><span class="p">,</span>
+        <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">,</span>
+        <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span><span class="p">,</span>
+        <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
+        <span class="n">run_with_cli</span><span class="o">=</span><span class="n">run_with_cli</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">load_python_config</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.custom_dataset_configs.load_python_config"><a href="../../../api/euroeval/custom_dataset_configs/#euroeval.custom_dataset_configs.load_python_config" title="Go to docs">[docs]</a></div>
+    <span class="n">hf_api</span><span class="p">:</span> <span class="n">HfApi</span><span class="p">,</span>
+    <span class="n">dataset_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+    <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatasetConfig</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a dataset config from a euroeval_config.py file in a Hugging Face repo.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        hf_api:</span>
+<span class="sd">            The Hugging Face API object.</span>
+<span class="sd">        dataset_id:</span>
+<span class="sd">            The ID of the dataset to get the config for.</span>
+<span class="sd">        cache_dir:</span>
+<span class="sd">            The directory to store the cache in.</span>
+<span class="sd">        trust_remote_code:</span>
+<span class="sd">            Whether to trust remote code.</span>
+<span class="sd">        run_with_cli:</span>
+<span class="sd">            Whether the code is being run with the CLI.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The dataset config if it exists, otherwise None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">repo_files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="n">hf_api</span><span class="o">.</span><span class="n">list_repo_files</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">,</span> <span class="n">repo_type</span><span class="o">=</span><span class="s2">&quot;dataset&quot;</span><span class="p">,</span> <span class="n">revision</span><span class="o">=</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+
     <span class="k">if</span> <span class="s2">&quot;euroeval_config.py&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">repo_files</span><span class="p">:</span>
         <span class="n">log_once</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2"> does not have a euroeval_config.py file, so we &quot;</span>
-            <span class="s2">&quot;cannot load it. Skipping.&quot;</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2"> does not have a euroeval_config.py or a YAML &quot;</span>
+                <span class="s2">&quot;config file (eval.yaml), so we cannot load it. Skipping.&quot;</span>
+            <span class="p">),</span>
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="c1"># At this point we know that the config exists in the repo, so we now check if the</span>
-    <span class="c1"># user has allowed running code from remote repositories, and abort if not. We abort</span>
-    <span class="c1"># the entire evaluation here to avoid a double error message, and since it requires</span>
-    <span class="c1"># the user to explicitly allow it before continuing.</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">trust_remote_code</span><span class="p">:</span>
         <span class="n">rerunning_msg</span> <span class="o">=</span> <span class="p">(</span>
             <span class="s2">&quot;the --trust-remote-code flag&quot;</span>
@@ -1244,14 +1369,16 @@
             <span class="k">else</span> <span class="s2">&quot;`trust_remote_code=True`&quot;</span>
         <span class="p">)</span>
         <span class="n">log_once</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;The dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2"> exists on the Hugging Face Hub and has a &quot;</span>
-            <span class="s2">&quot;euroeval_config.py file, but remote code is not allowed. Please rerun &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;this with </span><span class="si">{</span><span class="n">rerunning_msg</span><span class="si">}</span><span class="s2"> if you trust the code in this repository.&quot;</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2"> exists on the Hugging Face Hub and has a &quot;</span>
+                <span class="s2">&quot;euroeval_config.py file, but remote code is not allowed. Please &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;rerun this with </span><span class="si">{</span><span class="n">rerunning_msg</span><span class="si">}</span><span class="s2"> if you trust the code in this &quot;</span>
+                <span class="s2">&quot;repository.&quot;</span>
+            <span class="p">),</span>
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-    <span class="c1"># Fetch the euroeval_config.py file, abort if loading failed</span>
     <span class="n">external_config_path</span> <span class="o">=</span> <span class="n">cache_dir</span> <span class="o">/</span> <span class="s2">&quot;external_dataset_configs&quot;</span> <span class="o">/</span> <span class="n">dataset_id</span>
     <span class="n">external_config_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">hf_api</span><span class="o">.</span><span class="n">hf_hub_download</span><span class="p">(</span>
@@ -1261,55 +1388,53 @@
         <span class="n">local_dir</span><span class="o">=</span><span class="n">external_config_path</span><span class="p">,</span>
         <span class="n">local_dir_use_symlinks</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span>
+
     <span class="n">module</span> <span class="o">=</span> <span class="n">load_custom_datasets_module</span><span class="p">(</span>
         <span class="n">custom_datasets_file</span><span class="o">=</span><span class="n">external_config_path</span> <span class="o">/</span> <span class="s2">&quot;euroeval_config.py&quot;</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">module</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="c1"># Check that there is exactly one dataset config, abort if there isn&#39;t</span>
     <span class="n">repo_dataset_configs</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">cfg</span> <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="nb">vars</span><span class="p">(</span><span class="n">module</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">)</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">repo_dataset_configs</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># Already warned the user in this case, so we just skip</span>
-    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">repo_dataset_configs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">repo_dataset_configs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="n">log_once</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2"> has multiple dataset configurations. Please ensure &quot;</span>
-            <span class="s2">&quot;that only a single DatasetConfig is defined in the `euroeval_config.py` &quot;</span>
-            <span class="s2">&quot;file.&quot;</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2"> has multiple dataset configurations. Please &quot;</span>
+                <span class="s2">&quot;ensure that only a single DatasetConfig is defined in the &quot;</span>
+                <span class="s2">&quot;`euroeval_config.py` file.&quot;</span>
+            <span class="p">),</span>
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="c1"># Get the dataset split names</span>
-    <span class="n">splits</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">split</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">hf_api</span><span class="o">.</span><span class="n">dataset_info</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">)</span><span class="o">.</span><span class="n">card_data</span><span class="o">.</span><span class="n">dataset_info</span><span class="p">[</span>
-            <span class="s2">&quot;splits&quot;</span>
-        <span class="p">]</span>
-    <span class="p">]</span>
-    <span class="n">train_split_candidates</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
-        <span class="p">[</span><span class="n">split</span> <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">splits</span> <span class="k">if</span> <span class="s2">&quot;train&quot;</span> <span class="ow">in</span> <span class="n">split</span><span class="o">.</span><span class="n">lower</span><span class="p">()],</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span>
+    <span class="n">train_split</span><span class="p">,</span> <span class="n">val_split</span><span class="p">,</span> <span class="n">test_split</span> <span class="o">=</span> <span class="n">get_repo_splits</span><span class="p">(</span>
+        <span class="n">hf_api</span><span class="o">=</span><span class="n">hf_api</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span>
     <span class="p">)</span>
-    <span class="n">val_split_candidates</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
-        <span class="p">[</span><span class="n">split</span> <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">splits</span> <span class="k">if</span> <span class="s2">&quot;val&quot;</span> <span class="ow">in</span> <span class="n">split</span><span class="o">.</span><span class="n">lower</span><span class="p">()],</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span>
-    <span class="p">)</span>
-    <span class="n">test_split_candidates</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
-        <span class="p">[</span><span class="n">split</span> <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">splits</span> <span class="k">if</span> <span class="s2">&quot;test&quot;</span> <span class="ow">in</span> <span class="n">split</span><span class="o">.</span><span class="n">lower</span><span class="p">()],</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span>
-    <span class="p">)</span>
-    <span class="n">train_split</span> <span class="o">=</span> <span class="n">train_split_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">train_split_candidates</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="n">val_split</span> <span class="o">=</span> <span class="n">val_split_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">val_split_candidates</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="n">test_split</span> <span class="o">=</span> <span class="n">test_split_candidates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">test_split_candidates</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">test_split</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">log_once</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2"> does not have a test split, so we cannot load it. &quot;</span>
-            <span class="s2">&quot;Please ensure that the dataset has a test split.&quot;</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2"> does not have a test split, so we cannot load &quot;</span>
+                <span class="s2">&quot;it. Please ensure that the dataset has a test split.&quot;</span>
+            <span class="p">),</span>
             <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="c1"># Set up the config with the repo information</span>
+    <span class="k">if</span> <span class="n">train_split</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">val_split</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">log_once</span><span class="p">(</span>
+            <span class="n">message</span><span class="o">=</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">!r}</span><span class="s2"> has no training split. Using the validation &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;split </span><span class="si">{</span><span class="n">val_split</span><span class="si">!r}</span><span class="s2"> as the training split instead.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">train_split</span> <span class="o">=</span> <span class="n">val_split</span>
+        <span class="n">val_split</span> <span class="o">=</span> <span class="kc">None</span>
+
     <span class="n">repo_dataset_config</span> <span class="o">=</span> <span class="n">repo_dataset_configs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">repo_dataset_config</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">dataset_id</span>
     <span class="n">repo_dataset_config</span><span class="o">.</span><span class="n">pretty_name</span> <span class="o">=</span> <span class="n">dataset_id</span>
