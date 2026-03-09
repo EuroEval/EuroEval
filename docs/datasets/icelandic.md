@@ -937,13 +937,13 @@ euroeval --model <model-id> --dataset mmlu-is
 
 ### Unofficial: Icelandic Language Tests
 
-This dataset is based on the old Icelandic standardized tests held from 2013 to 2017,
+This dataset is based on the old Icelandic standardised tests held from 2013 to 2017,
 available at [mms.is](https://mms.is/eldri-prof-og-svor). The tests were administered at
 the primary school level (10th grade) and cover the Icelandic language. Only the
 multiple-choice questions from the tests have been included.
 
-The split sizes depend on the number of multiple-choice questions available across the
-test years, using older years for training and newer years for testing.
+There are 571 samples, and we use the 16 oldest samples for train, and the rest for
+test.
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
@@ -988,13 +988,13 @@ euroeval --model <model-id> --dataset icelandic-lang-tests
 
 ### Unofficial: Icelandic Mathematics Tests
 
-This dataset is based on the old Icelandic standardized tests held from 2013 to 2017,
+This dataset is based on the old Icelandic standardised tests held from 2013 to 2017,
 available at [mms.is](https://mms.is/eldri-prof-og-svor). The tests were administered at
 the primary school level (10th grade) and cover mathematics. Only the multiple-choice
 questions from the tests have been included.
 
-The split sizes depend on the number of multiple-choice questions available across the
-test years, using older years for training and newer years for testing.
+There are 242 samples in total, and we use the oldest 16 samples for train, and the rest
+for test.
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):

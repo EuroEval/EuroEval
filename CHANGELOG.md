@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
   The split is given by 64 / 128 / 723 samples for train / val / test, respectively.
   It is marked as `unofficial` for now.
-- Added the Icelandic standardized tests datasets icelandic-lang-tests and
-  icelandic-math-tests, based on old Icelandic primary school standardized tests
+- Added the Icelandic standardised tests datasets icelandic-lang-tests and
+  icelandic-math-tests, based on old Icelandic primary school standardised tests
   (2013–2017) from mms.is, covering Icelandic language and mathematics, respectively.
   Both are marked as `unofficial` for now.
 

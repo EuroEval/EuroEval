@@ -454,28 +454,20 @@ def main() -> None:
 
         logger.info(f"Total {subject} samples after deduplication: {len(df)}")
 
-        train_samples = 64
-        val_samples = 128
+        train_samples = 16
 
-        # Create splits based on year: oldest → train, middle → val, newest → test.
+        # Create splits based on year: oldest → train, newest → test.
         df = df.sort_values(by="year")
         train_df = df.iloc[:train_samples].copy().reset_index(drop=True)
-        val_df = (
-            df.iloc[train_samples : train_samples + val_samples]
-            .copy()
-            .reset_index(drop=True)
-        )
-        test_df = df.iloc[train_samples + val_samples :].copy().reset_index(drop=True)
+        test_df = df.iloc[train_samples:].copy().reset_index(drop=True)
 
         logger.info(
-            f"Split sizes for {subject}: train={len(train_df)}, val={len(val_df)}, "
-            f"test={len(test_df)}"
+            f"Split sizes for {subject}: train={len(train_df)}, test={len(test_df)}"
         )
 
         dataset_dict = DatasetDict(
             {
                 "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
-                "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
                 "test": Dataset.from_pandas(test_df, split=Split.TEST),
             }
         )
