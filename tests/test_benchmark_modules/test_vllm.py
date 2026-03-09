@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 import torch
+import torch.version
 
 from euroeval.benchmark_modules.vllm import VLLMModel
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
