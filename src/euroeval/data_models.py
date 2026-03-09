@@ -21,6 +21,7 @@ from transformers.generation.configuration_utils import GenerationConfig
 from .constants import (
     ATTENTION_BACKENDS,
     CHOICES_MAPPING,
+    EEE_SCHEMA_VERSION,
     MAX_NUMBER_OF_LOGGING_LANGUAGES,
 )
 from .enums import Device, GenerativeType, ModelType, TaskGroup
@@ -986,15 +987,14 @@ class BenchmarkResult(pydantic.BaseModel):
     def from_eee_dict(cls, config: dict) -> "BenchmarkResult":
         """Create a BenchmarkResult from an Every Eval Ever format dictionary.
 
-        Reconstructs a full ``BenchmarkResult`` from a dictionary conforming to the
+        Reconstructs a full `BenchmarkResult` from a dictionary conforming to the
         Every Eval Ever (EEE) JSON schema v0.2.1.  The method is the inverse of
-        :meth:`to_eee_dict` and enables lossless round-trips via
-        :meth:`from_dict`.
+        `to_eee_dict` and enables lossless round-trips via `from_dict`.
 
         Args:
             config:
                 A dictionary conforming to the EEE JSON schema v0.2.1, as produced
-                by :meth:`to_eee_dict`.
+                by `to_eee_dict`.
 
         Returns:
             The reconstructed benchmark result.
@@ -1048,11 +1048,11 @@ class BenchmarkResult(pydantic.BaseModel):
 
             Args:
                 value:
-                    The string to parse.  ``"null"`` maps to ``None``; any other
-                    value is compared case-insensitively to ``"true"``.
+                    The string to parse.  `"null"` maps to `None`; any other
+                    value is compared case-insensitively to `"true"`.
 
             Returns:
-                ``None`` if *value* is ``"null"``, otherwise a boolean.
+                `None` if *value* is `"null"`, otherwise a boolean.
             """
             if value == "null":
                 return None
@@ -1063,10 +1063,10 @@ class BenchmarkResult(pydantic.BaseModel):
 
             Args:
                 value:
-                    The string to parse.  ``"null"`` maps to ``None``.
+                    The string to parse.  `"null"` maps to `None`.
 
             Returns:
-                ``None`` if *value* is ``"null"``, otherwise the original string.
+                `None` if *value* is `"null"`, otherwise the original string.
             """
             return None if value == "null" else value
 
@@ -1125,24 +1125,24 @@ class BenchmarkResult(pydantic.BaseModel):
         Produces a dictionary conforming to the Every Eval Ever JSON schema v0.2.1
         (https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json).
         The resulting dict can be written directly to
-        ``euroeval_benchmark_results.jsonl`` and later reconstructed without loss
-        via :meth:`from_eee_dict` (or :meth:`from_dict`).
+        `euroeval_benchmark_results.jsonl` and later reconstructed without loss
+        via `from_eee_dict` (or `from_dict`).
 
         The mapping is as follows:
 
-        * **Top-level fields**: ``schema_version``, ``evaluation_id``,
-          ``evaluation_timestamp``, ``retrieved_timestamp``, ``source_metadata``.
-        * **model_info**: model ``id``/``name`` plus EuroEval-specific details
-          (``num_model_parameters``, ``max_sequence_length``, ``vocabulary_size``,
-          ``merge``, ``generative``, ``generative_type``) in ``additional_details``.
-        * **eval_library**: ``name="euroeval"``, library version, and evaluation
+        * **Top-level fields**: `schema_version`, `evaluation_id`,
+          `evaluation_timestamp`, `retrieved_timestamp`, `source_metadata`.
+        * **model_info**: model `id`/`name` plus EuroEval-specific details
+          (`num_model_parameters`, `max_sequence_length`, `vocabulary_size`,
+          `merge`, `generative`, `generative_type`) in `additional_details`.
+        * **eval_library**: `name="euroeval"`, library version, and evaluation
           context (languages, task, shot config, library versions, raw per-iteration
-          scores) in ``additional_details``.
+          scores) in `additional_details`.
         * **evaluation_results**: one entry per metric.  The 95 % confidence interval
-          half-width stored in the ``_se`` keys is exposed as a
-          ``confidence_interval`` with ``confidence_level: 0.95``.  Speed metrics
-          (``test_speed``, ``test_speed_short``) do not include ``score_type``,
-          ``min_score``, or ``max_score`` because tokens-per-second has no fixed
+          half-width stored in the `_se` keys is exposed as a
+          `confidence_interval` with `confidence_level: 0.95`.  Speed metrics
+          (`test_speed`, `test_speed_short`) do not include `score_type`,
+          `min_score`, or `max_score` because tokens-per-second has no fixed
           upper bound.
 
         Returns:
@@ -1272,7 +1272,7 @@ class BenchmarkResult(pydantic.BaseModel):
         }
 
         return {
-            "schema_version": "0.2.1",
+            "schema_version": EEE_SCHEMA_VERSION,
             "evaluation_id": evaluation_id,
             "evaluation_timestamp": evaluation_timestamp,
             "retrieved_timestamp": retrieved_timestamp,
