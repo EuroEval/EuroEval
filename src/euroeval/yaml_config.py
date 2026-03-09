@@ -416,7 +416,7 @@ def parse_languages(
                 f"YAML config at {yaml_path} does not contain a 'languages' key and "
                 "no language metadata could be found for this repository. Defaulting "
                 "to English. Add a top-level 'languages' key to the YAML file "
-                "(e.g. 'languages:\\n  - en') to override this."
+                "(e.g. 'languages: [en]') to override this."
             ),
             level=logging.WARNING,
         )
