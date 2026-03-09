@@ -12,7 +12,7 @@
 
 import json
 import os
-from typing import Literal
+import typing as t
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, load_dataset
@@ -30,7 +30,7 @@ CACHE_FILE = "llm_sent_cache.json"
 class Sentiment(BaseModel):
     """Sentiment classification."""
 
-    sentiment: Literal["negative", "positive"] = Field(
+    sentiment: t.Literal["negative", "positive"] = Field(
         description="The sentiment of the text, either 'negative' or 'positive'"
     )
 

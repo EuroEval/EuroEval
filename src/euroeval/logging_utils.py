@@ -10,6 +10,7 @@ from types import TracebackType
 
 import litellm
 from datasets.utils import disable_progress_bars as disable_datasets_progress_bars
+from dill import PicklingWarning
 from evaluate import disable_progress_bar as disable_evaluate_progress_bar
 from huggingface_hub.utils.tqdm import (
     disable_progress_bars as disable_hf_hub_progress_bars,
@@ -120,6 +121,9 @@ def block_terminal_output() -> None:
     warnings.filterwarnings("ignore", category=FutureWarning)
     warnings.filterwarnings("ignore", category=RuntimeWarning)
     logging.getLogger("absl").setLevel(logging.CRITICAL)
+
+    # Disable dill warnings
+    warnings.filterwarnings("ignore", category=PicklingWarning)
 
     # Disable matplotlib logging
     logging.getLogger("matplotlib.font_manager").setLevel(logging.CRITICAL)
