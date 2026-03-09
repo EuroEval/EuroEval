@@ -1196,8 +1196,7 @@ When evaluating generative models, we use the following setup (see the
 
 ### Unofficial: DAMETA
 
-This dataset was published in [this paper](https://arxiv.org/abs/2505.05476) and is part
-of the [Danish Semantic Reasoning
+This dataset is part of the [Danish Semantic Reasoning
 Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark). It is a
 metaphor interpretation dataset for Danish single word metaphors, developed as a
 multiple-choice task. Each item contains a word with a metaphoric meaning presented in
@@ -1206,7 +1205,7 @@ context, along with four paraphrases: a correct paraphrase, a literal distractor
 interpretation), and a contradictory distractor (opposite interpretation). The data is
 based on the Dafig corpus and the Danish Dictionary (DDO).
 
-The original full dataset consists of 915 samples. We use a 256 / 64 / 595 split for
+The original full dataset consists of 915 samples. We use a 64 / 128 / 723 split for
 training, validation and testing, respectively (so 915 samples used in total).
 
 Here are a few examples from the training split:

@@ -75,18 +75,20 @@ def main() -> None:
     df.drop_duplicates(inplace=True)
     df.reset_index(drop=True, inplace=True)
 
-    # Create validation split
-    val_size = 64
-    traintest_arr, val_arr = train_test_split(df, test_size=val_size, random_state=4242)
-    traintest_df = pd.DataFrame(traintest_arr, columns=df.columns)
-    val_df = pd.DataFrame(val_arr, columns=df.columns)
-
-    # Create train and test split
-    train_size = 256
-    train_arr, test_arr = train_test_split(
-        traintest_df, train_size=train_size, random_state=4242
+    # Create train split
+    train_size = 64
+    train_arr, remaining_arr = train_test_split(
+        df, train_size=train_size, random_state=4242
     )
     train_df = pd.DataFrame(train_arr, columns=df.columns)
+    remaining_df = pd.DataFrame(remaining_arr, columns=df.columns)
+
+    # Create validation and test split
+    val_size = 128
+    val_arr, test_arr = train_test_split(
+        remaining_df, train_size=val_size, random_state=4242
+    )
+    val_df = pd.DataFrame(val_arr, columns=df.columns)
     test_df = pd.DataFrame(test_arr, columns=df.columns)
 
     # Reset the index
