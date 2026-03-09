@@ -1158,7 +1158,16 @@
 <span class="normal">220</span>
 <span class="normal">221</span>
 <span class="normal">222</span>
-<span class="normal">223</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Danish dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Danish dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DANISH</span>
@@ -1378,6 +1387,15 @@
     <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;DanWiC&quot;</span><span class="p">,</span>
     <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/danwic&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">WIC</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DANISH</span><span class="p">],</span>
+    <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">DAMETA_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;dameta&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;DAMETA&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/dameta&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DANISH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
