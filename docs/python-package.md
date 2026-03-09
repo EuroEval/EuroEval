@@ -956,7 +956,7 @@ consumed directly by any tool that understands the EEE schema.
 Every line is a self-contained JSON object with the following top-level structure:
 
 | Field | Description |
-|---|---|
+| --- | --- |
 | `schema_version` | EEE schema version (`"0.2.1"`) |
 | `evaluation_id` | Unique run identifier in `dataset/model/timestamp` format |
 | `evaluation_timestamp` | ISO 8601 timestamp of when the evaluation ran |
