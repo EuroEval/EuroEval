@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   checks being applied unconditionally. The `flash_attn` conflict check no longer
   triggers `sys.exit` on ROCm, and the `nvcc` presence check is now skipped on ROCm
   hardware since AMD uses HIP tooling instead.
+- Fixed a `ValueError` when evaluating models like Qwen3.5 whose tokeniser returns a
+  `BatchEncoding` from `apply_chat_template(..., tokenise=True)`. The
+  `get_first_label_token_mapping` function now extracts `input_ids` from the
+  `BatchEncoding` before passing it to `convert_ids_to_tokens`.
 
 ## [v16.17.0] - 2026-03-09
 
