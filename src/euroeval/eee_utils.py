@@ -53,7 +53,7 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
     evaluation_id = f"{result.dataset}/{result.model}/{retrieved_timestamp}"
 
     total_results: dict[str, float] = {}
-    raw_results: list[str] = []
+    raw_results: list = []
     if isinstance(result.results, dict):
         if "total" in result.results and isinstance(result.results["total"], dict):
             total_results = result.results["total"]
