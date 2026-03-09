@@ -300,20 +300,6 @@ class LLMAsAJudgeMetric(Metric):
         )
 
 
-# Fluency metric ###
-
-
-class Fluency(BaseModel):
-    """Response format for the fluency metric.
-
-    Attributes:
-        fluency:
-            The fluency rating, an integer between 1 and 5.
-    """
-
-    fluency: t.Annotated[int, Field(ge=1, le=5)]
-
-
 fluency_metric = LLMAsAJudgeMetric(
     name="fluency",
     pretty_name="Fluency",
@@ -328,27 +314,20 @@ fluency_metric = LLMAsAJudgeMetric(
     "- 5: Excellent fluency, no grammatical errors and sounds natural\n\n"
     "Text: {prediction!r}\n\n"
     "Output your rating as a JSON object with a single key 'fluency'.",
-    response_format=Fluency,
+    response_format=create_model("Fluency", fluency=(int, Field(ge=1, le=5))),
     scoring_fn=lambda output: (output.fluency - 1) / 4.0,
 )
 
 
-# Model-graded fact metric ###
-
-_DEFAULT_MODEL_GRADED_FACT_USER_PROMPT = (
-    "You are evaluating whether a model's answer is factually correct.\n\n"
-    "Reference answer: {condition}\n\n"
-    "Model's answer: {prediction}\n\n"
-    "Is the model's answer factually correct? "
-    "Output a JSON object with a single key 'correct' (true or false)."
-)
-
-_DEFAULT_MODEL_GRADED_FACT_JUDGE_ID = "gpt-4o"
-
-
 def create_model_graded_fact_metric(
-    judge_id: str = _DEFAULT_MODEL_GRADED_FACT_JUDGE_ID,
-    user_prompt: str = _DEFAULT_MODEL_GRADED_FACT_USER_PROMPT,
+    judge_id: str = "gpt-5-mini",
+    user_prompt: str = (
+        "You are evaluating whether a model's answer is factually correct.\n\n"
+        "Reference answer: {condition}\n\n"
+        "Model's answer: {prediction}\n\n"
+        "Is the model's answer factually correct? "
+        "Output a JSON object with a single key 'correct' (true or false)."
+    ),
     system_prompt: str | None = None,
     temperature: float = 0.0,
     response_format: type[BaseModel] | None = None,
@@ -360,23 +339,23 @@ def create_model_graded_fact_metric(
     whether the model's answer is factually consistent with the reference answer.
 
     Args:
-        judge_id:
+        judge_id (optional):
             The model ID of the LLM to use as a judge (e.g. `openai/o3-mini`).
-            Defaults to `gpt-4o`.
-        user_prompt:
+            Defaults to `gpt-5-mini`.
+        user_prompt (optional):
             The user prompt template passed to the judge. Must contain
             `{prediction}` and `{condition}` placeholders. Defaults to a
             prompt that asks whether the model's answer is factually correct.
-        system_prompt:
+        system_prompt (optional):
             An optional system prompt for the judge. Defaults to None.
         temperature:
             Sampling temperature for the judge. Defaults to 0.0.
-        response_format:
+        response_format (optional):
             A Pydantic model class that defines the expected JSON structure
             of the judge's response. The model must have a single boolean
             field named `correct`. If not provided, a model with that shape
             is created automatically via `pydantic.create_model`.
-        scoring_fn:
+        scoring_fn (optional):
             A function mapping the judge's parsed response to a scalar score
             in [0, 1]. Defaults to 1.0 when `correct` is True, 0.0 otherwise.
 
@@ -387,7 +366,16 @@ def create_model_graded_fact_metric(
         response_format = create_model("FactCorrectness", correct=(bool, ...))
 
     def default_scoring_fn(output: BaseModel) -> float:
-        return 1.0 if output.correct else 0.0  # type: ignore[union-attr]
+        """Default scoring function for the model-graded fact metric.
+
+        Args:
+            output:
+                The parsed judge output containing the 'correct' field.
+
+        Returns:
+            1.0 if the output is correct, 0.0 otherwise.
+        """
+        return 1.0 if output.correct else 0.0
 
     if scoring_fn is None:
         scoring_fn = default_scoring_fn
