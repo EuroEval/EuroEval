@@ -1,8 +1,8 @@
 """Callbacks for the Hugging Face Trainer."""
 
+import collections.abc as c
 import sys
 import typing as t
-from collections.abc import Sized
 
 from tqdm.auto import tqdm
 from transformers.trainer_callback import ProgressCallback
@@ -62,7 +62,7 @@ class NeverLeaveProgressCallback(ProgressCallback):
         """Callback actions when a prediction step ends."""
         if eval_dataloader is None:
             return
-        correct_dtype = isinstance(eval_dataloader.dataset, Sized)
+        correct_dtype = isinstance(eval_dataloader.dataset, c.Sized)
         if state.is_local_process_zero and correct_dtype:
             if self.prediction_bar is None:
                 desc = "Evaluating model"

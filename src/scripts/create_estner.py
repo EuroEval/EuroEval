@@ -9,7 +9,7 @@
 
 """Create the Estonian NER dataset and upload to HF Hub."""
 
-from typing import MutableMapping
+import typing as t
 
 from datasets import Dataset, DatasetDict, load_dataset
 from huggingface_hub import HfApi
@@ -95,7 +95,7 @@ def get_label_map() -> dict[str, str]:
     return label_map
 
 
-def convert_labels(row: MutableMapping) -> MutableMapping:
+def convert_labels(row: t.MutableMapping) -> t.MutableMapping:
     """Convert original labels in a row to new ones.
 
     Args:

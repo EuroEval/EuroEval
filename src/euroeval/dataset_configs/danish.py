@@ -221,3 +221,12 @@ DANWIC_CONFIG = DatasetConfig(
     languages=[DANISH],
     unofficial=True,
 )
+
+DAMETA_CONFIG = DatasetConfig(
+    name="dameta",
+    pretty_name="DAMETA",
+    source="EuroEval/dameta",
+    task=KNOW,
+    languages=[DANISH],
+    unofficial=True,
+)

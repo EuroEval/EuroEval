@@ -1194,6 +1194,74 @@ When evaluating generative models, we use the following setup (see the
   Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c' eller 'd', og intet andet.
   ```
 
+### Unofficial: DAMETA
+
+This dataset is part of the [Danish Semantic Reasoning
+Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark). It is a
+metaphor interpretation dataset for Danish single word metaphors, developed as a
+multiple-choice task. Each item contains a word with a metaphoric meaning presented in
+context, along with four paraphrases: a correct paraphrase, a literal distractor
+(concrete/literal interpretation), a figurative distractor (incorrect figurative
+interpretation), and a contradictory distractor (opposite interpretation). The data is
+based on the Dafig corpus and the Danish Dictionary (DDO).
+
+The original full dataset consists of 915 samples. We use a 64 / 128 / 723 split for
+training, validation and testing, respectively (so 915 samples used in total).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Hvad er den korrekte fortolkning af ordet 'brænde' i følgende sætning?\n'Pigen brændte for at blive læge.'\nSvarmuligheder:\na. Pigen ønskede stærkt at blive læge\nb. Pigen var fysisk omgivet af flammer\nc. Pigen var ligeglad med at blive læge\nd. Pigen ønskede at blive brandmand",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Hvad er den korrekte fortolkning af ordet 'falde' i følgende sætning?\n'Priserne faldt kraftigt i løbet af ugen.'\nSvarmuligheder:\na. Priserne bevægede sig fysisk nedad\nb. Priserne steg markant i perioden\nc. Priserne blev reduceret betydeligt\nd. Priserne var uændrede hele ugen",
+  "label": "c"
+}
+```
+
+```json
+{
+  "text": "Hvad er den korrekte fortolkning af ordet 'bygge' i følgende sætning?\n'Politikerne byggede bro mellem de to partier.'\nSvarmuligheder:\na. Politikerne opbyggede en fysisk bro\nb. Politikerne skabte forbindelser og forsoning\nc. Politikerne ødelagde forholdet mellem partierne\nd. Politikerne byggede en bro til et nyt land",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spørgsmål: {text}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spørgsmål: {text}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c' eller 'd', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dameta
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-da

@@ -317,14 +317,144 @@ benchmarker.benchmark(model="<model-id>", dataset=MY_CONFIG)
 ```
 
 ///
-/// tab | Hugging Face Hub dataset
+/// tab | Hugging Face Hub dataset (YAML config)
 
-For a dataset that is accessible via the Hugging Face Hub, you simply need to create a
+The simplest and most secure way to add a EuroEval configuration to a Hugging Face Hub
+dataset is via a YAML file. No Python code is written, so no `--trust-remote-code` flag
+is required.
+
+Create a file called `eval.yaml` in the root of your dataset repository. The file
+follows the [Inspect AI `eval.yaml` format](https://inspect.aisi.org.uk/tasks.html#hugging-face)
+and works with both Inspect AI and EuroEval:
+
+```yaml title="eval.yaml"
+name: My Dataset
+tasks:
+  - id: my_dataset
+    split: test
+    field_spec:
+      input: review
+      target: sentiment
+    solvers:
+      - name: generate
+    scorers:
+      - name: choice
+# EuroEval-specific keys (optional; ignored by Inspect AI)
+task: classification
+languages:
+  - en
+labels:
+  - positive
+  - negative
+```
+
+The EuroEval-specific keys (`task`, `languages`, `labels`, and all other
+`DatasetConfig` arguments) are placed at the top level alongside the standard Inspect
+AI `tasks` block.  Inspect AI silently ignores keys it does not recognise, so the same
+file works for both frameworks.
+
+The value of `task` must be one of the task names used in EuroEval
+(e.g. `classification`, `sentiment-classification`,
+`named-entity-recognition`, `multiple-choice`, etc.).  `languages` is a list of
+[ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) language codes.
+
+All other `DatasetConfig` arguments are also supported:
+
+```yaml title="eval.yaml"
+name: My Dataset
+tasks:
+  - id: my_dataset
+    split: test
+    field_spec:
+      input: review
+      target: sentiment
+    solvers:
+      - name: generate
+    scorers:
+      - name: choice
+# EuroEval-specific keys (optional; ignored by Inspect AI)
+task: classification
+languages:
+  - en
+labels:
+  - positive
+  - negative
+num_few_shot_examples: 12
+max_generated_tokens: 5
+prompt_label_mapping:
+  positive: positive
+  negative: negative
+```
+
+The EuroEval-specific `task` and `languages` keys are **optional** — EuroEval will
+infer them automatically when they are absent:
+
+- **`task`** is inferred from the Inspect AI `tasks` block: a solver with
+  `name: multiple_choice` **or** a `field_spec.choices` entry both map to the
+  `multiple-choice` task.
+- **`languages`** are read from the Hugging Face Hub repository metadata
+  (the `language` field in the dataset card).  If the language cannot be determined,
+  EuroEval defaults to English and logs a warning.
+
+This means a standard Inspect AI `eval.yaml` with no EuroEval-specific keys works
+out of the box:
+
+```yaml title="eval.yaml"
+# Pure Inspect AI format — no EuroEval keys required
+name: My Dataset
+description: My dataset description.
+tasks:
+  - id: my_dataset
+    split: test
+    field_spec:
+      input: question
+      target: answer
+      choices: options
+    solvers:
+      - name: multiple_choice
+    scorers:
+      - name: choice
+```
+
+Column names can also be supplied as flat top-level keys (`input_column`,
+`target_column`, `choices_column`) instead of inside the `field_spec` block;
+top-level keys take precedence when both are present.  Note that Inspect AI allows
+`field_spec.target` values such as `"literal:A"` (a hard-coded answer string) and
+bare integers (mapped to letters A, B, C … by Inspect AI); EuroEval silently ignores
+both forms because they are not column names.
+
+The standard Inspect AI task keys are also used directly by EuroEval:
+
+- **`tasks[0].split`** — the evaluation split to use (e.g. `test`, `validation`).
+  EuroEval uses this as the test split, so no separate EuroEval key is needed.
+- **`tasks[0].config`** — the Hugging Face dataset config/subset name (e.g. `main`,
+  `default`).  EuroEval automatically appends it when loading the dataset.
+
+You can then benchmark your custom dataset by simply running
+
+```bash
+euroeval --dataset <org-id>/<repo-id> --model <model-id>
+```
+
+or from a Python script:
+
+```python
+from euroeval import Benchmarker
+
+benchmarker = Benchmarker()
+benchmarker.benchmark(model="<model-id>", dataset="<org-id>/<repo-id>")
+```
+
+///
+/// tab | Hugging Face Hub dataset (Python config)
+
+For a dataset that is accessible via the Hugging Face Hub, you can also create a
 file called `euroeval_config.py` in the root of your repository, in which you define
-the associated dataset configuration. Note that you don't need to specify the `name`,
-`pretty_name` or `source` arguments in this case, as these are automatically inferred
-from the repository name. Here is an example of a simple text classification
-dataset with two classes:
+the associated dataset configuration. This gives you full Python flexibility (e.g.
+custom preprocessing functions) but requires the `--trust-remote-code` flag.  Note
+that you don't need to specify the `name`, `pretty_name` or `source` arguments in this
+case, as these are automatically inferred from the repository name. Here is an example
+of a simple text classification dataset with two classes:
 
 ```python title="euroeval_config.py"
 from euroeval import DatasetConfig, TEXT_CLASSIFICATION
@@ -339,10 +469,11 @@ CONFIG = DatasetConfig(
 
 !!! note
 
-    To benchmark a dataset from the Hugging Face Hub, you always need to set the
-    `--trust-remote-code` flag (or `trust_remote_code=True` if using the `Benchmarker`),
-    as the dataset configuration is loaded from the remote code. We advise you to always
-    look at the code of the dataset configuration before running the benchmark.
+    To benchmark a dataset from the Hugging Face Hub using a Python config, you always
+    need to set the `--trust-remote-code` flag (or `trust_remote_code=True` if using
+    the `Benchmarker`), as the dataset configuration is loaded from the remote code.
+    We advise you to always look at the code of the dataset configuration before running
+    the benchmark.
 
 You can then benchmark your custom dataset by simply running
 
