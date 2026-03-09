@@ -14,8 +14,8 @@ import io
 import os
 import tarfile
 import tempfile
+import typing as t
 import urllib.request
-from typing import Any
 
 import datasets
 from huggingface_hub import HfApi
@@ -58,7 +58,7 @@ def main() -> None:
     dataset.push_to_hub(dataset_id_euroeval, private=True)
 
 
-def format(row: dict[str, Any]) -> dict[str, str]:
+def format(row: dict[str, t.Any]) -> dict[str, str]:
     """Format the dataset rows into promptable questions.
 
     There are two different types of questions in the dataset: cause and effect.

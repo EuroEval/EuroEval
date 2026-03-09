@@ -1,12 +1,12 @@
 """Constants used throughout the project."""
 
 import re
-from typing import TypeVar
+import typing as t
 
 from .enums import TaskGroup
 
 # Type variable used for generic typing
-T = TypeVar("T", bound=object)
+T = t.TypeVar("T", bound=object)
 
 # This is used as input to generative models; it cannot be a special token
 DUMMY_FILL_VALUE = 100

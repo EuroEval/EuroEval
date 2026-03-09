@@ -103,7 +103,10 @@ def extract_multiple_choice_labels(
         prompt:
             The prompt to extract the labels from.
         candidate_labels:
-            The candidate labels to look for in the prompt.
+            The candidate labels to look for in the prompt. If empty, the full
+            alphabet is used as the candidate set so that community datasets with a
+            variable number of choices (where no fixed label list is defined) still
+            work correctly.
 
     Returns:
         The extracted labels.
@@ -112,8 +115,14 @@ def extract_multiple_choice_labels(
         InvalidBenchmark:
             If no candidate labels could be found in the prompt.
     """
+    # For community datasets with variable-length choices the label list may be empty.
+    # In that case scan against the full alphabet so we pick up whatever letters the
+    # preprocessing placed in the prompt (a. , b. , c. , …).
+    effective_candidates = (
+        candidate_labels if candidate_labels else list("abcdefghijklmnopqrstuvwxyz")
+    )
     sample_candidate_labels: list[str] = list()
-    for candidate_label in candidate_labels:
+    for candidate_label in effective_candidates:
         candidate_label_match = re.search(
             pattern=rf"\b{candidate_label}\. ", string=prompt, flags=re.IGNORECASE
         )
@@ -124,7 +133,7 @@ def extract_multiple_choice_labels(
             "Could not extract any candidate labels from the prompt. Please ensure "
             "that the candidate labels are present in the prompt, each followed by a "
             "dot and a space (e.g., 'a. '). The candidate labels are: "
-            f"{', '.join(candidate_labels)}. Here is the prompt: {prompt!r}"
+            f"{', '.join(effective_candidates)}. Here is the prompt: {prompt!r}"
         )
     return sample_candidate_labels
 

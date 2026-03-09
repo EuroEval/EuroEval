@@ -109,7 +109,7 @@ def get_all_dataset_configs(
             if split_strings:
                 msg += f" with {', '.join(split_strings[:-1])} and {split_strings[-1]}"
             msg += "."
-            log_once(msg, level=logging.INFO)
+            log_once(msg, level=logging.DEBUG)
 
     # Add the custom datasets from the custom datasets file to the globals dict
     module = load_custom_datasets_module(custom_datasets_file=custom_datasets_file)
