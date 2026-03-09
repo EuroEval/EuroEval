@@ -1009,8 +1009,8 @@ class BenchmarkResult(pydantic.BaseModel):
 
         # Extract dataset name from evaluation_results or additional_details
         if evaluation_results:
-            dataset = evaluation_results[0].get("source_data", {}).get(
-                "dataset_name", ""
+            dataset = (
+                evaluation_results[0].get("source_data", {}).get("dataset_name", "")
             )
         else:
             dataset = eval_lib_additional.get("dataset", "")
@@ -1036,7 +1036,10 @@ class BenchmarkResult(pydantic.BaseModel):
                 total_dict[f"{metric_name}_se"] = ci_half_width
 
             details = score_details.get("details", {})
-            if "num_failed_instances" in details and "num_failed_instances" not in total_dict:
+            if (
+                "num_failed_instances" in details
+                and "num_failed_instances" not in total_dict
+            ):
                 total_dict["num_failed_instances"] = float(
                     details["num_failed_instances"]
                 )
@@ -1088,9 +1091,7 @@ class BenchmarkResult(pydantic.BaseModel):
             max_sequence_length=int(
                 model_additional.get("max_sequence_length", "0") or "0"
             ),
-            vocabulary_size=int(
-                model_additional.get("vocabulary_size", "0") or "0"
-            ),
+            vocabulary_size=int(model_additional.get("vocabulary_size", "0") or "0"),
             merge=model_additional.get("merge", "false") == "true",
             generative=model_additional.get("generative", "false") == "true",
             generative_type=parse_optional_str(
@@ -1243,9 +1244,7 @@ class BenchmarkResult(pydantic.BaseModel):
                 "merge": str(self.merge).lower(),
                 "generative": str(self.generative).lower(),
                 "generative_type": (
-                    self.generative_type
-                    if self.generative_type is not None
-                    else "null"
+                    self.generative_type if self.generative_type is not None else "null"
                 ),
             },
         }

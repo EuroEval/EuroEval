@@ -287,9 +287,7 @@ class TestBenchmarkResult:
 
         # Verify two results can be appended
         benchmark_result.append_to_results(results_path=results_path)
-        lines = [
-            line for line in results_path.read_text().splitlines() if line.strip()
-        ]
+        lines = [line for line in results_path.read_text().splitlines() if line.strip()]
         assert len(lines) == 2
         for line in lines:
             parsed = json.loads(line)
@@ -397,9 +395,7 @@ class TestBenchmarkResult:
         )
 
         eee = speed_result.to_eee_dict()
-        eval_results = {
-            er["evaluation_name"]: er for er in eee["evaluation_results"]
-        }
+        eval_results = {er["evaluation_name"]: er for er in eee["evaluation_results"]}
         assert "test_speed" in eval_results
         speed_config = eval_results["test_speed"]["metric_config"]
         # Speed metrics should only have lower_is_better, no score_type/min/max
