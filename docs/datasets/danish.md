@@ -1194,6 +1194,119 @@ When evaluating generative models, we use the following setup (see the
   Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c' eller 'd', og intet andet.
   ```
 
+### Unofficial: DAMETA
+
+This dataset is part of the [Danish Semantic Reasoning
+Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark). It is a
+metaphor interpretation dataset for Danish single word metaphors, developed as a
+multiple-choice task. Each item contains a word with a metaphoric meaning presented in
+context, along with four paraphrases: a correct paraphrase, a literal distractor
+(concrete/literal interpretation), a figurative distractor (incorrect figurative
+interpretation), and a contradictory distractor (opposite interpretation). The data is
+based on the Dafig corpus and the Danish Dictionary (DDO).
+
+The original full dataset consists of 915 samples. We use a 64 / 128 / 723 split for
+training, validation and testing, respectively (so 915 samples used in total).
+
+Here are a few examples from the training split:
+
+```json
+{
+    "ID": "b049",
+    "word": "lægning",
+    "sentence": "De kan færdes uantastede blandt ellers dybt mistænksomme personager af skurkagtig lægning",
+    "A": "De kan færdes uantastede blandt ellers dybt mistænksomme personager med en skurkagtig forhistorie",
+    "B": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som har lagt mange kartofler",
+    "C": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som har mistet besindelsen",
+    "D": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som ser smukke ud",
+    "label": "a",
+    "lit_dis": "B",
+    "fig_dis": "C",
+    "con_dis": "D",
+    "type": "3",
+    "domain": "-",
+    "DDO_sense_number": "-",
+    "source": "adhoc from news",
+    "annotator": "BSP",
+    "text": "Hvad er den korrekte fortolkning af ordet 'lægning' i følgende sætning?\n'De kan færdes uantastede blandt ellers dybt mistænksomme personager af skurkagtig lægning'\nSvarmuligheder:\na. De kan færdes uantastede blandt ellers dybt mistænksomme personager med en skurkagtig forhistorie\nb. De kan færdes uantastede blandt ellers dybt mistænksomme personager som har lagt mange kartofler\nc. De kan færdes uantastede blandt ellers dybt mistænksomme personager som har mistet besindelsen\nd. De kan færdes uantastede blandt ellers dybt mistænksomme personager som ser smukke ud"
+}
+```
+
+```json
+{
+    "ID": "n088",
+    "word": "forhøje",
+    "sentence": "Der er tale om forhøjede niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "A": "Der er tale om at fremme niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "B": "Der er tale om ekstra høje niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "C": "Der er tale om at øge højden på stueplan med såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "D": "Der er tale om ret lave niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "label": "b",
+    "lit_dis": "C",
+    "fig_dis": "A",
+    "con_dis": "D",
+    "type": "1",
+    "domain": "-",
+    "DDO_sense_number": "1a",
+    "source": "dafig",
+    "annotator": "SOL",
+    "text": "Hvad er den korrekte fortolkning af ordet 'forhøje' i følgende sætning?\n'Der er tale om forhøjede niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.'\nSvarmuligheder:\na. Der er tale om at fremme niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nb. Der er tale om ekstra høje niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nc. Der er tale om at øge højden på stueplan med såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nd. Der er tale om ret lave niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse."
+}
+```
+
+```json
+{
+    "ID": "n291",
+    "word": "rulle",
+    "sentence": "Og det kan være, at der snart ruller millioner ind i statskassen fra vanvidsbilisme.",
+    "A": "Og det kan være, at der snart triller millioner af mønter ind i statskassen fra vanvidsbilisme.",
+    "B": "Og det kan være, at der snart kan spenderes millioner af statskassen fra vanvidsbilisme.",
+    "C": "Og det kan være, at der snart kommer millioner ind i statskassen fra vanvidsbilisme.",
+    "D": "Og det kan være, at der snart er millioner i omløb i statskassen fra vanvidsbilisme.",
+    "label": "c",
+    "lit_dis": "A",
+    "fig_dis": "D",
+    "con_dis": "B",
+    "type": "1",
+    "domain": "-",
+    "DDO_sense_number": "1c",
+    "source": "dafig",
+    "annotator": "SOL",
+    "text": "Hvad er den korrekte fortolkning af ordet 'rulle' i følgende sætning?\n'Og det kan være, at der snart ruller millioner ind i statskassen fra vanvidsbilisme.'\nSvarmuligheder:\na. Og det kan være, at der snart triller millioner af mønter ind i statskassen fra vanvidsbilisme.\nb. Og det kan være, at der snart kan spenderes millioner af statskassen fra vanvidsbilisme.\nc. Og det kan være, at der snart kommer millioner ind i statskassen fra vanvidsbilisme.\nd. Og det kan være, at der snart er millioner i omløb i statskassen fra vanvidsbilisme."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spørgsmål: {text}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spørgsmål: {text}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c' eller 'd', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dameta
+```
+
 ## Common-sense Reasoning
 
 ### HellaSwag-da

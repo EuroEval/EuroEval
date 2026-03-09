@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added the Danish metaphor interpretation dataset DAMETA, part of the [Danish Semantic
+  Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+  The split is given by 64 / 128 / 723 samples for train / val / test, respectively.
+  It is marked as `unofficial` for now.
+  
 ### Fixed
 
 - Evaluation on AMD/ROCm hardware (e.g., LUMI) was broken due to two NVIDIA-specific

@@ -89,7 +89,7 @@ def create_uniform_label_distribution(
     min_size = min(len(class_df) for class_df in class_dfs)
 
     # Resample each class to the size of the smallest class
-    resampled_dfs: list[pd.DataFrame] = [
+    resampled_dfs: list[pd.DataFrame] = [  # pyrefly: ignore[bad-assignment]
         resample(class_df, replace=False, n_samples=min_size, random_state=random_state)
         for class_df in class_dfs
     ]

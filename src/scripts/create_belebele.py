@@ -103,11 +103,15 @@ def main() -> None:
         df["instruction"] = (
             text_mapping[language]
             + ": "
-            + df.flores_passage
-            + "\n"
-            + question_mapping[language]
-            + ": "
-            + df.question
+            + df.flores_passage.astype(
+                str
+            ).str.cat(  # pyrefly: ignore[no-matching-overload]
+                other="\n"
+                + question_mapping[language]
+                + ": "
+                + df.question.astype(str),
+                sep="",
+            )
         )
 
         # Remove the samples with overly short or long texts

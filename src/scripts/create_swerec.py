@@ -36,7 +36,9 @@ def main() -> None:
     csv_file = io.StringIO(csv_str)
 
     # Convert the dataset to a dataframe
-    df = pd.read_csv(csv_file, sep=",", usecols=["text", "rating"])  # type: ignore[no-matching-overload]
+    df = pd.read_csv(
+        csv_file, sep=",", usecols=["text", "rating"]
+    )  # pyrefly: ignore[no-matching-overload]
     df.columns = ["text", "label"]
 
     # Strip trailing whitespace
