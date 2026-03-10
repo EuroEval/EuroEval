@@ -18,10 +18,9 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
-# Split sizes for balanced train, validation and test sets
+# Split sizes
 TRAIN_SIZE = 1024
 VAL_SIZE = 256
-TEST_SIZE = 2048
 
 
 def main() -> None:
@@ -29,27 +28,28 @@ def main() -> None:
     raw_dataset = load_dataset(path="evalitahf/word_in_context")
     assert isinstance(raw_dataset, DatasetDict)
 
-    train_df = raw_dataset["train"].to_pandas()
-    val_df = raw_dataset["dev"].to_pandas()
-    test_df = raw_dataset["test"].to_pandas()
+    orig_train_df = raw_dataset["train"].to_pandas()
+    orig_val_df = raw_dataset["dev"].to_pandas()
+    orig_test_df = raw_dataset["test"].to_pandas()
 
-    assert isinstance(train_df, pd.DataFrame)
-    assert isinstance(val_df, pd.DataFrame)
-    assert isinstance(test_df, pd.DataFrame)
+    assert isinstance(orig_train_df, pd.DataFrame)
+    assert isinstance(orig_val_df, pd.DataFrame)
+    assert isinstance(orig_test_df, pd.DataFrame)
 
-    full_df = (
-        pd.concat(
-            [
-                process_dataframe(df=train_df),
-                process_dataframe(df=val_df),
-                process_dataframe(df=test_df),
-            ]
-        )
+    orig_train_df = process_dataframe(df=orig_train_df)
+    orig_val_df = process_dataframe(df=orig_val_df)
+    orig_test_df = process_dataframe(df=orig_test_df)
+
+    # Train and val are sampled from the original training split (stratified on label)
+    train_df, val_df = make_train_val_splits(df=orig_train_df)
+
+    # Test is the concatenation of the original dev and test splits
+    test_df = (
+        pd.concat([orig_val_df, orig_test_df])
         .drop_duplicates()
+        .sample(frac=1.0, random_state=4242)
         .reset_index(drop=True)
     )
-
-    train_df, val_df, test_df = make_splits(df=full_df)
 
     dataset = DatasetDict(
         {
@@ -101,26 +101,24 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create balanced train / val / test splits.
+def make_train_val_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Create balanced train and val splits from the original training data.
 
-    Each split has an equal number of ``same_sense`` and ``different_sense`` samples.
-    Samples are drawn without replacement: train is taken first, then val from the
-    remainder, then test from what remains.
+    Each split has an equal number of ``same_sense`` and ``different_sense`` samples,
+    stratified so that train is sampled first and val from the remainder.
 
     Args:
         df:
-            The full processed dataframe.
+            The processed original training dataframe.
 
     Returns:
-        A tuple of (train_df, val_df, test_df).
+        A tuple of (train_df, val_df).
     """
     same_df = df[df["label"] == "same_sense"].reset_index(drop=True)
     diff_df = df[df["label"] == "different_sense"].reset_index(drop=True)
 
     train_per_class = TRAIN_SIZE // 2
     val_per_class = VAL_SIZE // 2
-    test_per_class = TEST_SIZE // 2
 
     same_train = same_df.sample(n=train_per_class, random_state=4242)
     diff_train = diff_df.sample(n=train_per_class, random_state=4242)
@@ -130,12 +128,6 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
 
     same_val = same_remaining.sample(n=val_per_class, random_state=4242)
     diff_val = diff_remaining.sample(n=val_per_class, random_state=4242)
-
-    same_remaining = same_remaining.drop(same_val.index)
-    diff_remaining = diff_remaining.drop(diff_val.index)
-
-    same_test = same_remaining.sample(n=test_per_class, random_state=4242)
-    diff_test = diff_remaining.sample(n=test_per_class, random_state=4242)
 
     train_df = (
         pd.concat([same_train, diff_train])
@@ -147,13 +139,8 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
         .sample(frac=1.0, random_state=4242)
         .reset_index(drop=True)
     )
-    test_df = (
-        pd.concat([same_test, diff_test])
-        .sample(frac=1.0, random_state=4242)
-        .reset_index(drop=True)
-    )
 
-    return train_df, val_df, test_df
+    return train_df, val_df
 
 
 if __name__ == "__main__":

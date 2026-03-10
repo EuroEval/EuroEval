@@ -1243,8 +1243,10 @@ target word, the task is to determine whether the word carries the same sense in
 sentences.
 
 The original full dataset consists of 2,805 / 500 / 500 samples for training,
-development and testing, respectively. We use a split of 1,024 / 256 / 2,048 samples
-for training, validation and testing, respectively.
+development and testing, respectively. We use a split of 1,024 / 256 / 1,000 samples
+for training, validation and testing, respectively. The train and validation splits are
+sampled from the original training split (stratified on label), and the test split is
+the concatenation of the original development and test splits.
 
 Here are a few examples from the training split:
 
