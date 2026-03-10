@@ -250,9 +250,10 @@ task is to determine whether the word carries the same sense in both sentences.
 The dataset is sourced from WordNet, VerbNet and Wiktionary.
 
 The original dataset consists of 5,428 training and 638 validation samples (all
-labelled), plus 1,400 unlabelled test samples. We use the training and validation
-splits as the labelled data pool. We use 1,024 / 256 / 2,048 samples for training,
-validation and testing, respectively.
+labelled), plus 1,400 unlabelled test samples. Our train and validation splits are
+stratified subsets of the original training split, using 1,024 and 256 samples
+respectively. The test split is the original validation split in its entirety (638
+samples).
 
 Here are a few examples from the training split:
 

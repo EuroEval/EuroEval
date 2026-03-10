@@ -22,14 +22,12 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
-# Split sizes
+# Split sizes for train and val (drawn from SuperGLUE train split, stratified on label)
 TRAIN_SIZE = 1024
 VAL_SIZE = 256
-TEST_SIZE = 2048
 
 assert TRAIN_SIZE % 2 == 0, "TRAIN_SIZE must be even to allow per-class balancing."
 assert VAL_SIZE % 2 == 0, "VAL_SIZE must be even to allow per-class balancing."
-assert TEST_SIZE % 2 == 0, "TEST_SIZE must be even to allow per-class balancing."
 
 
 def main() -> None:
@@ -37,15 +35,12 @@ def main() -> None:
     raw_train = load_dataset("super_glue", "wic", split="train")
     raw_val = load_dataset("super_glue", "wic", split="validation")
 
-    train_df = raw_train.to_pandas()
-    val_df = raw_val.to_pandas()
+    # Train and val splits are drawn from the SuperGLUE training split.
+    # The SuperGLUE validation split is used directly as the test split.
+    source_train_df = process_dataframe(df=raw_train.to_pandas())
+    test_split = process_dataframe(df=raw_val.to_pandas())
 
-    # Combine train and validation (both have labels); test split has no labels
-    combined_df = pd.concat([train_df, val_df], ignore_index=True)
-
-    combined_df = process_dataframe(df=combined_df)
-
-    train_split, val_split, test_split = make_splits(df=combined_df)
+    train_split, val_split = make_splits(df=source_train_df)
 
     dataset = DatasetDict(
         {
@@ -96,24 +91,24 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create balanced train / val / test splits.
+def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Create balanced train and val splits from the SuperGLUE training data.
 
-    Each split has an equal number of ``same_sense`` and ``different_sense`` samples.
+    Each split has an equal number of ``same_sense`` and ``different_sense`` samples,
+    drawn from the provided dataframe via stratified sampling.
 
     Args:
         df:
-            The full processed dataframe.
+            The processed dataframe from the SuperGLUE training split.
 
     Returns:
-        A tuple of (train_df, val_df, test_df).
+        A tuple of (train_df, val_df).
     """
     same_df = df[df["label"] == "same_sense"].reset_index(drop=True)
     diff_df = df[df["label"] == "different_sense"].reset_index(drop=True)
 
     train_per_class = TRAIN_SIZE // 2
     val_per_class = VAL_SIZE // 2
-    test_per_class = TEST_SIZE // 2
 
     same_train = same_df.sample(n=train_per_class, random_state=4242)
     diff_train = diff_df.sample(n=train_per_class, random_state=4242)
@@ -123,12 +118,6 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
 
     same_val = same_remaining.sample(n=val_per_class, random_state=4242)
     diff_val = diff_remaining.sample(n=val_per_class, random_state=4242)
-
-    same_remaining = same_remaining.drop(same_val.index)
-    diff_remaining = diff_remaining.drop(diff_val.index)
-
-    same_test = same_remaining.sample(n=test_per_class, random_state=4242)
-    diff_test = diff_remaining.sample(n=test_per_class, random_state=4242)
 
     train_df = (
         pd.concat([same_train, diff_train])
@@ -140,13 +129,8 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
         .sample(frac=1.0, random_state=4242)
         .reset_index(drop=True)
     )
-    test_df = (
-        pd.concat([same_test, diff_test])
-        .sample(frac=1.0, random_state=4242)
-        .reset_index(drop=True)
-    )
 
-    return train_df, val_df, test_df
+    return train_df, val_df
 
 
 if __name__ == "__main__":
