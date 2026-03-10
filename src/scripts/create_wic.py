@@ -26,13 +26,14 @@ from huggingface_hub import HfApi
 TRAIN_SIZE = 128
 VAL_SIZE = 64
 
+assert TRAIN_SIZE % 2 == 0, "TRAIN_SIZE must be even to allow per-class balancing."
+assert VAL_SIZE % 2 == 0, "VAL_SIZE must be even to allow per-class balancing."
+
 
 def main() -> None:
     """Create the WiC dataset and upload it to the HF Hub."""
-    raw_train = load_dataset("super_glue", "wic", split="train", trust_remote_code=True)
-    raw_val = load_dataset(
-        "super_glue", "wic", split="validation", trust_remote_code=True
-    )
+    raw_train = load_dataset("super_glue", "wic", split="train")
+    raw_val = load_dataset("super_glue", "wic", split="validation")
 
     train_df = raw_train.to_pandas()
     val_df = raw_val.to_pandas()
@@ -94,9 +95,12 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create balanced train / val / test splits.
+    """Create balanced train / val splits and a test split with all remaining examples.
 
-    Each split has an equal number of ``same_sense`` and ``different_sense`` samples.
+    The train and val splits have an equal number of ``same_sense`` and
+    ``different_sense`` samples. The test split uses all remaining examples after
+    train and val are drawn, and may be slightly imbalanced if the source pool is not
+    perfectly balanced.
 
     Args:
         df:
