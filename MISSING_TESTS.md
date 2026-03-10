@@ -3,39 +3,6 @@
 This document lists test cases that should be added to improve test coverage for the
 EuroEval codebase.
 
-## 3. `test_finetuning.py` - Missing
-
-**Module:** `euroeval.finetuning`
-
-### Tests to add
-
-- `test_get_training_args_cpu_device`
-  - Test training args when using CPU
-
-- `test_get_training_args_cuda_device`
-  - Test training args when using CUDA
-
-- `test_get_training_args_fp16_dtype`
-  - Test that fp16 is set correctly when using CUDA with bf16 support
-
-- `test_get_training_args_fp32_dtype_cpu`
-  - Test that fp32 is used on CPU
-
-- `test_finetune_single_iteration_nan_error`
-  - Test NaNValueInModelOutput exception handling
-
-- `test_finetune_batch_size_reduction_on_cuda_oom`
-  - Test batch size reduction when CUDA OOM occurs
-
-- `test_finetune_batch_size_reduction_exhausted`
-  - Test InvalidBenchmark when batch size reduction fails
-
-- `test_remove_extra_tensors_from_logits_tuple`
-  - Test removal of extra tensors from tuple logits
-
-- `test_remove_extra_tensors_from_logits_single_tensor`
-  - Test that single tensor logits are returned unchanged
-
 ## 5. `test_string_utils.py` - Missing
 
 **Module:** `euroeval.string_utils`
