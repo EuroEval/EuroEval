@@ -93,9 +93,7 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def sample_balanced(
-    df: pd.DataFrame, n: int, random_state: int = 4242
-) -> pd.DataFrame:
+def sample_balanced(df: pd.DataFrame, n: int, random_state: int = 4242) -> pd.DataFrame:
     """Sample a balanced subset of the dataframe.
 
     Selects an equal number of ``same_sense`` and ``different_sense`` samples.

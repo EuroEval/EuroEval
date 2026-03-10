@@ -1250,22 +1250,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Parola: affare\nContesto 1: E visto che mi lascia GPS , Ecoscandaglio , TUTTE le dotazioni obbligatorie in ottimo stato ( razzi nuovi , ecc ) un sacco di cime ( due ancora nuove imballate ) , gonfiatore , pezzi vari di ricambio , ecc ecc ecc con un supplemento è affare fatto .\nContesto 2: La rivista nordamericana segnala come presunti sospetti il milionario e potente della stampa venezuelana , Gustavo Cisnero , che avrebbe ricevuto istruzioni da Otto Reich , massimo responsabile della Casa Bianca per gli Affari Latinoamericani .",
-    "label": "different_sense"
+  "text": "Parola: affare\nContesto 1: E visto che mi lascia GPS , Ecoscandaglio , TUTTE le dotazioni obbligatorie in ottimo stato ( razzi nuovi , ecc ) un sacco di cime ( due ancora nuove imballate ) , gonfiatore , pezzi vari di ricambio , ecc ecc ecc con un supplemento è affare fatto .\nContesto 2: La rivista nordamericana segnala come presunti sospetti il milionario e potente della stampa venezuelana , Gustavo Cisnero , che avrebbe ricevuto istruzioni da Otto Reich , massimo responsabile della Casa Bianca per gli Affari Latinoamericani .",
+  "label": "different_sense"
 }
 ```
 
 ```json
 {
-    "text": "Parola: elemento\nContesto 1: In particolare , l' elemento più scandaloso del provvedimento che ci accingiamo a votare è rappresentato dagli articoli 7 e 8 su cui , questa mattina , abbiamo condotto , come opposizione , una lunga battaglia di buon senso .\nContesto 2: Il Fondo mostra di apprezzare \" certi elementi di maggiore flessibilita' del patto di stabilita' , mentre si rammarica per la vaghezza di altre \" .",
-    "label": "same_sense"
+  "text": "Parola: elemento\nContesto 1: In particolare , l' elemento più scandaloso del provvedimento che ci accingiamo a votare è rappresentato dagli articoli 7 e 8 su cui , questa mattina , abbiamo condotto , come opposizione , una lunga battaglia di buon senso .\nContesto 2: Il Fondo mostra di apprezzare \" certi elementi di maggiore flessibilita' del patto di stabilita' , mentre si rammarica per la vaghezza di altre \" .",
+  "label": "same_sense"
 }
 ```
 
 ```json
 {
-    "text": "Parola: maschera\nContesto 1: In questo caso , dal momento che l' indirizzo 192.168.1.1 appartiene alla classe C , la maschera di rete predefinita sarebbe stata la stessa di quella che è stata indicata esplicitamente .\nContesto 2: Attenti ai teletrasporti , ai passaggi segreti , alle navi nelle bottiglie , ai cristalli , alla Maschera del Male , alle guardie , all' oro , alle trappole ed ai tradimenti .",
-    "label": "different_sense"
+  "text": "Parola: maschera\nContesto 1: In questo caso , dal momento che l' indirizzo 192.168.1.1 appartiene alla classe C , la maschera di rete predefinita sarebbe stata la stessa di quella che è stata indicata esplicitamente .\nContesto 2: Attenti ai teletrasporti , ai passaggi segreti , alle navi nelle bottiglie , ai cristalli , alla Maschera del Male , alle guardie , all' oro , alle trappole ed ai tradimenti .",
+  "label": "different_sense"
 }
 ```
 
