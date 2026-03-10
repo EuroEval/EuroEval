@@ -3,43 +3,6 @@
 This document lists test cases that should be added to improve test coverage for the
 EuroEval codebase.
 
-## 1. `test_preprocessing.py` - Missing
-
-**Module:** `euroeval.preprocessing`
-
-### Tests to add
-
-- `test_merge_input_and_choices_with_string_choices_column`
-  - Test merging input with a single choices column (string)
-  - Test merging input with a list of choices columns
-
-- `test_merge_input_and_choices_with_multiple_choices_columns`
-  - Test merging when choices_column is a list of column names
-
-- `test_build_preprocessing_func_with_choices_merging`
-  - Test full preprocessing pipeline with choices merging
-
-- `test_build_preprocessing_func_renames_input_column`
-  - Test that non-"text" input columns are renamed
-
-- `test_build_preprocessing_func_renames_target_column_to_labels`
-  - Test token classification target column becomes "labels"
-
-- `test_build_preprocessing_func_renames_target_column_to_target_text`
-  - Test text-to-text target column becomes "target_text"
-
-- `test_build_preprocessing_func_renames_target_column_to_label`
-  - Test classification target column becomes "label"
-
-- `test_build_preprocessing_func_validates_input_column_exists`
-  - Test that InvalidBenchmark is raised if input_column doesn't exist
-
-- `test_build_preprocessing_func_validates_choices_columns_exist`
-  - Test that InvalidBenchmark is raised if choices columns don't exist
-
-- `test_build_preprocessing_func_validates_target_column_exists`
-  - Test that InvalidBenchmark is raised if target_column doesn't exist
-
 ## 2. `test_split_utils.py` - Missing
 
 **Module:** `euroeval.split_utils`
