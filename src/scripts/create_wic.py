@@ -23,11 +23,13 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 
 # Split sizes
-TRAIN_SIZE = 128
-VAL_SIZE = 64
+TRAIN_SIZE = 1024
+VAL_SIZE = 256
+TEST_SIZE = 2048
 
 assert TRAIN_SIZE % 2 == 0, "TRAIN_SIZE must be even to allow per-class balancing."
 assert VAL_SIZE % 2 == 0, "VAL_SIZE must be even to allow per-class balancing."
+assert TEST_SIZE % 2 == 0, "TEST_SIZE must be even to allow per-class balancing."
 
 
 def main() -> None:
@@ -95,12 +97,9 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create balanced train / val splits and a test split with all remaining examples.
+    """Create balanced train / val / test splits.
 
-    The train and val splits have an equal number of ``same_sense`` and
-    ``different_sense`` samples. The test split uses all remaining examples after
-    train and val are drawn, and may be slightly imbalanced if the source pool is not
-    perfectly balanced.
+    Each split has an equal number of ``same_sense`` and ``different_sense`` samples.
 
     Args:
         df:
@@ -114,6 +113,7 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
 
     train_per_class = TRAIN_SIZE // 2
     val_per_class = VAL_SIZE // 2
+    test_per_class = TEST_SIZE // 2
 
     same_train = same_df.sample(n=train_per_class, random_state=4242)
     diff_train = diff_df.sample(n=train_per_class, random_state=4242)
@@ -124,8 +124,11 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
     same_val = same_remaining.sample(n=val_per_class, random_state=4242)
     diff_val = diff_remaining.sample(n=val_per_class, random_state=4242)
 
-    same_test = same_remaining.drop(same_val.index)
-    diff_test = diff_remaining.drop(diff_val.index)
+    same_remaining = same_remaining.drop(same_val.index)
+    diff_remaining = diff_remaining.drop(diff_val.index)
+
+    same_test = same_remaining.sample(n=test_per_class, random_state=4242)
+    diff_test = diff_remaining.sample(n=test_per_class, random_state=4242)
 
     train_df = (
         pd.concat([same_train, diff_train])

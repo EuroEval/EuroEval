@@ -251,7 +251,7 @@ The dataset is sourced from WordNet, VerbNet and Wiktionary.
 
 The original dataset consists of 5,428 training and 638 validation samples (all
 labelled), plus 1,400 unlabelled test samples. We use the training and validation
-splits as the labelled data pool. We use 128 / 64 / 5,874 samples for training,
+splits as the labelled data pool. We use 1,024 / 256 / 2,048 samples for training,
 validation and testing, respectively.
 
 Here are a few examples from the training split:
