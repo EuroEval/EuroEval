@@ -3,27 +3,6 @@
 This document lists test cases that should be added to improve test coverage for the
 EuroEval codebase.
 
-## 6. `test_speed_benchmark.py` - Missing
-
-**Module:** `euroeval.speed_benchmark`
-
-### Tests to add
-
-- `test_benchmark_speed_single_iteration_vllm_model`
-  - Test speed benchmark with VLLM model type
-
-- `test_benchmark_speed_single_iteration_litellm_model`
-  - Test speed benchmark with LiteLLM model type
-
-- `test_benchmark_speed_single_iteration_huggingface_encoder_model`
-  - Test speed benchmark with HuggingFace encoder model type
-
-- `test_benchmark_speed_single_iteration_invalid_model_raises_error`
-  - Test ValueError raised for unsupported model types
-
-- `test_benchmark_speed_single_iteration_cuda_oom_error`
-  - Test InvalidBenchmark raised when CUDA OOM occurs
-
 ## 7. `test_llm_as_a_judge.py` - Missing
 
 **Module:** `euroeval.metrics.llm_as_a_judge`
