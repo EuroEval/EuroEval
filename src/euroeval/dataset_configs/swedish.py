@@ -195,3 +195,12 @@ MULTILOKO_SV_CONFIG = DatasetConfig(
     languages=[SWEDISH],
     unofficial=True,
 )
+
+GERLANGMOD_SV_CONFIG = DatasetConfig(
+    name="gerlangmod-sv",
+    pretty_name="GerLangMod-sv",
+    source="EuroEval/gerlangmod-sv",
+    task=GED,
+    languages=[SWEDISH],
+    unofficial=True,
+)

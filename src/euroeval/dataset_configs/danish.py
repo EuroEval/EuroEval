@@ -231,3 +231,12 @@ DAMETA_CONFIG = DatasetConfig(
     languages=[DANISH],
     unofficial=True,
 )
+
+GERLANGMOD_DA_CONFIG = DatasetConfig(
+    name="gerlangmod-da",
+    pretty_name="GerLangMod-da",
+    source="EuroEval/gerlangmod-da",
+    task=GED,
+    languages=[DANISH],
+    unofficial=True,
+)

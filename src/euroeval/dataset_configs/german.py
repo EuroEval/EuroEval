@@ -171,3 +171,12 @@ MULTILOKO_DE_CONFIG = DatasetConfig(
     languages=[GERMAN],
     unofficial=True,
 )
+
+GERLANGMOD_DE_CONFIG = DatasetConfig(
+    name="gerlangmod-de",
+    pretty_name="GerLangMod-de",
+    source="EuroEval/gerlangmod-de",
+    task=GED,
+    languages=[GERMAN],
+    unofficial=True,
+)

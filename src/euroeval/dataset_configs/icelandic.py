@@ -189,3 +189,12 @@ ICELANDIC_MATH_TESTS_CONFIG = DatasetConfig(
     unofficial=True,
     val_split=None,
 )
+
+GERLANGMOD_IS_CONFIG = DatasetConfig(
+    name="gerlangmod-is",
+    pretty_name="GerLangMod-is",
+    source="EuroEval/gerlangmod-is",
+    task=GED,
+    languages=[ICELANDIC],
+    unofficial=True,
+)

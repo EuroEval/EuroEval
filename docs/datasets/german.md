@@ -1302,6 +1302,22 @@ the first phrase of each sentence to avoid creating correct polar question synta
 The split sizes are 1,024 / 256 / 2,048 samples for training, validation and testing,
 respectively.
 
+Here are a few examples from the training split:
+
+```json
+{
+  "tokens": ["Der", "Mann", "geht", "schnell", "."],
+  "labels": ["O", "O", "O", "O", "O"]
+}
+```
+
+```json
+{
+  "tokens": ["Der", "Mann", "schnell", "geht", "."],
+  "labels": ["O", "O", "O", "B-ERR", "O"]
+}
+```
+
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
