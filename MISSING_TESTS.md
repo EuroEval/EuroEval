@@ -3,67 +3,7 @@
 This document lists test cases that should be added to improve test coverage for the
 EuroEval codebase.
 
-## 2. `test_split_utils.py` - Missing
-
-**Module:** `euroeval.split_utils`
-
-### Tests to add
-
-- `test_find_split_with_exact_match`
-  - Test finding split with exact keyword match
-
-- `test_find_split_with_partial_match_returns_shortest`
-  - Test that shortest matching split is returned
-
-- `test_find_split_no_match_returns_none`
-  - Test that None is returned when no split matches keyword
-
-- `test_find_split_case_insensitive`
-  - Test that keyword matching is case insensitive
-
-- `test_get_repo_split_names_mocked`
-  - Test extraction of split names from mocked HfApi response
-
-- `test_get_repo_splits_all_splits_present`
-  - Test returning all three splits when all are present
-
-- `test_get_repo_splits_missing_splits`
-  - Test that None is returned for missing splits
-
-- `test_get_repo_splits_val_as_train_fallback`
-  - Test that validation split can be used as training when train is missing
-
-## 3. `test_yaml_config.py` - Missing Tests
-
-**Module:** `euroeval.yaml_config`
-
-### Additional tests to add
-
-- `test_infer_task_from_model_graded_fact_scorer_with_judge_model`
-  - Test task inference from model_graded_fact scorer with explicit judge model
-
-- `test_infer_task_from_model_graded_fact_scorer_without_judge_model`
-  - Test task inference from model_graded_fact scorer without judge model (uses default)
-
-- `test_build_kwargs_choices_column_list_error`
-  - Test error when choices_column is neither string nor list
-
-- `test_parse_int_field_bool_not_allowed`
-  - Test that boolean values are rejected for integer fields
-
-- `test_load_yaml_file_not_dict_returns_none`
-  - Test that YAML file with non-dict top-level returns None
-
-- `test_promote_field_spec_fields_multiple_tasks_uses_first`
-  - Test that only first task in tasks list is used for promotion
-
-- `test_infer_task_from_inspect_ai_multiple_scorers`
-  - Test task inference when multiple scorers are present
-
-- `test_parse_languages_empty_list_with_fallback`
-  - Test that empty languages list uses fallback codes
-
-## 4. `test_finetuning.py` - Missing
+## 3. `test_finetuning.py` - Missing
 
 **Module:** `euroeval.finetuning`
 
