@@ -12,13 +12,12 @@
 
 import hashlib
 import logging
-from typing import Literal
+import typing as t
 
 import pandas as pd
+from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
-
-from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("create_fosent")
@@ -192,8 +191,8 @@ def main() -> None:
 
 
 def merge_labels(
-    label_1: Literal[-1, 0, 1] | float, label_2: Literal[-1, 0, 1] | float
-) -> Literal["negative", "neutral", "positive"] | None:
+    label_1: t.Literal[-1, 0, 1] | float, label_2: t.Literal[-1, 0, 1] | float
+) -> t.Literal["negative", "neutral", "positive"] | None:
     """Merge two labels.
 
     This follows the following rules:
@@ -212,7 +211,7 @@ def merge_labels(
     Returns:
         The merged label.
     """
-    labels: list[Literal["negative", "neutral", "positive"]] = [
+    labels: list[t.Literal["negative", "neutral", "positive"]] = [
         "negative",
         "neutral",
         "positive",

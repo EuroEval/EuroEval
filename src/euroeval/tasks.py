@@ -4,6 +4,7 @@ from . import metrics as m
 from .constants import NUM_GENERATION_TOKENS_FOR_CLASSIFICATION
 from .data_models import Task
 from .enums import GenerativeType, ModelType, TaskGroup
+from .metrics.llm_as_a_judge import create_model_graded_fact_metric
 from .prompt_templates import (
     CLASSIFICATION_TEMPLATES,
     EMPTY_TEMPLATES,
@@ -11,14 +12,28 @@ from .prompt_templates import (
     LA_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
     NER_TEMPLATES,
+    NLI_TEMPLATES,
     RC_TEMPLATES,
     SENT_TEMPLATES,
     SIMPL_TEMPLATES,
     SUMM_TEMPLATES,
     TOKEN_CLASSIFICATION_TEMPLATES,
     TRANSLATION_TEMPLATES,
+    WIC_TEMPLATES,
 )
 from .prompt_templates.tool_calling import TOOL_CALLING_TEMPLATES, ToolCallingResponse
+
+
+def get_all_tasks() -> dict[str, "Task"]:
+    """Get a list of all the tasks.
+
+    Returns:
+        A mapping between task names and their configurations.
+    """
+    return {cfg.name: cfg for cfg in globals().values() if isinstance(cfg, Task)}
+
+
+# Tasks that can be run for all model types
 
 LA = Task(
     name="linguistic-acceptability",
@@ -28,6 +43,18 @@ LA = Task(
     default_num_few_shot_examples=12,
     default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
     default_labels=["correct", "incorrect"],
+    uses_logprobs=True,
+)
+
+
+NLI = Task(
+    name="natural-language-inference",
+    task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+    template_dict=NLI_TEMPLATES,
+    metrics=[m.mcc_metric, m.macro_f1_metric],
+    default_num_few_shot_examples=12,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    default_labels=["entailment", "neutral", "contradiction"],
     uses_logprobs=True,
 )
 
@@ -89,6 +116,19 @@ SENT = Task(
 )
 
 
+WIC = Task(
+    name="word-in-context",
+    task_group=TaskGroup.SEQUENCE_CLASSIFICATION,
+    template_dict=WIC_TEMPLATES,
+    metrics=[m.mcc_metric, m.macro_f1_metric],
+    default_num_few_shot_examples=12,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    default_labels=["same_sense", "different_sense"],
+    uses_logprobs=True,
+)
+
+# Tasks that can be run for generative models only
+
 SIMPL = Task(
     name="simplification",
     task_group=TaskGroup.TEXT_TO_TEXT,
@@ -105,7 +145,7 @@ SUMM = Task(
     name="summarization",
     task_group=TaskGroup.TEXT_TO_TEXT,
     template_dict=SUMM_TEMPLATES,
-    metrics=[m.bert_score_metric, m.rouge_l_metric],
+    metrics=[m.chrf3pp_metric, m.chrf4pp_metric],
     default_num_few_shot_examples=1,
     default_max_generated_tokens=256,
     default_labels=[],
@@ -117,7 +157,7 @@ TRANSLATION = Task(
     name="translation",
     task_group=TaskGroup.TEXT_TO_TEXT,
     template_dict=TRANSLATION_TEMPLATES,
-    metrics=[m.bert_score_metric, m.rouge_l_metric],
+    metrics=[m.chrf3pp_metric, m.chrf4pp_metric],
     default_num_few_shot_examples=5,
     default_max_generated_tokens=256,
     default_labels=[],
@@ -163,23 +203,23 @@ COMMON_SENSE = Task(
     uses_logprobs=True,
 )
 
+# Tasks for instruction-tuned models only
 
-EUROPEAN_VALUES = Task(
-    name="european-values",
-    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-    template_dict=MULTIPLE_CHOICE_TEMPLATES,
-    metrics=[m.european_values_metric],
+INSTRUCTION_FOLLOWING = Task(
+    name="instruction-following",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=EMPTY_TEMPLATES,
+    metrics=[m.instruction_accuracy],
     default_num_few_shot_examples=0,
-    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
-    default_labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"],
+    default_max_generated_tokens=2048,
+    default_labels=None,
     default_allowed_model_types=[ModelType.GENERATIVE],
     default_allowed_generative_types=[
         GenerativeType.INSTRUCTION_TUNED,
         GenerativeType.REASONING,
     ],
     requires_zero_shot=True,
-    uses_logprobs=True,
-    default_allow_invalid_model_outputs=False,
+    uses_logprobs=False,
 )
 
 
@@ -199,6 +239,26 @@ TOOL_CALLING = Task(
     requires_zero_shot=True,
     uses_structured_output=True,
     structured_output_format=ToolCallingResponse,
+)
+
+# Orthogonal tasks, which measures things not related to 'raw' language modelling
+
+EUROPEAN_VALUES = Task(
+    name="european-values",
+    task_group=TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
+    template_dict=MULTIPLE_CHOICE_TEMPLATES,
+    metrics=[m.european_values_metric],
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=NUM_GENERATION_TOKENS_FOR_CLASSIFICATION,
+    default_labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"],
+    default_allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
+    requires_zero_shot=True,
+    uses_logprobs=True,
+    default_allow_invalid_model_outputs=False,
 )
 
 
@@ -271,11 +331,12 @@ MULTIPLE_CHOICE = Task(
     uses_logprobs=True,
 )
 
-INSTRUCTION_FOLLOWING = Task(
-    name="instruction-following",
+
+OPEN_ENDED_QA = Task(
+    name="open-ended-qa",
     task_group=TaskGroup.TEXT_TO_TEXT,
     template_dict=EMPTY_TEMPLATES,
-    metrics=[m.instruction_accuracy],
+    metrics=[create_model_graded_fact_metric()],
     default_num_few_shot_examples=0,
     default_max_generated_tokens=2048,
     default_labels=None,

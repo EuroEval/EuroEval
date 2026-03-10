@@ -5,7 +5,6 @@ from ..languages import NORWEGIAN, NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
-    GED,
     KNOW,
     LA,
     MCRC,
@@ -13,6 +12,7 @@ from ..tasks import (
     RC,
     SENT,
     SUMM,
+    TEXT_CLASSIFICATION,
 )
 
 # Official datasets ###
@@ -150,6 +150,21 @@ SCHIBSTED_NO_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+SCHIBSTED_FRONT_TITLE_NO_CONFIG = DatasetConfig(
+    name="vg-front-title",
+    pretty_name="VG Front Title",
+    source="EuroEval/vg-front-title",
+    task=SUMM,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
+    unofficial=True,
+    max_generated_tokens=64,
+    prompt_prefix="Her følger nyhetsartikler med tilhørende titler.",
+    prompt_template="Nyhetsartikkel: {text}\nTittel: {target_text}",
+    instruction_prompt=(
+        "Nyhetsartikkel: {text}\n\nSkriv en tittel for den ovennevnte artikkelen."
+    ),
+)
+
 PERSONAL_SUM_CONFIG = DatasetConfig(
     name="personal-sum",
     pretty_name="Personal Sum",
@@ -223,20 +238,40 @@ WINOGRANDE_NO_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-GERLANGMOD_NB_CONFIG = DatasetConfig(
-    name="gerlangmod-nb",
-    pretty_name="GerLangMod-nb",
-    source="EuroEval/gerlangmod-nb",
-    task=GED,
-    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+NORDIAL_CONFIG = DatasetConfig(
+    name="nordial",
+    pretty_name="NorDial",
+    source="EuroEval/nordial",
+    task=TEXT_CLASSIFICATION,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
+    labels=["bokmål", "nynorsk", "dialectal", "mixed"],
+    prompt_prefix="Følgende er norske tweets og hvilken skriftform de er skrevet på, "
+    "som kan være {labels_str}.",
+    prompt_template="Tweet: {text}\nSkriftform: {label}",
+    instruction_prompt="Tweet: {text}\n\nKlassifiser skriftformen av tweeten. Svar med "
+    "{labels_str}, og ikke noe annet.",
+    prompt_label_mapping=dict(
+        bokmål="bokmål", nynorsk="nynorsk", dialectal="dialekt", mixed="blandet"
+    ),
     unofficial=True,
 )
 
-GERLANGMOD_NN_CONFIG = DatasetConfig(
-    name="gerlangmod-nn",
-    pretty_name="GerLangMod-nn",
-    source="EuroEval/gerlangmod-nn",
-    task=GED,
+NORSUMM_NB_CONFIG = DatasetConfig(
+    name="norsumm-nb",
+    pretty_name="NorSumm-nb",
+    source="EuroEval/norsumm-nb",
+    task=SUMM,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    unofficial=True,
+    val_split=None,
+)
+
+NORSUMM_NN_CONFIG = DatasetConfig(
+    name="norsumm-nn",
+    pretty_name="NorSumm-nn",
+    source="EuroEval/norsumm-nn",
+    task=SUMM,
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+    val_split=None,
 )

@@ -12,7 +12,7 @@
 """Create the MBBQ-NL dataset with train/val/test split and upload it to the HF Hub."""
 
 import textwrap
-from typing import Any, Optional
+import typing as t
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
@@ -104,7 +104,7 @@ def main() -> None:
     new_dataset.push_to_hub(dataset_id_mbbq, private=True)
 
 
-def format_row(row: dict[str, Any]) -> dict[str, Any]:
+def format_row(row: dict[str, t.Any]) -> dict[str, t.Any]:
     """Format the dataset rows into multiple choice question prompts.
 
     Args:
@@ -142,8 +142,8 @@ def format_row(row: dict[str, Any]) -> dict[str, Any]:
 
 
 def extract_bias_indices(
-    answer_info: dict[str, list[str]], additional_metadata: dict[str, Any]
-) -> tuple[Optional[int], Optional[int], Optional[int]]:
+    answer_info: dict[str, list[t.Any]], additional_metadata: dict[str, t.Any]
+) -> tuple[int | None, int | None, int | None]:
     """Determine the bias indices from one MBBQ row.
 
     From one MBBQ row, determine:

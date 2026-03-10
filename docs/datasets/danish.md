@@ -78,6 +78,83 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset angry-tweets
 ```
 
+### Unofficial: Danish Sentiment in Context
+
+This dataset was published in [this
+paper](https://doi.org/10.7146/nys.v1i65.143072) and is part of the [Danish Semantic
+Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+It differs from other sentiment datasets by measuring the sentiment of an individual
+word given its context, meaning the sentiment of the surrounding text may differ from
+the sentiment of the target word. The data is based on the semantic module of the [COR
+lexicon](https://aclanthology.org/2022.lrec-1.6.pdf), a human-curated lexical-semantic
+resource developed by the Society for Danish Language and Literature.
+
+The original dataset consists of 1,041 samples. We use a 256 / 64 / 721 split for
+training, validation and testing, respectively (so 1,041 samples used in total).
+
+The sentiment labels from the original dataset are on a scale from -3 (very negative)
+to +3 (very positive), which we map to `negative` (< 0), `neutral` (= 0), and
+`positive` (> 0).
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Ord: vinder\nKontekst: Umiddelbart efter lodtrækningen vil vinderne få gavekortet tilsendt",
+    "label": "positive"
+}
+```
+
+```json
+{
+    "text": "Ord: nervebane\nKontekst: Næsten alle nervebaner krydser i den menneskelige hjernestamme",
+    "label": "neutral"
+}
+```
+
+```json
+{
+    "text": "Ord: forrykt\nKontekst: Det er en forrykt situation. Det midaldrende par har tilbragt et år i et rum på seks kvadratmeter",
+    "label": "negative"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er ord med kontekst og ordets sentiment, som kan være 'positiv', 'neutral' eller 'negativ'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}
+  Sentiment: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+
+  Klassificer sentimentet for det angivne ord i konteksten. Svar kun med 'positiv', 'neutral' eller 'negativ', og intet andet.
+  ```
+
+- Label mapping:
+  - `positive` ➡️ `positiv`
+  - `neutral` ➡️ `neutral`
+  - `negative` ➡️ `negativ`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset danish-sentiment-in-context
+```
+
 ## Named Entity Recognition
 
 ### DANSK
@@ -370,6 +447,215 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset dala
+```
+
+## Natural Language Inference
+
+### Unofficial: The Danish Entailment Dataset
+
+This dataset was published in [this
+paper](https://aclanthology.org/2024.lrec-main.1421/) as part of the Danish Semantic
+Reasoning Benchmark and was developed at the Centre for Language Technology at the
+University of Copenhagen. Each sample pairs two Danish statements and asks whether the
+second statement follows from the first.
+
+The original dataset contains 319 usable samples after filtering. We use a split of
+32 / 286 samples for training and testing, respectively (so 318 samples used in total
+after deduplication). The splits were created by randomly sampling from the full dataset.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Udsagn 1: Per forsømte sin have.\nUdsagn 2: Per holdt ikke sin have.",
+    "label": "entailment"
+}
+```
+
+```json
+{
+    "text": "Udsagn 1: Per afbrød sine studier fordi han ikke havde råd til at fortsætte.\nUdsagn 2: Per studerede uden pause til han var færdiguddannet.",
+    "label": "contradiction"
+}
+```
+
+```json
+{
+    "text": "Udsagn 1: Regeringen afskaffede karaktergivning på de første tre klassetrin i grundskolen.\nUdsagn 2: Der gives ikke længere karakterer til eleverne på grundskolens mellemste klassetrin.",
+    "label": "neutral"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er par af udsagn og om det andet udsagn følger af det første, hvilket kan være 'sand', 'neutral' eller 'falsk'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Udsagn: {text}
+  Entailment: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Udsagn: {text}
+
+  Bestem om det andet udsagn følger af det første udsagn. Svar kun med 'sand', 'neutral' eller 'falsk', og intet andet.
+  ```
+
+- Label mapping:
+  - `entailment` ➡️ `sand`
+  - `neutral` ➡️ `neutral`
+  - `contradiction` ➡️ `falsk`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset danish-entailment
+```
+
+### Unofficial: Danish Lexical Inference
+
+This dataset is part of the [Danish Semantic Reasoning
+Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark). It
+measures word knowledge through lexical inference: given a context statement derived
+from a DanNet Qualia role (Agentive, Constitutive, Formal, or Telic), a model must
+determine whether a second statement is entailed by or contradicts the context.
+
+The original dataset consists of 1,020 samples across 17 sub-datasets. We use a 128 /
+64 / 828 split for training, validation and testing, respectively (so all 1,020 samples
+are used in total).
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Udsagn 1: træthed er en følelse; jegfølelse er en følelse\nUdsagn 2: Ferieminde er en følelse",
+  "label": "entailment"
+}
+```
+
+```json
+{
+  "text": "Udsagn 1: en armstol har armlæn; et glasbord har en glasplade\nUdsagn 2: En morgenbitter har ikke et afløb",
+  "label": "contradiction"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er par af udsagn og om det andet udsagn følger af det første, hvilket kan være 'sand' eller 'falsk'.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Udsagn: {text}
+  Entailment: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Udsagn: {text}
+
+  Bestem om det andet udsagn følger af det første udsagn. Svar kun med 'sand' eller 'falsk', og intet andet.
+  ```
+
+- Label mapping:
+  - `entailment` ➡️ `sand`
+  - `contradiction` ➡️ `falsk`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset danish-lexical-inference
+```
+
+## Word in Context
+
+### Unofficial: DanWiC
+
+This dataset was published in [this
+paper](https://doi.org/10.7146/nys.v1i65.143072) and is based on the semantic module of
+the [COR.SEM resource](https://corsem.dsl.dk/). The dataset measures the ability to
+distinguish word meanings/senses in context: given two sentences containing the same
+target word, the task is to determine whether the word carries the same sense in both
+sentences.
+
+The original full dataset consists of 1,098 polysemous samples with balanced labels.
+We use a split of 128 / 64 / 906 samples for training, validation and testing,
+respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Ord: briller\nKontekst 1: Karen tog sine briller af og pudsede dem. Uden brillerne var verden én stor tåge\nKontekst 2: Jeg blev altid drillet i skolen, fordi jeg havde briller og ikke var særlig køn",
+    "label": "same_sense"
+}
+```
+
+```json
+{
+    "text": "Ord: lag\nKontekst 1: Pladsens brosten var dækket af et fint lag snekrystaller\nKontekst 2: [de] fik indlagt tre lag glas i vinduerne for at holde larmen ude af stuerne",
+    "label": "same_sense"
+}
+```
+
+```json
+{
+    "text": "Ord: tjeneste\nKontekst 1: Han er jo aldrig kommet i kirken, når jeg havde tjenesten\nKontekst 2: Vil du ikke lige gøre mig den tjeneste at bestille en taxa",
+    "label": "different_sense"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Følgende er eksempler på ord brugt i to kontekster og om de har samme betydning.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}
+  Samme betydning: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+
+  Har ordet den samme betydning i de to kontekster? Svar kun med 'ja' eller 'nej', og intet andet.
+  ```
+
+- Label mapping:
+  - `same_sense` ➡️ `ja`
+  - `different_sense` ➡️ `nej`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset danwic
 ```
 
 ## Reading Comprehension
@@ -907,6 +1193,119 @@ When evaluating generative models, we use the following setup (see the
 
   Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c' eller 'd', og intet andet.
   ```
+
+### Unofficial: DAMETA
+
+This dataset is part of the [Danish Semantic Reasoning
+Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark). It is a
+metaphor interpretation dataset for Danish single word metaphors, developed as a
+multiple-choice task. Each item contains a word with a metaphoric meaning presented in
+context, along with four paraphrases: a correct paraphrase, a literal distractor
+(concrete/literal interpretation), a figurative distractor (incorrect figurative
+interpretation), and a contradictory distractor (opposite interpretation). The data is
+based on the Dafig corpus and the Danish Dictionary (DDO).
+
+The original full dataset consists of 915 samples. We use a 64 / 128 / 723 split for
+training, validation and testing, respectively (so 915 samples used in total).
+
+Here are a few examples from the training split:
+
+```json
+{
+    "ID": "b049",
+    "word": "lægning",
+    "sentence": "De kan færdes uantastede blandt ellers dybt mistænksomme personager af skurkagtig lægning",
+    "A": "De kan færdes uantastede blandt ellers dybt mistænksomme personager med en skurkagtig forhistorie",
+    "B": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som har lagt mange kartofler",
+    "C": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som har mistet besindelsen",
+    "D": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som ser smukke ud",
+    "label": "a",
+    "lit_dis": "B",
+    "fig_dis": "C",
+    "con_dis": "D",
+    "type": "3",
+    "domain": "-",
+    "DDO_sense_number": "-",
+    "source": "adhoc from news",
+    "annotator": "BSP",
+    "text": "Hvad er den korrekte fortolkning af ordet 'lægning' i følgende sætning?\n'De kan færdes uantastede blandt ellers dybt mistænksomme personager af skurkagtig lægning'\nSvarmuligheder:\na. De kan færdes uantastede blandt ellers dybt mistænksomme personager med en skurkagtig forhistorie\nb. De kan færdes uantastede blandt ellers dybt mistænksomme personager som har lagt mange kartofler\nc. De kan færdes uantastede blandt ellers dybt mistænksomme personager som har mistet besindelsen\nd. De kan færdes uantastede blandt ellers dybt mistænksomme personager som ser smukke ud"
+}
+```
+
+```json
+{
+    "ID": "n088",
+    "word": "forhøje",
+    "sentence": "Der er tale om forhøjede niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "A": "Der er tale om at fremme niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "B": "Der er tale om ekstra høje niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "C": "Der er tale om at øge højden på stueplan med såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "D": "Der er tale om ret lave niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+    "label": "b",
+    "lit_dis": "C",
+    "fig_dis": "A",
+    "con_dis": "D",
+    "type": "1",
+    "domain": "-",
+    "DDO_sense_number": "1a",
+    "source": "dafig",
+    "annotator": "SOL",
+    "text": "Hvad er den korrekte fortolkning af ordet 'forhøje' i følgende sætning?\n'Der er tale om forhøjede niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.'\nSvarmuligheder:\na. Der er tale om at fremme niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nb. Der er tale om ekstra høje niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nc. Der er tale om at øge højden på stueplan med såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nd. Der er tale om ret lave niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse."
+}
+```
+
+```json
+{
+    "ID": "n291",
+    "word": "rulle",
+    "sentence": "Og det kan være, at der snart ruller millioner ind i statskassen fra vanvidsbilisme.",
+    "A": "Og det kan være, at der snart triller millioner af mønter ind i statskassen fra vanvidsbilisme.",
+    "B": "Og det kan være, at der snart kan spenderes millioner af statskassen fra vanvidsbilisme.",
+    "C": "Og det kan være, at der snart kommer millioner ind i statskassen fra vanvidsbilisme.",
+    "D": "Og det kan være, at der snart er millioner i omløb i statskassen fra vanvidsbilisme.",
+    "label": "c",
+    "lit_dis": "A",
+    "fig_dis": "D",
+    "con_dis": "B",
+    "type": "1",
+    "domain": "-",
+    "DDO_sense_number": "1c",
+    "source": "dafig",
+    "annotator": "SOL",
+    "text": "Hvad er den korrekte fortolkning af ordet 'rulle' i følgende sætning?\n'Og det kan være, at der snart ruller millioner ind i statskassen fra vanvidsbilisme.'\nSvarmuligheder:\na. Og det kan være, at der snart triller millioner af mønter ind i statskassen fra vanvidsbilisme.\nb. Og det kan være, at der snart kan spenderes millioner af statskassen fra vanvidsbilisme.\nc. Og det kan være, at der snart kommer millioner ind i statskassen fra vanvidsbilisme.\nd. Og det kan være, at der snart er millioner i omløb i statskassen fra vanvidsbilisme."
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Følgende er multiple choice spørgsmål (med svar).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spørgsmål: {text}
+  Svar: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spørgsmål: {text}
+
+  Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c' eller 'd', og intet andet.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dameta
+```
 
 ## Common-sense Reasoning
 

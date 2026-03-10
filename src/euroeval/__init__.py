@@ -33,14 +33,24 @@ logging.basicConfig(
 # STAGE 2 ###
 # Check for incompatible packages ###
 
-# Throw informative error if `flash_attn` is installed ###
+# Throw informative error if `flash_attn` is installed on non-ROCm PyTorch builds.
+# On ROCm builds the package does not cause the same conflicts, so we skip this check
+# to allow evaluation to proceed (vLLM will fall back to TRITON_ATTN there).
 if importlib.util.find_spec("flash_attn") is not None:
-    logging.critical(
-        "The `flash_attn` package is not supported by EuroEval, as it is now built "
-        "into the other packages and it conflicts with the other implementations. "
-        "Please uninstall it using `pip uninstall flash_attn` and try again."
-    )
-    sys.exit(1)
+    try:
+        import torch as _torch
+
+        _is_rocm = _torch.version.hip is not None
+    except (ImportError, AttributeError):
+        _is_rocm = False
+    if not _is_rocm:
+        logging.critical(
+            "The `flash_attn` package is not supported by EuroEval, as it is now "
+            "built into the other packages and it conflicts with the other "
+            "implementations. Please uninstall it using `pip uninstall flash_attn` "
+            "and try again."
+        )
+        sys.exit(1)
 
 
 # STAGE 3 ###
@@ -103,11 +113,6 @@ os.environ["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "1"
 # use of `httpx` instead.
 # Link: https://github.com/BerriAI/litellm/issues/11657#issuecomment-3038984975
 os.environ["DISABLE_AIOHTTP_TRANSPORT"] = "True"
-
-
-# Enable the newer vLLM V1 engine, which is faster and offers more compatibility with
-# newer models
-os.environ["VLLM_USE_V1"] = "1"
 
 
 # Set the HF_TOKEN env var to copy the HUGGINGFACE_API_KEY env var, as vLLM uses the

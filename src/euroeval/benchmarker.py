@@ -17,8 +17,8 @@ from torch.distributed import destroy_process_group
 from .benchmark_config_factory import build_benchmark_config
 from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data, load_raw_data
-from .data_models import BenchmarkConfigParams, BenchmarkResult
-from .enums import Device, GenerativeType, ModelType
+from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
+from .enums import Device, GenerativeType, InferenceBackend, ModelType
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
@@ -77,7 +77,8 @@ class Benchmarker:
         gpu_memory_utilization: float = 0.8,
         attention_backend: t.Literal[
             *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-        ] = "FLASHINFER",
+        ]
+        | None = None,
         generative_type: GenerativeType | None = None,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
@@ -151,8 +152,9 @@ class Benchmarker:
                 the risk of running out of GPU memory. Only reduce this if you are
                 running out of GPU memory. Defaults to 0.9.
             attention_backend:
-                The attention backend to use for vLLM. Defaults to FLASHINFER. Only
-                relevant if the model is generative.
+                The attention backend to use for vLLM. Only relevant if the model is
+                generative. If None then vLLM will automatically choose the best
+                backend. Defaults to None.
             generative_type:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
@@ -250,6 +252,8 @@ class Benchmarker:
         # If FULL_LOG has been set, then force verbose mode
         if os.getenv("FULL_LOG", "0") == "1":
             verbose = True
+
+        adjust_logging_level(verbose=verbose)
 
         self.benchmark_config_default_params = BenchmarkConfigParams(
             task=task,
@@ -437,9 +441,9 @@ class Benchmarker:
                 when initialising the benchmarker.
             language:
                 The language codes of the languages to include, both for models and
-                datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this to
-                'all' if all languages should be considered. Defaults to the value
-                specified when initialising the benchmarker.
+                datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn).
+                Set this to 'all' if all languages should be considered.
+                Defaults to the value specified when initialising the benchmarker.
             device:
                 The device to use for benchmarking. Defaults to the value specified when
                 initialising the benchmarker.
@@ -538,7 +542,7 @@ class Benchmarker:
                 If we're offline benchmarking an adapter model, or if model loading
                 failed.
         """
-        log(
+        log_once(
             "Started EuroEval run. Run with `--verbose` for more information.",
             level=logging.INFO,
         )
@@ -810,7 +814,7 @@ class Benchmarker:
                     raise InvalidModel(
                         "Offline benchmarking of models with adapters is not currently "
                         "supported. An active internet connection is required. "
-                        "{open_issue_msg}"
+                        f"{open_issue_msg}"
                     )
                 elif benchmark_config.download_only:
                     log_once(
@@ -852,6 +856,15 @@ class Benchmarker:
                     )
                     benchmark_params_to_revert["few_shot"] = True
                     benchmark_config.few_shot = False
+
+                if benchmark_config.download_only:
+                    self._download(
+                        dataset_config=dataset_config,
+                        model_config=model_config,
+                        benchmark_config=benchmark_config,
+                    )
+                    num_finished_benchmarks += 1
+                    continue
 
                 # We do not re-initialise generative models as their architecture is not
                 # customised to specific datasets
@@ -1099,12 +1112,12 @@ class Benchmarker:
                 if model_config.param is not None:
                     model_id_to_be_stored += f"#{model_config.param}"
 
-                record = BenchmarkResult(
+                record = BenchmarkResult(  # pyrefly: ignore[bad-argument-type]
                     dataset=dataset_config.name,
                     task=dataset_config.task.name,
                     languages=[language.code for language in dataset_config.languages],
                     model=model_id_to_be_stored,
-                    results=results,
+                    results=results,  # pyrefly: ignore[bad-argument-type]
                     num_model_parameters=model.num_params,
                     max_sequence_length=model.model_max_length,
                     vocabulary_size=model.vocab_size,
@@ -1124,6 +1137,16 @@ class Benchmarker:
                         None
                         if dataset_config.val_split is None
                         else not benchmark_config.evaluate_test_split
+                    ),
+                    vllm_version=(
+                        get_package_version("vllm")
+                        if model_config.inference_backend == InferenceBackend.VLLM
+                        else None
+                    ),
+                    litellm_version=(
+                        get_package_version("litellm")
+                        if model_config.inference_backend == InferenceBackend.LITELLM
+                        else None
                     ),
                 )
                 log(f"Results:\n{results}", level=logging.DEBUG)

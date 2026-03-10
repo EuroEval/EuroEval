@@ -15,12 +15,8 @@
 from collections import Counter
 
 import pandas as pd
-import polars as pl  # type: ignore[missing-import]
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
-
-from .constants import (
+import polars as pl  # pyrefly: ignore[missing-import]
+from constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -28,6 +24,9 @@ from .constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
 
 LANGUAGES = [
     "da",

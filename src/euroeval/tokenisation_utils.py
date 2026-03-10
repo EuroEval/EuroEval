@@ -18,8 +18,10 @@ try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
     from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MistralCommonTokenizer,
+        MistralCommonBackend as MCB,  # pyrefly: ignore[missing-module-attribute]
     )
+
+    MistralCommonTokenizer = MCB  # pyrefly: ignore[assignment]
 
 if t.TYPE_CHECKING:
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
@@ -456,23 +458,32 @@ def get_first_label_token_mapping(
             for label in local_labels
         ]
     else:
-        all_tokens = [
-            tokeniser.convert_ids_to_tokens(
-                ids=apply_chat_template(  # type: ignore[no-matching-overload]
-                    conversation=[
-                        dict(role="user", content=""),
-                        dict(role="assistant", content=label),
-                        # Adding extra user message as Mistral tokenisers require
-                        # conversations to end with a user message
-                        dict(role="user", content=""),
-                    ],
-                    tokeniser=tokeniser,
-                    tokenise=True,
-                    add_generation_prompt=True,
-                    enable_thinking=generative_type == GenerativeType.REASONING,
-                )
+        all_token_ids: list[list[int]] = []
+        for label in local_labels:
+            token_ids = apply_chat_template(
+                conversation=[
+                    dict(role="user", content=""),
+                    dict(role="assistant", content=label),
+                    # Adding extra user message as Mistral tokenisers require
+                    # conversations to end with a user message
+                    dict(role="user", content=""),
+                ],
+                tokeniser=tokeniser,
+                tokenise=True,
+                add_generation_prompt=True,
+                enable_thinking=generative_type == GenerativeType.REASONING,
             )
-            for label in local_labels
+            if isinstance(token_ids, BatchEncoding):
+                token_ids = token_ids.input_ids
+            assert isinstance(token_ids, list), (
+                f"Expected token_ids to be a list, but got {type(token_ids)}."
+            )
+            all_token_ids.append(token_ids)
+        all_tokens = [
+            tokeniser.convert_ids_to_tokens(  # pyrefly: ignore[no-matching-overload]
+                ids=token_ids
+            )
+            for token_ids in all_token_ids
         ]
 
     # Remove any non-alphabetic characters from the tokens
@@ -615,4 +626,4 @@ def apply_chat_template(
             tokenize=tokenise,
             **extra_kwargs,
         )
-    return templated_prompt  # type: ignore[bad-return]
+    return templated_prompt  # pyrefly: ignore[bad-return]

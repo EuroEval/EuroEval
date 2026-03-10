@@ -143,6 +143,16 @@ MMLU_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+MMLU_PRO_CONFIG = DatasetConfig(
+    name="mmlu-pro",
+    pretty_name="MMLU-Pro",
+    source="EuroEval/mmlu-pro-mini",
+    task=KNOW,
+    languages=[ENGLISH],
+    labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+    unofficial=True,
+)
+
 MULTI_WIKI_QA_EN_CONFIG = DatasetConfig(
     name="multi-wiki-qa-en",
     pretty_name="MultiWikiQA-en",
@@ -159,5 +169,14 @@ WINOGRANDE_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[ENGLISH],
     labels=["a", "b"],
+    unofficial=True,
+)
+
+MULTILOKO_EN_CONFIG = DatasetConfig(
+    name="multiloko-en",
+    pretty_name="MultiLoKo-en",
+    source="EuroEval/multiloko-en-mini",
+    task=KNOW,
+    languages=[ENGLISH],
     unofficial=True,
 )

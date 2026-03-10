@@ -8,12 +8,11 @@
 # ///
 """Create the Estonian Trivia dataset and upload to HF Hub."""
 
-from typing import MutableMapping
+import typing as t
 
+from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, concatenate_datasets, load_dataset
 from huggingface_hub import HfApi
-
-from .constants import CHOICES_MAPPING
 
 
 def main() -> None:
@@ -58,7 +57,7 @@ def main() -> None:
     ds.push_to_hub(target_repo_id, private=True)
 
 
-def add_options_and_label(row: MutableMapping) -> MutableMapping:
+def add_options_and_label(row: t.MutableMapping) -> t.MutableMapping:
     """Add options to the text and transform labels to letters.
 
     Args:

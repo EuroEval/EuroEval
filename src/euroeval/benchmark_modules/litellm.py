@@ -522,7 +522,10 @@ class LiteLLMModel(BenchmarkModule):
             "Only temperature=1 is supported",
         ]
         max_items_messages = ["'maxItems' is not permitted."]
-        no_json_schema_messages = ["Property keys should match pattern"]
+        no_json_schema_messages = [
+            "Property keys should match pattern",
+            "'json_schema' is not supported",
+        ]
         thinking_budget_pattern = re.compile(
             r"the thinking budget [0-9]+ is invalid. please choose a value between "
             r"[0-9]+ and ([0-9]+)\."
@@ -533,6 +536,7 @@ class LiteLLMModel(BenchmarkModule):
             "got an unexpected keyword argument 'response_format'",
             "the model returned empty outputs",
             "'maxitems' is not supported",
+            "must contain the word 'json'",
         ]
 
         if (
@@ -624,7 +628,8 @@ class LiteLLMModel(BenchmarkModule):
             keys_and_their_types = {
                 tag_name: (c.Sequence[str], ...) for tag_name in tag_names
             }
-            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)  # type: ignore[no-matching-overload]
+            # pyrefly: ignore[no-matching-overload]
+            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
             return generation_kwargs, 0
         elif any(msg.lower() in error_msg for msg in no_json_schema_messages):
@@ -1380,7 +1385,7 @@ class LiteLLMModel(BenchmarkModule):
         num_attempts = 10
         for _ in range(num_attempts):
             try:
-                litellm.completion(  # type: ignore[not-callable]
+                litellm.completion(  # pyrefly: ignore[not-callable]
                     messages=[dict(role="user", content="X")],
                     model=clean_model_id(
                         model_id=model_id, benchmark_config=benchmark_config
@@ -1688,7 +1693,8 @@ class LiteLLMModel(BenchmarkModule):
                 for label in self.dataset_config.labels
             ]
             keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)  # type: ignore[invalid-literal]
+                # pyrefly: ignore[invalid-literal]
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class

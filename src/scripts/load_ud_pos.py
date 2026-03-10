@@ -8,11 +8,11 @@
 
 """Load the part-of-speech part of a Universal Dependencies treebank."""
 
+import collections.abc as c
 import logging
 import re
 from collections import defaultdict
 from functools import partial
-from typing import Callable, DefaultDict
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -661,7 +661,7 @@ def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
     Returns:
         The filtered data dictionary. Its format is identical to the input.
     """
-    output: DefaultDict[str, list] = defaultdict(list)
+    output: dict[str, list] = defaultdict(list)
 
     range_start: int = 0
     range_end: int = 0
@@ -705,7 +705,7 @@ def _load_split(
     *,
     lines: list[str],
     filter_source: str | None = None,
-    doc_process_fn: Callable[[str], str] = lambda x: x,
+    doc_process_fn: c.Callable[[str], str] = lambda x: x,
 ) -> pd.DataFrame:
     """Load single split of the POS part of a Universal Dependencies treebank.
 
@@ -769,7 +769,7 @@ def load_ud_pos(
     train_url: str,
     val_url: str,
     test_url: str,
-    doc_process_fn: Callable[[str], str] = lambda x: x,
+    doc_process_fn: c.Callable[[str], str] = lambda x: x,
     filter_source: str | None = None,
 ) -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of a Universal Dependencies treebank.

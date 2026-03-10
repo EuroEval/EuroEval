@@ -62,8 +62,10 @@ def compute_metrics(
         model_outputs = model_outputs[0]
 
     predictions: list[list[str]]
-    if not isinstance(model_outputs[0][0], str):  # type: ignore[bad-index]
-        raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()  # type: ignore[no-matching-overload]
+    # pyrefly: ignore[bad-index]
+    if not isinstance(model_outputs[0][0], str):
+        # pyrefly: ignore[no-matching-overload]
+        raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()
 
         # Remove ignored index (special tokens)
         predictions = [
@@ -88,7 +90,8 @@ def compute_metrics(
         ]
 
     else:
-        predictions = model_outputs  # type: ignore[assignment]
+        # pyrefly: ignore[assignment]  # pyrefly: ignore[bad-assignment]
+        predictions = model_outputs
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
 
@@ -118,7 +121,9 @@ def compute_metrics(
                 predictions_no_misc[i][j] = "o"
 
     # Remove MISC labels from labels
-    labels_no_misc: list[list[str]] = deepcopy(labels)  # type: ignore[arg-type]
+    labels_no_misc: list[list[str]] = deepcopy(  # pyrefly: ignore[arg-type]
+        labels  # pyrefly: ignore[bad-argument-type]
+    )
     for i, label_list in enumerate(labels_no_misc):
         for j, ner_tag in enumerate(label_list):
             if (

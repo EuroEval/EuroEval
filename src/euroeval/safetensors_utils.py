@@ -4,7 +4,13 @@ import logging
 from pathlib import Path
 
 from huggingface_hub import get_safetensors_metadata
-from huggingface_hub.errors import NotASafetensorsRepoError
+from huggingface_hub.errors import (
+    GatedRepoError,
+    HfHubHTTPError,
+    NotASafetensorsRepoError,
+    RepositoryNotFoundError,
+    SafetensorsParsingError,
+)
 
 from .logging_utils import log_once
 from .utils import get_hf_token, internet_connection_available
@@ -43,6 +49,35 @@ def get_num_params_from_safetensors_metadata(
             "If this is your own model, then you can use this Hugging Face Space to "
             "convert your model to the safetensors format: "
             "https://huggingface.co/spaces/safetensors/convert.",
+            level=logging.WARNING,
+        )
+        return None
+    except SafetensorsParsingError:
+        log_once(
+            f"The safetensors metadata for the model {model_id} could not be parsed. "
+            "Please report this issue at https://github.com/EuroEval/EuroEval/issues.",
+            level=logging.WARNING,
+        )
+        return None
+    except RepositoryNotFoundError:
+        log_once(
+            f"The model {model_id} could not be found on the Hugging Face Hub. "
+            "Please check that the model ID is correct.",
+            level=logging.WARNING,
+        )
+        return None
+    except GatedRepoError:
+        log_once(
+            f"The model {model_id} is gated, so the number of parameters could not be "
+            "determined. Please ensure that you have access to this model, and that "
+            "you have provided a valid API key or set the `HUGGINGFACE_API_KEY` or "
+            "`HF_TOKEN` environment variable.",
+            level=logging.WARNING,
+        )
+        return None
+    except HfHubHTTPError as e:
+        log_once(
+            f"Failed to get the number of parameters for the model {model_id}: {e}.",
             level=logging.WARNING,
         )
         return None

@@ -15,11 +15,7 @@ import logging
 from collections import Counter
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
-
-from .constants import (
+from constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -27,6 +23,9 @@ from .constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
 logger = logging.getLogger("create_skolprov")
@@ -100,7 +99,9 @@ def main() -> None:
     assert isinstance(df, pd.DataFrame)
 
     # Create category from test_id and section
-    df["category"] = df["test_id"] + "_" + df["section"].fillna("unknown")
+    df["category"] = (
+        df["test_id"].astype(str) + "_" + df["section"].fillna("unknown")
+    )  # pyrefly: ignore[unsupported-operation]
 
     # Make a `text` column with all the options in it
     def create_text(row: pd.Series) -> str:

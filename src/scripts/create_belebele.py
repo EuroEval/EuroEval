@@ -15,11 +15,7 @@ import re
 from collections import Counter
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split, load_dataset
-from huggingface_hub import HfApi
-from sklearn.model_selection import train_test_split
-
-from .constants import (
+from constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,
     MAX_NUM_CHARS_IN_OPTION,
@@ -27,6 +23,9 @@ from .constants import (
     MIN_NUM_CHARS_IN_INSTRUCTION,
     MIN_NUM_CHARS_IN_OPTION,
 )
+from datasets import Dataset, DatasetDict, Split, load_dataset
+from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
 
 
 def main() -> None:
@@ -104,11 +103,15 @@ def main() -> None:
         df["instruction"] = (
             text_mapping[language]
             + ": "
-            + df.flores_passage
-            + "\n"
-            + question_mapping[language]
-            + ": "
-            + df.question
+            + df.flores_passage.astype(
+                str
+            ).str.cat(  # pyrefly: ignore[no-matching-overload]
+                other="\n"
+                + question_mapping[language]
+                + ": "
+                + df.question.astype(str),
+                sep="",
+            )
         )
 
         # Remove the samples with overly short or long texts

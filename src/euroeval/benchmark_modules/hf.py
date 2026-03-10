@@ -77,11 +77,15 @@ from ..utils import get_hf_token, internet_connection_available
 from .base import BenchmarkModule
 
 try:
-    from transformers.tokenization_mistral_common import MistralCommonTokenizer
+    from transformers.tokenization_mistral_common import (
+        MistralCommonTokenizer,  # pyrefly: ignore[missing-module-attribute]
+    )
 except ImportError:
     from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MistralCommonTokenizer,
+        MistralCommonBackend as MCB,  # pyrefly: ignore[missing-module-attribute]
     )
+
+    MistralCommonTokenizer = MCB  # pyrefly: ignore[assignment]
 
 if t.TYPE_CHECKING:
     from transformers.configuration_utils import PretrainedConfig
@@ -381,7 +385,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 ).map(tokenise, batched=True, load_from_cache_file=False)
 
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                dataset = DatasetDict(  # type: ignore[no-matching-overload]
+                dataset = DatasetDict(  # pyrefly: ignore[no-matching-overload]
                     {
                         split_name: split.map(
                             partial(
@@ -456,7 +460,11 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                         load_from_cache_file=False,
                         keep_in_memory=True,
                     )
-                dataset = DatasetDict(data_dict)  # type: ignore[no-matching-overload]
+                dataset: DatasetDict = (
+                    DatasetDict(  # pyrefly: ignore[no-matching-overload]
+                        data_dict
+                    )
+                )
 
                 # The Trainer hides the columns that are not used by the model (here
                 # `id` and `offset_mapping` which we will need for our post-processing),
@@ -698,7 +706,7 @@ def load_model_and_tokeniser(
     assert model is not None, "The model should not be None."
 
     model.eval()
-    model.to(benchmark_config.device)  # type: ignore[arg-type]
+    model.to(benchmark_config.device)  # pyrefly: ignore[arg-type]
 
     if (
         isinstance(model, PreTrainedModel)
@@ -881,7 +889,8 @@ def get_model_repo_info(
         generative_class_names = [
             class_name
             for tag in GENERATIVE_PIPELINE_TAGS
-            for class_name in TASK_MAPPING.get(tag, dict()).values()  # type: ignore[attr-defined]
+            # pyrefly: ignore[attr-defined]
+            for class_name in TASK_MAPPING.get(tag, dict()).values()
         ]
         if class_names is not None and (
             any(class_name in generative_class_names for class_name in class_names)
@@ -1207,7 +1216,9 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
                 ),
                 dim=0,
             )
-            token_type_embeddings.num_embeddings = 2  # type: ignore[assignment]
+            token_type_embeddings.num_embeddings = (
+                2  # pyrefly: ignore[bad-argument-type]
+            )
 
         # Set the model config to use the new type vocab size
         model.config.type_vocab_size = 2
@@ -1280,7 +1291,7 @@ def align_model_and_tokeniser(
     # Move the model to the CPU, since otherwise we can't catch the IndexErrors when
     # finding the maximum sequence length of the model
     model_device = model.device
-    model.to(torch.device("cpu"))  # type: ignore[arg-type]
+    model.to(torch.device("cpu"))  # pyrefly: ignore[arg-type]
 
     # Manually check that this model max length is valid for the model, and adjust
     # otherwise
@@ -1311,7 +1322,7 @@ def align_model_and_tokeniser(
                     raise e
 
     # Move the model back to the original device
-    model.to(model_device)  # type: ignore[arg-type]
+    model.to(model_device)  # pyrefly: ignore[arg-type]
 
     # If there is a mismatch between the vocab size according to the tokeniser and
     # the vocab size according to the model, we raise an error

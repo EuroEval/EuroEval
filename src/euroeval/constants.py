@@ -1,12 +1,12 @@
 """Constants used throughout the project."""
 
 import re
-from typing import TypeVar
+import typing as t
 
 from .enums import TaskGroup
 
 # Type variable used for generic typing
-T = TypeVar("T", bound=object)
+T = t.TypeVar("T", bound=object)
 
 # This is used as input to generative models; it cannot be a special token
 DUMMY_FILL_VALUE = 100
@@ -181,3 +181,6 @@ TOOL_CALLING_CALLS_KEY = "tool_calls"
 TOOL_CALLING_FUNCTION_KEY = "function"
 TOOL_CALLING_ARGUMENTS_KEY = "arguments"
 TOOL_CALLING_KEYS = [TOOL_CALLING_FUNCTION_KEY, TOOL_CALLING_ARGUMENTS_KEY]
+
+# Every Eval Ever (EEE) schema version used when serialising benchmark results
+EEE_SCHEMA_VERSION = "0.2.1"

@@ -15,14 +15,14 @@ from ..languages import ENGLISH
 if t.TYPE_CHECKING:
     from ..languages import Language
 
-ToolCall = pydantic.create_model(
+ToolCall = pydantic.create_model(  # pyrefly: ignore[no-matching-overload]
     "ToolCall",
     __base__=pydantic.BaseModel,
     **{TOOL_CALLING_FUNCTION_KEY: str, TOOL_CALLING_ARGUMENTS_KEY: dict[str, str]},
 )
 
 
-ToolCallingResponse = pydantic.create_model(
+ToolCallingResponse = pydantic.create_model(  # pyrefly: ignore[no-matching-overload]
     "ToolCallingResponse",
     __base__=pydantic.BaseModel,
     **{TOOL_CALLING_CALLS_KEY: list[ToolCall]},

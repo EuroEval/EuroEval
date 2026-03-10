@@ -17,11 +17,10 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 import requests
+from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from sklearn.utils import resample
-
-from .constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 
 
 def main() -> None:
@@ -197,7 +196,9 @@ def _create_uniform_label_distribution(
     ]
 
     # Combine the resampled dataframes (keep original indices!)
-    balanced_df = pd.concat(resampled_dfs, ignore_index=False)
+    balanced_df = pd.concat(  # pyrefly: ignore[no-matching-overload]
+        resampled_dfs, ignore_index=False
+    )
 
     return balanced_df
 

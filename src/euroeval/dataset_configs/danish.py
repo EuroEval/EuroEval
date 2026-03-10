@@ -11,9 +11,11 @@ from ..tasks import (
     LA,
     MCRC,
     NER,
+    NLI,
     RC,
     SENT,
     SUMM,
+    WIC,
 )
 
 # Official datasets ###
@@ -103,7 +105,6 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
-
 # Unofficial datasets ###
 
 DALA_CONFIG = DatasetConfig(
@@ -179,11 +180,54 @@ WINOGRANDE_DA_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-GERLANGMOD_DA_CONFIG = DatasetConfig(
-    name="gerlangmod-da",
-    pretty_name="GerLangMod-da",
-    source="EuroEval/gerlangmod-da",
-    task=GED,
+DANISH_SENTIMENT_IN_CONTEXT_CONFIG = DatasetConfig(
+    name="danish-sentiment-in-context",
+    pretty_name="Danish Sentiment in Context",
+    source="EuroEval/danish-sentiment-in-context",
+    task=SENT,
+    languages=[DANISH],
+    prompt_prefix="Følgende er ord med kontekst og ordets sentiment, som kan være "
+    "{labels_str}.",
+    prompt_template="{text}\nSentiment: {label}",
+    instruction_prompt="{text}\n\nKlassificer sentimentet for det angivne ord i "
+    "konteksten. Svar kun med {labels_str}, og intet andet.",
+    unofficial=True,
+)
+
+DANISH_ENTAILMENT_CONFIG = DatasetConfig(
+    name="danish-entailment",
+    pretty_name="The Danish Entailment Dataset",
+    source="EuroEval/danish-entailment",
+    task=NLI,
+    languages=[DANISH],
+    val_split=None,
+    unofficial=True,
+)
+
+DANISH_LEXICAL_INFERENCE_CONFIG = DatasetConfig(
+    name="danish-lexical-inference",
+    pretty_name="Danish Lexical Inference",
+    source="EuroEval/danish-lexical-inference",
+    task=NLI,
+    languages=[DANISH],
+    labels=["entailment", "contradiction"],
+    unofficial=True,
+)
+
+DANWIC_CONFIG = DatasetConfig(
+    name="danwic",
+    pretty_name="DanWiC",
+    source="EuroEval/danwic",
+    task=WIC,
+    languages=[DANISH],
+    unofficial=True,
+)
+
+DAMETA_CONFIG = DatasetConfig(
+    name="dameta",
+    pretty_name="DAMETA",
+    source="EuroEval/dameta",
+    task=KNOW,
     languages=[DANISH],
     unofficial=True,
 )

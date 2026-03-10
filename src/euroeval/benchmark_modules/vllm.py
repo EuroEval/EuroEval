@@ -84,11 +84,15 @@ from ..utils import (
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 
 try:
-    from transformers.tokenization_mistral_common import MistralCommonTokenizer
+    from transformers.tokenization_mistral_common import (
+        MistralCommonTokenizer,  # pyrefly: ignore[missing-module-attribute]
+    )
 except ImportError:
     from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MistralCommonTokenizer,
+        MistralCommonBackend as MCB,  # pyrefly: ignore[missing-module-attribute]
     )
+
+    MistralCommonTokenizer = MCB  # pyrefly: ignore[assignment]
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     import vllm.config
@@ -115,17 +119,6 @@ if t.TYPE_CHECKING:
     from transformers.trainer import Trainer
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
-
-
-MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[
-    re.Pattern, t.Literal[*ATTENTION_BACKENDS]  # pyrefly: ignore[invalid-literal]
-] = {
-    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE): "TRITON_ATTN",
-}
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -160,7 +153,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         Raises:
             NeedsSystemDependency:
-                If the CUDA Toolkit is not installed.
+                If the CUDA Toolkit is not installed on NVIDIA hardware.
             NeedsExtraInstalled:
                 If the generative extra is not installed.
             InvalidBenchmark:
@@ -170,7 +163,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
 
-        if torch.cuda.is_available() and shutil.which("nvcc") is None:
+        if (
+            torch.cuda.is_available()
+            and torch.version.hip is None
+            and shutil.which("nvcc") is None
+        ):
             raise NeedsSystemDependency(
                 dependency="nvcc",
                 instructions=(
@@ -199,26 +196,13 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        # Determine the attention backend to use:
-        # Override for models that require a specific backend, otherwise use user's
-        # choice from CLI (defaults to FLASHINFER)
-        if hasattr(vllm.config, "attention"):
-            for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
-                if re.search(pattern=pattern, string=model_config.model_id):
-                    attention_backend = backend
-                    break
-            else:
-                attention_backend = benchmark_config.attention_backend
-        else:
-            attention_backend = benchmark_config.attention_backend
-
         with no_terminal_output(disable=benchmark_config.verbose):
             model, tokeniser = load_model_and_tokeniser(
                 model_config=model_config,
                 benchmark_config=benchmark_config,
-                attention_backend=attention_backend,
+                attention_backend=benchmark_config.attention_backend,
             )
-        self._model: "LLM" = model
+        self._model: t.Any = model  # pyrefly: ignore[bad-override]
         self._tokeniser: Tokeniser = tokeniser
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
@@ -398,7 +382,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         else:
             few_shot_examples = list()
 
-        dataset["test"] = dataset["test"].map(  # type: ignore[unsupported-operation]
+        dataset["test"] = dataset["test"].map(  # pyrefly: ignore[unsupported-operation]
             partial(
                 apply_prompt,
                 few_shot_examples=few_shot_examples,
@@ -1009,7 +993,8 @@ def load_model_and_tokeniser(
     benchmark_config: "BenchmarkConfig",
     attention_backend: t.Literal[
         *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-    ],
+    ]
+    | None,
 ) -> tuple["LLM", Tokeniser]:
     """Load the model and tokeniser.
 
@@ -1019,7 +1004,7 @@ def load_model_and_tokeniser(
         benchmark_config:
             The benchmark configuration.
         attention_backend:
-            The attention backend to use.
+            The attention backend to use, or None to use the vLLM default.
 
     Returns:
         A pair (model, tokeniser), with the loaded model and tokeniser
@@ -1149,7 +1134,7 @@ def load_model_and_tokeniser(
 
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
-    if hasattr(vllm.config, "attention"):
+    if hasattr(vllm.config, "attention") and attention_backend is not None:
         vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)
 
     clear_vllm()
@@ -1407,7 +1392,9 @@ def get_end_of_reasoning_token(
     output = model.generate(
         prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
     )[0]
-    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
+    completion = tokeniser.decode(
+        token_ids=list(output.outputs[0].token_ids)
+    )  # pyrefly: ignore[bad-argument-type]
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
@@ -1440,7 +1427,9 @@ def get_end_of_reasoning_token(
         sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
+    completion = tokeniser.decode(
+        token_ids=list(output.outputs[0].token_ids)
+    )  # pyrefly: ignore[bad-argument-type]
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
@@ -1532,7 +1521,9 @@ def get_custom_stop_tokens(
         sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
+    completion = tokeniser.decode(
+        token_ids=list(output.outputs[0].token_ids)
+    )  # pyrefly: ignore[bad-argument-type]
 
     stop_tokens = [
         stop_token

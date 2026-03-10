@@ -154,11 +154,20 @@ WINOGRANDE_DE_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-GERLANGMOD_DE_CONFIG = DatasetConfig(
-    name="gerlangmod-de",
-    pretty_name="GerLangMod-de",
-    source="EuroEval/gerlangmod-de",
-    task=GED,
+INCLUDE_DE_CONFIG = DatasetConfig(
+    name="include-de",
+    pretty_name="INCLUDE-de",
+    source="EuroEval/include-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+    unofficial=True,
+)
+
+MULTILOKO_DE_CONFIG = DatasetConfig(
+    name="multiloko-de",
+    pretty_name="MultiLoKo-de",
+    source="EuroEval/multiloko-de-mini",
+    task=KNOW,
     languages=[GERMAN],
     unofficial=True,
 )

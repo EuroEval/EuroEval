@@ -317,14 +317,144 @@ benchmarker.benchmark(model="<model-id>", dataset=MY_CONFIG)
 ```
 
 ///
-/// tab | Hugging Face Hub dataset
+/// tab | Hugging Face Hub dataset (YAML config)
 
-For a dataset that is accessible via the Hugging Face Hub, you simply need to create a
+The simplest and most secure way to add a EuroEval configuration to a Hugging Face Hub
+dataset is via a YAML file. No Python code is written, so no `--trust-remote-code` flag
+is required.
+
+Create a file called `eval.yaml` in the root of your dataset repository. The file
+follows the [Inspect AI `eval.yaml` format](https://inspect.aisi.org.uk/tasks.html#hugging-face)
+and works with both Inspect AI and EuroEval:
+
+```yaml title="eval.yaml"
+name: My Dataset
+tasks:
+  - id: my_dataset
+    split: test
+    field_spec:
+      input: review
+      target: sentiment
+    solvers:
+      - name: generate
+    scorers:
+      - name: choice
+# EuroEval-specific keys (optional; ignored by Inspect AI)
+task: classification
+languages:
+  - en
+labels:
+  - positive
+  - negative
+```
+
+The EuroEval-specific keys (`task`, `languages`, `labels`, and all other
+`DatasetConfig` arguments) are placed at the top level alongside the standard Inspect
+AI `tasks` block.  Inspect AI silently ignores keys it does not recognise, so the same
+file works for both frameworks.
+
+The value of `task` must be one of the task names used in EuroEval
+(e.g. `classification`, `sentiment-classification`,
+`named-entity-recognition`, `multiple-choice`, etc.).  `languages` is a list of
+[ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) language codes.
+
+All other `DatasetConfig` arguments are also supported:
+
+```yaml title="eval.yaml"
+name: My Dataset
+tasks:
+  - id: my_dataset
+    split: test
+    field_spec:
+      input: review
+      target: sentiment
+    solvers:
+      - name: generate
+    scorers:
+      - name: choice
+# EuroEval-specific keys (optional; ignored by Inspect AI)
+task: classification
+languages:
+  - en
+labels:
+  - positive
+  - negative
+num_few_shot_examples: 12
+max_generated_tokens: 5
+prompt_label_mapping:
+  positive: positive
+  negative: negative
+```
+
+The EuroEval-specific `task` and `languages` keys are **optional** — EuroEval will
+infer them automatically when they are absent:
+
+- **`task`** is inferred from the Inspect AI `tasks` block: a solver with
+  `name: multiple_choice` **or** a `field_spec.choices` entry both map to the
+  `multiple-choice` task.
+- **`languages`** are read from the Hugging Face Hub repository metadata
+  (the `language` field in the dataset card).  If the language cannot be determined,
+  EuroEval defaults to English and logs a warning.
+
+This means a standard Inspect AI `eval.yaml` with no EuroEval-specific keys works
+out of the box:
+
+```yaml title="eval.yaml"
+# Pure Inspect AI format — no EuroEval keys required
+name: My Dataset
+description: My dataset description.
+tasks:
+  - id: my_dataset
+    split: test
+    field_spec:
+      input: question
+      target: answer
+      choices: options
+    solvers:
+      - name: multiple_choice
+    scorers:
+      - name: choice
+```
+
+Column names can also be supplied as flat top-level keys (`input_column`,
+`target_column`, `choices_column`) instead of inside the `field_spec` block;
+top-level keys take precedence when both are present.  Note that Inspect AI allows
+`field_spec.target` values such as `"literal:A"` (a hard-coded answer string) and
+bare integers (mapped to letters A, B, C … by Inspect AI); EuroEval silently ignores
+both forms because they are not column names.
+
+The standard Inspect AI task keys are also used directly by EuroEval:
+
+- **`tasks[0].split`** — the evaluation split to use (e.g. `test`, `validation`).
+  EuroEval uses this as the test split, so no separate EuroEval key is needed.
+- **`tasks[0].config`** — the Hugging Face dataset config/subset name (e.g. `main`,
+  `default`).  EuroEval automatically appends it when loading the dataset.
+
+You can then benchmark your custom dataset by simply running
+
+```bash
+euroeval --dataset <org-id>/<repo-id> --model <model-id>
+```
+
+or from a Python script:
+
+```python
+from euroeval import Benchmarker
+
+benchmarker = Benchmarker()
+benchmarker.benchmark(model="<model-id>", dataset="<org-id>/<repo-id>")
+```
+
+///
+/// tab | Hugging Face Hub dataset (Python config)
+
+For a dataset that is accessible via the Hugging Face Hub, you can also create a
 file called `euroeval_config.py` in the root of your repository, in which you define
-the associated dataset configuration. Note that you don't need to specify the `name`,
-`pretty_name` or `source` arguments in this case, as these are automatically inferred
-from the repository name. Here is an example of a simple text classification
-dataset with two classes:
+the associated dataset configuration. This gives you full Python flexibility (e.g.
+custom preprocessing functions) but requires the `--trust-remote-code` flag.  Note
+that you don't need to specify the `name`, `pretty_name` or `source` arguments in this
+case, as these are automatically inferred from the repository name. Here is an example
+of a simple text classification dataset with two classes:
 
 ```python title="euroeval_config.py"
 from euroeval import DatasetConfig, TEXT_CLASSIFICATION
@@ -339,10 +469,11 @@ CONFIG = DatasetConfig(
 
 !!! note
 
-    To benchmark a dataset from the Hugging Face Hub, you always need to set the
-    `--trust-remote-code` flag (or `trust_remote_code=True` if using the `Benchmarker`),
-    as the dataset configuration is loaded from the remote code. We advise you to always
-    look at the code of the dataset configuration before running the benchmark.
+    To benchmark a dataset from the Hugging Face Hub using a Python config, you always
+    need to set the `--trust-remote-code` flag (or `trust_remote_code=True` if using
+    the `Benchmarker`), as the dataset configuration is loaded from the remote code.
+    We advise you to always look at the code of the dataset configuration before running
+    the benchmark.
 
 You can then benchmark your custom dataset by simply running
 
@@ -813,6 +944,109 @@ With any of these custom tasks you can then benchmark your dataset by running
 
 ```bash
 euroeval --dataset <dataset-name> --model <model-id>
+```
+
+## Output format: Every Eval Ever (EEE)
+
+Each entry written to `euroeval_benchmark_results.jsonl` conforms to the
+[Every Eval Ever (EEE) JSON schema v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json),
+a community-standard format for evaluation reporting.  The file can therefore be
+consumed directly by any tool that understands the EEE schema.
+
+Every line is a self-contained JSON object with the following top-level structure:
+
+| Field | Description |
+| --- | --- |
+| `schema_version` | EEE schema version (`"0.2.1"`) |
+| `evaluation_id` | Unique run identifier in `dataset/model/timestamp` format |
+| `evaluation_timestamp` | ISO 8601 timestamp of when the evaluation ran |
+| `retrieved_timestamp` | Unix epoch timestamp of when the record was written |
+| `source_metadata` | EuroEval organisation info and evaluator relationship |
+| `model_info` | Model identifier and EuroEval-specific metadata |
+| `eval_library` | Library name/version and evaluation context |
+| `evaluation_results` | Array of per-metric scores with uncertainty estimates |
+
+Here is an abbreviated example:
+
+```json
+{
+  "schema_version": "0.2.1",
+  "evaluation_id": "angry-tweets/meta-llama/Llama-3.1-8B-Instruct/1741260000",
+  "evaluation_timestamp": "2025-03-06T11:00:00+00:00",
+  "retrieved_timestamp": "1741260000",
+  "source_metadata": {
+    "source_name": "EuroEval",
+    "source_type": "evaluation_run",
+    "source_organization_name": "EuroEval",
+    "source_organization_url": "https://euroeval.com",
+    "evaluator_relationship": "third_party"
+  },
+  "model_info": {
+    "id": "meta-llama/Llama-3.1-8B-Instruct",
+    "name": "meta-llama/Llama-3.1-8B-Instruct",
+    "additional_details": {
+      "num_model_parameters": "8000000000",
+      "max_sequence_length": "131072",
+      "vocabulary_size": "128256",
+      "generative": "true",
+      "generative_type": "instruction_tuned"
+    }
+  },
+  "eval_library": {
+    "name": "euroeval",
+    "version": "16.16.1",
+    "additional_details": {
+      "task": "sentiment-classification",
+      "languages": "[\"da\"]",
+      "few_shot": "true",
+      "raw_results": "[{\"test_mcc\": 0.40}, {\"test_mcc\": 0.45}]"
+    }
+  },
+  "evaluation_results": [
+    {
+      "evaluation_name": "test_mcc",
+      "source_data": { "dataset_name": "angry-tweets", "source_type": "hf_dataset" },
+      "metric_config": {
+        "lower_is_better": false,
+        "score_type": "continuous",
+        "min_score": 0,
+        "max_score": 100
+      },
+      "score_details": {
+        "score": 42.5,
+        "details": { "num_failed_instances": "0.0" },
+        "uncertainty": {
+          "confidence_interval": {
+            "lower": 41.3,
+            "upper": 43.7,
+            "confidence_level": 0.95,
+            "method": "bootstrap"
+          },
+          "num_samples": 10
+        }
+      }
+    }
+  ]
+}
+```
+
+!!! note
+    The `_se` values stored internally are 95 % confidence interval half-widths
+    (`1.96 × SE`).  They are exposed in the EEE output as a
+    `confidence_interval { lower, upper, confidence_level: 0.95 }`, which is the
+    correct EEE field for this statistic.
+
+The EEE format can be read back into a `BenchmarkResult` object without any loss of
+information:
+
+```python
+import json
+from euroeval.data_models import BenchmarkResult
+
+with open("euroeval_benchmark_results.jsonl") as f:
+    for line in f:
+        if line.strip():
+            result = BenchmarkResult.from_dict(json.loads(line))
 ```
 
 ## Analysing the results of generative models
