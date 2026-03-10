@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added the English Word in Context dataset [WiC](https://aclanthology.org/N19-1128/),
+  based on the SuperGLUE benchmark. The split is given by 128 / 64 / 5,874 samples for
+  train / val / test, respectively. It is marked as `unofficial` for now.
 - Added the Danish metaphor interpretation dataset DAMETA, part of the [Danish Semantic
   Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
   The split is given by 64 / 128 / 723 samples for train / val / test, respectively.
