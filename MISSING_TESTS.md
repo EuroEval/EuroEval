@@ -3,60 +3,6 @@
 This document lists test cases that should be added to improve test coverage for the
 EuroEval codebase.
 
-## 5. `test_string_utils.py` - Missing
-
-**Module:** `euroeval.string_utils`
-
-### Tests to add
-
-- `test_scramble_and_unscramble_roundtrip`
-  - Test that scrambling and unscrambling restores original string
-
-- `test_scramble_deterministic_with_seed`
-  - Test that scramble produces same result with same seed
-
-- `test_extract_json_dict_from_string_with_prefix_suffix`
-  - Test JSON extraction from string with surrounding text
-
-- `test_extract_json_dict_from_string_no_json_returns_none`
-  - Test None returned when no JSON found
-
-- `test_extract_json_dict_from_string_invalid_json_returns_none`
-  - Test None returned when JSON is invalid
-
-- `test_extract_json_dict_from_string_non_dict_returns_none`
-  - Test None returned when JSON is not a dictionary
-
-- `test_extract_json_dict_from_string_non_string_keys_returns_none`
-  - Test None returned when JSON has non-string keys
-
-- `test_extract_multiple_choice_labels_with_labels`
-  - Test label extraction with provided candidate labels
-
-- `test_extract_multiple_choice_labels_without_labels`
-  - Test label extraction falls back to alphabet
-
-- `test_extract_multiple_choice_labels_case_insensitive`
-  - Test case-insensitive label extraction
-
-- `test_extract_multiple_choice_labels_no_match_raises_error`
-  - Test InvalidBenchmark raised when no labels found
-
-- `test_split_model_id_simple_id`
-  - Test splitting a simple model ID
-
-- `test_split_model_id_with_revision`
-  - Test splitting model ID with @revision
-
-- `test_split_model_id_with_param`
-  - Test splitting model ID with #param
-
-- `test_split_model_id_with_both_revision_and_param`
-  - Test splitting model ID with both @revision and #param
-
-- `test_split_model_id_invalid_raises_error`
-  - Test InvalidModel raised for invalid model ID
-
 ## 6. `test_speed_benchmark.py` - Missing
 
 **Module:** `euroeval.speed_benchmark`
