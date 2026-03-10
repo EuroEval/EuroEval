@@ -1299,7 +1299,12 @@ phrase boundaries. Noun-headed groups of tokens are treated as impermeable units
 misplaced verbs cannot split them up, and no verb can be placed in the first position of
 the first phrase of each sentence to avoid creating correct polar question syntax.
 
-The split sizes are 1,024 / 256 / 2,048 samples for training, validation and testing,
+The original dataset consists of 142,807 samples derived from the
+[UD_German-GSD](https://github.com/UniversalDependencies/UD_German-GSD),
+[UD_German-HDT](https://github.com/UniversalDependencies/UD_German-HDT),
+[UD_German-LIT](https://github.com/UniversalDependencies/UD_German-LIT) and
+[UD_German-PUD](https://github.com/UniversalDependencies/UD_German-PUD) treebanks.
+We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
 respectively.
 
 Here are a few examples from the training split:

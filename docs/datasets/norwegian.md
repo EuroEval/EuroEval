@@ -2094,8 +2094,11 @@ units so misplaced verbs cannot split them up, and no verb can be placed in the 
 position of the first phrase of each sentence to avoid creating correct polar question
 syntax.
 
-The split sizes are 1,024 / 256 / 2,048 samples for training, validation and testing,
-respectively.
+The original dataset consists of 18,108 samples derived from the
+[UD_Norwegian-Bokmaal](https://github.com/UniversalDependencies/UD_Norwegian-Bokmaal)
+treebank, with original splits of 14,120 / 2,178 / 1,810 for training, validation and
+testing, respectively. We use a sample of 1,024 / 256 / 2,048 of these for training,
+validation and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -2159,8 +2162,11 @@ units so misplaced verbs cannot split them up, and no verb can be placed in the 
 position of the first phrase of each sentence to avoid creating correct polar question
 syntax.
 
-The split sizes are 1,024 / 256 / 2,048 samples for training, validation and testing,
-respectively.
+The original dataset consists of 15,780 samples derived from the
+[UD_Norwegian-Nynorsk](https://github.com/UniversalDependencies/UD_Norwegian-Nynorsk)
+treebank, with original splits of 12,718 / 1,685 / 1,377 for training, validation and
+testing, respectively. We use a sample of 1,024 / 256 / 2,048 of these for training,
+validation and testing, respectively.
 
 Here are a few examples from the training split:
 
