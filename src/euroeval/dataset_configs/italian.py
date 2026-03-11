@@ -163,10 +163,10 @@ MULTILOKO_IT_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-WICITA_CONFIG = DatasetConfig(
-    name="wicita",
+WIC_ITA_CONFIG = DatasetConfig(
+    name="wic-ita",
     pretty_name="WiC-ITA",
-    source="EuroEval/wicita",
+    source="EuroEval/wic-ita",
     task=WIC,
     languages=[ITALIAN],
     unofficial=True,
