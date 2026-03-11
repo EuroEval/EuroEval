@@ -15,14 +15,14 @@ if t.TYPE_CHECKING:
     from ..data_models import DatasetConfig
 
 
-class TokenHallucinationMetric(Metric):
+class HallucinationRateMetric(Metric):
     """Hallucination metric."""
 
     def __init__(self) -> None:
         """Initialise the hallucination metric."""
         super().__init__(
             name="hallucination_rate",
-            pretty_name="Token-level hallucination rate",
+            pretty_name="Hallucination rate",
             postprocessing_fn=None,
         )
         self.detector: HallucinationDetector | None = None
@@ -90,4 +90,4 @@ class TokenHallucinationMetric(Metric):
         return hallucinated_samples / len(predicted_texts)
 
 
-hallucination_metric = TokenHallucinationMetric()
+hallucination_rate_metric = HallucinationRateMetric()
