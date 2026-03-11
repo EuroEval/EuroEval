@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FAROESE
-from ..tasks import GED, LA, NER, RC, SENT
+from ..tasks import GED, HALLU, LA, NER, RC, SENT
 
 # Official datasets ###
 
@@ -56,6 +56,15 @@ MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-fo",
     source="EuroEval/multi-wiki-qa-fo-mini",
     task=RC,
+    languages=[FAROESE],
+    unofficial=True,
+)
+
+MULTI_WIKI_QA_FO_HALLUCINATION_CONFIG = DatasetConfig(
+    name="multi-wiki-hallucination-qa-fo",
+    pretty_name="MultiWikiHalluQA-fo",
+    source="EuroEval/multi-wiki-qa-fo-mini",
+    task=HALLU,
     languages=[FAROESE],
     unofficial=True,
 )

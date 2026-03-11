@@ -589,3 +589,88 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset hunsum
 ```
+
+## Hallucination Detection
+
+### MultiWikiHalluQA-hu
+
+This dataset uses the same data as [MultiWikiQA-hu](#multiwikiqa-hu), published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
+with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
+correctness of the generated answer, this task evaluates the degree to which the model
+hallucinates, i.e., generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+transformer-based classifier to predict hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to
+total tokens in the generated answers.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "context": "Az utolsó mester (The Last of the Masters) Philip K. Dick egyik novellája, amelyet 1953-ban írt, majd 1954-ben az Orbit Science Fiction magazin november-decemberi számában jelent meg. Magyarul a Lenn a sivár Földön című novelláskötetben olvasható.\n\nTörténet \n\nA világon kétszáz éve az anarchia uralkodik. Akkor történt, hogy először Európában, majd szerte a világban fellázadtak a polgárok, és megdöntötték a kormányokat. Megölték a vezetőket, elpusztították a robotokat és megsemmisítettek minden addig a kormány kezében lévő kutatási anyagot, elpusztították az atombombákat. A világon most egyetlenegy szervezet van, az Anarchista Szövetség, aki csak arra ügyel, hogy nehogy valaki újra felépítsen magának egy rendszert. A robotok közül viszont az egyik – Bors – túlélte a pusztítást, és bujdosva a kétszáz év alatt felépített magának egy kis eldugott birodalmat. Ennek a birodalomnak vannak a legmodernebb eszközei (hiszen a két évszázaddal ezelőtti kutatási eredmények már csak Bors agyában maradtak meg), földcsuszamlásoknak álcázva elzárták a telephez vezető földutakat, és a szomszédos falukban elhelyezett kémeknek köszönhetően mindig időben tudták, ha a Szövetség ügynökei közelednek, így mindig időben félresöpörték őket. Nem sikerül azonban ezt megtenni Edward Tolbyval és lányával, Silviával. Így (bár Silviát sikerül elkapni) Tolby egyedül próbálja meg felvenni a harcot az erőddel. Az őrségen könnyen átjut, hiszen azok soha nem harcoltak, de végül mégis elkezdik őt üldözni. Bemenekül Fowler, Bors egyik helyettesének szobájába. Szerencséjére Fowlernek az az ötlete támad, hogy Tolbyval öleti meg Borst (mivel ő maga erre nem lenne képes, viszont az anarchia szimpatikus neki). Tolbynak végül is sikerül szétvernie Bors robotfejét, akinek halála miatt szétesik az általa felépített rendszer. Fowler a biztonság kedvéért elteszi Bors adatbázisát, hátha még szüksége lesz rá…\n\nForrások \n Philip K. Dick: Lenn a sivár földön (Agave Kiadó, 2005)\n\nPhilip K. Dick-novellák",
+    "question": "Mely kutató munkáját pusztították el a felkelők?",
+    "answers": {
+        "answer_start": [407],
+        "text": ["a kormány"]
+    }
+}
+```
+
+```json
+{
+    "context": 'Az U–1230 tengeralattjárót a német haditengerészet rendelte a hamburgi Deutsche Werft AG-től 1941. október 14-én. A hajót 1944. január 26-án vették hadrendbe. Egy járőrutat tett, amelyen egy hajót süllyesztett el.\n\nPályafutása \nAz U–1230 első és egyetlen harci küldetésére Hans Hilbig kapitány irányításával 1944. október 8-án futott ki Hortenből. Az Atlanti-óceán északi részén kelt át, majd november 29-én – az Elster hadművelet (németül Unternehmen Elster, magyarul Szarka hadművelet) – két német ügynököt rakott partra az amerikai Hancock Pointnál. Ezután az Amerikai Egyesült Államok partjainál, Connecticuttól északra vadászott. \n\nDecember 3-án Maine állam partjainak közelében megtorpedózta a kanadai Cornwallis nevű gőzöst, amely Barbadosról tartott St. Johnba, fedélzetén cukorral és melasszal. A Cornwallis 1942. szeptember 11-én kapott már torpedótalálatot Bridgetownban az U–514-től, de akkor még ki lehetett emelni a sekély vízből. Az U–1230 torpedója azonban végzetes volt, a fedélzeten tartózkodó 48 emberből 43 meghalt.\n\nŐrjárata befejeztével a tengeralattjáró visszatért Norvégiába, majd onnan 1945. február 20-án Flensburgba hajózott. 1945. május 5-én a németországi Heligolandnál adta meg magát. 1945. július 24-én Wilhelmshavenből indult a skóciai Loch Ryanbe, ahol a szövetségesek a megsemmisítésre kijelölt búvárhajókat gyűjtötték. Az U– össze 1230-at a HMS Cubitt brit fregatt süllyesztette el a Deadlight hadműveletben.\n\nKapitány\n\nŐrjárat\n\nElsüllyesztett hajó\n\nJegyzetek\n\nForrások \n  \n  \n  \n  \n\nIXC/40 típusú német tengeralattjárók',
+    "question": "Ki rendelte meg az U-1230-as tengeralattjárót?",
+    "answers": {
+        "answer_start": [62],
+        "text": ["hamburgi Deutsche Werft AG-től"]
+    }
+}
+```
+
+```json
+{
+    "context": "A budapesti 56B jelzésű villamos Hűvösvölgy és a Csóka utca között közlekedett a 2022-es budafoki vágányzár idején. A viszonylatot a Budapesti Közlekedési Zrt. üzemeltette.\n\nTörténete \n\n1981. október 22-étől a Széll Kálmán (akkor Moszkva) tér és Hűvösvölgy közötti pályafelújítási munkálatok miatt az 56-os villamos megosztott útvonalon, 56A jelzéssel a Széll Kálmán tér felől, 56B jelzéssel pedig Hűvösvölgy felől Budagyöngyéig közlekedett. 1982. május 24-étől az 56B rövidített útvonalon, minden nap 6 és 12 óra között Budagyöngyétől a Vadaskerti utcáig, majd 12 óra után a Nagyhíd megállóhelyig járt. 1982. szeptember 18-án a felújítás befejeztével megszűnt. 1983. június 13. és 19. között ismét közlekedett, ekkor a Budagyöngye és a Nyéki út közötti szakaszon. November 8-án újraindult a Heinrich István útig, majd november 24-én végleg megszűnt.\n\n2022. október 3. és november 18. között a Hűvösvölgy és a Csóka utca között közlekedett a budafoki vágányzár idején.\n\nÚtvonala\n\nMegállóhelyei \nAz átszállási kapcsolatok között a Hűvösvölgy és a Móricz Zsigmond körtér között azonos útvonalon közlekedő 56-os és 56A villamos nincs feltüntetve.\n\n!Perc\xa0(↓)\n!Megállóhely\n!Perc\xa0(↑)\n!Átszállási kapcsolatok a járat közlekedése idején\n|-\n|0||Hűvösvölgyvégállomás||41\n|align=left|\n|-\n|2||Heinrich István utca||38\n|align=left|\n|-\n|3||Völgy utca||37\n|align=left|\n|-\n|4||Vadaskerti utca||36\n|align=left|\n|-\n|5||Nagyhíd||35\n|align=left|\n|-\n|6||Zuhatag sor||34\n|align=left|\n|-\n|8||Kelemen László utca||33\n|align=left|\n|-\n|9||Akadémia||32\n|align=left|\n|-\n|10||Budagyöngye||31\n|align=left|\n|-\n|11||Nagyajtai utca||29\n|align=left|\n|-\n|14||Szent\xa0János\xa0Kórház||27\n|align=left|\n|-\n|15||Városmajor||26\n|align=left|\n|-\n|16||Nyúl utca||25\n|align=left|\n|-\n|18||Széll\xa0Kálmán\xa0tér\xa0M||24\n|align=left|\n|-\n|20||Déli pályaudvar M||22\n|align=left|\n|-\n|21||Mikó utca||20\n|\n|-\n|22||Krisztina tér||18\n|align=left|\n|-\n|24||Dózsa György tér||16\n|align=left|\n|-\n|26||Döbrentei tér||14\n|align=left|\n|-\n|27||Rudas Gyógyfürdő||13\n|align=left|\n|-\n|30||Szent Gellért tér – Műegyetem M||11\n|align=left|\n|-\n|32||Gárdonyi tér||9\n|align=left|\n|-\n|35||Móricz Zsigmond körtér\xa0M||6\n|align=left|\n|-\n|37||Kosztolányi Dezső tér||4\n|align=left|\n|-\n|38||Karolina út||2\n|align=left|\n|-\n|39||Csóka utcavégállomás||0\n|align=left|\n|}\n\nJegyzetek\n\nForrások \n\nBudapest megszűnt villamosvonalai",
+    "question": "A 2022-es budafoki vágányzár alatt mikor járt az 56B jelzésű villamos a Hűvösvölgy és a Csóka utca között?",
+    "answers": {
+        "answer_start": [852],
+        "text": ["2022. október 3. és november 18. között"]
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+
+  ```text
+  Az alábbiakban szövegek szerepelnek a hozzájuk tartozó kérdésekkel és válaszokkal.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Szöveg: {text}
+  Kérdés: {question}
+  Válasz legfeljebb 3 szóban:
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Szöveg: {text}
+
+  Válaszoljon az alábbi kérdésre a fenti szöveg alapján legfeljebb 3 szóban.
+
+  Kérdés: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-hu
+```

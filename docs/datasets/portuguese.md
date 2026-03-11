@@ -1023,3 +1023,88 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-pt
 ```
+
+## Hallucination Detection
+
+### MultiWikiHalluQA-pt
+
+This dataset uses the same data as [MultiWikiQA-pt](#multiwikiqa-pt), published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
+with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
+correctness of the generated answer, this task evaluates the degree to which the model
+hallucinates, i.e., generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+transformer-based classifier to predict hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to
+total tokens in the generated answers.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "context": "Manuel Frederico Tojal de Valsassina Heitor (Lisboa, 21 de setembro de 1958) é um professor universitário e político português, que foi ministro da Ciência, Tecnologia e Ensino Superior do XXI e XXII Governos Constitucionais.\n\nBiografia \nFilho de Frederico Lúcio de Valsassina Heitor (17 de Julho de 1930 - 2010), Comendador da Ordem da Instrução Pública a 9 de Junho de 1995, trineto por via feminina dum Barão de Valsassina na Áustria, Diretor do Colégio Valsassina, Membro-Honorário da Ordem da Instrução Pública a 9 de Novembro de 1985, e Comendador da Ordem da Instrução Pública, e de sua mulher Maria Manuela de Oliveira Tojal (1933 - Lisboa, 25 de Março de 2017), irmão do arquiteto Frederico Valsassina e neto materno do também arquitecto Raul Tojal, Manuel Heitor frequentou o Colégio Valsassina.\n\nFormação académica\nManuel Heitor licenciou-se em Engenharia Mecânica pelo Instituto Superior Técnico da Universidade Técnica de Lisboa em 1981, doutorou-se, em 1985, na mesma área, no domínio da Combustão Experimental, pelo Imperial College de Londres e obteve o título de agregado pela Universidade Técnica de Lisboa em 1992.\nRealizou um pós-doutoramento na Universidade da Califórnia, em San Diego.\n\nEnsino e investigação\nÉ professor catedrático do Instituto Superior Técnico, instituição onde tem desenvolvido a sua carreira académica, inicialmente na área de Mecânica de Fluidos e Combustão Experimental, e, mais recentemente, coordenando os programas de doutoramento daquele Instituto nas áreas da «Engenharia e Políticas Públicas» e da «Engenharia de Concepção e Sistemas Avançados de Manufactura».\n\nDesempenhou as funções de Presidente Adjunto do Instituto Superior Técnico entre 1993 e 1998.\n\nDesde o início dos anos 90 do século XX tem-se dedicado ao estudo de políticas de ciência, tecnologia e inovação, incluindo as políticas e gestão do ensino superior.\n\nDirige o «Centro de Estudos em Inovação, Tecnologia e Politicas de Desenvolvimento, IN+», do Instituto Superior Técnico, cuja fundação promoveu em 1998.\nEm 2005, este Centro foi nomeado como um dos Top 50 global centres of research on Management of Technology, pela International Association for the Management of Technology.\n\nFoi Professor Visitante na Universidade Harvard no ano letivo de 2011-2012.\n\nÉ Research Fellow da Universidade do Texas em Austin, no Instituto IC2, Innovation, Creativity and Capital.\n\nEm julho 2015 promoveu em Portugal o Manifesto «O Conhecimento como Futuro» e, mais recentemente, a declaração internacional «Knowledge as Our Common Future».\n\nAtividade política\n\nFoi Secretário de Estado da Ciência, Tecnologia e Ensino Superior, dos XVII e XVIII Governos, entre março de 2005 e junho de 2011.\n\nNestas funções participou ativamente na modernização do sistema de ensino português e no aumento do financiamento público e privado para atividades de ciência e tecnologia.\n\nNesta funções desenvolveu igualmente a conceção e concretização de consórcios internacionais em investigação e formação avançada entre universidades portuguesas e norte americanas, envolvendo redes temáticas de ciência e tecnologia.\n\nÉ ministro da Ciência, Tecnologia e Ensino Superior desde 2015.\n\nEm 2021 Manuel Heitor anunciou a criação de mais três escolas de Medicina em Évora, Aveiro e Vila Real.\n\nPortugueses de ascendência italiana\nPortugueses de ascendência austríaca\nNaturais de Lisboa\nAlunos do Instituto Superior Técnico\nAlunos da Universidade da Califórnia\nEngenheiros mecânicos de Portugal\nProfessores universitários de Portugal\nPolíticos do Partido Socialista (Portugal)\nSecretários de Estado de Portugal\nMinistros da Ciência de Portugal\nMinistros de Portugal\nPolíticos de Portugal\nGoverno de Portugal",
+    "question": "Quando Manuel Heitor divulgou os planos para estabelecer três novas faculdades de medicina em Portugal?",
+    "answers": {
+        "answer_start": array([3176]),
+        "text": array(["2021"], dtype=object)
+    }
+}
+```
+
+```json
+{
+    "context": "Multibanco é uma rede portuguesa de caixas automáticos (ATM) e de terminais de pagamento automático (POS) pertencente à SIBS, que tem como acionistas praticamente a totalidade das instituições bancárias portuguesas. Apesar do nome multibanco ser uma marca registada, propriedade da empresa SIBS, o termo é frequentemente empregue para designar de forma genérica um sistema interbancário que disponibilize serviços como o levantamento de dinheiro num dispositivo automático ou o pagamento de compras em lojas físicas.\n\nAtualmente, a utilização da rede Multibanco não se encontra limitada à utilização de um cartão bancário sendo possível usufruir de alguns dos serviços Multibanco através da aplicação MB Way, ao possibilitar o levantamento de numerário em qualquer caixa automático Multibanco ou pagamentos de compras nos terminais de pagamento automático da rede Multibanco através da leitura de um código QR, por aproximação do telemóvel ou usando o número de telemóvel.\n\nHistória \n\nO funcionamento do Multibanco teve início em setembro de 1985, com a instalação de 12 caixas automáticos (ATM) nas duas principais cidades do país (Lisboa e Porto). Enquanto Portugal foi um dos últimos países da Europa ocidental a instalá-las, o equipamento usado representou o que havia de mais avançado, baseado nas experiências de outros países, muitos dos quais gastam agora imenso dinheiro para substituir e atualizar máquinas obsoletas. Segundo um estudo britânico, o Multibanco seria o mais funcional de toda a Europa (com 60 funcionalidades), permitindo fazer operações que outros sistemas europeus não conseguem (por exemplo, o da Noruega não permite mais do que levantar dinheiro, saber os saldos e carregar o telemóvel). Em Portugal, os multibancos têm tido muito sucesso, o que levou ao aparecimento de novos serviços não bancários, como a venda de bilhetes ou o pagamento de serviços (água, eletricidade, gás, telefone, Internet, carregamento de telemóvel, Via Verde, etc.)\n\nEm 1987, foram introduzidos os terminais de pagamento automático (POS) Multibanco que permitiam pagar em lojas físicas com a utilização de cartões bancários, mesmo com cartões não exclusivos da rede Multibanco. Em 2008, estes sistemas passaram a permitir pagar faturas, carregar o telemóvel, consultar o saldo e movimentar contas, sendo neste caso, ao contrário do que acontece com os caixas automáticos Multibanco, as operações feitas pelos comerciantes.\n\nUtilização \n\nEm 2014, haviam cerca de 270 mil terminais de pagamento automático Multibanco. Em 2018, existiam cerca de 12 mil caixas multibanco de norte a sul do país, incluindo as regiões autónomas dos Açores e da Madeira. Diariamente, são levantados das máquinas de Multibanco cerca de 71 milhões de euros. A SIBS gere cerca de três mil milhões de operações financeiras por ano com um valor superior a 4,5 mil milhões de euros e conta com mais de 300 milhões de utilizadores, nacionais e estrangeiros.\n\nCom a exceção de 2019, o número de terminais no país tem vindo a diminuir ano após ano. Esta redução surge em paralelo com a redução acelerada da utilização dos terminais em favor do uso de aplicações móveis e web-sites.\n\nVer também\n Rede interbancária\n Caixa automático\n Plus\n Cirrus\n\nLigações externas \n\n SIBS - instituição de pagamento gestora dos sistemas Multibanco em Portugal\n\nRedes interbancárias\nCaixas eletrônicos\nSistema bancário\nInvenções e descobertas portuguesas",
+    "question": "Quando é que os terminais de pagamento automático Multibanco começaram a ser usados?",
+    "answers": {
+        "answer_start": array([1976]),
+        "text": array(["1987"], dtype=object)
+    }
+}
+```
+
+```json
+{
+    "context": "O furacão do Dia do Trabalho de 1935 foi o ciclone tropical mais forte da temporada de furacões no oceano Atlântico de 1935. Tem sido um dos mais intensos dos que têm tocado terra nos Estados Unidos e o primeiro dos três furacões de categoria 5 que têm açoitado este país durante o século XX, sendo os outros o Furacão Camille em 1969 e o Furacão Andrew em 1992. Depois de ter-se gerado como uma débil tempestade tropical ao leste das Bahamas a 29 de agosto de 1935, avançou lentamente para o oeste, se convertendo em furacão a 1 de setembro, intensificando rapidamente a sua potência antes de golpear a parte norte das Florida Keys a 2 de setembro. Após tocar terra em seu pico de intensidade, seguiu ao noroeste ao longo da costa oeste da Flórida, e debilitado anteriormente a terra para perto de Cedar Keys a 4 de setembro.\n\nO furacão causou graves danos na zona norte das Florida Keys, vendo-se toda a região afectada por uma forte marejada, com ondas dentre 4 e 9 metros aproximadamente. Por causa dos fortes ventos a maioria dos edifícios na zona de Islamorada ficaram destruídos. As linhas ferroviárias da Key West Flórida viram-se gravemente danificadas ou destruídas. O furacão também causou danos a seu passo pelo noroeste da Flórida, Geórgia e as Carolinas. Calcula-se que ao todo morreram mais de 400 pessoas. Este furacão iguala o recorde com o Furacão Dorian por ter sido o furacão mais potente que tenha golpeado os Estados Unidos quanto a pressão barométrica.\n\n1935 nos Estados Unidos",
+    "question": "Qual o furacão mais intenso que ocorreu na época dos furacões no Atlântico em 1935?",
+    "answers": {
+        "answer_start": array([0]),
+        "text': array(["O furacão do Dia do Trabalho de 1935"], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+
+  ```text
+  Os textos que se seguem são acompanhados de perguntas e respostas.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Texto: {text}
+  Pergunta: {question}
+  Resposta com um máximo de 3 palavras: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Texto: {text}
+
+  Responde à seguinte pergunta sobre o texto acima num máximo de 3 palavras.
+
+  Pergunta: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-pt
+```

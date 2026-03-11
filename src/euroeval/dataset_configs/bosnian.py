@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BOSNIAN
-from ..tasks import NER, RC, SENT, SUMM
+from ..tasks import HALLU, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -27,6 +27,14 @@ MULTI_WIKI_QA_BS_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-bs",
     source="EuroEval/multi-wiki-qa-bs-mini",
     task=RC,
+    languages=[BOSNIAN],
+)
+
+MULTI_WIKI_QA_BS_HALLUCINATION_CONFIG = DatasetConfig(
+    name="multi-wiki-hallucination-qa-bs",
+    pretty_name="MultiWikiHalluQA-bs",
+    source="EuroEval/multi-wiki-qa-bs-mini",
+    task=HALLU,
     languages=[BOSNIAN],
 )
 

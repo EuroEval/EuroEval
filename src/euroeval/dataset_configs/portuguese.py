@@ -5,6 +5,7 @@ from ..languages import EUROPEAN_PORTUGUESE, PORTUGUESE
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    HALLU,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -47,6 +48,14 @@ MULTI_WIKI_QA_PT_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-pt",
     source="EuroEval/multi-wiki-qa-pt-pt-mini",
     task=RC,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+)
+
+MULTI_WIKI_QA_PT_HALLUCINATION_CONFIG = DatasetConfig(
+    name="multi-wiki-hallucination-qa-pt",
+    pretty_name="MultiWikiHalluQA-pt",
+    source="EuroEval/multi-wiki-qa-pt-pt-mini",
+    task=HALLU,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 

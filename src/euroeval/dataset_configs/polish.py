@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import POLISH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, HALLU, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -83,6 +83,15 @@ MULTI_WIKI_QA_PL_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-pl",
     source="EuroEval/multi-wiki-qa-pl-mini",
     task=RC,
+    languages=[POLISH],
+    unofficial=True,
+)
+
+MULTI_WIKI_QA_PL_HALLUCINATION_CONFIG = DatasetConfig(
+    name="multi-wiki-hallucination-qa-pl",
+    pretty_name="MultiWikiHalluQA-pl",
+    source="EuroEval/multi-wiki-qa-pl-mini",
+    task=HALLU,
     languages=[POLISH],
     unofficial=True,
 )

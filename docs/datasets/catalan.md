@@ -620,3 +620,88 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ifeval-ca
 ```
+
+## Hallucination Detection
+
+### MultiWikiHalluQA-ca
+
+This dataset uses the same data as [MultiWikiQA-ca](#multiwikiqa-ca), published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
+with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
+correctness of the generated answer, this task evaluates the degree to which the model
+hallucinates, i.e., generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+transformer-based classifier to predict hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to
+total tokens in the generated answers.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "context": "Ca l'Alzamora és un casa d'Anglesola (Urgell) inclosa a l'Inventari del Patrimoni Arquitectònic de Catalunya.\n\nDescripció \nEdifici típicament renaixentista amb una tipologia quadrangular i dividida en tres pisos. Consta d'una planta baixa que es caracteritza per una entrada principal situada al mig i dos més als laterals. La principal té una llinda amb relleu esglaonat i adopta uns volums ondulants combinant-ho amb perfils rectes. Les portes laterals són en forma d'arc rebaixat. Entre la planta baixa i la segona hi ha una cornisa sobresortint que fa de separació entre l'una i l'altra. Aquesta primera planta es caracteritza per la senzillesa de tres obertures rectangulars amb perfils totalment rectes, sense cap mena de decoració aparent. Finalment, la tercera planta o golfes és de gran alçada i feta amb maons, construcció totalment contemporània.\n\nL'interior de l'habitatge conserva quasi intactes l'estructura del Casal del  i XIX en el que cal destacar una interessant balustrada de fusta a l'escala principal.\n\nHistòria \nLa façana tenia segons documents gràfics del 1921, dos porxos, però sembla que en tenia més. Els dos últims foren enderrocats el 1936-1937. La casa fou propietat de la família Alzamora, notaris fins que passà a la dels Mestres Apotecaris d'Anglesola. La primitiva façana tenia un interessant ràfec de diferents esglaons fets amb rajola.\n\nReferències \n\nPatrimoni monumental d'Anglesola\nEdificis d'Anglesola",
+    "question": "Com són les portes dels costats de la planta baixa?",
+    "answers": {
+        "answer_start": [470],
+        "text": ["arc rebaixat"]
+    }
+}
+```
+
+```json
+{
+    "context": "The Circus (El circ) és una pel·lícula muda de 1928 dirigida per Charles Chaplin.\n\nArgument \nCharlot es troba vagant en una fira, on és confós per un lladre i és perseguit per la policia. Fugint de l'oficial entra en un circ i sense adonar-se'n es converteix en l'estrella de la funció. Aconsegueix escapar. El propietari del circ, veient que es troba a la ruïna i que Charlot feia riure, el crida i li fa una prova que esdevé un fracàs. Després, uns treballadors del circ, que no havien cobrat la seva paga, se'n van enmig de la funció, per la qual cosa el director demana a l'encarregat que contracti el primer home que vegi, que resulta ser Charlot, que des d'un forat de la carpa observa la filla de l'amo. Charlot comença a treballar portant el material d'un mag a l'escenari i acaba per arruïnar-ho tot. Però a la gent li fa gràcia i el propietari del circ s'adona que és una estrella. Charlot no ho sap, i és contractat i explotat com un simple treballador. La filla de l'amo diu a Charlot que ell és l'estrella del circ i tot i així li donen un tracte miserable. El propietari vol colpejar la seva filla, però Charlot l'amenaça dient que si la segueix tractant igual i no li paga més se n'anirà. L'amo accepta les condicions i segueixen treballant fins que un dia una vident llegeix el futur a la noia i li diu que el seu gran amor es troba a prop. Charlot, creient que és ell, es disposa a proposar-li el matrimoni, però s'adona que és un altre: l'equilibrista. En una de les funcions l'equilibrista no compareix, i Charlot el substitueix. La seva actuació és pèssima: va a parar en una fruiteria. Ràpidament torna a entrar al circ justament quan l'amo pega la seva filla. Charlot dona un cop de puny a l'amo i automàticament és acomiadat. La noia li demana que se l'emporti amb ell. Charlot li diu que amb ell no tindrà futur, però que té una solució. Torna al circ, crida l'equilibrista i li diu que ha de proposar el matrimoni a la filla de l'amo, cosa que fa de seguida. Ja casats, el propietari del circ intenta tornar a tractar malament la seva filla, i l'equilibrista li para els peus. L'amo els pregunta si volen conservar la seva feina. Ells diuen que sí, però amb la condició que també contracti Charlot. Així ho fa. El circ marxa, però Charlot decideix no anar-se'n amb ells.\n\nRepartiment \n Charlie Chaplin: un vagabund\n A l'Ernest Garcia: propietari del circ\n Merna Kennedy: fillastra del propietari del circ\n Harry Crocker: Rex\n George Davis: mag\n Henry Bergman: pallasso\n Steve Murphy: lladre\n Tiny Sandford\n John Rand\n\nAl voltant de la pel·lícula \nThe Circus es va convertir en la setena pel·lícula més taquillera de la història del cinema mut: va recaptar quasi quatre milions de dòlars.\n\nLa producció de la pel·lícula va ser l'experiència més difícil en la carrera de Chaplin. Va tenir nombrosos problemes, incloent-hi un incendi en l'estudi de foc, i la filmació va ser interrompuda durant gairebé un any per l'amarg divorci de Chaplin, de la seva segona dona, Lita Grey, i les reclamacions d'impostos per part de l'Internal Revenue Service.\n\nVa ser nominat com a l'Oscar al millor actor i al millor director d'una comèdia. Chaplin va ser guardonat amb un Oscar honorífic per la versatilitat i el talent per a actuar, escriure, dirigir i produir la pel·lícula.\n\nEl 1970, Chaplin va tornar a editar la pel·lícula acompanyada de música.\n\nEnllaços externs \n \n\nPel·lícules mudes dirigides per Charles Chaplin\nPel·lícules dels Estats Units del 1928\nCirc\nPel·lícules dels Estats Units en blanc i negre",
+    "question": "En quin any va Chaplin reeditar el film amb una banda sonora?",
+    "answers": {
+        "answer_start": [3292],
+        "text": ["1970"]
+    }
+}
+```
+
+```json
+{
+    "context": "La paràbola de la figuera estèril és una narració de Jesús que recull l'evangeli segons Lluc (Lc 13, 1).\n\nArgument \nUn home tenia una figuera que feia tres anys que no donava fruit. Va plantejar-se de tallar-la, ja que els treballs que li suposava tenir-ne cura no compensaven si era un arbre estèril. L'amo dels terrenys el va instar a conservar-la un any més, posant-hi adob i especial esforç abans de tallar-la.\n\nAnàlisi \nDéu és el propietari que espera amb paciència que l'arbre (el creient) doni fruit (es converteixi o es comporti segons els preceptes de la fe). Envia els mitjans perquè això passi però adverteix que si continua sent un arbre estèril, es tallarà, és a dir, es condemnarà l'ànima d'aquella persona. La paràbola pertany al grup de narracions sobre la necessitat de seguir Jesús si es vol gaudir del cel, en una línia similar al que es relata a la paràbola de les verges nècies i prudents. La figuera ha gaudit de tres anys, per això ara té un ultimàtum. Aquests tres anys són paral·lels al que dura el Ministeri de Jesús.\n\nTal com passa a la paràbola del gra de mostassa, Jesús usa un símil vegetal parlant de germinació per fer referència al creixement espiritual. L'elecció de la figuera no és casual, era un conreu freqüent a la zona de l'audiència dels evangelis i sovint s'ha identificat amb Israel.\n\nReferències \n\nFiguera Esteril",
+    "question": "A què fa referència el fruit en aquesta paràbola?",
+    "answers": {
+        "answer_start": [508],
+        "text": ["es converteixi o es comporti segons els preceptes de la fe"]
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+
+```text
+Els textos següents contenen preguntes i respostes.
+```
+
+- Base prompt template:
+
+```text
+Text: {text}
+Pregunta: {question}
+Resposta amb un màxim de 3 paraules:
+```
+
+- Instruction-tuned prompt template:
+
+```text
+Text: {text}
+
+Respon a la següent pregunta sobre el text anterior amb un màxim de 3 paraules.
+
+Pregunta: {question}
+```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-ca
+```
