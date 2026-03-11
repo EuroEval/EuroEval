@@ -1408,15 +1408,67 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Maðurinn", "gengur", "hratt", "."],
-  "labels": ["O", "O", "O", "O"]
+    "tokens": [
+        "þeirra",
+        "hét",
+        "annar",
+        "kleofas",
+        "en",
+        "annar",
+        "hyggja",
+        "menn",
+        "að",
+        "verið",
+        "hafi",
+        "lúkas",
+        "guðspjallamaður"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
 }
 ```
 
 ```json
 {
-  "tokens": ["Maðurinn", "hratt", "gengur", "."],
-  "labels": ["O", "O", "B-ERR", "O"]
+    "tokens": [
+        "sá",
+        "réttlátur",
+        "og",
+        "siðsamur",
+        "og",
+        "heilagur",
+        "andi",
+        "með",
+        "honum",
+        "var",
+        "var"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "B-ERR",
+        "I-ERR"
+    ]
 }
 ```
 

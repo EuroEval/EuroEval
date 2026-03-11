@@ -1311,15 +1311,85 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Der", "Mann", "geht", "schnell", "."],
-  "labels": ["O", "O", "O", "O", "O"]
+    "tokens": [
+        "für",
+        "übersetzungen",
+        "die",
+        "beispielsweise",
+        "als",
+        "geschäftsbrief",
+        "gedacht",
+        "sind",
+        "benötigt",
+        "man",
+        "eher",
+        "ein",
+        "programm",
+        "für",
+        "500",
+        "oder",
+        "600",
+        "mark",
+        "kommt",
+        "aber",
+        "um",
+        "eine",
+        "nachbearbeitung",
+        "des",
+        "textes",
+        "nicht",
+        "herum"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
 }
 ```
 
 ```json
 {
-  "tokens": ["Der", "Mann", "schnell", "geht", "."],
-  "labels": ["O", "O", "O", "B-ERR", "O"]
+    "tokens": [
+        "die",
+        "höhe",
+        "beziffern",
+        "harisch",
+        "nicht",
+        "wollte"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "B-ERR",
+        "O",
+        "O",
+        "B-ERR"
+    ]
 }
 ```
 

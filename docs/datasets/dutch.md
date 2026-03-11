@@ -1428,15 +1428,69 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["De", "man", "loopt", "snel", "."],
-  "labels": ["O", "O", "O", "O", "O"]
+    "tokens": [
+        "om",
+        "in",
+        "de",
+        "finale",
+        "te",
+        "raken",
+        "verslaat",
+        "ze",
+        "ex-us",
+        "open",
+        "winnares",
+        "svetlana",
+        "kuznetsova",
+        "6-3",
+        "6-1"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
 }
 ```
 
 ```json
 {
-  "tokens": ["De", "man", "snel", "loopt", "."],
-  "labels": ["O", "O", "O", "B-ERR", "O"]
+    "tokens": [
+        "de",
+        "musical",
+        "zowel",
+        "in",
+        "belgië",
+        "als",
+        "in",
+        "nederland",
+        "is",
+        "opgevoerd"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "B-ERR",
+        "O"
+    ]
 }
 ```
 

@@ -1785,15 +1785,101 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Han", "spiser", "mad", "."],
-  "labels": ["O", "O", "O", "O"]
+    "tokens": [
+        "så",
+        "er",
+        "der",
+        "en",
+        "pause",
+        "på",
+        "5",
+        "år",
+        "indtil",
+        "vivaldis",
+        "største",
+        "sucses",
+        "de",
+        "fire",
+        "årstider",
+        "kommer"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
 }
 ```
 
 ```json
 {
-  "tokens": ["Han", "mad", "spiser", "."],
-  "labels": ["O", "O", "B-ERR", "O"]
+    "tokens": [
+        "såfremt",
+        "virksomheden",
+        "ikke",
+        "selv",
+        "er",
+        "i",
+        "stand",
+        "til",
+        "at",
+        "krævede",
+        "de",
+        "udføre",
+        "målinger",
+        "må",
+        "den",
+        "for",
+        "egen",
+        "regning",
+        "søge",
+        "bistand",
+        "hos",
+        "private",
+        "eller",
+        "offentlige",
+        "laboratorier"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "B-ERR",
+        "O",
+        "B-ERR",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
 }
 ```
 

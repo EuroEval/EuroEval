@@ -2104,15 +2104,33 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Mannen", "går", "raskt", "."],
-  "labels": ["O", "O", "O", "O"]
+    "tokens": [
+        "elva",
+        "skiller"
+    ],
+    "labels": [
+        "O",
+        "O"
+    ]
 }
 ```
 
 ```json
 {
-  "tokens": ["Mannen", "raskt", "går", "."],
-  "labels": ["O", "O", "B-ERR", "O"]
+    "tokens": [
+        "penger",
+        "aldri",
+        "et",
+        "er",
+        "problem"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "B-ERR",
+        "O"
+    ]
 }
 ```
 
@@ -2172,15 +2190,89 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["Mannen", "går", "raskt", "."],
-  "labels": ["O", "O", "O", "O"]
+    "tokens": [
+        "han",
+        "nemner",
+        "at",
+        "det",
+        "er",
+        "ledig",
+        "kapasitet",
+        "på",
+        "dyrskuplassen",
+        "både",
+        "vår",
+        "haust",
+        "og",
+        "vinter",
+        "medan",
+        "sommaren",
+        "har",
+        "godt",
+        "med",
+        "tilskipingar"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
 }
 ```
 
 ```json
 {
-  "tokens": ["Mannen", "raskt", "går", "."],
-  "labels": ["O", "O", "B-ERR", "O"]
+    "tokens": [
+        "noreg",
+        "er",
+        "på",
+        "veg",
+        "til",
+        "å",
+        "danmark",
+        "i",
+        "folketal",
+        "passere",
+        "for",
+        "første",
+        "gong",
+        "i",
+        "historia"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "B-ERR",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
 }
 ```
 
