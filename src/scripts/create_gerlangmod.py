@@ -27,7 +27,7 @@ from tqdm.auto import tqdm
 
 _BASE_URL = (
     "https://raw.githubusercontent.com/noahmanu/gerlangmod/main/"
-    "Datasets/verb_error_datasets_v1_1/{lang}/{lang}_{treebank}_{split}.tsv"
+    "Datasets/verb_error_datasets_v1_1/{lang}/{prefix}_{treebank}_{split}.tsv"
 )
 
 # Mapping from language code to list of (treebank, splits) pairs
@@ -103,7 +103,7 @@ def _download_tsv(lang: str, treebank: str, split: str) -> pd.DataFrame:
         DataFrame with raw GerLangMod columns.
     """
     prefix = _FILE_PREFIX_OVERRIDES.get((lang, treebank), lang)
-    url = _BASE_URL.format(lang=lang, treebank=f"{prefix}_{treebank}", split=split)
+    url = _BASE_URL.format(lang=lang, prefix=prefix, treebank=treebank, split=split)
     response = requests.get(url)
     response.raise_for_status()
     df = pd.read_csv(io.StringIO(response.text), sep="\t", dtype=str, na_filter=False)
