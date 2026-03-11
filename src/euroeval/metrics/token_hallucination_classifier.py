@@ -19,16 +19,18 @@ if t.TYPE_CHECKING:
 
 
 def detect_hallucinations(
-    dataset: Dataset, predictions: c.Sequence, model: str, device: str = "cpu"
+    dataset: Dataset, predictions: c.Iterable[dict[str, str]], model: str
 ) -> float:
     """Load tinylettuce model and detect hallucinations.
 
     Args:
-        dataset: Hallucination dataset, generated with e.g. lettuce.
-        predictions: Sequence of prediction objects, each containing a
-            ``"prediction_text"`` field with the model's answer text.
-        model: Path to hallucination detection model. Defaults to english.
-        device: Device to run on ('cpu' or 'cuda').
+        dataset:
+            Hallucination dataset, generated with, e.g., lettucedetect.
+        predictions:
+            Sequence of prediction objects, each containing a `prediction_text` field
+            with the model's answer text.
+        model:
+            The Hugging Face model ID of the hallucination detection model.
 
     Returns:
         A hallucination rate (hallucinated_tokens/total_tokens).
@@ -39,7 +41,7 @@ def detect_hallucinations(
             hallucination detection model.
     """
     detector = HallucinationDetector(
-        method="transformer", model_path=model, device=device
+        method="transformer", model_path=model, device="cpu"
     )
 
     predicted_texts = [p["prediction_text"] for p in predictions]
@@ -72,24 +74,17 @@ def detect_hallucinations(
 class TokenHallucinationMetric(Metric):
     """Hallucination metric."""
 
-    def __init__(self, name: str, pretty_name: str) -> None:
-        """Initialise the token hallucination metric.
-
-        Args:
-            name:
-                The name of the metric in snake_case.
-            pretty_name:
-                The pretty name of the metric, used for display purposes.
-        """
+    def __init__(self) -> None:
+        """Initialise the token hallucination metric."""
         super().__init__(
-            name=name,
-            pretty_name=pretty_name,
+            name="hallucination_rate",
+            pretty_name="Token-level hallucination rate",
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.2f}"),
         )
 
     def __call__(
         self,
-        predictions: c.Sequence,
+        predictions: c.Iterable[dict[str, str]],
         dataset: "Dataset",
         dataset_config: "DatasetConfig",
         **kwargs,
@@ -122,11 +117,8 @@ class TokenHallucinationMetric(Metric):
                 f"alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-"
                 f"{dataset_config.main_language.code}"
             ),
-            device="cpu",
         )
         return hallucination_rate
 
 
-hallucination_metric = TokenHallucinationMetric(
-    name="hallucination_rate", pretty_name="Hallucination rate"
-)
+hallucination_metric = TokenHallucinationMetric()
