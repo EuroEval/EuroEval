@@ -327,10 +327,10 @@ class LiteLLMModel(BenchmarkModule):
         return type_
 
     def _test_response_has_reasoning_content(self) -> bool:
-        """Run a test API call (if not already cached) and check for reasoning_content.
+        """Run a minimal test API call and return True if reasoning_content is present.
 
-        Makes a minimal test call to the model API, caches the response in the buffer,
-        and returns True if the response contains non-empty reasoning_content.
+        Runs the test call on first invocation only; subsequent calls return the
+        cached result.
 
         Returns:
             True if the test response contains non-empty reasoning_content,
@@ -340,61 +340,60 @@ class LiteLLMModel(BenchmarkModule):
             InvalidModel:
                 If the model fails to respond after multiple attempts.
         """
-        if "test_response" not in self.buffer:
-            test_kwargs: dict[str, t.Any] = dict(
-                max_completion_tokens=self.dataset_config.max_generated_tokens,
-                stop=[],
-                temperature=0.0,
-                seed=4242,
-                api_key=self.benchmark_config.api_key,
-                api_base=self.benchmark_config.api_base,
-                api_version=self.benchmark_config.api_version,
-                max_retries=3,
-            )
-            test_input = [
-                litellm.ChatCompletionUserMessage(role="user", content="Test message")
-            ]
-            test_successes: c.Sequence[tuple[int, "ModelResponse"]] = []
-            for _ in range(num_attempts := 10):
-                test_successes, failures = safe_run(
-                    self._generate_async(
-                        model_id=self.model_config.model_id,
-                        inputs=[test_input],
-                        max_concurrent_calls=1,
-                        **test_kwargs,
-                    )
-                )
-                if not failures:
-                    break
-                time_to_wait = 0
-                for _, error in failures:
-                    test_kwargs, wait_time = self._handle_exception(
-                        error=error, **test_kwargs
-                    )
-                    time_to_wait = max(time_to_wait, wait_time)
-                if time_to_wait > 0:
-                    sleep(time_to_wait)
-            else:
-                raise InvalidModel(
-                    "Failed to get a successful response from the model "
-                    f"{self.model_config.model_id!r} after {num_attempts} attempts."
-                )
-            if test_successes:
-                self.buffer["test_response"] = test_successes[0][1]
+        if "_has_reasoning_content" in self.buffer:
+            return bool(self.buffer["_has_reasoning_content"])
 
-        response: "litellm.ModelResponse | None" = self.buffer.get("test_response")
-        if not response or not response.choices:
-            return False
-        if not isinstance(response.choices[0], litellm.Choices):
-            return False
-        if not getattr(response.choices[0].message, "reasoning_content", None):
-            return False
-        log_once(
-            f"Detected {self.model_config.model_id!r} as a reasoning model via "
-            "response reasoning_content.",
-            level=logging.DEBUG,
+        test_kwargs: dict[str, t.Any] = dict(
+            max_completion_tokens=1,
+            api_key=self.benchmark_config.api_key,
+            api_base=self.benchmark_config.api_base,
+            api_version=self.benchmark_config.api_version,
+            max_retries=3,
         )
-        return True
+        test_input = [
+            litellm.ChatCompletionUserMessage(role="user", content="Test message")
+        ]
+        test_successes: c.Sequence[tuple[int, "ModelResponse"]] = []
+        for _ in range(num_attempts := 10):
+            test_successes, failures = safe_run(
+                self._generate_async(
+                    model_id=self.model_config.model_id,
+                    inputs=[test_input],
+                    max_concurrent_calls=1,
+                    **test_kwargs,
+                )
+            )
+            if not failures:
+                break
+            time_to_wait = 0
+            for _, error in failures:
+                test_kwargs, wait_time = self._handle_exception(
+                    error=error, **test_kwargs
+                )
+                time_to_wait = max(time_to_wait, wait_time)
+            if time_to_wait > 0:
+                sleep(time_to_wait)
+        else:
+            raise InvalidModel(
+                "Failed to get a successful response from the model "
+                f"{self.model_config.model_id!r} after {num_attempts} attempts."
+            )
+
+        response = test_successes[0][1] if test_successes else None
+        result = bool(
+            response
+            and response.choices
+            and isinstance(response.choices[0], litellm.Choices)
+            and getattr(response.choices[0].message, "reasoning_content", None)
+        )
+        if result:
+            log_once(
+                f"Detected {self.model_config.model_id!r} as a reasoning model via "
+                "response reasoning_content.",
+                level=logging.DEBUG,
+            )
+        self.buffer["_has_reasoning_content"] = result
+        return result
 
     def generate(self, inputs: dict) -> GenerativeModelOutput:
         """Generate outputs from the model.

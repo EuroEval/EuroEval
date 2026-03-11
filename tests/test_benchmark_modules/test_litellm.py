@@ -1,11 +1,9 @@
 """Unit tests for the `litellm` module."""
 
-import typing as t
-from unittest.mock import patch
-
 import ollama
 import pytest
 from litellm.types.utils import Choices, Message, ModelResponse
+from pytest_mock import MockerFixture
 
 from euroeval.benchmark_modules.litellm import LiteLLMModel
 from euroeval.constants import REASONING_MAX_TOKENS
@@ -50,6 +48,7 @@ def _make_model_response(reasoning_content: str | None = None) -> ModelResponse:
 
 
 def _make_litellm_model(
+    mocker: MockerFixture,
     model_config: ModelConfig,
     dataset_config: DatasetConfig,
     benchmark_config: BenchmarkConfig,
@@ -58,6 +57,8 @@ def _make_litellm_model(
     """Create a LiteLLMModel with mocked Ollama and API calls.
 
     Args:
+        mocker:
+            The pytest-mock fixture.
         model_config:
             The model configuration.
         dataset_config:
@@ -74,25 +75,26 @@ def _make_litellm_model(
 
     async def mock_generate_async(
         *args, **kwargs
-    ) -> tuple[list[tuple[int, ModelResponse]], list[t.Any]]:
+    ) -> tuple[list[tuple[int, ModelResponse]], list]:
         return [(0, response)], []
 
-    with patch.object(
+    mocker.patch.object(
         ollama, "show", return_value=ollama.ShowResponse(model_info=None)
-    ):
-        with patch.object(
-            LiteLLMModel, "_generate_async", side_effect=mock_generate_async
-        ):
-            return LiteLLMModel(
-                model_config=model_config,
-                dataset_config=dataset_config,
-                benchmark_config=benchmark_config,
-                log_metadata=False,
-            )
+    )
+    mocker.patch.object(
+        LiteLLMModel, "_generate_async", side_effect=mock_generate_async
+    )
+    return LiteLLMModel(
+        model_config=model_config,
+        dataset_config=dataset_config,
+        benchmark_config=benchmark_config,
+        log_metadata=False,
+    )
 
 
 @pytest.fixture()
 def litellm_model(
+    mocker: MockerFixture,
     litellm_model_config: ModelConfig,
     dataset_config: DatasetConfig,
     benchmark_config: BenchmarkConfig,
@@ -103,6 +105,7 @@ def litellm_model(
         A LiteLLMModel with generative_type == INSTRUCTION_TUNED.
     """
     return _make_litellm_model(
+        mocker=mocker,
         model_config=litellm_model_config,
         dataset_config=dataset_config,
         benchmark_config=benchmark_config,
@@ -112,6 +115,7 @@ def litellm_model(
 
 @pytest.fixture()
 def litellm_model_reasoning(
+    mocker: MockerFixture,
     litellm_model_config: ModelConfig,
     dataset_config: DatasetConfig,
     benchmark_config: BenchmarkConfig,
@@ -122,6 +126,7 @@ def litellm_model_reasoning(
         A LiteLLMModel with generative_type == REASONING.
     """
     return _make_litellm_model(
+        mocker=mocker,
         model_config=litellm_model_config,
         dataset_config=dataset_config,
         benchmark_config=benchmark_config,
@@ -132,11 +137,11 @@ def litellm_model_reasoning(
 class TestReasoningContentDetection:
     """Tests for automatic reasoning model detection via response reasoning_content."""
 
-    def test_reasoning_content_sets_buffer(
+    def test_reasoning_content_method_returns_true(
         self, litellm_model_reasoning: LiteLLMModel
     ) -> None:
-        """buffer["test_response"] is set after model creation with reasoning."""
-        assert litellm_model_reasoning.buffer.get("test_response") is not None
+        """_test_response_has_reasoning_content returns True when content detected."""
+        assert litellm_model_reasoning._test_response_has_reasoning_content() is True
 
     def test_reasoning_content_updates_generative_type(
         self, litellm_model_reasoning: LiteLLMModel
@@ -170,12 +175,14 @@ class TestReasoningContentDetection:
 
     def test_empty_reasoning_content_keeps_instruction_tuned(
         self,
+        mocker: MockerFixture,
         litellm_model_config: ModelConfig,
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
         """generative_type stays INSTRUCTION_TUNED when reasoning_content is empty."""
         model = _make_litellm_model(
+            mocker=mocker,
             model_config=litellm_model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
