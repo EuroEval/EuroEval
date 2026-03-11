@@ -3,7 +3,7 @@
 This document lists test cases that should be added to improve test coverage for the
 EuroEval codebase.
 
-## 9. `test_task_group_utils.py` - Missing
+## `test_task_group_utils.py` - Missing
 
 **Module:** `euroeval.task_group_utils.*`
 
@@ -17,7 +17,7 @@ For each task group utility module:
 - `test_text_to_text_process_batch`
 - `test_token_classification_process_batch`
 
-## 10. `test_benchmark_modules.py` - Missing
+## `test_benchmark_modules.py` - Missing
 
 **Module:** `euroeval.benchmark_modules.*`
 
@@ -44,13 +44,9 @@ For each task group utility module:
 - `test_fresh_model_generate`
 - `test_fresh_model_get_model_config`
 
-## 11. `test_metrics.py` - Missing
+## `test_metrics/*` - Missing
 
 **Module:** `euroeval.metrics.*`
-
-### Tests to add for `llm_as_a_judge.py`
-
-(See section 7 above - these should be in a dedicated test_llm_as_a_judge.py)
 
 ### Tests to add for `pipeline.py`
 
@@ -69,7 +65,7 @@ For each task group utility module:
 - `test_bias_metric_call`
 - `test_bias_metric_process_batch`
 
-## 12. `test_model_loading.py` - Missing
+## `test_model_loading.py` - Missing
 
 **Module:** `euroeval.model_loading`
 
@@ -80,7 +76,7 @@ For each task group utility module:
 - `test_load_model_litellm`
 - `test_load_model_fails_without_required_dependency`
 
-## 13. `test_data_models.py` - Missing
+## `test_data_models.py` - Missing
 
 **Module:** `euroeval.data_models`
 
@@ -92,7 +88,7 @@ For each task group utility module:
 - `test_model_config_with_cache_dir`
 - `test_benchmark_config_with_all_options`
 
-## 14. `test_logging_utils.py` - Missing
+## `test_logging_utils.py` - Missing
 
 **Module:** `euroeval.logging_utils`
 
@@ -104,7 +100,7 @@ For each task group utility module:
 - `test_get_pbar_enabled_when_true`
 - `test_get_pbar_with_custom_desc`
 
-## 15. `test_callbacks.py` - Missing
+## `test_callbacks.py` - Missing
 
 **Module:** `euroeval.callbacks`
 
@@ -113,7 +109,7 @@ For each task group utility module:
 - `test_never_leave_progress_callback_on_epoch_end`
 - `test_never_leave_progress_callback_on_epoch_start`
 
-## 16. `test_utils.py` - Missing
+## `test_utils.py` - Missing
 
 **Module:** `euroeval.utils`
 
