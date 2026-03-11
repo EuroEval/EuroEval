@@ -1,8 +1,8 @@
 """Unit tests for the `litellm` module."""
 
+import typing as t
 from unittest.mock import patch
 
-import litellm
 import ollama
 import pytest
 from litellm.types.utils import Choices, Message, ModelResponse
@@ -16,7 +16,11 @@ from euroeval.languages import DANISH
 
 @pytest.fixture()
 def litellm_model_config() -> ModelConfig:
-    """A minimal ModelConfig for a generic OpenAI-compatible LiteLLM model."""
+    """A minimal ModelConfig for a generic OpenAI-compatible LiteLLM model.
+
+    Returns:
+        A ModelConfig with LiteLLM inference backend and generative model type.
+    """
     return ModelConfig(
         model_id="openai/test-model",
         revision="main",
@@ -38,7 +42,11 @@ def litellm_model(
     dataset_config: DatasetConfig,
     benchmark_config: BenchmarkConfig,
 ) -> LiteLLMModel:
-    """A LiteLLMModel instance with Ollama calls mocked out."""
+    """A LiteLLMModel instance with Ollama calls mocked out.
+
+    Returns:
+        A LiteLLMModel with mocked Ollama show response.
+    """
     with patch.object(
         ollama, "show", return_value=ollama.ShowResponse(model_info=None)
     ):
@@ -51,11 +59,13 @@ def litellm_model(
 
 
 def _make_model_response(reasoning_content: str | None = None) -> ModelResponse:
-    """Build a minimal ModelResponse, optionally with reasoning_content."""
+    """Build a minimal ModelResponse, optionally with reasoning_content.
+
+    Returns:
+        A ModelResponse containing a single assistant choice.
+    """
     msg = Message(
-        content="Test response",
-        role="assistant",
-        reasoning_content=reasoning_content,
+        content="Test response", role="assistant", reasoning_content=reasoning_content
     )
     choice = Choices(message=msg, finish_reason="stop", index=0)
     return ModelResponse(choices=[choice], model="test-model", id="test-id")
@@ -65,14 +75,14 @@ class TestReasoningContentDetection:
     """Tests for automatic reasoning model detection via response reasoning_content."""
 
     def test_reasoning_content_sets_buffer(
-        self,
-        litellm_model: LiteLLMModel,
-        dataset_config: DatasetConfig,
+        self, litellm_model: LiteLLMModel, dataset_config: DatasetConfig
     ) -> None:
         """buffer["test_response"] is set after get_generation_kwargs with reasoning."""
         response = _make_model_response(reasoning_content="I am thinking deeply...")
 
-        async def mock_generate_async(*args, **kwargs):
+        async def mock_generate_async(
+            *args, **kwargs
+        ) -> tuple[list[tuple[int, ModelResponse]], list[t.Any]]:
             return [(0, response)], []
 
         with patch.object(
@@ -83,16 +93,16 @@ class TestReasoningContentDetection:
         assert litellm_model.buffer.get("test_response") is response
 
     def test_reasoning_content_updates_generative_type(
-        self,
-        litellm_model: LiteLLMModel,
-        dataset_config: DatasetConfig,
+        self, litellm_model: LiteLLMModel, dataset_config: DatasetConfig
     ) -> None:
         """generative_type property returns REASONING after detection."""
         assert litellm_model.generative_type == GenerativeType.INSTRUCTION_TUNED
 
         response = _make_model_response(reasoning_content="I am thinking deeply...")
 
-        async def mock_generate_async(*args, **kwargs):
+        async def mock_generate_async(
+            *args, **kwargs
+        ) -> tuple[list[tuple[int, ModelResponse]], list[t.Any]]:
             return [(0, response)], []
 
         with patch.object(
@@ -103,14 +113,14 @@ class TestReasoningContentDetection:
         assert litellm_model.generative_type == GenerativeType.REASONING
 
     def test_reasoning_content_uses_reasoning_max_tokens(
-        self,
-        litellm_model: LiteLLMModel,
-        dataset_config: DatasetConfig,
+        self, litellm_model: LiteLLMModel, dataset_config: DatasetConfig
     ) -> None:
         """Returned kwargs use REASONING_MAX_TOKENS when reasoning_content is found."""
         response = _make_model_response(reasoning_content="I am thinking deeply...")
 
-        async def mock_generate_async(*args, **kwargs):
+        async def mock_generate_async(
+            *args, **kwargs
+        ) -> tuple[list[tuple[int, ModelResponse]], list[t.Any]]:
             return [(0, response)], []
 
         with patch.object(
@@ -123,14 +133,14 @@ class TestReasoningContentDetection:
         assert generation_kwargs["max_completion_tokens"] == REASONING_MAX_TOKENS
 
     def test_reasoning_content_removes_response_format(
-        self,
-        litellm_model: LiteLLMModel,
-        dataset_config: DatasetConfig,
+        self, litellm_model: LiteLLMModel, dataset_config: DatasetConfig
     ) -> None:
         """response_format is removed from kwargs when reasoning_content is found."""
         response = _make_model_response(reasoning_content="I am thinking deeply...")
 
-        async def mock_generate_async(*args, **kwargs):
+        async def mock_generate_async(
+            *args, **kwargs
+        ) -> tuple[list[tuple[int, ModelResponse]], list[t.Any]]:
             return [(0, response)], []
 
         # Inject a response_format into the buffer so it ends up in the initial kwargs
@@ -146,14 +156,14 @@ class TestReasoningContentDetection:
         assert "response_format" not in generation_kwargs
 
     def test_no_reasoning_content_keeps_instruction_tuned(
-        self,
-        litellm_model: LiteLLMModel,
-        dataset_config: DatasetConfig,
+        self, litellm_model: LiteLLMModel, dataset_config: DatasetConfig
     ) -> None:
         """generative_type stays INSTRUCTION_TUNED when reasoning_content is absent."""
         response = _make_model_response(reasoning_content=None)
 
-        async def mock_generate_async(*args, **kwargs):
+        async def mock_generate_async(
+            *args, **kwargs
+        ) -> tuple[list[tuple[int, ModelResponse]], list[t.Any]]:
             return [(0, response)], []
 
         with patch.object(
@@ -164,14 +174,14 @@ class TestReasoningContentDetection:
         assert litellm_model.generative_type == GenerativeType.INSTRUCTION_TUNED
 
     def test_empty_reasoning_content_keeps_instruction_tuned(
-        self,
-        litellm_model: LiteLLMModel,
-        dataset_config: DatasetConfig,
+        self, litellm_model: LiteLLMModel, dataset_config: DatasetConfig
     ) -> None:
         """generative_type stays INSTRUCTION_TUNED when reasoning_content is empty."""
         response = _make_model_response(reasoning_content="")
 
-        async def mock_generate_async(*args, **kwargs):
+        async def mock_generate_async(
+            *args, **kwargs
+        ) -> tuple[list[tuple[int, ModelResponse]], list[t.Any]]:
             return [(0, response)], []
 
         with patch.object(

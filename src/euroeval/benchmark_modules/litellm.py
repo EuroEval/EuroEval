@@ -327,15 +327,25 @@ class LiteLLMModel(BenchmarkModule):
         return type_
 
     def _test_response_has_reasoning_content(self) -> bool:
-        """Return True if the buffered test response has non-empty reasoning_content."""
+        """Return True if the buffered test response has non-empty reasoning_content.
+
+        Returns:
+            True if the buffered test response contains non-empty reasoning_content,
+            False otherwise.
+        """
         response: "litellm.ModelResponse | None" = self.buffer.get("test_response")
         if not response or not response.choices:
             return False
         if not isinstance(response.choices[0], litellm.Choices):
             return False
-        return bool(
-            getattr(response.choices[0].message, "reasoning_content", None)
+        if not getattr(response.choices[0].message, "reasoning_content", None):
+            return False
+        log_once(
+            f"Detected {self.model_config.model_id!r} as a reasoning model via "
+            "response reasoning_content.",
+            level=logging.DEBUG,
         )
+        return True
 
     def generate(self, inputs: dict) -> GenerativeModelOutput:
         """Generate outputs from the model.
@@ -1794,14 +1804,8 @@ class LiteLLMModel(BenchmarkModule):
 
         # Auto-detect reasoning models from test response reasoning_content.
         if test_successes:
-            was_already_reasoning = self.generative_type == GenerativeType.REASONING
             self.buffer["test_response"] = test_successes[0][1]
-            if not was_already_reasoning and self.generative_type == GenerativeType.REASONING:
-                log_once(
-                    f"Detected {self.model_config.model_id!r} as a reasoning model "
-                    "via response reasoning_content.",
-                    level=logging.DEBUG,
-                )
+            if self.generative_type == GenerativeType.REASONING:
                 generation_kwargs["max_completion_tokens"] = REASONING_MAX_TOKENS
                 generation_kwargs.pop("response_format", None)
 
