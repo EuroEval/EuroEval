@@ -20,6 +20,7 @@ from .constants import (
     CHOICES_MAPPING,
     MAX_NUMBER_OF_LOGGING_LANGUAGES,
 )
+from .eee_utils import benchmark_result_from_eee_dict, benchmark_result_to_eee_dict
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
 from .languages import (
@@ -694,7 +695,7 @@ class DatasetConfig:
                 If the dataset has no languages.
         """
         # Importing here to avoid circular imports
-        from .tasks import TRANSLATION
+        from .tasks import TRANSLATION  # noqa: PLC0415
 
         # Special case for datasets with multiple languages
         if self.task == TRANSLATION:
@@ -959,6 +960,7 @@ class BenchmarkResult(pydantic.BaseModel):
     torch_version: str | None = get_package_version("torch")
     vllm_version: str | None = get_package_version("vllm")
     xgrammar_version: str | None = get_package_version("xgrammar")
+    litellm_version: str | None = None
 
     @classmethod
     def from_dict(cls, config: dict) -> "BenchmarkResult":
@@ -971,6 +973,10 @@ class BenchmarkResult(pydantic.BaseModel):
         Returns:
             The benchmark result.
         """
+        # Detect Every Eval Ever format by the presence of schema_version
+        if "schema_version" in config:
+            return cls.from_eee_dict(config)
+
         # To be backwards compatible, we accept old results which changed the model
         # name with parameters rather than adding them as explicit parameters
         val_matches = re.search(r"\(.*val.*\)$", config["model"])
@@ -999,6 +1005,38 @@ class BenchmarkResult(pydantic.BaseModel):
 
         return cls(**config)
 
+    @classmethod
+    def from_eee_dict(cls, config: dict) -> "BenchmarkResult":
+        """Create a BenchmarkResult from an Every Eval Ever format dictionary.
+
+        Reconstructs a full `BenchmarkResult` from a dictionary conforming to the
+        Every Eval Ever (EEE) JSON schema v0.2.1.  The method is the inverse of
+        `to_eee_dict` and enables lossless round-trips via `from_dict`.
+
+        Args:
+            config:
+                A dictionary conforming to the EEE JSON schema v0.2.1, as produced
+                by `to_eee_dict`.
+
+        Returns:
+            The reconstructed benchmark result.
+        """
+        return benchmark_result_from_eee_dict(config=config)
+
+    def to_eee_dict(self) -> dict:
+        """Convert this benchmark result to the Every Eval Ever (EEE) format.
+
+        Produces a dictionary conforming to the Every Eval Ever JSON schema v0.2.1
+        (https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json).
+        The resulting dict can be written directly to
+        `euroeval_benchmark_results.jsonl` and later reconstructed without loss
+        via `from_eee_dict` (or `from_dict`).
+
+        Returns:
+            A dictionary matching the EEE JSON schema v0.2.1.
+        """
+        return benchmark_result_to_eee_dict(result=self)
+
     def append_to_results(self, results_path: Path) -> None:
         """Append the benchmark result to the results file.
 
@@ -1006,7 +1044,7 @@ class BenchmarkResult(pydantic.BaseModel):
             results_path:
                 The path to the results file.
         """
-        json_str = json.dumps(self.model_dump(), ensure_ascii=False)
+        json_str = json.dumps(self.to_eee_dict(), ensure_ascii=False)
         with results_path.open("a") as f:
             f.write("\n" + json_str)
 
