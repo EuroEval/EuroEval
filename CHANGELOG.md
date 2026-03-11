@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   icelandic-math-tests, based on old Icelandic primary school standardised tests
   (2013–2017) from mms.is, covering Icelandic language and mathematics, respectively.
   Both are marked as `unofficial` for now.
+- Added support for the Aya thinking tokens `<|START_THINKING|>` and `<|END_THINKING|>`.
 
 ### Fixed
 

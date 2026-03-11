@@ -481,6 +481,8 @@ def build_kwargs(
         value = parse_int_field(raw=raw, field_name=field_name, yaml_path=yaml_path)
         if value is not None:
             kwargs[field_name] = value
+        elif raw.get(field_name) is not None:
+            return None
 
     labels_raw = raw.get("labels")
     if labels_raw is not None:

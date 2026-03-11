@@ -79,7 +79,7 @@ tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
 
 check:  ## Lint, format, and type-check the code
-	@uv run pre-commit run --all-files
+	@git add . && uv run pre-commit run --all-files
 
 bump-major:
 	@uv run python -m src.scripts.versioning --major

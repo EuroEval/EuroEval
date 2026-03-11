@@ -535,6 +535,30 @@ class DatasetConfig:
         else:
             self.preprocessing_func = preprocessing_func  # None or user-provided
 
+    def __repr__(self) -> str:
+        """The representation of the dataset configuration.
+
+        Returns:
+            The string representation.
+        """
+        language_repr = (
+            self.languages if len(self.languages) < 5 else self.languages[:5] + ["..."]
+        )
+        parts = [f"task={self.task.name}", f"languages={language_repr}"]
+        try:
+            parts.append(f"name={self.name}")
+        except ValueError:
+            pass
+        try:
+            parts.append(f"pretty_name={self.pretty_name}")
+        except ValueError:
+            pass
+        try:
+            parts.append(f"source={self.source}")
+        except ValueError:
+            pass
+        return f"DatasetConfig({', '.join(parts)})"
+
     @property
     def name(self) -> str:
         """The name of the dataset.
