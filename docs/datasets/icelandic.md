@@ -1506,3 +1506,88 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset gerlangmod-is
 ```
+
+## Hallucination Detection
+
+### Unofficial: MultiWikiHalluQA-is
+
+This dataset uses the same data as [Unofficial: MultiWikiQA-is](#unofficial-multiwikiqa-is), published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
+with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
+correctness of the generated answer, this task evaluates the degree to which the model
+hallucinates, i.e., generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+transformer-based classifier to predict hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to
+total tokens in the generated answers.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "context": "Eldfell er rétt rúmlega 200 m hátt eldfjall á Heimaey í Vestmannaeyjaklasanum. Það myndaðist í eldgosi sem hófst 23. janúar 1973 en lauk 3. júlí 1973, þetta eldgos er kallað Heimaeyjargosið.\n\nHeimaeyjargosið \nÍ upphafi gossins opnaðist stór sprunga frá norðri til suðurs á austasta hluta Heimaeyjar, og náði hún að höfninni  í norðri en niður að Skarfatanga í suðri. Fljótlega minnkaði sprungan þó og megineldvarpið varð þar sem nú stendur Eldfell. Gosefnið í upphafi gossins var nánast ísúrt, en þó varð það fljótlega basískt (SiO2 > 52%). Efnainnihald kvikunnar bendir til að kvikuhólf og megineldstöð séu að myndast á þessum slóðum. \n\nStrax og tilkynning barst um að eldgos væri hafið hófst brottflutningur fólks af eynni. Af 5.500 íbúum eyj[48;55;272;1980;3808tarinnar voru um 4.000 fluttir burt um nóttina, mestmegnis með skipum. Á næstu vikum voru búslóðir fólks fluttar burt að mestu, en hús tóku mjög fljótlega að hverfa undir hraun.\n\nEinn maður dó í gosinu og var það af völdum koldíoxíðeitrunar - mikið af lífshættulegum lofttegundum kom upp úr jörðinni með vikrinum og gjóskunni. Mikil mildi þótti að ekki skyldi hafa farið verr, þar sem að sprungan kom upp rétt austan við austasta hús bæjarins (þó munaði ekki nema nokkrum metrum). \n\nUm helmingur húsa bæjarins ýmist lenti undir hrauni eða á annan hátt eyðilagðist í gosinu, en uppbyggingin eftir gosið var mjög snögg.\n\nGosið í Heimaey byrjaði 23. janúar 1973 og lauk 3. júlí sama ár. Þetta er fyrsta gos sem hefst við þéttbýli á Íslandi. Það var loftskeytamaðurinn Hjálmar Guðnason og vinur hans, Ólaf Granz, sem voru í sínum vanalega miðnæturgöngutúr þegar hinn tilkomumikla sýn birtist þeim þegar þeir skoðuðu bæinn frá Helgafellstoppi. Þar sáu þeir jörðina opnast og eldtungurnar stóðu marga metra upp í loftið. Strax var haft samband við lögreglu þar sem tilkynnt var að jarðeldur væri kominn upp austan við Kirkjubæ. Lögreglan tók upplýsingarnar ekki trúanlegar í fyrstu en fór strax að athuga hvað væri í gangi og þegar á staðinn var komið sáu þeir að gos var hafið á 1600 metra langri sprungu og magnaðist hratt á fyrstu mínútunum. Kveikt var á brunalúðrum og á mjög skömmum tíma var allur bærinn vaknaður og fólk streymdi úr húsum sínum og niður á bryggju. Flestir þeir sem upplifðu gosið eru sammála um að klukkuna hafi vantað fimm mínútur í tvö þegar að gosið hófst.\n\nEldfellshraun er um 2,5 ferkílómetrar og stækkaði Heimaey um 20%.\n\nTenglar \n Átta tímar í eyjum; greinar í Morgunblaðinu 1973\n kort af götum sem fóru undir hraun\nVestmannaeyjar\nEldfjöll á Íslandi\nEldgos á Íslandi",
+    "question": "Hvað er Eldfell hátt?",
+    "answers": {
+        "answer_start": array([11]),
+        "text": array(["rétt rúmlega 200 m"], dtype=object)
+    }
+}
+```
+
+```json
+{
+    "context": "Edduverðlaunin 2007 eru afhending Edduverðlauna Íslensku kvikmynda- og sjónvarpsakademíunnar sem fór fram á Hótel Hilton Nordica sunnudaginn 11. nóvember 2007. Aðalkynnar kvöldsins voru Þorsteinn Guðmundsson og Ólafía Hrönn Jónsdóttir.\n\nÞær breytingar urðu á verðlaunaflokkum að flokknum „Leikari/leikkona í aðalhlutverki“ var skipt í tvennt og þrír tilnefndir í hvorum flokknum „leikari í aðalhlutverki“ og „leikkona í aðalhlutverki“. Fyrir sjónvarpsefni var flokknum „sjónvarpsþáttur ársins“ skipt í „frétta- og/eða viðtalsþáttur“ ársins annars vegar og „menningar- og/eða lífstílsþáttur ársins“ sem ásamt flokknum „skemmtiþáttur ársins“ gera þrjá flokka fyrir sjónvarpsþætti í stað tveggja áður. Flokkurinn „myndataka og klipping“ sem hafði verið með árið 2005 var aftur tekinn upp. Alls voru því veitt verðlaun í sextán flokkum, auk heiðursverðlauna ÍKSA. \n\nSigurmynd hátíðarinnar var kvikmyndin Foreldrar eftir Ragnar Bragason með sex verðlaun. Tvær myndir með tilvísun í Breiðavíkurmálið voru tilnefndar þetta árið, heimildarmyndin Syndir feðranna og kvikmynd Guðnýjar Halldórsdóttur, Veðramót. Tveir sjónvarpsþættir fengu verðlaun sem besti frétta-/viðtalsþáttur ársins; Kompás á Stöð 2 og Út og suður á RÚV. Egill Helgason var bæði valinn sjónvarpsmaður ársins og bókmenntaþáttur hans, Kiljan, var valinn menningar-/lífstílsþáttur ársins.\n\nTilnefningar og handhafar Edduverðlauna 2007\nHandhafar Edduverðlaunanna í hverjum flokki eru feitletraðir og gulllitaðir.\n\nKvikmynd ársins\n\nLeikið sjónvarpsefni ársins\n\nStuttmynd ársins\n\nLeikstjóri ársins\n\nHandrit ársins\n\nLeikkona í aðalhlutverki\n\nLeikari í aðalhlutverki\n\nLeikari/leikkona í aukahlutverki\n\nHeimildarmynd ársins\n\nFrétta- og/eða viðtalsþáttur ársins\n\nMenningar- og/eða lífstílsþáttur ársins\n\nSkemmtiþáttur ársins\n\nSjónvarpsmaður ársins\n\nMyndataka og klipping\n\nHljóð og tónlist\n\nÚtlit myndar\n\nHeiðursverðlaun ÍKSA 2007\n\nFramlag Íslands til forvals Óskarsins\n\nEdduverðlaunin",
+    "question": "Undir hvaða nafni er bókmenntaþáttur Egils Helgasonar þekktur, sem hlaut viðurkenningu sem menningar- eða lífstílsþáttur ársins?",
+    "answers": {
+        "answer_start": array([1294]),
+        "text": array(["Kiljan"], dtype=object)
+    }
+}
+```
+
+```json
+{
+    "context": "Edinborgarhúsið er friðað hús og menningarmiðstöð á Ísafirði. Húsið var byggt af Edinborgarversluninni sem var kringum aldamótin 1900 eitt stærsta verslunarfyrirtæki landsins um aldamótin 1900. Edinborgarverslunin var stofnuð í Reykjavík árið 1895 og var í eigu  Ásgeirs Sigurðsson sem ættaður var frá Ísafirði og  skoska verslunarfyrirtækisins Copland and Berrie í Leith. Edinborgarverslunin færði út kvíarnar og opnaði verslunarbúð á Ísafirði árið 1902. Árið 1903 varð Karl Olgeirsson, verslunarstjóri Edinborgarverslunar á Ísafirði og meðeigandi fáum árum síðar. \n\nBygging Edinborgarhússins hófst eftir að fengin var byggingarlóð fyrir húsið árið 1907  við Pollinn. Þar var byggt hús eftir teikningu Rögnvald Ágúst Ólafsson og bryggja og bryggjuhús. Edinborgarhúsið og bryggjan voru lengi ein mesta mannvirki á Ísafirði. Edinborgarverslun hætti starfsemi á Ísafirði árið 1917 og seldi hlut sinn til Karls verslunarstjóra. Árið 1918 varð Jóhann E. Þorsteinsson meðeigandi og var verslunin rekin undir nafninu Karl & Jóhann til  1923 en þá seldi Karl sinn hluta og Sigurjón Þ. Jónsson  kom inn og ráku Sigurjón og Jóhann E. Þorsteinson verslunina til ársins 1926.\n\nTogarafélag Ísfirðinga h.f. sem var stofnað 1925  var til húsa í Edinborgarhúsinu. Félagið keypti og rak togarann Hávarð Ísfirðing frá 1925 til 1939. Á kreppuárunum gekk reksturinn illa og árið 1935 tók Landsbankinn yfir reksturinn, hlutafé var aukið og nafni breytt í h.f. Hávarður. Árið 1938 varð þar félag gjaldþrota og stofnað nýtt hlutafélag með aðkomu Kaupfélags Ísfirðinga. Nýja hlutafélagið var nefnt Valur og var togarinn Hávarður endurskírður og nefndur Skutull.\n\nKaupfélag Ísfirðinga elfdist mjög á millistríðsárunum og keypti upp ýmsar eignir. Árið 1937 eignaðist kaupfélagið eignir sem höfðu tilheyrt Edinborgarversluninni  og þar á meðal Edinborgarhúsið og fiskreiti á lóð hússins. Kaupfélagið átti stóran hlut í útgerðarfélaginu Nirði en það félag gerði út báta sem kallaðir voru Dísirnar. Kaupfélagið verkaði fisk frá Nirði á fiskreitunum  og skömmu eftir árið 1945 var settur upp þurrklefi fyrir fisk í Edinborgarhúsinu. Þessi þurrklefi gerði mögulegt að þurrka fisk innan dyra á veturna. Kaupfélag Ísfirðinga átti Edinborgarhúsið í rúmlega 50 ár eða þangað til SÍS tók yfir eigur þess.\n\nStofnað var  einkahlutafélag um menningarmiðstöð í Edinborgarhúsinu 9. september 1992.\n\nHeimild \n Saga hússins (af vefnum edinborg.is)\n\nTenglar \n Glæsileg menningarmiðstöð í Edinborgarhúsi, Morgunblaðið B, 11. janúar 1998, bls. 6-7\n Stefnt að opnun fjölnotasalar eftit eitt ár, Morgunblaðið, 20. maí 2006, bls. 22\n Formleg opnun Edinborgarhússins, Bæjarins besta, 31. maí 2007, bls. 2\n\nÍsafjörður\nByggingar á Íslandi",
+    "question": "Hver gegndi stöðu verslunarstjóra hjá Edinborgarversluninni á Ísafirði árið 1903?",
+    "answers": {
+        "answer_start": array([471]),
+        "text": array(["Karl Olgeirsson"], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+
+  ```text
+  Eftirfarandi eru textar með tilheyrandi spurningum og svörum.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Texti: {text}
+  Spurning: {question}
+  Svaraðu með að hámarki 3 orðum: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Texti: {text}
+
+  Svaraðu eftirfarandi spurningu um textann að hámarki í 3 orðum.
+
+  Spurning: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-is
+```

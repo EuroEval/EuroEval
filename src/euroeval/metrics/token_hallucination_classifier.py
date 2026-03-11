@@ -1,16 +1,12 @@
 """Hallucination metric."""
 
 import collections.abc as c
-import logging
 import typing as t
 
-from datasets import Dataset
 from lettucedetect import HallucinationDetector
 
 from ..exceptions import InvalidBenchmark
 from .base import Metric
-
-logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -19,9 +15,12 @@ if t.TYPE_CHECKING:
 
 
 def detect_hallucinations(
-    dataset: Dataset, predictions: c.Iterable[dict[str, str]], model: str
+    dataset: "Dataset", predictions: c.Iterable[dict[str, str]], model: str
 ) -> float:
-    """Load tinylettuce model and detect hallucinations.
+    """Detect hallucinations using a transformer-based token-level classifier.
+
+    Loads a HallucinationDetector with the given model path and computes the
+    hallucination rate over all provided predictions.
 
     Args:
         dataset:
@@ -37,14 +36,20 @@ def detect_hallucinations(
 
     Raises:
         InvalidBenchmark:
-            If there are no tokens found in predicted answers of the
-            hallucination detection model.
+            If the number of predictions does not match the number of dataset examples,
+            or if there are no tokens found in predicted answers.
     """
     detector = HallucinationDetector(
         method="transformer", model_path=model, device="cpu"
     )
 
     predicted_texts = [p["prediction_text"] for p in predictions]
+
+    if len(predicted_texts) != len(dataset):
+        raise InvalidBenchmark(
+            f"Number of predictions ({len(predicted_texts)}) does not match the "
+            f"number of dataset examples ({len(dataset)})."
+        )
 
     hallucinated_tokens = 0
     total_tokens = 0

@@ -591,3 +591,88 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset lr-sum-sq
 ```
+
+## Hallucination Detection
+
+### MultiWikiHalluQA-sq
+
+This dataset uses the same data as [MultiWikiQA-sq](#multiwikiqa-sq), published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
+with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
+correctness of the generated answer, this task evaluates the degree to which the model
+hallucinates, i.e., generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+transformer-based classifier to predict hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to
+total tokens in the generated answers.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "context": "E drejta e lindjes është koncepti i gjërave që i detyrohen një personi me ose nga fakti i lindjes së tij, ose për shkak të rendit të lindjes së tyre. Këto mund të përfshijnë të drejtat e shtetësisë bazuar në vendin ku ka lindur personi ose shtetësinë e prindërve të tyre, dhe të drejtat e trashëgimisë për pronën e prindërve ose të tjerëve.\n\nKoncepti i të drejtës së lindjes është i lashtë dhe shpesh përkufizohet pjesërisht me konceptet e patriarkatit dhe rendit të lindjes. Për shembull, \"[në] gjithë Biblën koncepti i së drejtës së lindjes është absolutisht i ndërthurur me të parëlindurin. Kjo do të thotë, i parëlinduri trashëgon të drejtën e lindjes dhe ka pritshmëri të parësore\",  që historikisht i referohej së drejtës, me ligj ose zakoni, që fëmija i parëlindur legjitim të trashëgojë të gjithë pasurinë ose pasurinë kryesore të prindit në përparësi ndaj trashëgimisë së përbashkët midis të gjithë ose disa fëmijëve, çdo fëmije jashtëmartesor ose ndonjë të afërmi kolateral.  Në shekullin e shtatëmbëdhjetë, aktivisti anglez John Lilburne përdori termin në lidhje me të drejtat e anglezëve \"për të nënkuptuar gjithçka që i takon një qytetari\" të Anglisë, gjë që \"pretendohet nga ligji anglez tek autoritetet më të larta\".  Termi u popullarizua në mënyrë të ngjashme në Indi nga avokati i vetëqeverisjes Bal Gangadhar Tilak në vitet 1890, kur Tilak miratoi sloganin e shpikur nga bashkëpunëtori i tij Kaka Baptista: \"Swaraj (vetëqeverisja) është e drejta ime e lindjes dhe unë do ta kem atë\".  Termi më pas \"arriti statusin e një slogani politik\". \n\nNë kontekstin e të drejtave të qytetarisë, \"[t] termi e drejta e lindjes sinjalizon jo vetëm që anëtarësimi fitohet në lindje ose në bazë të lindjes, por gjithashtu se anëtarësimi është supozuar një status i përjetshëm për individin dhe i vazhdueshëm përgjatë brezave për qytetarin. si kolektiv”.  Shtetësia e të drejtës së lindjes ka qenë prej kohësh një tipar i ligjit të përbashkët anglez .  Rasti i Calvinit, [9] ishte veçanërisht i rëndësishëm pasi vendosi se, sipas ligjit të zakonshëm anglez, \"statusi i një personi ishte dhënë në lindje, dhe bazuar në vendin e lindjes - një person i lindur brenda dominimit të mbretit i detyrohej besnikërisë ndaj sovranit, dhe në nga ana tjetër, kishte të drejtën e mbrojtjes së mbretit.\"  I njëjti parim u pranua nga Shtetet e Bashkuara si \"i lashtë dhe themelor\", d.m.th., e drejta e zakonshme e themeluar mirë, siç thuhet nga Gjykata e Lartë në interpretimin e saj të vitit 1898 të Amendamentit të Katërmbëdhjetë të Kushtetutës së Shteteve të Bashkuara në Shtetet e Bashkuara. v. Wong Kim Ark: \"Amendamenti i Katërmbëdhjetë pohon rregullin e lashtë dhe themelor të shtetësisë me lindje brenda territorit, në besnikëri dhe nën mbrojtjen e vendit, duke përfshirë të gjithë fëmijët e lindur këtu nga të huajt rezidentë, me përjashtime ose kualifikime ( aq i vjetër sa vetë rregulli) të fëmijëve të sovranëve të huaj ose ministrave të tyre, ose të lindur në anije publike të huaja, ose të armiqve brenda dhe gjatë një pushtimi armiqësor të një pjese të territorit tonë, dhe me përjashtimin e vetëm shtesë të fëmijëve të anëtarëve të Fiset indiane për shkak të besnikërisë së drejtpërdrejtë ndaj disa fiseve të tyre\". \n\nKoncepti i së drejtës së lindjes që rrjedh nga pjesëmarrja në një kulturë të caktuar është demonstruar në programin Birthright Israel, i iniciuar në 1994.  Programi ofron udhëtime falas për të vizituar Izraelin për personat që kanë të paktën një prind me prejardhje të njohur hebreje, ose që janë konvertuar në judaizëm nëpërmjet një lëvizjeje të njohur hebraike dhe që nuk praktikojnë në mënyrë aktive një fe tjetër. Ata gjithashtu duhet të jenë nga mosha 18 deri në 32 vjeç, pas shkollës së mesme, as të kenë udhëtuar më parë në Izrael në një udhëtim arsimor ose program studimi për bashkëmoshatarët pas moshës 18 vjeç dhe as të kenë jetuar në Izrael mbi moshën 12 vjeç.\n\nShiko gjithashtu \n\n Shtetësia\n Diskriminim\n Monarki trashëgimore\n Monarkia\n Pabarazia ekonomike\n\nReferencat \n\nTë drejtat e njeriut",
+  "question": "Cilat koncepte lidhen me konceptin e së drejtës për t'u lindur?",
+  "answers": {
+    "answer_start": [440],
+    "text": ["patriarkatit dhe rendit të lindjes"]
+  }
+}
+```
+
+```json
+{
+  "context": "Në fizikë, nxitimi këndor (simboli α, alfa) është shkalla kohore e ndryshimit të shpejtësisë këndore. Pas dy llojeve të shpejtësisë këndore, shpejtësia këndore e rrotullimit dhe shpejtësia këndore orbitale, llojet përkatëse të nxitimit këndor janë: nxitimi këndor rrotullues, që përfshin një trup të ngurtë rreth një boshti rrotullimi që kryqëzon qendrën e trupit; dhe nxitimi këndor orbital, që përfshin një pikë materiale dhe një bosht të jashtëm.\n\nNxitimi këndor ka dimensione fizike të këndit për kohë në katror, të matur në njësi SI të radianeve për sekondë në katror (rad ⋅ s⁻²). Në dy dimensione, nxitimi këndor është një pseudoskalar, shenja e të cilit merret si pozitive nëse shpejtësia këndore rritet në të kundërt ose zvogëlohet në drejtim të akrepave të orës, dhe merret si negative nëse shpejtësia këndore rritet ose zvogëlohet në drejtim të kundërt. Në tre dimensione, nxitimi këndor është një pseudovektor.\n\nPër trupat e ngurtë, nxitimi këndor duhet të shkaktohet nga një çift rrotullues i jashtëm neto. Megjithatë, kjo nuk është kështu për trupat jo të ngurtë: Për shembull, një patinator mund të përshpejtojë rrotullimin e tij (duke marrë kështu një nxitim këndor) thjesht duke kontraktuar krahët dhe këmbët nga brenda, gjë që nuk përfshin asnjë çift rrotullues të jashtëm.\n\nNxitimi këndor orbital i një pike materiale\n\nPika në dy dimensione\nNë dy dimensione, nxitimi këndor orbital është shpejtësia me të cilën ndryshon shpejtësia këndore orbitale dydimensionale e grimcës rreth origjinës. Shpejtësia këndore e çastit në çdo moment të kohës jepet nga ...\n\nPrandaj, nxitimi këndor i çastit α i grimcës jepet nga ...\n\nNë rastin e veçantë kur grimca pëson lëvizje rrethore rreth origjinës, ...\n\nPika materiale në tre dimensione\nNë tre dimensione, nxitimi këndor orbital është shpejtësia në të cilën vektori i shpejtësisë këndore orbitale tredimensionale ndryshon me kalimin e kohës. Vektori i shpejtësisë këndore të çastit në çdo moment në kohë jepet nga ...\n\nPrandaj, nxitimi këndor orbital është vektori i përcaktuar nga ...\n\nNë rastin kur largësia e grimcës nga origjina nuk ndryshon me kalimin e kohës (e cila përfshin lëvizjen rrethore si nënrast), formula e mësipërme thjeshtohet në ...\n\nNga ekuacioni i mësipërm, mund të rikuperohet nxitimi kryq rrezor në këtë rast të veçantë si ...",
+  "question": "Cilat janë njësitë e nxitimit këndor?",
+  "answers": {
+    "answer_start": [489],
+    "text": ["të këndit për kohë në katror"]
+  }
+}
+```
+
+```json
+{
+  "context": "\n\nNgjarje \n 1910 – Theodore Roosevelt mbajti fjalimin e njohur si Njeriu në Arenë.\n 1932 – U dogj De Adriaan Windmill 153 vite i vjetër në Haarlem, Holandë.\n 1985 – Coca-Cola ndryshon formulën dhe paraqet në treg produktin e ri New Coke. Pritja ishte e pa pritur, negative, dhe brenda tre muajve u rikthye formula e vjetër.\n 1993 – Eritreanët votuar për pavarësi nga Etiopia. Referendumi u vrojtua Bashkimi Evropian.\n 1997 – U realizua masakra në Omaria, Algjeri ku mbetën të vrarë 42 fshatarë.\n 2003 – Në Bejxhin u mbyllën shkollat për dy javë për shkak të virusit SARS.\n\nLindje \n 1185 - Afonso II, mbret i Portugalisë (v. 1233) \n 1858 - Max Planck, fizikan gjerman (v. 1947)\n 1564 - William Shakespeare, shkrimtar anglez (v. 1616)\n 2001 Berat Emini futbollist i njohur Shqipetar\n\nVdekje \n 997 - Shën Vojciech Sławnikowic, peshkop i Pragës, mbrojtës i Polonisë\n 1605 - Boris Godunov, perandor i Rusisë (lindi më 1551)\n 1616 - William Shakespeare\n 1998 - Konstantinos Karamanlis, politikan grek (l. 1907)\n 2007 - Boris Yeltsin, politikan rus, presidenti i parë i Rusisë (l. 1931)\n\nFesta dhe përvjetore \n Dita ndërkombetare e librit dhe të drejtave të autorit\n\nPrill",
+  "question": "Cili ishte mulli me erë që u shkatërrua nga zjarri në Haarlem të Holandës më 1932?",
+  "answers": {
+    "answer_start": [98],
+    "text": ["De Adriaan Windmill"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+
+```text
+Më poshtë janë tekste me pyetje dhe përgjigje.
+```
+
+- Base prompt template:
+
+```text
+Teksti: {text}
+Pyetja: {question}
+Përgjigje me jo më shumë se 3 fjalë:
+```
+
+- Instruction-tuned prompt template:
+
+```text
+Teksti: {text}
+
+Përgjigjuni pyetjes së mëposhtme rreth tekstit të mësipërm me jo më shumë se 3 fjalë.
+
+Pyetja: {question}
+```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-sq
+```
