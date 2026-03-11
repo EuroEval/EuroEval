@@ -15,7 +15,7 @@
 from collections import Counter
 
 import pandas as pd
-import polars as pl  # type: ignore[missing-import]
+import polars as pl  # pyrefly: ignore[missing-import]
 from constants import (
     CHOICES_MAPPING,
     MAX_NUM_CHARS_IN_INSTRUCTION,

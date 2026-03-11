@@ -24,7 +24,7 @@ from zipfile import ZipFile
 import joblib
 import pandas as pd
 import requests as rq
-from bs4 import BeautifulSoup, NavigableString, Tag  # type: ignore[missing-import]
+from bs4 import BeautifulSoup, NavigableString, Tag  # pyrefly: ignore[missing-import]
 from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
@@ -146,7 +146,9 @@ def hydrate_data(df: pd.DataFrame) -> pd.DataFrame:
         warnings.simplefilter(
             action="ignore", category=pd.errors.SettingWithCopyWarning
         )
-        df["comment_content"] = comment_texts
+        df["comment_content"] = list(
+            comment_texts
+        )  # pyrefly: ignore[unsupported-operation]
 
     return df.dropna(subset=["comment_content"])
 

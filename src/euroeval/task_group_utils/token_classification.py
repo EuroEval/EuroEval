@@ -62,8 +62,10 @@ def compute_metrics(
         model_outputs = model_outputs[0]
 
     predictions: list[list[str]]
-    if not isinstance(model_outputs[0][0], str):  # type: ignore[bad-index]
-        raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()  # type: ignore[no-matching-overload]
+    # pyrefly: ignore[bad-index]
+    if not isinstance(model_outputs[0][0], str):
+        # pyrefly: ignore[no-matching-overload]
+        raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()
 
         # Remove ignored index (special tokens)
         predictions = [
@@ -88,7 +90,8 @@ def compute_metrics(
         ]
 
     else:
-        predictions = model_outputs  # type: ignore[assignment]
+        # pyrefly: ignore[assignment]  # pyrefly: ignore[bad-assignment]
+        predictions = model_outputs
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
 
@@ -110,83 +113,66 @@ def compute_metrics(
                 else:
                     predictions[i][j] = "o"
 
-    # Remove MISC labels from predictions
-    predictions_no_misc = deepcopy(predictions)
-    for i, prediction_list in enumerate(predictions_no_misc):
-        for j, ner_tag in enumerate(prediction_list):
-            if ner_tag[-4:] == "misc":
-                predictions_no_misc[i][j] = "o"
-
-    # Remove MISC labels from labels
-    labels_no_misc: list[list[str]] = deepcopy(labels)  # type: ignore[arg-type]
-    for i, label_list in enumerate(labels_no_misc):
-        for j, ner_tag in enumerate(label_list):
-            if (
-                isinstance(ner_tag, str)
-                and len(ner_tag) >= 4
-                and ner_tag[-4:] == "misc"
-            ):
-                labels_no_misc[i][j] = "o"
-
-    # Compute the metrics
-    # We manually set the F1 metric to be 100% if both the labels and the models
-    # have no NER tags in them, since this causes an error with the `compute`
-    # method otherwise
-    predictions_all_zero = all(
-        all(ner_tag == "o" for ner_tag in prediction_list)
-        for prediction_list in predictions
+    # Build no-misc variants only when needed by any metric
+    needs_no_misc = any(
+        m.name == "micro_f1_no_misc" for m in dataset_config.task.metrics
     )
-    labels_all_zero = all(
-        all(ner_tag == "o" for ner_tag in label_list) for label_list in labels
-    )
-    if predictions_all_zero and labels_all_zero:
-        micro_f1_score: float | None = 1.0
-    else:
-        metric = next(
-            metric
-            for metric in dataset_config.task.metrics
-            if metric.name == "micro_f1"
-        )
-        micro_f1_score = metric(
-            predictions=predictions,
-            references=list(labels),
-            dataset=dataset,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-        )
+    predictions_no_misc: list[list[str]] = []
+    labels_no_misc: list[list[str]] = []
+    if needs_no_misc:
+        predictions_no_misc = deepcopy(predictions)
+        for i, prediction_list in enumerate(predictions_no_misc):
+            for j, ner_tag in enumerate(prediction_list):
+                if ner_tag[-4:] == "misc":
+                    predictions_no_misc[i][j] = "o"
 
-    # Compute the metrics without MISC tags
-    # We manually set the F1 metric to be 100% if both the labels and the models
-    # have no NER tags in them, since this causes an error with the `compute`
-    # method otherwise
-    predictions_no_misc_all_zero = all(
-        all(ner_tag == "o" for ner_tag in prediction_list)
-        for prediction_list in predictions_no_misc
-    )
-    labels_no_misc_all_zero = all(
-        all(ner_tag == "o" for ner_tag in label_list) for label_list in labels_no_misc
-    )
-    if predictions_no_misc_all_zero and labels_no_misc_all_zero:
-        micro_f1_no_misc_score: float | None = 1.0
-    else:
-        metric = next(
-            metric
-            for metric in dataset_config.task.metrics
-            if metric.name == "micro_f1_no_misc"
+        labels_no_misc = deepcopy(  # pyrefly: ignore[arg-type]
+            labels  # pyrefly: ignore[bad-argument-type]
         )
-        micro_f1_no_misc_score = metric(
-            predictions=predictions_no_misc,
-            references=labels_no_misc,
-            dataset=dataset,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-        )
+        for i, label_list in enumerate(labels_no_misc):
+            for j, ner_tag in enumerate(label_list):
+                if (
+                    isinstance(ner_tag, str)
+                    and len(ner_tag) >= 4
+                    and ner_tag[-4:] == "misc"
+                ):
+                    labels_no_misc[i][j] = "o"
 
-    # Raise error if the metrics are invalid
-    if micro_f1_score is None or micro_f1_no_misc_score is None:
-        raise InvalidBenchmark("The predictions and labels are not of the same length.")
+    # Compute each metric defined on the task
+    result: dict[str, float] = {}
+    for metric in dataset_config.task.metrics:
+        # Select the appropriate predictions/labels variant
+        if metric.name == "micro_f1_no_misc":
+            preds = predictions_no_misc
+            refs = labels_no_misc
+        else:
+            preds = predictions
+            refs = list(labels)  # pyrefly: ignore[arg-type]
 
-    return dict(micro_f1_no_misc=micro_f1_no_misc_score, micro_f1=micro_f1_score)
+        # We manually set the F1 metric to be 100% if both the labels and the
+        # predictions have no NER tags in them, since this causes an error with
+        # the `compute` method otherwise
+        all_zero = all(
+            all(tag == "o" for tag in pred_list) for pred_list in preds
+        ) and all(all(tag == "o" for tag in ref_list) for ref_list in refs)
+
+        if all_zero:
+            result[metric.name] = 1.0
+        else:
+            score: float | None = metric(
+                predictions=preds,
+                references=refs,
+                dataset=dataset,
+                dataset_config=dataset_config,
+                benchmark_config=benchmark_config,
+            )
+            if score is None:
+                raise InvalidBenchmark(
+                    "The predictions and labels are not of the same length."
+                )
+            result[metric.name] = score
+
+    return result
 
 
 def extract_labels_from_generation(

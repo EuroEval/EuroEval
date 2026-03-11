@@ -5,6 +5,7 @@ from ..languages import SWEDISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    GED,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -191,6 +192,15 @@ MULTILOKO_SV_CONFIG = DatasetConfig(
     pretty_name="MultiLoKo-sv",
     source="EuroEval/multiloko-sv-mini",
     task=KNOW,
+    languages=[SWEDISH],
+    unofficial=True,
+)
+
+GERLANGMOD_SV_CONFIG = DatasetConfig(
+    name="gerlangmod-sv",
+    pretty_name="GerLangMod-sv",
+    source="EuroEval/gerlangmod-sv",
+    task=GED,
     languages=[SWEDISH],
     unofficial=True,
 )

@@ -17,8 +17,8 @@ from torch.distributed import destroy_process_group
 from .benchmark_config_factory import build_benchmark_config
 from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data, load_raw_data
-from .data_models import BenchmarkConfigParams, BenchmarkResult
-from .enums import Device, GenerativeType, ModelType
+from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
+from .enums import Device, GenerativeType, InferenceBackend, ModelType
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
@@ -441,9 +441,9 @@ class Benchmarker:
                 when initialising the benchmarker.
             language:
                 The language codes of the languages to include, both for models and
-                datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this to
-                'all' if all languages should be considered. Defaults to the value
-                specified when initialising the benchmarker.
+                datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn).
+                Set this to 'all' if all languages should be considered.
+                Defaults to the value specified when initialising the benchmarker.
             device:
                 The device to use for benchmarking. Defaults to the value specified when
                 initialising the benchmarker.
@@ -1112,12 +1112,12 @@ class Benchmarker:
                 if model_config.param is not None:
                     model_id_to_be_stored += f"#{model_config.param}"
 
-                record = BenchmarkResult(
+                record = BenchmarkResult(  # pyrefly: ignore[bad-argument-type]
                     dataset=dataset_config.name,
                     task=dataset_config.task.name,
                     languages=[language.code for language in dataset_config.languages],
                     model=model_id_to_be_stored,
-                    results=results,
+                    results=results,  # pyrefly: ignore[bad-argument-type]
                     num_model_parameters=model.num_params,
                     max_sequence_length=model.model_max_length,
                     vocabulary_size=model.vocab_size,
@@ -1137,6 +1137,16 @@ class Benchmarker:
                         None
                         if dataset_config.val_split is None
                         else not benchmark_config.evaluate_test_split
+                    ),
+                    vllm_version=(
+                        get_package_version("vllm")
+                        if model_config.inference_backend == InferenceBackend.VLLM
+                        else None
+                    ),
+                    litellm_version=(
+                        get_package_version("litellm")
+                        if model_config.inference_backend == InferenceBackend.LITELLM
+                        else None
                     ),
                 )
                 log(f"Results:\n{results}", level=logging.DEBUG)

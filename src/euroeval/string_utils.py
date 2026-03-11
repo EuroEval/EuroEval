@@ -153,7 +153,7 @@ def split_model_id(model_id: str) -> "ModelIdComponents":
             If the model ID is not valid.
     """
     # Importing here to avoid circular imports
-    from .data_models import ModelIdComponents
+    from .data_models import ModelIdComponents  # noqa: PLC0415
 
     # Attempt to extract the model ID, revision, and param using regex
     model_id_match = re.match(pattern=r"^[^@#]+", string=model_id)

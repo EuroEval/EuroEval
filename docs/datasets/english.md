@@ -238,6 +238,74 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset scala-en
 ```
 
+## Word in Context
+
+### Unofficial: WiC
+
+This dataset was published in [this paper](https://aclanthology.org/N19-1128/) and is
+based on the SuperGLUE benchmark. The dataset measures the ability to distinguish word
+meanings/senses in context: given two sentences containing the same target word, the
+task is to determine whether the word carries the same sense in both sentences.
+
+The dataset is sourced from WordNet, VerbNet and Wiktionary.
+
+The original dataset consists of 5,428 training and 638 validation samples (all
+labelled), plus 1,400 unlabelled test samples. Our train and validation splits are
+stratified subsets of the original training split, using 1,024 and 256 samples
+respectively. The test split is the original validation split in its entirety (638
+samples).
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Word: cover\nContext 1: Does my policy cover accidental loss?\nContext 2: The insurance won't cover this.",
+    "label": "same_sense"
+}
+```
+
+```json
+{
+    "text": "Word: dress\nContext 1: Dress a turkey.\nContext 2: Dress the patient.",
+    "label": "different_sense"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  The following are examples of words used in two contexts and whether they have the same meaning.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}
+  Same meaning: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+
+  Does the word have the same meaning in both contexts? Answer with 'yes' or 'no', and nothing else.
+  ```
+
+- Label mapping:
+  - `same_sense` ➡️ `yes`
+  - `different_sense` ➡️ `no`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wic
+```
+
 ## Reading Comprehension
 
 ### SQuAD

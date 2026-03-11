@@ -1138,7 +1138,7 @@ def check_no_accents(response: str, **_) -> bool:
         True if the response contains no accents, False otherwise.
     """
     accented_chars = re.compile(
-        pattern=r"[àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ]"
+        pattern=(r"[àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ]")
     )
     return accented_chars.search(response) is None
 
@@ -1155,7 +1155,7 @@ def check_accents(response: str, **_) -> bool:
         True if the response contains accents, False otherwise.
     """
     accented_chars = re.compile(
-        pattern=r"[àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ]"
+        pattern=(r"[àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ]")
     )
     return accented_chars.search(response) is not None
 

@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Benchmark results written to `euroeval_benchmark_results.jsonl` now conform to the
+  [Every Eval Ever (EEE) JSON schema
+  v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json). The
+  new format structures results into standardised sections (`source_metadata`,
+  `model_info`, `eval_library`, `evaluation_results`) and supports lossless round-trips
+  via `BenchmarkResult.from_dict()`.
+- - Added the new grammatical error detection task and the Germanic Verb Placement Error
+  Detection datasets for Danish (`gerlangmod-da`), Dutch (`gerlangmod-nl`), Faroese
+  (`gerlangmod-fo`), German (`gerlangmod-de`), Icelandic (`gerlangmod-is`), Norwegian
+  Bokmål (`gerlangmod-nb`), Norwegian Nynorsk (`gerlangmod-nn`), and Swedish
+  (`gerlangmod-sv`), based on the
+  [GerLangMod](https://github.com/noahmanu/gerlangmod) collection. All datasets are
+  marked as unofficial for now.
+- Added the Italian Word-in-Context dataset WiC-ITA, from
+  [Evalita 2023](https://www.evalita.it/campaigns/evalita-2023/). The train and
+  validation splits (1,024 / 256 samples) are sampled from the original training split,
+  stratified on label, and the test split (1,000 samples) is the concatenation of the
+  original development and test splits. It is marked as `unofficial` for now.
+- Added the English Word in Context dataset [WiC](https://aclanthology.org/N19-1128/),
+  based on the SuperGLUE benchmark. The split is given by 1,024 / 256 / 638 samples for
+  train / val / test, respectively. The train and val splits are stratified subsets of
+  the original SuperGLUE training split, and the test split is the original SuperGLUE
+  validation split. It is marked as `unofficial` for now.
+- Added the Danish metaphor interpretation dataset DAMETA, part of the [Danish Semantic
+  Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+  The split is given by 64 / 128 / 723 samples for train / val / test, respectively.
+  It is marked as `unofficial` for now.
+- Added the Icelandic standardised tests datasets icelandic-lang-tests and
+  icelandic-math-tests, based on old Icelandic primary school standardised tests
+  (2013–2017) from mms.is, covering Icelandic language and mathematics, respectively.
+  Both are marked as `unofficial` for now.
+- Added support for the Aya thinking tokens `<|START_THINKING|>` and `<|END_THINKING|>`.
+
+### Fixed
+
+- Evaluation on AMD/ROCm hardware (e.g., LUMI) was broken due to two NVIDIA-specific
+  checks being applied unconditionally. The `flash_attn` conflict check no longer
+  triggers `sys.exit` on ROCm, and the `nvcc` presence check is now skipped on ROCm
+  hardware since AMD uses HIP tooling instead.
+- Fixed a `ValueError` when evaluating models like Qwen3.5 whose tokeniser returns a
+  `BatchEncoding` from `apply_chat_template(..., tokenise=True)`. The
+  `get_first_label_token_mapping` function now extracts `input_ids` from the
+  `BatchEncoding` before passing it to `convert_ids_to_tokens`.
+
 ## [v16.17.0] - 2026-03-09
 
 ### Added

@@ -14,6 +14,7 @@ from ..tasks import (
     SENT,
     SUMM,
     TOOL_CALLING,
+    WIC,
 )
 
 # Official datasets ###
@@ -177,6 +178,15 @@ MULTILOKO_EN_CONFIG = DatasetConfig(
     pretty_name="MultiLoKo-en",
     source="EuroEval/multiloko-en-mini",
     task=KNOW,
+    languages=[ENGLISH],
+    unofficial=True,
+)
+
+WIC_CONFIG = DatasetConfig(
+    name="wic",
+    pretty_name="WiC",
+    source="EuroEval/wic",
+    task=WIC,
     languages=[ENGLISH],
     unofficial=True,
 )

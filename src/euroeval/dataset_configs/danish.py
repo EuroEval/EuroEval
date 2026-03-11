@@ -5,6 +5,7 @@ from ..languages import DANISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    GED,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -218,6 +219,24 @@ DANWIC_CONFIG = DatasetConfig(
     pretty_name="DanWiC",
     source="EuroEval/danwic",
     task=WIC,
+    languages=[DANISH],
+    unofficial=True,
+)
+
+DAMETA_CONFIG = DatasetConfig(
+    name="dameta",
+    pretty_name="DAMETA",
+    source="EuroEval/dameta",
+    task=KNOW,
+    languages=[DANISH],
+    unofficial=True,
+)
+
+GERLANGMOD_DA_CONFIG = DatasetConfig(
+    name="gerlangmod-da",
+    pretty_name="GerLangMod-da",
+    source="EuroEval/gerlangmod-da",
+    task=GED,
     languages=[DANISH],
     unofficial=True,
 )

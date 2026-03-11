@@ -242,7 +242,7 @@ macro_f1_metric = HuggingFaceMetric(
 
 micro_f1_metric = HuggingFaceMetric(
     name="micro_f1",
-    pretty_name="Micro-average F1-score with MISC tags",
+    pretty_name="Micro-average F1-score",
     huggingface_id="seqeval",
     results_key="overall_f1",
 )

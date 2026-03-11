@@ -1286,3 +1286,144 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-de
 ```
+
+## Grammatical Error Detection
+
+### Unofficial: GerLangMod-de
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the German Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.
+
+The original dataset consists of 142,807 samples derived from the
+[UD_German-GSD](https://github.com/UniversalDependencies/UD_German-GSD),
+[UD_German-HDT](https://github.com/UniversalDependencies/UD_German-HDT),
+[UD_German-LIT](https://github.com/UniversalDependencies/UD_German-LIT) and
+[UD_German-PUD](https://github.com/UniversalDependencies/UD_German-PUD) treebanks.
+We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
+respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "tokens": [
+        "für",
+        "übersetzungen",
+        "die",
+        "beispielsweise",
+        "als",
+        "geschäftsbrief",
+        "gedacht",
+        "sind",
+        "benötigt",
+        "man",
+        "eher",
+        "ein",
+        "programm",
+        "für",
+        "500",
+        "oder",
+        "600",
+        "mark",
+        "kommt",
+        "aber",
+        "um",
+        "eine",
+        "nachbearbeitung",
+        "des",
+        "textes",
+        "nicht",
+        "herum"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
+}
+```
+
+```json
+{
+    "tokens": [
+        "die",
+        "höhe",
+        "beziffern",
+        "harisch",
+        "nicht",
+        "wollte"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "B-ERR",
+        "O",
+        "O",
+        "B-ERR"
+    ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Unten sind Sätze und JSON-Wörterbücher mit den grammatischen Fehlern, die im jeweiligen Satz vorkommen.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Satz: {text}
+  Grammatische Fehler: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Satz: {text}
+
+  Identifizieren Sie die grammatischen Fehler im Satz. Sie sollten dies als JSON-Wörterbuch mit dem Schlüssel 'fehler' ausgeben. Der Wert soll eine Liste der falsch platzierten Wörter sein, genau so, wie sie im Satz erscheinen.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `fehler`
+  - `I-ERR` ➡️ `fehler`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-de
+```

@@ -1230,3 +1230,71 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-it
 ```
+
+## Word in Context
+
+### Unofficial: WiC-ITA
+
+This dataset was published as part of [Evalita 2023](https://www.evalita.it/campaigns/evalita-2023/),
+the 8th evaluation campaign of Natural Language Processing and Speech tools for Italian.
+It is the first Word-in-Context task for Italian. The dataset measures the ability to
+distinguish word meanings/senses in context: given two sentences containing the same
+target word, the task is to determine whether the word carries the same sense in both
+sentences.
+
+The original full dataset consists of 2,805 / 500 / 500 samples for training,
+development and testing, respectively. We use a split of 1,024 / 256 / 1,000 samples
+for training, validation and testing, respectively. The train and validation splits are
+sampled from the original training split (stratified on label), and the test split is
+the concatenation of the original development and test splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Parola: anno\nContesto 1: \" La comunità montana dell' Appennino cesenate ha davvero motivi di soddisfazione da questa giornata : da anni propone e chiede per il proprio territorio , la realizzazione delle autostrade della telematica .\nContesto 2: Ichem Kaba , direttore del Consiglio islamico italiano , appare soddisfatto della decisione presa dal Palazzo dei Bruzi : \" La comunità musulmana si riuniva da quattro anni in un piccolo vano di via Antonio Monaco .",
+    "label": "same_sense"
+}
+```
+
+```json
+{
+    "text": "Parola: buono\nContesto 1: Ho 25 anni , continuo a giocare ( meno di un tempo ) , sono quello dei \" pochi giochi ma buoni \" e gli amici ogni tanto mi prendono in giro .\nContesto 2: Anche a questa domanda Paolo risponde : non sia mai , anzi , il peccato , per apparire peccato , attraverso ciò che è buono mi produsse la morte per diventare estremamente peccante ( peccaminoso ) per mezzo del comandamento .",
+    "label": "different_sense"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Di seguito sono riportati esempi di parole usate in due contesti e se hanno lo stesso significato.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}
+  Stesso significato: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+
+  La parola ha lo stesso significato in entrambi i contesti? Rispondere con 'sì' o 'no', e nient'altro.
+  ```
+
+- Label mapping:
+  - `same_sense` ➡️ `sì`
+  - `different_sense` ➡️ `no`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset wic-ita
+```
