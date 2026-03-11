@@ -542,7 +542,7 @@ class DatasetConfig:
             The string representation.
         """
         language_repr = (
-            self.languages if len(self.languages) < 5 else self.languages[:5] + "..."
+            self.languages if len(self.languages) < 5 else self.languages[:5] + ["..."]
         )
         parts = [f"task={self.task.name}", f"languages={language_repr}"]
         try:
