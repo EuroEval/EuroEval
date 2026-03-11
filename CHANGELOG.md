@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Benchmark results written to `euroeval_benchmark_results.jsonl` now conform to the
+  [Every Eval Ever (EEE) JSON schema
+  v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json). The
+  new format structures results into standardised sections (`source_metadata`,
+  `model_info`, `eval_library`, `evaluation_results`) and supports lossless round-trips
+  via `BenchmarkResult.from_dict()`.
 - - Added the new grammatical error detection task and the Germanic Verb Placement Error
   Detection datasets for Danish (`gerlangmod-da`), Dutch (`gerlangmod-nl`), Faroese
   (`gerlangmod-fo`), German (`gerlangmod-de`), Icelandic (`gerlangmod-is`), Norwegian
@@ -16,21 +22,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   (`gerlangmod-sv`), based on the
   [GerLangMod](https://github.com/noahmanu/gerlangmod) collection. All datasets are
   marked as unofficial for now.
+- Added the Italian Word-in-Context dataset WiC-ITA, from
+  [Evalita 2023](https://www.evalita.it/campaigns/evalita-2023/). The train and
+  validation splits (1,024 / 256 samples) are sampled from the original training split,
+  stratified on label, and the test split (1,000 samples) is the concatenation of the
+  original development and test splits. It is marked as `unofficial` for now.
+- Added the English Word in Context dataset [WiC](https://aclanthology.org/N19-1128/),
+  based on the SuperGLUE benchmark. The split is given by 1,024 / 256 / 638 samples for
+  train / val / test, respectively. The train and val splits are stratified subsets of
+  the original SuperGLUE training split, and the test split is the original SuperGLUE
+  validation split. It is marked as `unofficial` for now.
 - Added the Danish metaphor interpretation dataset DAMETA, part of the [Danish Semantic
   Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
   The split is given by 64 / 128 / 723 samples for train / val / test, respectively.
   It is marked as `unofficial` for now.
-- Benchmark results written to `euroeval_benchmark_results.jsonl` now conform to the
-  [Every Eval Ever (EEE) JSON schema
-  v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json). The
-  new format structures results into standardised sections (`source_metadata`,
-  `model_info`, `eval_library`, `evaluation_results`) and supports lossless round-trips
-  via `BenchmarkResult.from_dict()`.  Old flat-format entries are still read correctly
-  for backward compatibility.
 - Added the Icelandic standardised tests datasets icelandic-lang-tests and
   icelandic-math-tests, based on old Icelandic primary school standardised tests
   (2013–2017) from mms.is, covering Icelandic language and mathematics, respectively.
   Both are marked as `unofficial` for now.
+- Added support for the Aya thinking tokens `<|START_THINKING|>` and `<|END_THINKING|>`.
 
 ### Fixed
 
