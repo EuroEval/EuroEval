@@ -87,7 +87,7 @@ GED = Task(
     template_dict=GED_TEMPLATES,
     metrics=[m.micro_f1_metric],
     default_num_few_shot_examples=8,
-    default_max_generated_tokens=128,
+    default_max_generated_tokens=256,
     default_labels=["o", "b-err", "i-err"],
     uses_structured_output=True,
 )
