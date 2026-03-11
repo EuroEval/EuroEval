@@ -1644,93 +1644,6 @@ class LiteLLMModel(BenchmarkModule):
             max_retries=3,
         )
 
-        # Set up the `response_format` generation argument if we are dealing with a task
-        # using structured generation
-        if dataset_config.task.uses_structured_output:
-            if self.generative_type == GenerativeType.REASONING:
-                log_once(
-                    f"The model {self.model_config.model_id!r} is a reasoning model "
-                    "and thus does not support structured generation, so we do not "
-                    "enable it.",
-                    level=logging.DEBUG,
-                )
-            elif dataset_config.task.structured_output_format is not None:
-                pydantic_class = dataset_config.task.structured_output_format
-                # TODO: here it would be nice to just input the pydantic class
-                # directly instead. However this caused problems with e.g.
-                # gpt-4o-mini (error: "additional_properties not defined")
-                generation_kwargs["response_format"] = {
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": pydantic_class.__class__.__name__,
-                        "schema": pydantic_class.model_json_schema(),
-                    },
-                }
-                log_once(
-                    "Enabling structured generation for model "
-                    f"{self.model_config.model_id!r} with response_format "
-                    f"{pydantic_class.model_json_schema()}.",
-                    level=logging.DEBUG,
-                )
-            # Skip litellm's support check when using a custom base_api URL, as
-            # litellm can only reliably verify support for their official API providers,
-            # not custom endpoints.
-            # We assume custom endpoint models support structured generation.
-            elif self.benchmark_config.api_base is not None or supports_response_schema(
-                model=self.model_config.model_id
-            ):
-                if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
-                    tag_names = list(dataset_config.prompt_label_mapping.values())
-                    keys_and_their_types: dict[str, t.Any] = {
-                        tag_name: (conlist(str, max_length=5), ...)
-                        for tag_name in tag_names
-                    }
-                    pydantic_class = create_model(
-                        "AnswerFormat", **keys_and_their_types
-                    )
-                else:
-                    raise InvalidBenchmark(
-                        "This task requires structured generation, but it has not "
-                        "been implemented for this task yet. Please open an issue "
-                        "at https://github.com/EuroEval/EuroEval/issues."
-                    )
-                generation_kwargs["response_format"] = pydantic_class
-                log_once(
-                    "Enabling structured generation for model "
-                    f"{self.model_config.model_id!r} with the JSON schema "
-                    f"{pydantic_class.model_json_schema()}",
-                    level=logging.DEBUG,
-                )
-            else:
-                generation_kwargs["response_format"] = dict(type="json_object")
-                log_once(
-                    "Enabling structured JSON generation for model "
-                    f"{self.model_config.model_id!r} with no custom JSON schema, as "
-                    "the model does not support schemas.",
-                    level=logging.DEBUG,
-                )
-
-        elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            localised_labels = [
-                self.dataset_config.prompt_label_mapping[label]
-                for label in self.dataset_config.labels
-            ]
-            keys_and_their_types = {
-                # pyrefly: ignore[invalid-literal]
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
-            }
-            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
-            generation_kwargs["response_format"] = pydantic_class
-
-        # If the model is an Ollama reasoning model, we ensure that thinking is enabled
-        if self.is_ollama and self.generative_type == GenerativeType.REASONING:
-            generation_kwargs["think"] = True
-            log_once(
-                "Enabling thinking mode for Ollama model "
-                f"{self.model_config.model_id!r}",
-                level=logging.DEBUG,
-            )
-
         # If the model is a Chat.dk model, we make sure reasoning traces are not
         # included in the output
         if self.model_config.model_id.startswith("ordbogen/"):
@@ -1805,9 +1718,104 @@ class LiteLLMModel(BenchmarkModule):
         # Auto-detect reasoning models from test response reasoning_content.
         if test_successes:
             self.buffer["test_response"] = test_successes[0][1]
+
+        # Set generative-type-dependent kwargs now that generative_type is final.
+        generation_kwargs["max_completion_tokens"] = (
+            REASONING_MAX_TOKENS
+            if self.generative_type == GenerativeType.REASONING
+            else dataset_config.max_generated_tokens
+        )
+
+        # Set up the `response_format` generation argument if we are dealing with a task
+        # using structured generation
+        if dataset_config.task.uses_structured_output:
             if self.generative_type == GenerativeType.REASONING:
-                generation_kwargs["max_completion_tokens"] = REASONING_MAX_TOKENS
-                generation_kwargs.pop("response_format", None)
+                log_once(
+                    f"The model {self.model_config.model_id!r} is a reasoning model "
+                    "and thus does not support structured generation, so we do not "
+                    "enable it.",
+                    level=logging.DEBUG,
+                )
+            elif dataset_config.task.structured_output_format is not None:
+                pydantic_class = dataset_config.task.structured_output_format
+                # TODO: here it would be nice to just input the pydantic class
+                # directly instead. However this caused problems with e.g.
+                # gpt-4o-mini (error: "additional_properties not defined")
+                generation_kwargs["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": pydantic_class.__class__.__name__,
+                        "schema": pydantic_class.model_json_schema(),
+                    },
+                }
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with response_format "
+                    f"{pydantic_class.model_json_schema()}.",
+                    level=logging.DEBUG,
+                )
+            # Skip litellm's support check when using a custom base_api URL, as
+            # litellm can only reliably verify support for their official API providers,
+            # not custom endpoints.
+            # We assume custom endpoint models support structured generation.
+            elif self.benchmark_config.api_base is not None or supports_response_schema(
+                model=self.model_config.model_id
+            ):
+                if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+                    tag_names = list(dataset_config.prompt_label_mapping.values())
+                    keys_and_their_types: dict[str, t.Any] = {
+                        tag_name: (conlist(str, max_length=5), ...)
+                        for tag_name in tag_names
+                    }
+                    pydantic_class = create_model(
+                        "AnswerFormat", **keys_and_their_types
+                    )
+                else:
+                    raise InvalidBenchmark(
+                        "This task requires structured generation, but it has not "
+                        "been implemented for this task yet. Please open an issue "
+                        "at https://github.com/EuroEval/EuroEval/issues."
+                    )
+                generation_kwargs["response_format"] = pydantic_class
+                log_once(
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with the JSON schema "
+                    f"{pydantic_class.model_json_schema()}",
+                    level=logging.DEBUG,
+                )
+            else:
+                generation_kwargs["response_format"] = dict(type="json_object")
+                log_once(
+                    "Enabling structured JSON generation for model "
+                    f"{self.model_config.model_id!r} with no custom JSON schema, as "
+                    "the model does not support schemas.",
+                    level=logging.DEBUG,
+                )
+
+        elif (
+            self.dataset_config.task.uses_logprobs
+            and self.dataset_config.labels
+            and self.generative_type != GenerativeType.REASONING
+        ):
+            localised_labels = [
+                self.dataset_config.prompt_label_mapping[label]
+                for label in self.dataset_config.labels
+            ]
+            keys_and_their_types = {
+                # pyrefly: ignore[invalid-literal]
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
+            }
+            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
+            generation_kwargs["response_format"] = pydantic_class
+
+        # If the model is an Ollama reasoning model, we ensure that thinking is enabled
+        if self.is_ollama and self.generative_type == GenerativeType.REASONING:
+            generation_kwargs["think"] = True
+            log_once(
+                "Enabling thinking mode for Ollama model "
+                f"{self.model_config.model_id!r}",
+                level=logging.DEBUG,
+            )
 
         return generation_kwargs
 
