@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Evaluation benchmark for hallucination detection, reporting a hallucination rate
+  (`hallucinated_tokens/total_tokens`). This was added by @FrejaThoresen ✨
 - Benchmark results written to `euroeval_benchmark_results.jsonl` now conform to the
   [Every Eval Ever (EEE) JSON schema
   v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json). The
