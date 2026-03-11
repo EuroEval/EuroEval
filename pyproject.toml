@@ -45,6 +45,7 @@ dependencies = [
     "nltk>=3.9.1",
     "langdetect>=1.0.9",
     "pyyaml>=6.0",
+    "lettucedetect>=0.1.8",
 ]
 
 [project.optional-dependencies]

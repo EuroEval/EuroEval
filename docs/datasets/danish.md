@@ -1598,6 +1598,161 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset nordjylland-news
 ```
 
+## Grammatical Error Detection
+
+### Unofficial: GerLangMod-da
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the Danish Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.
+
+The original dataset consists of 5,039 samples derived from the
+[UD_Danish-DDT](https://github.com/UniversalDependencies/UD_Danish-DDT) treebank, with
+original splits of 3,989 / 518 / 532 for training, validation and testing, respectively.
+We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
+respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "tokens": [
+        "så",
+        "er",
+        "der",
+        "en",
+        "pause",
+        "på",
+        "5",
+        "år",
+        "indtil",
+        "vivaldis",
+        "største",
+        "sucses",
+        "de",
+        "fire",
+        "årstider",
+        "kommer"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
+}
+```
+
+```json
+{
+    "tokens": [
+        "såfremt",
+        "virksomheden",
+        "ikke",
+        "selv",
+        "er",
+        "i",
+        "stand",
+        "til",
+        "at",
+        "krævede",
+        "de",
+        "udføre",
+        "målinger",
+        "må",
+        "den",
+        "for",
+        "egen",
+        "regning",
+        "søge",
+        "bistand",
+        "hos",
+        "private",
+        "eller",
+        "offentlige",
+        "laboratorier"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "B-ERR",
+        "O",
+        "B-ERR",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Nedenstående er sætninger og JSON-ordbøger med de grammatiske fejl, der forekommer i den givne sætning.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Sætning: {text}
+  Grammatiske fejl: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Sætning: {text}
+
+  Identificér de grammatiske fejl i sætningen. Du skal outputte dette som en JSON-ordbog med nøglen 'fejl'. Værdien skal være en liste over de forkert placerede ord, præcis som de forekommer i sætningen.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `fejl`
+  - `I-ERR` ➡️ `fejl`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-da
+```
+
 ## Instruction-following
 
 ### IFEval-da
@@ -1763,157 +1918,52 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset valeu-da
 ```
 
-## Grammatical Error Detection
+## Hallucination Detection
 
-### Unofficial: GerLangMod-da
+### MultiWikiHalluQA-da
 
-This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
-collection and derived from the Danish Universal Dependencies treebank. Assuming UD
-annotations are accurate and sentences are well-formed, the dataset contains permuted
-versions of these UD sentences where half of the verbs have been misplaced within their
-phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
-misplaced verbs cannot split them up, and no verb can be placed in the first position of
-the first phrase of each sentence to avoid creating correct polar question syntax.
+This dataset uses the same data as [MultiWikiQA-da](#multiwikiqa-da), published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
+with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
+correctness of the generated answer, this task evaluates the degree to which the model
+hallucinates, i.e., generates tokens that are not grounded in the provided context.
 
-The original dataset consists of 5,039 samples derived from the
-[UD_Danish-DDT](https://github.com/UniversalDependencies/UD_Danish-DDT) treebank, with
-original splits of 3,989 / 518 / 532 for training, validation and testing, respectively.
-We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
-respectively.
-
-Here are a few examples from the training split:
-
-```json
-{
-    "tokens": [
-        "så",
-        "er",
-        "der",
-        "en",
-        "pause",
-        "på",
-        "5",
-        "år",
-        "indtil",
-        "vivaldis",
-        "største",
-        "sucses",
-        "de",
-        "fire",
-        "årstider",
-        "kommer"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
-}
-```
-
-```json
-{
-    "tokens": [
-        "såfremt",
-        "virksomheden",
-        "ikke",
-        "selv",
-        "er",
-        "i",
-        "stand",
-        "til",
-        "at",
-        "krævede",
-        "de",
-        "udføre",
-        "målinger",
-        "må",
-        "den",
-        "for",
-        "egen",
-        "regning",
-        "søge",
-        "bistand",
-        "hos",
-        "private",
-        "eller",
-        "offentlige",
-        "laboratorier"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "B-ERR",
-        "O",
-        "B-ERR",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
-}
-```
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+transformer-based classifier to predict hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to total
+tokens in the generated answers.
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-- Number of few-shot examples: 8
+- Number of few-shot examples: 5
 - Prefix prompt:
 
   ```text
-  Nedenstående er sætninger og JSON-ordbøger med de grammatiske fejl, der forekommer i den givne sætning.
+  Følgende er tekster med tilhørende spørgsmål og svar.
   ```
 
 - Base prompt template:
 
   ```text
-  Sætning: {text}
-  Grammatiske fejl: {label}
+  Tekst: {text}
+  Spørgsmål: {question}
+  Svar med maks. 3 ord: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Sætning: {text}
+  Tekst: {text}
 
-  Identificér de grammatiske fejl i sætningen. Du skal outputte dette som en JSON-ordbog med nøglen 'fejl'. Værdien skal være en liste over de forkert placerede ord, præcis som de forekommer i sætningen.
+  Besvar følgende spørgsmål om teksten ovenfor med maks. 3 ord.
+
+  Spørgsmål: {question}
   ```
-
-- Label mapping:
-  - `B-ERR` ➡️ `fejl`
-  - `I-ERR` ➡️ `fejl`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset gerlangmod-da
+euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-da
 ```

@@ -44,3 +44,4 @@ this category are:
 5. [European Values](european-values.md)
 6. [Instruction-following](instruction-following.md)
 7. [Bias Detection](bias-detection.md)
+8. [Hallucination Detection](hallucination-detection.md)
