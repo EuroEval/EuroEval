@@ -259,22 +259,15 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Word: place\nContext 1: Do you want to come over to my place later?\nContext 2: A political system with no place for the less prominent groups.",
-  "label": "same_sense"
+    "text": "Word: cover\nContext 1: Does my policy cover accidental loss?\nContext 2: The insurance won't cover this.",
+    "label": "same_sense"
 }
 ```
 
 ```json
 {
-  "text": "Word: board\nContext 1: I'll be a sitting member of the board.\nContext 2: On the other hand, you could serve on the advisory board.",
-  "label": "same_sense"
-}
-```
-
-```json
-{
-  "text": "Word: play\nContext 1: He wanted to play a big part in the world.\nContext 2: The actor plays a key role in the movie.",
-  "label": "different_sense"
+    "text": "Word: dress\nContext 1: Dress a turkey.\nContext 2: Dress the patient.",
+    "label": "different_sense"
 }
 ```
 

@@ -1252,22 +1252,15 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Parola: affare\nContesto 1: E visto che mi lascia GPS , Ecoscandaglio , TUTTE le dotazioni obbligatorie in ottimo stato ( razzi nuovi , ecc ) un sacco di cime ( due ancora nuove imballate ) , gonfiatore , pezzi vari di ricambio , ecc ecc ecc con un supplemento è affare fatto .\nContesto 2: La rivista nordamericana segnala come presunti sospetti il milionario e potente della stampa venezuelana , Gustavo Cisnero , che avrebbe ricevuto istruzioni da Otto Reich , massimo responsabile della Casa Bianca per gli Affari Latinoamericani .",
-  "label": "different_sense"
+    "text": "Parola: anno\nContesto 1: \" La comunità montana dell' Appennino cesenate ha davvero motivi di soddisfazione da questa giornata : da anni propone e chiede per il proprio territorio , la realizzazione delle autostrade della telematica .\nContesto 2: Ichem Kaba , direttore del Consiglio islamico italiano , appare soddisfatto della decisione presa dal Palazzo dei Bruzi : \" La comunità musulmana si riuniva da quattro anni in un piccolo vano di via Antonio Monaco .",
+    "label": "same_sense"
 }
 ```
 
 ```json
 {
-  "text": "Parola: elemento\nContesto 1: In particolare , l' elemento più scandaloso del provvedimento che ci accingiamo a votare è rappresentato dagli articoli 7 e 8 su cui , questa mattina , abbiamo condotto , come opposizione , una lunga battaglia di buon senso .\nContesto 2: Il Fondo mostra di apprezzare \" certi elementi di maggiore flessibilita' del patto di stabilita' , mentre si rammarica per la vaghezza di altre \" .",
-  "label": "same_sense"
-}
-```
-
-```json
-{
-  "text": "Parola: maschera\nContesto 1: In questo caso , dal momento che l' indirizzo 192.168.1.1 appartiene alla classe C , la maschera di rete predefinita sarebbe stata la stessa di quella che è stata indicata esplicitamente .\nContesto 2: Attenti ai teletrasporti , ai passaggi segreti , alle navi nelle bottiglie , ai cristalli , alla Maschera del Male , alle guardie , all' oro , alle trappole ed ai tradimenti .",
-  "label": "different_sense"
+    "text": "Parola: buono\nContesto 1: Ho 25 anni , continuo a giocare ( meno di un tempo ) , sono quello dei \" pochi giochi ma buoni \" e gli amici ogni tanto mi prendono in giro .\nContesto 2: Anche a questa domanda Paolo risponde : non sia mai , anzi , il peccato , per apparire peccato , attraverso ciò che è buono mi produsse la morte per diventare estremamente peccante ( peccaminoso ) per mezzo del comandamento .",
+    "label": "different_sense"
 }
 ```
 
