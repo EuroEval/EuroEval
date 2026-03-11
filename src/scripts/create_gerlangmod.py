@@ -59,8 +59,8 @@ _LANG_FILES: dict[str, list[tuple[str, list[str]]]] = {
     ],
 }
 
-# Norwegian Bokmål uses "no_bokmaal" prefix instead of "nb_bokmaal"
-_FILE_PREFIX_OVERRIDES = {("nb", "bokmaal"): "no"}
+# Both Norwegian variants use "no_*" file prefixes instead of "nb_*" / "nn_*"
+_FILE_PREFIX_OVERRIDES = {("nb", "bokmaal"): "no", ("nn", "nynorsk"): "no"}
 
 # Dataset IDs on HuggingFace Hub
 _DATASET_IDS = {
