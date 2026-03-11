@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   validation splits (1,024 / 256 samples) are sampled from the original training split,
   stratified on label, and the test split (1,000 samples) is the concatenation of the
   original development and test splits. It is marked as `unofficial` for now.
+- Added the English Word in Context dataset [WiC](https://aclanthology.org/N19-1128/),
+  based on the SuperGLUE benchmark. The split is given by 1,024 / 256 / 638 samples for
+  train / val / test, respectively. The train and val splits are stratified subsets of
+  the original SuperGLUE training split, and the test split is the original SuperGLUE
+  validation split. It is marked as `unofficial` for now.
 - Added the Danish metaphor interpretation dataset DAMETA, part of the [Danish Semantic
   Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
   The split is given by 64 / 128 / 723 samples for train / val / test, respectively.
@@ -29,6 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   icelandic-math-tests, based on old Icelandic primary school standardised tests
   (2013–2017) from mms.is, covering Icelandic language and mathematics, respectively.
   Both are marked as `unofficial` for now.
+- Added support for the Aya thinking tokens `<|START_THINKING|>` and `<|END_THINKING|>`.
 
 ### Fixed
 

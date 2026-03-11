@@ -73,6 +73,7 @@ REASONING_TOKENS: list[tuple[str | re.Pattern, str | re.Pattern]] = [
         re.compile(pattern=r"<\|channel\|>(analysis|commentary)<\|message\|>"),
         "<|channel|>final<|message|>",
     ),
+    ("<|START_THINKING|>", "<|END_THINKING|>"),
 ]
 
 # These tokens are sometimes used by models to indicate the end of a generated

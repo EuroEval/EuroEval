@@ -30,7 +30,7 @@ if t.TYPE_CHECKING:
 
 
 def finetune(
-    model: "BenchmarkModule",
+    model: "BenchmarkModule | None",
     datasets: c.Sequence["DatasetDict"],
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
