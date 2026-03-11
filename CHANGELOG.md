@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added the Italian Word-in-Context dataset WiC-ITA, from
+  [Evalita 2023](https://www.evalita.it/campaigns/evalita-2023/). The train and
+  validation splits (1,024 / 256 samples) are sampled from the original training split,
+  stratified on label, and the test split (1,000 samples) is the concatenation of the
+  original development and test splits. It is marked as `unofficial` for now.
 - Added the Danish metaphor interpretation dataset DAMETA, part of the [Danish Semantic
   Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
   The split is given by 64 / 128 / 723 samples for train / val / test, respectively.
