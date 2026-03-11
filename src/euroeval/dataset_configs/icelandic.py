@@ -6,6 +6,7 @@ from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
     GED,
+    HALLU,
     KNOW,
     LA,
     MCRC,
@@ -166,6 +167,15 @@ MULTI_WIKI_QA_IS_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-is",
     source="EuroEval/multi-wiki-qa-is-mini",
     task=RC,
+    languages=[ICELANDIC],
+    unofficial=True,
+)
+
+MULTI_WIKI_QA_IS_HALLUCINATION_CONFIG = DatasetConfig(
+    name="multi-wiki-hallucination-qa-is",
+    pretty_name="MultiWikiHalluQA-is",
+    source="EuroEval/multi-wiki-qa-is-mini",
+    task=HALLU,
     languages=[ICELANDIC],
     unofficial=True,
 )

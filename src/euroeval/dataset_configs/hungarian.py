@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import HUNGARIAN
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -35,6 +35,14 @@ MULTI_WIKI_QA_HU_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-hu",
     source="EuroEval/multi-wiki-qa-hu-mini",
     task=RC,
+    languages=[HUNGARIAN],
+)
+
+MULTI_WIKI_QA_HU_HALLUCINATION_CONFIG = DatasetConfig(
+    name="multi-wiki-hallucination-qa-hu",
+    pretty_name="MultiWikiHalluQA-hu",
+    source="EuroEval/multi-wiki-qa-hu-mini",
+    task=HALLU,
     languages=[HUNGARIAN],
 )
 

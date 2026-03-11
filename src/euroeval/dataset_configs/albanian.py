@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ALBANIAN
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -35,6 +35,14 @@ MULTI_WIKI_QA_SQ_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-sq",
     source="EuroEval/multi-wiki-qa-sq-mini",
     task=RC,
+    languages=[ALBANIAN],
+)
+
+MULTI_WIKI_QA_SQ_HALLUCINATION_CONFIG = DatasetConfig(
+    name="multi-wiki-hallucination-qa-sq",
+    pretty_name="MultiWikiHalluQA-sq",
+    source="EuroEval/multi-wiki-qa-sq-mini",
+    task=HALLU,
     languages=[ALBANIAN],
 )
 
