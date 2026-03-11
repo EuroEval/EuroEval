@@ -143,8 +143,9 @@ skip-magic-trailing-comma = true
 [tool.ruff.lint]
 preview = true
 select = [
-    # isort (imports)
+    # Imports
     "I",
+    "PLC0415",
     # Docstrings
     "D",
     "DOC",
@@ -180,6 +181,9 @@ convention = "google"
 [tool.pyrefly.errors]
 missing-import = false
 missing-attribute = false
+# Pandas type stub issues - these are false positives due to incomplete type stubs
+unsupported-operation = false
+no-matching-overload = false
 
 [tool.pytest.ini_options]
 minversion = "7.0"

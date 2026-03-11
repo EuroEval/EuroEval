@@ -1099,3 +1099,165 @@ class TestRealWorldYamlConfigs:
         config = load_dataset_config_from_yaml(yaml_file)
         assert config is not None
         assert config.task.name == "open-ended-qa"
+
+    def test_infer_task_from_model_graded_fact_scorer_with_judge_model(
+        self, tmp_path: Path
+    ) -> None:
+        """Test task inference from model_graded_fact scorer with explicit judge."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                tasks:
+                  - id: hle
+                    split: test
+                    field_spec:
+                      input: question
+                      target: answer
+                    solvers:
+                      - name: generate
+                    scorers:
+                      - name: model_graded_fact
+                        args:
+                          model: openai/gpt-4
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "open-ended-qa"
+        assert len(config.task.metrics) == 1
+        assert config.task.metrics[0].judge_id == "openai/gpt-4"
+
+    def test_build_kwargs_choices_column_list_error(self, tmp_path: Path) -> None:
+        """Test error when choices_column is neither string nor list."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: classification
+                languages:
+                  - en
+                choices_column: 123
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is None
+
+    def test_parse_int_field_bool_not_allowed(self, tmp_path: Path) -> None:
+        """Test that boolean values are rejected for integer fields."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: classification
+                languages:
+                  - en
+                num_few_shot_examples: true
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is None, (
+            f"The following config was not found to be None: {config}"
+        )
+
+    def test_parse_int_field_bool_not_allowed_max_tokens(self, tmp_path: Path) -> None:
+        """Test that boolean values are rejected for max_generated_tokens."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: classification
+                languages:
+                  - en
+                max_generated_tokens: false
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is None
+
+    def test_load_yaml_file_not_dict_returns_none(self, tmp_path: Path) -> None:
+        """Test that YAML file with non-dict top-level returns None."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text("just a string\n")
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is None
+
+    def test_promote_field_spec_fields_multiple_tasks_uses_first(
+        self, tmp_path: Path
+    ) -> None:
+        """Test that only first task in tasks list is used for promotion."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                tasks:
+                  - id: first_task
+                    split: test
+                    field_spec:
+                      input: question
+                      choices: options
+                  - id: second_task
+                    split: validation
+                    field_spec:
+                      input: text
+                task: multiple-choice
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.test_split == "test"
+        assert config.preprocessing_func is not None
+
+    def test_infer_task_from_inspect_ai_multiple_scorers(self, tmp_path: Path) -> None:
+        """Test task inference when multiple scorers are present."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                tasks:
+                  - id: my_dataset
+                    field_spec:
+                      input: question
+                      target: answer
+                    solvers:
+                      - name: generate
+                    scorers:
+                      - name: exact_match
+                      - name: model_graded_fact
+                        args:
+                          model: openai/gpt-4
+                languages:
+                  - en
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(yaml_file)
+        assert config is not None
+        assert config.task.name == "open-ended-qa"
+        assert config.task.metrics[0].judge_id == "openai/gpt-4"
+
+    def test_parse_languages_empty_list_with_fallback(self, tmp_path: Path) -> None:
+        """Test that empty languages list uses fallback codes."""
+        yaml_file = tmp_path / "eval.yaml"
+        yaml_file.write_text(
+            textwrap.dedent(
+                """\
+                task: classification
+                languages: []
+                """
+            )
+        )
+        config = load_dataset_config_from_yaml(
+            yaml_file, fallback_language_codes=["da"]
+        )
+        assert config is not None
+        assert config.languages[0].code == "da"

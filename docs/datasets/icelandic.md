@@ -935,6 +935,160 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset mmlu-is
 ```
 
+### Unofficial: Icelandic Language Tests
+
+This dataset is based on the old Icelandic standardised tests held from 2013 to 2017,
+available at [mms.is](https://mms.is/eldri-prof-og-svor). The tests were administered at
+the primary school level (10th grade) and cover the Icelandic language. Only the
+multiple-choice questions from the tests have been included.
+
+There are 571 samples, and we use the 16 oldest samples for train, and the rest for
+test.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Lestu textann um Gabba gæs og svaraðu spurningunum.\n\nHúsið mitt stendur við tjörn. Og við tjörnina býr líka gæs sem ég kalla Gabba – sem er stytting á Gabríel eins og erkiengillinn neitir. Það er komið haust og laufblöðin eru farin að roðna og falla af trjánum. Ég sit við eldhúsgluggann minn og horfi á Gabba sem vappar um í gulnuðu grasinu við tjörnina. Hann goggar í grasið og fær sér gott í gogginn. Við erum reyndar bæði að borða. Ég borða kremkex frá Kexverksmiðjunni Frón en Gabbi borðar fræ og pöddur úr ríki móður náttúru.\n\nFyrir Gabba er túnit hér fyrir utan eins og salatbar. Á sumrin leynist þar allskyns hnossgæti fyrir gæsir. Gabbi hefur tínt upp úr því fæði í allt sumar. Hann vill nefnilega fita sig – ekki af því að hann dreymir um að verða að safaríkri jólagæsasteik í brúnni sósu – heldur af því að gæsir eins og hann fljúga mörg hundruð kílómetra á haustin. Þá þurfa þær að geta blakað vængjunum stanslaust í margar vikur og á meðan geta þær ekkert étið, nema kannski eina og eina flugu. Á haustin hópa allar feitu gæsarnar sig svo saman, áður en þær hefja langt sameiginlegt oddaflug til hlýrri landa.\n\nNú kemur önnur gæs að. Hún gefur sig á tal við Gabba sem er hættur að éta. Við skulum kalla hana Sigfús. Fyrst sýnist mér Sigfús vera með stæla. Er hann að ýbba gogg? Nei, þegar betur er að gáð virðist Sigfús vera áhyggjufullur. Af hverju ætti það að sé? Ég kýngi kremkexinu og beini allri athygli minni að gæsunum. Sigfús hefur þá verið að ná í Gabba. Þeir ætla að hitta hinna gæsinar áður en þær fljúga á haf út saman. En viti menn! Gabbi hoppar um á sterklégum fótunum og blakar stórum vængjunum ákaflega en tekst ekki á loft. Ég sé að annar vængurinn er laskaður. Gabba er illt í honum. Sigfús flýgur hins vegar af stað. Hann hringsólar yfir hausamótunum á Gabba og gargar eitthvað á gæsamál, sem ég ímynda mér að hafi verið: „Vertu sæll og gangi þér vel.“ Sigfús flýgur í burtu og Gabbi stendur einn eftir væng- og niðurbrotinn í blautu grasinu. Greyið Gabbi. Ég er miður mín en man svo eftir að hafa lesið í dagblaðinu að gæsir eins og Gabbi séu sumar farnar að búa allan veturinn á Íslandi án þess að verða meint af. Ég veit að það mun ekkert slæmt henda Gabba þótt hann verði áfram á Íslandi. Ég veit það af því að ég verð líka hérna við tjörnina í vetur. Ég ætla að fylgjast með Gabba og gefa honum af kremkexinu mínu. Og kartöflur og múslí og allskonar afganga. Við Gabbi ætlum að halda áfram að borða saman hérna við tjörnina í allan vetur – og langt fram á næsta vor.\n\nUm hvað er sagan?\nSvarmöguleikar:\na. gæs í erfiðleikum\nb. heimili við tjörn\nc. oddaflug gæsa",
+    "label": "a",
+    "year": "2013"
+}
+```
+
+```json
+{
+    "text": "Lestu textabrotið úr Alfræði unga fólksins og svaraðu spurningunum.\n\nDýr með heitt blóð þurfa yfirleitt að verja umtalsverði orku til að halda á sér hita yfir kalda vetrarmánuði. Orkuna fá þau úr fæðunni sem er þó einmitt jafnan hvað minnst að vetrinum. Sum dýr komast af með því að flytja sig til hlýrri staða en önnur, til dæmis leðurblök og broddgeltir, leggjast í dvala á öruggum og skjólgóðum stað, svo sem í greni, hreiðri eða hellisskúta. Hjá dýrum sem fara í eiginlegan vetrardvala hægir mjög á allri líkamstarfsemi, hjartað slær aðeins öðru hverju og andardrátturinn verður mjög hægur. Líkamshitinn er bara nokkrum gráðum hærri en hiti umhverfisins og er til dæmis rétt um frostmark hjá hömstrum. Ef hitinn úti fer undir frostmark örvast efnskaskipti líkamans og hindra að dýrið frjósi í hel. Dýr sem leggjast í vetrardvala éta sérlega mikið á haustin og safna fituforða til vetrarins. Sá forði fleytir þeim yfir vetrarmánuðina án þess að þau þurfi að næra sig.\n\nSvartbjörn\nBirnir, skunkar og jarðíkornar sofa ekki eins föstum vetrarsvefni og leðurblökur og mýs sem leggjast í eiginlegan vetrardvala. Líkamshiti svartbjarnar lækkar nokkuð er hann leggst í híði en hjartað slær nánast jafnt hratt og í vöku. Þetta gerir það að verkum að bangsi getur rumskað af vægum svefni ef veður hlýnar svolítið um hríð. Þótt björninn vakni upp af dvalanum fer hann yfirleitt ekki á stjá til að leita sér fæðu, heldur lifir áfram á fituforða sínum. Sumar birnur fæða húna í híði sínu að vetrinum.\n\nDá\nSum dýr með heitt blóð, t.d. leðurblökur og kólibrífuglar, spara orku með því að líkamshiti þeirra lækkar og hjartslátturinn róast hluta dags eða nætur. Þetta kallast dá og er ekki sama eðlis og dvali. Stór dýr falla yfirleitt ekki í dá því að þau þyrftu svo mikla orku til að ná líkamshitanum upp aftur. Leðurblökur hjúfra sig oft hver upp að annarri til að draga úr varmatapinu þar sem þær hanga á haus. Þegar vetur gengur í garð safnast leðurblökur í vissa hella eða tré og leggjast þar í eiginlegan vetrardvala.\n\nSumardvali\nMörg eyðimerkurdýr liggja í dvala heitasta árstímann til að prauka steikjandi hitann. Þetta kallast sumardvali, andstætt vetrardvala. Margar æður, froskar, sniglar og skordýr eyðimerkunnar leggjast í sumardvala. Áður en sniglar fara í dvalann loka þeir kúðungi sínum með því að þekja opið með himnu úr slími sem harðnar síðan í hitanum.\n\n(úr: Alfræð í unga fólksins, 1994)\n\n19. Hvernig er starfsemi líkamans þegar dýr er í dvala?\nSvarmöguleikar:\na. Líkamshitinn hækkar.\nb. Orkan verður meiri.\nc. Starfsemin er hægari.",
+    "label": "b",
+    "year": "2013"
+}
+```
+
+```json
+{
+    "text": "Lestu textabrotið úr Alfræði unga fólksins og svaraðu spurningunum.\n\nDýr með heitt blóð þurfa yfirleitt að verja umtalsverði orku til að halda á sér hita yfir kalda vetrarmánuði. Orkuna fá þau úr fæðunni sem er þó einmitt jafnan hvað minnst að vetrinum. Sum dýr komast af með því að flytja sig til hlýrri staða en önnur, til dæmis leðurblök og broddgeltir, leggjast í dvala á öruggum og skjólgóðum stað, svo sem í greni, hreiðri eða hellisskúta. Hjá dýrum sem fara í eiginlegan vetrardvala hægir mjög á allri líkamstarfsemi, hjartað slær aðeins öðru hverju og andardrátturinn verður mjög hægur. Líkamshitinn er bara nokkrum gráðum hærri en hiti umhverfisins og er til dæmis rétt um frostmark hjá hömstrum. Ef hitinn úti fer undir frostmark örvast efnskaskipti líkamans og hindra að dýrið frjósi í hel. Dýr sem leggjast í vetrardvala éta sérlega mikið á haustin og safna fituforða til vetrarins. Sá forði fleytir þeim yfir vetrarmánuðina án þess að þau þurfi að næra sig.\n\nSvartbjörn\nBirnir, skunkar og jarðíkornar sofa ekki eins föstum vetrarsvefni og leðurblökur og mýs sem leggjast í eiginlegan vetrardvala. Líkamshiti svartbjarnar lækkar nokkuð er hann leggst í híði en hjartað slær nánast jafnt hratt og í vöku. Þetta gerir það að verkum að bangsi getur rumskað af vægum svefni ef veður hlýnar svolítið um hríð. Þótt björninn vakni upp af dvalanum fer hann yfirleitt ekki á stjá til að leita sér fæðu, heldur lifir áfram á fituforða sínum. Sumar birnur fæða húna í híði sínu að vetrinum.\n\nDá\nSum dýr með heitt blóð, t.d. leðurblökur og kólibrífuglar, spara orku með því að líkamshiti þeirra lækkar og hjartslátturinn róast hluta dags eða nætur. Þetta kallast dá og er ekki sama eðlis og dvali. Stór dýr falla yfirleitt ekki í dá því að þau þyrftu svo mikla orku til að ná líkamshitanum upp aftur. Leðurblökur hjúfra sig oft hver upp að annarri til að draga úr varmatapinu þar sem þær hanga á haus. Þegar vetur gengur í garð safnast leðurblökur í vissa hella eða tré og leggjast þar í eiginlegan vetrardvala.\n\nSumardvali\nMörg eyðimerkurdýr liggja í dvala heitasta árstímann til að prauka steikjandi hitann. Þetta kallast sumardvali, andstætt vetrardvala. Margar æður, froskar, sniglar og skordýr eyðimerkunnar leggjast í sumardvala. Áður en sniglar fara í dvalann loka þeir kúðungi sínum með því að þekja opið með himnu úr slími sem harðnar síðan í hitanum.\n\n(úr: Alfræð í unga fólksins, 1994)\n\n22. Hvað kallast dvalarstaður bjarnna á veturna?\nSvarmöguleikar:\na. greni\nb. hellir\nc. híði",
+    "label": "c",
+    "year": "2013"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Eftirfarandi eru fjölvalsspurningar (með svörum).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svara: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Svaraðu eftirfarandi spurningum með 'a', 'b', 'c' eða 'd', og engu öðru.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset icelandic-lang-tests
+```
+
+### Unofficial: Icelandic Mathematics Tests
+
+This dataset is based on the old Icelandic standardised tests held from 2013 to 2017,
+available at [mms.is](https://mms.is/eldri-prof-og-svor). The tests were administered at
+the primary school level (10th grade) and cover mathematics. Only the multiple-choice
+questions from the tests have been included.
+
+There are 242 samples in total, and we use the oldest 16 samples for train, and the rest
+for test.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "text": "Hve lengi væri rútan á milli Reykjavíkur og Akureyrar ef hún keyrði á 85 km hraða á klst. að jafnaði og stoppaði hvergi?\nSvarmöguleikar:\na. 4 klst. 34 mín.\nb. 4 klst. 56 mín.\nc. 6 klst. 48 mín.\nd. 6 klst. 56 mín.",
+    "label": "a",
+    "year": "2013"
+}
+```
+
+```json
+{
+    "text": "Hæð og grunnlína í þríhyrningi eru 2 cm að lengd. Hve mörgum sinnum stærri verður þríhyrningurinn að flatarmáli ef hvort strik er lengt um 2 cm?\nSvarmöguleikar:\na. Tvisvar sinnum stærri.\nb. Fjórum sinnum stærri.\nc. Átta sinnum stærri.\nd. Sextán sinnum stærri.",
+    "label": "b",
+    "year": "2013"
+}
+```
+
+```json
+{
+    "text": "16. Fjórar handboltakempur voru að lyfta lóðum.\nÞær báru saman bækur sínar til að sjá hver lyfti mestri þyngd í einni lyftu.\n\nTóta lyfti 75 kg\nStína lyfti 77 500 g\nFreyja lyfti 765 hg\nBára lyfti 76 000 000 mg\n\nHver þeirra lyfti mestri þyngd í einni lyftu?\nSvarmöguleikar:\na. Bára\nb. Freyja\nc. Stína\nd. Tóta",
+    "label": "c",
+    "year": "2013"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+- Prefix prompt:
+
+  ```text
+  Eftirfarandi eru fjölvalsspurningar (með svörum).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+  Svara: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Spurningar: {text}
+  Svarmöguleikar:
+  a. {option_a}
+  b. {option_b}
+  c. {option_c}
+  d. {option_d}
+
+  Svaraðu eftirfarandi spurningum með 'a', 'b', 'c' eða 'd', og engu öðru.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset icelandic-math-tests
+```
+
 ## Common-sense Reasoning
 
 ### Winogrande-is
@@ -1228,4 +1382,127 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset valeu-is
+```
+
+## Grammatical Error Detection
+
+### Unofficial: GerLangMod-is
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the Icelandic Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.
+
+The original dataset consists of 51,450 samples derived from the
+[UD_Icelandic-IcePaHC](https://github.com/UniversalDependencies/UD_Icelandic-IcePaHC),
+[UD_Icelandic-GC](https://github.com/UniversalDependencies/UD_Icelandic-GC),
+[UD_Icelandic-Modern](https://github.com/UniversalDependencies/UD_Icelandic-Modern) and
+[UD_Icelandic-PUD](https://github.com/UniversalDependencies/UD_Icelandic-PUD) treebanks.
+We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
+respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "tokens": [
+        "þeirra",
+        "hét",
+        "annar",
+        "kleofas",
+        "en",
+        "annar",
+        "hyggja",
+        "menn",
+        "að",
+        "verið",
+        "hafi",
+        "lúkas",
+        "guðspjallamaður"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
+}
+```
+
+```json
+{
+    "tokens": [
+        "sá",
+        "réttlátur",
+        "og",
+        "siðsamur",
+        "og",
+        "heilagur",
+        "andi",
+        "með",
+        "honum",
+        "var",
+        "var"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "B-ERR",
+        "I-ERR"
+    ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Hér fyrir neðan eru setningar og JSON orðabækur með málfræðilegum villum sem koma fyrir í viðkomandi setningu.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Setning: {text}
+  Málfræðilegar villur: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Setning: {text}
+
+  Finndu málfræðilegar villur í setningunni. Þú átt að prenta þetta sem JSON orðabók með lyklinum 'villa'. Gildið á að vera listi yfir rangt staðsett orð, nákvæmlega eins og þau koma fyrir í setningunni.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `villa`
+  - `I-ERR` ➡️ `villa`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-is
 ```

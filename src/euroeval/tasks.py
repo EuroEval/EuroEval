@@ -8,6 +8,7 @@ from .metrics.llm_as_a_judge import create_model_graded_fact_metric
 from .prompt_templates import (
     CLASSIFICATION_TEMPLATES,
     EMPTY_TEMPLATES,
+    GED_TEMPLATES,
     LA_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
     NER_TEMPLATES,
@@ -76,6 +77,18 @@ NER = Task(
         "b-misc",
         "i-misc",
     ],
+    uses_structured_output=True,
+)
+
+
+GED = Task(
+    name="grammatical-error-detection",
+    task_group=TaskGroup.TOKEN_CLASSIFICATION,
+    template_dict=GED_TEMPLATES,
+    metrics=[m.micro_f1_metric],
+    default_num_few_shot_examples=8,
+    default_max_generated_tokens=256,
+    default_labels=["o", "b-err", "i-err"],
     uses_structured_output=True,
 )
 

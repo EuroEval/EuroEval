@@ -11,7 +11,6 @@
 import collections.abc as c
 import logging
 import re
-import typing as t
 from collections import defaultdict
 from functools import partial
 from urllib.parse import urlparse
@@ -662,7 +661,7 @@ def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
     Returns:
         The filtered data dictionary. Its format is identical to the input.
     """
-    output: t.DefaultDict[str, list] = defaultdict(list)
+    output: dict[str, list] = defaultdict(list)
 
     range_start: int = 0
     range_end: int = 0

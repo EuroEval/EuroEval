@@ -115,9 +115,12 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     )
     for col in option_cols:
         present = df[col].notna()
-        length_filter &= ~present | (
-            (df[col].str.len() >= MIN_NUM_CHARS_IN_OPTION)
-            & (df[col].str.len() <= MAX_NUM_CHARS_IN_OPTION)
+        length_filter = length_filter & (  # pyrefly: ignore[unsupported-operation]
+            ~present
+            | (
+                (df[col].str.len() >= MIN_NUM_CHARS_IN_OPTION)
+                & (df[col].str.len() <= MAX_NUM_CHARS_IN_OPTION)
+            )
         )
     df = df[length_filter]
 
@@ -130,8 +133,12 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     repetition_filter = ~df.instruction.apply(is_repetitive)
     for col in option_cols:
         present = df[col].notna()
-        repetition_filter &= ~present | ~df[col].apply(
-            lambda x: is_repetitive(x) if pd.notna(x) else False
+        repetition_filter = (
+            repetition_filter
+            & (  # pyrefly: ignore[unsupported-operation]
+                ~present
+                | ~df[col].apply(lambda x: is_repetitive(x) if pd.notna(x) else False)
+            )
         )
     df = df[repetition_filter]
 

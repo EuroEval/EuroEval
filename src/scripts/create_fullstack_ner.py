@@ -195,7 +195,7 @@ def parse_conllu_data(raw_data: str) -> list[dict[str, list[str] | str]]:
     lines = raw_data.strip().split("\n")
 
     # Initialize data dictionary for current sentence
-    data_dict: dict[str, list[str]] = defaultdict(list)  # type: ignore[assignment]
+    data_dict: dict[str, list[str]] = defaultdict(list)  # pyrefly: ignore[assignment]
 
     for line in lines:
         line = line.strip()
@@ -240,7 +240,7 @@ def parse_conllu_data(raw_data: str) -> list[dict[str, list[str] | str]]:
         }
         records.append(record)
 
-    return records  # type: ignore[return-value]
+    return records  # pyrefly: ignore[return-value]
 
 
 def delete_fullstack_repository(repo_path: Path) -> None:

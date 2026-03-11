@@ -319,7 +319,7 @@ KASHMIRI: Language = Language(
     code="ks", name="Kashmiri", _and_separator="تہٕ", _or_separator="یا"
 )
 KAZAKH: Language = Language(
-    code="kk", name="Kazakh", _and_separator="және", _or_separator="немесе"
+    code="kk", name="Kazakh", _and_separator="және", _or_separator="nemесе"
 )
 CENTRAL_KHMER: Language = Language(
     code="km", name="Central Khmer", _and_separator="និង", _or_separator="ឬ"

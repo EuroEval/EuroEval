@@ -94,11 +94,14 @@ def main() -> None:
     train_df = full_train_df.sample(n=1024, random_state=4242)
 
     # Collect datasets in a dataset dictionary
-    dataset = DatasetDict(
+    dataset = DatasetDict(  # pyrefly: ignore[bad-argument-type]
         train=Dataset.from_pandas(train_df, split=Split.TRAIN),
         val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
         test=Dataset.from_pandas(test_df, split=Split.TEST),
-        full_train=Dataset.from_pandas(full_train_df, split="full_train"),  # type: ignore[bad-argument-type]
+        full_train=Dataset.from_pandas(
+            full_train_df,
+            split="full_train",  # pyrefly: ignore[bad-argument-type]
+        ),
     )
 
     # Create dataset ID

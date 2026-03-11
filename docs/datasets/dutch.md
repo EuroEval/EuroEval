@@ -1405,3 +1405,126 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-nl
 ```
+
+## Grammatical Error Detection
+
+### Unofficial: GerLangMod-nl
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the Dutch Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.
+
+The original dataset consists of 25,771 samples derived from the
+[UD_Dutch-Alpino](https://github.com/UniversalDependencies/UD_Dutch-Alpino) and
+[UD_Dutch-LassySmall](https://github.com/UniversalDependencies/UD_Dutch-LassySmall)
+treebanks. We use a sample of 1,024 / 256 / 2,048 of these for training, validation and
+testing, respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "tokens": [
+        "om",
+        "in",
+        "de",
+        "finale",
+        "te",
+        "raken",
+        "verslaat",
+        "ze",
+        "ex-us",
+        "open",
+        "winnares",
+        "svetlana",
+        "kuznetsova",
+        "6-3",
+        "6-1"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
+}
+```
+
+```json
+{
+    "tokens": [
+        "de",
+        "musical",
+        "zowel",
+        "in",
+        "belgië",
+        "als",
+        "in",
+        "nederland",
+        "is",
+        "opgevoerd"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "B-ERR",
+        "O"
+    ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Hieronder staan zinnen en JSON-woordenboeken met de grammaticale fouten die in de gegeven zin voorkomen.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Zin: {text}
+  Grammaticale fouten: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Zin: {text}
+
+  Identificeer de grammaticale fouten in de zin. Je moet dit weergeven als een JSON-woordenboek met de sleutel 'fout'. De waarde moet een lijst zijn van de foutief geplaatste woorden, precies zoals ze in de zin voorkomen.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `fout`
+  - `I-ERR` ➡️ `fout`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-nl
+```

@@ -78,7 +78,6 @@ from ..task_group_utils import (
     text_to_text,
     token_classification,
 )
-from ..tasks import NER
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
 from .base import BenchmarkModule
@@ -631,18 +630,19 @@ class LiteLLMModel(BenchmarkModule):
             return generation_kwargs, 0
         elif (
             any(msg.lower() in error_msg for msg in max_items_messages)
-            and self.dataset_config.task == NER
+            and self.dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION
         ):
             log_once(
                 f"The model {model_id!r} does not support "
                 "maxItems in the JSON schema, so disabling it.",
                 level=logging.DEBUG,
             )
-            ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+            tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types = {
-                tag_name: (c.Sequence[str], ...) for tag_name in ner_tag_names
+                tag_name: (c.Sequence[str], ...) for tag_name in tag_names
             }
-            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)  # type: ignore[no-matching-overload]
+            # pyrefly: ignore[no-matching-overload]
+            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
             return generation_kwargs, 0
         elif any(msg.lower() in error_msg for msg in no_json_schema_messages):
@@ -1398,7 +1398,7 @@ class LiteLLMModel(BenchmarkModule):
         num_attempts = 10
         for _ in range(num_attempts):
             try:
-                litellm.completion(  # type: ignore[not-callable]
+                litellm.completion(  # pyrefly: ignore[not-callable]
                     messages=[dict(role="user", content="X")],
                     model=clean_model_id(
                         model_id=model_id, benchmark_config=benchmark_config
@@ -1669,11 +1669,11 @@ class LiteLLMModel(BenchmarkModule):
             elif self.benchmark_config.api_base is not None or supports_response_schema(
                 model=self.model_config.model_id
             ):
-                if dataset_config.task == NER:
-                    ner_tag_names = list(dataset_config.prompt_label_mapping.values())
+                if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+                    tag_names = list(dataset_config.prompt_label_mapping.values())
                     keys_and_their_types: dict[str, t.Any] = {
                         tag_name: (conlist(str, max_length=5), ...)
-                        for tag_name in ner_tag_names
+                        for tag_name in tag_names
                     }
                     pydantic_class = create_model(
                         "AnswerFormat", **keys_and_their_types
@@ -1706,7 +1706,8 @@ class LiteLLMModel(BenchmarkModule):
                 for label in self.dataset_config.labels
             ]
             keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)  # type: ignore[invalid-literal]
+                # pyrefly: ignore[invalid-literal]
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class

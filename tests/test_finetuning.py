@@ -1,13 +1,21 @@
 """Tests for the `finetuning` module."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 import torch
 from transformers.trainer_utils import IntervalStrategy
 from transformers.training_args import TrainingArguments
 
-from euroeval.data_models import BenchmarkConfig, ModelConfig
+from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import DataType
-from euroeval.finetuning import get_training_args
+from euroeval.exceptions import InvalidBenchmark, NaNValueInModelOutput
+from euroeval.finetuning import (
+    finetune,
+    get_training_args,
+    remove_extra_tensors_from_logits,
+)
+from euroeval.metrics import HuggingFaceMetric
 
 
 class TestGetTrainingArgs:
@@ -178,3 +186,167 @@ class TestGetTrainingArgs:
         )
         assert args.use_cpu == expected_use_cpu
         benchmark_config.device = old_device  # type: ignore[read-only]
+
+
+class TestFinetune:
+    """Test that the `finetune` function works as expected."""
+
+    @patch("euroeval.finetuning.load_model")
+    @patch("euroeval.finetuning.get_training_args")
+    @patch("euroeval.finetuning.get_pbar")
+    def test_finetune_single_iteration_nan_error(
+        self,
+        mock_get_pbar: MagicMock,
+        mock_get_training_args: MagicMock,
+        mock_load_model: MagicMock,
+        benchmark_config: BenchmarkConfig,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        metric: HuggingFaceMetric,
+    ) -> None:
+        """Test NaNValueInModelOutput exception handling."""
+        mock_dataset = {
+            "train": MagicMock(),
+            "val": MagicMock(),
+            "test": MagicMock(),
+            "original_test": MagicMock(),
+        }
+        mock_datasets = [mock_dataset]
+        mock_get_pbar.return_value = range(1)
+        mock_get_training_args.return_value = TrainingArguments(output_dir="test")
+
+        mock_model = MagicMock()
+        mock_model.trainer_class.return_value.evaluate.side_effect = (
+            NaNValueInModelOutput("NaN detected")
+        )
+        mock_load_model.return_value = mock_model
+
+        with pytest.raises(
+            InvalidBenchmark,
+            match="NaN value detected in model outputs, even with mixed precision",
+        ):
+            finetune(
+                model=mock_model,
+                datasets=mock_datasets,
+                model_config=model_config,
+                dataset_config=dataset_config,
+                benchmark_config=benchmark_config,
+            )
+
+    @patch("euroeval.finetuning.load_model")
+    @patch("euroeval.finetuning.get_training_args")
+    @patch("euroeval.finetuning.get_pbar")
+    @patch("euroeval.finetuning.clear_memory")
+    def test_finetune_batch_size_reduction_on_cuda_oom(
+        self,
+        mock_clear_memory: MagicMock,
+        mock_get_pbar: MagicMock,
+        mock_get_training_args: MagicMock,
+        mock_load_model: MagicMock,
+        benchmark_config: BenchmarkConfig,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+    ) -> None:
+        """Test batch size reduction when CUDA OOM occurs."""
+        mock_dataset = {
+            "train": MagicMock(),
+            "val": MagicMock(),
+            "test": MagicMock(),
+            "original_test": MagicMock(),
+        }
+        mock_datasets = [mock_dataset]
+        mock_get_pbar.return_value = range(1)
+
+        mock_training_args = TrainingArguments(output_dir="test")
+        mock_get_training_args.side_effect = [mock_training_args, mock_training_args]
+
+        mock_model = MagicMock()
+        mock_trainer = MagicMock()
+        mock_trainer.evaluate.side_effect = [
+            RuntimeError("CUDA out of memory"),
+            {"test/accuracy": 0.9},
+        ]
+        mock_model.trainer_class.return_value = mock_trainer
+        mock_load_model.return_value = mock_model
+
+        benchmark_config.finetuning_batch_size = 2
+
+        scores = finetune(
+            model=None,
+            datasets=mock_datasets,
+            model_config=model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+        )
+
+        assert isinstance(scores, list)
+        assert len(scores) == 1
+        assert mock_clear_memory.call_count > 0
+
+    @patch("euroeval.finetuning.load_model")
+    @patch("euroeval.finetuning.get_training_args")
+    @patch("euroeval.finetuning.get_pbar")
+    @patch("euroeval.finetuning.clear_memory")
+    def test_finetune_batch_size_reduction_exhausted(
+        self,
+        mock_clear_memory: MagicMock,
+        mock_get_pbar: MagicMock,
+        mock_get_training_args: MagicMock,
+        mock_load_model: MagicMock,
+        benchmark_config: BenchmarkConfig,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        metric: HuggingFaceMetric,
+    ) -> None:
+        """Test InvalidBenchmark when batch size reduction fails."""
+        mock_dataset = {
+            "train": MagicMock(),
+            "val": MagicMock(),
+            "test": MagicMock(),
+            "original_test": MagicMock(),
+        }
+        mock_datasets = [mock_dataset]
+        mock_get_pbar.return_value = range(1)
+        mock_get_training_args.return_value = TrainingArguments(output_dir="test")
+
+        mock_model = MagicMock()
+        mock_model.trainer_class.return_value.evaluate.side_effect = RuntimeError(
+            "CUDA out of memory"
+        )
+        mock_load_model.return_value = mock_model
+
+        benchmark_config.finetuning_batch_size = 1
+
+        with pytest.raises(
+            InvalidBenchmark,
+            match="Could not benchmark the model, even with a batch size of 1!",
+        ):
+            finetune(
+                model=mock_model,
+                datasets=mock_datasets,
+                model_config=model_config,
+                dataset_config=dataset_config,
+                benchmark_config=benchmark_config,
+            )
+
+
+class TestRemoveExtraTensorsFromLogits:
+    """Test that the `remove_extra_tensors_from_logits` function works as expected."""
+
+    def test_remove_extra_tensors_from_logits_tuple(self) -> None:
+        """Test removal of extra tensors from tuple logits."""
+        logits = (torch.randn(2, 3), (torch.randn(2, 3), torch.randn(2, 3)))
+        labels = torch.randint(0, 3, (2,))
+
+        result = remove_extra_tensors_from_logits(logits=logits, labels=labels)
+
+        assert torch.equal(result, logits[0])
+
+    def test_remove_extra_tensors_from_logits_single_tensor(self) -> None:
+        """Test that single tensor logits are returned unchanged."""
+        logits = torch.randn(2, 3)
+        labels = torch.randint(0, 3, (2,))
+
+        result = remove_extra_tensors_from_logits(logits=logits, labels=labels)
+
+        assert torch.equal(result, logits)

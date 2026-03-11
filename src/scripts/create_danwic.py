@@ -96,11 +96,11 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     df["text"] = (
         "Ord: "
-        + df["target"].str.strip()
+        + df["target"].str.strip().astype(str)
         + "\nKontekst 1: "
-        + df["first_context"].str.strip()
+        + df["first_context"].str.strip().astype(str)
         + "\nKontekst 2: "
-        + df["second_context"].str.strip()
+        + df["second_context"].str.strip().astype(str)
     )
 
     df = df[["text", "label"]].copy()

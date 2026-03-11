@@ -5,6 +5,7 @@ from ..languages import DUTCH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    GED,
     KNOW,
     LA,
     MCRC,
@@ -195,6 +196,15 @@ MULTILOKO_NL_CONFIG = DatasetConfig(
     pretty_name="MultiLoKo-nl",
     source="EuroEval/multiloko-nl-mini",
     task=KNOW,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
+GERLANGMOD_NL_CONFIG = DatasetConfig(
+    name="gerlangmod-nl",
+    pretty_name="GerLangMod-nl",
+    source="EuroEval/gerlangmod-nl",
+    task=GED,
     languages=[DUTCH],
     unofficial=True,
 )
