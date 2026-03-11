@@ -117,8 +117,8 @@ class LLMAsAJudgeMetric(Metric):
                 or if the user prompt requires a condition but none is provided.
         """
         # Importing here to avoid circular imports
-        from ..benchmark_modules import LiteLLMModel
-        from ..model_cache import ModelCache
+        from ..benchmark_modules import LiteLLMModel  # noqa: PLC0415
+        from ..model_cache import ModelCache  # noqa: PLC0415
 
         if not predictions or not references:
             return None
