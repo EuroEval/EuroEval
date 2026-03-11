@@ -13,7 +13,7 @@ The hallucination detection is performed using the
 transformer-based classifier to predict hallucination at the token level. The
 hallucination detection classifiers are trained on the publicly available
 hallucination dataset
-[MultiWikiQA-Synthetic-Hallucinations](alexandrainst/multi-wiki-qa-synthetic-hallucinations).
+[MultiWikiQA-Synthetic-Hallucinations](https://huggingface.co/datasets/alexandrainst/multi-wiki-qa-synthetic-hallucinations).
 
 When evaluating generative models, we allow the model to generate 5 tokens on this task.
 
