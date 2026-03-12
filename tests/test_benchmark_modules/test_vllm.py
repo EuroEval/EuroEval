@@ -160,7 +160,7 @@ class TestVLLMPromptTruncation:
         #   3rd call  – special-token removal on the final completions
         tokenize_call_count = [0]
 
-        def mock_tokenize(text=None, max_length=None, truncation=False, **kwargs):
+        def _mock_tokenize(*args, **kwargs) -> MagicMock:
             result = MagicMock()
             tokenize_call_count[0] += 1
             if tokenize_call_count[0] == 1:
@@ -183,7 +183,7 @@ class TestVLLMPromptTruncation:
         tokeniser.model_max_length = max_model_length
         tokeniser.decode.return_value = end_of_chat_token
         tokeniser.batch_decode.return_value = ["generated text"]
-        tokeniser.side_effect = mock_tokenize
+        tokeniser.side_effect = _mock_tokenize
 
         model = object.__new__(VLLMModel)
         model._tokeniser = tokeniser
