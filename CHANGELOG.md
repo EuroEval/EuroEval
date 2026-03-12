@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   (2013–2017) from mms.is, covering Icelandic language and mathematics, respectively.
   Both are marked as `unofficial` for now.
 - Added support for the Aya thinking tokens `<|START_THINKING|>` and `<|END_THINKING|>`.
+- If a LiteLLM model uses `reasoning_content` then we automatically mark it as a
+  reasoning model. This is for instance useful when using a custom vLLM inference server
+  with `--reasoning-parser` set.
 
 ### Fixed
 

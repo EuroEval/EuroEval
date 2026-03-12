@@ -313,6 +313,8 @@ class LiteLLMModel(BenchmarkModule):
             type_ = GenerativeType.BASE
         elif supports_reasoning(model=self.model_config.model_id):
             type_ = GenerativeType.REASONING
+        elif self.buffer.get("uses_reasoning_content", False):
+            type_ = GenerativeType.REASONING
         else:
             type_ = GenerativeType.INSTRUCTION_TUNED
 
@@ -1649,10 +1651,11 @@ class LiteLLMModel(BenchmarkModule):
                     f"{pydantic_class.model_json_schema()}.",
                     level=logging.DEBUG,
                 )
-            # Skip litellm's support check when using a custom base_api URL, as
-            # litellm can only reliably verify support for their official API providers,
-            # not custom endpoints.
-            # We assume custom endpoint models support structured generation.
+
+            # Skip LiteLLM's support check when using a custom base_api URL, as litellm
+            # can only reliably verify support for their official API providers, not
+            # custom endpoints. We assume custom endpoint models support structured
+            # generation.
             elif self.benchmark_config.api_base is not None or supports_response_schema(
                 model=self.model_config.model_id
             ):
@@ -1750,7 +1753,7 @@ class LiteLLMModel(BenchmarkModule):
                 litellm.ChatCompletionUserMessage(role="user", content="Test message")
             ]
         for _ in range(num_attempts := 10):
-            _, failures = safe_run(
+            successes, failures = safe_run(
                 self._generate_async(
                     model_id=self.model_config.model_id,
                     inputs=[test_input],
@@ -1758,8 +1761,27 @@ class LiteLLMModel(BenchmarkModule):
                     **generation_kwargs,
                 )
             )
+
+            # Check if the model is using the `reasoning_content` attribute, in which
+            # case we want to mark the model as a reasoning model.
+            if successes and self.generative_type != GenerativeType.REASONING:
+                _, successful_content = successes[0]
+                if successful_content.choices[0].message.reasoning_content is not None:
+                    self.buffer["uses_reasoning_content"] = True
+                    generation_kwargs["max_completion_tokens"] = REASONING_MAX_TOKENS
+                    generation_kwargs.pop("response_format", None)
+                    if self.is_ollama:
+                        generation_kwargs["think"] = True
+                    log_once(
+                        "Detected reasoning content in model output for the model "
+                        f"{self.model_config.model_id!r}, so changing the generative "
+                        "type to reasoning.",
+                        level=logging.DEBUG,
+                    )
+
             if not failures:
                 break
+
             time_to_wait = 0
             for _, error in failures:
                 generation_kwargs, wait_time = self._handle_exception(
