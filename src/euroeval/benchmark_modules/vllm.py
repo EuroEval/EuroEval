@@ -653,9 +653,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                         list(self.end_of_chat_token_ids)
                     )
                     prompt_segments: list[list[str]] = [
-                        prompt.replace(self._tokeniser.bos_token, "").split(
-                            end_of_chat_token
-                        )
+                        (
+                            prompt.replace(self._tokeniser.bos_token, "")
+                            if self._tokeniser.bos_token is not None
+                            else prompt
+                        ).split(end_of_chat_token)
                         for prompt in prompts
                     ]
                     for num_few_shots_to_remove in range(
