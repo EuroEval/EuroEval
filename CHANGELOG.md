@@ -52,6 +52,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `BatchEncoding` from `apply_chat_template(..., tokenise=True)`. The
   `get_first_label_token_mapping` function now extracts `input_ids` from the
   `BatchEncoding` before passing it to `convert_ids_to_tokens`.
+- Fixed a `TypeError` in the vLLM `generate()` method when a model's tokeniser has
+  `bos_token = None` (e.g., `Qwen/Qwen3.5-2B`). The prompt truncation logic for
+  instruction-tuned and reasoning models now guards the `str.replace()` call with a
+  `None` check.
 
 ## [v16.17.0] - 2026-03-09
 
