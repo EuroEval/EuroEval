@@ -27,7 +27,7 @@ from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
-logger = logging.getLogger("create_jentoft")
+logger = logging.getLogger("create_danwic")
 
 
 # The DanWiC dataset is stored in a password-protected zip archive
