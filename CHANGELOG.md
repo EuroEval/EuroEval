@@ -45,6 +45,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   reasoning model. This is for instance useful when using a custom vLLM inference server
   with `--reasoning-parser` set.
 
+### Changed
+
+- The DanWiC dataset previously only contained the polysemous samples. We now include
+  both the monosemous samples and the polysemous samples, resulting in 1,024 / 256 / 916
+  samples for train / val / test, respectively.
+
 ### Fixed
 
 - Evaluation on AMD/ROCm hardware (e.g., LUMI) was broken due to two NVIDIA-specific

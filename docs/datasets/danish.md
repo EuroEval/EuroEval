@@ -590,36 +590,42 @@ euroeval --model <model-id> --dataset danish-lexical-inference
 ### Unofficial: DanWiC
 
 This dataset was published in [this
-paper](https://doi.org/10.7146/nys.v1i65.143072) and is based on the semantic module of
-the [COR.SEM resource](https://corsem.dsl.dk/). The dataset measures the ability to
-distinguish word meanings/senses in context: given two sentences containing the same
-target word, the task is to determine whether the word carries the same sense in both
-sentences.
+paper](https://aclanthology.org/2024.lrec-main.1421/) and is based on the semantic
+module of the [COR.SEM resource](https://corsem.dsl.dk/). The dataset measures the
+ability to distinguish word meanings/senses in context: given two sentences containing
+the same target word, the task is to determine whether the word carries the same sense
+in both sentences.
 
-The original full dataset consists of 1,098 polysemous samples with balanced labels.
-We use a split of 128 / 64 / 906 samples for training, validation and testing,
-respectively.
+The original full dataset consists of 2,196 polysemous samples with balanced labels. We
+use all the samples, split into 1,024 / 256 / 916 samples for training, validation and
+testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Ord: briller\nKontekst 1: Karen tog sine briller af og pudsede dem. Uden brillerne var verden én stor tåge\nKontekst 2: Jeg blev altid drillet i skolen, fordi jeg havde briller og ikke var særlig køn",
-    "label": "same_sense"
+    "text": "Ord: folkeslag\nKontekst 1: I århundreder levede arabere og jøder, to semitiske folkeslag, fredeligt side om side i Palæstina\nKontekst 2: Jeg elsker at gå i spraglet tøj inspireret af primitive folkeslag",
+    "label": "same_sense",
+    "type": "monosemous",
+    "idx": 1133
 }
 ```
 
 ```json
 {
-    "text": "Ord: lag\nKontekst 1: Pladsens brosten var dækket af et fint lag snekrystaller\nKontekst 2: [de] fik indlagt tre lag glas i vinduerne for at holde larmen ude af stuerne",
-    "label": "same_sense"
+    "text": "Ord: uheld\nKontekst 1: På årets første snevejrsdag fredag steg antallet af uheld med bulede biler cirka en fjerdedel\nKontekst 2: Eget held er godt, andres uheld ikke at foragte",
+    "label": "different_sense",
+    "type": "polysemous",
+    "idx": 15316
 }
 ```
 
 ```json
 {
-    "text": "Ord: tjeneste\nKontekst 1: Han er jo aldrig kommet i kirken, når jeg havde tjenesten\nKontekst 2: Vil du ikke lige gøre mig den tjeneste at bestille en taxa",
-    "label": "different_sense"
+    "text": "Ord: service\nKontekst 1: De fleste borgere har det jo sådan, at de både ønsker lavere skatter og bedre offentlig service. Det er uforenelige mål\nKontekst 2: isvand med to glas kom uopfordret og blev fyldt op undervejs — fin service",
+    "label": "same_sense",
+    "type": "polysemous",
+    "idx": 11195
 }
 ```
 

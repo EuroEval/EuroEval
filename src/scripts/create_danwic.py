@@ -5,6 +5,7 @@
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
 #     "requests==2.32.3",
+#     "scikit-learn==1.6.1",
 # ]
 # ///
 
@@ -16,12 +17,18 @@ to determine whether the word is used with the same sense or a different sense.
 """
 
 import io
+import logging
 import zipfile
 
 import pandas as pd
 import requests
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
+from sklearn.model_selection import train_test_split
+
+logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_jentoft")
+
 
 # The DanWiC dataset is stored in a password-protected zip archive
 DANWIC_URL = (
@@ -31,18 +38,15 @@ DANWIC_URL = (
 ZIP_PASSWORD = "benchmark"
 
 # Split sizes
-TRAIN_SIZE = 128
-VAL_SIZE = 64
+TRAIN_SIZE = 1024
+VAL_SIZE = 256
 
 
 def main() -> None:
     """Create the DanWiC dataset and upload it to the HF Hub."""
-    poly_df = download_and_load_poly()
-
-    poly_df = process_dataframe(df=poly_df)
-
-    train_df, val_df, test_df = make_splits(df=poly_df)
-
+    df = download_and_load_dataset()
+    df = process_dataframe(df=df)
+    train_df, val_df, test_df = make_splits(df=df)
     dataset = DatasetDict(
         {
             "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
@@ -50,29 +54,38 @@ def main() -> None:
             "test": Dataset.from_pandas(test_df, split=Split.TEST),
         }
     )
-
+    logger.info(
+        f"Created dataset with {len(dataset['train'])} train samples, "
+        f"{len(dataset['val'])} validation samples and {len(dataset['test'])} "
+        f"test samples."
+    )
     dataset_id = "EuroEval/danwic"
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
 
 
-def download_and_load_poly() -> pd.DataFrame:
-    """Download the DanWiC zip and return the polysemous selection dataframe.
+def download_and_load_dataset() -> pd.DataFrame:
+    """Download the DanWiC zip and return the dataframe.
 
     Returns:
-        The polysemous selection dataframe with both same_sense and different_sense
-        labels.
+        The dataframe with both same_sense and different_sense labels.
     """
+    logger.info(f"Downloading DanWiC dataset from {DANWIC_URL}...")
     response = requests.get(DANWIC_URL, timeout=30)
     response.raise_for_status()
 
+    logger.info("Loading DanWiC dataset...")
     zip_bytes = io.BytesIO(response.content)
     with zipfile.ZipFile(zip_bytes) as zf:
         zf.setpassword(ZIP_PASSWORD.encode())
         with zf.open("danwic_poly_selection.tsv") as f:
             poly_df = pd.read_csv(f, sep="\t")
+            poly_df["type"] = "polysemous"
+        with zf.open("danwic_mono_selection.tsv") as f:
+            mono_df = pd.read_csv(f, sep="\t")
+            mono_df["type"] = "monosemous"
 
-    return poly_df
+    return pd.concat([poly_df, mono_df]).sample(frac=1.0).reset_index(drop=True)
 
 
 def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -92,8 +105,8 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         A dataframe with ``text`` and ``label`` columns.
     """
+    logger.info("Processing DanWiC dataframe...")
     df = df.copy()
-
     df["text"] = (
         "Ord: "
         + df["target"].str.strip().astype(str)
@@ -102,10 +115,8 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         + "\nKontekst 2: "
         + df["second_context"].str.strip().astype(str)
     )
-
-    df = df[["text", "label"]].copy()
-    df = df.drop_duplicates().reset_index(drop=True)
-    return df
+    df = df[["text", "label", "type", "idx"]]
+    return df.drop_duplicates().reset_index(drop=True)
 
 
 def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -120,41 +131,19 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
     Returns:
         A tuple of (train_df, val_df, test_df).
     """
-    same_df = df[df["label"] == "same_sense"].reset_index(drop=True)
-    diff_df = df[df["label"] == "different_sense"].reset_index(drop=True)
-
-    train_per_class = TRAIN_SIZE // 2
-    val_per_class = VAL_SIZE // 2
-
-    same_train = same_df.sample(n=train_per_class, random_state=4242)
-    diff_train = diff_df.sample(n=train_per_class, random_state=4242)
-
-    same_remaining = same_df.drop(same_train.index)
-    diff_remaining = diff_df.drop(diff_train.index)
-
-    same_val = same_remaining.sample(n=val_per_class, random_state=4242)
-    diff_val = diff_remaining.sample(n=val_per_class, random_state=4242)
-
-    same_test = same_remaining.drop(same_val.index)
-    diff_test = diff_remaining.drop(diff_val.index)
-
-    train_df = (
-        pd.concat([same_train, diff_train])
-        .sample(frac=1.0, random_state=4242)
-        .reset_index(drop=True)
+    logger.info("Making splits...")
+    train_val, test = train_test_split(
+        df, train_size=TRAIN_SIZE + VAL_SIZE, random_state=4242, stratify=df["label"]
     )
-    val_df = (
-        pd.concat([same_val, diff_val])
-        .sample(frac=1.0, random_state=4242)
-        .reset_index(drop=True)
-    )
-    test_df = (
-        pd.concat([same_test, diff_test])
-        .sample(frac=1.0, random_state=4242)
-        .reset_index(drop=True)
+    train, val = train_test_split(
+        train_val, test_size=VAL_SIZE, random_state=4242, stratify=train_val["label"]
     )
 
-    return train_df, val_df, test_df
+    train = train.sample(frac=1.0, random_state=4242).reset_index(drop=True)
+    val = val.sample(frac=1.0, random_state=4242).reset_index(drop=True)
+    test = test.sample(frac=1.0, random_state=4242).reset_index(drop=True)
+
+    return train, val, test
 
 
 if __name__ == "__main__":
