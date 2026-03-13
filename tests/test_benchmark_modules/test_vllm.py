@@ -8,7 +8,8 @@ import pytest
 import torch
 import torch.version
 
-from euroeval.benchmark_modules.vllm import VLLMModel
+from euroeval.benchmark_modules.vllm import VLLMModel, load_model
+from euroeval.constants import MAX_CONTEXT_LENGTH, REASONING_MAX_TOKENS
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import GenerativeType
 from euroeval.exceptions import NeedsSystemDependency
@@ -219,3 +220,112 @@ class TestVLLMPromptTruncation:
 
         assert len(result.sequences) == 1
         assert result.sequences[0] == "generated text"
+
+
+class TestLoadModelMaxModelLen:
+    """Tests that load_model passes the correct max_model_len to LLM.
+
+    The max_model_len should be capped at MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS for
+    reasoning models, and at MAX_CONTEXT_LENGTH for all other model types.
+    """
+
+    @pytest.mark.parametrize(
+        argnames=["generative_type", "true_max_model_len", "expected_max_model_len"],
+        argvalues=[
+            (
+                GenerativeType.REASONING,
+                MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS + 1_000,
+                MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS,
+            ),
+            (
+                GenerativeType.REASONING,
+                100,
+                100,
+            ),
+            (
+                GenerativeType.INSTRUCTION_TUNED,
+                MAX_CONTEXT_LENGTH + 1_000,
+                MAX_CONTEXT_LENGTH,
+            ),
+            (
+                GenerativeType.INSTRUCTION_TUNED,
+                100,
+                100,
+            ),
+            (
+                GenerativeType.BASE,
+                MAX_CONTEXT_LENGTH + 1_000,
+                MAX_CONTEXT_LENGTH,
+            ),
+        ],
+        ids=[
+            "reasoning_model_large_context",
+            "reasoning_model_small_context",
+            "instruction_tuned_model_large_context",
+            "instruction_tuned_model_small_context",
+            "base_model_large_context",
+        ],
+    )
+    def test_load_model_passes_correct_max_model_len_to_llm(
+        self,
+        generative_type: GenerativeType,
+        true_max_model_len: int,
+        expected_max_model_len: int,
+        model_config: ModelConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Test that load_model passes the correct max_model_len to LLM.
+
+        For reasoning models, max_model_len is capped at
+        MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS; for all other types it is capped at
+        MAX_CONTEXT_LENGTH. When the model's true max length is smaller than the cap,
+        the true max length is used instead.
+        """
+        mock_llm_instance = MagicMock()
+        mock_hf_model_config = MagicMock(spec=["dtype"])
+        mock_hf_model_config.dtype = torch.float16
+        mock_tokeniser = MagicMock()
+
+        # Build a minimal mock for the vllm module so that vllm.config is accessible
+        # inside load_model without requiring vllm to be installed.
+        mock_vllm_module = MagicMock()
+        mock_vllm_module.config = MagicMock(spec=[])  # no 'attention' attribute
+
+        with (
+            patch(
+                "euroeval.benchmark_modules.vllm.LLM",
+                return_value=mock_llm_instance,
+                create=True,
+            ) as mock_llm_cls,
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
+            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
+            patch(
+                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
+                return_value=("mp", 1, 1),
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.internet_connection_available",
+                return_value=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
+                return_value={},
+            ),
+        ):
+            load_model(
+                model_config=model_config,
+                benchmark_config=benchmark_config,
+                attention_backend=None,
+                generative_type=generative_type,
+                true_max_model_len=true_max_model_len,
+                tokeniser=mock_tokeniser,
+                hf_model_config=mock_hf_model_config,
+            )
+
+        mock_llm_cls.assert_called_once()
+        call_kwargs = mock_llm_cls.call_args.kwargs
+        assert call_kwargs["max_model_len"] == expected_max_model_len
