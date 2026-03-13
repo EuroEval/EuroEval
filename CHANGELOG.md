@@ -68,7 +68,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Removed
 
-- Removed the deprecated `Benchmarker.__call__` function. Use `benchmarker.benchmark()`
+- Removed the deprecated `Benchmarker.__call__` function. Use `Benchmarker(...).benchmark()`
   instead.
 - Removed the deprecated `DatasetConfig` arguments starting with an underscore, such as
   `_labels`. Use the corresponding argument without the underscore instead, such as
