@@ -13,10 +13,10 @@ from pathlib import Path
 from time import sleep
 
 import torch
+import torch.version
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
 from transformers.generation.configuration_utils import GenerationConfig
-from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
@@ -113,10 +113,9 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
 
-
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
-    from transformers.trainer import Trainer
+    from transformers.trainer import PretrainedConfig, Trainer
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
@@ -159,6 +158,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             InvalidBenchmark:
                 If no CUDA GPUs are available and the dataset requires structured
                 generation.
+            InvalidModel:
+                If the generative type was None for the model.
         """
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
@@ -196,14 +197,56 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
+        hf_model_config = load_hf_model_config(
+            model_id=model_config.adapter_base_model_id or model_config.model_id,
+            num_labels=0,
+            id2label=HashableDict(),
+            label2id=HashableDict(),
+            revision=(
+                model_config.revision
+                if model_config.adapter_base_model_id is None
+                else "main"
+            ),
+            model_cache_dir=model_config.model_cache_dir,
+            api_key=benchmark_config.api_key,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            run_with_cli=benchmark_config.run_with_cli,
+        )
+        true_max_model_len = get_true_max_model_len(
+            model_config=model_config, benchmark_config=benchmark_config
+        )
+
+        tokeniser = load_tokeniser(
+            model_id=model_config.model_id,
+            revision=model_config.revision,
+            adapter_base_model_id=model_config.adapter_base_model_id,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            model_max_length=true_max_model_len,
+            model_config=model_config,
+            hf_model_config=hf_model_config,
+            token=get_hf_token(api_key=benchmark_config.api_key),
+        )
+        self._tokeniser: Tokeniser = tokeniser
+
+        generative_type = self.generative_type
+        if generative_type is None:
+            raise InvalidModel(
+                f"Generative type for model {model_config.model_id!r} was None during "
+                "initialisation. Please report this issue at "
+                "https://github.com/EuroEval/EuroEval/issues/new."
+            )
+
         with no_terminal_output(disable=benchmark_config.verbose):
-            model, tokeniser = load_model_and_tokeniser(
+            model = load_model(
                 model_config=model_config,
                 benchmark_config=benchmark_config,
                 attention_backend=benchmark_config.attention_backend,
+                true_max_model_len=true_max_model_len,
+                generative_type=generative_type,
+                tokeniser=tokeniser,
+                hf_model_config=hf_model_config,
             )
-        self._model: t.Any = model  # pyrefly: ignore[bad-override]
-        self._tokeniser: Tokeniser = tokeniser
+        self._model: LLM = model  # pyrefly: ignore[bad-override]
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
         # to call the `__init__` method of the `BenchmarkModule` class.
@@ -268,14 +311,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
-        if not hasattr(self, "_tokeniser"):
-            log_once(
-                "The generative type of the model has not been set yet as the "
-                "tokeniser has not been loaded.",
-                level=logging.DEBUG,
-            )
-            return None
-        elif self.benchmark_config.generative_type is not None:
+        if self.benchmark_config.generative_type is not None:
             type_ = self.benchmark_config.generative_type
         elif self.model_config.param in {"thinking"}:
             type_ = GenerativeType.REASONING
@@ -286,6 +322,13 @@ class VLLMModel(HuggingFaceEncoderModel):
             and self.end_of_reasoning_token is not None
         ):
             type_ = GenerativeType.REASONING
+        elif not hasattr(self, "_tokeniser"):
+            log_once(
+                "The generative type of the model has not been set yet as the "
+                "tokeniser has not been loaded.",
+                level=logging.DEBUG,
+            )
+            return None
         elif (
             has_chat_template(tokeniser=self._tokeniser)
             or "instruct" in self.model_config.model_id.lower()
@@ -990,15 +1033,19 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
 
 
-def load_model_and_tokeniser(
+def load_model(
     model_config: "ModelConfig",
     benchmark_config: "BenchmarkConfig",
     attention_backend: t.Literal[
         *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
     ]
     | None,
-) -> tuple["LLM", Tokeniser]:
-    """Load the model and tokeniser.
+    generative_type: "GenerativeType",
+    true_max_model_len: int,
+    tokeniser: Tokeniser,
+    hf_model_config: "PretrainedConfig",
+) -> "LLM":
+    """Load the model.
 
     Args:
         model_config:
@@ -1007,9 +1054,17 @@ def load_model_and_tokeniser(
             The benchmark configuration.
         attention_backend:
             The attention backend to use, or None to use the vLLM default.
+        generative_type:
+            The generative type of the model.
+        true_max_model_len:
+            The maximum context length of the model.
+        tokeniser:
+            The tokeniser associated with the model.
+        hf_model_config:
+            The Hugging Face model configuration.
 
     Returns:
-        A pair (model, tokeniser), with the loaded model and tokeniser
+        The loaded model.
 
     Raises:
         NeedsExtraInstalled:
@@ -1023,18 +1078,6 @@ def load_model_and_tokeniser(
     model_id = model_config.adapter_base_model_id or model_config.model_id
     revision = (
         model_config.revision if model_config.adapter_base_model_id is None else "main"
-    )
-
-    hf_model_config = load_hf_model_config(
-        model_id=model_id,
-        num_labels=0,
-        id2label=HashableDict(),
-        label2id=HashableDict(),
-        revision=revision,
-        model_cache_dir=model_config.model_cache_dir,
-        api_key=benchmark_config.api_key,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        run_with_cli=benchmark_config.run_with_cli,
     )
 
     # Start with dtype being the "auto" vLLM dtype
@@ -1103,33 +1146,6 @@ def load_model_and_tokeniser(
     else:
         download_dir = str(model_config.model_cache_dir)
 
-    potential_max_model_length_config_names = [
-        "max_position_embeddings",
-        "max_sequence_length",
-        "model_max_length",
-        "n_positions",
-    ]
-    true_max_model_len_candidates: list[int] = list()
-    for config_name in potential_max_model_length_config_names:
-        if hasattr(hf_model_config, config_name):
-            model_len = getattr(hf_model_config, config_name)
-            if model_len is not None:
-                true_max_model_len_candidates.append(model_len)
-
-    if len(true_max_model_len_candidates) > 0:
-        true_max_model_len = min(true_max_model_len_candidates)
-    else:
-        true_max_model_len = MAX_CONTEXT_LENGTH
-
-    tokeniser = load_tokeniser(
-        model_id=model_config.model_id,
-        revision=model_config.revision,
-        adapter_base_model_id=model_config.adapter_base_model_id,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        model_max_length=true_max_model_len,
-        model_config=model_config,
-        token=get_hf_token(api_key=benchmark_config.api_key),
-    )
     vllm_params = get_vllm_tokenisation_params(
         tokeniser=tokeniser, model_config=model_config
     )
@@ -1153,7 +1169,10 @@ def load_model_and_tokeniser(
         )
 
         max_model_len = min(
-            true_max_model_len, MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
+            true_max_model_len,
+            MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
+            if generative_type == GenerativeType.REASONING
+            else MAX_CONTEXT_LENGTH,
         )
         model = LLM(
             model=model_location,
@@ -1223,7 +1242,61 @@ def load_model_and_tokeniser(
 
     model.config = hf_model_config
 
-    return model, tokeniser
+    return model
+
+
+def get_true_max_model_len(
+    model_config: ModelConfig, benchmark_config: BenchmarkConfig
+) -> int:
+    """Get the true maximum context length of a model.
+
+    Args:
+        model_config:
+            The model configuration.
+        benchmark_config:
+            The benchmark configuration.
+
+    Returns:
+        The maximum context length.
+    """
+    # Prefer base model ID if the model is an adapter - the adapter will be added on
+    # during inference in this case
+    model_id = model_config.adapter_base_model_id or model_config.model_id
+    revision = (
+        model_config.revision if model_config.adapter_base_model_id is None else "main"
+    )
+
+    hf_model_config = load_hf_model_config(
+        model_id=model_id,
+        num_labels=0,
+        id2label=HashableDict(),
+        label2id=HashableDict(),
+        revision=revision,
+        model_cache_dir=model_config.model_cache_dir,
+        api_key=benchmark_config.api_key,
+        trust_remote_code=benchmark_config.trust_remote_code,
+        run_with_cli=benchmark_config.run_with_cli,
+    )
+
+    potential_max_model_length_config_names = [
+        "max_position_embeddings",
+        "max_sequence_length",
+        "model_max_length",
+        "n_positions",
+    ]
+    true_max_model_len_candidates: list[int] = list()
+    for config_name in potential_max_model_length_config_names:
+        if hasattr(hf_model_config, config_name):
+            model_len = getattr(hf_model_config, config_name)
+            if model_len is not None:
+                true_max_model_len_candidates.append(model_len)
+
+    true_max_model_len = (
+        min(true_max_model_len_candidates)
+        if len(true_max_model_len_candidates) > 0
+        else MAX_CONTEXT_LENGTH
+    )
+    return true_max_model_len
 
 
 def load_tokeniser(
@@ -1233,6 +1306,7 @@ def load_tokeniser(
     trust_remote_code: bool,
     model_max_length: int,
     model_config: "ModelConfig",
+    hf_model_config: "PretrainedConfig",
     token: str | bool,
 ) -> Tokeniser:
     """Load the tokeniser.
@@ -1251,6 +1325,8 @@ def load_tokeniser(
             The maximum length of the model.
         model_config:
             The model configuration.
+        hf_model_config:
+            The Hugging Face model configuration.
         token:
             The Hugging Face API token.
 
@@ -1262,14 +1338,6 @@ def load_tokeniser(
             If the tokeniser could not be loaded.
     """
     revision = revision if adapter_base_model_id is None else "main"
-    config = AutoConfig.from_pretrained(
-        adapter_base_model_id or model_id,
-        revision=revision,
-        cache_dir=model_config.model_cache_dir,
-        token=token,
-        trust_remote_code=trust_remote_code,
-        local_files_only=not internet_connection_available(),
-    )
     num_retries = 5
     for _ in range(num_retries):
         try:
@@ -1293,7 +1361,7 @@ def load_tokeniser(
                 truncation_side="left",
                 model_max_length=model_max_length,
                 cache_dir=model_config.model_cache_dir,
-                config=config,
+                config=hf_model_config,
                 token=token,
                 local_files_only=not internet_connection_available(),
             )
