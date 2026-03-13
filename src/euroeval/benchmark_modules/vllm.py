@@ -115,7 +115,8 @@ if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
-    from transformers.trainer import PretrainedConfig, Trainer
+    from transformers.configuration_utils import PretrainedConfig
+    from transformers.trainer import Trainer
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
