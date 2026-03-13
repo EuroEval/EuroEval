@@ -2990,13 +2990,17 @@ samples).</p>
 <ul>
 <li>Base prompt template:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>{text}
+<div class="highlight"><pre><span></span><code>Word: {target}
+Context 1: {first_context}
+Context 2: {second_context}
 Same meaning: {label}
 </code></pre></div>
 <ul>
 <li>Instruction-tuned prompt template:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>{text}
+<div class="highlight"><pre><span></span><code>Word: {target}
+Context 1: {first_context}
+Context 2: {second_context}
 
 Does the word have the same meaning in both contexts? Answer with &#39;yes&#39; or &#39;no&#39;, and nothing else.
 </code></pre></div>

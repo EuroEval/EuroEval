@@ -3625,13 +3625,17 @@ the concatenation of the original development and test splits.</p>
 <ul>
 <li>Base prompt template:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>{text}
+<div class="highlight"><pre><span></span><code>Parola: {target}
+Contesto 1: {first_context}
+Contesto 2: {second_context}
 Stesso significato: {label}
 </code></pre></div>
 <ul>
 <li>Instruction-tuned prompt template:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>{text}
+<div class="highlight"><pre><span></span><code>Parola: {target}
+Contesto 1: {first_context}
+Contesto 2: {second_context}
 
 La parola ha lo stesso significato in entrambi i contesti? Rispondere con &#39;sì&#39; o &#39;no&#39;, e nient&#39;altro.
 </code></pre></div>

@@ -3360,13 +3360,17 @@ training, validation and testing, respectively.</p>
 <ul>
 <li>Base prompt template:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>{text}
+<div class="highlight"><pre><span></span><code>Ord: {target}
+Kontekst 1: {first_context}
+Kontekst 2: {second_context}
 Samme betydning: {label}
 </code></pre></div>
 <ul>
 <li>Instruction-tuned prompt template:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>{text}
+<div class="highlight"><pre><span></span><code>Ord: {target}
+Kontekst 1: {first_context}
+Kontekst 2: {second_context}
 
 Har ordet den samme betydning i de to kontekster? Svar kun med &#39;ja&#39; eller &#39;nej&#39;, og intet andet.
 </code></pre></div>
