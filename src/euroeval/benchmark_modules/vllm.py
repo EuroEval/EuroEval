@@ -217,9 +217,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             trust_remote_code=benchmark_config.trust_remote_code,
             run_with_cli=benchmark_config.run_with_cli,
         )
-        true_max_model_len = get_true_max_model_len(
-            model_config=model_config, benchmark_config=benchmark_config
-        )
+        true_max_model_len = get_true_max_model_len(hf_model_config=hf_model_config)
 
         tokeniser = load_tokeniser(
             model_id=model_config.model_id,
@@ -1250,39 +1248,16 @@ def load_model(
     return model
 
 
-def get_true_max_model_len(
-    model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
-) -> int:
+def get_true_max_model_len(hf_model_config: "PretrainedConfig") -> int:
     """Get the true maximum context length of a model.
 
     Args:
-        model_config:
-            The model configuration.
-        benchmark_config:
-            The benchmark configuration.
+        hf_model_config:
+            The Hugging Face model configuration.
 
     Returns:
         The maximum context length.
     """
-    # Prefer base model ID if the model is an adapter - the adapter will be added on
-    # during inference in this case
-    model_id = model_config.adapter_base_model_id or model_config.model_id
-    revision = (
-        model_config.revision if model_config.adapter_base_model_id is None else "main"
-    )
-
-    hf_model_config = load_hf_model_config(
-        model_id=model_id,
-        num_labels=0,
-        id2label=HashableDict(),
-        label2id=HashableDict(),
-        revision=revision,
-        model_cache_dir=model_config.model_cache_dir,
-        api_key=benchmark_config.api_key,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        run_with_cli=benchmark_config.run_with_cli,
-    )
-
     potential_max_model_length_config_names = [
         "max_position_embeddings",
         "max_sequence_length",
