@@ -27,7 +27,7 @@ from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
-logger = logging.getLogger("create_jentoft")
+logger = logging.getLogger("create_danwic")
 
 
 # The DanWiC dataset is stored in a password-protected zip archive
@@ -40,6 +40,7 @@ ZIP_PASSWORD = "benchmark"
 # Split sizes
 TRAIN_SIZE = 1024
 VAL_SIZE = 256
+RANDOM_STATE = 4242
 
 
 def main() -> None:
@@ -85,7 +86,11 @@ def download_and_load_dataset() -> pd.DataFrame:
             mono_df = pd.read_csv(f, sep="\t")
             mono_df["type"] = "monosemous"
 
-    return pd.concat([poly_df, mono_df]).sample(frac=1.0).reset_index(drop=True)
+    return (
+        pd.concat([poly_df, mono_df])
+        .sample(frac=1.0, random_state=RANDOM_STATE)
+        .reset_index(drop=True)
+    )
 
 
 def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -103,7 +108,7 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             The raw dataframe from the TSV file.
 
     Returns:
-        A dataframe with ``text`` and ``label`` columns.
+        A dataframe with ``text``, ``label``, ``type``, and ``idx`` columns.
     """
     logger.info("Processing DanWiC dataframe...")
     df = df.copy()
