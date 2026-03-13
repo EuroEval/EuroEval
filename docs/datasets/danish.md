@@ -596,7 +596,7 @@ ability to distinguish word meanings/senses in context: given two sentences cont
 the same target word, the task is to determine whether the word carries the same sense
 in both sentences.
 
-The original full dataset consists of 2,196 polysemous samples with balanced labels. We
+The original full dataset consists of 2,196 samples (both monosemous and polysemous) with balanced labels. We
 use all the samples, split into 1,024 / 256 / 916 samples for training, validation and
 testing, respectively.
 
