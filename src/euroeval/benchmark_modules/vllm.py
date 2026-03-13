@@ -197,6 +197,10 @@ class VLLMModel(HuggingFaceEncoderModel):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
+        # This is already set when calling `super().__init__`, but we need it to get
+        # the correct value from `self.generative_type`, so we set it here as well.
+        self.benchmark_config = benchmark_config
+
         hf_model_config = load_hf_model_config(
             model_id=model_config.adapter_base_model_id or model_config.model_id,
             num_labels=0,
