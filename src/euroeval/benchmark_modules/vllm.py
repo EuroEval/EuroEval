@@ -1246,7 +1246,7 @@ def load_model(
 
 
 def get_true_max_model_len(
-    model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
 ) -> int:
     """Get the true maximum context length of a model.
 
