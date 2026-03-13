@@ -579,6 +579,8 @@
       
         
       
+        
+      
     
     
     
@@ -978,6 +980,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#output-format-every-eval-ever-eee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output format: Every Eval Ever (EEE)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#analysing-the-results-of-generative-models" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1223,6 +1236,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-format-every-eval-ever-eee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output format: Every Eval Ever (EEE)
+      
+    </span>
+  </a>
   
 </li>
       
@@ -2066,6 +2090,132 @@ query from a natural language input:</p>
 </div>
 <p>With any of these custom tasks you can then benchmark your dataset by running</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--dataset<span class="w"> </span>&lt;dataset-name&gt;<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;
+</code></pre></div>
+<h2 id="output-format-every-eval-ever-eee">Output format: Every Eval Ever (EEE)<a class="headerlink" href="#output-format-every-eval-ever-eee" title="Permanent link">&para;</a></h2>
+<p>Each entry written to <code>euroeval_benchmark_results.jsonl</code> conforms to the
+<a href="https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json">Every Eval Ever (EEE) JSON schema v0.2.1</a>,
+a community-standard format for evaluation reporting.  The file can therefore be
+consumed directly by any tool that understands the EEE schema.</p>
+<p>Every line is a self-contained JSON object with the following top-level structure:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>schema_version</code></td>
+<td>EEE schema version (<code>"0.2.1"</code>)</td>
+</tr>
+<tr>
+<td><code>evaluation_id</code></td>
+<td>Unique run identifier in <code>dataset/model/timestamp</code> format</td>
+</tr>
+<tr>
+<td><code>evaluation_timestamp</code></td>
+<td>ISO 8601 timestamp of when the evaluation ran</td>
+</tr>
+<tr>
+<td><code>retrieved_timestamp</code></td>
+<td>Unix epoch timestamp of when the record was written</td>
+</tr>
+<tr>
+<td><code>source_metadata</code></td>
+<td>EuroEval organisation info and evaluator relationship</td>
+</tr>
+<tr>
+<td><code>model_info</code></td>
+<td>Model identifier and EuroEval-specific metadata</td>
+</tr>
+<tr>
+<td><code>eval_library</code></td>
+<td>Library name/version and evaluation context</td>
+</tr>
+<tr>
+<td><code>evaluation_results</code></td>
+<td>Array of per-metric scores with uncertainty estimates</td>
+</tr>
+</tbody>
+</table>
+<p>Here is an abbreviated example:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;schema_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.2.1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;evaluation_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;angry-tweets/meta-llama/Llama-3.1-8B-Instruct/1741260000&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;evaluation_timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-03-06T11:00:00+00:00&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;retrieved_timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1741260000&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;source_metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;source_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EuroEval&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;source_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;evaluation_run&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;source_organization_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EuroEval&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;source_organization_url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://euroeval.com&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;evaluator_relationship&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;third_party&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;model_info&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;meta-llama/Llama-3.1-8B-Instruct&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;meta-llama/Llama-3.1-8B-Instruct&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;additional_details&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;num_model_parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;8000000000&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;max_sequence_length&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;131072&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;vocabulary_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;128256&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;generative&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;true&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;generative_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;instruction_tuned&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;eval_library&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;euroeval&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;16.16.1&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;additional_details&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;task&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sentiment-classification&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;languages&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[\&quot;da\&quot;]&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;few_shot&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;true&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;raw_results&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[{\&quot;test_mcc\&quot;: 0.40}, {\&quot;test_mcc\&quot;: 0.45}]&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;evaluation_results&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;evaluation_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test_mcc&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;source_data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;dataset_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;angry-tweets&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;source_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;hf_dataset&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;metric_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;lower_is_better&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;score_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;continuous&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;min_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;score_details&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">42.5</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;details&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;num_failed_instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.0&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">&quot;uncertainty&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;confidence_interval&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;lower&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">41.3</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;upper&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">43.7</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;confidence_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.95</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;bootstrap&quot;</span>
+<span class="w">          </span><span class="p">},</span>
+<span class="w">          </span><span class="nt">&quot;num_samples&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>_se</code> values stored internally are 95 % confidence interval half-widths
+(<code>1.96 × SE</code>).  They are exposed in the EEE output as a
+<code>confidence_interval { lower, upper, confidence_level: 0.95 }</code>, which is the
+correct EEE field for this statistic.</p>
+</div>
+<p>The EEE format can be read back into a <code>BenchmarkResult</code> object without any loss of
+information:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkResult</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;euroeval_benchmark_results.jsonl&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">BenchmarkResult</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
 </code></pre></div>
 <h2 id="analysing-the-results-of-generative-models">Analysing the results of generative models<a class="headerlink" href="#analysing-the-results-of-generative-models" title="Permanent link">&para;</a></h2>
 <h3 id="failed-instances">Failed instances<a class="headerlink" href="#failed-instances" title="Permanent link">&para;</a></h3>

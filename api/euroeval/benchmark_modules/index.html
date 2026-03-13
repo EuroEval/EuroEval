@@ -579,6 +579,8 @@
       
         
       
+        
+      
     
     
     
@@ -903,6 +905,8 @@
       
         
           
+        
+      
         
       
         
@@ -1508,6 +1512,8 @@
       
         
       
+        
+      
     
     
     
@@ -1920,6 +1926,34 @@
     
   
     euroeval.data_models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eee_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.eee_utils
   
 
     
@@ -5866,7 +5900,7 @@ Whether to log the model and dataset metadata.</p>
 <li>
 <p><span class="mkapi-item-name">NeedsSystemDependency</span>
  <span class="mkapi-dash">&mdash;</span>
-If the CUDA Toolkit is not installed.</p>
+If the CUDA Toolkit is not installed on NVIDIA hardware.</p>
 </li>
 <li>
 <p><span class="mkapi-item-name">NeedsExtraInstalled</span>
@@ -5878,6 +5912,11 @@ If the generative extra is not installed.</p>
  <span class="mkapi-dash">&mdash;</span>
 If no CUDA GPUs are available and the dataset requires structured
 generation.</p>
+</li>
+<li>
+<p><span class="mkapi-item-name">InvalidModel</span>
+ <span class="mkapi-dash">&mdash;</span>
+If the generative type was None for the model.</p>
 </li>
 </ul>
 </div>
@@ -6161,8 +6200,8 @@ of each label in the dataset.</p>
 <li>
 <p><span class="mkapi-item-name">InvalidTask</span>
  <span class="mkapi-dash">&mdash;</span>
-If the task requires structured output, but either is not NER or
-does not define an output structure.</p>
+If the task requires structured output, but it is not a token
+classification task and does not define an output structure.</p>
 </li>
 </ul>
 </div>

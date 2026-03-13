@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -2237,106 +2239,7 @@
 <span class="normal">1219</span>
 <span class="normal">1220</span>
 <span class="normal">1221</span>
-<span class="normal">1222</span>
-<span class="normal">1223</span>
-<span class="normal">1224</span>
-<span class="normal">1225</span>
-<span class="normal">1226</span>
-<span class="normal">1227</span>
-<span class="normal">1228</span>
-<span class="normal">1229</span>
-<span class="normal">1230</span>
-<span class="normal">1231</span>
-<span class="normal">1232</span>
-<span class="normal">1233</span>
-<span class="normal">1234</span>
-<span class="normal">1235</span>
-<span class="normal">1236</span>
-<span class="normal">1237</span>
-<span class="normal">1238</span>
-<span class="normal">1239</span>
-<span class="normal">1240</span>
-<span class="normal">1241</span>
-<span class="normal">1242</span>
-<span class="normal">1243</span>
-<span class="normal">1244</span>
-<span class="normal">1245</span>
-<span class="normal">1246</span>
-<span class="normal">1247</span>
-<span class="normal">1248</span>
-<span class="normal">1249</span>
-<span class="normal">1250</span>
-<span class="normal">1251</span>
-<span class="normal">1252</span>
-<span class="normal">1253</span>
-<span class="normal">1254</span>
-<span class="normal">1255</span>
-<span class="normal">1256</span>
-<span class="normal">1257</span>
-<span class="normal">1258</span>
-<span class="normal">1259</span>
-<span class="normal">1260</span>
-<span class="normal">1261</span>
-<span class="normal">1262</span>
-<span class="normal">1263</span>
-<span class="normal">1264</span>
-<span class="normal">1265</span>
-<span class="normal">1266</span>
-<span class="normal">1267</span>
-<span class="normal">1268</span>
-<span class="normal">1269</span>
-<span class="normal">1270</span>
-<span class="normal">1271</span>
-<span class="normal">1272</span>
-<span class="normal">1273</span>
-<span class="normal">1274</span>
-<span class="normal">1275</span>
-<span class="normal">1276</span>
-<span class="normal">1277</span>
-<span class="normal">1278</span>
-<span class="normal">1279</span>
-<span class="normal">1280</span>
-<span class="normal">1281</span>
-<span class="normal">1282</span>
-<span class="normal">1283</span>
-<span class="normal">1284</span>
-<span class="normal">1285</span>
-<span class="normal">1286</span>
-<span class="normal">1287</span>
-<span class="normal">1288</span>
-<span class="normal">1289</span>
-<span class="normal">1290</span>
-<span class="normal">1291</span>
-<span class="normal">1292</span>
-<span class="normal">1293</span>
-<span class="normal">1294</span>
-<span class="normal">1295</span>
-<span class="normal">1296</span>
-<span class="normal">1297</span>
-<span class="normal">1298</span>
-<span class="normal">1299</span>
-<span class="normal">1300</span>
-<span class="normal">1301</span>
-<span class="normal">1302</span>
-<span class="normal">1303</span>
-<span class="normal">1304</span>
-<span class="normal">1305</span>
-<span class="normal">1306</span>
-<span class="normal">1307</span>
-<span class="normal">1308</span>
-<span class="normal">1309</span>
-<span class="normal">1310</span>
-<span class="normal">1311</span>
-<span class="normal">1312</span>
-<span class="normal">1313</span>
-<span class="normal">1314</span>
-<span class="normal">1315</span>
-<span class="normal">1316</span>
-<span class="normal">1317</span>
-<span class="normal">1318</span>
-<span class="normal">1319</span>
-<span class="normal">1320</span>
-<span class="normal">1321</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
+<span class="normal">1222</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Class that benchmarks language models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2355,8 +2258,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.benchmark_config_factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_benchmark_config</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">ATTENTION_BACKENDS</span><span class="p">,</span> <span class="n">GENERATIVE_PIPELINE_TAGS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.data_loading</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_data</span><span class="p">,</span> <span class="n">load_raw_data</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfigParams</span><span class="p">,</span> <span class="n">BenchmarkResult</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">ModelType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfigParams</span><span class="p">,</span> <span class="n">BenchmarkResult</span><span class="p">,</span> <span class="n">get_package_version</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">Device</span><span class="p">,</span> <span class="n">GenerativeType</span><span class="p">,</span> <span class="n">InferenceBackend</span><span class="p">,</span> <span class="n">ModelType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceHubDown</span><span class="p">,</span> <span class="n">InvalidBenchmark</span><span class="p">,</span> <span class="n">InvalidModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.finetuning</span><span class="w"> </span><span class="kn">import</span> <span class="n">finetune</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate</span>
@@ -2423,9 +2326,6 @@
         <span class="n">run_with_cli</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">requires_safetensors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">download_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">model_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">max_context_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">vocabulary_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -2511,12 +2411,6 @@
 <span class="sd">            download_only:</span>
 <span class="sd">                Whether to only download models and datasets without performing any</span>
 <span class="sd">                benchmarking. Defaults to False.</span>
-<span class="sd">            model_language:</span>
-<span class="sd">                Deprecated argument. Please use `language` instead.</span>
-<span class="sd">            dataset_language:</span>
-<span class="sd">                Deprecated argument. Please use `language` instead.</span>
-<span class="sd">            batch_size:</span>
-<span class="sd">                Deprecated argument. Please use `finetuning_batch_size` instead.</span>
 <span class="sd">            max_context_length:</span>
 <span class="sd">                Override for the maximum context length of the model. If None, the value</span>
 <span class="sd">                will be inferred automatically from the model. Defaults to None.</span>
@@ -2539,53 +2433,6 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot;the argument `download_only` was set to True.&quot;</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-
-        <span class="c1"># Deprecation warnings</span>
-        <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">run_with_cli</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;The --batch-size option is deprecated and will be removed in a &quot;</span>
-                    <span class="s2">&quot;future version. Please use --finetuning-batch-size instead. &quot;</span>
-                    <span class="s2">&quot;Overwriting --finetuning-batch-size with the value from &quot;</span>
-                    <span class="s2">&quot;--batch-size.&quot;</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;The `batch_size` argument is deprecated and will be removed in a &quot;</span>
-                    <span class="s2">&quot;future version. Please use `finetuning_batch_size` instead. &quot;</span>
-                    <span class="s2">&quot;Overwriting `finetuning_batch_size` with the value from &quot;</span>
-                    <span class="s2">&quot;`batch_size`.&quot;</span>
-                <span class="p">)</span>
-            <span class="n">log</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
-            <span class="n">finetuning_batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
-        <span class="k">if</span> <span class="n">model_language</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">run_with_cli</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;The --model-language option is deprecated and will be removed in &quot;</span>
-                    <span class="s2">&quot;a future version. Please use --language instead. Ignoring the &quot;</span>
-                    <span class="s2">&quot;--model-language value.&quot;</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;The `model_language` argument is deprecated and will be removed &quot;</span>
-                    <span class="s2">&quot;in a future version. Please use `language` instead. Ignoring the &quot;</span>
-                    <span class="s2">&quot;`model_language` value.&quot;</span>
-                <span class="p">)</span>
-            <span class="n">log</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">dataset_language</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">run_with_cli</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;The --dataset-language option is deprecated and will be removed &quot;</span>
-                    <span class="s2">&quot;in a future version. Please use --language instead. Ignoring the &quot;</span>
-                    <span class="s2">&quot;--dataset-language value.&quot;</span>
-                <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;The `dataset_language` argument is deprecated and will be removed &quot;</span>
-                    <span class="s2">&quot;in a future version. Please use `language` instead. Ignoring the &quot;</span>
-                    <span class="s2">&quot;`dataset_language` value.&quot;</span>
-                <span class="p">)</span>
-            <span class="n">log</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
 
         <span class="c1"># If FULL_LOG has been set, then force verbose mode</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;FULL_LOG&quot;</span><span class="p">,</span> <span class="s2">&quot;0&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;1&quot;</span><span class="p">:</span>
@@ -2748,9 +2595,6 @@
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">model_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">dataset_language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">max_context_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">vocabulary_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="n">BenchmarkResult</span><span class="p">]:</span>
@@ -2855,12 +2699,6 @@
 <span class="sd">            debug:</span>
 <span class="sd">                Whether to output debug information. Defaults to the value specified</span>
 <span class="sd">                when initialising the benchmarker.</span>
-<span class="sd">            model_language:</span>
-<span class="sd">                Deprecated argument. Please use `language` instead.</span>
-<span class="sd">            dataset_language:</span>
-<span class="sd">                Deprecated argument. Please use `language` instead.</span>
-<span class="sd">            batch_size:</span>
-<span class="sd">                Deprecated argument. Please use `finetuning_batch_size` instead.</span>
 <span class="sd">            max_context_length:</span>
 <span class="sd">                Override for the maximum context length of the model. If None, the</span>
 <span class="sd">                value will be inferred automatically from the model. Defaults to the</span>
@@ -2887,31 +2725,6 @@
 
         <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dataset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only one of `task` and `dataset` can be specified.&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Deprecation warnings</span>
-        <span class="k">if</span> <span class="n">batch_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">log</span><span class="p">(</span>
-                <span class="s2">&quot;The `batch_size` argument is deprecated and will be removed in a &quot;</span>
-                <span class="s2">&quot;future version. Please use `finetuning_batch_size` instead. &quot;</span>
-                <span class="s2">&quot;Overwriting `finetuning_batch_size` with the value from &quot;</span>
-                <span class="s2">&quot;`batch_size`.&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">finetuning_batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
-        <span class="k">if</span> <span class="n">model_language</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">log</span><span class="p">(</span>
-                <span class="s2">&quot;The `model_language` argument is deprecated and will be removed &quot;</span>
-                <span class="s2">&quot;in a future version. Please use `language` instead. Ignoring the &quot;</span>
-                <span class="s2">&quot;`model_language` value.&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">dataset_language</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">log</span><span class="p">(</span>
-                <span class="s2">&quot;The `dataset_language` argument is deprecated and will be removed &quot;</span>
-                <span class="s2">&quot;in a future version. Please use `language` instead. Ignoring the &quot;</span>
-                <span class="s2">&quot;`dataset_language` value.&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-            <span class="p">)</span>
 
         <span class="c1"># Get a new updated benchmark configuration, based on any changes to the</span>
         <span class="c1"># parameters</span>
@@ -3450,12 +3263,12 @@
                 <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">model_id_to_be_stored</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;#</span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span><span class="si">}</span><span class="s2">&quot;</span>
 
-                <span class="n">record</span> <span class="o">=</span> <span class="n">BenchmarkResult</span><span class="p">(</span>
+                <span class="n">record</span> <span class="o">=</span> <span class="n">BenchmarkResult</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[bad-argument-type]</span>
                     <span class="n">dataset</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                     <span class="n">task</span><span class="o">=</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">language</span><span class="o">.</span><span class="n">code</span> <span class="k">for</span> <span class="n">language</span> <span class="ow">in</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">languages</span><span class="p">],</span>
                     <span class="n">model</span><span class="o">=</span><span class="n">model_id_to_be_stored</span><span class="p">,</span>
-                    <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>
+                    <span class="n">results</span><span class="o">=</span><span class="n">results</span><span class="p">,</span>  <span class="c1"># pyrefly: ignore[bad-argument-type]</span>
                     <span class="n">num_model_parameters</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">num_params</span><span class="p">,</span>
                     <span class="n">max_sequence_length</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">model_max_length</span><span class="p">,</span>
                     <span class="n">vocabulary_size</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">vocab_size</span><span class="p">,</span>
@@ -3475,6 +3288,16 @@
                         <span class="kc">None</span>
                         <span class="k">if</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">val_split</span> <span class="ow">is</span> <span class="kc">None</span>
                         <span class="k">else</span> <span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">evaluate_test_split</span>
+                    <span class="p">),</span>
+                    <span class="n">vllm_version</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">get_package_version</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">inference_backend</span> <span class="o">==</span> <span class="n">InferenceBackend</span><span class="o">.</span><span class="n">VLLM</span>
+                        <span class="k">else</span> <span class="kc">None</span>
+                    <span class="p">),</span>
+                    <span class="n">litellm_version</span><span class="o">=</span><span class="p">(</span>
+                        <span class="n">get_package_version</span><span class="p">(</span><span class="s2">&quot;litellm&quot;</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">inference_backend</span> <span class="o">==</span> <span class="n">InferenceBackend</span><span class="o">.</span><span class="n">LITELLM</span>
+                        <span class="k">else</span> <span class="kc">None</span>
                     <span class="p">),</span>
                 <span class="p">)</span>
                 <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Results:</span><span class="se">\n</span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
@@ -3513,25 +3336,6 @@
                 <span class="sa">f</span><span class="s2">&quot;Failed to benchmark model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> on dataset &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> after </span><span class="si">{</span><span class="n">num_attempts</span><span class="si">}</span><span class="s2"> attempts.&quot;</span>
             <span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">:</span>  <span class="c1"># noqa: ANN401</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Alias for `self.benchmark()`.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            *args:</span>
-<span class="sd">                Positional arguments to pass to `self.benchmark()`.</span>
-<span class="sd">            **kwds:</span>
-<span class="sd">                Keyword arguments to pass to `self.benchmark()`.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            The result of `self.benchmark()`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">log</span><span class="p">(</span>
-            <span class="s2">&quot;Calling the `Benchmarker` class directly is deprecated. Please use the &quot;</span>
-            <span class="s2">&quot;`benchmark` function instead. This will be removed in a future version.&quot;</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_record</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmarker.get_record"><a href="../../../api/euroeval/benchmarker/#euroeval.benchmarker.get_record" title="Go to docs">[docs]</a></div>

@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -2575,7 +2577,17 @@
 <span class="normal">1392</span>
 <span class="normal">1393</span>
 <span class="normal">1394</span>
-<span class="normal">1395</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1395</span>
+<span class="normal">1396</span>
+<span class="normal">1397</span>
+<span class="normal">1398</span>
+<span class="normal">1399</span>
+<span class="normal">1400</span>
+<span class="normal">1401</span>
+<span class="normal">1402</span>
+<span class="normal">1403</span>
+<span class="normal">1404</span>
+<span class="normal">1405</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
@@ -2654,11 +2666,15 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkModule</span>
 
 <span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">MistralCommonTokenizer</span><span class="p">,</span>  <span class="c1"># pyrefly: ignore[missing-module-attribute]</span>
+    <span class="p">)</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-        <span class="n">MistralCommonBackend</span> <span class="k">as</span> <span class="n">MistralCommonTokenizer</span><span class="p">,</span>
+        <span class="n">MistralCommonBackend</span> <span class="k">as</span> <span class="n">MCB</span><span class="p">,</span>  <span class="c1"># pyrefly: ignore[missing-module-attribute]</span>
     <span class="p">)</span>
+
+    <span class="n">MistralCommonTokenizer</span> <span class="o">=</span> <span class="n">MCB</span>  <span class="c1"># pyrefly: ignore[assignment]</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.configuration_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PretrainedConfig</span>
@@ -2958,7 +2974,7 @@
                 <span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">tokenise</span><span class="p">,</span> <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">load_from_cache_file</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
             <span class="k">case</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">:</span>
-                <span class="n">dataset</span> <span class="o">=</span> <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># type: ignore[no-matching-overload]</span>
+                <span class="n">dataset</span> <span class="o">=</span> <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[no-matching-overload]</span>
                     <span class="p">{</span>
                         <span class="n">split_name</span><span class="p">:</span> <span class="n">split</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
                             <span class="n">partial</span><span class="p">(</span>
@@ -3033,7 +3049,11 @@
                         <span class="n">load_from_cache_file</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">keep_in_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="p">)</span>
-                <span class="n">dataset</span> <span class="o">=</span> <span class="n">DatasetDict</span><span class="p">(</span><span class="n">data_dict</span><span class="p">)</span>  <span class="c1"># type: ignore[no-matching-overload]</span>
+                <span class="n">dataset</span><span class="p">:</span> <span class="n">DatasetDict</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[no-matching-overload]</span>
+                        <span class="n">data_dict</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
 
                 <span class="c1"># The Trainer hides the columns that are not used by the model (here</span>
                 <span class="c1"># `id` and `offset_mapping` which we will need for our post-processing),</span>
@@ -3275,7 +3295,7 @@
     <span class="k">assert</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;The model should not be None.&quot;</span>
 
     <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>  <span class="c1"># pyrefly: ignore[arg-type]</span>
 
     <span class="k">if</span> <span class="p">(</span>
         <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">PreTrainedModel</span><span class="p">)</span>
@@ -3458,7 +3478,7 @@
         <span class="n">generative_class_names</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">class_name</span>
             <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">GENERATIVE_PIPELINE_TAGS</span>
-            <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="c1"># pyrefly: ignore[attr-defined]</span>
             <span class="k">for</span> <span class="n">class_name</span> <span class="ow">in</span> <span class="n">TASK_MAPPING</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
         <span class="p">]</span>
         <span class="k">if</span> <span class="n">class_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
@@ -3785,7 +3805,9 @@
                 <span class="p">),</span>
                 <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">num_embeddings</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># type: ignore[assignment]</span>
+            <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">num_embeddings</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="mi">2</span>  <span class="c1"># pyrefly: ignore[bad-argument-type]</span>
+            <span class="p">)</span>
 
         <span class="c1"># Set the model config to use the new type vocab size</span>
         <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">type_vocab_size</span> <span class="o">=</span> <span class="mi">2</span>
@@ -3858,7 +3880,7 @@
     <span class="c1"># Move the model to the CPU, since otherwise we can&#39;t catch the IndexErrors when</span>
     <span class="c1"># finding the maximum sequence length of the model</span>
     <span class="n">model_device</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">device</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">))</span>  <span class="c1"># type: ignore[arg-type]</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cpu&quot;</span><span class="p">))</span>  <span class="c1"># pyrefly: ignore[arg-type]</span>
 
     <span class="c1"># Manually check that this model max length is valid for the model, and adjust</span>
     <span class="c1"># otherwise</span>
@@ -3889,7 +3911,7 @@
                     <span class="k">raise</span> <span class="n">e</span>
 
     <span class="c1"># Move the model back to the original device</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_device</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model_device</span><span class="p">)</span>  <span class="c1"># pyrefly: ignore[arg-type]</span>
 
     <span class="c1"># If there is a mismatch between the vocab size according to the tokeniser and</span>
     <span class="c1"># the vocab size according to the model, we raise an error</span>

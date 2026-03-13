@@ -579,6 +579,8 @@
       
         
       
+        
+      
     
     
     
@@ -903,6 +905,8 @@
       
         
           
+        
+      
         
       
         
@@ -1349,6 +1353,8 @@
       
         
       
+        
+      
     
     
     
@@ -1761,6 +1767,34 @@
     
   
     euroeval.data_models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eee_utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    euroeval.eee_utils
   
 
     
@@ -2684,7 +2718,7 @@ If the logits are a tuple, return only the first element.</p>
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span>
-<span class="mkapi-object-name"><a href="./#euroeval.finetuning.finetune" title="euroeval.finetuning.finetune">finetune</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">datasets</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>['DatasetDict']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">benchmark_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, float]]</span></span>
+<span class="mkapi-object-name"><a href="./#euroeval.finetuning.finetune" title="euroeval.finetuning.finetune">finetune</a></span><span class="mkapi-signature"><span class="mkapi-paren">(</span><span class="mkapi-arg">model</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a> | None</span><span class="mkapi-comma">, </span><span class="mkapi-arg">datasets</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>['DatasetDict']</span><span class="mkapi-comma">, </span><span class="mkapi-arg">model_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.ModelConfig" title="euroeval.data_models.ModelConfig">ModelConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">dataset_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.DatasetConfig" title="euroeval.data_models.DatasetConfig">DatasetConfig</a></span><span class="mkapi-comma">, </span><span class="mkapi-arg">benchmark_config</span><span class="mkapi-colon">: </span><span class="mkapi-ann"><a href="../data_models/#euroeval.data_models.BenchmarkConfig" title="euroeval.data_models.BenchmarkConfig">BenchmarkConfig</a></span><span class="mkapi-paren">)</span><span class="mkapi-arrow"> → </span><span class="mkapi-return"><span class="mkapi-tooltip" title="collections.abc">c</span>.<span class="mkapi-tooltip" title="collections.abc.Sequence">Sequence</span>[dict[str, float]]</span></span>
 </p>
 <div class="mkapi-document">
 <p>Evaluate a model on a dataset through finetuning.</p>
@@ -2700,7 +2734,7 @@ If the logits are a tuple, return only the first element.</p>
 <ul class="mkapi-item-list">
 <li>
 <p><span class="mkapi-item-name">model</span> : 
-<span class="mkapi-item-type"><a href="../benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a></span> <span class="mkapi-dash">&mdash;</span>
+<span class="mkapi-item-type"><a href="../benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule" title="euroeval.benchmark_modules.base.BenchmarkModule">BenchmarkModule</a> | None</span> <span class="mkapi-dash">&mdash;</span>
 The model to evaluate.</p>
 </li>
 <li>

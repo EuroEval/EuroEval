@@ -577,6 +577,8 @@
       
         
       
+        
+      
     
     
     
@@ -1513,6 +1515,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-icelandic-language-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: Icelandic Language Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-icelandic-mathematics-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: Icelandic Mathematics Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1602,6 +1626,34 @@
     <span class="md-ellipsis">
       
         ValEU-is
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#grammatical-error-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grammatical Error Detection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Grammatical Error Detection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-gerlangmod-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: GerLangMod-is
       
     </span>
   </a>
@@ -2375,6 +2427,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#unofficial-icelandic-language-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: Icelandic Language Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-icelandic-mathematics-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: Icelandic Mathematics Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2464,6 +2538,34 @@
     <span class="md-ellipsis">
       
         ValEU-is
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#grammatical-error-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grammatical Error Detection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Grammatical Error Detection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-gerlangmod-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: GerLangMod-is
       
     </span>
   </a>
@@ -3269,6 +3371,126 @@ Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>mmlu-is
 </code></pre></div>
+<h3 id="unofficial-icelandic-language-tests">Unofficial: Icelandic Language Tests<a class="headerlink" href="#unofficial-icelandic-language-tests" title="Permanent link">&para;</a></h3>
+<p>This dataset is based on the old Icelandic standardised tests held from 2013 to 2017,
+available at <a href="https://mms.is/eldri-prof-og-svor">mms.is</a>. The tests were administered at
+the primary school level (10th grade) and cover the Icelandic language. Only the
+multiple-choice questions from the tests have been included.</p>
+<p>There are 571 samples, and we use the 16 oldest samples for train, and the rest for
+test.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Lestu textann um Gabba gæs og svaraðu spurningunum.\n\nHúsið mitt stendur við tjörn. Og við tjörnina býr líka gæs sem ég kalla Gabba – sem er stytting á Gabríel eins og erkiengillinn neitir. Það er komið haust og laufblöðin eru farin að roðna og falla af trjánum. Ég sit við eldhúsgluggann minn og horfi á Gabba sem vappar um í gulnuðu grasinu við tjörnina. Hann goggar í grasið og fær sér gott í gogginn. Við erum reyndar bæði að borða. Ég borða kremkex frá Kexverksmiðjunni Frón en Gabbi borðar fræ og pöddur úr ríki móður náttúru.\n\nFyrir Gabba er túnit hér fyrir utan eins og salatbar. Á sumrin leynist þar allskyns hnossgæti fyrir gæsir. Gabbi hefur tínt upp úr því fæði í allt sumar. Hann vill nefnilega fita sig – ekki af því að hann dreymir um að verða að safaríkri jólagæsasteik í brúnni sósu – heldur af því að gæsir eins og hann fljúga mörg hundruð kílómetra á haustin. Þá þurfa þær að geta blakað vængjunum stanslaust í margar vikur og á meðan geta þær ekkert étið, nema kannski eina og eina flugu. Á haustin hópa allar feitu gæsarnar sig svo saman, áður en þær hefja langt sameiginlegt oddaflug til hlýrri landa.\n\nNú kemur önnur gæs að. Hún gefur sig á tal við Gabba sem er hættur að éta. Við skulum kalla hana Sigfús. Fyrst sýnist mér Sigfús vera með stæla. Er hann að ýbba gogg? Nei, þegar betur er að gáð virðist Sigfús vera áhyggjufullur. Af hverju ætti það að sé? Ég kýngi kremkexinu og beini allri athygli minni að gæsunum. Sigfús hefur þá verið að ná í Gabba. Þeir ætla að hitta hinna gæsinar áður en þær fljúga á haf út saman. En viti menn! Gabbi hoppar um á sterklégum fótunum og blakar stórum vængjunum ákaflega en tekst ekki á loft. Ég sé að annar vængurinn er laskaður. Gabba er illt í honum. Sigfús flýgur hins vegar af stað. Hann hringsólar yfir hausamótunum á Gabba og gargar eitthvað á gæsamál, sem ég ímynda mér að hafi verið: „Vertu sæll og gangi þér vel.“ Sigfús flýgur í burtu og Gabbi stendur einn eftir væng- og niðurbrotinn í blautu grasinu. Greyið Gabbi. Ég er miður mín en man svo eftir að hafa lesið í dagblaðinu að gæsir eins og Gabbi séu sumar farnar að búa allan veturinn á Íslandi án þess að verða meint af. Ég veit að það mun ekkert slæmt henda Gabba þótt hann verði áfram á Íslandi. Ég veit það af því að ég verð líka hérna við tjörnina í vetur. Ég ætla að fylgjast með Gabba og gefa honum af kremkexinu mínu. Og kartöflur og múslí og allskonar afganga. Við Gabbi ætlum að halda áfram að borða saman hérna við tjörnina í allan vetur – og langt fram á næsta vor.\n\nUm hvað er sagan?\nSvarmöguleikar:\na. gæs í erfiðleikum\nb. heimili við tjörn\nc. oddaflug gæsa&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;year&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2013&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Lestu textabrotið úr Alfræði unga fólksins og svaraðu spurningunum.\n\nDýr með heitt blóð þurfa yfirleitt að verja umtalsverði orku til að halda á sér hita yfir kalda vetrarmánuði. Orkuna fá þau úr fæðunni sem er þó einmitt jafnan hvað minnst að vetrinum. Sum dýr komast af með því að flytja sig til hlýrri staða en önnur, til dæmis leðurblök og broddgeltir, leggjast í dvala á öruggum og skjólgóðum stað, svo sem í greni, hreiðri eða hellisskúta. Hjá dýrum sem fara í eiginlegan vetrardvala hægir mjög á allri líkamstarfsemi, hjartað slær aðeins öðru hverju og andardrátturinn verður mjög hægur. Líkamshitinn er bara nokkrum gráðum hærri en hiti umhverfisins og er til dæmis rétt um frostmark hjá hömstrum. Ef hitinn úti fer undir frostmark örvast efnskaskipti líkamans og hindra að dýrið frjósi í hel. Dýr sem leggjast í vetrardvala éta sérlega mikið á haustin og safna fituforða til vetrarins. Sá forði fleytir þeim yfir vetrarmánuðina án þess að þau þurfi að næra sig.\n\nSvartbjörn\nBirnir, skunkar og jarðíkornar sofa ekki eins föstum vetrarsvefni og leðurblökur og mýs sem leggjast í eiginlegan vetrardvala. Líkamshiti svartbjarnar lækkar nokkuð er hann leggst í híði en hjartað slær nánast jafnt hratt og í vöku. Þetta gerir það að verkum að bangsi getur rumskað af vægum svefni ef veður hlýnar svolítið um hríð. Þótt björninn vakni upp af dvalanum fer hann yfirleitt ekki á stjá til að leita sér fæðu, heldur lifir áfram á fituforða sínum. Sumar birnur fæða húna í híði sínu að vetrinum.\n\nDá\nSum dýr með heitt blóð, t.d. leðurblökur og kólibrífuglar, spara orku með því að líkamshiti þeirra lækkar og hjartslátturinn róast hluta dags eða nætur. Þetta kallast dá og er ekki sama eðlis og dvali. Stór dýr falla yfirleitt ekki í dá því að þau þyrftu svo mikla orku til að ná líkamshitanum upp aftur. Leðurblökur hjúfra sig oft hver upp að annarri til að draga úr varmatapinu þar sem þær hanga á haus. Þegar vetur gengur í garð safnast leðurblökur í vissa hella eða tré og leggjast þar í eiginlegan vetrardvala.\n\nSumardvali\nMörg eyðimerkurdýr liggja í dvala heitasta árstímann til að prauka steikjandi hitann. Þetta kallast sumardvali, andstætt vetrardvala. Margar æður, froskar, sniglar og skordýr eyðimerkunnar leggjast í sumardvala. Áður en sniglar fara í dvalann loka þeir kúðungi sínum með því að þekja opið með himnu úr slími sem harðnar síðan í hitanum.\n\n(úr: Alfræð í unga fólksins, 1994)\n\n19. Hvernig er starfsemi líkamans þegar dýr er í dvala?\nSvarmöguleikar:\na. Líkamshitinn hækkar.\nb. Orkan verður meiri.\nc. Starfsemin er hægari.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;year&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2013&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Lestu textabrotið úr Alfræði unga fólksins og svaraðu spurningunum.\n\nDýr með heitt blóð þurfa yfirleitt að verja umtalsverði orku til að halda á sér hita yfir kalda vetrarmánuði. Orkuna fá þau úr fæðunni sem er þó einmitt jafnan hvað minnst að vetrinum. Sum dýr komast af með því að flytja sig til hlýrri staða en önnur, til dæmis leðurblök og broddgeltir, leggjast í dvala á öruggum og skjólgóðum stað, svo sem í greni, hreiðri eða hellisskúta. Hjá dýrum sem fara í eiginlegan vetrardvala hægir mjög á allri líkamstarfsemi, hjartað slær aðeins öðru hverju og andardrátturinn verður mjög hægur. Líkamshitinn er bara nokkrum gráðum hærri en hiti umhverfisins og er til dæmis rétt um frostmark hjá hömstrum. Ef hitinn úti fer undir frostmark örvast efnskaskipti líkamans og hindra að dýrið frjósi í hel. Dýr sem leggjast í vetrardvala éta sérlega mikið á haustin og safna fituforða til vetrarins. Sá forði fleytir þeim yfir vetrarmánuðina án þess að þau þurfi að næra sig.\n\nSvartbjörn\nBirnir, skunkar og jarðíkornar sofa ekki eins föstum vetrarsvefni og leðurblökur og mýs sem leggjast í eiginlegan vetrardvala. Líkamshiti svartbjarnar lækkar nokkuð er hann leggst í híði en hjartað slær nánast jafnt hratt og í vöku. Þetta gerir það að verkum að bangsi getur rumskað af vægum svefni ef veður hlýnar svolítið um hríð. Þótt björninn vakni upp af dvalanum fer hann yfirleitt ekki á stjá til að leita sér fæðu, heldur lifir áfram á fituforða sínum. Sumar birnur fæða húna í híði sínu að vetrinum.\n\nDá\nSum dýr með heitt blóð, t.d. leðurblökur og kólibrífuglar, spara orku með því að líkamshiti þeirra lækkar og hjartslátturinn róast hluta dags eða nætur. Þetta kallast dá og er ekki sama eðlis og dvali. Stór dýr falla yfirleitt ekki í dá því að þau þyrftu svo mikla orku til að ná líkamshitanum upp aftur. Leðurblökur hjúfra sig oft hver upp að annarri til að draga úr varmatapinu þar sem þær hanga á haus. Þegar vetur gengur í garð safnast leðurblökur í vissa hella eða tré og leggjast þar í eiginlegan vetrardvala.\n\nSumardvali\nMörg eyðimerkurdýr liggja í dvala heitasta árstímann til að prauka steikjandi hitann. Þetta kallast sumardvali, andstætt vetrardvala. Margar æður, froskar, sniglar og skordýr eyðimerkunnar leggjast í sumardvala. Áður en sniglar fara í dvalann loka þeir kúðungi sínum með því að þekja opið með himnu úr slími sem harðnar síðan í hitanum.\n\n(úr: Alfræð í unga fólksins, 1994)\n\n22. Hvað kallast dvalarstaður bjarnna á veturna?\nSvarmöguleikar:\na. greni\nb. hellir\nc. híði&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;year&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2013&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
+Svarmöguleikar:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Svara: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
+Svarmöguleikar:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða &#39;d&#39;, og engu öðru.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>icelandic-lang-tests
+</code></pre></div>
+<h3 id="unofficial-icelandic-mathematics-tests">Unofficial: Icelandic Mathematics Tests<a class="headerlink" href="#unofficial-icelandic-mathematics-tests" title="Permanent link">&para;</a></h3>
+<p>This dataset is based on the old Icelandic standardised tests held from 2013 to 2017,
+available at <a href="https://mms.is/eldri-prof-og-svor">mms.is</a>. The tests were administered at
+the primary school level (10th grade) and cover mathematics. Only the multiple-choice
+questions from the tests have been included.</p>
+<p>There are 242 samples in total, and we use the oldest 16 samples for train, and the rest
+for test.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hve lengi væri rútan á milli Reykjavíkur og Akureyrar ef hún keyrði á 85 km hraða á klst. að jafnaði og stoppaði hvergi?\nSvarmöguleikar:\na. 4 klst. 34 mín.\nb. 4 klst. 56 mín.\nc. 6 klst. 48 mín.\nd. 6 klst. 56 mín.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;a&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;year&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2013&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Hæð og grunnlína í þríhyrningi eru 2 cm að lengd. Hve mörgum sinnum stærri verður þríhyrningurinn að flatarmáli ef hvort strik er lengt um 2 cm?\nSvarmöguleikar:\na. Tvisvar sinnum stærri.\nb. Fjórum sinnum stærri.\nc. Átta sinnum stærri.\nd. Sextán sinnum stærri.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;b&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;year&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2013&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;16. Fjórar handboltakempur voru að lyfta lóðum.\nÞær báru saman bækur sínar til að sjá hver lyfti mestri þyngd í einni lyftu.\n\nTóta lyfti 75 kg\nStína lyfti 77 500 g\nFreyja lyfti 765 hg\nBára lyfti 76 000 000 mg\n\nHver þeirra lyfti mestri þyngd í einni lyftu?\nSvarmöguleikar:\na. Bára\nb. Freyja\nc. Stína\nd. Tóta&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;c&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;year&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2013&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 5</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Eftirfarandi eru fjölvalsspurningar (með svörum).
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
+Svarmöguleikar:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+Svara: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Spurningar: {text}
+Svarmöguleikar:
+a. {option_a}
+b. {option_b}
+c. {option_c}
+d. {option_d}
+
+Svaraðu eftirfarandi spurningum með &#39;a&#39;, &#39;b&#39;, &#39;c&#39; eða &#39;d&#39;, og engu öðru.
+</code></pre></div>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>icelandic-math-tests
+</code></pre></div>
 <h2 id="common-sense-reasoning">Common-sense Reasoning<a class="headerlink" href="#common-sense-reasoning" title="Permanent link">&para;</a></h2>
 <h3 id="winogrande-is">Winogrande-is<a class="headerlink" href="#winogrande-is" title="Permanent link">&para;</a></h3>
 <p>This dataset was published in <a href="https://aclanthology.org/2022.lrec-1.464/">this paper</a>
@@ -3492,6 +3714,114 @@ eða &#39;k&#39;, og engu öðru.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>valeu-is
+</code></pre></div>
+<h2 id="grammatical-error-detection">Grammatical Error Detection<a class="headerlink" href="#grammatical-error-detection" title="Permanent link">&para;</a></h2>
+<h3 id="unofficial-gerlangmod-is">Unofficial: GerLangMod-is<a class="headerlink" href="#unofficial-gerlangmod-is" title="Permanent link">&para;</a></h3>
+<p>This dataset is based on the <a href="https://github.com/noahmanu/gerlangmod">GerLangMod</a>
+collection and derived from the Icelandic Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.</p>
+<p>The original dataset consists of 51,450 samples derived from the
+<a href="https://github.com/UniversalDependencies/UD_Icelandic-IcePaHC">UD_Icelandic-IcePaHC</a>,
+<a href="https://github.com/UniversalDependencies/UD_Icelandic-GC">UD_Icelandic-GC</a>,
+<a href="https://github.com/UniversalDependencies/UD_Icelandic-Modern">UD_Icelandic-Modern</a> and
+<a href="https://github.com/UniversalDependencies/UD_Icelandic-PUD">UD_Icelandic-PUD</a> treebanks.
+We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
+respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;þeirra&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;hét&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;annar&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;kleofas&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;en&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;annar&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;hyggja&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;menn&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;að&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;verið&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;hafi&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;lúkas&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;guðspjallamaður&quot;</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;sá&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;réttlátur&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;og&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;siðsamur&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;og&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;heilagur&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;andi&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;með&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;honum&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;var&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;var&quot;</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;B-ERR&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;I-ERR&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 8</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hér fyrir neðan eru setningar og JSON orðabækur með málfræðilegum villum sem koma fyrir í viðkomandi setningu.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
+Málfræðilegar villur: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Setning: {text}
+
+Finndu málfræðilegar villur í setningunni. Þú átt að prenta þetta sem JSON orðabók með lyklinum &#39;villa&#39;. Gildið á að vera listi yfir rangt staðsett orð, nákvæmlega eins og þau koma fyrir í setningunni.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>B-ERR</code> ➡️ <code>villa</code></li>
+<li><code>I-ERR</code> ➡️ <code>villa</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>gerlangmod-is
 </code></pre></div>
 
 

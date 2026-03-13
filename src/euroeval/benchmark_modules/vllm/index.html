@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -1014,10 +1016,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#euroeval.benchmark_modules.vllm.load_model_and_tokeniser" class="md-nav__link">
+  <a href="#euroeval.benchmark_modules.vllm.load_model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        load_model_and_tokeniser
+        load_model
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.vllm.get_true_max_model_len" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_true_max_model_len
       
     </span>
   </a>
@@ -2747,7 +2760,71 @@
 <span class="normal">1619</span>
 <span class="normal">1620</span>
 <span class="normal">1621</span>
-<span class="normal">1622</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1622</span>
+<span class="normal">1623</span>
+<span class="normal">1624</span>
+<span class="normal">1625</span>
+<span class="normal">1626</span>
+<span class="normal">1627</span>
+<span class="normal">1628</span>
+<span class="normal">1629</span>
+<span class="normal">1630</span>
+<span class="normal">1631</span>
+<span class="normal">1632</span>
+<span class="normal">1633</span>
+<span class="normal">1634</span>
+<span class="normal">1635</span>
+<span class="normal">1636</span>
+<span class="normal">1637</span>
+<span class="normal">1638</span>
+<span class="normal">1639</span>
+<span class="normal">1640</span>
+<span class="normal">1641</span>
+<span class="normal">1642</span>
+<span class="normal">1643</span>
+<span class="normal">1644</span>
+<span class="normal">1645</span>
+<span class="normal">1646</span>
+<span class="normal">1647</span>
+<span class="normal">1648</span>
+<span class="normal">1649</span>
+<span class="normal">1650</span>
+<span class="normal">1651</span>
+<span class="normal">1652</span>
+<span class="normal">1653</span>
+<span class="normal">1654</span>
+<span class="normal">1655</span>
+<span class="normal">1656</span>
+<span class="normal">1657</span>
+<span class="normal">1658</span>
+<span class="normal">1659</span>
+<span class="normal">1660</span>
+<span class="normal">1661</span>
+<span class="normal">1662</span>
+<span class="normal">1663</span>
+<span class="normal">1664</span>
+<span class="normal">1665</span>
+<span class="normal">1666</span>
+<span class="normal">1667</span>
+<span class="normal">1668</span>
+<span class="normal">1669</span>
+<span class="normal">1670</span>
+<span class="normal">1671</span>
+<span class="normal">1672</span>
+<span class="normal">1673</span>
+<span class="normal">1674</span>
+<span class="normal">1675</span>
+<span class="normal">1676</span>
+<span class="normal">1677</span>
+<span class="normal">1678</span>
+<span class="normal">1679</span>
+<span class="normal">1680</span>
+<span class="normal">1681</span>
+<span class="normal">1682</span>
+<span class="normal">1683</span>
+<span class="normal">1684</span>
+<span class="normal">1685</span>
+<span class="normal">1686</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2762,10 +2839,10 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">time</span><span class="w"> </span><span class="kn">import</span> <span class="n">sleep</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.version</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">snapshot_download</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">conlist</span><span class="p">,</span> <span class="n">create_model</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.generation.configuration_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.configuration_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.models.auto.tokenization_auto</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib3.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">RequestError</span>
 
@@ -2812,7 +2889,6 @@
     <span class="n">text_to_text</span><span class="p">,</span>
     <span class="n">token_classification</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">NER</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tokenisation_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">apply_chat_template</span><span class="p">,</span>
     <span class="n">get_bos_token</span><span class="p">,</span>
@@ -2834,11 +2910,15 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">.hf</span><span class="w"> </span><span class="kn">import</span> <span class="n">HuggingFaceEncoderModel</span><span class="p">,</span> <span class="n">get_model_repo_info</span><span class="p">,</span> <span class="n">load_hf_model_config</span>
 
 <span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">MistralCommonTokenizer</span><span class="p">,</span>  <span class="c1"># pyrefly: ignore[missing-module-attribute]</span>
+    <span class="p">)</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-        <span class="n">MistralCommonBackend</span> <span class="k">as</span> <span class="n">MistralCommonTokenizer</span><span class="p">,</span>
+        <span class="n">MistralCommonBackend</span> <span class="k">as</span> <span class="n">MCB</span><span class="p">,</span>  <span class="c1"># pyrefly: ignore[missing-module-attribute]</span>
     <span class="p">)</span>
+
+    <span class="n">MistralCommonTokenizer</span> <span class="o">=</span> <span class="n">MCB</span>  <span class="c1"># pyrefly: ignore[assignment]</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span> <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">vllm.config</span>
@@ -2859,9 +2939,9 @@
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span> <span class="ow">or</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;ray&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">ray</span>
 
-
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetDict</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.configuration_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PretrainedConfig</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.trainer</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span><span class="p">,</span> <span class="n">Task</span>
@@ -2899,17 +2979,23 @@
 
 <span class="sd">        Raises:</span>
 <span class="sd">            NeedsSystemDependency:</span>
-<span class="sd">                If the CUDA Toolkit is not installed.</span>
+<span class="sd">                If the CUDA Toolkit is not installed on NVIDIA hardware.</span>
 <span class="sd">            NeedsExtraInstalled:</span>
 <span class="sd">                If the generative extra is not installed.</span>
 <span class="sd">            InvalidBenchmark:</span>
 <span class="sd">                If no CUDA GPUs are available and the dataset requires structured</span>
 <span class="sd">                generation.</span>
+<span class="sd">            InvalidModel:</span>
+<span class="sd">                If the generative type was None for the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;vllm&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NeedsExtraInstalled</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;generative&quot;</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="ow">and</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">&quot;nvcc&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">hip</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">&quot;nvcc&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="p">):</span>
             <span class="k">raise</span> <span class="n">NeedsSystemDependency</span><span class="p">(</span>
                 <span class="n">dependency</span><span class="o">=</span><span class="s2">&quot;nvcc&quot;</span><span class="p">,</span>
                 <span class="n">instructions</span><span class="o">=</span><span class="p">(</span>
@@ -2938,14 +3024,59 @@
             <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span> <span class="n">allowed_params</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">allowed_params</span>
         <span class="p">)</span>
 
+        <span class="c1"># This is already set when calling `super().__init__`, but we need it to get</span>
+        <span class="c1"># the correct value from `self.generative_type`, so we set it here as well.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span> <span class="o">=</span> <span class="n">benchmark_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span> <span class="o">=</span> <span class="n">model_config</span>
+
+        <span class="n">hf_model_config</span> <span class="o">=</span> <span class="n">load_hf_model_config</span><span class="p">(</span>
+            <span class="n">model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span> <span class="ow">or</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">num_labels</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">id2label</span><span class="o">=</span><span class="n">HashableDict</span><span class="p">(),</span>
+            <span class="n">label2id</span><span class="o">=</span><span class="n">HashableDict</span><span class="p">(),</span>
+            <span class="n">revision</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span>
+                <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="s2">&quot;main&quot;</span>
+            <span class="p">),</span>
+            <span class="n">model_cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
+            <span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
+            <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
+            <span class="n">run_with_cli</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">run_with_cli</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">true_max_model_len</span> <span class="o">=</span> <span class="n">get_true_max_model_len</span><span class="p">(</span><span class="n">hf_model_config</span><span class="o">=</span><span class="n">hf_model_config</span><span class="p">)</span>
+
+        <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_tokeniser</span><span class="p">(</span>
+            <span class="n">model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
+            <span class="n">revision</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
+            <span class="n">adapter_base_model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span><span class="p">,</span>
+            <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
+            <span class="n">model_max_length</span><span class="o">=</span><span class="n">true_max_model_len</span><span class="p">,</span>
+            <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
+            <span class="n">hf_model_config</span><span class="o">=</span><span class="n">hf_model_config</span><span class="p">,</span>
+            <span class="n">token</span><span class="o">=</span><span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">:</span> <span class="n">Tokeniser</span> <span class="o">=</span> <span class="n">tokeniser</span>
+
+        <span class="n">generative_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span>
+        <span class="k">if</span> <span class="n">generative_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidModel</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Generative type for model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> was None during &quot;</span>
+                <span class="s2">&quot;initialisation. Please report this issue at &quot;</span>
+                <span class="s2">&quot;https://github.com/EuroEval/EuroEval/issues/new.&quot;</span>
+            <span class="p">)</span>
+
         <span class="k">with</span> <span class="n">no_terminal_output</span><span class="p">(</span><span class="n">disable</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">verbose</span><span class="p">):</span>
-            <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_model_and_tokeniser</span><span class="p">(</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">load_model</span><span class="p">(</span>
                 <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
                 <span class="n">benchmark_config</span><span class="o">=</span><span class="n">benchmark_config</span><span class="p">,</span>
                 <span class="n">attention_backend</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">attention_backend</span><span class="p">,</span>
+                <span class="n">true_max_model_len</span><span class="o">=</span><span class="n">true_max_model_len</span><span class="p">,</span>
+                <span class="n">generative_type</span><span class="o">=</span><span class="n">generative_type</span><span class="p">,</span>
+                <span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">,</span>
+                <span class="n">hf_model_config</span><span class="o">=</span><span class="n">hf_model_config</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">:</span> <span class="s2">&quot;LLM&quot;</span> <span class="o">=</span> <span class="n">model</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">:</span> <span class="n">Tokeniser</span> <span class="o">=</span> <span class="n">tokeniser</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">:</span> <span class="n">LLM</span> <span class="o">=</span> <span class="n">model</span>  <span class="c1"># pyrefly: ignore[bad-override]</span>
 
         <span class="c1"># We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want</span>
         <span class="c1"># to call the `__init__` method of the `BenchmarkModule` class.</span>
@@ -3010,14 +3141,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            The generative type of the model, or None if it has not been set yet.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_tokeniser&quot;</span><span class="p">):</span>
-            <span class="n">log_once</span><span class="p">(</span>
-                <span class="s2">&quot;The generative type of the model has not been set yet as the &quot;</span>
-                <span class="s2">&quot;tokeniser has not been loaded.&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">generative_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">generative_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">generative_type</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;thinking&quot;</span><span class="p">}:</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
@@ -3028,6 +3152,13 @@
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_of_reasoning_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">):</span>
             <span class="n">type_</span> <span class="o">=</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_tokeniser&quot;</span><span class="p">):</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;The generative type of the model has not been set yet as the &quot;</span>
+                <span class="s2">&quot;tokeniser has not been loaded.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
         <span class="k">elif</span> <span class="p">(</span>
             <span class="n">has_chat_template</span><span class="p">(</span><span class="n">tokeniser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">)</span>
             <span class="ow">or</span> <span class="s2">&quot;instruct&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
@@ -3124,7 +3255,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">few_shot_examples</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
 
-        <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>  <span class="c1"># type: ignore[unsupported-operation]</span>
+        <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[unsupported-operation]</span>
             <span class="n">partial</span><span class="p">(</span>
                 <span class="n">apply_prompt</span><span class="p">,</span>
                 <span class="n">few_shot_examples</span><span class="o">=</span><span class="n">few_shot_examples</span><span class="p">,</span>
@@ -3156,8 +3287,8 @@
 <span class="sd">                If the dataset requires logprobs, but we could not get the first token</span>
 <span class="sd">                of each label in the dataset.</span>
 <span class="sd">            InvalidTask:</span>
-<span class="sd">                If the task requires structured output, but either is not NER or</span>
-<span class="sd">                does not define an output structure.</span>
+<span class="sd">                If the task requires structured output, but it is not a token</span>
+<span class="sd">                classification task and does not define an output structure.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Get stopping tokens</span>
         <span class="n">stop_tokens</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">custom_stop_tokens</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -3221,11 +3352,11 @@
                 <span class="n">structured_outputs</span> <span class="o">=</span> <span class="n">StructuredOutputsParams</span><span class="p">(</span>
                     <span class="n">json</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">structured_output_format</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">()</span>
                 <span class="p">)</span>
-            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span> <span class="o">==</span> <span class="n">NER</span><span class="p">:</span>
-                <span class="n">ner_tag_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span> <span class="o">==</span> <span class="n">TaskGroup</span><span class="o">.</span><span class="n">TOKEN_CLASSIFICATION</span><span class="p">:</span>
+                <span class="n">tag_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">prompt_label_mapping</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
                 <span class="n">keys_and_their_types</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
                     <span class="n">tag_name</span><span class="p">:</span> <span class="p">(</span><span class="n">conlist</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="o">...</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">tag_name</span> <span class="ow">in</span> <span class="n">ner_tag_names</span>
+                    <span class="k">for</span> <span class="n">tag_name</span> <span class="ow">in</span> <span class="n">tag_names</span>
                 <span class="p">}</span>
                 <span class="n">answer_format_class</span> <span class="o">=</span> <span class="n">create_model</span><span class="p">(</span>
                     <span class="s2">&quot;AnswerFormat&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">keys_and_their_types</span>
@@ -3242,8 +3373,8 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">InvalidTask</span><span class="p">(</span>
                     <span class="n">message</span><span class="o">=</span><span class="p">(</span>
-                        <span class="s2">&quot;Task set to use structured out, but neither is an NER task &quot;</span>
-                        <span class="s2">&quot;nor defines an output structure &quot;</span>
+                        <span class="s2">&quot;Task set to use structured output, but it neither defines &quot;</span>
+                        <span class="s2">&quot;an output structure nor is a token classification task &quot;</span>
                         <span class="s2">&quot;- at least one of these must be true.&quot;</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
@@ -3395,9 +3526,11 @@
                         <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end_of_chat_token_ids</span><span class="p">)</span>
                     <span class="p">)</span>
                     <span class="n">prompt_segments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
-                        <span class="n">prompt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
-                            <span class="n">end_of_chat_token</span>
-                        <span class="p">)</span>
+                        <span class="p">(</span>
+                            <span class="n">prompt</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">bos_token</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="o">.</span><span class="n">bos_token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                            <span class="k">else</span> <span class="n">prompt</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">end_of_chat_token</span><span class="p">)</span>
                         <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompts</span>
                     <span class="p">]</span>
                     <span class="k">for</span> <span class="n">num_few_shots_to_remove</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span>
@@ -3730,15 +3863,19 @@
         <span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">load_model_and_tokeniser</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.load_model_and_tokeniser"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.load_model_and_tokeniser" title="Go to docs">[docs]</a></div>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_model</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.load_model"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.load_model" title="Go to docs">[docs]</a></div>
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
     <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
     <span class="n">attention_backend</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">Literal</span><span class="p">[</span>
         <span class="o">*</span><span class="n">ATTENTION_BACKENDS</span>  <span class="c1"># pyrefly: ignore[invalid-literal]</span>
     <span class="p">]</span>
     <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="s2">&quot;LLM&quot;</span><span class="p">,</span> <span class="n">Tokeniser</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the model and tokeniser.</span>
+    <span class="n">generative_type</span><span class="p">:</span> <span class="s2">&quot;GenerativeType&quot;</span><span class="p">,</span>
+    <span class="n">true_max_model_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tokeniser</span><span class="p">:</span> <span class="n">Tokeniser</span><span class="p">,</span>
+    <span class="n">hf_model_config</span><span class="p">:</span> <span class="s2">&quot;PretrainedConfig&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;LLM&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the model.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model_config:</span>
@@ -3747,9 +3884,17 @@
 <span class="sd">            The benchmark configuration.</span>
 <span class="sd">        attention_backend:</span>
 <span class="sd">            The attention backend to use, or None to use the vLLM default.</span>
+<span class="sd">        generative_type:</span>
+<span class="sd">            The generative type of the model.</span>
+<span class="sd">        true_max_model_len:</span>
+<span class="sd">            The maximum context length of the model.</span>
+<span class="sd">        tokeniser:</span>
+<span class="sd">            The tokeniser associated with the model.</span>
+<span class="sd">        hf_model_config:</span>
+<span class="sd">            The Hugging Face model configuration.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        A pair (model, tokeniser), with the loaded model and tokeniser</span>
+<span class="sd">        The loaded model.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        NeedsExtraInstalled:</span>
@@ -3763,18 +3908,6 @@
     <span class="n">model_id</span> <span class="o">=</span> <span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span> <span class="ow">or</span> <span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span>
     <span class="n">revision</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">model_config</span><span class="o">.</span><span class="n">revision</span> <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;main&quot;</span>
-    <span class="p">)</span>
-
-    <span class="n">hf_model_config</span> <span class="o">=</span> <span class="n">load_hf_model_config</span><span class="p">(</span>
-        <span class="n">model_id</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
-        <span class="n">num_labels</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">id2label</span><span class="o">=</span><span class="n">HashableDict</span><span class="p">(),</span>
-        <span class="n">label2id</span><span class="o">=</span><span class="n">HashableDict</span><span class="p">(),</span>
-        <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span>
-        <span class="n">model_cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
-        <span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">,</span>
-        <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
-        <span class="n">run_with_cli</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">run_with_cli</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># Start with dtype being the &quot;auto&quot; vLLM dtype</span>
@@ -3843,33 +3976,6 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">download_dir</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">)</span>
 
-    <span class="n">potential_max_model_length_config_names</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;max_position_embeddings&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;max_sequence_length&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;model_max_length&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;n_positions&quot;</span><span class="p">,</span>
-    <span class="p">]</span>
-    <span class="n">true_max_model_len_candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">config_name</span> <span class="ow">in</span> <span class="n">potential_max_model_length_config_names</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">hf_model_config</span><span class="p">,</span> <span class="n">config_name</span><span class="p">):</span>
-            <span class="n">model_len</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">hf_model_config</span><span class="p">,</span> <span class="n">config_name</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">model_len</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">true_max_model_len_candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_len</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">true_max_model_len_candidates</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">true_max_model_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">true_max_model_len_candidates</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">true_max_model_len</span> <span class="o">=</span> <span class="n">MAX_CONTEXT_LENGTH</span>
-
-    <span class="n">tokeniser</span> <span class="o">=</span> <span class="n">load_tokeniser</span><span class="p">(</span>
-        <span class="n">model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="p">,</span>
-        <span class="n">revision</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">revision</span><span class="p">,</span>
-        <span class="n">adapter_base_model_id</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">adapter_base_model_id</span><span class="p">,</span>
-        <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">trust_remote_code</span><span class="p">,</span>
-        <span class="n">model_max_length</span><span class="o">=</span><span class="n">true_max_model_len</span><span class="p">,</span>
-        <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span><span class="p">,</span>
-        <span class="n">token</span><span class="o">=</span><span class="n">get_hf_token</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_key</span><span class="p">),</span>
-    <span class="p">)</span>
     <span class="n">vllm_params</span> <span class="o">=</span> <span class="n">get_vllm_tokenisation_params</span><span class="p">(</span>
         <span class="n">tokeniser</span><span class="o">=</span><span class="n">tokeniser</span><span class="p">,</span> <span class="n">model_config</span><span class="o">=</span><span class="n">model_config</span>
     <span class="p">)</span>
@@ -3893,7 +3999,10 @@
         <span class="p">)</span>
 
         <span class="n">max_model_len</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
-            <span class="n">true_max_model_len</span><span class="p">,</span> <span class="n">MAX_CONTEXT_LENGTH</span> <span class="o">+</span> <span class="n">REASONING_MAX_TOKENS</span>
+            <span class="n">true_max_model_len</span><span class="p">,</span>
+            <span class="n">MAX_CONTEXT_LENGTH</span> <span class="o">+</span> <span class="n">REASONING_MAX_TOKENS</span>
+            <span class="k">if</span> <span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span>
+            <span class="k">else</span> <span class="n">MAX_CONTEXT_LENGTH</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">LLM</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="n">model_location</span><span class="p">,</span>
@@ -3963,7 +4072,38 @@
 
     <span class="n">model</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">hf_model_config</span>
 
-    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokeniser</span>
+    <span class="k">return</span> <span class="n">model</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_true_max_model_len</span><span class="p">(</span><span class="n">hf_model_config</span><span class="p">:</span> <span class="s2">&quot;PretrainedConfig&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.get_true_max_model_len"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.get_true_max_model_len" title="Go to docs">[docs]</a></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the true maximum context length of a model.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        hf_model_config:</span>
+<span class="sd">            The Hugging Face model configuration.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The maximum context length.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">potential_max_model_length_config_names</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;max_position_embeddings&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;max_sequence_length&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;model_max_length&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;n_positions&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">true_max_model_len_candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">config_name</span> <span class="ow">in</span> <span class="n">potential_max_model_length_config_names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">hf_model_config</span><span class="p">,</span> <span class="n">config_name</span><span class="p">):</span>
+            <span class="n">model_len</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">hf_model_config</span><span class="p">,</span> <span class="n">config_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">model_len</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">true_max_model_len_candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_len</span><span class="p">)</span>
+
+    <span class="n">true_max_model_len</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">min</span><span class="p">(</span><span class="n">true_max_model_len_candidates</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">true_max_model_len_candidates</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="k">else</span> <span class="n">MAX_CONTEXT_LENGTH</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">true_max_model_len</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">load_tokeniser</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.load_tokeniser"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.load_tokeniser" title="Go to docs">[docs]</a></div>
@@ -3973,6 +4113,7 @@
     <span class="n">trust_remote_code</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">model_max_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
+    <span class="n">hf_model_config</span><span class="p">:</span> <span class="s2">&quot;PretrainedConfig&quot;</span><span class="p">,</span>
     <span class="n">token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tokeniser</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the tokeniser.</span>
@@ -3991,6 +4132,8 @@
 <span class="sd">            The maximum length of the model.</span>
 <span class="sd">        model_config:</span>
 <span class="sd">            The model configuration.</span>
+<span class="sd">        hf_model_config:</span>
+<span class="sd">            The Hugging Face model configuration.</span>
 <span class="sd">        token:</span>
 <span class="sd">            The Hugging Face API token.</span>
 
@@ -4002,14 +4145,6 @@
 <span class="sd">            If the tokeniser could not be loaded.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">revision</span> <span class="o">=</span> <span class="n">revision</span> <span class="k">if</span> <span class="n">adapter_base_model_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;main&quot;</span>
-    <span class="n">config</span> <span class="o">=</span> <span class="n">AutoConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
-        <span class="n">adapter_base_model_id</span> <span class="ow">or</span> <span class="n">model_id</span><span class="p">,</span>
-        <span class="n">revision</span><span class="o">=</span><span class="n">revision</span><span class="p">,</span>
-        <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
-        <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span>
-        <span class="n">trust_remote_code</span><span class="o">=</span><span class="n">trust_remote_code</span><span class="p">,</span>
-        <span class="n">local_files_only</span><span class="o">=</span><span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">(),</span>
-    <span class="p">)</span>
     <span class="n">num_retries</span> <span class="o">=</span> <span class="mi">5</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_retries</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
@@ -4033,7 +4168,7 @@
                 <span class="n">truncation_side</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
                 <span class="n">model_max_length</span><span class="o">=</span><span class="n">model_max_length</span><span class="p">,</span>
                 <span class="n">cache_dir</span><span class="o">=</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_cache_dir</span><span class="p">,</span>
-                <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+                <span class="n">config</span><span class="o">=</span><span class="n">hf_model_config</span><span class="p">,</span>
                 <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span>
                 <span class="n">local_files_only</span><span class="o">=</span><span class="ow">not</span> <span class="n">internet_connection_available</span><span class="p">(),</span>
             <span class="p">)</span>
@@ -4134,7 +4269,9 @@
     <span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
         <span class="n">prompts</span><span class="o">=</span><span class="p">[</span><span class="n">prompt</span><span class="p">],</span> <span class="n">sampling_params</span><span class="o">=</span><span class="n">SamplingParams</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="mi">10</span><span class="p">),</span> <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span>
     <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">completion</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">token_ids</span><span class="o">=</span><span class="n">output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span><span class="p">)</span>
+    <span class="n">completion</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+        <span class="n">token_ids</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span><span class="p">)</span>
+    <span class="p">)</span>  <span class="c1"># pyrefly: ignore[bad-argument-type]</span>
     <span class="n">bor_reasoning_matches</span> <span class="o">=</span> <span class="p">[</span>
         <span class="p">(</span><span class="n">bor_token</span><span class="p">,</span> <span class="n">eor_token</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">bor_token</span><span class="p">,</span> <span class="n">eor_token</span> <span class="ow">in</span> <span class="n">REASONING_TOKENS</span>
@@ -4167,7 +4304,9 @@
         <span class="n">sampling_params</span><span class="o">=</span><span class="n">SamplingParams</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="n">REASONING_MAX_TOKENS</span><span class="p">),</span>
         <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">completion</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">token_ids</span><span class="o">=</span><span class="n">output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span><span class="p">)</span>
+    <span class="n">completion</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+        <span class="n">token_ids</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span><span class="p">)</span>
+    <span class="p">)</span>  <span class="c1"># pyrefly: ignore[bad-argument-type]</span>
     <span class="n">eor_reasoning_matches</span> <span class="o">=</span> <span class="p">[</span>
         <span class="p">(</span><span class="n">bor_token</span><span class="p">,</span> <span class="n">eor_token</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">bor_token</span><span class="p">,</span> <span class="n">eor_token</span> <span class="ow">in</span> <span class="n">bor_reasoning_matches</span>
@@ -4259,7 +4398,9 @@
         <span class="n">sampling_params</span><span class="o">=</span><span class="n">SamplingParams</span><span class="p">(</span><span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="mf">0.0</span><span class="p">),</span>
         <span class="n">use_tqdm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">completion</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">token_ids</span><span class="o">=</span><span class="n">output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span><span class="p">)</span>
+    <span class="n">completion</span> <span class="o">=</span> <span class="n">tokeniser</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+        <span class="n">token_ids</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">token_ids</span><span class="p">)</span>
+    <span class="p">)</span>  <span class="c1"># pyrefly: ignore[bad-argument-type]</span>
 
     <span class="n">stop_tokens</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">stop_token</span>

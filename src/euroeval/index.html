@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -1220,7 +1222,17 @@
 <span class="normal">108</span>
 <span class="normal">109</span>
 <span class="normal">110</span>
-<span class="normal">111</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;EuroEval - A benchmarking framework for language models.&quot;&quot;&quot;</span>
 
 <span class="c1"># STAGE 1 ###</span>
 <span class="c1"># Block unwanted terminal output that happens on importing external modules ###</span>
@@ -1255,14 +1267,24 @@
 <span class="c1"># STAGE 2 ###</span>
 <span class="c1"># Check for incompatible packages ###</span>
 
-<span class="c1"># Throw informative error if `flash_attn` is installed ###</span>
+<span class="c1"># Throw informative error if `flash_attn` is installed on non-ROCm PyTorch builds.</span>
+<span class="c1"># On ROCm builds the package does not cause the same conflicts, so we skip this check</span>
+<span class="c1"># to allow evaluation to proceed (vLLM will fall back to TRITON_ATTN there).</span>
 <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">&quot;flash_attn&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">logging</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
-        <span class="s2">&quot;The `flash_attn` package is not supported by EuroEval, as it is now built &quot;</span>
-        <span class="s2">&quot;into the other packages and it conflicts with the other implementations. &quot;</span>
-        <span class="s2">&quot;Please uninstall it using `pip uninstall flash_attn` and try again.&quot;</span>
-    <span class="p">)</span>
-    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">_torch</span>
+
+        <span class="n">_is_rocm</span> <span class="o">=</span> <span class="n">_torch</span><span class="o">.</span><span class="n">version</span><span class="o">.</span><span class="n">hip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+        <span class="n">_is_rocm</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_rocm</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+            <span class="s2">&quot;The `flash_attn` package is not supported by EuroEval, as it is now &quot;</span>
+            <span class="s2">&quot;built into the other packages and it conflicts with the other &quot;</span>
+            <span class="s2">&quot;implementations. Please uninstall it using `pip uninstall flash_attn` &quot;</span>
+            <span class="s2">&quot;and try again.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
 
 <span class="c1"># STAGE 3 ###</span>

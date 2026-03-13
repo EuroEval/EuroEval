@@ -577,6 +577,8 @@
       
         
       
+        
+      
     
     
     
@@ -1999,6 +2001,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#grammatical-error-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grammatical Error Detection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Grammatical Error Detection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-gerlangmod-sv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: GerLangMod-sv
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2564,6 +2594,34 @@
     <span class="md-ellipsis">
       
         ValEU-sv
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#grammatical-error-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grammatical Error Detection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Grammatical Error Detection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-gerlangmod-sv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: GerLangMod-sv
       
     </span>
   </a>
@@ -3758,6 +3816,131 @@ och inget annat.
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>valeu-sv
+</code></pre></div>
+<h2 id="grammatical-error-detection">Grammatical Error Detection<a class="headerlink" href="#grammatical-error-detection" title="Permanent link">&para;</a></h2>
+<h3 id="unofficial-gerlangmod-sv">Unofficial: GerLangMod-sv<a class="headerlink" href="#unofficial-gerlangmod-sv" title="Permanent link">&para;</a></h3>
+<p>This dataset is based on the <a href="https://github.com/noahmanu/gerlangmod">GerLangMod</a>
+collection and derived from the Swedish Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.</p>
+<p>The original dataset consists of 11,485 samples derived from the
+<a href="https://github.com/UniversalDependencies/UD_Swedish-Talbanken">UD_Swedish-Talbanken</a>,
+<a href="https://github.com/UniversalDependencies/UD_Swedish-LinES">UD_Swedish-LinES</a> and
+<a href="https://github.com/UniversalDependencies/UD_Swedish-PUD">UD_Swedish-PUD</a> treebanks.
+We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
+respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;mörkt&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;regn&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;på&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;eftermiddagen&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;i&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;london&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;när&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;planet&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;startade&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;flygplatsen&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;i&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;rom&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;ett&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;väldigt&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;surögt&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;skyltfönster&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;blanka&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;flödiga&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;färger&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;genom&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;regnet&quot;</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;de&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;flesta&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;bilar&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;i&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;dag&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;redan&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;är&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;från&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;fabriken&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;utrustade&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;med&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;radialdäck&quot;</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;B-ERR&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 8</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nedan är meningar och JSON-ordböcker med de grammatiska fel som förekommer i den givna meningen.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Mening: {text}
+Grammatiska fel: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Mening: {text}
+
+Identifiera de grammatiska felen i meningen. Du ska skriva ut detta som en JSON-ordbok med nyckeln &#39;fel&#39;. Värdet ska vara en lista över felplacerade ord, precis som de visas i meningen.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>B-ERR</code> ➡️ <code>fel</code></li>
+<li><code>I-ERR</code> ➡️ <code>fel</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>gerlangmod-sv
 </code></pre></div>
 
 

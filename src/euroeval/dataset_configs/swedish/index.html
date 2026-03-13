@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -1131,13 +1133,24 @@
 <span class="normal">193</span>
 <span class="normal">194</span>
 <span class="normal">195</span>
-<span class="normal">196</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Swedish dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Swedish dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">SWEDISH</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">COMMON_SENSE</span><span class="p">,</span>
     <span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
+    <span class="n">GED</span><span class="p">,</span>
     <span class="n">INSTRUCTION_FOLLOWING</span><span class="p">,</span>
     <span class="n">KNOW</span><span class="p">,</span>
     <span class="n">LA</span><span class="p">,</span>
@@ -1324,6 +1337,15 @@
     <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;MultiLoKo-sv&quot;</span><span class="p">,</span>
     <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/multiloko-sv-mini&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">KNOW</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
+    <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GERLANGMOD_SV_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;gerlangmod-sv&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;GerLangMod-sv&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/gerlangmod-sv&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">GED</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">SWEDISH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>

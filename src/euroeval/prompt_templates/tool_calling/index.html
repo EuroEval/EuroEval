@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -1009,14 +1011,14 @@
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">Language</span>
 
-<span class="n">ToolCall</span> <span class="o">=</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">create_model</span><span class="p">(</span>
+<span class="n">ToolCall</span> <span class="o">=</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">create_model</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[no-matching-overload]</span>
     <span class="s2">&quot;ToolCall&quot;</span><span class="p">,</span>
     <span class="n">__base__</span><span class="o">=</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">,</span>
     <span class="o">**</span><span class="p">{</span><span class="n">TOOL_CALLING_FUNCTION_KEY</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">TOOL_CALLING_ARGUMENTS_KEY</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]},</span>
 <span class="p">)</span>
 
 
-<span class="n">ToolCallingResponse</span> <span class="o">=</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">create_model</span><span class="p">(</span>
+<span class="n">ToolCallingResponse</span> <span class="o">=</span> <span class="n">pydantic</span><span class="o">.</span><span class="n">create_model</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[no-matching-overload]</span>
     <span class="s2">&quot;ToolCallingResponse&quot;</span><span class="p">,</span>
     <span class="n">__base__</span><span class="o">=</span><span class="n">pydantic</span><span class="o">.</span><span class="n">BaseModel</span><span class="p">,</span>
     <span class="o">**</span><span class="p">{</span><span class="n">TOOL_CALLING_CALLS_KEY</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ToolCall</span><span class="p">]},</span>

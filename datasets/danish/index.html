@@ -577,6 +577,8 @@
       
         
       
+        
+      
     
     
     
@@ -1450,6 +1452,34 @@
     <span class="md-ellipsis">
       
         ValEU-da
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#grammatical-error-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grammatical Error Detection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Grammatical Error Detection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-gerlangmod-da" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: GerLangMod-da
       
     </span>
   </a>
@@ -2731,6 +2761,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#grammatical-error-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Grammatical Error Detection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Grammatical Error Detection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-gerlangmod-da" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: GerLangMod-da
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3260,29 +3318,35 @@ Bestem om det andet udsagn følger af det første udsagn. Svar kun med &#39;sand
 </code></pre></div>
 <h2 id="word-in-context">Word in Context<a class="headerlink" href="#word-in-context" title="Permanent link">&para;</a></h2>
 <h3 id="unofficial-danwic">Unofficial: DanWiC<a class="headerlink" href="#unofficial-danwic" title="Permanent link">&para;</a></h3>
-<p>This dataset was published in <a href="https://doi.org/10.7146/nys.v1i65.143072">this
-paper</a> and is based on the semantic module of
-the <a href="https://corsem.dsl.dk/">COR.SEM resource</a>. The dataset measures the ability to
-distinguish word meanings/senses in context: given two sentences containing the same
-target word, the task is to determine whether the word carries the same sense in both
-sentences.</p>
-<p>The original full dataset consists of 1,098 polysemous samples with balanced labels.
-We use a split of 128 / 64 / 906 samples for training, validation and testing,
-respectively.</p>
+<p>This dataset was published in <a href="https://aclanthology.org/2024.lrec-main.1421/">this
+paper</a> and is based on the semantic
+module of the <a href="https://corsem.dsl.dk/">COR.SEM resource</a>. The dataset measures the
+ability to distinguish word meanings/senses in context: given two sentences containing
+the same target word, the task is to determine whether the word carries the same sense
+in both sentences.</p>
+<p>The original full dataset consists of 2,196 samples (both monosemous and polysemous)
+with balanced labels. We use all the samples, split into 1,024 / 256 / 916 samples for
+training, validation and testing, respectively.</p>
 <p>Here are a few examples from the training split:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: briller\nKontekst 1: Karen tog sine briller af og pudsede dem. Uden brillerne var verden én stor tåge\nKontekst 2: Jeg blev altid drillet i skolen, fordi jeg havde briller og ikke var særlig køn&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same_sense&quot;</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: folkeslag\nKontekst 1: I århundreder levede arabere og jøder, to semitiske folkeslag, fredeligt side om side i Palæstina\nKontekst 2: Jeg elsker at gå i spraglet tøj inspireret af primitive folkeslag&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same_sense&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;monosemous&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;idx&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1133</span>
 <span class="p">}</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: lag\nKontekst 1: Pladsens brosten var dækket af et fint lag snekrystaller\nKontekst 2: [de] fik indlagt tre lag glas i vinduerne for at holde larmen ude af stuerne&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same_sense&quot;</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: uheld\nKontekst 1: På årets første snevejrsdag fredag steg antallet af uheld med bulede biler cirka en fjerdedel\nKontekst 2: Eget held er godt, andres uheld ikke at foragte&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;different_sense&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;polysemous&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;idx&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">15316</span>
 <span class="p">}</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: tjeneste\nKontekst 1: Han er jo aldrig kommet i kirken, når jeg havde tjenesten\nKontekst 2: Vil du ikke lige gøre mig den tjeneste at bestille en taxa&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;different_sense&quot;</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Ord: service\nKontekst 1: De fleste borgere har det jo sådan, at de både ønsker lavere skatter og bedre offentlig service. Det er uforenelige mål\nKontekst 2: isvand med to glas kom uopfordret og blev fyldt op undervejs — fin service&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same_sense&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;polysemous&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;idx&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">11195</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>When evaluating generative models, we use the following setup (see the
@@ -4181,6 +4245,146 @@ Besvar ovenstående spørgsmål ved at svare med &#39;a&#39;, &#39;b&#39;, &#39;
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>valeu-da
+</code></pre></div>
+<h2 id="grammatical-error-detection">Grammatical Error Detection<a class="headerlink" href="#grammatical-error-detection" title="Permanent link">&para;</a></h2>
+<h3 id="unofficial-gerlangmod-da">Unofficial: GerLangMod-da<a class="headerlink" href="#unofficial-gerlangmod-da" title="Permanent link">&para;</a></h3>
+<p>This dataset is based on the <a href="https://github.com/noahmanu/gerlangmod">GerLangMod</a>
+collection and derived from the Danish Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.</p>
+<p>The original dataset consists of 5,039 samples derived from the
+<a href="https://github.com/UniversalDependencies/UD_Danish-DDT">UD_Danish-DDT</a> treebank, with
+original splits of 3,989 / 518 / 532 for training, validation and testing, respectively.
+We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
+respectively.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;så&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;er&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;der&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;en&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;pause&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;på&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;5&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;år&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;indtil&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;vivaldis&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;største&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;sucses&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;de&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;fire&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;årstider&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;kommer&quot;</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;såfremt&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;virksomheden&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;ikke&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;selv&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;er&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;i&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;stand&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;til&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;at&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;krævede&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;de&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;udføre&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;målinger&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;må&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;den&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;for&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;egen&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;regning&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;søge&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;bistand&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;hos&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;private&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;eller&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;offentlige&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;laboratorier&quot;</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;B-ERR&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;B-ERR&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;O&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 8</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Nedenstående er sætninger og JSON-ordbøger med de grammatiske fejl, der forekommer i den givne sætning.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sætning: {text}
+Grammatiske fejl: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Sætning: {text}
+
+Identificér de grammatiske fejl i sætningen. Du skal outputte dette som en JSON-ordbog med nøglen &#39;fejl&#39;. Værdien skal være en liste over de forkert placerede ord, præcis som de forekommer i sætningen.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>B-ERR</code> ➡️ <code>fejl</code></li>
+<li><code>I-ERR</code> ➡️ <code>fejl</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>gerlangmod-da
 </code></pre></div>
 
 

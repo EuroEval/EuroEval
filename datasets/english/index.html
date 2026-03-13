@@ -577,6 +577,8 @@
       
         
       
+        
+      
     
     
     
@@ -1150,6 +1152,34 @@
     <span class="md-ellipsis">
       
         ScaLA-En
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#word-in-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word in Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Word in Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-wic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: WiC
       
     </span>
   </a>
@@ -2332,6 +2362,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#word-in-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word in Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Word in Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-wic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: WiC
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reading-comprehension" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2897,6 +2955,58 @@ Determine whether the sentence is grammatically correct or not. Reply with &#39;
 </ul>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>scala-en
+</code></pre></div>
+<h2 id="word-in-context">Word in Context<a class="headerlink" href="#word-in-context" title="Permanent link">&para;</a></h2>
+<h3 id="unofficial-wic">Unofficial: WiC<a class="headerlink" href="#unofficial-wic" title="Permanent link">&para;</a></h3>
+<p>This dataset was published in <a href="https://aclanthology.org/N19-1128/">this paper</a> and is
+based on the SuperGLUE benchmark. The dataset measures the ability to distinguish word
+meanings/senses in context: given two sentences containing the same target word, the
+task is to determine whether the word carries the same sense in both sentences.</p>
+<p>The dataset is sourced from WordNet, VerbNet and Wiktionary.</p>
+<p>The original dataset consists of 5,428 training and 638 validation samples (all
+labelled), plus 1,400 unlabelled test samples. Our train and validation splits are
+stratified subsets of the original training split, using 1,024 and 256 samples
+respectively. The test split is the original validation split in its entirety (638
+samples).</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Word: cover\nContext 1: Does my policy cover accidental loss?\nContext 2: The insurance won&#39;t cover this.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same_sense&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Word: dress\nContext 1: Dress a turkey.\nContext 2: Dress the patient.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;different_sense&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 12</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>The following are examples of words used in two contexts and whether they have the same meaning.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+Same meaning: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+
+Does the word have the same meaning in both contexts? Answer with &#39;yes&#39; or &#39;no&#39;, and nothing else.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>same_sense</code> ➡️ <code>yes</code></li>
+<li><code>different_sense</code> ➡️ <code>no</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>wic
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
 <h3 id="squad">SQuAD<a class="headerlink" href="#squad" title="Permanent link">&para;</a></h3>

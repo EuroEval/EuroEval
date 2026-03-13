@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -1544,9 +1546,9 @@
 
         <span class="c1"># Use majority voting to get the final prediction for each question</span>
         <span class="c1"># Shape: (53,)</span>
-        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">apply_along_axis</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[no-matching-overload]</span>
             <span class="n">func1d</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">argmax</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">arr</span>
-        <span class="p">)</span>  <span class="c1"># type: ignore[no-matching-overload]</span>
+        <span class="p">)</span>
 
         <span class="c1"># Convert the array to a list</span>
         <span class="n">integer_predictions</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>

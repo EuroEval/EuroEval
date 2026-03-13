@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -1212,13 +1214,33 @@
 <span class="normal">274</span>
 <span class="normal">275</span>
 <span class="normal">276</span>
-<span class="normal">277</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Norwegian dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">277</span>
+<span class="normal">278</span>
+<span class="normal">279</span>
+<span class="normal">280</span>
+<span class="normal">281</span>
+<span class="normal">282</span>
+<span class="normal">283</span>
+<span class="normal">284</span>
+<span class="normal">285</span>
+<span class="normal">286</span>
+<span class="normal">287</span>
+<span class="normal">288</span>
+<span class="normal">289</span>
+<span class="normal">290</span>
+<span class="normal">291</span>
+<span class="normal">292</span>
+<span class="normal">293</span>
+<span class="normal">294</span>
+<span class="normal">295</span>
+<span class="normal">296</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Norwegian dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">NORWEGIAN</span><span class="p">,</span> <span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span> <span class="n">NORWEGIAN_NYNORSK</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..tasks</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">COMMON_SENSE</span><span class="p">,</span>
     <span class="n">EUROPEAN_VALUES</span><span class="p">,</span>
+    <span class="n">GED</span><span class="p">,</span>
     <span class="n">KNOW</span><span class="p">,</span>
     <span class="n">LA</span><span class="p">,</span>
     <span class="n">MCRC</span><span class="p">,</span>
@@ -1488,6 +1510,24 @@
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span> <span class="n">NORWEGIAN</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">val_split</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GERLANGMOD_NB_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;gerlangmod-nb&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;GerLangMod-nb&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/gerlangmod-nb&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">GED</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span> <span class="n">NORWEGIAN</span><span class="p">],</span>
+    <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">GERLANGMOD_NN_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;gerlangmod-nn&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;GerLangMod-nn&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/gerlangmod-nn&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">GED</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span> <span class="n">NORWEGIAN</span><span class="p">],</span>
+    <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 

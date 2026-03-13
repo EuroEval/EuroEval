@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -1204,7 +1206,9 @@
 <span class="normal">170</span>
 <span class="normal">171</span>
 <span class="normal">172</span>
-<span class="normal">173</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Types used throughout the project.&quot;&quot;&quot;</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Types used throughout the project.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
@@ -1216,8 +1220,10 @@
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="n">MistralCommonTokenizer</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">transformers.tokenization_mistral_common</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-        <span class="n">MistralCommonBackend</span> <span class="k">as</span> <span class="n">MistralCommonTokenizer</span><span class="p">,</span>
+        <span class="n">MistralCommonBackend</span> <span class="k">as</span> <span class="n">MCB</span><span class="p">,</span>  <span class="c1"># pyrefly: ignore[missing-module-attribute]</span>
     <span class="p">)</span>
+
+    <span class="n">MistralCommonTokenizer</span> <span class="o">=</span> <span class="n">MCB</span>  <span class="c1"># pyrefly: ignore[assignment]</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.arrow_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>

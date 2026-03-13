@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -1345,8 +1347,7 @@
 <span class="normal">355</span>
 <span class="normal">356</span>
 <span class="normal">357</span>
-<span class="normal">358</span>
-<span class="normal">359</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the finetuning of models.&quot;&quot;&quot;</span>
+<span class="normal">358</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Functions related to the finetuning of models.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1378,7 +1379,7 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">finetune</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.finetuning.finetune"><a href="../../../api/euroeval/finetuning/#euroeval.finetuning.finetune" title="Go to docs">[docs]</a></div>
-    <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;BenchmarkModule&quot;</span><span class="p">,</span>
+    <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;BenchmarkModule | None&quot;</span><span class="p">,</span>
     <span class="n">datasets</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;DatasetDict&quot;</span><span class="p">],</span>
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
@@ -1449,7 +1450,7 @@
                 <span class="p">)</span>
 
                 <span class="n">itr_scores</span> <span class="o">=</span> <span class="n">finetune_single_iteration</span><span class="p">(</span>
-                    <span class="c1"># type: ignore[unbound-name]</span>
+                    <span class="c1"># pyrefly: ignore[unbound-name]</span>
                     <span class="n">model</span><span class="o">=</span><span class="n">model</span> <span class="k">if</span> <span class="n">model_already_initialized</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
                     <span class="n">dataset</span><span class="o">=</span><span class="n">datasets</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
                     <span class="n">training_args</span><span class="o">=</span><span class="n">training_args</span><span class="p">,</span>
@@ -1593,15 +1594,15 @@
     <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">inference_mode</span><span class="p">():</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">test_scores</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
-                <span class="c1"># type: ignore[bad-argument-type]</span>
-                <span class="c1"># type: ignore[unexpected-keyword]</span>
-                <span class="n">eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>
-                <span class="n">orig_eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;original_test&quot;</span><span class="p">],</span>
+                <span class="n">eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>  <span class="c1"># pyrefly: ignore[bad-argument-type]</span>
+                <span class="n">orig_eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span>  <span class="c1"># pyrefly: ignore[unexpected-keyword]</span>
+                    <span class="s2">&quot;original_test&quot;</span>
+                <span class="p">],</span>
                 <span class="n">metric_key_prefix</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
             <span class="n">test_scores</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
-                <span class="n">eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>  <span class="c1"># type: ignore[bad-argument-type]</span>
+                <span class="n">eval_dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">],</span>  <span class="c1"># pyrefly: ignore[bad-argument-type]</span>
                 <span class="n">metric_key_prefix</span><span class="o">=</span><span class="s2">&quot;test&quot;</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">NaNValueInModelOutput</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -1676,7 +1677,6 @@
         <span class="n">bf16</span><span class="o">=</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">DataType</span><span class="o">.</span><span class="n">BF16</span><span class="p">,</span>
         <span class="n">disable_tqdm</span><span class="o">=</span><span class="ow">not</span> <span class="n">benchmark_config</span><span class="o">.</span><span class="n">progress_bar</span><span class="p">,</span>
         <span class="n">ddp_find_unused_parameters</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">save_safetensors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># TEMP: Use only 1 GPU for now for finetuning</span>

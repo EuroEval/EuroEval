@@ -571,6 +571,8 @@
       
         
       
+        
+      
     
     
     
@@ -1152,11 +1154,6 @@
             <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
 
 
-<span class="n">tool_calling_metric</span> <span class="o">=</span> <span class="n">ToolCallingAccuracy</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;tool_calling_accuracy&quot;</span><span class="p">,</span> <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;Tool Calling Accuracy&quot;</span>
-<span class="p">)</span>
-
-
 <span class="k">def</span><span class="w"> </span><span class="nf">_evaluate_function_toolcall_response</span><span class="p">(</span>
     <span class="n">pred_calls_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ref_calls_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">descriptions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -1234,6 +1231,11 @@
             <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pred_args</span> <span class="ow">or</span> <span class="n">pred_args</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
                 <span class="k">return</span> <span class="kc">False</span>
     <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="n">tool_calling_accuracy</span> <span class="o">=</span> <span class="n">ToolCallingAccuracy</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;tool_calling_accuracy&quot;</span><span class="p">,</span> <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;Tool Calling Accuracy&quot;</span>
+<span class="p">)</span>
 </code></pre></div></td></tr></table></div>
 
 

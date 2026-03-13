@@ -577,6 +577,8 @@
       
         
       
+        
+      
     
     
     
@@ -1658,6 +1660,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#word-in-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word in Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Word in Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-wic-ita" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: WiC-ITA
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2498,6 +2528,34 @@
     <span class="md-ellipsis">
       
         ValEU-it
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#word-in-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Word in Context
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Word in Context">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-wic-ita" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: WiC-ITA
       
     </span>
   </a>
@@ -3531,6 +3589,59 @@ Rispondete alla domanda precedente con &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, &#
 </code></pre></div>
 <p>You can evaluate this dataset directly as follows:</p>
 <div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>valeu-it
+</code></pre></div>
+<h2 id="word-in-context">Word in Context<a class="headerlink" href="#word-in-context" title="Permanent link">&para;</a></h2>
+<h3 id="unofficial-wic-ita">Unofficial: WiC-ITA<a class="headerlink" href="#unofficial-wic-ita" title="Permanent link">&para;</a></h3>
+<p>This dataset was published as part of <a href="https://www.evalita.it/campaigns/evalita-2023/">Evalita 2023</a>,
+the 8th evaluation campaign of Natural Language Processing and Speech tools for Italian.
+It is the first Word-in-Context task for Italian. The dataset measures the ability to
+distinguish word meanings/senses in context: given two sentences containing the same
+target word, the task is to determine whether the word carries the same sense in both
+sentences.</p>
+<p>The original full dataset consists of 2,805 / 500 / 500 samples for training,
+development and testing, respectively. We use a split of 1,024 / 256 / 1,000 samples
+for training, validation and testing, respectively. The train and validation splits are
+sampled from the original training split (stratified on label), and the test split is
+the concatenation of the original development and test splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Parola: anno\nContesto 1: \&quot; La comunità montana dell&#39; Appennino cesenate ha davvero motivi di soddisfazione da questa giornata : da anni propone e chiede per il proprio territorio , la realizzazione delle autostrade della telematica .\nContesto 2: Ichem Kaba , direttore del Consiglio islamico italiano , appare soddisfatto della decisione presa dal Palazzo dei Bruzi : \&quot; La comunità musulmana si riuniva da quattro anni in un piccolo vano di via Antonio Monaco .&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;same_sense&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Parola: buono\nContesto 1: Ho 25 anni , continuo a giocare ( meno di un tempo ) , sono quello dei \&quot; pochi giochi ma buoni \&quot; e gli amici ogni tanto mi prendono in giro .\nContesto 2: Anche a questa domanda Paolo risponde : non sia mai , anzi , il peccato , per apparire peccato , attraverso ciò che è buono mi produsse la morte per diventare estremamente peccante ( peccaminoso ) per mezzo del comandamento .&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;different_sense&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>Number of few-shot examples: 12</li>
+<li>Prefix prompt:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Di seguito sono riportati esempi di parole usate in due contesti e se hanno lo stesso significato.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+Stesso significato: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+
+La parola ha lo stesso significato in entrambi i contesti? Rispondere con &#39;sì&#39; o &#39;no&#39;, e nient&#39;altro.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>same_sense</code> ➡️ <code>sì</code></li>
+<li><code>different_sense</code> ➡️ <code>no</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>wic-ita
 </code></pre></div>
 
 
