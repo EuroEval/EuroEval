@@ -108,7 +108,7 @@ def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             The raw dataframe from the TSV file.
 
     Returns:
-        A dataframe with ``text`` and ``label`` columns.
+        A dataframe with ``text``, ``label``, ``type``, and ``idx`` columns.
     """
     logger.info("Processing DanWiC dataframe...")
     df = df.copy()
