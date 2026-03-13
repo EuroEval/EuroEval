@@ -215,26 +215,6 @@ from .languages import get_all_languages
     "relevant if the model is generative.",
 )
 @click.option(
-    "--model-language",
-    "-ml",
-    default=None,
-    show_default=True,
-    multiple=True,
-    metavar="ISO 639-1 LANGUAGE CODE",
-    type=click.Choice(["all"] + list(get_all_languages().keys())),
-    help="""This option is deprecated - please use --language instead.""",
-)
-@click.option(
-    "--dataset-language",
-    "-dl",
-    default=None,
-    show_default=True,
-    multiple=True,
-    metavar="ISO 639-1 LANGUAGE CODE",
-    type=click.Choice(["all"] + list(get_all_languages().keys())),
-    help="""This option is deprecated - please use --language instead.""",
-)
-@click.option(
     "--max-context-length",
     default=None,
     type=int,
@@ -249,13 +229,6 @@ from .languages import get_all_languages
     show_default=True,
     help="Override for the vocabulary size of the model. If not specified, the value "
     "will be inferred automatically from the model.",
-)
-@click.option(
-    "--batch-size",
-    default=None,
-    type=click.Choice(["1", "2", "4", "8", "16", "32"]),
-    help="This option is deprecated - please use --finetuning-batch-size instead.",
-    deprecated=True,
 )
 def benchmark(
     model: tuple[str],
@@ -285,11 +258,8 @@ def benchmark(
     custom_datasets_file: Path,
     download_only: bool,
     debug: bool,
-    model_language: tuple[str],
-    dataset_language: tuple[str],
     max_context_length: int | None,
     vocabulary_size: int | None,
-    batch_size: str | None,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
     Benchmarker(
@@ -322,9 +292,6 @@ def benchmark(
         run_with_cli=True,
         requires_safetensors=requires_safetensors,
         download_only=download_only,
-        model_language=None if len(model_language) == 0 else list(model_language),
-        dataset_language=None if len(dataset_language) == 0 else list(dataset_language),
-        batch_size=int(batch_size) if batch_size is not None else None,
         max_context_length=max_context_length,
         vocabulary_size=vocabulary_size,
     ).benchmark(model=list(model))

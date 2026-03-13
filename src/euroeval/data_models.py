@@ -216,17 +216,6 @@ class DatasetConfig:
         target_column: str | None = None,
         choices_column: str | list[str] | None = None,
         preprocessing_func: c.Callable[[DatasetDict], DatasetDict] | None = None,
-        _prompt_prefix: str | None = None,
-        _prompt_template: str | None = None,
-        _instruction_prompt: str | None = None,
-        _num_few_shot_examples: int | None = None,
-        _max_generated_tokens: int | None = None,
-        _labels: c.Sequence[str] | None = None,
-        _prompt_label_mapping: dict[str, str] | t.Literal["auto"] | None = None,
-        _allowed_model_types: c.Sequence[ModelType] | None = None,
-        _allowed_generative_types: c.Sequence[GenerativeType] | None = None,
-        _allow_invalid_model_outputs: bool | None = None,
-        _logging_string: str | None = None,
     ) -> None:
         """Initialise a DatasetConfig object.
 
@@ -324,108 +313,7 @@ class DatasetConfig:
                 A custom preprocessing function that takes a DatasetDict and returns a
                 DatasetDict. If set together with any of the column arguments, a warning
                 is logged and `preprocessing_func` takes precedence. Defaults to None.
-            _prompt_prefix (optional):
-                This argument is deprecated. Please use `prompt_prefix` instead.
-            _prompt_template (optional):
-                This argument is deprecated. Please use `prompt_template` instead.
-            _instruction_prompt (optional):
-                This argument is deprecated. Please use `instruction_prompt` instead.
-            _num_few_shot_examples (optional):
-                This argument is deprecated. Please use `num_few_shot_examples` instead.
-            _max_generated_tokens (optional):
-                This argument is deprecated. Please use `max_generated_tokens` instead.
-            _labels (optional):
-                This argument is deprecated. Please use `labels` instead.
-            _prompt_label_mapping (optional):
-                This argument is deprecated. Please use `prompt_label_mapping` instead.
-            _allowed_model_types (optional):
-                This argument is deprecated. Please use `allowed_model_types` instead.
-            _allowed_generative_types (optional):
-                This argument is deprecated. Please use `allowed_generative_types`
-                instead.
-            _allow_invalid_model_outputs (optional):
-                This argument is deprecated. Please use `allow_invalid_model_outputs`
-                instead.
-            _logging_string (optional):
-                This argument is deprecated. Please use `logging_string` instead.
         """
-        # Deprecation warnings
-        if _prompt_prefix is not None:
-            log_once(
-                "The `_prompt_prefix` argument is deprecated. Please use "
-                "`prompt_prefix` instead.",
-                level=logging.WARNING,
-            )
-            prompt_prefix = _prompt_prefix
-        if _prompt_template is not None:
-            log_once(
-                "The `_prompt_template` argument is deprecated. Please use "
-                "`prompt_template` instead.",
-                level=logging.WARNING,
-            )
-            prompt_template = _prompt_template
-        if _instruction_prompt is not None:
-            log_once(
-                "The `_instruction_prompt` argument is deprecated. Please use "
-                "`instruction_prompt` instead.",
-                level=logging.WARNING,
-            )
-            instruction_prompt = _instruction_prompt
-        if _num_few_shot_examples is not None:
-            log_once(
-                "The `_num_few_shot_examples` argument is deprecated. Please use "
-                "`num_few_shot_examples` instead.",
-                level=logging.WARNING,
-            )
-            num_few_shot_examples = _num_few_shot_examples
-        if _max_generated_tokens is not None:
-            log_once(
-                "The `_max_generated_tokens` argument is deprecated. Please use "
-                "`max_generated_tokens` instead.",
-                level=logging.WARNING,
-            )
-            max_generated_tokens = _max_generated_tokens
-        if _labels is not None:
-            log_once(
-                "The `_labels` argument is deprecated. Please use `labels` instead.",
-                level=logging.WARNING,
-            )
-            labels = _labels
-        if _prompt_label_mapping is not None:
-            log_once(
-                "The `_prompt_label_mapping` argument is deprecated. Please use "
-                "`prompt_label_mapping` instead.",
-                level=logging.WARNING,
-            )
-            prompt_label_mapping = _prompt_label_mapping
-        if _allowed_model_types is not None:
-            log_once(
-                "The `_allowed_model_types` argument is deprecated. Please use "
-                "`allowed_model_types` instead.",
-                level=logging.WARNING,
-            )
-            allowed_model_types = _allowed_model_types
-        if _allowed_generative_types is not None:
-            log_once(
-                "The `_allowed_generative_types` argument is deprecated. Please use "
-                "`allowed_generative_types` instead.",
-                level=logging.WARNING,
-            )
-            allowed_generative_types = _allowed_generative_types
-        if _allow_invalid_model_outputs is not None:
-            log_once(
-                "The `_allow_invalid_model_outputs` argument is deprecated. Please use "
-                "`allow_invalid_model_outputs` instead.",
-                level=logging.WARNING,
-            )
-            allow_invalid_model_outputs = _allow_invalid_model_outputs
-        if _logging_string is not None:
-            log_once(
-                "The `_logging_string` argument is deprecated and is not used anymore. "
-                "Using it will have no effect.",
-                level=logging.WARNING,
-            )
-
         self._name = name
         self._pretty_name = pretty_name
         self._source = source

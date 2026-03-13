@@ -66,6 +66,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   instruction-tuned and reasoning models now guards the `str.replace()` call with a
   `None` check.
 
+### Removed
+
+- Removed the deprecated `Benchmarker.__call__` function. Use `benchmarker.benchmark()`
+  instead.
+- Removed the deprecated `DatasetConfig` arguments starting with an underscore, such as
+  `_labels`. Use the corresponding argument without the underscore instead, such as
+  `labels`.
+- Removed the deprecated `--model-language` and `--dataset-language` CLI arguments
+  (`model_language` and `dataset_language` in `Benchmarker`). Use the `--language`
+  argument instead, or `language` in `Benchmarker` instead.
+- Removed the deprecated `--batch-size` argument (`batch_size` in `Benchmarker`). Use
+  `--finetuning-batch-size` instead, or `finetuning_batch_size` in `Benchmarker`
+  instead.
+
 ## [v16.17.0] - 2026-03-09
 
 ### Added
