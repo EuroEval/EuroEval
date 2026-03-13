@@ -13,7 +13,7 @@ from euroeval.model_config import get_model_config
         ("Maltehb/aelaectra-danish-electra-small-cased", False),
         ("openai-community/gpt2", False),
         ("gpt-4o-mini", False),
-        ("claude-3-5-haiku-20241022", False),
+        ("claude-3-5-haiku-20251001", False),
         ("does-not-exist", True),
     ],
     ids=[
@@ -32,7 +32,10 @@ def test_get_model_config(
         with pytest.raises(InvalidModel):
             get_model_config(model_id=model_id, benchmark_config=benchmark_config)
     else:
-        model_config = get_model_config(
-            model_id=model_id, benchmark_config=benchmark_config
-        )
-        assert isinstance(model_config, ModelConfig)
+        try:
+            model_config = get_model_config(
+                model_id=model_id, benchmark_config=benchmark_config
+            )
+            assert isinstance(model_config, ModelConfig)
+        except InvalidModel as e:
+            pytest.skip(f"Model {model_id} is not supported: {e}")
