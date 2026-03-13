@@ -40,6 +40,7 @@ ZIP_PASSWORD = "benchmark"
 # Split sizes
 TRAIN_SIZE = 1024
 VAL_SIZE = 256
+RANDOM_STATE = 4242
 
 
 def main() -> None:
@@ -85,7 +86,11 @@ def download_and_load_dataset() -> pd.DataFrame:
             mono_df = pd.read_csv(f, sep="\t")
             mono_df["type"] = "monosemous"
 
-    return pd.concat([poly_df, mono_df]).sample(frac=1.0).reset_index(drop=True)
+    return (
+        pd.concat([poly_df, mono_df])
+        .sample(frac=1.0, random_state=RANDOM_STATE)
+        .reset_index(drop=True)
+    )
 
 
 def process_dataframe(df: pd.DataFrame) -> pd.DataFrame:
