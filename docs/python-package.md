@@ -1072,8 +1072,14 @@ element in the decoded list is a per-iteration score dictionary that may contain
   `"Could not parse JSON from model output"` or
   `"No candidate label found in model output"`).
 
+Here is an abbreviated example (omitting top-level EEE fields such as
+`schema_version`, `evaluation_id`, `model_info`, etc. — see the
+[Output format](#output-format-every-eval-ever-eee) section for the full structure):
+
 ```json
 {
+  "schema_version": "0.2.1",
+  "evaluation_id": "ner-dataset/my-model/1741260000",
   "eval_library": {
     "name": "euroeval",
     "version": "16.17.0",
