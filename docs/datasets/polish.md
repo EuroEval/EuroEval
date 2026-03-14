@@ -844,3 +844,89 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-pl
 ```
+
+## Hallucination Detection
+
+### Unofficial: MultiWikiHalluQA-pl
+
+This dataset uses the same data as [Unofficial: MultiWikiQA-pl](#unofficial-multiwikiqa-pl), published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
+with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
+correctness of the generated answer, this task evaluates the degree to which the model
+hallucinates, i.e., generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+transformer-based classifier to predict hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to
+total tokens in the generated answers.
+
+Here are a few examples from the training split:
+
+```json
+{
+    'context': 'Marcus Terrell Thornton (ur. 5 czerwca 1987 w Baton Rouge) – amerykański koszykarz, występujący na pozycji rzucającego obrońcy, wybrany do drugiego składu najlepszych debiutantów NBA.\n\n25 lipca 2015 roku podpisał umowę z Houston Rockets.\n\n18 lutego 2016 w ramach wymiany między trzema klubami miał trafić do Detroit Pistons. Jednak cztery dni później umowa została anulowana, ponieważ inny gracz biorący udział w wymianie, litewski skrzydłowy Donatas Motiejūnas, nie przeszedł testów medycznych i tym samym Thornton pozostał w drużynie Houston Rockets. 26 lutego 2016 roku został zwolniony przez klub Rockets. 9 marca 2016 roku podpisał umowę do końca sezonu z klubem Washington Wizards.\n\n22 lutego 2017 został wytransferowany wraz z Andrew Nicholsonem oraz przyszłym wyborem I rundy draftu 2017 do Brooklyn Nets w zamian za Bojana Bogdanovicia i Chrisa McCullougha. Kolejnego dnia został zwolniony przez Nets.\n\nOsiągnięcia \nStan na 29 grudnia 2020, na podstawie, o ile nie zaznaczono inaczej.\n College\n Uczestnik turnieju NCAA (2009)\n Mistrz sezonu regularnego konferecji Southeastern NCAA (SEC – 2009)\n Zawodnik roku konferencji Southeastern (2009)\n MVP turnieju NJCAA Basketball Coaches Association Classic\n Najlepszy nowo przybyły zawodnik konferencji SEC (2008)\n Zaliczony do:\n I składu: \n SEC (2008, 2009)\n All-Louisiana (2008)\n NJCAA All-American (2007)\n\n NBA\n Wybrany do II składu debiutantów NBA (2010)\n\n Inne\n Uczestnik meczu gwiazd G-League (2018)\n\nPrzypisy\n\nLinki zewnętrzne \n Profil na NBA.com \n Statystyki na basketball-reference.com \n Profil na landofbasketball.com \n\nAmerykańscy koszykarze\nKoszykarze Boston Celtics\nKoszykarze New Orleans Hornets\nKoszykarze Sacramento Kings\nKoszykarze Phoenix Suns\nKoszykarze Houston Rockets\nKoszykarze LSU Tigers\nKoszykarze Grand Rapids Drive\nKoszykarze Washington Wizards\nKoszykarze Brooklyn Nets\nKoszykarze Beijing Ducks\nUrodzeni w 1987\nLudzie urodzeni w Baton Rouge',
+    'question': 'Gdzie Thornton przyszedł na świat?',
+    'answers': {
+        'answer_start': array([46]),
+        'text': array(['Baton Rouge'], dtype=object)
+    }
+}
+```
+
+```json
+{
+    "context": "Leonowo – dawny folwark. Tereny, na których był położony leżą obecnie na Białorusi, w obwodzie mińskim, w rejonie miadzielskim, w sielsowiecie Krzywicze.\n\nHistoria \nW czasach zaborów folwark prywatny w powiecie wilejskim, w guberni wileńskiej Imperium Rosyjskiego. W 1866 roku liczył 18 mieszkańców w 1 domu.\n\nW latach 1921–1945 folwark leżał w Polsce, w województwie wileńskim, w powiecie wilejskim, w gminie Krzywicze.\n\nWedług Powszechnego Spisu Ludności z 1921 roku zamieszkiwały tu 24 osoby, 17 było wyznania rzymskokatolickiego a 7 mahometańskiego. Jednocześnie 17 mieszkańców zadeklarowało polską a 7 białoruską przynależność narodową. Były tu 3 budynki mieszkalne. W 1931 w 2 domach zamieszkiwało 17 osób.\n\nWierni należeli do parafii rzymskokatolickiej i prawosławnej w Krzywiczach. Miejscowość podlegała pod Sąd Grodzki w Krzywicze i Okręgowy w Wilnie; właściwy urząd pocztowy mieścił się w Krzywiczach.\n\nW wyniku napaści ZSRR na Polskę we wrześniu 1939 miejscowość znalazła się pod okupacją sowiecką. 2 listopada została włączona do Białoruskiej SRR. Od czerwca 1941 roku pod okupacją niemiecką. W 1944 miejscowość została ponownie zajęta przez wojska sowieckie i włączona do Białoruskiej SRR.\n\nUwagi\n\nPrzypisy\n\nLinki zewnętrzne \n\n \n\nRejon miadzielski\nOpuszczone miejscowości na Białorusi\nMiejscowości województwa wileńskiego (II Rzeczpospolita)",
+    "question": "Jaka była liczba ludności Leonowa w 1921 roku?",
+    "answers": {
+        "answer_start": array([486]),
+        "text": array(["24"], dtype=object)
+    }
+}
+```
+
+```json
+{
+    "context": "Carlos Manuel Brito Leal de Queiroz (wym. ; ur. 1 marca 1953 w Nampuli w Mozambiku) – portugalski trener piłkarski i piłkarz.\n\nKariera szkoleniowa \nBył bramkarzem miejscowego klubu Nampuli. W 1976 z powodu kontuzji musiał zakończyć piłkarską karierę. Pracę szkoleniową rozpoczął w Portugalii, z reprezentacją młodzieżową, z którą dwukrotnie – w 1989 i 1991 – zdobył tytuł mistrza świata. Jest twórcą największych sukcesów w historii młodzieżowej piłki portugalskiej i wychowawcą „Złotego pokolenia” portugalskich piłkarzy, którego najwybitniejsi przedstawiciele – Luís Figo, Rui Costa, Jorge Costa i Fernando Couto – stanowili później o sile dorosłej kadry.\n\nW 1990 został selekcjonerem reprezentacji A, ale nie udało mu się z nią awansować do Mundialu 1994. Do światowego czempionatu wprowadził za to Republikę Południowej Afryki, lecz został zwolniony na kilka miesięcy przed turniejem. Ponadto szkolił zespoły w Stanach Zjednoczonych, Japonii i Zjednoczonych Emiratach Arabskich; jest jednym z nielicznych trenerów, którzy pracowali na czterech różnych kontynentach.\n\nW 2003 dostał szansę od Realu Madryt, ale sezon spędzony w stolicy Hiszpanii – IV miejsce w Primera División i szybkie odpadnięcie z Ligi Mistrzów – był jednym z gorszych w całej historii klubu. W 2004 ponownie (wcześniej w latach 2002–2003) został asystentem Aleksa Fergusona w Manchesterze United. W tym czasie klub zdobył m.in. Puchar Mistrzów i dwa tytuły mistrza Anglii. Zdaniem wielu obserwatorów był szykowany na następcę Fergusona, jednak w lipcu 2008 zdecydował się przyjąć propozycję szefów Portugalskiego Związku Piłki Nożnej i po raz drugi w karierze poprowadził reprezentację Portugalii.\n\nBrał z nią udział w kwalifikacjach do Mundialu 2010. W grupie eliminacyjnej Portugalia zajęła drugie miejsce, za Danią. Do mistrzostw awansowała dzięki wygranej w barażach z Bośnią i Hercegowiną. Na samym turnieju jego podopieczni, wśród których znajdowali się m.in. Cristiano Ronaldo, Deco, Paulo Ferreira i Ricardo Carvalho, doszli do drugiej rundy, gdzie przegrali 0:1 z przyszłymi mistrzami świata Hiszpanami. W rozgrywkach grupowych wygrali z Koreą Północną i Wybrzeżem Kości Słoniowej oraz zremisowali z Brazylią.\n\nPo mistrzostwach Queiroz został zawieszony na pół roku za obrażenie kontrolerów antydopingowych. W tym czasie Portugalczycy (prowadzeni na boisku przez Agostinho Oliveirę) rozpoczęli eliminacje do Euro 2012; po dwu pierwszych meczach mieli na koncie tylko jeden punkt, po remisie z Cyprem (4:4) i porażce z Norwegią (0:1). 9 września, dwa dni po tym ostatnim spotkaniu, portugalska federacja postanowiła rozwiązać kontrakt z trenerem.\n\n4 kwietnia 2011 został selekcjonerem reprezentacji Iranu. Dwa lata później świętował z nią awans do Mundialu 2014.\n\n8 września 2021 roku został trenerem reprezentacji Egiptu.\n\nSukcesy szkoleniowe \n mistrzostwo świata U-20 1989 i 1991 z młodzieżową reprezentacją Portugalii\n wicemistrzostwo Portugalii 1996 ze Sportingiem\n awans do Mundialu 2002 z reprezentacją RPA\n awans do Mundialu 2010 i start w tym turnieju (1/8 finału) z reprezentacją Portugalii\n awans do Mundialu 2014 z reprezentacją Iranu\n\nOdznaczenia \n  Komandor Orderu Infanta Henryka (1989, Portugalia)\n\nZobacz też \n Złote pokolenie piłkarzy portugalskich\n\nPortugalscy trenerzy piłkarscy\nSelekcjonerzy reprezentacji Portugalii w piłce nożnej mężczyzn\nSelekcjonerzy reprezentacji Zjednoczonych Emiratów Arabskich w piłce nożnej mężczyzn\nSelekcjonerzy reprezentacji Południowej Afryki w piłce nożnej mężczyzn\nSelekcjonerzy reprezentacji Iranu w piłce nożnej mężczyzn\nSelekcjonerzy reprezentacji Kolumbii w piłce nożnej mężczyzn\nSelekcjonerzy reprezentacji Egiptu w piłce nożnej mężczyzn\nSelekcjonerzy reprezentacji Kataru w piłce nożnej mężczyzn\nTrenerzy piłkarzy Realu Madryt\nTrenerzy piłkarzy Sportingu CP\nTrenerzy piłkarzy Nagoya Grampus\nTrenerzy piłkarzy New York Red Bulls\nOdznaczeni Orderem Infanta Henryka\nLudzie urodzeni w Nampuli\nUrodzeni w 1953",
+    "question": "Kiedy Carlos Queiroz był selekcjonerem reprezentacji Portugalii na Mistrzostwach Świata?",
+    "answers": {
+        "answer_start": array([1720]),
+        "text": array(["2010"], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+
+  ```text
+  Poniżej znajdują się teksty z towarzyszącymi pytaniami i
+  odpowiedziami.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Tekst: {text}
+  Pytanie: {question}
+  Odpowiedź z użyciem maksymalnie 3 słów: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Tekst: {text}
+
+  Odpowiedz na następujące pytanie dotyczące powyższego tekstu, używając maksymalnie 3 słów.
+
+  Pytanie: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-pl
+```

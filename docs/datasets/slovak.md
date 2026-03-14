@@ -446,3 +446,80 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset winogrande-sk
 ```
+
+## Hallucination Detection
+
+### MultiWikiHalluQA-sk
+
+This dataset uses the same data as [MultiWikiQA-sk](#multiwikiqa-sk), published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
+with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
+correctness of the generated answer, this task evaluates the degree to which the model
+hallucinates, i.e., generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+transformer-based classifier to predict hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to
+total tokens in the generated answers.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "context": "Register toxických účinkov chemických látok (anglicky Registry of Toxic Effects of Chemical Substances, RTECS) je databáza toxikologických informácií zostavených z voľne dostupnej vedeckej literatúry bez odkazu na platnosť alebo užitočnosť publikovaných štúdií. Do roku 2001 bola databáza spravovaná americkou organizáciou NIOSH (National Institute for Occupational Safety and Health, slov. Národný ústav pre bezpečnosť a ochranu zdravia pri práci) ako verejne dostupná publikácia. Teraz ju spravuje súkromná spoločnosť Symyx Technologies a je dostupná len za poplatok.\n\nObsah \nDatabáza obsahuje šesť typov toxikologických informácií:\n primárne podráždenie\n mutagénne účinky\n reprodukčné účinky\n karcinogénne účinky\n akútna toxicita\n toxicita viacnásobných dávok\nV databáze sa spomínajú ako špecifické číselné hodnoty, ako napríklad LD50, LC50, TDLo alebo TCLo, tak aj študované organizmy a spôsob podávania látky. Pre všetky dáta sú uvedené bibliografické zdroje. Štúdie pritom nie sú nijako hodnotené.\n\nHistória \nDatabáza RTECS bola aktivitou schválenou americkým Kongresom, zakotvenou v Sekcii 20(a)(6) zákona Occupational Safety and Health Act z roku 1970 (PL 91-596). Pôvodné vydanie, známe ako Zoznam toxických látok (Toxic Substances List), bolo publikované 28. júna 1971 a obsahovalo toxikologické dáta o približne 5 000 chemikáliách. Názov bol neskôr zmenený na dnešný Register toxických účinkov chemických látok (Registry of Toxic Effects of Chemical Substances). V januári 2001 databáza obsahovala 152 970 chemikálií. V decembri 2001 bola správa RTECS prevedená z NIOSH do súkromnej firmy Elsevier MDL. Túto firmu kúpila v roku 2007 spoločnosť Symyx, súčasťou akvizície bola aj databáza RTECS. Tá je teraz dostupná len za poplatok vo forme ročného predplatného.\n\nRTECS je k dispozícii v angličtine, francúzštine a španielčine, a to prostredníctvom Kanadského centra pre bezpečnosť a ochranu zdravia pri práci. Predplatitelia majú prístup cez web, na CD-ROM a vo formáte pre intranet. Databáza je dostupná na webe aj cez NISC (National Information Services Corporation) a ExPub (Expert Publishing, LLC).\n\nExterné odkazy \n\n RTECS overview \n Symyx website \n Expert Publishing, LLC Website\n\nZdroj \n\nChemické názvy a kódy\nToxikológia",
+  "question": "Aké sú tri možnosti prístupu k databáze RTECS, ak som predplatiteľ?",
+  "answers": {"answer_start": [1949], "text": ["cez web, na CD-ROM a vo formáte pre intranet"]}}
+```
+
+```json
+{
+  "context": "Herta Naglová-Docekalová (* 29. máj 1944, Wels, Rakúsko) je rakúska filozofka a profesorka, členka vedenia Medzinárodnej asociácie filozofiek (IAPf), Österreichische Akademie der Wissenschaften, Institut International de Philosophie (Paríž), viceprezidentka Fédération Internationale des Sociétés de Philosophie (FISP), zakladajúca členka interdisciplinárnych pracovných skupín Frauengeschichte a Philosophische Frauenforschung na Viedenskej univerzite, členka redakčných rád popredných vedeckých časopisov, napr. Philosophin, L´Homme, Deutsche Zeitschrift für Philosophie.\n\nŽivotopis \nVyštudovala históriu, filozofiu a germanistiku na Viedenskej univerzite. V roku 1967 získala na svojej alma mater doktorát z histórie prácou o filozofovi dejín Ernstovi von Lasaulx). V rokoch 1968 - 1985 bola asistentkou na Inštitúte filozofie Viedenskej univerzity. V lete 1980 prednášala na Millersville University of Pennsylvania v USA.\n\nV roku 1981 sa habilitovala z filozofie na Viedenskej univerzite dielom Die Objektivität der Geschichtswissenschaft. V rokoch 1985 až 2009 bola profesorkou Inštitútu filozofie Viedenskej univerzity. Od roku 2009 je univerzitnou profesorkou na dôchodku (Universitätsprofessorin i. R.)\n\nBola hosťujúcou profesorkou v roku 1990 na Universiteit Utrecht v holandskom Utrechte; v Nemecku 1991/1992 na Goethe-Universität Frankfurt vo Frankfurte nad Mohanom; 1993 na Universität Konstanz v Konstanzi; 1994/1995 na Freie Universität Berlin v Berlíne. V rokoch 1995/1996 prednášala na Universität Innsbruck a 2011 na univerzite v Petrohrade v Rusku.\n\nDielo (výber) \n Jenseits der Säkularisierung. Religionsphilosophische Studien. - Berlin 2008 (Hg., gem.m. Friedrich Wolfram).\n Viele Religionen - eine Vernunft? Ein Disput zu Hegel. - Wien/Berlin 2008 (Hg., gem.m. Wolfgang Kaltenbacher und Ludwig Nagl).\n Glauben und Wissen. Ein Symposium mit Jürgen Habermas. - Wien/Berlin 2007 (Hg., gem.m. Rudolf Langthaler).\n Geschichtsphilosophie und Kulturkritik. - Darmstadt 2003 (Hrsg., gem.m. Johannes Rohbeck).\n Feministische Philosophie. Ergebnisse, Probleme, Perspektiven. - Frankfurt a.M. 2000 a 2004 \n Continental Philosophy in Feminist Perspective. - Pennsylviania State University Press 2000 (Hg. gem.m. Cornelia Klingler).\n Der Sinn des Historischen. - Frankfurt a.M. 1996 (Hrsg.).\n Politische Theorie. Differenz und Lebensqualität. - Frankfurt a.M. 1996 (Hrsg. gem.m. Herlinde Pauer-Studer).\n Postkoloniales Philosophieren: Afrika. - Wien/München 1992 (Hrsg., gem.m. Franz Wimmer).\n Tod des Subjekts? - Wien/München 1987 (Hrsg., gem.m. Helmuth Vetter).\n Die Objektivität der Geschichtswissenschaft. Systematische Untersuchungen zum wissenschaftlichen Status der Historie. - Wien/München 1982\n spoluvydavateľka: Wiener Reihe. Themen der Philosophie (od 1986). \n spoluvydavateľka: Deutsche Zeitschrift für Philosophie (1993-2004). \n spoluvydavateľka: L'Homme. Europäische Zeitschrift für feministische Geschichtswissenschaft (1990 - 2003).\n\nOcenenia \n Förderpreis mesta Viedeň, 1983\n Käthe Leichter Preis (rakúska štátna cena), 1997 \n Preis für Geistes- und Sozialwissenschaften der Stadt Wien, 2009\n\nReferencie\n\nExterné odkazy \n Oficiálna stránka, Universität Wien \n Austria Forum, Wissenssammlungen/Biographien: Herta Nagl-Docekal\n\nZdroj \n\nRakúski filozofi",
+  "question": "Kedy prišla na svet Herta Naglová-Docekalová?",
+  "answers": {"answer_start": [28], "text": ["29. máj 1944"]}}
+```
+
+```json
+{
+  "context": "Martin Bareš (* 25. november 1968, Brno) je český profesor neurológie, od septembra 2019 rektor Masarykovej univerzity, predtým od februára 2018 do septembra 2019 dekan Lekárskej fakulty Masarykovej univerzity.\n\nRiadiace funkcie \nVo februári 2018 sa stal dekanom Lekárskej fakulty Masarykovej univerzity. Funkciu prevzal po Jiřím Mayerovi, ktorý zastával pozíciu dekana v období 20102018. S nástupom na post dekana ukončil svoje pôsobenie ako prorektor univerzity, ako i zástupca prednostu I. neurologickej kliniky pre vedu a výskum.\n\nDo funkcie rektora univerzity bol zvolený 1. apríla 2019 Akademickým senátom Masarykovej univerzity. V prvom kole tajnej voľby získal Bareš 36 hlasov z 50 prítomných senátorov. Protikandidáta, prodekana Prírodovedeckej fakulty Jaromíra Leichmana, volilo 11 senátorov. 3 odovzdané hlasy boli neplatné.\n\nSkúsenosti s pôsobením vo vedení školy zbieral Bareš v rokoch 20112018, kedy pôsobil najskôr ako jej prorektor pre rozvoj a potom ako prorektor pre akademické záležitosti. Za svoje priority označil Bareš v dobe voľby posilňovanie role univerzity ako piliera slobody v súčasnej spoločnosti a zvýšenie kvality vzdelávania, vedy a výskumu na medzinárodnej úrovni.\n\nDo funkcie rektora ho vymenoval 11. júna 2019 prezident Miloš Zeman s účinnosťou od 1. septembra 2019. Vo funkcii tak nahradil Mikuláša Beka, ktorému sa skončilo druhé volebné obdobie a o zvolenie sa teda už opäť uchádzať nemohol. Bareš k 1. septembru 2019 rezignoval na post dekana Lekárskej fakulty.\n\nVedecká činnosť \nJe prednášajúcim v odboroch všeobecné lekárstvo, zubné lekárstvo, optometria, fyzioterapia, neurofyziológia pre študentov prírodných vied Lekárskej fakulty Masarykovej univerzity a školiteľ doktorandov odborovej rady neurológia a neurovedy.\n\nPôsobí v týchto vedeckých radách: Masarykova univerzita, Lekárska fakulta Masarykovej univerzity a CEITEC MU. Ďalej tiež Univerzita Palackého v Olomouci, Lekárska fakulta UPOL, Fakulta veterinárního lékařství VFU, ďalej je tiež členom Českej lekárskej komory, Českej neurologickej spoločnosti, Českej spoločnosti klinickej neurofyziológie, Českej lekárskej spoločnosti Jana Evangelisty Purkyně, Movement Disorders Society, Society for the Research on the Cerebellum a Society for Neuroscience. Takisto je členom redakčnej rady časopisov Clinical Neurophysiology, Behavioural Neurology, Tremor and Other Hyperkinetic Movements a Biomedical Papers.\n\nOsobný život \nJe ženatý, má dvoch synov a dcéru.\n\nReferencie\n\nExterné odkazy \n Martin Bareš\n\nZdroj \n\nČeskí lekári\nNeurológovia\nRektori Masarykovej univerzity\nČeskí univerzitní profesori\nDekani Lekárskej fakulty Masarykovej univerzity\nAbsolventi Lekárskej fakulty Masarykovej univerzity\nOsobnosti z Brna",
+  "question": "Akú pozíciu mal Martin Bareš na Masarykovej univerzite počnúc septembrom 2019?",
+  "answers": {
+    "answer_start": [89],
+    "text": ["rektor"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+
+  ```text
+  Nasledujú texty s pridruženými otázkami a odpoveďami.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Text: {text}
+  Otázka: {question}
+  Odpoveď na maximálne 3 slová:
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Text: {text}
+
+  Odpovedzte na nasledujúcu otázku týkajúcu sa textu uvedeného vyššie maximálne 3 slovami.
+
+  Otázka: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-sk
+```

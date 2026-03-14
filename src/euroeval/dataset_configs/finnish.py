@@ -5,6 +5,7 @@ from ..languages import FINNISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    HALLU,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -95,6 +96,15 @@ MULTI_WIKI_QA_FI_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-fi",
     source="EuroEval/multi-wiki-qa-fi-mini",
     task=RC,
+    languages=[FINNISH],
+    unofficial=True,
+)
+
+MULTI_WIKI_QA_FI_HALLUCINATION_CONFIG = DatasetConfig(
+    name="multi-wiki-hallucination-qa-fi",
+    pretty_name="MultiWikiHalluQA-fi",
+    source="EuroEval/multi-wiki-qa-fi-mini",
+    task=HALLU,
     languages=[FINNISH],
     unofficial=True,
 )
