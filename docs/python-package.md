@@ -1055,11 +1055,16 @@ with open("euroeval_benchmark_results.jsonl") as f:
 
 When evaluating a generative model, some samples may fail silently — for example when
 the model's output cannot be parsed as JSON (for NER tasks), or when no valid label can
-be matched to the model's output (for classification tasks). These failures are now
-recorded in `euroeval_benchmark_results.jsonl`.
+be matched to the model's output (for classification tasks). These failures are recorded
+in `euroeval_benchmark_results.jsonl` using the EEE format.
 
-In `results.raw`, each per-iteration score dictionary contains a `failed_instances` key
-with a list of failed samples. Every item in the list has:
+The total number of failed instances across all iterations is stored as a string in
+`evaluation_results[N].score_details.details.num_failed_instances` for each metric.
+
+The raw per-iteration scores, including per-iteration `failed_instances` lists, are
+stored as a JSON-encoded string in `eval_library.additional_details.raw_results`. Each
+element in the decoded list is a per-iteration score dictionary that may contain a
+`failed_instances` key with a list of failed samples. Every item in the list has:
 
 - `sample_index` — the 0-based index of the sample within the bootstrapped batch for
   that iteration.
@@ -1067,32 +1072,53 @@ with a list of failed samples. Every item in the list has:
   `"Could not parse JSON from model output"` or
   `"No candidate label found in model output"`).
 
-In `results.total`, the `num_failed_instances` key holds the total count of failed
-instances summed across all iterations.
-
 ```json
 {
-  "results": {
-    "total": {
-      "test_micro_f1": 0.82,
-      "test_micro_f1_se": 0.01,
-      "num_failed_instances": 3.0
-    },
-    "raw": [
-      {
-        "micro_f1": 0.82,
-        "failed_instances": [
-          {"sample_index": 4, "error": "Could not parse JSON from model output"}
-        ]
+  "eval_library": {
+    "name": "euroeval",
+    "version": "16.17.0",
+    "additional_details": {
+      "raw_results": "[{\"micro_f1\": 0.82, \"failed_instances\": [{\"sample_index\": 4, \"error\": \"Could not parse JSON from model output\"}]}]"
+    }
+  },
+  "evaluation_results": [
+    {
+      "evaluation_name": "test_micro_f1",
+      "score_details": {
+        "score": 0.82,
+        "details": { "num_failed_instances": "3.0" }
       }
-    ]
-  }
+    }
+  ]
 }
 ```
 
 If a model never fails (e.g. encoder/fine-tuned models, or a flawless generative run),
-`num_failed_instances` will be `0.0` and `failed_instances` will be an empty list for
+`num_failed_instances` will be `"0.0"` and `failed_instances` will be an empty list for
 every iteration.
+
+To inspect failed instances programmatically, you can load a result via
+`BenchmarkResult.from_dict()`, which transparently decodes the EEE format (including
+the JSON-encoded `raw_results` string) into a `BenchmarkResult` object. The decoded
+per-iteration scores are then available via `result.results["raw"]`:
+
+```python
+import json
+from euroeval.data_models import BenchmarkResult
+
+with open("euroeval_benchmark_results.jsonl") as f:
+    for line in f:
+        if line.strip():
+            # from_dict() decodes the EEE format transparently
+            result = BenchmarkResult.from_dict(json.loads(line))
+            raw = result.results.get("raw", [])
+            for iteration_idx, iteration_scores in enumerate(raw):
+                for failure in iteration_scores.get("failed_instances", []):
+                    print(
+                        f"Iteration {iteration_idx}, "
+                        f"sample {failure['sample_index']}: {failure['error']}"
+                    )
+```
 
 ### Detailed model outputs
 
