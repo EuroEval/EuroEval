@@ -2221,10 +2221,14 @@ information:</p>
 <h3 id="failed-instances">Failed instances<a class="headerlink" href="#failed-instances" title="Permanent link">&para;</a></h3>
 <p>When evaluating a generative model, some samples may fail silently — for example when
 the model's output cannot be parsed as JSON (for NER tasks), or when no valid label can
-be matched to the model's output (for classification tasks). These failures are now
-recorded in <code>euroeval_benchmark_results.jsonl</code>.</p>
-<p>In <code>results.raw</code>, each per-iteration score dictionary contains a <code>failed_instances</code> key
-with a list of failed samples. Every item in the list has:</p>
+be matched to the model's output (for classification tasks). These failures are recorded
+in <code>euroeval_benchmark_results.jsonl</code> using the EEE format.</p>
+<p>The total number of failed instances across all iterations is stored as a string in
+<code>evaluation_results[N].score_details.details.num_failed_instances</code> for each metric.</p>
+<p>The raw per-iteration scores, including per-iteration <code>failed_instances</code> lists, are
+stored as a JSON-encoded string in <code>eval_library.additional_details.raw_results</code>. Each
+element in the decoded list is a per-iteration score dictionary that may contain a
+<code>failed_instances</code> key with a list of failed samples. Every item in the list has:</p>
 <ul>
 <li><code>sample_index</code> — the 0-based index of the sample within the bootstrapped batch for
   that iteration.</li>
@@ -2232,29 +2236,53 @@ with a list of failed samples. Every item in the list has:</p>
   <code>"Could not parse JSON from model output"</code> or
   <code>"No candidate label found in model output"</code>).</li>
 </ul>
-<p>In <code>results.total</code>, the <code>num_failed_instances</code> key holds the total count of failed
-instances summed across all iterations.</p>
+<p>Here is an abbreviated example (omitting top-level EEE fields such as
+<code>schema_version</code>, <code>evaluation_id</code>, <code>model_info</code>, etc. — see the
+<a href="#output-format-every-eval-ever-eee">Output format</a> section for the full structure):</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;results&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;test_micro_f1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.82</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;test_micro_f1_se&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.01</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;num_failed_instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.0</span>
-<span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">&quot;raw&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;micro_f1&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.82</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;failed_instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">          </span><span class="p">{</span><span class="nt">&quot;sample_index&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Could not parse JSON from model output&quot;</span><span class="p">}</span>
-<span class="w">        </span><span class="p">]</span>
+<span class="w">  </span><span class="nt">&quot;schema_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.2.1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;evaluation_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ner-dataset/my-model/1741260000&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;eval_library&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;euroeval&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;16.17.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;additional_details&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;raw_results&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[{\&quot;micro_f1\&quot;: 0.82, \&quot;failed_instances\&quot;: [{\&quot;sample_index\&quot;: 4, \&quot;error\&quot;: \&quot;Could not parse JSON from model output\&quot;}]}]&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;evaluation_results&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;evaluation_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;test_micro_f1&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;score_details&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;score&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.82</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;details&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;num_failed_instances&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;3.0&quot;</span><span class="w"> </span><span class="p">}</span>
 <span class="w">      </span><span class="p">}</span>
-<span class="w">    </span><span class="p">]</span>
-<span class="w">  </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>If a model never fails (e.g. encoder/fine-tuned models, or a flawless generative run),
-<code>num_failed_instances</code> will be <code>0.0</code> and <code>failed_instances</code> will be an empty list for
+<code>num_failed_instances</code> will be <code>"0.0"</code> and <code>failed_instances</code> will be an empty list for
 every iteration.</p>
+<p>To inspect failed instances programmatically, you can load a result via
+<code>BenchmarkResult.from_dict()</code>, which transparently decodes the EEE format (including
+the JSON-encoded <code>raw_results</code> string) into a <code>BenchmarkResult</code> object. The decoded
+per-iteration scores are then available via <code>result.results["raw"]</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">euroeval.data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkResult</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;euroeval_benchmark_results.jsonl&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="c1"># from_dict() decodes the EEE format transparently</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">BenchmarkResult</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">))</span>
+            <span class="n">raw</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;raw&quot;</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="k">for</span> <span class="n">iteration_idx</span><span class="p">,</span> <span class="n">iteration_scores</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">raw</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">failure</span> <span class="ow">in</span> <span class="n">iteration_scores</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;failed_instances&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Iteration </span><span class="si">{</span><span class="n">iteration_idx</span><span class="si">}</span><span class="s2">, &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;sample </span><span class="si">{</span><span class="n">failure</span><span class="p">[</span><span class="s1">&#39;sample_index&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">failure</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+</code></pre></div>
 <h3 id="detailed-model-outputs">Detailed model outputs<a class="headerlink" href="#detailed-model-outputs" title="Permanent link">&para;</a></h3>
 <p>If you're evaluating a generative model and want to be able to analyse the model results
 more in-depth, you can run your evaluation with the <code>--debug</code> flag (or <code>debug=True</code> if
