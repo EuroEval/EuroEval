@@ -1143,3 +1143,88 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset valeu-et
 ```
+
+## Hallucination Detection
+
+### MultiWikiHalluQA-et
+
+This dataset uses the same data as [MultiWikiQA-et](#multiwikiqa-et), published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
+with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
+correctness of the generated answer, this task evaluates the degree to which the model
+hallucinates, i.e., generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+transformer-based classifier to predict hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to
+total tokens in the generated answers.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "context": "Kõrgõzstani 2010. aasta ülestõus, mäss,  revolutsioon või riigipööre oli sündmusteahel, mis kukutas president Kurmanbek Bakijevi ja tõi võimule ajutise valitsuse Roza Otunbajevaga eesotsas.\n\nRahutused algasid 6. aprillil Talasis ja levisid järgmisel päeval teistesse Kõrgõzstani põhjaosa linnadesse. Rahutustes hukkus vähemalt 85 inimest, täiendavaid ohvreid tõid kaasa järgnenud korratused.\n\nRahutuste põhjused \n\nVõimuvahetuse järel kokku tulnud "sõltumatu ühiskondlik komisjon" 6. kuni 8. aprilli sündmuste uurimiseks, leidis, et rahutused põhjustas Bakijevi korruptsioonis, onupojapoliitikas ja riigi vara kõrvaletoimetamises süüdistatud valitsuse "laostav poliitika", sotsiaalse kindlustunde vähenemine, laiade ühiskonnakihtide vaesumine ([48;56;245;2016;3430tostujõu vähenemine ja kiire inflatsioon), opositsiooni ja ajakirjanike laiaulatuslik tagakiusamine, poliitiliste mõrvade seeria ning sõltumatute trükiväljaannete, raadio- ja telekanalite sulgemine.\n\nRahutuste vahetuks käivitajaks on peetud hinnatõusu. Elektri- ja küttehinnad olid kahekordistunud, tõusnud olid näiteks mobiilteenuste hinnad.\n\nTalasi sündmused \n\n6. aprilli hommikul vahistati Talasis partei Ata-Meken aseesimees Bolotbek Šernijazov. Lõunaks kogunes sadu vahistatu poolehoidjaid miilitsajaoskonna juurde ja Šernijazov vabastati. Meeleavaldajad liikusid oblastivalitsuse hoone juurde ja võtsid pantvangi oblastijuhi. Hangiti kive ja bensiini, valmistati ette pudeleid süüteseguga.\n\nÕhtul saabusid Biškekist lennukid ja helikopterid 200 korrakaitsejõudude teenistujaga, kes pidid asepeaminister Akõlbek Džaparovi juhtimisel läbi viima erioperatsiooni oblastijuhi vabastamiseks. Meeleavaldajate vastu kasutati pisargaasi, kummikuule ja valgusmüra granaate(?). Oblastijuht vabastati ja Bolotbek Šernijazov võeti jõudu kasutades uuesti vahi alla.\n\nRahvahulk piiras sisse grupi miilitsatöötajaid, asus neid peksma ja süütas oblastivalitsuse hoone, kuhu umbes 150 miilitsat varjunud olid. Miilitsail lõppes erivarustus, täiendusi toonud sõiduki hõivasid mässajad ja kasutasid valdusse võetud vahendeid miilitsa vastu.\n\nÖöl vastu 7. aprilli vahistati Biškekis ja Ošis mitu opositsioonijuhti, sealhulgas Ömürbek Tekebajev, Almazbek Atambajev ja Temir Sarijev.\n\nTuhanded inimesed kogunesid piirama presidendi- ja valitsushoonet Biškekis. Julgeolekujõud kasutasid rahva laialiajamiseks tulirelvi. Bakijev lahkus pealinnast Džalal-Abadi. Roza Otunbajeva, Tekebajev, Atambajev ja teised tuntud opositsionäärid kuulutasid endid ajutiseks valitsuseks. Bakijev varjas end kuni 15. aprillini ja lahkus seejärel Valgevenesse.\n\nViited\n\nKõrgõzstani poliitika\n2010\nRevolutsioonid",
+    "question": "Kes eemaldati võimult Kõrgõzstani 2010. aasta rahutuste ajal?",
+    "answers": {
+        "answer_start": array([100]),
+        "text": array(["president Kurmanbek Bakijev"], dtype=object)
+    }
+}
+```
+
+```json
+{
+    "context": "Lepna haruraamatukogu on raamatukogu, mis tegutseb Lääne-Viru maakonnas Rakvere vallas Lepna külas. See on Sõmeru raamatukogu struktuuriüksus.\n\nAjalugu \n\nRaamatukogu täpne ja ametlik asutamise aeg pole kindlalt teada. Raamatukogus leiduvas kroonika kirjutaja arvates ulatub see 1892. aastasse, kuid dokumentaalset kinnitust sellele ei ole leitud. Kirjas on, et raamatukogu asutati Tõrma valla kooli juurde. Küll aga saab ajalehest Virulane (10. mai 1928) lugeda, et Rakvere valla avalik raamatukogu asutati 1925. aasta lõpul "Avalikkude raamatukogu seaduse" alusel ja alustas tegevust 1. jaanuaril 1926.\n\nRaamatukogu aluspõhi töötati välja Rakvere vallas töötavate seltside poolt, kes oma raamatukogud täies ulatuses avalikule raamatukogule üle andsid. Raamatukogu tegevust toetasid rahaliselt nii Rakvere vald kui Haridusministeerium.\n\nRakvere valla avaliku raamatukogu all töötasid erinevad osakonnad (7. osakond),\xa0mille juhatajateks olid nii koolide juhatajad ja teised haridustegelased. Edukamaks osakonnaks aga peeti Mädapea osakonda, mida juhatas Mädapea Algkooli juhataja Jakob Awik. Raamatukogu asus Mädapea mõisas, Mädapea Algkooliga ühe katuse all. 1934. aastal laenutas raamatuid välja toonane kooliõpetaja Helene Tammik.\n\n1965–1991 oli Mädapea mõis Energia kolhoosi hallata.\n\n1991 avati Lepna alevikus paiknev Lepna teeninduspunkt kortermaja neljatoalises korteris kolmandal korrusel. Raamatukogu kogu oli jaotunud kahte hoonesse: Mädapea mõisa ja Lepna kortermajja.\n\n1995 kolis raamatukogu Mädapealt Lepna alevikku kortermaja kahte korterisse, mis asusid maja kolmandal korrusel.\n\n26. juunist 1996 nimetatakse Mädapea raamatukogu Lepna raamatukoguks.\n\nAlates 12. septembrist 2018 kuulub raamatukogu haruraamatukoguna Sõmeru raamatukogustruktuuri.\n\nRaamatukogul on kaks teeninduspunkti: Veltsi Lasteaed-Algkoolis ja Lasila Põhikoolis.\n\nTöötajad \nMädapea raamatukogu töötajad alates 1927. aastast vastavalt Lepna raamatukogu üleandmise ja vastuvõtmise aktidele:\n Jakob Awik 1927\n Helene Tammik 1934\n Ellen Kuusik 01.11.1945–20.02.1954\n Salme Partei 20.02.1949–25.11.1954\n Vilma Niitla (Laar) 25.11.1954–25.05.1955\n Evi Suurväli 25.05.1955–06.08.1956\n Elvi Sats 06.08.1956–30.05.1957\n Maie Tiigi 30.05.1957–05.04.1959\n Vaike Salamets 05.04.1959–15.09.1961\n Elfride Salumäe 15.09.1961–28.03.1963\n Linda Rünk 28.03.1963–07.03.1964\n Evi Lahi 07.03.1964–01.08.1964\n Liia Pall 1964–1947\n Ille Laarman 1975–1977\n Anne Pilipenko1978–20.09.2009 (Mädapea Raamatukogu / Lepna Raamatukogu)\n Jaana Ant 01.09.2009–01.07.2016\n Olga Samra (raamatukogu direktori kohusetäitja) 01.09.2016-märts 2017\n Silja Raudsepp märts 2017– august 2018\n Jaana Ant 22.10.2018 –\n\nKirjandus \n Virulane, 10. mai 1928. lk 4\n\nViited\n\nVälislingid \n Rakvere valla koduleht, rakvere valla raamatukogud\n Lepna raamatukogu koduleht\n Lepna raamatukogu Facebookis\n\nLääne-Viru maakonna raamatukogud\nRakvere vald",
+    "question": "Kes valitses Mädapea mõisat ajavahemikul 1965–1991?",
+    "answers": {
+        "answer_start": array([1261]),
+        "text": array(["Energia kolhoosi"], dtype=object)
+    }
+}
+```
+
+```json
+{
+    "context": "Kannuka pank ehk Kannuka klindineemik on Põhja-Eesti panga osa Ida-Viru maakonnas Narva-Jõesuu linnas ja Sillamäe linnas. Kannuka pank algab peale Sõtke klindilahest ja kulgeb kuni Pimestiku panga moodustavate klindisaarteni.\n\nKannuka klindineemik on läänepoolsem 2,5 km pikkune ja 1,5 km laiune osa Vaivara Sinimägedega sarnase, Sillamäe rikkevööndi, tektooniliselt rikutud keerulise ehitusega klindivööndist. Panga paeplatoo kõrgub 28...30 meetrit üle merepinna. Paeplatool avanevad õhukese moreenikihi all Kesk-Ordoviitsiumi Volhovi lademe Toila kihistu glaukoniiti sisaldavad lubjakivid.\n\nKlindiserv on kaetud rusukalletega ning paljandid peaaegu puuduvad välja arvatud Sillamäe linnas mõned üksikud lõigud. Kannuka pank on nüüdisajal kasvanud suures osas Sillamäe linna sisse, kuid kohati on säilinud väikeste lõikudena ka pangale omast klindimetsa.\n\nVaata ka\nEesti pankade loend\nMeriküla pank\nPargimäe pank\nPimestiku pank\nPõrguaugumäe pank\nTornimäe pank\nUtria kõrgekallas\nUdria maastikukaitseala\nUtria savikallas\nVaivara klindilõik\nPuhkovo-Olgina klindiplatoo (Puhkovo-Vodava-Olgina klindiplatoo)\nLaagna klindisaarestik\n\nKirjandus\nKalle Suuroja. Põhja-Eesti pangad, Tallinn 2004.\n\nIda-Viru maakonna paljandid\nNarva-Jõesuu linn",
+    "question": "Mis klindivööndis asub Kannuka pank?",
+    "answers": {
+        "answer_start": array([330]),
+        "text": array(["Sillamäe rikkevööndi"], dtype=object)
+    }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 4
+- Prefix prompt:
+
+  ```text
+  Järgnevad on tekstid koos küsimuste ja vastustega.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Tekst: {text}
+  Küsimus: {question}
+  Vasta maksimaalselt 3 sõnaga: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Tekst: {text}
+
+  Vasta järgmisele küsimusele ülevaltoodud teksti kohta maksimaalselt 3 sõnaga.
+
+  Küsimus: {question}
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-et
+```

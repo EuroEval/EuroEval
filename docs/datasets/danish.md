@@ -1608,6 +1608,161 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset nordjylland-news
 ```
 
+## Grammatical Error Detection
+
+### Unofficial: GerLangMod-da
+
+This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+collection and derived from the Danish Universal Dependencies treebank. Assuming UD
+annotations are accurate and sentences are well-formed, the dataset contains permuted
+versions of these UD sentences where half of the verbs have been misplaced within their
+phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
+misplaced verbs cannot split them up, and no verb can be placed in the first position of
+the first phrase of each sentence to avoid creating correct polar question syntax.
+
+The original dataset consists of 5,039 samples derived from the
+[UD_Danish-DDT](https://github.com/UniversalDependencies/UD_Danish-DDT) treebank, with
+original splits of 3,989 / 518 / 532 for training, validation and testing, respectively.
+We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
+respectively.
+
+Here are a few examples from the training split:
+
+```json
+{
+    "tokens": [
+        "så",
+        "er",
+        "der",
+        "en",
+        "pause",
+        "på",
+        "5",
+        "år",
+        "indtil",
+        "vivaldis",
+        "største",
+        "sucses",
+        "de",
+        "fire",
+        "årstider",
+        "kommer"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
+}
+```
+
+```json
+{
+    "tokens": [
+        "såfremt",
+        "virksomheden",
+        "ikke",
+        "selv",
+        "er",
+        "i",
+        "stand",
+        "til",
+        "at",
+        "krævede",
+        "de",
+        "udføre",
+        "målinger",
+        "må",
+        "den",
+        "for",
+        "egen",
+        "regning",
+        "søge",
+        "bistand",
+        "hos",
+        "private",
+        "eller",
+        "offentlige",
+        "laboratorier"
+    ],
+    "labels": [
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "B-ERR",
+        "O",
+        "B-ERR",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O",
+        "O"
+    ]
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Nedenstående er sætninger og JSON-ordbøger med de grammatiske fejl, der forekommer i den givne sætning.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Sætning: {text}
+  Grammatiske fejl: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Sætning: {text}
+
+  Identificér de grammatiske fejl i sætningen. Du skal outputte dette som en JSON-ordbog med nøglen 'fejl'. Værdien skal være en liste over de forkert placerede ord, præcis som de forekommer i sætningen.
+  ```
+
+- Label mapping:
+  - `B-ERR` ➡️ `fejl`
+  - `I-ERR` ➡️ `fejl`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset gerlangmod-da
+```
+
 ## Instruction-following
 
 ### IFEval-da
@@ -1773,157 +1928,87 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset valeu-da
 ```
 
-## Grammatical Error Detection
+## Hallucination Detection
 
-### Unofficial: GerLangMod-da
+### MultiWikiHalluQA-da
 
-This dataset is based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
-collection and derived from the Danish Universal Dependencies treebank. Assuming UD
-annotations are accurate and sentences are well-formed, the dataset contains permuted
-versions of these UD sentences where half of the verbs have been misplaced within their
-phrase boundaries. Noun-headed groups of tokens are treated as impermeable units so
-misplaced verbs cannot split them up, and no verb can be placed in the first position of
-the first phrase of each sentence to avoid creating correct polar question syntax.
+This dataset uses the same data as [MultiWikiQA-da](#multiwikiqa-da), published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
+with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
+correctness of the generated answer, this task evaluates the degree to which the model
+hallucinates, i.e., generates tokens that are not grounded in the provided context.
 
-The original dataset consists of 5,039 samples derived from the
-[UD_Danish-DDT](https://github.com/UniversalDependencies/UD_Danish-DDT) treebank, with
-original splits of 3,989 / 518 / 532 for training, validation and testing, respectively.
-We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
-respectively.
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+transformer-based classifier to predict hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to
+total tokens in the generated answers.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": [
-        "så",
-        "er",
-        "der",
-        "en",
-        "pause",
-        "på",
-        "5",
-        "år",
-        "indtil",
-        "vivaldis",
-        "største",
-        "sucses",
-        "de",
-        "fire",
-        "årstider",
-        "kommer"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+    "context": 'Rødspætten (Pleuronectes platessa) er en fladfisk, der findes overalt i de danske farvande. Den er i øvrigt udbredt fra Middelhavet til Island og Hvidehavet. Den foretrækker steder, hvor bunden består af sten, sand og grus. De unge rødspætter findes på lavt vand, mens de voksne foretrækker 10-50 meters dybde. Rødspætten er en højrevendt fladfisk, idet det normalt er højre side, der under larvens forvandling bliver til overside.\n\nUdseende \nRødspætten kan blive op til 100 centimeter, men bliver i Danmark sjældent over 50 centimeter. Den kendes bedst på, at der bag øjnene løber en buet køl med 4-7 benknuder. Skællene er små og glatte og ikke taglagte. Munden er lille med ret tykke læber. Begge øjne findes normalt på fiskens højre side. På oversiden er rødspætten oftest brunlig med et grønligt skær og med spredte rødlige pletter, der ofte er omgivet af lyse eller mørke ringe. Undersiden er hvid.\n\nLevevis \nRødspætten lever især af børsteorme og tyndskallede muslinger. Den er mest aktiv i døgnets mørke timer, mens den skjuler sig på bunden om dagen. Den skifter farve efter bundens farve og struktur. Rødspættens naturlige fjender er ud over mennesket f.eks. krabber og torsk.\n\nForplantning \nHannerne bliver i Nordsøen kønsmodne 3-4 år gamle og en længde på 20 centimeter, mens hunnerne kønsmodner et par år senere. I Østersøen bliver begge køn tidligere kønsmodne. Gydningen foregår normalt i 20-50 meters dybde i perioden januar til juni. Rødspætten foretrækker en temperatur på 6\xa0°C til gydningen. Æggene er glasklare med en diameter på cirka 2 millimeter og flyder op til overfladen. Efter 2-3 uger klækkes de 6 millimeter store larver. Larverne lever af planktonorganismer og begynder efter cirka 5 uger med en længde på 1 centimeter en forvandling, hvor venstre øje vandrer op over hovedet, der vrides, og kroppen bliver bredere. Til at begynde med svømmer de små rødspætter skråt og siden med højre side opad. Med en længde på 1,2-1,4 centimeter skifter de fra et pelagisk liv til at leve på lavt vand langs kysterne. I det første efterår måler rødspætten 7-12 centimeter og trækker ud, for at overvintre på dybere vand.\n\nKilder/Henvisninger \n\n C. V. Otterstrøm (1881-1962).\xa0Danmarks Fauna. Fisk II. Blødfinnefisk. G.E.C. Gads Forlag. København 1914.\n\nFladfisk',
+    "question": 'Hvilken side af rødspætten vender typisk opad?',
+    "answers": {
+        "answer_start": array([369]),
+        "text": array(['højre side'], dtype=object)
+    }
 }
 ```
 
 ```json
 {
-    "tokens": [
-        "såfremt",
-        "virksomheden",
-        "ikke",
-        "selv",
-        "er",
-        "i",
-        "stand",
-        "til",
-        "at",
-        "krævede",
-        "de",
-        "udføre",
-        "målinger",
-        "må",
-        "den",
-        "for",
-        "egen",
-        "regning",
-        "søge",
-        "bistand",
-        "hos",
-        "private",
-        "eller",
-        "offentlige",
-        "laboratorier"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "B-ERR",
-        "O",
-        "B-ERR",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+    "context": 'Mzilikazi ("blodvejen" eller "den store vej" ca. 1790–9. september 1868) var en sydafrikansk konge som grundlagde matabelekongedømmet i det område, som nu er Zimbabwe. Han var søn af Matshobana og blev født nær Mkuze i Zululand (nu del af Sydafrika) og døde ved Ingama i Matabeleland (nær Bulawayo, Zimbabwe). Mange regner ham som den største sydafrikanske militærleder efter zulukongen Shaka.\n\nHan førte sin stamme, khumalo, på en 800 km lang rejse fra Zululand til det, som nu er Zimbabwe. På vejen viste han betydelige statsmandsevner, da han samlede sit eget folk og de mange stammer han erobrede, til et stort,  etnisk rigt og centraliseret kongedømme.\n\nHan var oprindelig en af Shakas løjtnanter, men i 1823 gjorde han oprør. Frem for at møde rituel henrettelse, flygtede han sammen med sin stamme. Han rejste først til Mozambique og i 1826 ind i Transvaal på grund af fortsatte angreb fra sine fjender.\n\nFortsatte angreb fik ham først til at flytte til dagens Botswana og i 1837 til det, som nu er Zambia Han klarede ikke at erobre den indfødte kololo–nation der og rejste til det, som blev kendt som Matabeleland (i dagens Zimbabwe) og slog sig ned der i 1840.\n\nEfter hans ankomst organiserede han sine tilhængere i et militærsystem med regiment–kraaler som kong Shakas, som blev stærke nok til at afvise boernes angreb i 1847–1851 og tvinge den Sydfrikanske Republiks regering til at underskrive en fredsaftale med ham i 1852.\n\nMzilikazi var generelt venlig over for europæisk rejsende, førte opdagelsen af guld i Matabeleland i 1867 til en flom af bosættere, som han ikke kunne kontrollere, og som førte til kongedømmets endelige nederlag under hans efterfølger Lobengula.\n\nKongelige fra historiske riger',
+    "question": 'Med hvilket øgenavn var Mzilikazi kendt?',
+    "answers": {
+        "answer_start": array([11]),
+        "text": array(['"blodvejen" eller "den store vej"'], dtype=object)
+    }
+}
+```
+
+```json
+{
+    "context": 'Jean-Nicolas Bouilly (24. januar 1763 i La Coudraye ved Tours – 14. april 1842 i Paris) var en fransk forfatter. \n\nEfter at have studeret jura sluttede Bouilly sig ved revolutionens udbrud til Mirabeau og Barnave og beklædte forskellige embeder, i hvilke han navnlig virkede for indførelsen af primærskoler og for folkeoplysning i det hele taget. Senere trak han sig tilbage og vedblev at leve uafhængig til sin død. 1790 opførtes hans opéra comique Pierre le Grand, med musik af Grétry. Af hans senere dramatiske arbejder kan nævnes L\'abbé de l\'Épée(1795), Les deux journées (1800), komponeret af Cherubini, Fanchon (1802), komponeret af Himmel, L\'intrigue aux fenêtres, Une folie (1803, med musik af Méhul; på dansk ved N.T. Bruun: "Ungdom og Galskab" [1806], med musik af Du Puy), Mme. de Sévigné (1805) og så videre. Desuden oversatte han flere stykker af Kotzebue. Hans skrifter for ungdommen stod i sin tid i høj kurs; hans stil er vidtsvævende og retorisk, hans billeder skruede, hele tonen så sentimental, at han fik navnet le poète lacrymal. Af disse skrifter kan nævnes: Contes offerts aux enfants de France, Contes à ma fille (1809), Conseils à ma fille (1811) og Les jeunes femmes (1819).\n\nKilder \n\n \n\nDramatikere fra Frankrig\nFranskmænd i 1700-tallet\nFranskmænd i 1800-tallet\nSalmonsens',
+    "question": 'Med hvilke politiske personer allierede Bouilly sig ved revolutionens begyndelse?',
+    "answers": {
+        "answer_start": array([193]),
+        "text": array(['Mirabeau og Barnave'], dtype=object)
+    }
 }
 ```
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-- Number of few-shot examples: 8
+- Number of few-shot examples: 5
 - Prefix prompt:
 
   ```text
-  Nedenstående er sætninger og JSON-ordbøger med de grammatiske fejl, der forekommer i den givne sætning.
+  Følgende er tekster med tilhørende spørgsmål og svar.
   ```
 
 - Base prompt template:
 
   ```text
-  Sætning: {text}
-  Grammatiske fejl: {label}
+  Tekst: {text}
+  Spørgsmål: {question}
+  Svar med maks. 3 ord: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Sætning: {text}
+  Tekst: {text}
 
-  Identificér de grammatiske fejl i sætningen. Du skal outputte dette som en JSON-ordbog med nøglen 'fejl'. Værdien skal være en liste over de forkert placerede ord, præcis som de forekommer i sætningen.
+  Besvar følgende spørgsmål om teksten ovenfor med maks. 3 ord.
+
+  Spørgsmål: {question}
   ```
-
-- Label mapping:
-  - `B-ERR` ➡️ `fejl`
-  - `I-ERR` ➡️ `fejl`
 
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset gerlangmod-da
+euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-da
 ```

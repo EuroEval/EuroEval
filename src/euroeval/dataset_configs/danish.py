@@ -6,6 +6,7 @@ from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
     GED,
+    HALLU,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -103,6 +104,14 @@ VALEU_DA_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     bootstrap_samples=False,
+)
+
+MULTI_WIKI_QA_DA_HALLUCINATION_CONFIG = DatasetConfig(
+    name="multi-wiki-hallucination-qa-da",
+    pretty_name="MultiWikiHalluQA-da",
+    source="EuroEval/multi-wiki-qa-da-mini",
+    task=HALLU,
+    languages=[DANISH],
 )
 
 # Unofficial datasets ###

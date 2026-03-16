@@ -284,6 +284,18 @@ MCSTEREO = Task(
 )
 
 
+HALLU = Task(
+    name="hallucination-detection",
+    task_group=TaskGroup.QUESTION_ANSWERING,
+    template_dict=RC_TEMPLATES,
+    metrics=[m.hallucination_rate_metric],
+    default_num_few_shot_examples=4,
+    default_max_generated_tokens=32,
+    default_labels=[],
+    default_allowed_model_types=[ModelType.GENERATIVE],
+)
+
+
 SPEED = Task(
     name="speed",
     task_group=TaskGroup.SPEED,
