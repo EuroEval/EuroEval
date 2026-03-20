@@ -7,7 +7,6 @@
 # ///
 
 """Create the Dutch SICK-NL Entailment dataset and upload it to the HF Hub."""
-# TODO use uvx to fix these dependencies
 
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
