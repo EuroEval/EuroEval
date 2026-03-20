@@ -200,7 +200,7 @@ class LiteLLMModel(BenchmarkModule):
     high_priority = False
     allowed_params = {
         # OpenAI models
-        re.compile(r"gpt-5-.*"): ["minimal", "low", "medium", "high"],
+        re.compile(r"gpt-5-.*"): ["none", "minimal", "low", "medium", "high"],
         re.compile(r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?"): [
             "low",
             "medium",

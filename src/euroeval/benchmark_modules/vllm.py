@@ -1443,9 +1443,7 @@ def get_end_of_reasoning_token(
     output = model.generate(
         prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
     )[0]
-    completion = tokeniser.decode(
-        token_ids=list(output.outputs[0].token_ids)
-    )  # pyrefly: ignore[bad-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # pyrefly: ignore[bad-argument-type]
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
@@ -1478,9 +1476,7 @@ def get_end_of_reasoning_token(
         sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(
-        token_ids=list(output.outputs[0].token_ids)
-    )  # pyrefly: ignore[bad-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # pyrefly: ignore[bad-argument-type]
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
@@ -1572,9 +1568,7 @@ def get_custom_stop_tokens(
         sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(
-        token_ids=list(output.outputs[0].token_ids)
-    )  # pyrefly: ignore[bad-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # pyrefly: ignore[bad-argument-type]
 
     stop_tokens = [
         stop_token

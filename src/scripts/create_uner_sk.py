@@ -26,9 +26,7 @@ def main() -> None:
 
     # Assuming `inputs` is the text and `targets` contains the entities
     train_df = pd.DataFrame(dataset["train"])  # pyrefly: ignore[no-matching-overload]
-    val_df = pd.DataFrame(
-        dataset["validation"]
-    )  # pyrefly: ignore[no-matching-overload]
+    val_df = pd.DataFrame(dataset["validation"])  # pyrefly: ignore[no-matching-overload]
     test_df = pd.DataFrame(dataset["test"])  # pyrefly: ignore[no-matching-overload]
 
     train_df = process_df(train_df)

@@ -460,10 +460,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                         load_from_cache_file=False,
                         keep_in_memory=True,
                     )
-                dataset: DatasetDict = (
-                    DatasetDict(  # pyrefly: ignore[no-matching-overload]
-                        data_dict
-                    )
+                dataset: DatasetDict = DatasetDict(  # pyrefly: ignore[no-matching-overload]
+                    data_dict
                 )
 
                 # The Trainer hides the columns that are not used by the model (here
@@ -1216,9 +1214,7 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
                 ),
                 dim=0,
             )
-            token_type_embeddings.num_embeddings = (
-                2  # pyrefly: ignore[bad-argument-type]
-            )
+            token_type_embeddings.num_embeddings = 2  # pyrefly: ignore[bad-argument-type]
 
         # Set the model config to use the new type vocab size
         model.config.type_vocab_size = 2

@@ -146,9 +146,7 @@ def hydrate_data(df: pd.DataFrame) -> pd.DataFrame:
         warnings.simplefilter(
             action="ignore", category=pd.errors.SettingWithCopyWarning
         )
-        df["comment_content"] = list(
-            comment_texts
-        )  # pyrefly: ignore[unsupported-operation]
+        df["comment_content"] = list(comment_texts)  # pyrefly: ignore[unsupported-operation]
 
     return df.dropna(subset=["comment_content"])
 

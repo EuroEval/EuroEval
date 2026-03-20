@@ -81,10 +81,7 @@ def compute_metrics(
         all_observed = sorted(
             {
                 v.lower() if isinstance(v, str) else str(v)
-                for v in list(predictions)
-                + list(
-                    labels
-                )  # pyrefly: ignore[operator]  # pyrefly: ignore[no-matching-overload]
+                for v in list(predictions) + list(labels)  # pyrefly: ignore[operator]  # pyrefly: ignore[no-matching-overload]
             }
         )
         label2id = {lbl: idx for idx, lbl in enumerate(all_observed)}

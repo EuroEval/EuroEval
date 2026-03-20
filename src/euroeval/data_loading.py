@@ -78,9 +78,7 @@ def load_data(
     # evaluation
     if hasattr(sys, "_called_from_test") and dataset_config.task != EUROPEAN_VALUES:
         # Truncate test set to one sample for testing
-        dataset["test"] = dataset[
-            "test"
-        ].select(  # pyrefly: ignore[unsupported-operation]
+        dataset["test"] = dataset["test"].select(  # pyrefly: ignore[unsupported-operation]
             range(1)
         )
 
