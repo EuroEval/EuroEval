@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   using the new `lingua-language-detector` dependency. For datasets with Danish or
   Norwegian variants (Bokmål/Nynorsk), the confidence scores are summed across all
   accepted languages before applying the threshold.
-- Added the SICK-NL Dutch Entailment Datase (`sick-nl`).
+- Added the SICK-NL Dutch Entailment Dataset (`sick-nl`).
   It is marked as unofficial for now. This was added by @Rijgersberg ✨
 
 ### Changed
