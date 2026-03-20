@@ -11,6 +11,7 @@ from ..tasks import (
     MCRC,
     MCSTEREO,
     NER,
+    NLI,
     RC,
     SENT,
     SIMPL,
@@ -205,6 +206,15 @@ GERLANGMOD_NL_CONFIG = DatasetConfig(
     pretty_name="GerLangMod-nl",
     source="EuroEval/gerlangmod-nl",
     task=GED,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
+SICK_NL_CONFIG = DatasetConfig(
+    name="sick-nl",
+    pretty_name="The Dutch SICK-NL Entailment Dataset",
+    source="EuroEval/sick-nl",
+    task=NLI,
     languages=[DUTCH],
     unofficial=True,
 )

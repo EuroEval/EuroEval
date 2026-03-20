@@ -269,6 +269,83 @@ Here are a few examples from the training split:
 }
 ```
 
+## Natural Language Inference
+
+### Unofficial: The Dutch SICK-NL Entailment Dataset
+
+This dataset is a Dutch translation of the English
+[SICK (Sentences Involving Compositional Knowledge)](https://marcobaroni.org/composes/sick.html)
+dataset, published in the repository [sick_nl](https://github.com/gijswijnholds/sick_nl)
+and described in the paper [SICK-NL: A Dataset for Dutch Natural Language Inference](https://aclanthology.org/2021.eacl-main.126/)
+by Gijs Wijnholds and Michael Moortgat.
+Each sample pairs two Dutch sentences and asks whether the second
+sentence follows from the first.
+
+The original dataset consists of 4,439 / 495 / 4,906 samples for training, validation
+and testing, respectively. We use a 1,024 / 256 / 1,024 split for training, validation
+and testing, respectively (so 2,304 samples used in total). All new splits are subsets
+of the original splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Zin 1: Twee kinderen rollen in modderig water.\nZin 2: Twee jongens liggen in de oceaan dicht bij het strand.",
+  "label": "neutral"
+}
+```
+
+```json
+{
+  "text": "Zin 1: Een man rijdt op een motor.\nZin 2: Een man rijdt op een motorfiets.",
+  "label": "entailment"
+}
+```
+
+```json
+{
+  "text": "Zin 1: De jongen speelt niet vrolijk piano.\nZin 2: Een jongen speelt vrolijk piano.",
+  "label": "contradiction"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+
+- Prefix prompt:
+
+  ```text
+  Hieronder volgen paren van uitspraken en hun logische relatie, die 'waar', 'neutraal' of 'onwaar' kan zijn.
+  ```
+
+- Base prompt template:
+
+  ```text
+  {text}
+  Implicatie: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+
+  Bepaal of de tweede uitspraak volgt uit de eerste, ermee in tegenspraak is of er geen logisch verband mee heeft. Antwoord met 'waar', 'neutraal' of 'onwaar', en verder niets.
+  ```
+
+- Label mapping:
+  - `entailment` ➡️ `waar`
+  - `neutral` ➡️ `neutraal`
+  - `contradiction` ➡️ `onwaar`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset sick-nl
+```
+
 ## Reading Comprehension
 
 ### SQuAD-nl
