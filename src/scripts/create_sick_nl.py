@@ -10,6 +10,7 @@
 # TODO use uvx to fix these dependencies
 
 from datasets import Dataset, DatasetDict
+from huggingface_hub import HfApi
 
 
 def format(row: dict[str, str]) -> dict[str, str]:
@@ -42,17 +43,15 @@ def main() -> None:
         }
     ).remove_columns(["split"])
 
-    print(dataset)
-
     dataset = dataset.shuffle(seed=42)
     dataset["train"] = dataset["train"].select(range(1024))
     dataset["val"] = dataset["val"].select(range(256))
     dataset["test"] = dataset["test"].select(range(1024))
 
     # Push the dataset to the Hugging Face Hub
-    # dataset_id = "EuroEval/sick-nl"
-    # HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
-    # dataset.push_to_hub(dataset_id, private=True)
+    dataset_id = "EuroEval/sick-nl"
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
+    dataset.push_to_hub(dataset_id, private=True)
 
 
 if __name__ == "__main__":
