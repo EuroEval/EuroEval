@@ -1,8 +1,8 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "datasets>=4.8.3",
-#     "huggingface-hub>=1.7.2",
+#     "datasets==4.8.3",
+#     "huggingface-hub==1.7.2",
 # ]
 # ///
 
@@ -15,6 +15,10 @@ from huggingface_hub import HfApi
 
 def format(row: dict[str, str]) -> dict[str, str]:
     """Format the raw dataset into the columns needed for EuroEval.
+
+    Args:
+        row:
+            A row of the dataset as presented by HF Dataset.map().
 
     Returns:
         the row formatted for EuroEval
