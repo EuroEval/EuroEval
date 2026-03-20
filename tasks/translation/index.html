@@ -1583,7 +1583,9 @@ translation evaluation as it is robust to paraphrasing and works well across dif
 languages.</p>
 <p>We also report <a href="https://www.aclweb.org/anthology/W18-2346/">CHRF4++</a>, which uses
 tri-grams (beta=4) for even more context-aware evaluation. Both metrics are computed
-using SacreBLEU and are reported as percentages.</p>
+using SacreBLEU and are reported as percentages. For both metrics, per-sentence scores
+are penalized if the predicted translation is not in the correct target language, in
+which case the score for that sentence is set to 0.</p>
 <h2 id="how-to-run">🛠️ How to run<a class="headerlink" href="#how-to-run" title="Permanent link">&para;</a></h2>
 <p>In the command line interface of the <a href="/python-package">EuroEval Python package</a>, you
 can benchmark your favorite model on the translation task like so:</p>

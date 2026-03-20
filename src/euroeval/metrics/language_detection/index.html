@@ -19,7 +19,7 @@
     
     
       
-        <title>euroeval.metrics.sacrebleu - EuroEval</title>
+        <title>euroeval.metrics.language_detection - EuroEval</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#euroeval.metrics.sacrebleu" class="md-skip">
+        <a href="#euroeval.metrics.language_detection" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              euroeval.metrics.sacrebleu
+              euroeval.metrics.language_detection
             
           </span>
         </div>
@@ -911,19 +911,19 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#euroeval.metrics.sacrebleu.ChrF" class="md-nav__link">
+  <a href="#euroeval.metrics.language_detection.LanguageDetector" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ChrF
+        LanguageDetector
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="ChrF">
+    <nav class="md-nav" aria-label="LanguageDetector">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#euroeval.metrics.sacrebleu.ChrF.download" class="md-nav__link">
+  <a href="#euroeval.metrics.language_detection.LanguageDetector.download" class="md-nav__link">
     <span class="md-ellipsis">
       
         download
@@ -963,16 +963,16 @@
 
 
 
-<h1 style="display: none;">euroeval.metrics.sacrebleu<a class="headerlink" href="#euroeval.metrics.sacrebleu" title="Permanent link">&para;</a></h1><p class="mkapi-object mkapi-page-object" id="euroeval.metrics.sacrebleu">
+<h1 style="display: none;">euroeval.metrics.language_detection<a class="headerlink" href="#euroeval.metrics.language_detection" title="Permanent link">&para;</a></h1><p class="mkapi-object mkapi-page-object" id="euroeval.metrics.language_detection">
 <span class="mkapi-object-link">
 
 
-<a href="../../../../api/euroeval/metrics/sacrebleu/#euroeval.metrics.sacrebleu" title="Go to docs">[docs]</a>
+<a href="../../../../api/euroeval/metrics/language_detection/#euroeval.metrics.language_detection" title="Go to docs">[docs]</a>
 <span class="mkapi-document-toggle" title="Toggle all docs">
 <i class="fa-regular fa-square-minus"></i>
 </span>
 </span><span class="mkapi-object-kind">module</span>
-<span class="mkapi-object-name"><a href="./#euroeval.metrics.sacrebleu" title="euroeval.metrics.sacrebleu">euroeval.metrics.sacrebleu</a></span>
+<span class="mkapi-object-name"><a href="./#euroeval.metrics.language_detection" title="euroeval.metrics.language_detection">euroeval.metrics.language_detection</a></span>
 </p>
 <div class="mkapi-source no-copy highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">  1</span>
 <span class="normal">  2</span>
@@ -1089,122 +1089,164 @@
 <span class="normal">113</span>
 <span class="normal">114</span>
 <span class="normal">115</span>
-<span class="normal">116</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Metrics from the SacreBLEU package.&quot;&quot;&quot;</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Language detection module.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">sacrebleu.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">CHRF</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Metric</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.language_detection</span><span class="w"> </span><span class="kn">import</span> <span class="n">language_detector</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..caching_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_arguments</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">MIN_LANG_CONFIDENCE_SCORE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DANISH</span><span class="p">,</span>
+    <span class="n">NORWEGIAN</span><span class="p">,</span>
+    <span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span>
+    <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span>
+    <span class="n">get_correct_language_codes</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">datasets.arrow_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">lingua</span><span class="w"> </span><span class="kn">import</span> <span class="n">LanguageDetector</span> <span class="k">as</span> <span class="n">LinguaLanguageDetector</span>
 
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BenchmarkConfig</span><span class="p">,</span> <span class="n">DatasetConfig</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.language_detection</span><span class="w"> </span><span class="kn">import</span> <span class="n">LanguageDetector</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lingua</span><span class="w"> </span><span class="kn">import</span> <span class="n">IsoCode639_1</span><span class="p">,</span> <span class="n">LanguageDetectorBuilder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lingua</span><span class="w"> </span><span class="kn">import</span> <span class="n">Language</span> <span class="k">as</span> <span class="n">LinguaLanguage</span>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">ChrF</span><span class="p">(</span><span class="n">Metric</span><span class="p">):</span><div class="mkapi-source-link" id="euroeval.metrics.sacrebleu.ChrF"><a href="../../../../api/euroeval/metrics/sacrebleu/#euroeval.metrics.sacrebleu.ChrF" title="Go to docs">[docs]</a></div>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;The ChrF metric.&quot;&quot;&quot;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LanguageDetector</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.metrics.language_detection.LanguageDetector"><a href="../../../../api/euroeval/metrics/language_detection/#euroeval.metrics.language_detection.LanguageDetector" title="Go to docs">[docs]</a></div>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Language detector class.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">word_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="n">beta</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="n">language_detector</span><span class="p">:</span> <span class="s2">&quot;LanguageDetector | None&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the ChrF metric.</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the language detector.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">:</span> <span class="s2">&quot;LinguaLanguageDetector | None&quot;</span> <span class="o">=</span> <span class="kc">None</span>
 
-<span class="sd">        Args:</span>
-<span class="sd">            word_order (optional):</span>
-<span class="sd">                The word order for the ChrF metric. Defaults to 0, which is the</span>
-<span class="sd">                original chrF metric. If set to 2, it is the chrF++ metric.</span>
-<span class="sd">            beta (optional):</span>
-<span class="sd">                The beta parameter for the ChrF metric. Defaults to 2, which is the</span>
-<span class="sd">                original chrF (and chrF++) metric.</span>
-<span class="sd">            language_detector (optional):</span>
-<span class="sd">                A LanguageDetector instance. If provided, each per-sentence score is</span>
-<span class="sd">                multiplied by a binary language penalty (1.0 if the prediction is in</span>
-<span class="sd">                the correct language, 0.0 otherwise) before averaging. Defaults to</span>
-<span class="sd">                None, which disables language penalization.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;chr_f</span><span class="si">{</span><span class="n">beta</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;p&quot;</span> <span class="o">*</span> <span class="n">word_order</span><span class="p">,</span>
-            <span class="n">pretty_name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;ChrF</span><span class="si">{</span><span class="n">beta</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;+&quot;</span> <span class="o">*</span> <span class="n">word_order</span><span class="p">,</span>
-            <span class="n">postprocessing_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">),</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.metrics.language_detection.LanguageDetector.download"><a href="../../../../api/euroeval/metrics/language_detection/#euroeval.metrics.language_detection.LanguageDetector.download" title="Go to docs">[docs]</a></div>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Download and initialize the language detection model.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">LanguageDetectorBuilder</span><span class="o">.</span><span class="n">from_all_spoken_languages</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">with_preloaded_language_models</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">build</span><span class="p">()</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">word_order</span> <span class="o">=</span> <span class="n">word_order</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">language_detector</span> <span class="o">=</span> <span class="n">language_detector</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">metric</span> <span class="o">=</span> <span class="n">CHRF</span><span class="p">(</span><span class="n">char_order</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">word_order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">word_order</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">download</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ChrF&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.metrics.sacrebleu.ChrF.download"><a href="../../../../api/euroeval/metrics/sacrebleu/#euroeval.metrics.sacrebleu.ChrF.download" title="Go to docs">[docs]</a></div>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Download the language detection model if needed.</span>
-
-<span class="sd">        Args:</span>
-<span class="sd">            cache_dir:</span>
-<span class="sd">                The directory where the metric will be downloaded to.</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            The metric object itself.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">language_detector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">language_detector</span><span class="o">.</span><span class="n">download</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span>
-        <span class="n">references</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span>
-        <span class="n">dataset</span><span class="p">:</span> <span class="s2">&quot;Dataset&quot;</span><span class="p">,</span>
-        <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
-        <span class="n">benchmark_config</span><span class="p">:</span> <span class="s2">&quot;BenchmarkConfig&quot;</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate the ChrF score.</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Classify if the predictions are in the dataset languages.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            predictions:</span>
-<span class="sd">                The predictions of the model.</span>
-<span class="sd">            references:</span>
-<span class="sd">                The references for the predictions.</span>
-<span class="sd">            dataset:</span>
-<span class="sd">                The dataset used for evaluation. This is only used in case any</span>
-<span class="sd">                additional metadata is used to compute the metrics.</span>
+<span class="sd">                The predictions to detect the language of.</span>
 <span class="sd">            dataset_config:</span>
 <span class="sd">                The dataset configuration.</span>
-<span class="sd">            benchmark_config:</span>
-<span class="sd">                The benchmark configuration.</span>
 
 <span class="sd">        Returns:</span>
-<span class="sd">            The ChrF score, penalized per-sentence by language correctness.</span>
+<span class="sd">            List of binary scores (1.0 or 0.0) for each prediction, where 1.0</span>
+<span class="sd">            indicates the prediction is in the correct language(s) and 0.0 indicates</span>
+<span class="sd">            it is not.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">metric</span><span class="o">.</span><span class="n">sentence_score</span><span class="p">(</span>
-                <span class="n">hypothesis</span><span class="o">=</span><span class="n">prediction</span><span class="p">,</span> <span class="n">references</span><span class="o">=</span><span class="p">[</span><span class="n">reference</span><span class="p">]</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">score</span>
-            <span class="k">for</span> <span class="n">prediction</span><span class="p">,</span> <span class="n">reference</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">references</span><span class="p">)</span>
+        <span class="c1"># Danish and Norwegian variants are mutually included since they are</span>
+        <span class="c1"># difficult to distinguish, even for humans, and some sentences can be</span>
+        <span class="c1"># identical across them.</span>
+        <span class="n">danish_and_norwegian</span> <span class="o">=</span> <span class="p">{</span><span class="n">DANISH</span><span class="p">,</span> <span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span> <span class="n">NORWEGIAN_NYNORSK</span><span class="p">}</span>
+        <span class="n">dataset_languages</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">languages</span><span class="p">)</span>
+
+        <span class="c1"># extend with danish_and_norwegian if any are present</span>
+        <span class="k">if</span> <span class="n">danish_and_norwegian</span> <span class="o">&amp;</span> <span class="n">dataset_languages</span><span class="p">:</span>
+            <span class="n">dataset_languages</span> <span class="o">|=</span> <span class="n">danish_and_norwegian</span>
+
+        <span class="c1"># Exclude the source language for translation tasks</span>
+        <span class="c1"># as it is tuple for translation tasks, otherwise a single language is returned</span>
+        <span class="n">main_lang</span> <span class="o">=</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">main_language</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">main_lang</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">source_lang</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">main_lang</span>
+            <span class="n">dataset_languages</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">source_lang</span><span class="p">)</span>
+
+        <span class="n">target_language_codes</span> <span class="o">=</span> <span class="n">get_correct_language_codes</span><span class="p">(</span>
+            <span class="n">language_codes</span><span class="o">=</span><span class="p">[</span><span class="n">lang</span><span class="o">.</span><span class="n">code</span> <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">dataset_languages</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Skipping &quot;no&quot; norwegian as lingua does not have a code for it</span>
+        <span class="n">detector_languages</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">LinguaLanguage</span><span class="o">.</span><span class="n">from_iso_code_639_1</span><span class="p">(</span><span class="n">IsoCode639_1</span><span class="o">.</span><span class="n">from_str</span><span class="p">(</span><span class="n">lang</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">target_language_codes</span>
+            <span class="k">if</span> <span class="n">lang</span> <span class="o">!=</span> <span class="n">NORWEGIAN</span><span class="o">.</span><span class="n">code</span>
         <span class="p">]</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">scores</span><span class="p">:</span>
-            <span class="k">return</span> <span class="mf">1.0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detect_language</span><span class="p">(</span>
+            <span class="n">predictions</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span>
+            <span class="n">detector_languages</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">detector_languages</span><span class="p">),</span>
+            <span class="n">target_language_codes</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">target_language_codes</span><span class="p">),</span>
+        <span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">language_detector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">penalties</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">language_detector</span><span class="p">(</span>
-                <span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span> <span class="n">dataset_config</span><span class="o">=</span><span class="n">dataset_config</span>
+    <span class="nd">@cache_arguments</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_detect_language</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">predictions</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">detector_languages</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">LinguaLanguage</span><span class="p">],</span>
+        <span class="n">target_language_codes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal method that performs language detection with caching.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            predictions:</span>
+<span class="sd">                The predictions to detect the language of.</span>
+<span class="sd">            detector_languages:</span>
+<span class="sd">                The detector languages to use for filtering.</span>
+<span class="sd">            target_language_codes:</span>
+<span class="sd">                The target language codes (used for cache key).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of binary scores (1.0 or 0.0) for each prediction, where 1.0</span>
+<span class="sd">            indicates the prediction is in the correct language(s) and 0.0 indicates</span>
+<span class="sd">            it is not. Score is 1.0 if the sum of confidence values for target</span>
+<span class="sd">            languages exceeds MIN_LANG_CONFIDENCE_SCORE</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">download</span><span class="p">()</span>
+
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s2">&quot;Model is not initialized, please call download() first&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">conf_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">compute_language_confidence_values_in_parallel</span><span class="p">(</span>
+            <span class="nb">list</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">confidence</span> <span class="ow">in</span> <span class="n">conf_values</span><span class="p">:</span>
+            <span class="c1"># sum the confidence values so we get a single value for datasets</span>
+            <span class="c1"># with &#39;multiple&#39; languages, like Danish and Norwegian</span>
+            <span class="n">lang_confidence</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+                <span class="n">conf</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">confidence</span> <span class="k">if</span> <span class="n">conf</span><span class="o">.</span><span class="n">language</span> <span class="ow">in</span> <span class="n">detector_languages</span>
             <span class="p">)</span>
-            <span class="n">scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="o">*</span> <span class="n">p</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">scores</span><span class="p">,</span> <span class="n">penalties</span><span class="p">)]</span>
+            <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">1.0</span> <span class="k">if</span> <span class="n">lang_confidence</span> <span class="o">&gt;</span> <span class="n">MIN_LANG_CONFIDENCE_SCORE</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scores</span>
 
-        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
 
-
-<span class="n">chrf2_metric</span> <span class="o">=</span> <span class="n">ChrF</span><span class="p">(</span><span class="n">language_detector</span><span class="o">=</span><span class="n">language_detector</span><span class="p">)</span>
-<span class="n">chrf3_metric</span> <span class="o">=</span> <span class="n">ChrF</span><span class="p">(</span><span class="n">beta</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">language_detector</span><span class="o">=</span><span class="n">language_detector</span><span class="p">)</span>
-<span class="n">chrf4_metric</span> <span class="o">=</span> <span class="n">ChrF</span><span class="p">(</span><span class="n">beta</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">language_detector</span><span class="o">=</span><span class="n">language_detector</span><span class="p">)</span>
-<span class="n">chrf2pp_metric</span> <span class="o">=</span> <span class="n">ChrF</span><span class="p">(</span><span class="n">word_order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">language_detector</span><span class="o">=</span><span class="n">language_detector</span><span class="p">)</span>
-<span class="n">chrf3pp_metric</span> <span class="o">=</span> <span class="n">ChrF</span><span class="p">(</span><span class="n">word_order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">language_detector</span><span class="o">=</span><span class="n">language_detector</span><span class="p">)</span>
-<span class="n">chrf4pp_metric</span> <span class="o">=</span> <span class="n">ChrF</span><span class="p">(</span><span class="n">word_order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">language_detector</span><span class="o">=</span><span class="n">language_detector</span><span class="p">)</span>
+<span class="n">language_detector</span> <span class="o">=</span> <span class="n">LanguageDetector</span><span class="p">()</span>
 </code></pre></div></td></tr></table></div>
 
 

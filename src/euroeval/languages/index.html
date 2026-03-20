@@ -960,6 +960,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#euroeval.languages.get_correct_language_codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_correct_language_codes
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2033,12 +2044,49 @@
 <span class="normal">1035</span>
 <span class="normal">1036</span>
 <span class="normal">1037</span>
-<span class="normal">1038</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;List of languages and their language codes.</span>
+<span class="normal">1038</span>
+<span class="normal">1039</span>
+<span class="normal">1040</span>
+<span class="normal">1041</span>
+<span class="normal">1042</span>
+<span class="normal">1043</span>
+<span class="normal">1044</span>
+<span class="normal">1045</span>
+<span class="normal">1046</span>
+<span class="normal">1047</span>
+<span class="normal">1048</span>
+<span class="normal">1049</span>
+<span class="normal">1050</span>
+<span class="normal">1051</span>
+<span class="normal">1052</span>
+<span class="normal">1053</span>
+<span class="normal">1054</span>
+<span class="normal">1055</span>
+<span class="normal">1056</span>
+<span class="normal">1057</span>
+<span class="normal">1058</span>
+<span class="normal">1059</span>
+<span class="normal">1060</span>
+<span class="normal">1061</span>
+<span class="normal">1062</span>
+<span class="normal">1063</span>
+<span class="normal">1064</span>
+<span class="normal">1065</span>
+<span class="normal">1066</span>
+<span class="normal">1067</span>
+<span class="normal">1068</span>
+<span class="normal">1069</span>
+<span class="normal">1070</span>
+<span class="normal">1071</span>
+<span class="normal">1072</span>
+<span class="normal">1073</span>
+<span class="normal">1074</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;List of languages and their language codes.</span>
 
 <span class="sd">The language codes contain both all the ISO 639-1 codes, as well as the ISO 639-3 codes</span>
 <span class="sd">for languages that do not have an ISO 639-1 code.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 
 
@@ -2116,6 +2164,41 @@
 <span class="sd">        A mapping between language codes and their configurations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">code</span><span class="p">:</span> <span class="n">cfg</span> <span class="k">for</span> <span class="n">cfg</span> <span class="ow">in</span> <span class="nb">globals</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">Language</span><span class="p">)}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_correct_language_codes</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.languages.get_correct_language_codes"><a href="../../../api/euroeval/languages/#euroeval.languages.get_correct_language_codes" title="Go to docs">[docs]</a></div>
+    <span class="n">language_codes</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get correct language code(s).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        language_codes:</span>
+<span class="sd">            The language codes of the languages to include, both for models and</span>
+<span class="sd">            datasets. Here &#39;no&#39; means both Bokmål (nb) and Nynorsk (nn). Set this</span>
+<span class="sd">            to &#39;all&#39; if all languages should be considered.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The correct language codes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Create a dictionary that maps languages to their associated language objects</span>
+    <span class="n">language_mapping</span> <span class="o">=</span> <span class="n">get_all_languages</span><span class="p">()</span>
+
+    <span class="c1"># Create the list `languages`</span>
+    <span class="k">if</span> <span class="s2">&quot;all&quot;</span> <span class="ow">in</span> <span class="n">language_codes</span><span class="p">:</span>
+        <span class="n">languages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">language_mapping</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">language_codes</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">languages</span> <span class="o">=</span> <span class="p">[</span><span class="n">language_codes</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">languages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">language_codes</span><span class="p">)</span>
+
+    <span class="c1"># If `languages` contains &#39;no&#39; then also include &#39;nb&#39; and &#39;nn&#39;. Conversely, if</span>
+    <span class="c1"># either &#39;nb&#39; or &#39;nn&#39; are specified then also include &#39;no&#39;.</span>
+    <span class="k">if</span> <span class="s2">&quot;no&quot;</span> <span class="ow">in</span> <span class="n">languages</span><span class="p">:</span>
+        <span class="n">languages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">languages</span><span class="p">)</span> <span class="o">|</span> <span class="p">{</span><span class="s2">&quot;nb&quot;</span><span class="p">,</span> <span class="s2">&quot;nn&quot;</span><span class="p">})</span>
+    <span class="k">elif</span> <span class="s2">&quot;nb&quot;</span> <span class="ow">in</span> <span class="n">languages</span> <span class="ow">or</span> <span class="s2">&quot;nn&quot;</span> <span class="ow">in</span> <span class="n">languages</span><span class="p">:</span>
+        <span class="n">languages</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">languages</span><span class="p">)</span> <span class="o">|</span> <span class="p">{</span><span class="s2">&quot;no&quot;</span><span class="p">})</span>
+
+    <span class="k">return</span> <span class="n">languages</span>
 
 
 <span class="n">ABKHAZIAN</span><span class="p">:</span> <span class="n">Language</span> <span class="o">=</span> <span class="n">Language</span><span class="p">(</span>

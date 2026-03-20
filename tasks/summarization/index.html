@@ -1578,14 +1578,16 @@ the original text, but that the model has to generate new text based on the inpu
 task.</p>
 <h2 id="metrics">📊 Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h2>
 <p>The primary metric used to evaluate the performance of a model on the summarization task
-is <a href="https://www.aclweb.org/anthology/W18-2346/">CHRF3++</a>, which measures the quality of
+is <a href="https://aclanthology.org/W17-4770/">CHRF3++</a>, which measures the quality of
 a summary by combining character-level n-gram F-scores with word order information. The
 "++" indicates that it uses bi-grams (word_order=2) in addition to unigrams, and we use
 beta=3 to weight precision and recall. CHRF is particularly well-suited for
 summarization as it is robust to paraphrasing and works well across different languages.</p>
-<p>We also report <a href="https://www.aclweb.org/anthology/W18-2346/">CHRF4++</a>, which uses
+<p>We also report <a href="https://aclanthology.org/W17-4770/">CHRF4++</a>, which uses
 tri-grams (beta=4) for even more context-aware evaluation. Both metrics are computed
-using SacreBLEU and are reported as percentages.</p>
+using SacreBLEU and are reported as percentages. For both metrics, per-sentence scores
+are penalized if the predicted summary is not in the correct target language, in
+which case the score for that sentence is set to 0.</p>
 <h2 id="how-to-run">🛠️ How to run<a class="headerlink" href="#how-to-run" title="Permanent link">&para;</a></h2>
 <p>In the command line interface of the <a href="/python-package">EuroEval Python package</a>, you
 can benchmark your favorite model on the summarization task like so:</p>
