@@ -745,6 +745,13 @@ class VLLMModel(HuggingFaceEncoderModel):
         truncation_attempts = 1
         for _ in range(num_attempts):
             try:
+                # Replace any empty prompts with the BOS token to avoid vLLM
+                # errors. Empty prompts can occur after truncation or other
+                # processing steps.
+                bos_token = str(self._tokeniser.bos_token or "x")
+                prompts = [
+                    prompt if prompt.strip() else bos_token for prompt in prompts
+                ]
                 raw_outputs = self._model.generate(
                     prompts=prompts,
                     sampling_params=sampling_params,
