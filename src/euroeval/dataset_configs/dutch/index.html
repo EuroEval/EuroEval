@@ -1147,7 +1147,17 @@
 <span class="normal">207</span>
 <span class="normal">208</span>
 <span class="normal">209</span>
-<span class="normal">210</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Dutch dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;All Dutch dataset configurations used in EuroEval.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="n">DUTCH</span>
@@ -1160,6 +1170,7 @@
     <span class="n">MCRC</span><span class="p">,</span>
     <span class="n">MCSTEREO</span><span class="p">,</span>
     <span class="n">NER</span><span class="p">,</span>
+    <span class="n">NLI</span><span class="p">,</span>
     <span class="n">RC</span><span class="p">,</span>
     <span class="n">SENT</span><span class="p">,</span>
     <span class="n">SIMPL</span><span class="p">,</span>
@@ -1354,6 +1365,15 @@
     <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;GerLangMod-nl&quot;</span><span class="p">,</span>
     <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/gerlangmod-nl&quot;</span><span class="p">,</span>
     <span class="n">task</span><span class="o">=</span><span class="n">GED</span><span class="p">,</span>
+    <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
+    <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">SICK_NL_CONFIG</span> <span class="o">=</span> <span class="n">DatasetConfig</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;sick-nl&quot;</span><span class="p">,</span>
+    <span class="n">pretty_name</span><span class="o">=</span><span class="s2">&quot;The Dutch SICK-NL Entailment Dataset&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;EuroEval/sick-nl&quot;</span><span class="p">,</span>
+    <span class="n">task</span><span class="o">=</span><span class="n">NLI</span><span class="p">,</span>
     <span class="n">languages</span><span class="o">=</span><span class="p">[</span><span class="n">DUTCH</span><span class="p">],</span>
     <span class="n">unofficial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>

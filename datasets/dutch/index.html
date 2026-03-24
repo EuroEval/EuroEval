@@ -1147,6 +1147,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#natural-language-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Natural Language Inference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Natural Language Inference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-the-dutch-sick-nl-entailment-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: The Dutch SICK-NL Entailment Dataset
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reading-comprehension" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2356,6 +2384,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#natural-language-inference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Natural Language Inference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Natural Language Inference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unofficial-the-dutch-sick-nl-entailment-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unofficial: The Dutch SICK-NL Entailment Dataset
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#reading-comprehension" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2960,6 +3016,69 @@ new splits. All new splits are subsets of the original splits.</p>
 <span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Wat is het duidelijk dat Jan zal krijgen?&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;incorrect&quot;</span>
 <span class="p">}</span>
+</code></pre></div>
+<h2 id="natural-language-inference">Natural Language Inference<a class="headerlink" href="#natural-language-inference" title="Permanent link">&para;</a></h2>
+<h3 id="unofficial-the-dutch-sick-nl-entailment-dataset">Unofficial: The Dutch SICK-NL Entailment Dataset<a class="headerlink" href="#unofficial-the-dutch-sick-nl-entailment-dataset" title="Permanent link">&para;</a></h3>
+<p>This dataset is a Dutch translation of the English
+<a href="https://marcobaroni.org/composes/sick.html">SICK (Sentences Involving Compositional Knowledge)</a>
+dataset, published in the repository <a href="https://github.com/gijswijnholds/sick_nl">sick_nl</a>
+and described in the paper <a href="https://aclanthology.org/2021.eacl-main.126/">SICK-NL: A Dataset for Dutch Natural Language Inference</a>
+by Gijs Wijnholds and Michael Moortgat.
+Each sample pairs two Dutch sentences and asks whether the second
+sentence follows from the first.</p>
+<p>The original dataset consists of 4,439 / 495 / 4,906 samples for training, validation
+and testing, respectively. We use a 1,024 / 256 / 1,024 split for training, validation
+and testing, respectively (so 2,304 samples used in total). All new splits are subsets
+of the original splits.</p>
+<p>Here are a few examples from the training split:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Zin 1: Twee kinderen rollen in modderig water.\nZin 2: Twee jongens liggen in de oceaan dicht bij het strand.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;neutral&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Zin 1: Een man rijdt op een motor.\nZin 2: Een man rijdt op een motorfiets.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;entailment&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Zin 1: De jongen speelt niet vrolijk piano.\nZin 2: Een jongen speelt vrolijk piano.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;contradiction&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>When evaluating generative models, we use the following setup (see the
+<a href="/methodology">methodology</a> for more information on how these are used):</p>
+<ul>
+<li>
+<p>Number of few-shot examples: 12</p>
+</li>
+<li>
+<p>Prefix prompt:</p>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code>Hieronder volgen paren van uitspraken en hun logische relatie, die &#39;waar&#39;, &#39;neutraal&#39; of &#39;onwaar&#39; kan zijn.
+</code></pre></div>
+<ul>
+<li>Base prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+Implicatie: {label}
+</code></pre></div>
+<ul>
+<li>Instruction-tuned prompt template:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>{text}
+
+Bepaal of de tweede uitspraak volgt uit de eerste, ermee in tegenspraak is of er geen logisch verband mee heeft. Antwoord met &#39;waar&#39;, &#39;neutraal&#39; of &#39;onwaar&#39;, en verder niets.
+</code></pre></div>
+<ul>
+<li>Label mapping:</li>
+<li><code>entailment</code> ➡️ <code>waar</code></li>
+<li><code>neutral</code> ➡️ <code>neutraal</code></li>
+<li><code>contradiction</code> ➡️ <code>onwaar</code></li>
+</ul>
+<p>You can evaluate this dataset directly as follows:</p>
+<div class="highlight"><pre><span></span><code>euroeval<span class="w"> </span>--model<span class="w"> </span>&lt;model-id&gt;<span class="w"> </span>--dataset<span class="w"> </span>sick-nl
 </code></pre></div>
 <h2 id="reading-comprehension">Reading Comprehension<a class="headerlink" href="#reading-comprehension" title="Permanent link">&para;</a></h2>
 <h3 id="squad-nl">SQuAD-nl<a class="headerlink" href="#squad-nl" title="Permanent link">&para;</a></h3>

@@ -2583,11 +2583,7 @@
 <span class="normal">1398</span>
 <span class="normal">1399</span>
 <span class="normal">1400</span>
-<span class="normal">1401</span>
-<span class="normal">1402</span>
-<span class="normal">1403</span>
-<span class="normal">1404</span>
-<span class="normal">1405</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
+<span class="normal">1401</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Encoder models from the Hugging Face Hub.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
@@ -3049,10 +3045,8 @@
                         <span class="n">load_from_cache_file</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">keep_in_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                     <span class="p">)</span>
-                <span class="n">dataset</span><span class="p">:</span> <span class="n">DatasetDict</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[no-matching-overload]</span>
-                        <span class="n">data_dict</span>
-                    <span class="p">)</span>
+                <span class="n">dataset</span><span class="p">:</span> <span class="n">DatasetDict</span> <span class="o">=</span> <span class="n">DatasetDict</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[no-matching-overload]</span>
+                    <span class="n">data_dict</span>
                 <span class="p">)</span>
 
                 <span class="c1"># The Trainer hides the columns that are not used by the model (here</span>
@@ -3805,9 +3799,7 @@
                 <span class="p">),</span>
                 <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">num_embeddings</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="mi">2</span>  <span class="c1"># pyrefly: ignore[bad-argument-type]</span>
-            <span class="p">)</span>
+            <span class="n">token_type_embeddings</span><span class="o">.</span><span class="n">num_embeddings</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># pyrefly: ignore[bad-argument-type]</span>
 
         <span class="c1"># Set the model config to use the new type vocab size</span>
         <span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">type_vocab_size</span> <span class="o">=</span> <span class="mi">2</span>

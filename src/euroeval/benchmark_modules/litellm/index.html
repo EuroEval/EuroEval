@@ -3094,7 +3094,28 @@
 <span class="normal">1964</span>
 <span class="normal">1965</span>
 <span class="normal">1966</span>
-<span class="normal">1967</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
+<span class="normal">1967</span>
+<span class="normal">1968</span>
+<span class="normal">1969</span>
+<span class="normal">1970</span>
+<span class="normal">1971</span>
+<span class="normal">1972</span>
+<span class="normal">1973</span>
+<span class="normal">1974</span>
+<span class="normal">1975</span>
+<span class="normal">1976</span>
+<span class="normal">1977</span>
+<span class="normal">1978</span>
+<span class="normal">1979</span>
+<span class="normal">1980</span>
+<span class="normal">1981</span>
+<span class="normal">1982</span>
+<span class="normal">1983</span>
+<span class="normal">1984</span>
+<span class="normal">1985</span>
+<span class="normal">1986</span>
+<span class="normal">1987</span>
+<span class="normal">1988</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models from an inference API, using the LiteLLM framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
@@ -3187,15 +3208,15 @@
 
 <span class="n">VOCAB_SIZE_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># OpenAI models</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-5\.2.*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-5-.*&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4-(32k)?(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4-[0-9]</span><span class="si">{4}</span><span class="s2">-preview&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4-turbo(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4-(vision|turbo)(-preview)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-3\.5-turbo-instruct(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4o(-mini)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_019</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-5\.[234].*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-5-.*&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4-(32k)?(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4-[0-9]</span><span class="si">{4}</span><span class="s2">-preview&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4-turbo(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4-(vision|turbo)(-preview)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-3\.5-turbo-instruct(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">100_256</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4o(-mini)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_019</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
     <span class="c1"># Anthropic models</span>
     <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]</span><span class="si">{8}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
     <span class="c1"># Gemini models</span>
@@ -3210,19 +3231,21 @@
 
 <span class="n">MODEL_MAX_LENGTH_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># OpenAI models</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-5\.2.*&quot;</span><span class="p">:</span> <span class="mi">400_000</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-5-.*&quot;</span><span class="p">:</span> <span class="mi">272_000</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">8_191</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4-32k(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">32_767</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4-[0-9]</span><span class="si">{4}</span><span class="s2">-preview&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4-turbo(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4-(vision|turbo)(-preview)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-3\.5-turbo-instruct(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">4_095</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4o(-mini)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;o1-(mini|preview)(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;o1(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;o[2-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4\.1.*&quot;</span><span class="p">:</span> <span class="mi">1_047_576</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-5\.4-(mini|nano)-.*&quot;</span><span class="p">:</span> <span class="mi">400_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-5\.4-.*&quot;</span><span class="p">:</span> <span class="mi">1_050_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-5\.2.*&quot;</span><span class="p">:</span> <span class="mi">400_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-5-.*&quot;</span><span class="p">:</span> <span class="mi">272_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">8_191</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4-32k(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">32_767</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4-[0-9]</span><span class="si">{4}</span><span class="s2">-preview&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4-turbo(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4-(vision|turbo)(-preview)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-3\.5-turbo-instruct(-[0-9]</span><span class="si">{4}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">4_095</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4o(-mini)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?o1-(mini|preview)(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">128_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?o1(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?o[2-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4\.1.*&quot;</span><span class="p">:</span> <span class="mi">1_047_576</span><span class="p">,</span>
     <span class="c1"># Anthropic models</span>
     <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]</span><span class="si">{8}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-(opus|sonnet|haiku)-[1-9](-[1-9])?-[0-9]</span><span class="si">{8}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="mi">200_000</span><span class="p">,</span>
@@ -3240,9 +3263,9 @@
 
 <span class="n">NUM_PARAMS_MAPPING</span> <span class="o">=</span> <span class="p">{</span>
     <span class="c1"># OpenAI models</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-5.*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-4.*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-5.*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-4.*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
     <span class="c1"># Anthropic models</span>
     <span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-*&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
     <span class="c1"># Gemini models</span>
@@ -3258,7 +3281,8 @@
 
 
 <span class="n">REASONING_MODELS</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-5.4-.*&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini.*thinking.*&quot;</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;(gemini/)?gemini-2.5.*&quot;</span><span class="p">,</span>
     <span class="sa">r</span><span class="s2">&quot;(xai/)?grok-3-mini.*&quot;</span><span class="p">,</span>
@@ -3267,12 +3291,12 @@
 <span class="p">]</span>
 
 <span class="n">BASE_DECODER_MODELS</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="sa">r</span><span class="s2">&quot;gpt-3.5-turbo-instruct.*&quot;</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;ada-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;babbage-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;curie-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;davinci-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
-    <span class="sa">r</span><span class="s2">&quot;text-davinci-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-3.5-turbo-instruct.*&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?ada-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?babbage-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?curie-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?davinci-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s2">&quot;(openai/)?text-davinci-[0-9]</span><span class="si">{3}</span><span class="s2">&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">CUSTOM_INFERENCE_API_PREFIXES</span> <span class="o">=</span> <span class="p">[</span>
@@ -3296,12 +3320,17 @@
     <span class="n">high_priority</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">allowed_params</span> <span class="o">=</span> <span class="p">{</span>
         <span class="c1"># OpenAI models</span>
-        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;gpt-5-.*&quot;</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">],</span>
-        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span><span class="p">):</span> <span class="p">[</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(openai/)?gpt-5.*&quot;</span><span class="p">):</span> <span class="p">[</span>
+            <span class="s2">&quot;none&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;minimal&quot;</span><span class="p">,</span>
             <span class="s2">&quot;low&quot;</span><span class="p">,</span>
             <span class="s2">&quot;medium&quot;</span><span class="p">,</span>
             <span class="s2">&quot;high&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;xhigh&quot;</span><span class="p">,</span>
         <span class="p">],</span>
+        <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;(openai/)?o[1-9](-mini|-preview)?(-[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">)?&quot;</span>
+        <span class="p">):</span> <span class="p">[</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">],</span>
         <span class="c1"># Anthropic models</span>
         <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-3-7-sonnet.*&quot;</span><span class="p">):</span> <span class="p">[</span><span class="s2">&quot;no-thinking&quot;</span><span class="p">,</span> <span class="s2">&quot;thinking&quot;</span><span class="p">],</span>
         <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(anthropic/)?claude-(sonnet|opus)-4.*&quot;</span><span class="p">):</span> <span class="p">[</span>
@@ -4520,7 +4549,13 @@
                     <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-            <span class="k">except</span> <span class="p">(</span><span class="n">BadRequestError</span><span class="p">,</span> <span class="n">NotFoundError</span><span class="p">):</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">BadRequestError</span><span class="p">,</span> <span class="n">NotFoundError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="c1"># Sometimes the error is simply because the completion couldn&#39;t finish.</span>
+                <span class="c1"># We don&#39;t really care about that, since it still shows that the model</span>
+                <span class="c1"># exists.</span>
+                <span class="k">if</span> <span class="s2">&quot;could not finish the message&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+
                 <span class="c1"># In case we&#39;re using `api_base`, try again with the `/v1` suffix</span>
                 <span class="k">if</span> <span class="p">(</span>
                     <span class="n">benchmark_config</span><span class="o">.</span><span class="n">api_base</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -4830,7 +4865,14 @@
                 <span class="sa">f</span><span class="s2">&quot;Disabling thinking mode for model </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;minimal&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;medium&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">}:</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span> <span class="ow">in</span> <span class="p">{</span>
+            <span class="s2">&quot;none&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;minimal&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;low&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;medium&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;high&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;xhigh&quot;</span><span class="p">,</span>
+        <span class="p">}:</span>
             <span class="n">generation_kwargs</span><span class="p">[</span><span class="s2">&quot;reasoning_effort&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span>
             <span class="n">log_once</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Enabling reasoning effort </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="o">.</span><span class="n">param</span><span class="si">!r}</span><span class="s2"> for model &quot;</span>

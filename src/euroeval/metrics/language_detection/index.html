@@ -1110,28 +1110,54 @@
 <span class="normal">134</span>
 <span class="normal">135</span>
 <span class="normal">136</span>
-<span class="normal">137</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Language detection module.&quot;&quot;&quot;</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span>
+<span class="normal">154</span>
+<span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Language detection module.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">t</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lingua</span><span class="w"> </span><span class="kn">import</span> <span class="n">IsoCode639_1</span><span class="p">,</span> <span class="n">IsoCode639_3</span><span class="p">,</span> <span class="n">LanguageDetectorBuilder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lingua</span><span class="w"> </span><span class="kn">import</span> <span class="n">Language</span> <span class="k">as</span> <span class="n">LinguaLanguage</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..caching_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_arguments</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">MIN_LANG_CONFIDENCE_SCORE</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..languages</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DANISH</span><span class="p">,</span>
-    <span class="n">NORWEGIAN</span><span class="p">,</span>
     <span class="n">NORWEGIAN_BOKMÅL</span><span class="p">,</span>
     <span class="n">NORWEGIAN_NYNORSK</span><span class="p">,</span>
     <span class="n">get_correct_language_codes</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..logging_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_once</span>
 
 <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">lingua</span><span class="w"> </span><span class="kn">import</span> <span class="n">LanguageDetector</span> <span class="k">as</span> <span class="n">LinguaLanguageDetector</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">..data_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetConfig</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">lingua</span><span class="w"> </span><span class="kn">import</span> <span class="n">IsoCode639_1</span><span class="p">,</span> <span class="n">LanguageDetectorBuilder</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">lingua</span><span class="w"> </span><span class="kn">import</span> <span class="n">Language</span> <span class="k">as</span> <span class="n">LinguaLanguage</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">LanguageDetector</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.metrics.language_detection.LanguageDetector"><a href="../../../../api/euroeval/metrics/language_detection/#euroeval.metrics.language_detection.LanguageDetector" title="Go to docs">[docs]</a></div>
@@ -1189,25 +1215,52 @@
             <span class="n">language_codes</span><span class="o">=</span><span class="p">[</span><span class="n">lang</span><span class="o">.</span><span class="n">code</span> <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">dataset_languages</span><span class="p">]</span>
         <span class="p">)</span>
 
-        <span class="c1"># Skipping &quot;no&quot; norwegian as lingua does not have a code for it</span>
-        <span class="n">detector_languages</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">LinguaLanguage</span><span class="o">.</span><span class="n">from_iso_code_639_1</span><span class="p">(</span><span class="n">IsoCode639_1</span><span class="o">.</span><span class="n">from_str</span><span class="p">(</span><span class="n">lang</span><span class="p">))</span>
-            <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">target_language_codes</span>
-            <span class="k">if</span> <span class="n">lang</span> <span class="o">!=</span> <span class="n">NORWEGIAN</span><span class="o">.</span><span class="n">code</span>
-        <span class="p">]</span>
+        <span class="n">detector_languages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">LinguaLanguage</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">lang</span> <span class="ow">in</span> <span class="n">target_language_codes</span><span class="p">:</span>
+            <span class="n">lang</span> <span class="o">=</span> <span class="n">lang</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">match</span> <span class="nb">len</span><span class="p">(</span><span class="n">lang</span><span class="p">):</span>
+                <span class="k">case</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">iso_code</span> <span class="o">=</span> <span class="n">IsoCode639_1</span><span class="o">.</span><span class="n">from_str</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">lang</span><span class="p">)</span>
+                        <span class="n">lingua_language</span> <span class="o">=</span> <span class="n">LinguaLanguage</span><span class="o">.</span><span class="n">from_iso_code_639_1</span><span class="p">(</span>
+                            <span class="n">iso_code</span><span class="o">=</span><span class="n">iso_code</span>
+                        <span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                        <span class="n">log_once</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;The ISO 639-1 code </span><span class="si">{</span><span class="n">lang</span><span class="si">!r}</span><span class="s2"> is not supported by Lingua, &quot;</span>
+                            <span class="s2">&quot;skipping&quot;</span><span class="p">,</span>
+                            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="k">continue</span>
+                <span class="k">case</span> <span class="mi">3</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">iso_code</span> <span class="o">=</span> <span class="n">IsoCode639_3</span><span class="o">.</span><span class="n">from_str</span><span class="p">(</span><span class="n">string</span><span class="o">=</span><span class="n">lang</span><span class="p">)</span>
+                        <span class="n">lingua_language</span> <span class="o">=</span> <span class="n">LinguaLanguage</span><span class="o">.</span><span class="n">from_iso_code_639_3</span><span class="p">(</span>
+                            <span class="n">iso_code</span><span class="o">=</span><span class="n">iso_code</span>
+                        <span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                        <span class="n">log_once</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;The ISO 639-3 code </span><span class="si">{</span><span class="n">lang</span><span class="si">!r}</span><span class="s2"> is not supported by Lingua, &quot;</span>
+                            <span class="s2">&quot;skipping&quot;</span><span class="p">,</span>
+                            <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="k">continue</span>
+                <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                    <span class="n">log_once</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Language </span><span class="si">{</span><span class="n">lang</span><span class="si">!r}</span><span class="s2"> is neither an ISO 639-1 nor an ISO 639-3 &quot;</span>
+                        <span class="s2">&quot;code. Skipping.&quot;</span><span class="p">,</span>
+                        <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">continue</span>
+            <span class="n">detector_languages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lingua_language</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detect_language</span><span class="p">(</span>
-            <span class="n">predictions</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span>
-            <span class="n">detector_languages</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">detector_languages</span><span class="p">),</span>
-            <span class="n">target_language_codes</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">target_language_codes</span><span class="p">),</span>
+            <span class="n">predictions</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">predictions</span><span class="p">),</span> <span class="n">detector_languages</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">detector_languages</span><span class="p">)</span>
         <span class="p">)</span>
 
     <span class="nd">@cache_arguments</span><span class="p">()</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_detect_language</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">predictions</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-        <span class="n">detector_languages</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">LinguaLanguage</span><span class="p">],</span>
-        <span class="n">target_language_codes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">detector_languages</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">LinguaLanguage</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal method that performs language detection with caching.</span>
 
@@ -1216,8 +1269,6 @@
 <span class="sd">                The predictions to detect the language of.</span>
 <span class="sd">            detector_languages:</span>
 <span class="sd">                The detector languages to use for filtering.</span>
-<span class="sd">            target_language_codes:</span>
-<span class="sd">                The target language codes (used for cache key).</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of binary scores (1.0 or 0.0) for each prediction, where 1.0</span>
@@ -1227,7 +1278,6 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">download</span><span class="p">()</span>
-
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span>
             <span class="s2">&quot;Model is not initialized, please call download() first&quot;</span>
         <span class="p">)</span>
@@ -1237,8 +1287,8 @@
         <span class="p">)</span>
         <span class="n">scores</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">confidence</span> <span class="ow">in</span> <span class="n">conf_values</span><span class="p">:</span>
-            <span class="c1"># sum the confidence values so we get a single value for datasets</span>
-            <span class="c1"># with &#39;multiple&#39; languages, like Danish and Norwegian</span>
+            <span class="c1"># Sum the confidence values so we get a single value for datasets with</span>
+            <span class="c1"># &#39;multiple&#39; languages, like Danish and Norwegian</span>
             <span class="n">lang_confidence</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
                 <span class="n">conf</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">conf</span> <span class="ow">in</span> <span class="n">confidence</span> <span class="k">if</span> <span class="n">conf</span><span class="o">.</span><span class="n">language</span> <span class="ow">in</span> <span class="n">detector_languages</span>
             <span class="p">)</span>
