@@ -464,6 +464,26 @@ class VLLMModel(HuggingFaceEncoderModel):
                 If the task requires structured output, but it is not a token
                 classification task and does not define an output structure.
         """
+        # Get the mapping from labels to the first token in the label. We call this each
+        # time we generate a new dataset since the dataset config can change
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            tokeniser=self._tokeniser,
+            generative_type=self.generative_type,
+            log_metadata=self.log_metadata,
+        )
+        if (
+            not self.buffer["first_label_token_mapping"]
+            and self.dataset_config.task.requires_logprobs
+        ):
+            raise InvalidBenchmark(
+                "The dataset requires logprobs, but we encountered an error when "
+                "trying to get the first token of each label in the dataset. You can "
+                "try running this benchmark with the --verbose flag to see what the "
+                "error was. Skipping this evaluation."
+            )
+
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
         if self.generative_type == GenerativeType.BASE:
@@ -489,26 +509,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             ).strip()
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
-
-        # Get the mapping from labels to the first token in the label. We call this each
-        # time we generate a new dataset since the dataset config can change
-        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
-            dataset_config=self.dataset_config,
-            model_config=self.model_config,
-            tokeniser=self._tokeniser,
-            generative_type=self.generative_type,
-            log_metadata=self.log_metadata,
-        )
-        if (
-            not self.buffer["first_label_token_mapping"]
-            and self.dataset_config.task.requires_logprobs
-        ):
-            raise InvalidBenchmark(
-                "The dataset requires logprobs, but we encountered an error when "
-                "trying to get the first token of each label in the dataset. You can "
-                "try running this benchmark with the --verbose flag to see what the "
-                "error was. Skipping this evaluation."
-            )
 
         structured_generation_schema = None
         if (
@@ -906,7 +906,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ]
                 for raw_output in raw_outputs
             ]
-            breakpoint()
             output = GenerativeModelOutput(sequences=completions, scores=scores)
         else:
             output = GenerativeModelOutput(sequences=completions)
