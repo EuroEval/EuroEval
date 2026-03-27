@@ -43,8 +43,6 @@ def main() -> None:
             joined: dict = item | gt
             items.append(joined)
 
-    breakpoint()
-
     for item in items:
         function_str = json.dumps(item["function"])
         question_str = item["question"][0][0]["content"]
