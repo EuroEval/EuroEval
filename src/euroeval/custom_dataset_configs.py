@@ -7,8 +7,6 @@ logic lives in the `yaml_config` module.
 
 import importlib.util
 import logging
-import os
-import sys
 from pathlib import Path
 from types import ModuleType
 
