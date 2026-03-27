@@ -410,6 +410,7 @@ def get_first_label_token_mapping(
         Boolean value indicating whether the model should output scores (if the mapping
         is outputted then the model will always output scores).
     """
+    breakpoint()
     if not (dataset_config.task.uses_logprobs and dataset_config.labels):
         if log_metadata:
             log_once(

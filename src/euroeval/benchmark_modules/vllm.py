@@ -906,6 +906,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ]
                 for raw_output in raw_outputs
             ]
+            breakpoint()
             output = GenerativeModelOutput(sequences=completions, scores=scores)
         else:
             output = GenerativeModelOutput(sequences=completions)
