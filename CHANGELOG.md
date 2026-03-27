@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Fixed a bug when evaluating a generative task that uses logprobs for which partial
+- Fixed a bug when evaluating a generative task that uses logprobs with partial
   completions. The issue was that the first label token mapping wasn't updated
   immediately after the dataset config changed, which has been fixed now.
 
