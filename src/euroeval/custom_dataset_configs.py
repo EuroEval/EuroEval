@@ -7,11 +7,13 @@ logic lives in the `yaml_config` module.
 
 import importlib.util
 import logging
+import os
 import sys
 from pathlib import Path
 from types import ModuleType
 
 from huggingface_hub import HfApi
+from huggingface_hub.errors import OfflineModeIsEnabled as HfOfflineModeIsEnabled
 
 from .data_models import DatasetConfig
 from .logging_utils import log_once
@@ -91,7 +93,15 @@ def try_get_dataset_config_from_repo(
     """
     token = get_hf_token(api_key=api_key)
     hf_api = HfApi(token=token)
-    if not hf_api.repo_exists(repo_id=dataset_id, repo_type="dataset"):
+
+    try:
+        if not hf_api.repo_exists(repo_id=dataset_id, repo_type="dataset"):
+            return None
+    except HfOfflineModeIsEnabled as e:
+        log_once(
+            message=str(e),
+            level=logging.WARNING
+        )
         return None
 
     repo_files = list(
