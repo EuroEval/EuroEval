@@ -801,7 +801,9 @@ class Benchmarker:
                             )
                             break
                     else:
-                        loaded_model.dataset_config = dataset_config
+                        loaded_model.update_dataset_config(
+                            dataset_config=dataset_config
+                        )
 
                     # Skip the benchmark if the model is not of the correct
                     # generative type

@@ -239,6 +239,19 @@ class BenchmarkModule(ABC):
         """
         ...
 
+    def update_dataset_config(self, dataset_config: "DatasetConfig") -> t.Self:
+        """Update the dataset config registered in the benchmark module.
+
+        Args:
+            dataset_config:
+                The new dataset config.
+
+        Returns:
+            The benchmark module.
+        """
+        self.dataset_config = dataset_config
+        return self
+
     def prepare_datasets(
         self, datasets: list[DatasetDict], task: "Task"
     ) -> c.Sequence[DatasetDict]:
