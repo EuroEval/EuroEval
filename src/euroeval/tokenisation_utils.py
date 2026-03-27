@@ -8,6 +8,7 @@ import typing as t
 import torch
 from transformers import BatchEncoding
 
+from .caching_utils import cache_arguments
 from .constants import BOS_TOKENS, EOS_TOKENS, PAD_TOKENS
 from .enums import GenerativeType
 from .exceptions import InvalidModel
@@ -384,6 +385,7 @@ def get_end_of_chat_token_ids(
     return end_of_chat_tokens
 
 
+@cache_arguments("dataset_config", "model_config")
 def get_first_label_token_mapping(
     dataset_config: "DatasetConfig",
     model_config: "ModelConfig",
@@ -410,7 +412,6 @@ def get_first_label_token_mapping(
         Boolean value indicating whether the model should output scores (if the mapping
         is outputted then the model will always output scores).
     """
-    breakpoint()
     if not (dataset_config.task.uses_logprobs and dataset_config.labels):
         if log_metadata:
             log_once(
