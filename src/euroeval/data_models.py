@@ -320,8 +320,8 @@ class DatasetConfig:
         self.task = task
         self.languages = languages
 
-        template = self.task.template_dict.get(  # pyrefly: ignore[no-matching-overload]
-            self.main_language
+        template = self.task.template_dict.get(
+            self.main_language  # pyrefly: ignore[bad-argument-type]
         )
         self.prompt_prefix = (
             prompt_prefix

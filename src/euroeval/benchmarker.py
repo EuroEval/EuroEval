@@ -952,10 +952,11 @@ class Benchmarker:
             InvalidModel:
                 If the model is invalid.
         """
-        try:
-            model.update_dataset_config(dataset_config=dataset_config)
-        except InvalidBenchmark as e:
-            return e
+        if model is not None:
+            try:
+                model.update_dataset_config(dataset_config=dataset_config)
+            except InvalidBenchmark as e:
+                return e
 
         for _ in range(num_attempts := 5):
             try:

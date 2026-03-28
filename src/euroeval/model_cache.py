@@ -230,6 +230,7 @@ class ModelCache:
         """
         input_column = "messages" if "messages" in model_inputs else "text"
 
+        metadata: dict | None = None
         if self.store_metadata:
             metadata = deepcopy(model_inputs)
             metadata.pop("messages" if "messages" != input_column else "text", None)
@@ -273,7 +274,7 @@ class ModelCache:
                         )
                     scores = None
 
-                if self.store_metadata:
+                if metadata is not None:
                     single_metadata = HashableDict(
                         {
                             metadata_column: metadata_values[sample_idx]
