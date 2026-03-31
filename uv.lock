@@ -1097,8 +1097,8 @@ requires-dist = [
     { name = "vllm", marker = "sys_platform == 'darwin' and extra == 'generative'", git = "https://github.com/vllm-project/vllm.git?tag=v0.14.1" },
     { name = "vllm", extras = ["flashinfer"], marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=0.14.1" },
     { name = "vllm", extras = ["flashinfer"], marker = "sys_platform == 'linux' and extra == 'generative'", specifier = ">=0.14.1" },
-    { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'all'", git = "https://github.com/vllm-project/vllm-metal.git" },
-    { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'generative'", git = "https://github.com/vllm-project/vllm-metal.git" },
+    { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'all'", git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.1.0-20260318-043723" },
+    { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'generative'", git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.1.0-20260318-043723" },
 ]
 provides-extras = ["generative", "all"]
 
@@ -5617,7 +5617,7 @@ dependencies = [
 [[package]]
 name = "vllm-metal"
 version = "0.1.0"
-source = { git = "https://github.com/vllm-project/vllm-metal.git#3b6c25789d7a44457a9c217bc654233467c5afe2" }
+source = { git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.1.0-20260318-043723#52a12e79517d26b7174485290f0957c58fc39ab5" }
 dependencies = [
     { name = "accelerate", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "mlx", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
