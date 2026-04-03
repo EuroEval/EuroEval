@@ -104,7 +104,6 @@ scandeval = "euroeval.cli:benchmark"
 dev = [
     "pytest>=8.3.3",
     "pytest-cov>=5.0.0",
-    "pre-commit>=3.8.0",
     "readme-coverage-badger>=0.1.2",
     "click>=8.1.7",
     "ruff>=0.7.1",
@@ -136,6 +135,7 @@ dev = [
     "pytest-depends>=1.0.1",
     "pyrefly>=0.43.1",
     "tqdm-stubs>=0.2.1",
+    "pre-commit>=4.5.1",
 ]
 
 [tool.ruff]
@@ -180,6 +180,14 @@ ignore = [
     "ANN002",
     # Type annotations for **kwargs
     "ANN003",
+    # Type annotations for "self" arguments
+    "ANN101",
+    # Type annotations for "cls" arguments
+    "ANN102",
+    # Always add blank line before class docstring
+    "D203",
+    # No new-line as first line of docstring
+    "D213",
 ]
 
 [tool.ruff.lint.extend-per-file-ignores]
