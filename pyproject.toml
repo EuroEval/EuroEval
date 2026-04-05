@@ -111,7 +111,7 @@ dev = [
 
 [tool.uv.sources]
 # PyPi releases seem to be lagging behind, so we use git sources directly
-vllm-metal = { git = "https://github.com/vllm-project/vllm-metal.git", tag = "v0.1.0-20260318-043723", marker = "platform_system == 'Darwin'" }
+vllm-metal = { git = "https://github.com/vllm-project/vllm-metal.git", tag = "v0.1.0-20260404-164341", marker = "platform_system == 'Darwin'" }
 # vLLM has no official wheels for macos arm64 and flashinfer is a default dep from 0.12.0 (which seems to only be x86_64 + cuda)
 vllm = { git = "https://github.com/vllm-project/vllm.git", tag = "v0.14.1", marker = "platform_system == 'Darwin'" }
 
