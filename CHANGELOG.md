@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Now overrides vLLM's pinned `transformers<5` dependency with `transformers>=5.5.0`, to
+  allow compatibility with the latest models.
+
 ### Fixed
 
 - Fixed a bug when evaluating a generative task that uses logprobs with partial
