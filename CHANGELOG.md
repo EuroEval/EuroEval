@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed a bug when evaluating a generative task that uses logprobs with partial
   completions. The issue was that the first label token mapping wasn't updated
   immediately after the dataset config changed, which has been fixed now.
+- Updated vLLM from v0.14.1 to v0.18.1 on macOS Apple Silicon, enabling structured
+  output support for tasks such as sequence classification and multiple choice.
 
 ## [v17.1.0] - 2026-03-24
 
