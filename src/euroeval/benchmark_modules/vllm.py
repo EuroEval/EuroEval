@@ -156,9 +156,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 If the CUDA Toolkit is not installed on NVIDIA hardware.
             NeedsExtraInstalled:
                 If the generative extra is not installed.
-            InvalidBenchmark:
-                If no CUDA GPUs are available and the dataset requires structured
-                generation.
             InvalidModel:
                 If the generative type was None for the model.
         """
@@ -177,21 +174,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                     "https://developer.nvidia.com/cuda-downloads or ensure that NVCC "
                     "is available in your PATH."
                 ),
-            )
-
-        if not torch.cuda.is_available() and (
-            dataset_config.task.task_group
-            in [
-                TaskGroup.SEQUENCE_CLASSIFICATION,
-                TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-            ]
-            or dataset_config.task.uses_structured_output
-        ):
-            raise InvalidBenchmark(
-                "We currently require CUDA to benchmark generative models on tasks "
-                "that uses structured generation, which includes the current task "
-                f"{dataset_config.task.name}. This is due to an xgrammar issue, which "
-                "will hopefully be fixed soon."
             )
 
         raise_if_wrong_params(
