@@ -148,7 +148,7 @@ def test_benchmark_ollama(
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
 
-@pytest.mark.disable_socket
+@pytest.mark.allow_hosts(["127.0.0.1"])
 @pytest.mark.depends(on=["test_benchmark_encoder"])
 def test_benchmark_encoder_no_internet(
     task: Task, language: Language, encoder_model_id: str
