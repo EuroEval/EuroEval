@@ -178,7 +178,7 @@ def build_preprocessing_func(
                             The example to fix.
 
                     Returns:
-                        The fixes example.
+                        The fixed example.
                     """
                     if isinstance(choices_column, list):
                         choices = [example[col] for col in choices_column]
