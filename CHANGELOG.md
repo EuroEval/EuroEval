@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed a bug related to evaluating gated datasets on the Hugging Face Hub.
 - We now automatically detect if a dataset doesn't have a training split and force
   zero-shot evaluation if so.
-- Fixed an issue when the label column of multiple choice datasets contain the full
+- Fixed an issue when the label column of multiple choice datasets contains the full
   choice text, rather than the a/b/c/d labels. We now convert such labels to the single
   letters.
 - Updated vLLM from v0.14.1 to v0.18.1 on macOS Apple Silicon, enabling structured
