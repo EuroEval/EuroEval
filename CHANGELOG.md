@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Now overrides vLLM's pinned `transformers<5` dependency with `transformers>=5.5.0`, to
   allow compatibility with the latest models.
+- If evaluating a dataset on the Hugging Face Hub with both a YAML config and a Python
+  config, we first try the YAML one, and then try the Python one if the YAML one failed.
+  Previously the evaluation failed if the YAML config was invalid.
 
 ### Fixed
 
