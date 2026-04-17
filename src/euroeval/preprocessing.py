@@ -197,7 +197,8 @@ def build_preprocessing_func(
 
                 # If the label is the full choice string, then we convert it to the
                 # appropriate letter
-                split = split.map(_fix_mc_label_column)
+                if target_column is not None:
+                    split = split.map(_fix_mc_label_column)
 
                 # Handle input column (optionally merging with choices)
                 merge_fn = functools.partial(
