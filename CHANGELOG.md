@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v17.2.0] - 2026-04-17
+
 ### Changed
 
 - Now overrides vLLM's pinned `transformers<5` dependency with `transformers>=5.5.0`, to

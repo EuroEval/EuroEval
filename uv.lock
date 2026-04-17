@@ -986,7 +986,7 @@ wheels = [
 
 [[package]]
 name = "euroeval"
-version = "17.1.0.dev0"
+version = "17.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
