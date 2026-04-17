@@ -373,7 +373,8 @@ def get_end_of_chat_token_ids(
     end_of_chat_tokens = token_ids[x_token_index + 1 :]
     if len(end_of_chat_tokens) == 0:
         log(
-            "Could not locate the end-of-chat token for the model.", level=logging.DEBUG
+            "The end-of-chat token seems to be empty for the model.",
+            level=logging.DEBUG,
         )
         return None
 

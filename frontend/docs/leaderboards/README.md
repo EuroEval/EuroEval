@@ -1,0 +1,45 @@
+---
+hide:
+    - toc
+---
+# Leaderboards
+
+👈 Choose a leaderboard on the left to see the results.
+
+## 🏷️ Types of Leaderboards
+
+Each language has two leaderboards:
+
+- **Generative Leaderboard**: This leaderboard shows the performance of models that can
+  generate text. These models have been evaluated on _all_ [tasks](/tasks), both NLU and
+  NLG.
+- **NLU Leaderboard**: This leaderboard shows the performance of models that can
+  understand text, which includes both generative and non-generative models.
+
+## 📊 How to Read the Leaderboards
+
+The main score column is the `Rank`, showing the [mean rank score](/methodology) of the
+model across all the tasks in the leaderboard. The lower the rank, the better the model.
+
+The columns that follow the rank columns are metadata about the model:
+
+- `Type`: The type of model:
+  - 🔍 indicates that it is an encoder model (e.g., BERT)
+  - 🧠 indicates that it is a base generative model (e.g., GPT-2)
+  - 📝 indicates that it is an instruction-tuned model (e.g., ChatGPT)
+  - 🤔 indicates that it is a reasoning model (e.g., o1)
+- `Parameters`: The total number of parameters in the model, in millions.
+- `Vocabulary`: The size of the model's vocabulary, in thousands.
+- `Context`: The maximum number of tokens that the model can process at a time.
+- `Commercial`: Whether the model can be used for commercial purposes. See [here](/faq)
+  for more information.
+- `Merge`: Whether the model is a merge of other models.
+
+After these metadata columns, the individual scores for each dataset is shown. Each
+dataset has a primary and secondary score - see what these are on the [task
+page](/tasks). Lastly, the final columns show the EuroEval version used to benchmark
+the given model on each of the datasets.
+
+To read more about the individual datasets, see the [datasets](/datasets) page. If
+you're interested in the methodology behind the benchmark, see the
+[methodology](/methodology) page.
