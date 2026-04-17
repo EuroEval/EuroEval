@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed a bug when evaluating a generative task that uses logprobs with partial
   completions. The issue was that the first label token mapping wasn't updated
   immediately after the dataset config changed, which has been fixed now.
+- Fixed a bug related to evaluating gated datasets on the Hugging Face Hub.
 
 ## [v17.1.0] - 2026-03-24
 
