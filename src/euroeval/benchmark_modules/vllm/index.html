@@ -15,7 +15,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -949,6 +949,17 @@
     <span class="md-ellipsis">
       
         prepare_dataset
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.vllm.VLLMModel.update_dataset_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_dataset_config
       
     </span>
   </a>
@@ -2825,7 +2836,24 @@
 <span class="normal">1684</span>
 <span class="normal">1685</span>
 <span class="normal">1686</span>
-<span class="normal">1687</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
+<span class="normal">1687</span>
+<span class="normal">1688</span>
+<span class="normal">1689</span>
+<span class="normal">1690</span>
+<span class="normal">1691</span>
+<span class="normal">1692</span>
+<span class="normal">1693</span>
+<span class="normal">1694</span>
+<span class="normal">1695</span>
+<span class="normal">1696</span>
+<span class="normal">1697</span>
+<span class="normal">1698</span>
+<span class="normal">1699</span>
+<span class="normal">1700</span>
+<span class="normal">1701</span>
+<span class="normal">1702</span>
+<span class="normal">1703</span>
+<span class="normal">1704</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Generative models using the vLLM inference framework.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
@@ -2983,9 +3011,6 @@
 <span class="sd">                If the CUDA Toolkit is not installed on NVIDIA hardware.</span>
 <span class="sd">            NeedsExtraInstalled:</span>
 <span class="sd">                If the generative extra is not installed.</span>
-<span class="sd">            InvalidBenchmark:</span>
-<span class="sd">                If no CUDA GPUs are available and the dataset requires structured</span>
-<span class="sd">                generation.</span>
 <span class="sd">            InvalidModel:</span>
 <span class="sd">                If the generative type was None for the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -3004,21 +3029,6 @@
                     <span class="s2">&quot;https://developer.nvidia.com/cuda-downloads or ensure that NVCC &quot;</span>
                     <span class="s2">&quot;is available in your PATH.&quot;</span>
                 <span class="p">),</span>
-            <span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span>
-            <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">task_group</span>
-            <span class="ow">in</span> <span class="p">[</span>
-                <span class="n">TaskGroup</span><span class="o">.</span><span class="n">SEQUENCE_CLASSIFICATION</span><span class="p">,</span>
-                <span class="n">TaskGroup</span><span class="o">.</span><span class="n">MULTIPLE_CHOICE_CLASSIFICATION</span><span class="p">,</span>
-            <span class="p">]</span>
-            <span class="ow">or</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_structured_output</span>
-        <span class="p">):</span>
-            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
-                <span class="s2">&quot;We currently require CUDA to benchmark generative models on tasks &quot;</span>
-                <span class="s2">&quot;that uses structured generation, which includes the current task &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">. This is due to an xgrammar issue, which &quot;</span>
-                <span class="s2">&quot;will hopefully be fixed soon.&quot;</span>
             <span class="p">)</span>
 
         <span class="n">raise_if_wrong_params</span><span class="p">(</span>
@@ -3272,6 +3282,41 @@
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">dataset</span>
+<div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.update_dataset_config"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.update_dataset_config" title="Go to docs">[docs]</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_dataset_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the dataset config registered in the benchmark module.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset_config:</span>
+<span class="sd">                The new dataset config.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The benchmark module.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InvalidBenchmark:</span>
+<span class="sd">                If the dataset requires logprobs, but we weren&#39;t able to update the</span>
+<span class="sd">                first label token mapping.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span> <span class="o">=</span> <span class="n">dataset_config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_first_label_token_mapping</span><span class="p">(</span>
+            <span class="n">dataset_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="p">,</span>
+            <span class="n">model_config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model_config</span><span class="p">,</span>
+            <span class="n">tokeniser</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_tokeniser</span><span class="p">,</span>
+            <span class="n">generative_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generative_type</span><span class="p">,</span>
+            <span class="n">log_metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log_metadata</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="s2">&quot;first_label_token_mapping&quot;</span><span class="p">]</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">requires_logprobs</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidBenchmark</span><span class="p">(</span>
+                <span class="s2">&quot;The dataset requires logprobs, but we encountered an error when &quot;</span>
+                <span class="s2">&quot;trying to get the first token of each label in the dataset. You can &quot;</span>
+                <span class="s2">&quot;try running this benchmark with the --verbose flag to see what the &quot;</span>
+                <span class="s2">&quot;error was. Skipping this evaluation.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GenerativeModelOutput&quot;</span><span class="p">:</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.vllm.VLLMModel.generate"><a href="../../../../api/euroeval/benchmark_modules/vllm/#euroeval.benchmark_modules.vllm.VLLMModel.generate" title="Go to docs">[docs]</a></div>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate outputs from the model.</span>

@@ -15,7 +15,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -1684,7 +1684,9 @@
 <span class="normal">626</span>
 <span class="normal">627</span>
 <span class="normal">628</span>
-<span class="normal">629</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
+<span class="normal">629</span>
+<span class="normal">630</span>
+<span class="normal">631</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Utility functions related to tokenisation.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1694,6 +1696,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchEncoding</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.caching_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_arguments</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">BOS_TOKENS</span><span class="p">,</span> <span class="n">EOS_TOKENS</span><span class="p">,</span> <span class="n">PAD_TOKENS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerativeType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidModel</span>
@@ -2070,6 +2073,7 @@
     <span class="k">return</span> <span class="n">end_of_chat_tokens</span>
 
 
+<span class="nd">@cache_arguments</span><span class="p">(</span><span class="s2">&quot;dataset_config&quot;</span><span class="p">,</span> <span class="s2">&quot;model_config&quot;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_first_label_token_mapping</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.tokenisation_utils.get_first_label_token_mapping"><a href="../../../api/euroeval/tokenisation_utils/#euroeval.tokenisation_utils.get_first_label_token_mapping" title="Go to docs">[docs]</a></div>
     <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">,</span>
     <span class="n">model_config</span><span class="p">:</span> <span class="s2">&quot;ModelConfig&quot;</span><span class="p">,</span>
@@ -2096,19 +2100,19 @@
 <span class="sd">        Boolean value indicating whether the model should output scores (if the mapping</span>
 <span class="sd">        is outputted then the model will always output scores).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_logprobs</span> <span class="ow">and</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">log_metadata</span><span class="p">:</span>
-            <span class="n">log_once</span><span class="p">(</span>
-                <span class="s2">&quot;We will not use logprobs with the model, since the dataset does not &quot;</span>
-                <span class="s2">&quot;have labels.&quot;</span><span class="p">,</span>
-                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="kc">False</span>
-    <span class="k">elif</span> <span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">generative_type</span> <span class="o">==</span> <span class="n">GenerativeType</span><span class="o">.</span><span class="n">REASONING</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">log_metadata</span><span class="p">:</span>
             <span class="n">log_once</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;The model </span><span class="si">{</span><span class="n">model_config</span><span class="o">.</span><span class="n">model_id</span><span class="si">!r}</span><span class="s2"> is a reasoning model and &quot;</span>
                 <span class="s2">&quot;thus does not support logprobs, so we do not enable it.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="p">(</span><span class="n">dataset_config</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">uses_logprobs</span> <span class="ow">and</span> <span class="n">dataset_config</span><span class="o">.</span><span class="n">labels</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">log_metadata</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="s2">&quot;We will not use logprobs with the model, since the dataset does not &quot;</span>
+                <span class="s2">&quot;have labels.&quot;</span><span class="p">,</span>
                 <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="kc">False</span>

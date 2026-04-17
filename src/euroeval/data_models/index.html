@@ -15,7 +15,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -2707,8 +2707,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">task</span> <span class="o">=</span> <span class="n">task</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">languages</span> <span class="o">=</span> <span class="n">languages</span>
 
-        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>  <span class="c1"># pyrefly: ignore[no-matching-overload]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">main_language</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task</span><span class="o">.</span><span class="n">template_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">main_language</span>  <span class="c1"># pyrefly: ignore[bad-argument-type]</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prompt_prefix</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">prompt_prefix</span>

@@ -15,7 +15,7 @@
       
       
       <link rel="icon" href="../../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -1033,6 +1033,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#euroeval.benchmark_modules.base.BenchmarkModule.update_dataset_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_dataset_config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#euroeval.benchmark_modules.base.BenchmarkModule.prepare_datasets" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1493,7 +1504,20 @@
 <span class="normal">363</span>
 <span class="normal">364</span>
 <span class="normal">365</span>
-<span class="normal">366</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Abstract benchmark module class that the model classes inherit from.&quot;&quot;&quot;</span>
+<span class="normal">366</span>
+<span class="normal">367</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Abstract benchmark module class that the model classes inherit from.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -1733,6 +1757,19 @@
 <span class="sd">            The Trainer class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="o">...</span>
+<div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.update_dataset_config"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.update_dataset_config" title="Go to docs">[docs]</a></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_dataset_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_config</span><span class="p">:</span> <span class="s2">&quot;DatasetConfig&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">t</span><span class="o">.</span><span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the dataset config registered in the benchmark module.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            dataset_config:</span>
+<span class="sd">                The new dataset config.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The benchmark module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataset_config</span> <span class="o">=</span> <span class="n">dataset_config</span>
+        <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">prepare_datasets</span><span class="p">(</span><div class="mkapi-source-link" id="euroeval.benchmark_modules.base.BenchmarkModule.prepare_datasets"><a href="../../../../api/euroeval/benchmark_modules/base/#euroeval.benchmark_modules.base.BenchmarkModule.prepare_datasets" title="Go to docs">[docs]</a></div>
         <span class="bp">self</span><span class="p">,</span> <span class="n">datasets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">DatasetDict</span><span class="p">],</span> <span class="n">task</span><span class="p">:</span> <span class="s2">&quot;Task&quot;</span>

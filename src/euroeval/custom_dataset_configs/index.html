@@ -15,7 +15,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -1212,7 +1212,17 @@
 <span class="normal">231</span>
 <span class="normal">232</span>
 <span class="normal">233</span>
-<span class="normal">234</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Load custom dataset configs.</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Load custom dataset configs.</span>
 
 <span class="sd">This module provides the main entry point for loading dataset configurations from</span>
 <span class="sd">Hugging Face repositories, including Python-based configs. YAML-specific loading</span>
@@ -1313,9 +1323,19 @@
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="s2">&quot;eval.yaml&quot;</span> <span class="ow">in</span> <span class="n">repo_files</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">load_yaml_config</span><span class="p">(</span>
-            <span class="n">hf_api</span><span class="o">=</span><span class="n">hf_api</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span>
-        <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">yaml_config</span> <span class="o">=</span> <span class="n">load_yaml_config</span><span class="p">(</span>
+                <span class="n">hf_api</span><span class="o">=</span><span class="n">hf_api</span><span class="p">,</span> <span class="n">dataset_id</span><span class="o">=</span><span class="n">dataset_id</span><span class="p">,</span> <span class="n">cache_dir</span><span class="o">=</span><span class="n">cache_dir</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">yaml_config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">yaml_config</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log_once</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to load eval.yaml from dataset repository </span><span class="si">{</span><span class="n">dataset_id</span><span class="si">}</span><span class="s2">. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;The error was &#39;</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&#39;. Trying the Python config instead, if it &quot;</span>
+                <span class="s2">&quot;exists.&quot;</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
+            <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">load_python_config</span><span class="p">(</span>
         <span class="n">hf_api</span><span class="o">=</span><span class="n">hf_api</span><span class="p">,</span>

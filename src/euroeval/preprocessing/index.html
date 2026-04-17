@@ -15,7 +15,7 @@
       
       
       <link rel="icon" href="../../../gfx/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -1173,7 +1173,38 @@
 <span class="normal">203</span>
 <span class="normal">204</span>
 <span class="normal">205</span>
-<span class="normal">206</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Preprocessing utilities for custom dataset column mapping.&quot;&quot;&quot;</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span>
+<span class="normal">229</span>
+<span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="sd">&quot;&quot;&quot;Preprocessing utilities for custom dataset column mapping.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">c</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
@@ -1343,8 +1374,39 @@
                 <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">split_name</span><span class="p">,</span> <span class="n">split</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="c1"># Handle input column (optionally merging with choices)</span>
             <span class="k">if</span> <span class="n">choices_cols</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+                <span class="k">def</span><span class="w"> </span><span class="nf">_fix_mc_label_column</span><span class="p">(</span><span class="n">example</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">                    </span><span class="sd">&quot;&quot;&quot;Ensure multiple choice labels are lowercase letters.</span>
+
+<span class="sd">                    Args:</span>
+<span class="sd">                        example:</span>
+<span class="sd">                            The example to fix.</span>
+
+<span class="sd">                    Returns:</span>
+<span class="sd">                        The fixed example.</span>
+<span class="sd">                    &quot;&quot;&quot;</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">choices_column</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                        <span class="n">choices</span> <span class="o">=</span> <span class="p">[</span><span class="n">example</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">choices_column</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">choices</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="n">choices_column</span><span class="p">]</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="n">target_column</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">choices</span><span class="p">:</span>
+                        <span class="n">example</span><span class="p">[</span><span class="n">target_column</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span><span class="p">[</span>
+                            <span class="n">choices</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+                        <span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="n">target_column</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+                        <span class="n">example</span><span class="p">[</span><span class="n">target_column</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;abcdefghijklmnopqrstuvwxyz&quot;</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">example</span><span class="p">[</span><span class="n">target_column</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="n">example</span><span class="p">[</span><span class="n">target_column</span><span class="p">]</span> <span class="o">=</span> <span class="n">example</span><span class="p">[</span><span class="n">target_column</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                    <span class="k">return</span> <span class="n">example</span>
+
+                <span class="c1"># If the label is the full choice string, then we convert it to the</span>
+                <span class="c1"># appropriate letter</span>
+                <span class="k">if</span> <span class="n">target_column</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">split</span> <span class="o">=</span> <span class="n">split</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">_fix_mc_label_column</span><span class="p">)</span>
+
+                <span class="c1"># Handle input column (optionally merging with choices)</span>
                 <span class="n">merge_fn</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span>
                     <span class="n">merge_input_and_choices</span><span class="p">,</span>
                     <span class="n">input_column</span><span class="o">=</span><span class="n">input_column</span><span class="p">,</span>
