@@ -336,9 +336,11 @@ def get_end_of_chat_token_ids(
         return None
 
     user_message: dict[str, str] = dict(role="user", content="X")
+    assistant_message: dict[str, str] = dict(role="assistant", content="Y")
+    user_followup_message: dict[str, str] = dict(role="user", content="Z")
     try:
         token_ids = apply_chat_template(
-            conversation=[user_message],
+            conversation=[user_message, assistant_message, user_followup_message],
             tokeniser=tokeniser,
             tokenise=True,
             add_generation_prompt=False,
