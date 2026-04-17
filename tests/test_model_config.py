@@ -13,7 +13,7 @@ from euroeval.model_config import get_model_config
         ("Maltehb/aelaectra-danish-electra-small-cased", False),
         ("openai-community/gpt2", False),
         ("gpt-4o-mini", False),
-        ("claude-3-5-haiku-20251001", False),
+        ("claude-haiku-4-5-20251001", False),
         ("does-not-exist", True),
     ],
     ids=[
