@@ -52,6 +52,15 @@ def extract_few_shot_examples(
         InvalidBenchmark:
             If there are not enough short examples for few-shot learning.
     """
+    if "train" not in dataset:
+        log_once(
+            "There is no training split in the dataset, so we cannot extract any "
+            "few-shot examples, even though you requested few-shot evaluation (it's "
+            "the default). We will therefore evaluate the model zero-shot.",
+            level=logging.DEBUG,
+        )
+        return list()
+
     if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
         msg = (
             "This task only allows zero-shot evaluation, so even though you have "

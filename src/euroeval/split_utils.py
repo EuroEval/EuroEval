@@ -1,5 +1,7 @@
 """Utilities for detecting and mapping dataset splits."""
 
+from pathlib import Path
+
 from huggingface_hub import HfApi
 
 
@@ -20,7 +22,7 @@ def find_split(splits: list[str], keyword: str) -> str | None:
     return candidates[0] if candidates else None
 
 
-def get_repo_split_names(hf_api: HfApi, dataset_id: str) -> list[str]:
+def get_repo_split_names(hf_api: HfApi, dataset_id: str) -> list[str] | None:
     """Extract split names from a Hugging Face dataset repo.
 
     Args:
@@ -30,14 +32,32 @@ def get_repo_split_names(hf_api: HfApi, dataset_id: str) -> list[str]:
             The ID of the dataset to get the split names for.
 
     Returns:
-        A list of split names.
+        A list of split names, or None if the split names are not available.
     """
-    return [
-        split["name"]
-        for split in hf_api.dataset_info(repo_id=dataset_id).card_data.dataset_info[
-            "splits"
+    dataset_info = hf_api.dataset_info(repo_id=dataset_id)
+
+    if (
+        dataset_info.card_data is not None
+        and hasattr(dataset_info.card_data, "dataset_info")
+        and "splits" in dataset_info.card_data.dataset_info
+    ):
+        return [
+            split["name"] for split in dataset_info.card_data.dataset_info["splits"]
         ]
-    ]
+
+    # If we don't have access to the split names directly, we look at the data files,
+    # since they tend to be of the form "data/test-00000-of-00001.parquet"
+    elif dataset_info.siblings is not None:
+        parquet_file_names = [
+            sibling.rfilename
+            for sibling in dataset_info.siblings
+            if sibling.rfilename.endswith(".parquet")
+        ]
+        split_names = [Path(fname).stem.split("-")[0] for fname in parquet_file_names]
+        if split_names:
+            return split_names
+
+    return None
 
 
 def get_repo_splits(
@@ -56,6 +76,8 @@ def get_repo_splits(
             the name of the matching split or None if no such split exists.
     """
     splits = get_repo_split_names(hf_api=hf_api, dataset_id=dataset_id)
+    if splits is None:
+        return None, None, None
     return (
         find_split(splits=splits, keyword="train"),
         find_split(splits=splits, keyword="val"),

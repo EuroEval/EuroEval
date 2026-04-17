@@ -11,12 +11,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Now overrides vLLM's pinned `transformers<5` dependency with `transformers>=5.5.0`, to
   allow compatibility with the latest models.
+- If evaluating a dataset on the Hugging Face Hub with both a YAML config and a Python
+  config, we first try the YAML one, and then try the Python one if the YAML one failed.
+  Previously the evaluation failed if the YAML config was invalid.
 
 ### Fixed
 
 - Fixed a bug when evaluating a generative task that uses logprobs with partial
   completions. The issue was that the first label token mapping wasn't updated
   immediately after the dataset config changed, which has been fixed now.
+- Fixed a bug related to evaluating gated datasets on the Hugging Face Hub.
+- We now automatically detect if a dataset doesn't have a training split and force
+  zero-shot evaluation if so.
+- Fixed an issue when the label column of multiple choice datasets contains the full
+  choice text, rather than the a/b/c/d labels. We now convert such labels to the single
+  letters.
 - Updated vLLM from v0.14.1 to v0.18.1 on macOS Apple Silicon, enabling structured
   output support for tasks such as sequence classification and multiple choice.
 

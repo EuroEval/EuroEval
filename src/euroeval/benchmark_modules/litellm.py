@@ -1638,16 +1638,19 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         # Set up the `response_format` generation argument if we are dealing with a task
-        # using structured generation
-        if dataset_config.task.uses_structured_output:
-            if self.generative_type == GenerativeType.REASONING:
-                log_once(
-                    f"The model {self.model_config.model_id!r} is a reasoning model "
-                    "and thus does not support structured generation, so we do not "
-                    "enable it.",
-                    level=logging.DEBUG,
-                )
-            elif dataset_config.task.structured_output_format is not None:
+        # using structured generation and the model isn't a reasoning model
+        if self.generative_type == GenerativeType.REASONING and (
+            dataset_config.task.uses_structured_output
+            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+        ):
+            log_once(
+                f"The model {self.model_config.model_id!r} is a reasoning model "
+                "and thus does not support structured generation, so we do not "
+                "enable it.",
+                level=logging.DEBUG,
+            )
+        elif dataset_config.task.uses_structured_output:
+            if dataset_config.task.structured_output_format is not None:
                 pydantic_class = dataset_config.task.structured_output_format
                 # TODO: here it would be nice to just input the pydantic class
                 # directly instead. However this caused problems with e.g.

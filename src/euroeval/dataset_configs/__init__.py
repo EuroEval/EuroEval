@@ -106,8 +106,10 @@ def get_all_dataset_configs(
                 split_strings.append(
                     f"test split '{dataset_config_or_none.test_split}'"
                 )
-            if split_strings:
+            if len(split_strings) > 1:
                 msg += f" with {', '.join(split_strings[:-1])} and {split_strings[-1]}"
+            elif split_strings:
+                msg += f" with {split_strings[0]}"
             msg += "."
             log_once(msg, level=logging.DEBUG)
 

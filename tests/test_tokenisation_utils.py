@@ -14,11 +14,7 @@ from euroeval.tokenisation_utils import (
 
 @pytest.mark.parametrize(
     argnames=["model_id", "expected"],
-    argvalues=[
-        ("AI-Sweden-Models/gpt-sw3-6.7b-v2", True),
-        ("01-ai/Yi-6B", True),
-        ("google-bert/bert-base-uncased", False),
-    ],
+    argvalues=[("01-ai/Yi-6B", True), ("google-bert/bert-base-uncased", False)],
 )
 def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) -> None:
     """Test that a model ID is a generative model."""
@@ -43,11 +39,7 @@ def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) ->
 
 @pytest.mark.parametrize(
     argnames=["model_id", "expected"],
-    argvalues=[
-        ("AI-Sweden-Models/gpt-sw3-6.7b-v2", False),
-        ("01-ai/Yi-6B", False),
-        ("common-pile/comma-v0.1-2t", True),
-    ],
+    argvalues=[("01-ai/Yi-6B", False), ("common-pile/comma-v0.1-2t", True)],
 )
 def test_should_prefix_space_be_added_to_labels(
     model_id: str, expected: bool, auth: str

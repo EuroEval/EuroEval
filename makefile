@@ -32,7 +32,6 @@ install: ## Install dependencies
 	@$(MAKE) --quiet install-uv
 	@$(MAKE) --quiet install-dependencies
 	@$(MAKE) --quiet setup-environment-variables
-	@$(MAKE) --quiet install-pre-commit
 	@echo "Installed the 'EuroEval' project."
 
 install-rust:

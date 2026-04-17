@@ -99,9 +99,19 @@ def try_get_dataset_config_from_repo(
     )
 
     if "eval.yaml" in repo_files:
-        return load_yaml_config(
-            hf_api=hf_api, dataset_id=dataset_id, cache_dir=cache_dir
-        )
+        try:
+            yaml_config = load_yaml_config(
+                hf_api=hf_api, dataset_id=dataset_id, cache_dir=cache_dir
+            )
+            if yaml_config is not None:
+                return yaml_config
+        except Exception as e:
+            log_once(
+                f"Failed to load eval.yaml from dataset repository {dataset_id}. "
+                f"The error was '{e}'. Trying the Python config instead, if it "
+                "exists.",
+                level=logging.ERROR,
+            )
 
     return load_python_config(
         hf_api=hf_api,
