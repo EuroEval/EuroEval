@@ -709,10 +709,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                         skip_special_tokens=True,
                     )
                 case GenerativeType.INSTRUCTION_TUNED | GenerativeType.REASONING:
-                    assert self.end_of_chat_token_ids is not None, (
-                        "The end-of-chat token IDs should be set for instruction-tuned "
-                        "and reasoning models."
-                    )
+                    if self.end_of_chat_token_ids is None:
+                        raise InvalidBenchmark(
+                            "The end-of-chat token IDs should be set for "
+                            "instruction-tuned and reasoning models."
+                        )
                     end_of_chat_token = self._tokeniser.decode(
                         list(self.end_of_chat_token_ids)
                     )
