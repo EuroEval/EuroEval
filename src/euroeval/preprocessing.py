@@ -168,8 +168,35 @@ def build_preprocessing_func(
                 )
 
         for split_name, split in dataset.items():
-            # Handle input column (optionally merging with choices)
             if choices_cols is not None:
+
+                def _fix_mc_label_column(example: dict) -> dict:
+                    """Ensure multiple choice labels are lowercase letters.
+
+                    Args:
+                        example:
+                            The example to fix.
+
+                    Returns:
+                        The fixes example.
+                    """
+                    if isinstance(choices_column, list):
+                        choices = [example[col] for col in choices_column]
+                    else:
+                        choices = example[choices_column]
+                    label = example[target_column]
+                    if label in choices:
+                        example[target_column] = "abcdefghijklmnopqrstuvwxyz"[
+                            choices.index(label)
+                        ]
+                    example[target_column] = example[target_column].lower()
+                    return example
+
+                # If the label is the full choice string, then we convert it to the
+                # appropriate letter
+                split = split.map(_fix_mc_label_column)
+
+                # Handle input column (optionally merging with choices)
                 merge_fn = functools.partial(
                     merge_input_and_choices,
                     input_column=input_column,

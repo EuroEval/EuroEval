@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed a bug related to evaluating gated datasets on the Hugging Face Hub.
 - We now automatically detect if a dataset doesn't have a training split and force
   zero-shot evaluation if so.
+- Fixed an issue when the label column of multiple choice datasets contain the full
+  choice text, rather than the a/b/c/d labels. We now convert such labels to the single
+  letters.
 
 ## [v17.1.0] - 2026-03-24
 
