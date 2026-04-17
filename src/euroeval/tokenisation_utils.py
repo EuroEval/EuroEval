@@ -412,19 +412,19 @@ def get_first_label_token_mapping(
         Boolean value indicating whether the model should output scores (if the mapping
         is outputted then the model will always output scores).
     """
-    if not (dataset_config.task.uses_logprobs and dataset_config.labels):
-        if log_metadata:
-            log_once(
-                "We will not use logprobs with the model, since the dataset does not "
-                "have labels.",
-                level=logging.DEBUG,
-            )
-        return False
-    elif generative_type == GenerativeType.REASONING:
+    if generative_type == GenerativeType.REASONING:
         if log_metadata:
             log_once(
                 f"The model {model_config.model_id!r} is a reasoning model and "
                 "thus does not support logprobs, so we do not enable it.",
+                level=logging.DEBUG,
+            )
+        return False
+    elif not (dataset_config.task.uses_logprobs and dataset_config.labels):
+        if log_metadata:
+            log_once(
+                "We will not use logprobs with the model, since the dataset does not "
+                "have labels.",
                 level=logging.DEBUG,
             )
         return False
