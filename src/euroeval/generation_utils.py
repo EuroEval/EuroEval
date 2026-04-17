@@ -57,7 +57,7 @@ def extract_few_shot_examples(
             "There is no training split in the dataset, so we cannot extract any "
             "few-shot examples, even though you requested few-shot evaluation (it's "
             "the default). We will therefore evaluate the model zero-shot.",
-            level=logging.WARNING,
+            level=logging.DEBUG,
         )
         return list()
 
