@@ -42,8 +42,7 @@ def get_repo_split_names(hf_api: HfApi, dataset_id: str) -> list[str] | None:
         and "splits" in dataset_info.card_data.dataset_info
     ):
         return [
-            split["name"]
-            for split in dataset_info.card_data.dataset_info["splits"]
+            split["name"] for split in dataset_info.card_data.dataset_info["splits"]
         ]
 
     # If we don't have access to the split names directly, we look at the data files,
