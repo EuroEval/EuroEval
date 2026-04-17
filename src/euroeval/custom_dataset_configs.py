@@ -107,9 +107,9 @@ def try_get_dataset_config_from_repo(
                 return yaml_config
         except Exception as e:
             log_once(
-                f"Failed to load the YAML config for dataset {dataset_id} from "
-                f"{dataset_id}. The error was '{e}'. Trying the Python config "
-                "instead, if it exists.",
+                f"Failed to load eval.yaml from dataset repository {dataset_id}. "
+                f"The error was '{e}'. Trying the Python config instead, if it "
+                "exists.",
                 level=logging.ERROR,
             )
 
