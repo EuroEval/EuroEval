@@ -189,7 +189,10 @@ def build_preprocessing_func(
                         example[target_column] = "abcdefghijklmnopqrstuvwxyz"[
                             choices.index(label)
                         ]
-                    example[target_column] = example[target_column].lower()
+                    if isinstance(example[target_column], int):
+                        example[target_column] = "abcdefghijklmnopqrstuvwxyz"[label]
+                    if isinstance(example[target_column], str):
+                        example[target_column] = example[target_column].lower()
                     return example
 
                 # If the label is the full choice string, then we convert it to the
