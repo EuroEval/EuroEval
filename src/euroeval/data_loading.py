@@ -14,7 +14,7 @@ from numpy.random import Generator
 
 from .constants import SUPPORTED_FILE_FORMATS_FOR_LOCAL_DATASETS
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark
-from .logging_utils import log, no_terminal_output
+from .logging_utils import log, log_once, no_terminal_output
 from .string_utils import unscramble
 from .tasks import EUROPEAN_VALUES
 from .utils import get_hf_token
@@ -44,6 +44,16 @@ def load_data(
         cache_dir=benchmark_config.cache_dir,
         api_key=benchmark_config.api_key,
     )
+
+    # If there is no training split in the dataset, we force zero-shot evaluation
+    if "train" not in dataset and benchmark_config.few_shot:
+        log_once(
+            "There is no training split in the dataset, so we cannot extract any "
+            "few-shot examples, even though you requested few-shot evaluation (it's "
+            "the default). We will therefore evaluate the model zero-shot.",
+            level=logging.WARNING,
+        )
+        benchmark_config.few_shot = False
 
     # Apply custom preprocessing function if configured
     if dataset_config.preprocessing_func is not None:

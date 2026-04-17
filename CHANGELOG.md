@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   completions. The issue was that the first label token mapping wasn't updated
   immediately after the dataset config changed, which has been fixed now.
 - Fixed a bug related to evaluating gated datasets on the Hugging Face Hub.
+- We now automatically detect if a dataset doesn't have a training split and force
+  zero-shot evaluation if so.
 
 ## [v17.1.0] - 2026-03-24
 
