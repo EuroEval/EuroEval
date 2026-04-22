@@ -127,6 +127,17 @@ DUTCH_COLA_FULL_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+DUTCH_PROVERBS_CONFIG = DatasetConfig(
+    name="dutch-proverbs",
+    pretty_name="Dutch proverbs",
+    source="EuroEval/dutch-proverbs",
+    task=KNOW,
+    languages=[DUTCH],
+    labels=["a", "b"],
+    val_split=None,
+    unofficial=True,
+)
+
 ARC_NL_CONFIG = DatasetConfig(
     name="arc-nl",
     pretty_name="ARC-nl",
