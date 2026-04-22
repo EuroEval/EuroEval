@@ -10,12 +10,11 @@
 
 """Create a Dutch proverbs dataset from the GPT-NL proverb dataset."""
 
-import random
-from typing import Any
-
 import datasets
+import random
 from huggingface_hub import HfApi
 from requests import HTTPError
+from typing import Any
 
 
 def main() -> None:
