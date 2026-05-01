@@ -12,7 +12,7 @@ from euroeval.benchmark_modules.vllm import VLLMModel, load_model
 from euroeval.constants import MAX_CONTEXT_LENGTH, REASONING_MAX_TOKENS
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import GenerativeType
-from euroeval.exceptions import NeedsSystemDependency
+from euroeval.exceptions import InvalidBenchmark, NeedsSystemDependency
 
 
 class TestNvccCheck:
@@ -317,3 +317,250 @@ class TestLoadModelMaxModelLen:
         mock_llm_cls.assert_called_once()
         call_kwargs = mock_llm_cls.call_args.kwargs
         assert call_kwargs["max_model_len"] == expected_max_model_len
+
+
+class TestScoreCompletions:
+    """Tests for `VLLMModel.score_completions`.
+
+    These tests focus on the prefix-trim logic that handles tokeniser seams
+    (where the prompt's final token re-tokenises differently when concatenated
+    with a candidate's first token under SentencePiece) and the per-token
+    logprob slicing that produces the returned matrix. Bugs here are silent —
+    they would shift the logprob window by one token and quietly skew CF scores
+    rather than raise.
+    """
+
+    @staticmethod
+    def _lp(value: float) -> MagicMock:
+        """Create a vLLM logprob entry value with a `.logprob` attribute.
+
+        Args:
+            value: The logprob to attach.
+
+        Returns:
+            A MagicMock with the given `.logprob` attribute.
+        """
+        entry = MagicMock()
+        entry.logprob = value
+        return entry
+
+    def _build_model(
+        self,
+        tokenize_map: dict[str, list[int]],
+        prompt_logprobs_per_call: list[list[dict | None]],
+    ) -> VLLMModel:
+        """Construct a VLLMModel with a mocked tokenizer and vLLM model.
+
+        The mocked tokenizer returns whatever token sequence is mapped to the
+        input string. The mocked vLLM model returns one output per element of
+        `prompt_logprobs_per_call`, in order — i.e. one entry per
+        (sample, candidate) pair, since `score_completions` flattens these.
+
+        Args:
+            tokenize_map: String → token-id list lookup for the fake tokenizer.
+            prompt_logprobs_per_call: One vLLM-output prompt_logprobs list per
+                expected `_model.generate` invocation, in flatten order.
+
+        Returns:
+            A `VLLMModel` instance with `_tokeniser`, `_model`, and `buffer`
+            populated. Other attributes are not set; tests should only call
+            `score_completions` on the returned model.
+        """
+
+        def _tok(text: str, add_special_tokens: bool = True) -> MagicMock:
+            assert text in tokenize_map, f"Unexpected tokenisation request: {text!r}"
+            result = MagicMock()
+            result.input_ids = tokenize_map[text]
+            return result
+
+        outputs: list[MagicMock] = []
+        for prompt_logprobs in prompt_logprobs_per_call:
+            output = MagicMock()
+            output.prompt_logprobs = prompt_logprobs
+            outputs.append(output)
+        mock_model = MagicMock()
+        mock_model.generate.return_value = outputs
+
+        model = object.__new__(VLLMModel)
+        model._tokeniser = _tok
+        model._model = mock_model
+        model.buffer = {}
+        return model
+
+    def test_clean_concat_returns_continuation_logprobs(self) -> None:
+        """Clean prefix → continuation tokens are exactly the trailing positions.
+
+        When the prompt's tokens prefix the full sequence cleanly (no SentencePiece
+        seam), `prompt_len` does not shrink and the returned logprobs are the
+        positions strictly after the prompt.
+        """
+        prompt = "Q: A: "
+        candidate = "alpha"
+        tokenize_map = {
+            prompt: [10, 11, 12, 13],
+            prompt + candidate: [10, 11, 12, 13, 20, 21],
+        }
+        # `prompt_logprobs` is one entry per token of the *full* sequence.
+        # The first entry is None (no logprob for the leading token).
+        prompt_logprobs = [
+            None,
+            {11: self._lp(-0.1)},
+            {12: self._lp(-0.2)},
+            {13: self._lp(-0.3)},
+            {20: self._lp(-1.5)},
+            {21: self._lp(-2.5)},
+        ]
+        model = self._build_model(
+            tokenize_map=tokenize_map, prompt_logprobs_per_call=[prompt_logprobs]
+        )
+
+        with patch("euroeval.benchmark_modules.vllm.SamplingParams", create=True):
+            scores = model.score_completions(
+                prompts=[prompt], completions=[[candidate]]
+            )
+
+        assert scores == [[[-1.5, -2.5]]]
+
+    def test_seam_shrinks_prefix_and_reads_correct_tokens(self) -> None:
+        """Tokeniser seam → prefix_len shrinks to the longest matching prefix.
+
+        Simulates a SentencePiece seam: ``"Q: A: "`` alone tokenises with a final
+        whitespace token that disappears when ``"Foo"`` is appended, because
+        ``"_Foo"`` (with a leading metaspace) replaces it. The trimmed prefix is
+        one token shorter, and the continuation starts one position earlier in
+        the full sequence.
+        """
+        prompt = "Q: A: "
+        candidate = "Foo"
+        tokenize_map = {
+            prompt: [10, 11, 12, 13],
+            # Token 13 (the trailing space) merges into the candidate's first
+            # token, becoming token 99. The remaining sequence diverges at
+            # position 3.
+            prompt + candidate: [10, 11, 12, 99, 100],
+        }
+        prompt_logprobs = [
+            None,
+            {11: self._lp(-0.1)},
+            {12: self._lp(-0.2)},
+            {99: self._lp(-1.0)},
+            {100: self._lp(-2.0)},
+        ]
+        model = self._build_model(
+            tokenize_map=tokenize_map, prompt_logprobs_per_call=[prompt_logprobs]
+        )
+
+        with patch("euroeval.benchmark_modules.vllm.SamplingParams", create=True):
+            scores = model.score_completions(
+                prompts=[prompt], completions=[[candidate]]
+            )
+
+        # prefix_len shrinks 4 → 3, so continuation tokens are at positions 3, 4.
+        assert scores == [[[-1.0, -2.0]]]
+
+    def test_none_entry_yields_zero_logprob(self) -> None:
+        """A missing `prompt_logprobs` entry contributes 0.0, not an exception."""
+        prompt = "P "
+        candidate = "X"
+        tokenize_map = {prompt: [1], prompt + candidate: [1, 2]}
+        # The continuation position has no logprob entry (vLLM occasionally
+        # returns None for special-token positions).
+        prompt_logprobs = [None, None]
+        model = self._build_model(
+            tokenize_map=tokenize_map, prompt_logprobs_per_call=[prompt_logprobs]
+        )
+
+        with patch("euroeval.benchmark_modules.vllm.SamplingParams", create=True):
+            scores = model.score_completions(
+                prompts=[prompt], completions=[[candidate]]
+            )
+
+        assert scores == [[[0.0]]]
+
+    def test_multi_sample_multi_candidate_shape_and_order(self) -> None:
+        """Output shape is (batch, num_candidates, num_continuation_tokens).
+
+        Per-candidate ordering follows the input order; the flattened vLLM
+        outputs are correctly distributed back to their (sample, candidate) slot.
+        """
+        tokenize_map = {
+            "S1: ": [1, 2],
+            "S1: a": [1, 2, 3],
+            "S1: b": [1, 2, 4],
+            "S2: ": [5, 6],
+            "S2: cd": [5, 6, 7, 8],
+        }
+        # Three flat prompts → three vLLM outputs in flatten order:
+        # (sample 1, candidate "a"), (sample 1, candidate "b"), (sample 2, "cd").
+        prompt_logprobs_per_call = [
+            [None, {2: self._lp(-0.5)}, {3: self._lp(-1.0)}],
+            [None, {2: self._lp(-0.5)}, {4: self._lp(-2.0)}],
+            [None, {6: self._lp(-0.1)}, {7: self._lp(-3.0)}, {8: self._lp(-4.0)}],
+        ]
+        model = self._build_model(
+            tokenize_map=tokenize_map, prompt_logprobs_per_call=prompt_logprobs_per_call
+        )
+
+        with patch("euroeval.benchmark_modules.vllm.SamplingParams", create=True):
+            scores = model.score_completions(
+                prompts=["S1: ", "S2: "], completions=[["a", "b"], ["cd"]]
+            )
+
+        assert scores == [[[-1.0], [-2.0]], [[-3.0, -4.0]]]
+
+    def test_empty_candidate_documented_boundary(self) -> None:
+        """Pinpoint the empty-candidate boundary in the prefix-trim loop.
+
+        With `prompt_ids == full_ids` (i.e. an empty candidate), the loop
+        shrinks `prefix_len` to `len(full_ids) - 1` and the guard does NOT
+        fire. The function then returns the last prompt-token's logprob as a
+        spurious "continuation". This is a latent bug: an empty candidate
+        ought to raise `InvalidBenchmark` per the docstring's "at least one
+        continuation token is required". Production datasets never have empty
+        choice strings, so this is not currently observed in practice — but
+        if the empty-candidate guard is later tightened, this test should be
+        flipped to expect `InvalidBenchmark`.
+        """
+        prompt = "Q"
+        candidate = ""
+        tokenize_map = {
+            prompt: [1, 2, 3],
+            prompt + candidate: [1, 2, 3],  # full_ids == prompt_ids → no continuation.
+        }
+        prompt_logprobs = [None, {2: self._lp(-0.1)}, {3: self._lp(-0.2)}]
+        model = self._build_model(
+            tokenize_map=tokenize_map, prompt_logprobs_per_call=[prompt_logprobs]
+        )
+        with patch("euroeval.benchmark_modules.vllm.SamplingParams", create=True):
+            scores = model.score_completions(
+                prompts=[prompt], completions=[[candidate]]
+            )
+        # Continuation reads the *last* prompt token's logprob — see note above.
+        assert scores == [[[-0.2]]]
+
+    def test_empty_full_sequence_raises(self) -> None:
+        """When the full token sequence is empty, raise `InvalidBenchmark`.
+
+        The guard at the end of the prefix-trim loop fires only when
+        `prefix_len >= len(full_ids)` after the loop has shrunk `prefix_len`
+        all the way down. That happens when `full_ids` is empty.
+        """
+        prompt = "abc"
+        candidate = "def"
+        tokenize_map = {
+            prompt: [1, 2, 3],
+            # Completely different tokens (e.g. BOS injection mismatch). The
+            # `while` loop will shrink prefix_len all the way to 0, and the
+            # final guard fires only if 0 >= len(full_ids), which it isn't.
+            # The raise condition is `prefix_len >= len(full_ids)` *after* the
+            # loop, which only triggers if `len(full_ids) == 0`.
+            prompt + candidate: [],
+        }
+        prompt_logprobs: list[dict | None] = []
+        model = self._build_model(
+            tokenize_map=tokenize_map, prompt_logprobs_per_call=[prompt_logprobs]
+        )
+
+        with patch("euroeval.benchmark_modules.vllm.SamplingParams", create=True):
+            with pytest.raises(InvalidBenchmark, match="empty after tokenisation"):
+                model.score_completions(prompts=[prompt], completions=[[candidate]])

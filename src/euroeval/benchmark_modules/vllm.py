@@ -35,6 +35,7 @@ from ..constants import (
 from ..data_models import GenerativeModelOutput, HashableDict, ModelConfig
 from ..enums import (
     BatchingPreference,
+    EvaluationType,
     GenerativeType,
     InferenceBackend,
     ModelType,
@@ -58,6 +59,7 @@ from ..logging_utils import get_pbar, log, log_once, no_terminal_output
 from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
 from ..task_group_utils import (
+    cloze,
     question_answering,
     sequence_classification,
     text_to_text,
@@ -336,6 +338,19 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             The function used to extract the labels from the generated output.
         """
+        if (
+            self.benchmark_config.evaluation_type == EvaluationType.CF
+            and self.dataset_config.task.task_group
+            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        ):
+            return partial(
+                cloze.extract_labels_from_cf,
+                dataset_config=self.dataset_config,
+                model_config=self.model_config,
+                first_label_token_mapping=self.buffer.get(
+                    "first_label_token_mapping", False
+                ),
+            )
         match self.dataset_config.task.task_group:
             case (
                 TaskGroup.SEQUENCE_CLASSIFICATION
@@ -411,6 +426,60 @@ class VLLMModel(HuggingFaceEncoderModel):
         else:
             few_shot_examples = list()
 
+        # For Cloze Formulation on MCQ tasks, build prompts directly instead of
+        # going through ``apply_prompt``: we want bare-question prompts ending
+        # with the answer marker (e.g. ``"Antwoord: "``) and few-shot examples
+        # whose ``{label}`` slot is the full answer text, not the gold letter.
+        cf_active = (
+            self.benchmark_config.evaluation_type == EvaluationType.CF
+            and task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        )
+        if cf_active:
+
+            def _ensure_cf_columns(example: dict) -> dict:
+                if "raw_choices" in example and "bare_input" in example:
+                    return {
+                        "bare_input": example["bare_input"],
+                        "raw_choices": example["raw_choices"],
+                    }
+                bare_input, raw_choices = cloze.parse_mcq_text(example["text"])
+                return {"bare_input": bare_input, "raw_choices": raw_choices}
+
+            few_shot_examples = [
+                {**ex, **_ensure_cf_columns(ex)} for ex in few_shot_examples
+            ]
+            few_shot_rendered = [
+                cloze.render_cf_few_shot(
+                    bare_input=ex["bare_input"],
+                    answer_text=cloze.letter_to_choice_text(
+                        letter=str(ex["label"]), raw_choices=ex["raw_choices"]
+                    ),
+                    prompt_template=self.dataset_config.prompt_template,
+                )
+                for ex in few_shot_examples
+            ]
+
+            dataset["test"] = dataset["test"].map(  # pyrefly: ignore[unsupported-operation]
+                _ensure_cf_columns, load_from_cache_file=False, keep_in_memory=True
+            )
+
+            prompt_template = self.dataset_config.prompt_template
+            prompt_prefix = self.dataset_config.prompt_prefix
+
+            def _build_cf_prompt(example: dict) -> dict:
+                text = cloze.build_cf_prompt(
+                    bare_input=example["bare_input"],
+                    few_shot_rendered=few_shot_rendered,
+                    prompt_template=prompt_template,
+                    prompt_prefix=prompt_prefix,
+                )
+                return {"text": text, "prompt": text}
+
+            dataset["test"] = dataset["test"].map(  # pyrefly: ignore[unsupported-operation]
+                _build_cf_prompt, load_from_cache_file=False, keep_in_memory=True
+            )
+            return dataset
+
         dataset["test"] = dataset["test"].map(  # pyrefly: ignore[unsupported-operation]
             partial(
                 apply_prompt,
@@ -481,6 +550,13 @@ class VLLMModel(HuggingFaceEncoderModel):
                 If the task requires structured output, but it is not a token
                 classification task and does not define an output structure.
         """
+        if (
+            self.benchmark_config.evaluation_type == EvaluationType.CF
+            and self.dataset_config.task.task_group
+            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        ):
+            return self._generate_cf(inputs=inputs)
+
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
         if self.generative_type == GenerativeType.BASE:
@@ -928,6 +1004,136 @@ class VLLMModel(HuggingFaceEncoderModel):
             output = GenerativeModelOutput(sequences=completions)
 
         return output
+
+    def _generate_cf(self, inputs: dict) -> "GenerativeModelOutput":
+        """Score each candidate answer with the Cloze Formulation.
+
+        For each sample, builds one vLLM prompt per (prompt, candidate) pair,
+        extracts the per-token logprobs of the candidate continuation, applies
+        the configured length normalization, and returns one normalized score
+        per candidate.
+
+        Args:
+            inputs:
+                The input batch containing ``"text"`` (bare-question prompts as
+                produced by ``apply_prompt`` in CF mode) and ``"raw_choices"``
+                (a list of candidate strings per sample).
+
+        Returns:
+            A ``GenerativeModelOutput`` with empty ``sequences`` and a populated
+            ``cf_scores`` matrix of shape ``(batch_size, num_choices)``.
+
+        Raises:
+            InvalidBenchmark:
+                If ``raw_choices`` is missing from the input batch.
+        """
+        if "raw_choices" not in inputs:
+            raise InvalidBenchmark(
+                "Cloze Formulation evaluation requires a `raw_choices` column, "
+                "which was not found in the batch."
+            )
+        prompts: c.Sequence[str] = inputs["text"]
+        raw_choices: c.Sequence[c.Sequence[str]] = inputs["raw_choices"]
+
+        per_token_logprobs = self.score_completions(
+            prompts=prompts, completions=raw_choices
+        )
+
+        method = self.benchmark_config.cf_normalization
+        cf_scores: list[list[float]] = [
+            [
+                cloze.normalize_cf_score(
+                    token_logprobs=token_lps, answer_text=answer, method=method
+                )
+                for token_lps, answer in zip(sample_lps, sample_choices)
+            ]
+            for sample_lps, sample_choices in zip(per_token_logprobs, raw_choices)
+        ]
+
+        return GenerativeModelOutput(sequences=[""] * len(prompts), cf_scores=cf_scores)
+
+    def score_completions(
+        self, prompts: c.Sequence[str], completions: c.Sequence[c.Sequence[str]]
+    ) -> c.Sequence[c.Sequence[c.Sequence[float]]]:
+        """Score each (prompt, candidate) pair with vLLM's ``prompt_logprobs``.
+
+        Args:
+            prompts:
+                One bare-question prompt per sample. The candidate strings are
+                appended directly to the prompt before scoring; the prompt is
+                expected to end with whatever separator the template uses
+                (e.g. ``"Antwoord: "``).
+            completions:
+                Per-sample list of candidate continuation strings.
+
+        Returns:
+            Per-sample, per-candidate, per-token logprobs.
+
+        Raises:
+            InvalidBenchmark:
+                If the candidate is empty after tokenisation, i.e. the full
+                tokenised sequence has no tokens beyond the prompt prefix.
+        """
+        tok = self._tokeniser
+        flat_prompts: list[str] = []
+        spans: list[list[tuple[int, int]]] = []
+        for prompt, candidates in zip(prompts, completions):
+            prompt_ids = list(tok(prompt, add_special_tokens=False).input_ids)
+            group: list[tuple[int, int]] = []
+            for candidate in candidates:
+                full = prompt + candidate
+                full_ids = list(tok(full, add_special_tokens=False).input_ids)
+                # The prompt's final token often merges with the first candidate
+                # token at tokeniser seams (e.g. SentencePiece "_Foo" vs "Foo").
+                # Find the longest prefix of the prompt's token sequence that
+                # also prefixes the full sequence, then treat the remaining
+                # tokens as the continuation. At least one continuation token
+                # is required.
+                prefix_len = len(prompt_ids)
+                while prefix_len > 0 and (
+                    prefix_len >= len(full_ids)
+                    or full_ids[:prefix_len] != prompt_ids[:prefix_len]
+                ):
+                    prefix_len -= 1
+                if prefix_len >= len(full_ids):
+                    raise InvalidBenchmark(
+                        "Candidate is empty after tokenisation: cannot score an "
+                        f"empty continuation. Prompt: {prompt!r}, candidate: "
+                        f"{candidate!r}."
+                    )
+                flat_prompts.append(full)
+                group.append((prefix_len, len(full_ids)))
+            spans.append(group)
+
+        sampling_params = SamplingParams(
+            max_tokens=1, prompt_logprobs=1, temperature=0.0
+        )
+        raw_outputs = self._model.generate(
+            prompts=flat_prompts,
+            sampling_params=sampling_params,
+            use_tqdm=False,
+            lora_request=self.buffer.get("lora_request"),
+        )
+
+        out: list[list[list[float]]] = []
+        cursor = 0
+        for group in spans:
+            per_sample: list[list[float]] = []
+            for prompt_len, full_len in group:
+                prompt_logprobs = raw_outputs[cursor].prompt_logprobs or []
+                token_lps: list[float] = []
+                for pos in range(prompt_len, full_len):
+                    entry = prompt_logprobs[pos]
+                    if not entry:
+                        token_lps.append(0.0)
+                        continue
+                    # ``prompt_logprobs=1`` returns exactly the logprob for the
+                    # actual token at this position (keyed by token id).
+                    token_lps.append(float(next(iter(entry.values())).logprob))
+                per_sample.append(token_lps)
+                cursor += 1
+            out.append(per_sample)
+        return out
 
     @classmethod
     def model_exists(

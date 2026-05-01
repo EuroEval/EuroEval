@@ -148,3 +148,40 @@ class TaskGroup(AutoStrEnum):
     QUESTION_ANSWERING = auto()
     TEXT_TO_TEXT = auto()
     SPEED = auto()
+
+
+class EvaluationType(AutoStrEnum):
+    """The formulation used to evaluate multiple-choice questions.
+
+    Attributes:
+        MCF:
+            Multiple Choice Formulation. The model is shown the question along with
+            every enumerated choice (``a.``/``b.``/``c.``/...) and we compare the
+            first-token logprobs of the label letters. This is the current default.
+        CF:
+            Cloze Formulation (OLMES-style). For each answer choice, we score the
+            full answer text as a continuation of a bare-question prompt using
+            ``sum(log P(answer_tokens | prompt))``, and select the highest-scoring
+            choice after length normalization.
+    """
+
+    MCF = auto()
+    CF = auto()
+
+
+class CFNormalization(AutoStrEnum):
+    """Length-normalization method used for Cloze Formulation (CF) scores.
+
+    Attributes:
+        NONE:
+            No normalization. Raw sum of per-token logprobs.
+        TOKEN:
+            Divide the logprob sum by the number of answer tokens.
+        CHARACTER:
+            Divide the logprob sum by the number of answer characters. Matches the
+            default used by Llama and the EleutherAI LM Evaluation Harness.
+    """
+
+    NONE = auto()
+    TOKEN = auto()
+    CHARACTER = auto()

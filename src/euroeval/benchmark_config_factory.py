@@ -12,7 +12,8 @@ import torch
 from .closest_match import get_closest_match
 from .data_models import BenchmarkConfig, BenchmarkConfigParams, DatasetConfig, Task
 from .dataset_configs import get_all_dataset_configs
-from .enums import Device
+from .enums import Device, EvaluationType, TaskGroup
+from .exceptions import InvalidBenchmark
 from .languages import get_all_languages, get_correct_language_codes
 from .logging_utils import log
 
@@ -34,6 +35,11 @@ def build_benchmark_config(
 
     Returns:
         The benchmark configuration.
+
+    Raises:
+        InvalidBenchmark:
+            If Cloze Formulation evaluation is requested but the configured
+            datasets are not multiple-choice tasks with logprob support.
     """
     language_codes = get_correct_language_codes(
         language_codes=benchmark_config_params.language
@@ -53,6 +59,22 @@ def build_benchmark_config(
         trust_remote_code=benchmark_config_params.trust_remote_code,
         run_with_cli=benchmark_config_params.run_with_cli,
     )
+
+    if benchmark_config_params.evaluation_type == EvaluationType.CF:
+        for ds in dataset_configs:
+            if ds.task.task_group != TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+                raise InvalidBenchmark(
+                    "Cloze Formulation (CF) evaluation is only supported for "
+                    "multiple-choice tasks, but the task "
+                    f"{ds.task.name!r} of dataset {ds.name!r} is "
+                    f"{ds.task.task_group}."
+                )
+            if not ds.task.uses_logprobs:
+                raise InvalidBenchmark(
+                    "Cloze Formulation (CF) evaluation requires a task with "
+                    f"`uses_logprobs=True`, but the task {ds.task.name!r} of "
+                    f"dataset {ds.name!r} does not use logprobs."
+                )
 
     return BenchmarkConfig(
         datasets=dataset_configs,
@@ -80,6 +102,8 @@ def build_benchmark_config(
         gpu_memory_utilization=benchmark_config_params.gpu_memory_utilization,
         attention_backend=benchmark_config_params.attention_backend,
         generative_type=benchmark_config_params.generative_type,
+        evaluation_type=benchmark_config_params.evaluation_type,
+        cf_normalization=benchmark_config_params.cf_normalization,
         debug=benchmark_config_params.debug,
         run_with_cli=benchmark_config_params.run_with_cli,
         requires_safetensors=benchmark_config_params.requires_safetensors,

@@ -18,7 +18,14 @@ from .benchmark_config_factory import build_benchmark_config
 from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
-from .enums import Device, GenerativeType, InferenceBackend, ModelType
+from .enums import (
+    CFNormalization,
+    Device,
+    EvaluationType,
+    GenerativeType,
+    InferenceBackend,
+    ModelType,
+)
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
@@ -80,6 +87,8 @@ class Benchmarker:
         ]
         | None = None,
         generative_type: GenerativeType | None = None,
+        evaluation_type: EvaluationType = EvaluationType.MCF,
+        cf_normalization: CFNormalization = CFNormalization.CHARACTER,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
         run_with_cli: bool = False,
@@ -156,6 +165,14 @@ class Benchmarker:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to None.
+            evaluation_type:
+                Which formulation to use for multiple-choice evaluation. ``MCF``
+                (default) compares first-token logprobs of the label letters; ``CF``
+                scores each answer text as a continuation (cloze formulation).
+                Defaults to ``EvaluationType.MCF``.
+            cf_normalization:
+                The length-normalization method used when ``evaluation_type`` is
+                ``CF``. Ignored for ``MCF``. Defaults to ``CFNormalization.CHARACTER``.
             custom_datasets_file:
                 Path to a Python file defining custom datasets. Defaults to
                 'custom_datasets.py'.
@@ -222,6 +239,8 @@ class Benchmarker:
             gpu_memory_utilization=gpu_memory_utilization,
             attention_backend=attention_backend,
             generative_type=generative_type,
+            evaluation_type=evaluation_type,
+            cf_normalization=cf_normalization,
             custom_datasets_file=Path(custom_datasets_file),
             verbose=verbose,
             force=force,
@@ -346,6 +365,8 @@ class Benchmarker:
         download_only: bool | None = None,
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
+        evaluation_type: EvaluationType | None = None,
+        cf_normalization: CFNormalization | None = None,
         attention_backend: t.Literal[
             *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
         ]
@@ -441,6 +462,15 @@ class Benchmarker:
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to the value specified when initialising
                 the benchmarker.
+            evaluation_type:
+                Which formulation to use for multiple-choice evaluation. ``MCF``
+                compares first-token logprobs of the label letters; ``CF`` scores each
+                answer text as a continuation (cloze formulation). Defaults to the value
+                specified when initialising the benchmarker.
+            cf_normalization:
+                The length-normalization method used when ``evaluation_type`` is
+                ``CF``. Ignored for ``MCF``. Defaults to the value specified when
+                initialising the benchmarker.
             attention_backend:
                 The attention backend to use for vLLM. Only relevant if the model is
                 generative. Defaults to the value specified when initialising the
@@ -590,6 +620,16 @@ class Benchmarker:
                 generative_type
                 if generative_type is not None
                 else self.benchmark_config_default_params.generative_type
+            ),
+            evaluation_type=(
+                evaluation_type
+                if evaluation_type is not None
+                else self.benchmark_config_default_params.evaluation_type
+            ),
+            cf_normalization=(
+                cf_normalization
+                if cf_normalization is not None
+                else self.benchmark_config_default_params.cf_normalization
             ),
             attention_backend=(
                 attention_backend

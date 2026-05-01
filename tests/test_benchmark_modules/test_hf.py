@@ -1,5 +1,6 @@
 """Unit tests for the `hf` module."""
 
+import dataclasses
 import hashlib
 from unittest.mock import MagicMock, patch
 
@@ -7,8 +8,14 @@ import pytest
 import torch
 from huggingface_hub.hf_api import HfApi
 
-from euroeval.benchmark_modules.hf import get_dtype, get_model_repo_info
-from euroeval.data_models import BenchmarkConfig
+from euroeval.benchmark_modules.hf import (
+    HuggingFaceEncoderModel,
+    get_dtype,
+    get_model_repo_info,
+)
+from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
+from euroeval.enums import EvaluationType
+from euroeval.exceptions import InvalidBenchmark
 
 
 @pytest.mark.parametrize(
@@ -86,3 +93,51 @@ def test_safetensors_check(
             run_with_cli=benchmark_config.run_with_cli,
         )
         assert (result is not None) == model_exists
+
+
+class TestCFGating:
+    """Tests that the HF encoder backend rejects Cloze Formulation evaluation.
+
+    CF requires per-token logprobs of forced continuations, which the encoder
+    backend does not produce. The guard sits in `__init__` so the user gets a
+    clear error before any model loading happens.
+    """
+
+    def test_init_raises_invalid_benchmark_on_cf(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """Constructing the HF encoder with `evaluation_type=CF` raises early."""
+        cf_config = dataclasses.replace(
+            benchmark_config, evaluation_type=EvaluationType.CF
+        )
+        # Patch out the param-allow-list check so the CF guard is what fires.
+        with patch("euroeval.benchmark_modules.hf.raise_if_wrong_params"):
+            with pytest.raises(InvalidBenchmark, match="Cloze Formulation"):
+                HuggingFaceEncoderModel(
+                    model_config=model_config,
+                    dataset_config=dataset_config,
+                    benchmark_config=cf_config,
+                    log_metadata=False,
+                )
+
+    def test_error_message_points_to_vllm_backend(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """The CF rejection message names vLLM as the supported alternative."""
+        cf_config = dataclasses.replace(
+            benchmark_config, evaluation_type=EvaluationType.CF
+        )
+        with patch("euroeval.benchmark_modules.hf.raise_if_wrong_params"):
+            with pytest.raises(InvalidBenchmark, match="vLLM backend"):
+                HuggingFaceEncoderModel(
+                    model_config=model_config,
+                    dataset_config=dataset_config,
+                    benchmark_config=cf_config,
+                    log_metadata=False,
+                )

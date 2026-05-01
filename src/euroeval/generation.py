@@ -9,7 +9,7 @@ from pathlib import Path
 from datasets import Dataset
 from tqdm.auto import tqdm
 
-from .enums import BatchingPreference, TaskGroup
+from .enums import BatchingPreference, EvaluationType, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import get_pbar, log, log_once
 from .model_cache import (
@@ -63,13 +63,21 @@ def generate(
         model_cache_dir = Path.cwd()
     else:
         model_cache_dir = Path(model_config.model_cache_dir)
+    # Namespace the cache by evaluation type so Cloze Formulation runs do not
+    # collide with cached Multiple-Choice Formulation outputs.
+    cache_suffix = (
+        "-cf" if benchmark_config.evaluation_type == EvaluationType.CF else ""
+    )
     if hasattr(sys, "_called_from_test"):
-        cache_name = f"{dataset_config.name}-model-outputs-test.json"
+        cache_name = f"{dataset_config.name}{cache_suffix}-model-outputs-test.json"
         (model_cache_dir / cache_name).unlink(missing_ok=True)
     elif benchmark_config.debug:
-        cache_name = f"{model_config.model_id}-{dataset_config.name}-model-outputs.json"
+        cache_name = (
+            f"{model_config.model_id}-{dataset_config.name}{cache_suffix}"
+            "-model-outputs.json"
+        )
     else:
-        cache_name = f"{dataset_config.name}-model-outputs.json"
+        cache_name = f"{dataset_config.name}{cache_suffix}-model-outputs.json"
 
     cache = ModelCache(
         model_cache_dir=model_cache_dir,

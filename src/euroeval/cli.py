@@ -7,7 +7,7 @@ import click
 from .benchmarker import Benchmarker
 from .constants import ATTENTION_BACKENDS
 from .data_models import DatasetConfig
-from .enums import Device, GenerativeType
+from .enums import CFNormalization, Device, EvaluationType, GenerativeType
 from .languages import get_all_languages
 
 
@@ -194,6 +194,24 @@ from .languages import get_all_languages
     "not specified, the type will be inferred automatically.",
 )
 @click.option(
+    "--evaluation-type",
+    type=click.Choice(["mcf", "cf"]),
+    default="mcf",
+    show_default=True,
+    help="Formulation used for multiple-choice evaluation. 'mcf' (default) compares "
+    "first-token logprobs of the label letters; 'cf' scores each full answer text as "
+    "a cloze continuation. CF is only valid for multiple-choice tasks and is "
+    "currently only supported by the vLLM backend.",
+)
+@click.option(
+    "--cf-normalization",
+    type=click.Choice(["none", "token", "character"]),
+    default="character",
+    show_default=True,
+    help="Length normalization applied to CF logprob scores. Only relevant when "
+    "--evaluation-type=cf.",
+)
+@click.option(
     "--custom-datasets-file",
     type=click.Path(exists=False, dir_okay=False, path_type=Path),
     default="custom_datasets.py",
@@ -255,6 +273,8 @@ def benchmark(
     attention_backend: str,
     requires_safetensors: bool,
     generative_type: str | None,
+    evaluation_type: str,
+    cf_normalization: str,
     custom_datasets_file: Path,
     download_only: bool,
     debug: bool,
@@ -287,6 +307,8 @@ def benchmark(
         generative_type=GenerativeType[generative_type.upper()]
         if generative_type
         else None,
+        evaluation_type=EvaluationType[evaluation_type.upper()],
+        cf_normalization=CFNormalization[cf_normalization.upper()],
         custom_datasets_file=custom_datasets_file,
         debug=debug,
         run_with_cli=True,
