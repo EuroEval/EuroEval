@@ -194,7 +194,7 @@ from .languages import get_all_languages
     "not specified, the type will be inferred automatically.",
 )
 @click.option(
-    "--evaluation-type",
+    "--scoring-method",
     type=click.Choice(["mcf", "cf"]),
     default="mcf",
     show_default=True,
@@ -209,7 +209,7 @@ from .languages import get_all_languages
     default="character",
     show_default=True,
     help="Length normalization applied to CF logprob scores. Only relevant when "
-    "--evaluation-type=cf.",
+    "--scoring-method=cf.",
 )
 @click.option(
     "--custom-datasets-file",
@@ -273,7 +273,7 @@ def benchmark(
     attention_backend: str,
     requires_safetensors: bool,
     generative_type: str | None,
-    evaluation_type: str,
+    scoring_method: str,
     cf_normalization: str,
     custom_datasets_file: Path,
     download_only: bool,
@@ -307,7 +307,7 @@ def benchmark(
         generative_type=GenerativeType[generative_type.upper()]
         if generative_type
         else None,
-        evaluation_type=EvaluationType[evaluation_type.upper()],
+        evaluation_type=EvaluationType[scoring_method.upper()],
         cf_normalization=CFNormalization[cf_normalization.upper()],
         custom_datasets_file=custom_datasets_file,
         debug=debug,
