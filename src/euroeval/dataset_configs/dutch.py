@@ -129,7 +129,7 @@ DUTCH_COLA_FULL_CONFIG = DatasetConfig(
 
 DUTCH_PROVERBS_CONFIG = DatasetConfig(
     name="dutch-proverbs",
-    pretty_name="Dutch proverbs",
+    pretty_name="Dutch Proverbs",
     source="EuroEval/dutch-proverbs",
     task=KNOW,
     languages=[DUTCH],
