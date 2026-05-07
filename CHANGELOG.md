@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [v17.2.0] - 2026-04-17
 
+### Added
+
+- Added a benchmark for the purpose of testing the knowledge of Dutch proverbs.
+  The dataset consists of brief scenarios and two possible proverbs for
+  the Large Language Model to select from.
+  The dataset was created manually and reviewed by native Dutch speakers.
+
 ### Changed
 
 - Now overrides vLLM's pinned `transformers<5` dependency with `transformers>=5.5.0`, to
