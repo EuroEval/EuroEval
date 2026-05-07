@@ -7,14 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [v17.2.0] - 2026-04-17
-
 ### Added
 
 - Added a benchmark for the purpose of testing the knowledge of Dutch proverbs.
   The dataset consists of brief scenarios and two possible proverbs for
   the Large Language Model to select from.
   The dataset was created manually and reviewed by native Dutch speakers.
+
+## [v17.2.0] - 2026-04-17
 
 ### Changed
 
