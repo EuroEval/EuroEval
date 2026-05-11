@@ -120,6 +120,12 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
+# Mapping from HuggingFace architecture names that vLLM does not recognise to their
+# vLLM-compatible equivalents.  Transformers 4.57 split Gemma 4 into a multimodal
+# class (Gemma4ForConditionalGeneration) and a text-only class
+# (Gemma4TextForCausalLM).  vLLM only registers the former, so we remap here.
+_ARCHITECTURE_ALIASES: dict[str, str] = {"Gemma4TextForCausalLM": "Gemma4ForCausalLM"}
+
 
 class VLLMModel(HuggingFaceEncoderModel):
     """A generative model using the vLLM inference framework."""
@@ -1185,6 +1191,26 @@ def load_model(
 
     clear_vllm()
 
+    # Remap architecture names that the installed vLLM version does not recognise
+    # to their compatible equivalents (e.g. Gemma4TextForCausalLM ->
+    # Gemma4ForCausalLM).  We pass the remapped names via `hf_overrides` so that
+    # vLLM's model-loader picks up the supported class name, and also update the
+    # in-memory config for EuroEval's own use.
+    hf_overrides: dict[str, t.Any] = {}
+    if hasattr(hf_model_config, "architectures") and hf_model_config.architectures:
+        remapped = [
+            _ARCHITECTURE_ALIASES.get(arch, arch)
+            for arch in hf_model_config.architectures
+        ]
+        if remapped != list(hf_model_config.architectures):
+            log(
+                f"Remapping model architectures {hf_model_config.architectures} -> "
+                f"{remapped} for vLLM compatibility.",
+                level=logging.INFO,
+            )
+            hf_model_config.architectures = remapped
+            hf_overrides["architectures"] = remapped
+
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism()
     )
@@ -1224,6 +1250,7 @@ def load_model(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
+            **({"hf_overrides": hf_overrides} if hf_overrides else {}),
             **vllm_params,
         )
     except (RuntimeError, ValueError, OSError) as e:
