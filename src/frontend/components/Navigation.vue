@@ -13,7 +13,7 @@ onMounted(async () => {
 });
 
 const isActive = (path: string) => {
-  return route.path === `/docs/${path}` || route.path === `/docs/${path}/`;
+  return route.path === `/documentation/${path}` || route.path === `/documentation/${path}/`;
 };
 </script>
 
@@ -31,7 +31,7 @@ const isActive = (path: string) => {
         <ul class="section-pages">
           <li v-for="page in section.pages" :key="page.path">
             <a
-              :href="`/docs/${page.path}`"
+              :href="`/documentation/${page.path}`"
               :class="{ active: isActive(page.path) }"
             >
               {{ page.title || page.path }}

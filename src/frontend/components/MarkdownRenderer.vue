@@ -42,7 +42,7 @@ watch(
     html.value = "";
 
     try {
-      const response = await fetch(`/docs/${newPath}`);
+      const response = await fetch(`/documentation/${newPath}`);
       if (!response.ok) {
         error.value = true;
         loading.value = false;
@@ -66,7 +66,7 @@ watch(
   <div v-else class="page-wrapper">
     <div class="page-header">
       <div class="breadcrumb">
-        <a href="/docs">docs</a>
+        <a href="/documentation">documentation</a>
         <span v-if="breadcrumb" class="separator">/</span>
         <span v-if="breadcrumb" class="breadcrumb-path">{{ breadcrumb }}</span>
       </div>

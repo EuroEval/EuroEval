@@ -82,7 +82,7 @@ As a starting point, make your dataset unofficial. This can always be changed la
 ## Step 3: Document Your Dataset
 
 Dataset documentation in EuroEval is organised by language, with each language having
-its own file at `docs/datasets/{language}.md`. Within each language file, documentation
+its own file at `documentation/datasets/{language}.md`. Within each language file, documentation
 is further organised by task.
 
 Navigate to the documentation file for your dataset's language and add your dataset's
@@ -98,7 +98,7 @@ The documentation should include the following information:
 
 To do this, you can follow these steps:
 
-1. Find an existing dataset of the same task in `docs/datasets/{language}.md`
+1. Find an existing dataset of the same task in `documentation/datasets/{language}.md`
 2. Copy the entire documentation section for that dataset
 3. Use this as a template and modify all details to match your new dataset
 4. Ensure you update all dataset-specific information (description, split sizes, example
