@@ -1,6 +1,6 @@
 # This ensures that we can call `make <target>` even if `<target>` exists as a file or
 # directory.
-.PHONY: help docs
+.PHONY: help docs install install-frontend
 
 # Exports all variables defined in the makefile available to scripts
 .EXPORT_ALL_VARIABLES:
@@ -32,6 +32,7 @@ install: ## Install dependencies
 	@$(MAKE) --quiet install-uv
 	@$(MAKE) --quiet install-dependencies
 	@$(MAKE) --quiet setup-environment-variables
+	@$(MAKE) --quiet install-frontend
 	@echo "Installed the 'EuroEval' project."
 
 install-rust:
@@ -58,6 +59,11 @@ setup-environment-variables:
 
 setup-environment-variables-non-interactive:
 	@uv run python src/scripts/fix_dot_env_file.py --non-interactive
+
+install-frontend: ## Install frontend dependencies
+	@echo "Installing frontend dependencies..."
+	@npm install
+	@echo "Installed frontend dependencies."
 
 install-pre-commit:
 	@uv run pre-commit install
