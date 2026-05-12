@@ -108,7 +108,7 @@ gai-experiments.xlsx
 src/upload/
 
 # Model outputs in debugging mode
-*.json
+*outputs.json
 
 # Mkdocs
 site/
