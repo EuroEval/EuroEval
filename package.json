@@ -1,0 +1,22 @@
+{
+  "name": "euroeval-docs",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.0",
+    "vue-router": "^4.5.0",
+    "js-yaml": "^4.0.0",
+    "markdown-it": "^14.0.0",
+    "highlight.js": "^11.11.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "@vitejs/plugin-vue": "^5.1.0",
+    "typescript": "^5.6.0"
+  }
+}
