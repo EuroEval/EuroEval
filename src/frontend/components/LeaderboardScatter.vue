@@ -6,12 +6,39 @@ const props = defineProps<{
   table: LeaderboardTable;
 }>();
 
+type ModelKind = "instruct" | "reasoning" | "base" | "encoder" | "other";
+
 interface Point {
   x: number;
   y: number;
   label: string;
   icon: string;
+  kind: ModelKind;
+  commercial: boolean;
 }
+
+const KIND_FROM_ICON: Record<string, ModelKind> = {
+  "📝": "instruct",
+  "🤔": "reasoning",
+  "🧠": "base",
+  "🔍": "encoder",
+};
+
+const KIND_LABEL: Record<ModelKind, string> = {
+  instruct: "Instruction-tuned",
+  reasoning: "Reasoning",
+  base: "Base generative",
+  encoder: "Encoder",
+  other: "Other",
+};
+
+const KIND_COLOR: Record<ModelKind, string> = {
+  instruct: "#5b9dd9", // blue
+  reasoning: "#f0a040", // amber
+  base: "#5cb874", // green
+  encoder: "#b07ad8", // purple
+  other: "#9aa0a6", // muted
+};
 
 const colIndex = (key: string) =>
   props.table.columns.findIndex((c) => c.key.toLowerCase() === key.toLowerCase());
@@ -41,12 +68,14 @@ const xIdx = computed(() => colIndex(xKey.value));
 const yIdx = computed(() => colIndex("rank"));
 const modelIdx = computed(() => colIndex("model"));
 const typeIdx = computed(() => colIndex("type"));
+const commercialIdx = computed(() => colIndex("commercial"));
 
 const points = computed<Point[]>(() => {
   const xi = xIdx.value;
   const yi = yIdx.value;
   const mi = modelIdx.value;
   const ti = typeIdx.value;
+  const ci = commercialIdx.value;
   if (xi < 0 || yi < 0) return [];
 
   const out: Point[] = [];
@@ -64,15 +93,31 @@ const points = computed<Point[]>(() => {
     const yk = yc.sortKey;
     if (typeof xk !== "number" || !Number.isFinite(xk)) continue;
     if (typeof yk !== "number" || !Number.isFinite(yk)) continue;
+    const icon = ti >= 0 ? row.cells[ti].text : "";
+    const commercialText = ci >= 0 ? row.cells[ci].text : "";
     out.push({
       x: xk,
       y: yk,
       label: mi >= 0 ? row.cells[mi].text : "",
-      icon: ti >= 0 ? row.cells[ti].text : "",
+      icon,
+      kind: KIND_FROM_ICON[icon] ?? "other",
+      commercial: commercialText === "✓",
     });
   }
   return out;
 });
+
+// Legend uses only the kinds that actually appear in the data.
+const presentKinds = computed<ModelKind[]>(() => {
+  const seen = new Set<ModelKind>();
+  for (const p of points.value) seen.add(p.kind);
+  return (["instruct", "reasoning", "base", "encoder", "other"] as const).filter(
+    (k) => seen.has(k),
+  );
+});
+
+const hasCommercial = computed(() => points.value.some((p) => p.commercial));
+const hasNonCommercial = computed(() => points.value.some((p) => !p.commercial));
 
 // SVG plot geometry.
 const width = 800;
@@ -146,6 +191,21 @@ const yTicks = computed<number[]>(() => {
   return ticks;
 });
 
+// Build a 5-point star path centered at (cx, cy) with the given outer radius.
+const starPath = (cx: number, cy: number, r: number): string => {
+  const inner = r * 0.45;
+  const pts: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const radius = i % 2 === 0 ? r : inner;
+    // Top vertex first: rotate so the star points up.
+    const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+    const x = cx + radius * Math.cos(angle);
+    const y = cy + radius * Math.sin(angle);
+    pts.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+  return `M${pts[0]} L${pts.slice(1).join(" L")} Z`;
+};
+
 const hovered = ref<Point | null>(null);
 const hoverPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -175,6 +235,28 @@ const onLeave = () => {
       </label>
       <span class="scatter-help">
         Y-axis: Rank (lower is better). {{ points.length }} models plotted.
+      </span>
+    </div>
+
+    <div class="scatter-legend">
+      <span v-for="k in presentKinds" :key="k" class="legend-item">
+        <svg viewBox="0 0 14 14" class="swatch" aria-hidden="true">
+          <circle cx="7" cy="7" r="5" :fill="KIND_COLOR[k]" />
+        </svg>
+        {{ KIND_LABEL[k] }}
+      </span>
+      <span class="legend-sep" v-if="hasCommercial || hasNonCommercial">|</span>
+      <span v-if="hasCommercial" class="legend-item">
+        <svg viewBox="0 0 14 14" class="swatch" aria-hidden="true">
+          <path :d="starPath(7, 7, 6)" fill="currentColor" />
+        </svg>
+        Commercial
+      </span>
+      <span v-if="hasNonCommercial" class="legend-item">
+        <svg viewBox="0 0 14 14" class="swatch" aria-hidden="true">
+          <circle cx="7" cy="7" r="5" fill="currentColor" />
+        </svg>
+        Non-commercial
       </span>
     </div>
 
@@ -262,18 +344,28 @@ const onLeave = () => {
           Rank
         </text>
 
-        <!-- Points -->
+        <!-- Points: commercial → star, otherwise → circle. Colored by kind. -->
         <g class="points">
-          <circle
-            v-for="(p, i) in points"
-            :key="`p-${i}`"
-            :cx="xScale(p.x)"
-            :cy="yScale(p.y)"
-            r="5"
-            class="point"
-            @mousemove="onMove($event, p)"
-            @mouseleave="onLeave"
-          />
+          <template v-for="(p, i) in points" :key="`p-${i}`">
+            <path
+              v-if="p.commercial"
+              :d="starPath(xScale(p.x), yScale(p.y), 7)"
+              :fill="KIND_COLOR[p.kind]"
+              class="point"
+              @mousemove="onMove($event, p)"
+              @mouseleave="onLeave"
+            />
+            <circle
+              v-else
+              :cx="xScale(p.x)"
+              :cy="yScale(p.y)"
+              r="5"
+              :fill="KIND_COLOR[p.kind]"
+              class="point"
+              @mousemove="onMove($event, p)"
+              @mouseleave="onLeave"
+            />
+          </template>
         </g>
       </svg>
 
@@ -284,7 +376,9 @@ const onLeave = () => {
       >
         <div class="tt-model">{{ hovered.icon }} {{ hovered.label }}</div>
         <div class="tt-meta">
-          {{ xKey }}: {{ formatX(hovered.x) }} · Rank: {{ hovered.y.toFixed(2) }}
+          {{ xKey }}: {{ formatX(hovered.x) }} · Rank:
+          {{ hovered.y.toFixed(2) }} ·
+          {{ KIND_LABEL[hovered.kind] }}{{ hovered.commercial ? " · commercial" : "" }}
         </div>
       </div>
     </div>
@@ -321,6 +415,31 @@ const onLeave = () => {
   font-size: 0.8rem;
 }
 
+.scatter-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.legend-sep {
+  opacity: 0.4;
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+}
+
 .scatter-wrap {
   position: relative;
   background: var(--color-surface);
@@ -353,17 +472,16 @@ const onLeave = () => {
 }
 
 .point {
-  fill: var(--color-link);
-  fill-opacity: 0.75;
+  fill-opacity: 0.85;
   stroke: var(--color-bg);
-  stroke-width: 1.2;
+  stroke-width: 1;
   cursor: pointer;
-  transition: r 0.1s ease;
+  transition: fill-opacity 0.1s ease;
 }
 
 .point:hover {
   fill-opacity: 1;
-  r: 7;
+  stroke-width: 1.8;
 }
 
 .tooltip {
