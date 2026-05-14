@@ -43,34 +43,15 @@ const KIND_COLOR: Record<ModelKind, string> = {
 const colIndex = (key: string) =>
   props.table.columns.findIndex((c) => c.key.toLowerCase() === key.toLowerCase());
 
-const xAxisOptions = computed(() =>
-  props.table.columns
-    .filter((c) => c.kind === "number" && c.key.toLowerCase() !== "rank")
-    .map((c) => c.key),
-);
+const xKey = "Parameters";
 
-const xKey = ref<string>("");
-
-// Default x-axis: Parameters when present, else first numeric column.
-const ensureDefaultX = () => {
-  if (xKey.value && xAxisOptions.value.includes(xKey.value)) return;
-  const opts = xAxisOptions.value;
-  if (opts.length === 0) {
-    xKey.value = "";
-    return;
-  }
-  xKey.value = opts.find((k) => k.toLowerCase() === "parameters") ?? opts[0];
-};
-
-ensureDefaultX();
-
-const xIdx = computed(() => colIndex(xKey.value));
+const xIdx = computed(() => colIndex(xKey));
 const yIdx = computed(() => colIndex("rank"));
 const modelIdx = computed(() => colIndex("model"));
 const typeIdx = computed(() => colIndex("type"));
 const commercialIdx = computed(() => colIndex("commercial"));
 
-const points = computed<Point[]>(() => {
+const allPoints = computed<Point[]>(() => {
   const xi = xIdx.value;
   const yi = yIdx.value;
   const mi = modelIdx.value;
@@ -110,39 +91,67 @@ const points = computed<Point[]>(() => {
 // Legend uses only the kinds that actually appear in the data.
 const presentKinds = computed<ModelKind[]>(() => {
   const seen = new Set<ModelKind>();
-  for (const p of points.value) seen.add(p.kind);
+  for (const p of allPoints.value) seen.add(p.kind);
   return (["instruct", "reasoning", "base", "encoder", "other"] as const).filter(
     (k) => seen.has(k),
   );
 });
 
-const hasCommercial = computed(() => points.value.some((p) => p.commercial));
-const hasNonCommercial = computed(() => points.value.some((p) => !p.commercial));
+const hasCommercial = computed(() =>
+  allPoints.value.some((p) => p.commercial),
+);
+const hasNonCommercial = computed(() =>
+  allPoints.value.some((p) => !p.commercial),
+);
+
+// Visibility toggles. All groups visible by default; clicking a legend
+// item toggles its group off/on.
+const hiddenKinds = ref<Set<ModelKind>>(new Set());
+const hideCommercial = ref(false);
+const hideNonCommercial = ref(false);
+
+const toggleKind = (k: ModelKind) => {
+  if (hiddenKinds.value.has(k)) {
+    hiddenKinds.value.delete(k);
+  } else {
+    hiddenKinds.value.add(k);
+  }
+  // Force reactivity (Set mutation isn't tracked).
+  hiddenKinds.value = new Set(hiddenKinds.value);
+};
+
+const isKindHidden = (k: ModelKind) => hiddenKinds.value.has(k);
+
+const visiblePoints = computed<Point[]>(() =>
+  allPoints.value.filter((p) => {
+    if (hiddenKinds.value.has(p.kind)) return false;
+    if (p.commercial && hideCommercial.value) return false;
+    if (!p.commercial && hideNonCommercial.value) return false;
+    return true;
+  }),
+);
 
 // SVG plot geometry.
 const width = 800;
 const height = 460;
 const margin = { top: 20, right: 20, bottom: 48, left: 60 };
 
+// Axis domains are computed from *all* points (not just the visible ones)
+// so toggling groups on/off doesn't rescale the plot.
 const xMinMax = computed(() => {
-  const xs = points.value.map((p) => p.x);
+  const xs = allPoints.value.map((p) => p.x);
   if (xs.length === 0) return { min: 0, max: 1 };
   const min = Math.min(...xs);
   const max = Math.max(...xs);
   return min === max ? { min: min - 1, max: max + 1 } : { min, max };
 });
 
-const yMinMax = computed(() => {
-  const ys = points.value.map((p) => p.y);
-  if (ys.length === 0) return { min: 0, max: 1 };
-  const min = Math.min(...ys);
-  const max = Math.max(...ys);
-  return min === max ? { min: min - 0.5, max: max + 0.5 } : { min, max };
-});
+// Fixed mean-rank-score domain so plots are visually comparable across
+// languages and pages. Lower is better, so 1.0 is at the top, 5.5 at the
+// bottom.
+const yMinMax = computed(() => ({ min: 1.0, max: 5.5 }));
 
-const useLogX = computed(
-  () => xKey.value.toLowerCase() === "parameters" && xMinMax.value.min > 0,
-);
+const useLogX = computed(() => xMinMax.value.min > 0);
 
 const xScale = (v: number) => {
   const { min, max } = xMinMax.value;
@@ -169,25 +178,42 @@ const formatX = (v: number): string => {
   return v.toFixed(1).replace(/\.0$/, "");
 };
 
-const xTicks = computed<number[]>(() => {
+interface Tick {
+  value: number;
+  major: boolean;
+}
+
+const xTicks = computed<Tick[]>(() => {
   const { min, max } = xMinMax.value;
   if (useLogX.value) {
-    const ticks: number[] = [];
+    const ticks: Tick[] = [];
     const lo = Math.floor(Math.log10(Math.max(min, 1)));
     const hi = Math.ceil(Math.log10(Math.max(max, 1)));
-    for (let i = lo; i <= hi; i++) ticks.push(Math.pow(10, i));
-    return ticks.filter((t) => t >= min && t <= max);
+    for (let i = lo; i <= hi; i++) {
+      const base = Math.pow(10, i);
+      ticks.push({ value: base, major: true });
+      // Intra-decade minor labels at 2× and 5×.
+      ticks.push({ value: 2 * base, major: false });
+      ticks.push({ value: 5 * base, major: false });
+    }
+    return ticks.filter((t) => t.value >= min && t.value <= max);
   }
-  // Linear: 5 evenly spaced.
-  const ticks: number[] = [];
-  for (let i = 0; i <= 5; i++) ticks.push(min + (max - min) * (i / 5));
+  // Linear: 10 evenly spaced.
+  const ticks: Tick[] = [];
+  for (let i = 0; i <= 10; i++) {
+    ticks.push({
+      value: min + (max - min) * (i / 10),
+      major: i % 2 === 0,
+    });
+  }
   return ticks;
 });
 
-const yTicks = computed<number[]>(() => {
-  const { min, max } = yMinMax.value;
-  const ticks: number[] = [];
-  for (let i = 0; i <= 5; i++) ticks.push(min + (max - min) * (i / 5));
+const yTicks = computed<Tick[]>(() => {
+  const ticks: Tick[] = [];
+  for (let v = 1.0; v <= 5.5 + 1e-9; v += 0.5) {
+    ticks.push({ value: Math.round(v * 10) / 10, major: true });
+  }
   return ticks;
 });
 
@@ -225,39 +251,54 @@ const onLeave = () => {
 <template>
   <div class="scatter">
     <div class="scatter-toolbar">
-      <label>
-        X-axis:
-        <select v-model="xKey">
-          <option v-for="opt in xAxisOptions" :key="opt" :value="opt">
-            {{ opt }}
-          </option>
-        </select>
-      </label>
       <span class="scatter-help">
-        Y-axis: Rank (lower is better). {{ points.length }} models plotted.
+        X-axis: Parameters (log). Y-axis: Mean rank score (lower is better).
+        Showing {{ visiblePoints.length }} of {{ allPoints.length }} models.
       </span>
     </div>
 
     <div class="scatter-legend">
-      <span v-for="k in presentKinds" :key="k" class="legend-item">
+      <button
+        v-for="k in presentKinds"
+        :key="k"
+        type="button"
+        class="legend-item"
+        :class="{ disabled: isKindHidden(k) }"
+        @click="toggleKind(k)"
+        :aria-pressed="!isKindHidden(k)"
+      >
         <svg viewBox="0 0 14 14" class="swatch" aria-hidden="true">
           <circle cx="7" cy="7" r="5" :fill="KIND_COLOR[k]" />
         </svg>
         {{ KIND_LABEL[k] }}
-      </span>
+      </button>
       <span class="legend-sep" v-if="hasCommercial || hasNonCommercial">|</span>
-      <span v-if="hasCommercial" class="legend-item">
+      <button
+        v-if="hasCommercial"
+        type="button"
+        class="legend-item"
+        :class="{ disabled: hideCommercial }"
+        @click="hideCommercial = !hideCommercial"
+        :aria-pressed="!hideCommercial"
+      >
         <svg viewBox="0 0 14 14" class="swatch" aria-hidden="true">
           <path :d="starPath(7, 7, 6)" fill="currentColor" />
         </svg>
         Commercial
-      </span>
-      <span v-if="hasNonCommercial" class="legend-item">
+      </button>
+      <button
+        v-if="hasNonCommercial"
+        type="button"
+        class="legend-item"
+        :class="{ disabled: hideNonCommercial }"
+        @click="hideNonCommercial = !hideNonCommercial"
+        :aria-pressed="!hideNonCommercial"
+      >
         <svg viewBox="0 0 14 14" class="swatch" aria-hidden="true">
           <circle cx="7" cy="7" r="5" fill="currentColor" />
         </svg>
         Non-commercial
-      </span>
+      </button>
     </div>
 
     <div class="scatter-wrap">
@@ -289,41 +330,42 @@ const onLeave = () => {
             :key="`yg-${i}`"
             :x1="margin.left"
             :x2="width - margin.right"
-            :y1="yScale(t)"
-            :y2="yScale(t)"
+            :y1="yScale(t.value)"
+            :y2="yScale(t.value)"
           />
           <text
             v-for="(t, i) in yTicks"
             :key="`yt-${i}`"
             class="tick-label"
             :x="margin.left - 8"
-            :y="yScale(t)"
+            :y="yScale(t.value)"
             dominant-baseline="middle"
             text-anchor="end"
           >
-            {{ t.toFixed(2) }}
+            {{ t.value.toFixed(1) }}
           </text>
         </g>
 
-        <!-- X ticks -->
+        <!-- X ticks (major: solid grid, full label; minor: dashed, smaller label) -->
         <g class="grid">
           <line
             v-for="(t, i) in xTicks"
             :key="`xg-${i}`"
-            :x1="xScale(t)"
-            :x2="xScale(t)"
+            :x1="xScale(t.value)"
+            :x2="xScale(t.value)"
             :y1="margin.top"
             :y2="height - margin.bottom"
+            :class="{ minor: !t.major }"
           />
           <text
             v-for="(t, i) in xTicks"
             :key="`xt-${i}`"
-            class="tick-label"
-            :x="xScale(t)"
+            :class="['tick-label', { minor: !t.major }]"
+            :x="xScale(t.value)"
             :y="height - margin.bottom + 16"
             text-anchor="middle"
           >
-            {{ formatX(t) }}
+            {{ formatX(t.value) }}
           </text>
         </g>
 
@@ -334,19 +376,19 @@ const onLeave = () => {
           :y="height - 6"
           text-anchor="middle"
         >
-          {{ xKey }}{{ useLogX ? " (log)" : "" }}
+          Parameters{{ useLogX ? " (log)" : "" }}
         </text>
         <text
           class="axis-label"
           :transform="`translate(14, ${height / 2}) rotate(-90)`"
           text-anchor="middle"
         >
-          Rank
+          Mean rank score
         </text>
 
         <!-- Points: commercial → star, otherwise → circle. Colored by kind. -->
         <g class="points">
-          <template v-for="(p, i) in points" :key="`p-${i}`">
+          <template v-for="(p, i) in visiblePoints" :key="`p-${i}`">
             <path
               v-if="p.commercial"
               :d="starPath(xScale(p.x), yScale(p.y), 7)"
@@ -376,7 +418,7 @@ const onLeave = () => {
       >
         <div class="tt-model">{{ hovered.icon }} {{ hovered.label }}</div>
         <div class="tt-meta">
-          {{ xKey }}: {{ formatX(hovered.x) }} · Rank:
+          Parameters: {{ formatX(hovered.x) }} · Mean rank:
           {{ hovered.y.toFixed(2) }} ·
           {{ KIND_LABEL[hovered.kind] }}{{ hovered.commercial ? " · commercial" : "" }}
         </div>
@@ -428,6 +470,24 @@ const onLeave = () => {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.1rem 0.2rem;
+  border-radius: 3px;
+  transition: opacity 0.15s ease;
+}
+
+.legend-item:hover {
+  background: var(--color-surface);
+}
+
+.legend-item.disabled {
+  opacity: 0.35;
+  text-decoration: line-through;
 }
 
 .legend-sep {
@@ -465,10 +525,19 @@ const onLeave = () => {
   opacity: 0.4;
 }
 
+.grid line.minor {
+  opacity: 0.18;
+}
+
 .tick-label,
 .axis-label {
   fill: var(--color-muted);
   font-size: 11px;
+}
+
+.tick-label.minor {
+  font-size: 9px;
+  opacity: 0.7;
 }
 
 .point {
