@@ -50,9 +50,18 @@ const points = computed<Point[]>(() => {
   if (xi < 0 || yi < 0) return [];
 
   const out: Point[] = [];
+  // Drop rows whose displayed value is a sentinel (e.g. "-", "?", "") —
+  // these have a sort key like `-@@100` purely to push them to the bottom
+  // of the sorted table, and shouldn't appear on the plot.
+  const isRealValue = (text: string) =>
+    text !== "" && text !== "-" && text !== "?" && text !== "??";
+
   for (const row of props.table.rows) {
-    const xk = row.cells[xi].sortKey;
-    const yk = row.cells[yi].sortKey;
+    const xc = row.cells[xi];
+    const yc = row.cells[yi];
+    if (!isRealValue(xc.text) || !isRealValue(yc.text)) continue;
+    const xk = xc.sortKey;
+    const yk = yc.sortKey;
     if (typeof xk !== "number" || !Number.isFinite(xk)) continue;
     if (typeof yk !== "number" || !Number.isFinite(yk)) continue;
     out.push({
