@@ -1,0 +1,110 @@
+[project]
+name = "leaderboards"
+version = "0.1.0"
+description = "Collection of all evaluation results from the EuroEval framework."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "anthropic>=0.49.0",
+  "chardet>=5.2.0",
+  "click>=8.1.7",
+  "geopandas>=1.1.1",
+  "google-genai>=1.9.0",
+  "huggingface-hub>=0.26.5",
+  "ipywidgets>=8.1.7",
+  "jupyterlab>=4.4.0",
+  "matplotlib>=3.10.6",
+  "openai>=1.66.3",
+  "pandas>=2.2.3",
+  "pip>=24.3.1",
+  "plotly>=6.0.1",
+  "pre-commit>=4.0.1",
+  "python-dotenv>=1.0.1",
+  "scipy>=1.14.1",
+  "wheel>=0.45.1",
+]
+
+[project.urls]
+Repository = "https://github.com/EuroEval/leaderboards"
+Issues = "https://github.com/EuroEval/EuroEval/issues"
+
+[project.license]
+file = "LICENSE"
+
+[dependency-groups]
+dev = [
+  "pre-commit>=3.8.0",
+  "ruff>=0.7.1",
+  "nbstripout>=0.7.1",
+  "pyrefly>=0.44.2",
+  "types-pyyaml>=6.0.12.20260408",
+  "types-tqdm>=4.67.3.20260408",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+exclude = [
+  ".git",
+  ".pytest_cache",
+  ".ruff_cache",
+  ".euroeval_cache",
+  ".venv",
+]
+extend-include = [
+    "*.ipynb",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+select = [
+  # isort (imports)
+  "I",
+  # pydocstyle (docstrings)
+  "D",
+  # pycodestyle errors and warnings (PEP8)
+  "E",
+  "W",
+  # flake-annotations (type hints)
+  "ANN",
+  # Pyflakes
+  "F",
+]
+ignore = [
+  # Type annotations for "self" arguments
+  "ANN101",
+  # Type annotations for "cls" arguments
+  "ANN102",
+  # Type annotations for *args
+  "ANN002",
+  # Type annotations for **kwargs
+  "ANN003",
+  # Docstrings for **kwargs
+  "D417",
+]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"__init__.py" = [
+  "F401",
+]
+"src/scripts/main.py" = [
+  "I",
+]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pyrefly]
+site-package-path = [".venv/lib/python3.12/site-packages"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

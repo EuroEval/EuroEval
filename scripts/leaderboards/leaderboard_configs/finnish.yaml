@@ -1,0 +1,14 @@
+sentiment-classification:
+  - scandisent-fi
+named-entity-recognition:
+  - turku-ner-fi
+linguistic-acceptability:
+  - scala-fi
+reading-comprehension:
+  - tydiqa-fi
+summarization:
+  - xlsum-fi
+common-sense-reasoning:
+  - hellaswag-fi
+european-values:
+  - valeu-fi

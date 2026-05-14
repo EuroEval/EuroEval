@@ -1,0 +1,14 @@
+sentiment-classification:
+  - atsiliepimai
+named-entity-recognition:
+  - wikiann-lt
+linguistic-acceptability:
+  - scala-lt
+reading-comprehension:
+  - multi-wiki-qa-lt
+summarization:
+  - lrytas
+knowledge:
+  - lt-history
+common-sense-reasoning:
+  - winogrande-lt

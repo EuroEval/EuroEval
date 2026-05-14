@@ -1,0 +1,8 @@
+sentiment-classification:
+  - fosent
+named-entity-recognition:
+  - fone
+linguistic-acceptability:
+  - scala-fo
+reading-comprehension:
+  - foqa

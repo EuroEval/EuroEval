@@ -57,18 +57,31 @@ const buildIndex = (): SearchEntry[] => {
 
     if (section.pages) {
       for (const page of section.pages) {
-        const md = lookup[page.path];
-        if (!md) continue;
-        const text = stripMarkdown(stripFrontmatter(md));
-        entries.push({
-          sectionId: section.id,
-          sectionTitle: section.title,
-          pageTitle: page.title,
-          url: `/${section.id}/${pageSlug(page.path)}`,
-          text,
-          textLower: text.toLowerCase(),
-          titleLower: page.title.toLowerCase(),
-        });
+        if (page.path) {
+          const md = lookup[page.path];
+          if (!md) continue;
+          const text = stripMarkdown(stripFrontmatter(md));
+          entries.push({
+            sectionId: section.id,
+            sectionTitle: section.title,
+            pageTitle: page.title,
+            url: `/${section.id}/${pageSlug(page)}`,
+            text,
+            textLower: text.toLowerCase(),
+            titleLower: page.title.toLowerCase(),
+          });
+        } else if (page.csv) {
+          // Leaderboard pages: index title only — CSV content is not searched.
+          entries.push({
+            sectionId: section.id,
+            sectionTitle: section.title,
+            pageTitle: page.title,
+            url: `/${section.id}/${pageSlug(page)}`,
+            text: page.title,
+            textLower: page.title.toLowerCase(),
+            titleLower: page.title.toLowerCase(),
+          });
+        }
       }
     }
   }

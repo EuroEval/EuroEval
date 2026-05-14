@@ -1,0 +1,8 @@
+sentiment-classification:
+  - mms-bs
+named-entity-recognition:
+  - wikiann-bs
+reading-comprehension:
+  - multi-wiki-qa-bs
+summarization:
+  - lr-sum-bs

@@ -1,0 +1,19 @@
+sentiment-classification:
+  - norec
+named-entity-recognition:
+  - norne-nb
+  - norne-nn
+linguistic-acceptability:
+  - scala-nb
+  - scala-nn
+reading-comprehension:
+  - norquad
+summarization:
+  - no-sammendrag
+knowledge:
+  - nrk-quiz-qa
+  - idioms-no
+common-sense-reasoning:
+  - nor-common-sense-qa
+european-values:
+  - valeu-no

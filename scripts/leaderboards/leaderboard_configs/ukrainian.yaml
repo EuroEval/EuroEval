@@ -1,0 +1,14 @@
+sentiment-classification:
+  - cross-domain-uk-reviews
+named-entity-recognition:
+  - ner-uk
+linguistic-acceptability:
+  - scala-uk
+reading-comprehension:
+  - multi-wiki-qa-uk
+summarization:
+  - lr-sum-uk
+knowledge:
+  - global-mmlu-uk
+common-sense-reasoning:
+  - winogrande-uk

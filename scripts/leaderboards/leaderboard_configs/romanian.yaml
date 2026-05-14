@@ -1,0 +1,14 @@
+sentiment-classification:
+  - ro-sent
+named-entity-recognition:
+  - ronec
+linguistic-acceptability:
+  - scala-ro
+reading-comprehension:
+  - multi-wiki-qa-ro
+summarization:
+  - sumo-ro
+knowledge:
+  - global-mmlu-ro
+common-sense-reasoning:
+  - winogrande-ro

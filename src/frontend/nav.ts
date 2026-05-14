@@ -2,8 +2,15 @@ import yaml from "js-yaml";
 import configYaml from "@/config.yaml?raw";
 
 export interface NavPage {
-  path: string;
   title: string;
+  /** Markdown path under src/frontend/md/. Mutually exclusive with `csv`. */
+  path?: string;
+  /** Leaderboard CSV stem (e.g. `danish`). Mutually exclusive with `path`. */
+  csv?: string;
+  /** Explicit URL slug. Defaults to the file stem of `path` or `csv`. */
+  slug?: string;
+  /** Optional group heading shown in the sidebar above this page. */
+  group?: string;
 }
 
 export interface NavSection {
@@ -34,10 +41,22 @@ export function findSection(id: string | undefined): NavSection | undefined {
   return navConfig.sections.find((s) => s.id === id);
 }
 
-export function pageSlug(path: string): string {
-  // datasets/danish.md -> danish, tasks/speed.md -> speed
-  const file = path.split("/").pop() || path;
-  return file.replace(/\.md$/i, "");
+export function pageSlug(pageOrPath: NavPage | string): string {
+  if (typeof pageOrPath === "string") {
+    const file = pageOrPath.split("/").pop() || pageOrPath;
+    return file.replace(/\.(md|csv)$/i, "");
+  }
+  if (pageOrPath.slug) return pageOrPath.slug;
+  const ref = pageOrPath.path || pageOrPath.csv || "";
+  return pageSlug(ref);
+}
+
+export function findPage(
+  section: NavSection,
+  pageSlugStr: string | undefined,
+): NavPage | undefined {
+  if (!pageSlugStr || !section.pages) return undefined;
+  return section.pages.find((p) => pageSlug(p) === pageSlugStr);
 }
 
 export function resolveMdPath(
@@ -51,11 +70,8 @@ export function resolveMdPath(
     return section.indexPath || section.path;
   }
 
-  if (section.pages) {
-    const match = section.pages.find((p) => pageSlug(p.path) === pageSlugStr);
-    return match?.path;
-  }
-  return section.path;
+  const match = findPage(section, pageSlugStr);
+  return match?.path;
 }
 
 export function sectionUrl(section: NavSection): string {
@@ -64,5 +80,26 @@ export function sectionUrl(section: NavSection): string {
 }
 
 export function pageUrl(sectionId: string, page: NavPage): string {
-  return `/${sectionId}/${pageSlug(page.path)}`;
+  return `/${sectionId}/${pageSlug(page)}`;
+}
+
+export interface SideNavGroup {
+  title?: string;
+  pages: NavPage[];
+}
+
+/** Group a section's pages by their `group` field, preserving order. */
+export function groupedPages(section: NavSection): SideNavGroup[] {
+  if (!section.pages) return [];
+  const groups: SideNavGroup[] = [];
+  let current: SideNavGroup | null = null;
+  for (const page of section.pages) {
+    const groupTitle = page.group;
+    if (!current || current.title !== groupTitle) {
+      current = { title: groupTitle, pages: [] };
+      groups.push(current);
+    }
+    current.pages.push(page);
+  }
+  return groups;
 }

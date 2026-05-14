@@ -1,0 +1,14 @@
+sentiment-classification:
+  - mms-sq
+named-entity-recognition:
+  - wikiann-sq
+linguistic-acceptability:
+  - scala-sq
+reading-comprehension:
+  - multi-wiki-qa-sq
+summarization:
+  - lr-sum-sq
+knowledge:
+  - global-mmlu-lite-sq
+common-sense-reasoning:
+  - winogrande-sq

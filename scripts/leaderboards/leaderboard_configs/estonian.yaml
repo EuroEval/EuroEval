@@ -1,0 +1,16 @@
+sentiment-classification:
+  - estonian-valence
+named-entity-recognition:
+  - estner
+linguistic-acceptability:
+  - grammar-et
+reading-comprehension:
+  - multi-wiki-qa-et
+summarization:
+  - err-news
+knowledge:
+  - trivia-et
+common-sense-reasoning:
+  - winogrande-et
+european-values:
+  - valeu-et

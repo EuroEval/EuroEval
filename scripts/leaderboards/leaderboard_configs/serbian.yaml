@@ -1,0 +1,14 @@
+sentiment-classification:
+  - mms-sr
+named-entity-recognition:
+  - uner-sr
+linguistic-acceptability:
+  - scala-sr
+reading-comprehension:
+  - multi-wiki-qa-sr
+summarization:
+  - lr-sum-sr
+knowledge:
+  - mmlu-sr
+common-sense-reasoning:
+  - winogrande-sr

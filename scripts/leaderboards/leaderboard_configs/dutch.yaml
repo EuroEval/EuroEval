@@ -1,0 +1,18 @@
+sentiment-classification:
+  - dbrd
+named-entity-recognition:
+  - conll-nl
+linguistic-acceptability:
+  - scala-nl
+reading-comprehension:
+  - squad-nl
+summarization:
+  - wiki-lingua-nl
+knowledge:
+  - mmlu-nl
+common-sense-reasoning:
+  - hellaswag-nl
+simplification:
+  - duidelijke-taal
+european-values:
+  - valeu-nl

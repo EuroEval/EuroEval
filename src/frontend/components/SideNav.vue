@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { NavSection } from "@/nav";
-import { pageSlug, pageUrl } from "@/nav";
+import { groupedPages, pageSlug, pageUrl } from "@/nav";
 import { drawerOpen, closeDrawer } from "@/drawer";
-import { watch } from "vue";
+import { computed, watch } from "vue";
 import { useRoute } from "vue-router";
 
 const props = defineProps<{
@@ -10,7 +10,10 @@ const props = defineProps<{
   activePageSlug: string | undefined;
 }>();
 
-const isActive = (path: string) => pageSlug(path) === props.activePageSlug;
+const groups = computed(() => groupedPages(props.section));
+
+const isActivePage = (page: { path?: string; csv?: string; slug?: string }) =>
+  pageSlug(page as any) === props.activePageSlug;
 
 const route = useRoute();
 watch(
@@ -35,17 +38,20 @@ watch(
     >
       {{ section.title }}
     </router-link>
-    <ul class="side-list">
-      <li v-for="page in section.pages" :key="page.path">
-        <router-link
-          :to="pageUrl(section.id, page)"
-          class="side-link"
-          :class="{ active: isActive(page.path) }"
-        >
-          {{ page.title }}
-        </router-link>
-      </li>
-    </ul>
+    <div v-for="(group, gi) in groups" :key="gi" class="side-group">
+      <div v-if="group.title" class="side-group-title">{{ group.title }}</div>
+      <ul class="side-list">
+        <li v-for="page in group.pages" :key="page.title">
+          <router-link
+            :to="pageUrl(section.id, page)"
+            class="side-link"
+            :class="{ active: isActivePage(page) }"
+          >
+            {{ page.title }}
+          </router-link>
+        </li>
+      </ul>
+    </div>
   </aside>
 </template>
 
@@ -68,12 +74,21 @@ watch(
   margin-bottom: 0.5rem;
 }
 
-.side-title.active {
-  color: var(--color-link);
-}
-
 .side-title:not(.active) {
   color: var(--color-text);
+}
+
+.side-group + .side-group {
+  margin-top: 1rem;
+}
+
+.side-group-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+  margin: 0.4rem 0 0.3rem;
 }
 
 .side-list {
@@ -120,6 +135,7 @@ watch(
     transition: transform 0.2s ease;
     z-index: 30;
     overflow-y: auto;
+    max-height: none;
   }
   .side-nav.open {
     transform: translateX(0);

@@ -1,0 +1,16 @@
+sentiment-classification:
+  - polemo2
+named-entity-recognition:
+  - kpwr-ner
+linguistic-acceptability:
+  - scala-pl
+reading-comprehension:
+  - poquad
+summarization:
+  - psc
+knowledge:
+  - llmzszl
+common-sense-reasoning:
+  - winogrande-pl
+european-values:
+  - valeu-pl

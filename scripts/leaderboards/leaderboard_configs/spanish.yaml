@@ -1,0 +1,16 @@
+sentiment-classification:
+  - sentiment-headlines-es
+named-entity-recognition:
+  - conll-es
+linguistic-acceptability:
+  - scala-es
+reading-comprehension:
+  - mlqa-es
+summarization:
+  - mlsum-es
+knowledge:
+  - mmlu-es
+common-sense-reasoning:
+  - hellaswag-es
+european-values:
+  - valeu-es

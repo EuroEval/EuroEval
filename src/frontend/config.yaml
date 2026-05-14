@@ -9,7 +9,47 @@ sections:
 
   - id: leaderboards
     title: Leaderboards
-    path: leaderboards-README.md
+    indexPath: leaderboards-README.md
+    pages:
+      # Monolingual
+      - { group: Monolingual, csv: albanian, title: "🇦🇱 Albanian" }
+      - { group: Monolingual, csv: bosnian, title: "🇧🇦 Bosnian" }
+      - { group: Monolingual, csv: bulgarian, title: "🇧🇬 Bulgarian" }
+      - { group: Monolingual, csv: catalan, title: "Catalan" }
+      - { group: Monolingual, csv: croatian, title: "🇭🇷 Croatian" }
+      - { group: Monolingual, csv: czech, title: "🇨🇿 Czech" }
+      - { group: Monolingual, csv: danish, title: "🇩🇰 Danish" }
+      - { group: Monolingual, csv: dutch, title: "🇳🇱 Dutch" }
+      - { group: Monolingual, csv: english, title: "🇬🇧 English" }
+      - { group: Monolingual, csv: estonian, title: "🇪🇪 Estonian" }
+      - { group: Monolingual, csv: faroese, title: "🇫🇴 Faroese" }
+      - { group: Monolingual, csv: finnish, title: "🇫🇮 Finnish" }
+      - { group: Monolingual, csv: french, title: "🇫🇷 French" }
+      - { group: Monolingual, csv: german, title: "🇩🇪 German" }
+      - { group: Monolingual, csv: greek, title: "🇬🇷 Greek" }
+      - { group: Monolingual, csv: hungarian, title: "🇭🇺 Hungarian" }
+      - { group: Monolingual, csv: icelandic, title: "🇮🇸 Icelandic" }
+      - { group: Monolingual, csv: italian, title: "🇮🇹 Italian" }
+      - { group: Monolingual, csv: latvian, title: "🇱🇻 Latvian" }
+      - { group: Monolingual, csv: lithuanian, title: "🇱🇹 Lithuanian" }
+      - { group: Monolingual, csv: norwegian, title: "🇳🇴 Norwegian" }
+      - { group: Monolingual, csv: polish, title: "🇵🇱 Polish" }
+      - { group: Monolingual, csv: portuguese, title: "🇵🇹 Portuguese" }
+      - { group: Monolingual, csv: romanian, title: "🇷🇴 Romanian" }
+      - { group: Monolingual, csv: serbian, title: "🇷🇸 Serbian" }
+      - { group: Monolingual, csv: slovak, title: "🇸🇰 Slovak" }
+      - { group: Monolingual, csv: slovene, title: "🇸🇮 Slovene" }
+      - { group: Monolingual, csv: spanish, title: "🇪🇸 Spanish" }
+      - { group: Monolingual, csv: swedish, title: "🇸🇪 Swedish" }
+      - { group: Monolingual, csv: ukrainian, title: "🇺🇦 Ukrainian" }
+      # Multilingual
+      - { group: Multilingual, csv: european, slug: european, title: "🇪🇺 European" }
+      - { group: Multilingual, csv: baltic, slug: baltic, title: "Baltic" }
+      - { group: Multilingual, csv: finnic, slug: finnic, title: "Finnic" }
+      - { group: Multilingual, csv: germanic, slug: germanic, title: "Germanic" }
+      - { group: Multilingual, csv: mainland_scandinavian, slug: mainland-scandinavian, title: "Mainland Scandinavian" }
+      - { group: Multilingual, csv: romance, slug: romance, title: "Romance" }
+      - { group: Multilingual, csv: slavic, slug: slavic, title: "Slavic" }
 
   - id: tasks
     title: Tasks

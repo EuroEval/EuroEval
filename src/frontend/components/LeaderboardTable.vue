@@ -1,0 +1,406 @@
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
+import type { Column, LeaderboardTable, Row } from "@/leaderboard";
+
+const props = defineProps<{
+  table: LeaderboardTable;
+}>();
+
+type FilterValue = string;
+const colFilters = ref<Record<string, FilterValue>>({});
+const globalSearch = ref("");
+const sortBy = ref<{ index: number; dir: "asc" | "desc" } | null>(null);
+const page = ref(1);
+const pageSize = 25;
+
+// Default sort: rank ascending if present.
+watch(
+  () => props.table,
+  () => {
+    colFilters.value = {};
+    page.value = 1;
+    const rankIdx = props.table.columns.findIndex(
+      (c) => c.key.toLowerCase() === "rank",
+    );
+    sortBy.value = rankIdx >= 0 ? { index: rankIdx, dir: "asc" } : null;
+  },
+  { immediate: true },
+);
+
+const passesColumnFilter = (cellText: string, filter: string, col: Column) => {
+  if (!filter) return true;
+  if (col.kind === "icon") {
+    // For icon columns, exact match against the filter value.
+    return cellText === filter;
+  }
+  return cellText.toLowerCase().includes(filter.toLowerCase());
+};
+
+const filteredRows = computed<Row[]>(() => {
+  const cols = props.table.columns;
+  const q = globalSearch.value.trim().toLowerCase();
+  return props.table.rows.filter((row) => {
+    // Per-column filters.
+    for (let i = 0; i < cols.length; i++) {
+      const filter = colFilters.value[cols[i].key];
+      if (filter && !passesColumnFilter(row.cells[i].text, filter, cols[i])) {
+        return false;
+      }
+    }
+    // Global search.
+    if (q) {
+      const hit = row.cells.some((c) => c.text.toLowerCase().includes(q));
+      if (!hit) return false;
+    }
+    return true;
+  });
+});
+
+const sortedRows = computed<Row[]>(() => {
+  const rows = filteredRows.value;
+  const s = sortBy.value;
+  if (!s) return rows;
+  const idx = s.index;
+  const dir = s.dir === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const ak = a.cells[idx].sortKey;
+    const bk = b.cells[idx].sortKey;
+    if (typeof ak === "number" && typeof bk === "number") {
+      return (ak - bk) * dir;
+    }
+    return String(ak).localeCompare(String(bk)) * dir;
+  });
+});
+
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil(sortedRows.value.length / pageSize)),
+);
+
+watch(pageCount, (n) => {
+  if (page.value > n) page.value = n;
+});
+
+const pagedRows = computed<Row[]>(() => {
+  const start = (page.value - 1) * pageSize;
+  return sortedRows.value.slice(start, start + pageSize);
+});
+
+const toggleSort = (idx: number) => {
+  if (sortBy.value?.index === idx) {
+    sortBy.value =
+      sortBy.value.dir === "asc"
+        ? { index: idx, dir: "desc" }
+        : null;
+  } else {
+    sortBy.value = { index: idx, dir: "asc" };
+  }
+};
+
+const resetFilters = () => {
+  colFilters.value = {};
+  globalSearch.value = "";
+  page.value = 1;
+};
+</script>
+
+<template>
+  <div class="leaderboard">
+    <div class="lb-toolbar">
+      <input
+        v-model="globalSearch"
+        class="lb-search"
+        type="search"
+        placeholder="Search in table"
+        aria-label="Search in table"
+        @input="page = 1"
+      />
+      <button class="lb-reset" type="button" @click="resetFilters">
+        Reset filters
+      </button>
+      <div class="lb-pageinfo">
+        Page
+        <select v-model.number="page" aria-label="Page">
+          <option v-for="n in pageCount" :key="n" :value="n">{{ n }}</option>
+        </select>
+        of {{ pageCount }} · {{ sortedRows.length }} rows
+      </div>
+    </div>
+
+    <div class="lb-scroll">
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th
+              v-for="(col, i) in table.columns"
+              :key="col.key + i"
+              :class="['col', `kind-${col.kind}`]"
+              @click="toggleSort(i)"
+            >
+              <span class="th-label" v-html="col.titleHtml || col.title" />
+              <span class="th-sort">
+                <template v-if="sortBy?.index === i">
+                  {{ sortBy.dir === "asc" ? "▲" : "▼" }}
+                </template>
+              </span>
+            </th>
+          </tr>
+          <tr class="filter-row">
+            <th
+              v-for="(col, i) in table.columns"
+              :key="`f-${col.key}-${i}`"
+              @click.stop
+            >
+              <template v-if="col.kind === 'icon' && col.distinctValues">
+                <select
+                  v-model="colFilters[col.key]"
+                  class="lb-filter"
+                  @change="page = 1"
+                  :aria-label="`Filter ${col.title}`"
+                >
+                  <option value="">any</option>
+                  <option v-for="v in col.distinctValues" :key="v" :value="v">
+                    {{ v }}
+                  </option>
+                </select>
+              </template>
+              <template v-else-if="col.kind === 'number' || col.kind === 'score'">
+                <input
+                  v-model="colFilters[col.key]"
+                  type="search"
+                  class="lb-filter"
+                  :placeholder="col.min !== undefined ? `≥ ${col.min}` : 'filter'"
+                  :aria-label="`Filter ${col.title}`"
+                  @input="page = 1"
+                />
+              </template>
+              <template v-else>
+                <input
+                  v-model="colFilters[col.key]"
+                  type="search"
+                  class="lb-filter"
+                  placeholder="filter"
+                  :aria-label="`Filter ${col.title}`"
+                  @input="page = 1"
+                />
+              </template>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(row, ri) in pagedRows" :key="ri">
+            <td
+              v-for="(cell, ci) in row.cells"
+              :key="ci"
+              :class="['cell', `kind-${table.columns[ci].kind}`]"
+            >
+              <span v-html="cell.html" />
+            </td>
+          </tr>
+          <tr v-if="pagedRows.length === 0">
+            <td :colspan="table.columns.length" class="empty">
+              No rows match these filters.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="lb-pager">
+      <button
+        type="button"
+        :disabled="page <= 1"
+        @click="page = Math.max(1, page - 1)"
+      >
+        ‹ Prev
+      </button>
+      <span>Page {{ page }} of {{ pageCount }}</span>
+      <button
+        type="button"
+        :disabled="page >= pageCount"
+        @click="page = Math.min(pageCount, page + 1)"
+      >
+        Next ›
+      </button>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.leaderboard {
+  font-size: 0.85rem;
+}
+
+.lb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.lb-search {
+  flex: 1;
+  min-width: 200px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.lb-search:focus {
+  outline: 2px solid var(--color-link);
+  outline-offset: -1px;
+}
+
+.lb-reset {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  padding: 0.4rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.lb-reset:hover {
+  background: var(--color-border);
+}
+
+.lb-pageinfo {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.lb-pageinfo select {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.15rem 0.3rem;
+  margin: 0 0.25rem;
+}
+
+.lb-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.lb-table th,
+.lb-table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.lb-table thead th {
+  background: var(--color-surface);
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.lb-table thead .filter-row th {
+  position: sticky;
+  top: 36px;
+  background: var(--color-surface);
+  cursor: default;
+  font-weight: normal;
+  padding: 0.3rem 0.4rem;
+}
+
+.th-label :deep(a) {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.th-sort {
+  margin-left: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--color-link);
+}
+
+.lb-filter {
+  width: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 0.2rem 0.35rem;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.lb-filter:focus {
+  outline: 1px solid var(--color-link);
+  outline-offset: -1px;
+}
+
+.cell.kind-model {
+  white-space: normal;
+  min-width: 220px;
+}
+
+.cell.kind-number,
+.cell.kind-score {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cell.kind-icon {
+  text-align: center;
+}
+
+.cell :deep(a) {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+.cell :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.empty {
+  text-align: center;
+  color: var(--color-muted);
+  padding: 1.5rem;
+}
+
+.lb-pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.lb-pager button {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  padding: 0.3rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.lb-pager button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.lb-pager button:not(:disabled):hover {
+  background: var(--color-border);
+}
+</style>

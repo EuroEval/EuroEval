@@ -1,0 +1,14 @@
+sentiment-classification:
+  - guia-cat
+named-entity-recognition:
+  - wikiann-ca
+linguistic-acceptability:
+  - scala-ca
+reading-comprehension:
+  - multi-wiki-qa-ca
+summarization:
+  - dacsa-ca
+knowledge:
+  - mmlu-ca
+common-sense-reasoning:
+  - winogrande-ca

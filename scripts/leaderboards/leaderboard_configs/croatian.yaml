@@ -1,0 +1,12 @@
+sentiment-classification:
+  - mms-hr
+named-entity-recognition:
+  - wikiann-hr
+linguistic-acceptability:
+  - scala-hr
+reading-comprehension:
+  - multi-wiki-qa-hr
+knowledge:
+  - mmlu-hr
+common-sense-reasoning:
+  - winogrande-hr

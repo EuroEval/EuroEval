@@ -5,9 +5,11 @@ import TopHeader from "@/components/TopHeader.vue";
 import SectionTabs from "@/components/SectionTabs.vue";
 import SideNav from "@/components/SideNav.vue";
 import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
+import LeaderboardView from "@/components/LeaderboardView.vue";
 import TableOfContents from "@/components/TableOfContents.vue";
 import {
   defaultSection,
+  findPage,
   findSection,
   resolveMdPath,
 } from "@/nav";
@@ -27,9 +29,16 @@ const activeSection = computed(
   () => findSection(sectionId.value) || defaultSection,
 );
 
-const mdPath = computed(() =>
-  resolveMdPath(sectionId.value, pageSlug.value),
+const activePage = computed(() =>
+  findPage(activeSection.value, pageSlug.value),
 );
+
+const isLeaderboard = computed(() => Boolean(activePage.value?.csv));
+
+const mdPath = computed(() => {
+  if (isLeaderboard.value) return undefined;
+  return resolveMdPath(sectionId.value, pageSlug.value);
+});
 
 const hasSidebar = computed(
   () => Boolean(activeSection.value.pages && activeSection.value.pages.length),
@@ -49,17 +58,29 @@ const layoutClass = computed(() => {
     <TopHeader />
     <SectionTabs :active-id="activeSection.id" />
     <div class="page" :class="layoutClass">
-      <SideNav v-if="hasSidebar" :section="activeSection" :active-page-slug="pageSlug" />
+      <SideNav
+        v-if="hasSidebar"
+        :section="activeSection"
+        :active-page-slug="pageSlug"
+      />
       <main class="content-wrap">
+        <LeaderboardView
+          v-if="isLeaderboard && activePage"
+          :stem="activePage.csv!"
+          :title="activePage.title"
+        />
         <MarkdownRenderer
-          v-if="mdPath"
+          v-else-if="mdPath"
           :path="mdPath"
           :section="activeSection"
           :page-slug="pageSlug"
         />
         <div v-else class="error">Page not found.</div>
       </main>
-      <TableOfContents v-if="hasToc && mdPath" :path="mdPath" />
+      <TableOfContents
+        v-if="hasToc && mdPath && !isLeaderboard"
+        :path="mdPath"
+      />
     </div>
     <footer class="site-footer">
       Made by
