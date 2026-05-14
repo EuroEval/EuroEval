@@ -15,6 +15,5 @@
     }
   },
   "include": ["src/**/*"],
-  "references": {},
   "exclude": ["node_modules", "dist"]
 }

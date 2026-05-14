@@ -1,0 +1,83 @@
+github:
+  repo: EuroEval/EuroEval
+  version: v17.2.0
+
+sections:
+  - id: about
+    title: About
+    path: doc-README.md
+
+  - id: leaderboards
+    title: Leaderboards
+    path: leaderboards-README.md
+
+  - id: tasks
+    title: Tasks
+    indexPath: tasks/README.md
+    pages:
+      - { path: tasks/bias-detection.md, title: Bias Detection }
+      - { path: tasks/common-sense-reasoning.md, title: Common-sense Reasoning }
+      - { path: tasks/european-values.md, title: European Values }
+      - { path: tasks/grammatical-error-detection.md, title: Grammatical Error Detection }
+      - { path: tasks/instruction-following.md, title: Instruction-following }
+      - { path: tasks/knowledge.md, title: Knowledge }
+      - { path: tasks/linguistic-acceptability.md, title: Linguistic Acceptability }
+      - { path: tasks/named-entity-recognition.md, title: Named Entity Recognition }
+      - { path: tasks/natural-language-inference.md, title: Natural Language Inference }
+      - { path: tasks/reading-comprehension.md, title: Reading Comprehension }
+      - { path: tasks/sentiment-classification.md, title: Sentiment Classification }
+      - { path: tasks/simplification.md, title: Simplification }
+      - { path: tasks/speed.md, title: Speed }
+      - { path: tasks/summarization.md, title: Summarization }
+      - { path: tasks/tool-calling.md, title: Tool calling }
+      - { path: tasks/translation.md, title: Translation }
+
+  - id: datasets
+    title: Datasets
+    indexPath: datasets/README.md
+    pages:
+      - { path: datasets/albanian.md, title: "🇦🇱 Albanian" }
+      - { path: datasets/belarusian.md, title: "🇧🇾 Belarusian" }
+      - { path: datasets/bosnian.md, title: "🇧🇦 Bosnian" }
+      - { path: datasets/bulgarian.md, title: "🇧🇬 Bulgarian" }
+      - { path: datasets/catalan.md, title: "Catalan" }
+      - { path: datasets/croatian.md, title: "🇭🇷 Croatian" }
+      - { path: datasets/czech.md, title: "🇨🇿 Czech" }
+      - { path: datasets/danish.md, title: "🇩🇰 Danish" }
+      - { path: datasets/dutch.md, title: "🇳🇱 Dutch" }
+      - { path: datasets/english.md, title: "🇬🇧 English" }
+      - { path: datasets/estonian.md, title: "🇪🇪 Estonian" }
+      - { path: datasets/faroese.md, title: "🇫🇴 Faroese" }
+      - { path: datasets/finnish.md, title: "🇫🇮 Finnish" }
+      - { path: datasets/french.md, title: "🇫🇷 French" }
+      - { path: datasets/german.md, title: "🇩🇪 German" }
+      - { path: datasets/greek.md, title: "🇬🇷 Greek" }
+      - { path: datasets/hungarian.md, title: "🇭🇺 Hungarian" }
+      - { path: datasets/icelandic.md, title: "🇮🇸 Icelandic" }
+      - { path: datasets/italian.md, title: "🇮🇹 Italian" }
+      - { path: datasets/latvian.md, title: "🇱🇻 Latvian" }
+      - { path: datasets/lithuanian.md, title: "🇱🇹 Lithuanian" }
+      - { path: datasets/norwegian.md, title: "🇳🇴 Norwegian" }
+      - { path: datasets/polish.md, title: "🇵🇱 Polish" }
+      - { path: datasets/portuguese.md, title: "🇵🇹 Portuguese" }
+      - { path: datasets/romanian.md, title: "🇷🇴 Romanian" }
+      - { path: datasets/serbian.md, title: "🇷🇸 Serbian" }
+      - { path: datasets/slovak.md, title: "🇸🇰 Slovak" }
+      - { path: datasets/slovene.md, title: "🇸🇮 Slovene" }
+      - { path: datasets/spanish.md, title: "🇪🇸 Spanish" }
+      - { path: datasets/swedish.md, title: "🇸🇪 Swedish" }
+      - { path: datasets/ukrainian.md, title: "🇺🇦 Ukrainian" }
+
+  - id: methodology
+    title: Methodology
+    path: methodology.md
+    toc: true
+
+  - id: faq
+    title: FAQ
+    path: faq.md
+
+  - id: python-package
+    title: Python Package
+    path: python-package.md
+    toc: true
