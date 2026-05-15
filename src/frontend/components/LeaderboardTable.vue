@@ -234,6 +234,31 @@ const resetFilters = () => {
   colFilters.value = {};
   page.value = 1;
 };
+
+const isModelCol = (col: Column) => col.key.toLowerCase() === "model";
+
+/** Pull the bare "org/name" id out of the model cell's display text. */
+const modelIdFromCell = (text: string): string =>
+  text.replace(/\s*\([^)]*\)\s*$/, "").trim();
+
+const reportBadEval = (modelId: string) => {
+  if (!modelId) return;
+  const confirmed = window.confirm(
+    `Report a bad evaluation for "${modelId}"?\n\n` +
+      "We'll take you to a new GitHub issue prefilled with the model id." +
+      " You can add details about what looks wrong before submitting.",
+  );
+  if (!confirmed) return;
+  const title = `[EVALUATION ERROR] ${modelId}`;
+  const body =
+    `The model ${modelId} has an issue with its evaluation results.` +
+    ` The issue is that `;
+  const url =
+    "https://github.com/EuroEval/EuroEval/issues/new?template=BLANK_ISSUE" +
+    `&title=${encodeURIComponent(title)}` +
+    `&body=${encodeURIComponent(body)}`;
+  window.open(url, "_blank", "noopener");
+};
 </script>
 
 <template>
@@ -319,6 +344,16 @@ const resetFilters = () => {
               "
               :title="ci === 0 ? cell.text : undefined"
             >
+              <button
+                v-if="isModelCol(table.columns[ci])"
+                type="button"
+                class="report-bad"
+                aria-label="Report bad evaluation for this model"
+                title="Report a bad evaluation for this model"
+                @click="reportBadEval(modelIdFromCell(cell.text))"
+              >
+                ⚠
+              </button>
               <span v-html="cellDisplayHtml(cell, table.columns[ci])" />
             </td>
           </tr>
@@ -491,6 +526,36 @@ const resetFilters = () => {
 
 .cell.kind-model {
   min-width: 220px;
+}
+
+.report-bad {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4em;
+  height: 1.4em;
+  margin-right: 0.4rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--color-text-muted, #888);
+  font-size: 0.85em;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+  vertical-align: middle;
+}
+
+.report-bad:hover,
+.report-bad:focus-visible {
+  opacity: 1;
+  color: #b00020;
+  border-color: #b00020;
 }
 
 .cell.kind-number,

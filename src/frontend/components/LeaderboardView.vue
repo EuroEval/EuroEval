@@ -140,22 +140,6 @@ const downloadCsv = async () => {
     downloading.value = false;
   }
 };
-
-const reportBadEval = () => {
-  const modelId = (
-    window.prompt("Model ID with a bad evaluation (e.g. org/model):") || ""
-  ).trim();
-  if (!modelId) return;
-  const title = `[EVALUATION ERROR] ${modelId}`;
-  const body =
-    `The model ${modelId} has an issue with its evaluation results.` +
-    ` The issue is that `;
-  const url =
-    "https://github.com/EuroEval/EuroEval/issues/new?template=BLANK_ISSUE" +
-    `&title=${encodeURIComponent(title)}` +
-    `&body=${encodeURIComponent(body)}`;
-  window.open(url, "_blank", "noopener");
-};
 </script>
 
 <template>
@@ -170,11 +154,6 @@ const reportBadEval = () => {
       Want a model evaluated? Submit it on the
       <router-link to="/evaluation-queue">Evaluation Queue</router-link>
       page.
-    </p>
-    <p class="lb-help">
-      Spotted a bad evaluation?
-      <a href="#" @click.prevent="reportBadEval">Report it</a>
-      so we can investigate.
     </p>
 
     <nav class="lb-tabs" role="tablist">
