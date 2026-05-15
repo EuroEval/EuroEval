@@ -31,6 +31,16 @@ const stripMarkdown = (text: string): string => {
     .replace(/`[^`]*`/g, " ")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    // Strip HTML — both block-level (`<details>`, `<summary>`, `<svg>`, …)
+    // and inline (`<img>`, `<a>`, raw `<hN>` headings emitted by the API
+    // reference generator). Without this, snippets can be drowned in raw
+    // markup.
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&")
     .replace(/[#>*_~]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
