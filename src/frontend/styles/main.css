@@ -599,3 +599,47 @@ button {
   margin-left: 1.6rem;
   margin-right: 0.5rem;
 }
+
+/* "source" anchors appended to every module / class / function heading in
+   the auto-generated API reference. Kept small and muted so they don't
+   compete with the symbol name. */
+.markdown-body .api-source-link {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--color-muted);
+  text-decoration: none;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.markdown-body .api-source-link:hover {
+  color: var(--color-link);
+  border-color: var(--color-link);
+}
+
+/* Raw HTML headings emitted for classes / functions / methods. Reuse the
+   same shared heading style by inheritance — these rules only handle the
+   per-level sizing that the markdown headings would normally inherit. */
+.markdown-body h3.api-symbol {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 1.2em 0 0.4em;
+}
+
+.markdown-body h4.api-symbol,
+.markdown-body h5.api-symbol,
+.markdown-body h6.api-symbol {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0.9em 0 0.35em;
+}
+
+.markdown-body .api-symbol code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}

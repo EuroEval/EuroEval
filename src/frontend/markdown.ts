@@ -174,7 +174,14 @@ const decodeEntities = (s: string): string =>
  * just the symbol name.
  */
 const simplifyHeadingForToc = (rawInner: string): string => {
-  let text = decodeEntities(rawInner.replace(/<[^>]+>/g, "")).trim();
+  // Strip the "source" GitHub link the API generator appends to each heading
+  // before we strip generic HTML, so its text content doesn't leak into the
+  // TOC label.
+  let stripped = rawInner.replace(
+    /<a\s+class="api-source-link"[^>]*>[\s\S]*?<\/a>/gi,
+    "",
+  );
+  let text = decodeEntities(stripped.replace(/<[^>]+>/g, "")).trim();
   // Drop a trailing `-> type` annotation if it appears outside the parens.
   text = text.replace(/\s*->.*$/, "");
   // Drop the parenthesised signature, if any.

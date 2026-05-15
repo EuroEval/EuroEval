@@ -14,11 +14,82 @@ whenever a Python source file changes.
 from __future__ import annotations
 
 import ast
+import html
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 PKG_ROOT = REPO / "src" / "euroeval"
 OUTPUT = REPO / "src" / "frontend" / "md" / "api.md"
+GITHUB_SRC = "https://github.com/EuroEval/EuroEval/blob/main/src/euroeval"
+
+
+def gh_url(rel: Path, lineno: int | None = None) -> str:
+    """Build a GitHub source URL for a file (optionally pointing at a line).
+
+    Args:
+        rel: Path relative to the package root.
+        lineno: 1-based line number, or None to link to the file itself.
+
+    Returns:
+        An absolute URL on github.com.
+    """
+    base = f"{GITHUB_SRC}/{rel.as_posix()}"
+    return f"{base}#L{lineno}" if lineno else base
+
+
+def source_link(url: str) -> str:
+    """Render a small "source" anchor pointing at a GitHub URL.
+
+    Args:
+        url: The GitHub URL to link to.
+
+    Returns:
+        An HTML `<a>` snippet ready to be appended to a heading.
+    """
+    return (
+        f' <a class="api-source-link" href="{url}" '
+        f'target="_blank" rel="noopener">source</a>'
+    )
+
+
+def heading_html(level: int, anchor: str, code: str, url: str) -> str:
+    """Emit a raw HTML heading with a `<code>` label and a GitHub source link.
+
+    We bypass markdown's heading syntax so we can attach the source link
+    without polluting the auto-generated heading slug — and so the TOC
+    extraction can recognise the source-link span and skip it.
+
+    Args:
+        level: Heading level (2–6).
+        anchor: The HTML id for the heading.
+        code: Label text rendered inside `<code>` (e.g. a function signature).
+        url: GitHub URL appended as a `source` link.
+
+    Returns:
+        A single-line `<hN>…</hN>` snippet for the markdown buffer.
+    """
+    return (
+        f'<h{level} id="{anchor}" class="api-symbol">'
+        f"<code>{html.escape(code, quote=False)}</code>"
+        f"{source_link(url)}</h{level}>"
+    )
+
+
+def symbol_anchor(rel: Path, *parts: str) -> str:
+    """Build a stable HTML id for a symbol declared in a module.
+
+    Args:
+        rel: Path relative to the package root.
+        *parts: Symbol path within the file (e.g. `Class`, `Class.method`).
+
+    Returns:
+        A unique anchor like `api-metrics-Foo-bar`.
+    """
+    mod = rel.with_suffix("").as_posix().replace("/", "-")
+    if mod.endswith("-__init__"):
+        mod = mod[: -len("-__init__")]
+    suffix = "-" + "-".join(parts) if parts else ""
+    return f"api-{mod}{suffix}"
 
 
 def is_public(name: str) -> bool:
@@ -132,21 +203,25 @@ def render_function(
     node: ast.FunctionDef | ast.AsyncFunctionDef,
     out: list[str],
     *,
-    heading: str,
-    prefix: str = "",
+    level: int,
+    rel: Path,
+    parent_class: str | None = None,
 ) -> None:
     """Append a function or method entry to the output buffer.
 
     Args:
         node: The function/method AST node.
         out: The output buffer (mutated in place).
-        heading: Markdown heading prefix (e.g. `###` for functions, `####`
-            for methods).
-        prefix: Optional symbol prefix prepended before the function name,
-            typically `ClassName.` for methods.
+        level: Heading level (2–6).
+        rel: Path relative to the package root, used to build the GitHub link.
+        parent_class: Optional enclosing class name; used both as a display
+            prefix (`Class.method(…)`) and in the anchor id.
     """
     sig = render_signature(node)
-    out.append(f"{heading} `{prefix}{node.name}{sig}`")
+    label = f"{parent_class}.{node.name}{sig}" if parent_class else f"{node.name}{sig}"
+    parts = [parent_class, node.name] if parent_class else [node.name]
+    anchor = symbol_anchor(rel, *parts)
+    out.append(heading_html(level, anchor, label, gh_url(rel, node.lineno)))
     out.append("")
     doc = ast.get_docstring(node, clean=True)
     if doc:
@@ -154,16 +229,21 @@ def render_function(
         out.append("")
 
 
-def render_class(cls: ast.ClassDef, out: list[str]) -> None:
+def render_class(
+    cls: ast.ClassDef, out: list[str], *, rel: Path, level: int = 3
+) -> None:
     """Append a class entry — including any public methods — to the output.
 
     Args:
         cls: The class AST node.
         out: The output buffer (mutated in place).
+        rel: Path relative to the package root.
+        level: Heading level for the class entry (methods go one level deeper).
     """
     bases = ", ".join(ast.unparse(b) for b in cls.bases)
     header = f"class {cls.name}" + (f"({bases})" if bases else "")
-    out.append(f"### `{header}`")
+    anchor = symbol_anchor(rel, cls.name)
+    out.append(heading_html(level, anchor, header, gh_url(rel, cls.lineno)))
     out.append("")
     doc = ast.get_docstring(cls, clean=True)
     if doc:
@@ -176,7 +256,7 @@ def render_class(cls: ast.ClassDef, out: list[str]) -> None:
         and (is_public(n.name) or n.name == "__init__")
     ]
     for m in methods:
-        render_function(m, out, heading="####", prefix=f"{cls.name}.")
+        render_function(m, out, level=min(level + 1, 6), rel=rel, parent_class=cls.name)
 
 
 def render_module(rel: Path, source: str, out: list[str]) -> None:
@@ -217,16 +297,16 @@ def render_module(rel: Path, source: str, out: list[str]) -> None:
     out.append(
         f'<summary class="api-module-summary">'
         f'<h2 id="{anchor}" class="api-module-heading">'
-        f"<code>{mod_name}</code></h2></summary>"
+        f"<code>{mod_name}</code>{source_link(gh_url(rel))}</h2></summary>"
     )
     out.append("")
     if module_doc:
         out.append(indent_docstring(module_doc))
         out.append("")
     for cls in classes:
-        render_class(cls, out)
+        render_class(cls, out, rel=rel, level=3)
     for f in funcs:
-        render_function(f, out, heading="###")
+        render_function(f, out, level=3, rel=rel)
     out.append("</details>")
     out.append("")
 
@@ -268,7 +348,8 @@ def render_submodule_inline(rel: Path, source: str, out: list[str]) -> None:
     anchor = "api-" + mod_name.replace(".", "-")
     out.append(f'<details class="api-submodule" id="{anchor}-wrap">')
     out.append(
-        f'<summary class="api-submodule-summary"><code>{mod_name}</code></summary>'
+        f'<summary class="api-submodule-summary">'
+        f"<code>{mod_name}</code>{source_link(gh_url(rel))}</summary>"
     )
     out.append("")
     if module_doc:
@@ -277,36 +358,11 @@ def render_submodule_inline(rel: Path, source: str, out: list[str]) -> None:
     for cls in classes:
         # Bump class headings down a level so they remain below the submodule
         # heading and out of the TOC.
-        render_class_inline(cls, out)
+        render_class(cls, out, rel=rel, level=5)
     for f in funcs:
-        render_function(f, out, heading="#####")
+        render_function(f, out, level=5, rel=rel)
     out.append("</details>")
     out.append("")
-
-
-def render_class_inline(cls: ast.ClassDef, out: list[str]) -> None:
-    """Like `render_class` but with h5/h6 headings to stay out of the TOC.
-
-    Args:
-        cls: The class AST node.
-        out: The output buffer (mutated in place).
-    """
-    bases = ", ".join(ast.unparse(b) for b in cls.bases)
-    header = f"class {cls.name}" + (f"({bases})" if bases else "")
-    out.append(f"##### `{header}`")
-    out.append("")
-    doc = ast.get_docstring(cls, clean=True)
-    if doc:
-        out.append(indent_docstring(doc))
-        out.append("")
-    methods = [
-        n
-        for n in cls.body
-        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
-        and (is_public(n.name) or n.name == "__init__")
-    ]
-    for m in methods:
-        render_function(m, out, heading="######", prefix=f"{cls.name}.")
 
 
 def render_nested_subpackage(
@@ -342,16 +398,16 @@ def render_nested_subpackage(
     out.append(
         f'<summary class="api-module-summary">'
         f'<h2 id="{anchor}" class="api-module-heading">'
-        f"<code>{mod_name}</code></h2></summary>"
+        f"<code>{mod_name}</code>{source_link(gh_url(parent_rel))}</h2></summary>"
     )
     out.append("")
     if module_doc:
         out.append(indent_docstring(module_doc))
         out.append("")
     for cls in classes:
-        render_class(cls, out)
+        render_class(cls, out, rel=parent_rel, level=3)
     for f in funcs:
-        render_function(f, out, heading="###")
+        render_function(f, out, level=3, rel=parent_rel)
     for sub in submodule_files:
         rel = sub.relative_to(PKG_ROOT)
         render_submodule_inline(rel, sub.read_text(encoding="utf-8"), out)
