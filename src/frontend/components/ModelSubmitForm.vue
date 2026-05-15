@@ -122,7 +122,14 @@ async function onSubmit() {
           Hugging Face Hub
         </a>
         and choose which language groups it should be evaluated on. API-only
-        models are not accepted.
+        models are not accepted for automatic evaluation, as it can be quite
+        expensive, but we urge you to
+        <a
+          href="https://github.com/EuroEval/EuroEval/issues/new?template=model_evaluation_request.yaml"
+          target="_blank"
+          rel="noopener"
+        >open an issue</a>
+        if you think we missed one.
       </p>
 
     <label class="field">
