@@ -40,8 +40,16 @@ onMounted(refresh);
       Anyone can submit a public model on the Hugging Face Hub for evaluation
       on EuroEval. Submissions become GitHub issues, and our compute servers
       pick them up automatically; results are then merged into the
-      leaderboards. We don't accept API-only models, since running them at
-      benchmark scale is prohibitively expensive.
+      leaderboards. We don't accept API-only models as they can get quite costly to
+      evaluate, but you can still
+      <a
+        href="https://github.com/EuroEval/EuroEval/issues/new?template=model_evaluation_request.yaml"
+        target="_blank"
+        rel="noopener"
+      >
+        submit an evaluation request
+      </a>
+      for it!
     </p>
 
     <ModelSubmitForm @submitted="onSubmitted" />
