@@ -303,3 +303,66 @@ button {
   border-top: 1px solid var(--color-border);
   margin: 2em 0;
 }
+
+/* Pure-CSS tab group emitted from mkdocs-style `/// tab | Title` blocks. */
+.md-tabs {
+  display: block;
+  margin: 1em 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.md-tabs > .md-tab-radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.md-tabs > .md-tab-label {
+  display: inline-block;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  border-bottom: 2px solid transparent;
+  user-select: none;
+}
+
+.md-tabs > .md-tab-label:hover {
+  color: var(--color-text);
+}
+
+.md-tabs > .md-tab-radio:checked + .md-tab-label {
+  color: var(--color-link);
+  border-bottom-color: var(--color-link);
+  font-weight: 600;
+}
+
+.md-tabs > .md-tab-radio:focus-visible + .md-tab-label {
+  outline: 2px solid var(--color-link);
+  outline-offset: -2px;
+}
+
+.md-tabs > .md-tab-pane {
+  display: none;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.md-tabs > .md-tab-radio-0:checked ~ .md-tab-pane[data-idx="0"],
+.md-tabs > .md-tab-radio-1:checked ~ .md-tab-pane[data-idx="1"],
+.md-tabs > .md-tab-radio-2:checked ~ .md-tab-pane[data-idx="2"],
+.md-tabs > .md-tab-radio-3:checked ~ .md-tab-pane[data-idx="3"],
+.md-tabs > .md-tab-radio-4:checked ~ .md-tab-pane[data-idx="4"],
+.md-tabs > .md-tab-radio-5:checked ~ .md-tab-pane[data-idx="5"] {
+  display: block;
+}
+
+.md-tab-pane > :first-child {
+  margin-top: 0;
+}
+
+.md-tab-pane > :last-child {
+  margin-bottom: 0;
+}

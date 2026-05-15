@@ -24,6 +24,72 @@ for (const fullPath in mdModules) {
   mdLookup[key] = mdModules[fullPath];
 }
 
+// Transform mkdocs-blocks-style tab groups (`/// tab | Title` … `///`) into
+// pure-CSS radio-driven tab containers. Consecutive tab blocks form a single
+// group; isolated blocks become a one-tab group.
+let tabGroupCounter = 0;
+const escapeHtml = (s: string): string =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+const transformTabs = (text: string): string => {
+  const lines = text.split("\n");
+  const out: string[] = [];
+  const openRe = /^\/\/\/\s+tab\s+\|\s+(.+?)\s*$/;
+  let i = 0;
+  while (i < lines.length) {
+    if (!openRe.test(lines[i])) {
+      out.push(lines[i]);
+      i++;
+      continue;
+    }
+    const tabs: Array<{ title: string; content: string }> = [];
+    while (i < lines.length) {
+      const m = lines[i].match(openRe);
+      if (!m) break;
+      const title = m[1];
+      i++;
+      const contentLines: string[] = [];
+      while (i < lines.length && lines[i].trim() !== "///") {
+        contentLines.push(lines[i]);
+        i++;
+      }
+      if (i < lines.length) i++; // skip closing ///
+      tabs.push({ title, content: contentLines.join("\n").trim() });
+      // Look ahead past blank lines for another tab in the same group.
+      let j = i;
+      while (j < lines.length && lines[j].trim() === "") j++;
+      if (j < lines.length && openRe.test(lines[j])) {
+        i = j;
+      } else {
+        break;
+      }
+    }
+    const gid = `md-tabs-${++tabGroupCounter}`;
+    out.push(`<div class="md-tabs">`);
+    tabs.forEach((t, idx) => {
+      const checked = idx === 0 ? " checked" : "";
+      out.push(
+        `<input type="radio" class="md-tab-radio md-tab-radio-${idx}" name="${gid}" id="${gid}-${idx}"${checked} aria-hidden="true">` +
+          `<label class="md-tab-label" for="${gid}-${idx}">${escapeHtml(t.title)}</label>`,
+      );
+    });
+    tabs.forEach((t, idx) => {
+      out.push(`<div class="md-tab-pane" data-idx="${idx}">`);
+      out.push("");
+      out.push(t.content);
+      out.push("");
+      out.push(`</div>`);
+    });
+    out.push(`</div>`);
+    out.push("");
+  }
+  return out.join("\n");
+};
+
 const stripFrontmatter = (text: string): string => {
   if (text.startsWith("---")) {
     const end = text.indexOf("\n---", 3);
@@ -92,7 +158,7 @@ export function renderMarkdown(path: string): RenderedMarkdown | undefined {
   if (!raw) return undefined;
 
   const env: Record<string, unknown> = {};
-  const html = md.render(stripFrontmatter(raw), env);
+  const html = md.render(transformTabs(stripFrontmatter(raw)), env);
 
   // Walk the html to extract heading info for TOC (h2 + h3 only).
   const toc: TocItem[] = [];

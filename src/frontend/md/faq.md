@@ -15,6 +15,156 @@ terms of use states that their outputs cannot be used to train competing models 
 includes OpenAI, Gemini, Claude, Grok, and others). If you find an issue with any of
 models feel free to open an [issue](https://github.com/EuroEval/EuroEval/issues).
 
+## How is the overall rank computed across tasks and languages?
+
+Ranks are built bottom-up from individual datasets. For every dataset we sort the models
+by their primary score (best first) and walk down the list: the top model gets rank 1,
+and each subsequent model only gets a worse rank if its score is *significantly* worse
+than the previous model's (a statistical test on the per-iteration raw scores). When it
+is significantly worse, the rank increases by the score gap divided by the standard
+deviation of all scores on that dataset — so the gap between models is measured in
+"how unusual is this gap, given the spread of scores on this dataset". Models that are
+statistically tied therefore share the same rank, and models without a score on the
+dataset get rank infinity.
+
+These dataset ranks are then averaged into a task rank per language (e.g. NER in
+Danish), task ranks are averaged into a per-language rank, and per-language ranks are
+averaged into the overall rank shown at the top of each leaderboard. Tasks flagged as
+"orthogonal" — currently the speed task — are excluded from rank aggregation and shown
+with their raw scores only.
+
+## How are the confidence intervals (`± x.xx`) computed?
+
+Each model/dataset combination is evaluated for 10 iterations, which gives a small
+sample of scores. We compute the standard error of that sample, assume a normal
+distribution, and report the 95% confidence interval — i.e. roughly 1.96 × standard
+error around the mean. Two models are considered statistically tied on a dataset when
+their score distributions overlap in this sense.
+
+## Why do some model names end in `(val)`?
+
+The `(val)` suffix marks models that have only been evaluated on the validation splits
+of the datasets, not the test splits. We use this for quick iteration during
+development; once a model is evaluated on the test splits, the suffix is dropped.
+Scores from validation runs are still shown so you have *some* signal, but they aren't
+strictly comparable to the regular test-split scores.
+
+## Are evaluations deterministic — will I get the same numbers if I rerun?
+
+Almost, but not quite. We do our best to fix seeds and pin behaviour, but for
+generative models full determinism isn't always achievable — some inference providers
+don't accept `temperature=0`, and some models have non-deterministic kernels. Because
+we run 10 iterations per model/dataset combination and report a confidence interval,
+the *aggregate* scores are robust: rerunning a model should land you well inside the
+reported error bars, and any leaderboard movement should be within statistical noise.
+
+## How do you prevent test-set contamination?
+
+Honestly, we mostly can't. Most of the datasets in EuroEval are publicly available, so
+we have no way of stopping them from ending up in pretraining corpora. We do plan to
+introduce a closed, held-out subset of the benchmark specifically for contamination
+testing, but that work is still in progress. If you're interested in helping us build
+that, please [reach out](https://github.com/EuroEval/EuroEval/issues) — we'd love the
+help.
+
+## How do I get my model added to the leaderboard?
+
+You have two options:
+
+1. **Run it yourself** by installing EuroEval and following the
+   [quickstart guide](https://euroeval.com/python-package). This is the fastest way to
+   get numbers, and you can submit the resulting JSONL file from your disk.
+2. **Open an evaluation request** at the
+   [model evaluation request form](https://github.com/EuroEval/EuroEval/issues/new?template=model_evaluation_request.yaml).
+   Either we or another contributor will then run it and add the results.
+
+Even if you ran the model yourself, we encourage you to still open a request and paste
+the JSONL output in a comment — that way the model gets added to the official
+leaderboard.
+
+## How long does an evaluation take, and what hardware is needed?
+
+For local evaluation we support:
+
+- **NVIDIA GPUs** (CUDA) — the recommended option.
+- **Apple silicon** via Metal.
+- **AMD GPUs** in alpha mode.
+- **CPUs** for encoder models — this works but expect it to be slow.
+
+A single dataset typically takes 1–5 minutes per model on a consumer-grade GPU, though
+this scales with model size and inference speed. If you're benchmarking against an
+external inference API (e.g. OpenAI, Anthropic, a hosted vLLM server) then your local
+hardware essentially doesn't matter — the bottleneck is the API.
+
+## Why are encoder, decoder, and instruction-tuned models all ranked together?
+
+To make them comparable! Many EuroEval tasks (sentiment classification, NER, NLI,
+reading comprehension, …) can be solved by all three model families, and one of the
+most interesting questions a benchmark can answer is *which architecture actually
+performs best on this task for this language*. Mixing them in one leaderboard makes
+that comparison direct rather than hypothetical. The `Type` column lets you filter to a
+single architecture if you only care about one.
+
+## What do the "Merge" and "Trained from scratch" columns mean?
+
+**Merge** indicates that the model is a weight merge of other models. We surface this
+because merging top-leaderboard models is a known way to overfit to test sets — if
+several base models have already seen leaked test data, a merge of them inherits all
+of that exposure. The label lets you discount merged models if you want a cleaner
+signal.
+
+**Trained from scratch** indicates that the model wasn't initialised from another
+public checkpoint. For an encoder or a base decoder this is straightforward. For an
+instruction-tuned model, we assign the label if the *same developers* also pretrained
+the underlying base model from scratch — i.e. the whole stack is theirs, not just the
+instruction-tuning layer.
+
+## Why isn't language X or dataset Y included?
+
+Our focus is European languages, but coverage is not yet complete. We cover at least
+one national language for every European country, but many minority and regional
+languages are still missing. Some are already tracked as
+[open language issues](https://github.com/EuroEval/EuroEval/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22new%20language%22),
+and several candidate datasets are tracked under
+[benchmark dataset requests](https://github.com/EuroEval/EuroEval/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22benchmark%20dataset%20request%22).
+If your language or dataset isn't already on the list, please
+[open an issue](https://github.com/EuroEval/EuroEval/issues) — we'd love to add it.
+
+## How often is the leaderboard refreshed?
+
+Typically several times a day. As soon as new evaluation runs are merged in, the
+leaderboard CSVs are regenerated and the site picks them up automatically.
+
+## Can I run EuroEval on a custom dataset or a private/locally hosted model?
+
+Yes to both.
+
+For custom datasets, see the
+[Benchmarking custom datasets](https://euroeval.com/python-package#benchmarking-custom-datasets)
+section of the Python package docs — it walks through the dataset format and the CLI
+flags you need.
+
+For private or locally hosted models, EuroEval supports any OpenAI-compatible
+inference endpoint (vLLM, Ollama, your own server, etc.) via the `--api-base` and
+`--api-key` flags. See
+[Benchmarking custom inference APIs](https://euroeval.com/python-package#benchmarking-custom-inference-apis)
+for the details.
+
+## How should I cite EuroEval?
+
+The current BibTeX entries are kept up to date in the
+[`Citing EuroEval`](https://github.com/EuroEval/EuroEval#citing-euroeval) section of the
+GitHub README — copy from there to make sure you're citing the most recent version.
+
+## Why do some cells in the leaderboard show `-` or `?`?
+
+A dash means we simply haven't run that model on that dataset yet. We maintain a
+[prioritised list of models](https://github.com/EuroEval/EuroEval/issues/1186) that we
+try to keep fully covered, but other models will have gaps — especially as new
+datasets are released and existing models haven't yet been rerun against them. If
+there's a specific model/dataset combination you'd like to see filled in, please open
+a [model evaluation request](https://github.com/EuroEval/EuroEval/issues/new?template=model_evaluation_request.yaml).
+
 ## Not finding the answer that you are looking for?
 
 If don't find the answer that you are looking for feel free to ask your question in the
