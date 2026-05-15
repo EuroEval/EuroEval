@@ -15,6 +15,7 @@ import pandas as pd
 from yaml import safe_load
 
 from .link_generation import generate_task_link
+from .paths import CONFIGS_DIR, OUTPUT_DIR, TASK_CONFIG_PATH
 from .result_loading import load_processed_results
 from .result_processing import extract_model_metadata, group_results_by_model
 from .score_computation import compute_ranks
@@ -44,7 +45,7 @@ def generate_leaderboard(
     logger.info(f"Generating {leaderboard_title} leaderboard...")
 
     # Load configs
-    with Path("task_config.yaml").open(mode="r") as f:
+    with TASK_CONFIG_PATH.open(mode="r") as f:
         task_config: dict[str, dict[str, str]] = safe_load(stream=f)
     with leaderboard_config_path.open(mode="r") as f:
         config: dict[str, list[str]] = safe_load(stream=f)
@@ -54,7 +55,7 @@ def generate_leaderboard(
     configs: dict[str, dict[str, list[str]]] = dict()
     if "languages" in config:
         for language in config["languages"]:
-            with Path(f"leaderboard_configs/{language}.yaml").open(mode="r") as f:
+            with (CONFIGS_DIR / f"{language}.yaml").open(mode="r") as f:
                 configs[language] = safe_load(stream=f)
     else:
         configs = {leaderboard_config_path.stem: config}
@@ -96,12 +97,10 @@ def generate_leaderboard(
     for category, df_pair in zip(categories, df_pairs):
         df, df_simplified = df_pair
 
-        leaderboard_path = (
-            Path("leaderboards") / f"{leaderboard_config_path.stem}_{category}.csv"
-        )
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        leaderboard_path = OUTPUT_DIR / f"{leaderboard_config_path.stem}_{category}.csv"
         simplified_leaderboard_path = (
-            Path("leaderboards")
-            / f"{leaderboard_config_path.stem}_{category}_simplified.csv"
+            OUTPUT_DIR / f"{leaderboard_config_path.stem}_{category}_simplified.csv"
         )
 
         # Check if anything got updated

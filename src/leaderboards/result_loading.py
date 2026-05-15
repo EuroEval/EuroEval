@@ -158,8 +158,6 @@ def load_processed_results() -> list[dict]:
     Raises:
         FileNotFoundError:
             If the processed results file is not found.
-        ValueError:
-            If the processed results file contains invalid JSON.
     """
     results_path = Path("results.tar.gz")
     if not results_path.exists():

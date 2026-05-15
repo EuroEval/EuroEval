@@ -80,6 +80,12 @@ publish-docs:  ## Publish documentation to GitHub Pages
 test:  ## Run tests
 	@uv run pytest && uv run readme-cov && rm .coverage*
 
+generate-leaderboards:  ## Regenerate leaderboard CSVs (writes to src/frontend/csv/)
+	@uv run --extra leaderboards python -m src.scripts.generate_leaderboards
+
+generate-leaderboards-force:  ## Regenerate leaderboards even if no new results
+	@uv run --extra leaderboards python -m src.scripts.generate_leaderboards --force
+
 tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
 

@@ -208,6 +208,8 @@ def fix_metadata(record: dict, cache: Cache) -> dict | None:
     Args:
         record:
             A record from the JSONL file.
+        cache:
+            Metadata cache used to fill in missing model fields.
 
     Returns:
         The record with fixed metadata, or None if the record should be removed.
@@ -563,6 +565,8 @@ def record_is_valid(
             The EuroEval versions to ban.
         banned_model_patterns:
             The model IDs to ban.
+        api_model_patterns:
+            Regex patterns identifying models accessed via API.
 
     Returns:
         True if the record is valid, False otherwise.

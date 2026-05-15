@@ -4,12 +4,12 @@ import logging
 import re
 import typing as t
 import warnings
-from pathlib import Path
 
 import click
 from dotenv import load_dotenv
 
 from leaderboards.leaderboard_generation import generate_leaderboard
+from leaderboards.paths import CONFIGS_DIR
 from leaderboards.result_processing import process_results
 
 logging.basicConfig(
@@ -104,7 +104,7 @@ def main(categories: tuple[t.Literal["all", "nlu"]], force: bool) -> None:
         api_model_patterns=API_MODEL_PATTERNS,
         trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
     )
-    all_leaderboard_configs = Path("leaderboard_configs").glob("*.yaml")
+    all_leaderboard_configs = CONFIGS_DIR.glob("*.yaml")
     for config_path in all_leaderboard_configs:
         generate_leaderboard(
             leaderboard_config_path=config_path,

@@ -45,8 +45,8 @@ class Cache:
         """Create a cache from processed records.
 
         Args:
-            processed_records_path:
-                The path to the processed records file.
+            compressed_results_path:
+                The path to the compressed processed results file.
 
         Returns:
             A Cache instance populated with model metadata.
