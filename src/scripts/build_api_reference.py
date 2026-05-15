@@ -34,18 +34,22 @@ def is_public(name: str) -> bool:
 
 
 def rel_to_module(rel: Path) -> str:
-    """Convert a relative path to a dotted module path.
+    """Convert a relative path to a dotted module label.
+
+    The leading `euroeval.` prefix is dropped — every entry on the page is
+    implicitly under the `euroeval` package, so repeating it just adds noise.
 
     Args:
         rel: Path relative to the package root, e.g. `metrics/__init__.py`.
 
     Returns:
-        The dotted module name, e.g. `euroeval.metrics`.
+        The dotted module label, e.g. `metrics` or `metrics.ifeval.compute`.
+        Returns the empty string for the package root `__init__.py`.
     """
     parts = list(rel.with_suffix("").parts)
     if parts and parts[-1] == "__init__":
         parts.pop()
-    return ".".join(["euroeval", *parts]) if parts else "euroeval"
+    return ".".join(parts)
 
 
 def render_signature(func: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
@@ -382,7 +386,9 @@ def main() -> None:
         "# API Reference",
         "",
         "Auto-generated from the EuroEval Python package source. Lists every "
-        "public module along with its classes, functions, and signatures.",
+        "public module along with its classes, functions, and signatures. "
+        "All entries are under the `euroeval` package — the prefix is implied "
+        "and omitted for brevity.",
         "",
         "_Regenerated on every dev-server start, build, and Python source "
         "change — so this page is always in sync with the installed package._",
@@ -392,6 +398,11 @@ def main() -> None:
     for f in files:
         rel = f.relative_to(PKG_ROOT)
         if should_skip(rel):
+            continue
+        # Skip the root package `__init__.py` — every entry on the page is
+        # already implicitly under `euroeval`, no need for a bare top-level
+        # entry.
+        if rel == Path("__init__.py"):
             continue
         if f in rendered:
             continue
