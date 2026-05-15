@@ -8,6 +8,11 @@ const props = defineProps<{
 
 type ModelKind = "instruct" | "reasoning" | "base" | "encoder" | "other";
 
+interface MetaItem {
+  label: string;
+  value: string;
+}
+
 interface Point {
   x: number;
   y: number;
@@ -15,7 +20,45 @@ interface Point {
   icon: string;
   kind: ModelKind;
   commercial: boolean;
+  meta: MetaItem[];
 }
+
+// Columns to surface in the hover tooltip, in display order. We skip
+// Model/Type/Rank (already shown elsewhere in the tooltip) and any
+// per-dataset score columns (too noisy).
+const META_KEYS: readonly string[] = [
+  "parameters",
+  "vocabulary",
+  "context",
+  "european values",
+  "commercial",
+  "merge",
+  "open",
+  "trained from scratch",
+];
+
+const formatCompact = (n: number): string => {
+  const abs = Math.abs(n);
+  if (abs >= 1e12) return Math.round(n / 1e12) + "T";
+  if (abs >= 1e9) return Math.round(n / 1e9) + "B";
+  if (abs >= 1e6) return Math.round(n / 1e6) + "M";
+  if (abs >= 1e3) return Math.round(n / 1e3) + "K";
+  return String(Math.round(n));
+};
+
+const COMPACT_KEYS = new Set(["parameters", "vocabulary", "context"]);
+const PERCENT_KEYS = new Set(["european values"]);
+
+const formatMetaValue = (key: string, cell: { text: string; sortKey: number | string }): string => {
+  if (cell.text === "-" || cell.text === "?" || cell.text === "") return "—";
+  if (COMPACT_KEYS.has(key) && typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
+    return formatCompact(cell.sortKey);
+  }
+  if (PERCENT_KEYS.has(key) && typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
+    return `${Math.round(cell.sortKey)}%`;
+  }
+  return cell.text;
+};
 
 const KIND_FROM_ICON: Record<string, ModelKind> = {
   "📝": "instruct",
@@ -51,6 +94,17 @@ const modelIdx = computed(() => colIndex("model"));
 const typeIdx = computed(() => colIndex("type"));
 const commercialIdx = computed(() => colIndex("commercial"));
 
+// For each metadata key we want to show, cache its column index (if present).
+const metaIndices = computed<{ key: string; title: string; idx: number }[]>(() =>
+  META_KEYS.map((key) => {
+    const idx = props.table.columns.findIndex(
+      (c) => c.key.toLowerCase() === key,
+    );
+    const title = idx >= 0 ? props.table.columns[idx].title : key;
+    return { key, title, idx };
+  }).filter((e) => e.idx >= 0),
+);
+
 const allPoints = computed<Point[]>(() => {
   const xi = xIdx.value;
   const yi = yIdx.value;
@@ -76,6 +130,10 @@ const allPoints = computed<Point[]>(() => {
     if (typeof yk !== "number" || !Number.isFinite(yk)) continue;
     const icon = ti >= 0 ? row.cells[ti].text : "";
     const commercialText = ci >= 0 ? row.cells[ci].text : "";
+    const meta: MetaItem[] = metaIndices.value.map(({ key, title, idx }) => ({
+      label: title,
+      value: formatMetaValue(key, row.cells[idx]),
+    }));
     out.push({
       x: xk,
       y: yk,
@@ -83,6 +141,7 @@ const allPoints = computed<Point[]>(() => {
       icon,
       kind: KIND_FROM_ICON[icon] ?? "other",
       commercial: commercialText === "✓",
+      meta,
     });
   }
   return out;
@@ -233,19 +292,44 @@ const starPath = (cx: number, cy: number, r: number): string => {
 };
 
 const hovered = ref<Point | null>(null);
-const hoverPos = ref<{ x: number; y: number }>({ x: 0, y: 0 });
+const hoverPos = ref<{ x: number; y: number; flipX: boolean; flipY: boolean }>({
+  x: 0,
+  y: 0,
+  flipX: false,
+  flipY: false,
+});
+
+const TOOLTIP_W = 280; // approximate, kept in sync with .tooltip max-width
+const TOOLTIP_H = 240; // generous; the actual height depends on meta length
 
 const onMove = (e: MouseEvent, p: Point) => {
   hovered.value = p;
   const target = e.currentTarget as SVGElement;
   const svg = target.ownerSVGElement as SVGSVGElement;
   const rect = svg.getBoundingClientRect();
-  hoverPos.value = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  hoverPos.value = {
+    x,
+    y,
+    // If there isn't room to the right of the cursor, anchor to its left.
+    flipX: x + 24 + TOOLTIP_W > rect.width,
+    flipY: y + 24 + TOOLTIP_H > rect.height,
+  };
 };
 
 const onLeave = () => {
   hovered.value = null;
 };
+
+const tooltipStyle = computed(() => {
+  const x = hoverPos.value.x;
+  const y = hoverPos.value.y;
+  return {
+    left: hoverPos.value.flipX ? `${Math.max(0, x - TOOLTIP_W - 12)}px` : `${x + 12}px`,
+    top: hoverPos.value.flipY ? `${Math.max(0, y - TOOLTIP_H - 12)}px` : `${y + 12}px`,
+  };
+});
 </script>
 
 <template>
@@ -414,13 +498,20 @@ const onLeave = () => {
       <div
         v-if="hovered"
         class="tooltip"
-        :style="{ left: `${hoverPos.x + 12}px`, top: `${hoverPos.y + 12}px` }"
+        :style="tooltipStyle"
       >
         <div class="tt-model">{{ hovered.icon }} {{ hovered.label }}</div>
-        <div class="tt-meta">
-          Parameters: {{ formatX(hovered.x) }} · Mean rank:
-          {{ hovered.y.toFixed(2) }} ·
-          {{ KIND_LABEL[hovered.kind] }}{{ hovered.commercial ? " · commercial" : "" }}
+        <div class="tt-row">
+          <span class="tt-label">Mean rank</span>
+          <span class="tt-value">{{ hovered.y.toFixed(2) }}</span>
+        </div>
+        <div class="tt-row">
+          <span class="tt-label">Kind</span>
+          <span class="tt-value">{{ KIND_LABEL[hovered.kind] }}</span>
+        </div>
+        <div v-for="m in hovered.meta" :key="m.label" class="tt-row">
+          <span class="tt-label">{{ m.label }}</span>
+          <span class="tt-value">{{ m.value }}</span>
         </div>
       </div>
     </div>
@@ -560,19 +651,34 @@ const onLeave = () => {
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 4px;
-  padding: 0.4rem 0.6rem;
+  padding: 0.5rem 0.7rem;
   font-size: 0.78rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  max-width: 320px;
+  width: 280px;
+  max-width: calc(100% - 24px);
   z-index: 5;
 }
 
 .tt-model {
   font-weight: 500;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.25rem;
+  white-space: nowrap;
 }
 
-.tt-meta {
+.tt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.25rem;
+  line-height: 1.4;
+}
+
+.tt-label {
   color: var(--color-muted);
+}
+
+.tt-value {
+  font-variant-numeric: tabular-nums;
 }
 </style>
