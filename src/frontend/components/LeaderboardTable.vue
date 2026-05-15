@@ -93,7 +93,7 @@ const PERCENT_COLS = new Set(["european values"]);
 const TICK_CROSS_COLS = new Set([
   "commercial",
   "merge",
-  "open",
+  "open-weight",
   "trained from scratch",
 ]);
 
@@ -258,7 +258,7 @@ const resetFilters = () => {
                 :aria-label="`Filter ${col.title}`"
                 @change="page = 1"
               >
-                <option value="">any</option>
+                <option value=""></option>
                 <option v-for="v in col.distinctValues" :key="v" :value="v">
                   {{ v }}
                 </option>

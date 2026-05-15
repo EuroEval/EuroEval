@@ -33,7 +33,7 @@ const META_KEYS: readonly string[] = [
   "european values",
   "commercial",
   "merge",
-  "open",
+  "open-weight",
   "trained from scratch",
 ];
 

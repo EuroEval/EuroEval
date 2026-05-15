@@ -151,14 +151,21 @@ const parseNumberSafe = (s: string): number | null => {
 /**
  * Parse a single cell, given the column's inferred kind.
  */
+// Collapse the partial-open-source tick into the standard tick: we no longer
+// distinguish "fully open source" from "open-weight only", just open-weight
+// vs. closed.
+const normalizeIconText = (s: string): string => (s === "(✓)" ? "✓" : s);
+
 export function parseCell(raw: string, kind: CellKind): ParsedCell {
   const { display, sort } = splitDisplaySort(raw);
-  const text = stripTags(display);
+  let text = stripTags(display);
+  if (kind === "icon") text = normalizeIconText(text);
 
   // Whitelist <a href=...> tags only when rendering HTML; everything else
   // becomes plain text. Inputs come from a build-time CSV under our control,
   // so the risk is limited but we'd rather be safe.
-  const safeHtml = sanitizeHtml(display);
+  let safeHtml = sanitizeHtml(display);
+  if (kind === "icon") safeHtml = normalizeIconText(safeHtml);
 
   let sortKey: number | string;
   if (sort !== null) {
@@ -259,13 +266,20 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
 
   // Build column metadata.
   const columns: Column[] = headerRow.map((rawTitle, idx) => {
-    const title = stripTags(rawTitle);
+    let title = stripTags(rawTitle);
+    let titleHtml = sanitizeHtml(rawTitle);
     const sampleValues = dataRows.map((r) => r[idx] ?? "");
     const kind = inferKind(title, sampleValues);
+    // Rename the "Open" column to "Open-weight" — we no longer distinguish
+    // fully open-source from open-weight-only.
+    if (title.toLowerCase() === "open") {
+      titleHtml = titleHtml.replace(/Open/i, "Open-weight");
+      title = "Open-weight";
+    }
     return {
       key: title || `col_${idx}`,
       title,
-      titleHtml: sanitizeHtml(rawTitle),
+      titleHtml,
       kind,
     };
   });
