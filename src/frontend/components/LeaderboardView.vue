@@ -58,6 +58,17 @@ const activeTable = computed<LBTable | null>(() => {
   return nluTable.value;
 });
 
+const MULTILINGUAL_STEMS = new Set([
+  "european",
+  "baltic",
+  "finnic",
+  "germanic",
+  "mainland_scandinavian",
+  "romance",
+  "slavic",
+]);
+const isMultilingual = computed(() => MULTILINGUAL_STEMS.has(props.stem));
+
 const tabs: { id: TabId; label: string }[] = [
   { id: "all", label: "Generative Leaderboard" },
   { id: "nlu", label: "NLU Leaderboard" },
@@ -209,7 +220,11 @@ const downloadCsv = async () => {
     <div v-else-if="error" class="lb-status error">{{ error }}</div>
     <template v-else>
       <template v-if="tab === 'all' || tab === 'nlu'">
-        <LeaderboardTable v-if="activeTable" :table="activeTable" />
+        <LeaderboardTable
+          v-if="activeTable"
+          :table="activeTable"
+          :heatmap-score-cols="isMultilingual"
+        />
         <div v-else class="lb-status">
           This leaderboard variant has no data.
         </div>

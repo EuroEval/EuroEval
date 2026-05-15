@@ -158,6 +158,33 @@ const stripFrontmatter = (text: string): string => {
   return text;
 };
 
+const decodeEntities = (s: string): string =>
+  s
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+
+/**
+ * Trim a rendered heading down to a short label suitable for the right-hand
+ * table of contents. Strips tags, decodes entities, and — for API-reference
+ * headings like `class Foo(Bar)` or `bar.baz(arg: int) -> bool` — drops the
+ * parenthesised signature and any trailing return-type annotation, leaving
+ * just the symbol name.
+ */
+const simplifyHeadingForToc = (rawInner: string): string => {
+  let text = decodeEntities(rawInner.replace(/<[^>]+>/g, "")).trim();
+  // Drop a trailing `-> type` annotation if it appears outside the parens.
+  text = text.replace(/\s*->.*$/, "");
+  // Drop the parenthesised signature, if any.
+  const paren = text.indexOf("(");
+  if (paren !== -1) text = text.slice(0, paren).trim();
+  // Drop a leading `class ` keyword, leaving just the class name.
+  text = text.replace(/^class\s+/, "");
+  return text;
+};
+
 const slugify = (text: string): string =>
   text
     .toLowerCase()
@@ -281,8 +308,7 @@ export function renderMarkdown(path: string): RenderedMarkdown | undefined {
   while ((match = re.exec(html)) !== null) {
     const level = parseInt(match[1], 10);
     const id = match[2];
-    // Strip HTML tags from heading inner text.
-    const text = match[3].replace(/<[^>]+>/g, "").trim();
+    const text = simplifyHeadingForToc(match[3]);
     if (text) toc.push({ id, text, level });
   }
 

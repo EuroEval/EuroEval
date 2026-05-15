@@ -291,16 +291,50 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
     .filter(({ c }) => c.kind !== "version")
     .map(({ i }) => i);
 
-  const visibleColumns = visibleColIndexes.map((i) => columns[i]);
+  let visibleColumns = visibleColIndexes.map((i) => columns[i]);
 
   // Parse cells.
-  const parsedRows: Row[] = dataRows
+  let parsedRows: Row[] = dataRows
     .filter((r) => r.length > 1 && stripTags(r[0]).trim() !== "")
     .map((r) => ({
       cells: visibleColIndexes.map((i) =>
         parseCell(r[i] ?? "", columns[i].kind),
       ),
     }));
+
+  // Reorder columns so the high-signal filter columns sit together near the
+  // left, before the more variable per-task / per-language score columns.
+  // Model stays first (it has special styling); everything not explicitly
+  // ranked here keeps its original relative order.
+  const PRIORITY_ORDER: string[] = [
+    "model",
+    "rank",
+    "european values",
+    "commercial",
+    "merge",
+    "open-weight",
+    "trained from scratch",
+    "parameters",
+    "vocabulary",
+    "context",
+  ];
+  const priorityIndex = (col: Column): number => {
+    const idx = PRIORITY_ORDER.indexOf(col.key.toLowerCase());
+    return idx === -1 ? PRIORITY_ORDER.length : idx;
+  };
+  const reorder = visibleColumns
+    .map((col, idx) => ({ col, idx }))
+    .sort((a, b) => {
+      const pa = priorityIndex(a.col);
+      const pb = priorityIndex(b.col);
+      if (pa !== pb) return pa - pb;
+      return a.idx - b.idx;
+    })
+    .map(({ idx }) => idx);
+  visibleColumns = reorder.map((i) => visibleColumns[i]);
+  parsedRows = parsedRows.map((r) => ({
+    cells: reorder.map((i) => r.cells[i]),
+  }));
 
   // Augment columns with min/max + distinct values.
   for (let c = 0; c < visibleColumns.length; c++) {

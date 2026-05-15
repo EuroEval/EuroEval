@@ -2,9 +2,15 @@
 import { computed, ref, watch } from "vue";
 import type { Column, LeaderboardTable, Row } from "@/leaderboard";
 
-const props = defineProps<{
-  table: LeaderboardTable;
-}>();
+const props = withDefaults(
+  defineProps<{
+    table: LeaderboardTable;
+    /** Apply a heatmap to score-kind columns (used for multilingual
+     *  leaderboards, where the score columns are per-language). */
+    heatmapScoreCols?: boolean;
+  }>(),
+  { heatmapScoreCols: false },
+);
 
 type FilterValue = string;
 const colFilters = ref<Record<string, FilterValue>>({});
@@ -186,6 +192,33 @@ const rankHeatmapStyle = (
   };
 };
 
+// Score heatmap: higher = green, lower = red, scaled to the column's
+// observed min/max. Sentinel cells (-, ?, empty) get no background.
+const scoreHeatmapStyle = (
+  cell: { text: string; sortKey: number | string },
+  col: Column,
+): Record<string, string> => {
+  if (cell.text === "-" || cell.text === "?" || cell.text === "") return {};
+  const v = cell.sortKey;
+  if (typeof v !== "number" || !Number.isFinite(v)) return {};
+  const min = col.min;
+  const max = col.max;
+  if (min === undefined || max === undefined || max <= min) return {};
+  const t = Math.max(0, Math.min(1, (v - min) / (max - min)));
+  let rgb: [number, number, number];
+  if (t >= 0.5) {
+    rgb = blendRgb(RANK_YELLOW, RANK_GREEN, (t - 0.5) * 2);
+  } else {
+    rgb = blendRgb(RANK_RED, RANK_YELLOW, t * 2);
+  }
+  return {
+    backgroundColor: `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.45)`,
+  };
+};
+
+const isHeatmapScoreCol = (col: Column): boolean =>
+  props.heatmapScoreCols && col.kind === "score";
+
 const toggleSort = (idx: number) => {
   if (sortBy.value?.index === idx) {
     sortBy.value =
@@ -277,7 +310,13 @@ const resetFilters = () => {
                 isRankCol(table.columns[ci]) ? 'cell-rank' : '',
                 isTickCrossCol(table.columns[ci]) ? `cell-tc ${tickCrossClass(cell.text)}` : '',
               ]"
-              :style="isRankCol(table.columns[ci]) ? rankHeatmapStyle(cell) : undefined"
+              :style="
+                isRankCol(table.columns[ci])
+                  ? rankHeatmapStyle(cell)
+                  : isHeatmapScoreCol(table.columns[ci])
+                    ? scoreHeatmapStyle(cell, table.columns[ci])
+                    : undefined
+              "
               :title="ci === 0 ? cell.text : undefined"
             >
               <span v-html="cellDisplayHtml(cell, table.columns[ci])" />
