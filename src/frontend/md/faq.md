@@ -141,7 +141,12 @@ For custom datasets, see the
 section of the Python package docs — it walks through the dataset format and the CLI
 flags you need.
 
-For private or locally hosted models, EuroEval supports any OpenAI-compatible
+For local models stored on disk in Hugging Face format, you can simply point
+`--model` at the model directory — see
+[Benchmarking local models](https://euroeval.com/python-package#benchmarking-local-models)
+for details.
+
+For private or remotely hosted models, EuroEval supports any OpenAI-compatible
 inference endpoint (vLLM, Ollama, your own server, etc.) via the `--api-base` and
 `--api-key` flags. See
 [Benchmarking custom inference APIs](https://euroeval.com/python-package#benchmarking-custom-inference-apis)

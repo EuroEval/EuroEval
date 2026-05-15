@@ -196,6 +196,36 @@ an Ollama model hosted locally:
 ... )
 ```
 
+## Benchmarking local models
+
+If your model is stored on disk in the Hugging Face format — i.e. a directory
+containing the `config.json`, weights, tokenizer files, etc. — you don't need to upload
+it anywhere or spin up a separate inference server. Just point `--model` at the local
+path and EuroEval will load it the same way it loads a model from the Hub:
+
+/// tab | Using the command line
+
+```bash
+euroeval --model /path/to/my-model
+```
+
+///
+
+/// tab | Using a script
+
+```python
+>>> from euroeval import Benchmarker
+>>> benchmarker = Benchmarker()
+>>> benchmarker.benchmark(model="/path/to/my-model")
+```
+
+///
+
+This works for both encoder and decoder checkpoints, and accepts any path the local
+Hugging Face loader can resolve. If you'd rather serve the model through an inference
+server (vLLM, Ollama, …) and benchmark over HTTP, see
+[Benchmarking custom inference APIs](#benchmarking-custom-inference-apis) instead.
+
 ## Benchmarking in an offline environment
 
 If you need to benchmark in an offline environment, you need to download the models,
