@@ -480,3 +480,75 @@ button {
   --md-adm-accent: #9aa0a6;
   --md-adm-accent-soft: rgba(154, 160, 166, 0.12);
 }
+
+/* Collapsible module sections in the auto-generated API reference. */
+.markdown-body .api-module {
+  margin: 0.75rem 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.markdown-body .api-module-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.5rem 0.9rem;
+  user-select: none;
+  position: relative;
+  padding-left: 2.1rem;
+}
+
+.markdown-body .api-module-summary::-webkit-details-marker {
+  display: none;
+}
+
+.markdown-body .api-module-summary::before {
+  content: "▸";
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  transition: transform 0.15s ease;
+}
+
+.markdown-body .api-module[open] > .api-module-summary::before {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.markdown-body .api-module-heading {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.markdown-body .api-module-heading code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}
+
+.markdown-body .api-module[open] {
+  background: var(--color-bg);
+}
+
+.markdown-body .api-module[open] > .api-module-summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.markdown-body .api-module > :not(.api-module-summary) {
+  margin-left: 0.9rem;
+  margin-right: 0.9rem;
+}
+
+.markdown-body .api-module > :not(.api-module-summary):first-of-type {
+  margin-top: 0.9rem;
+}
+
+.markdown-body .api-module > :not(.api-module-summary):last-child {
+  margin-bottom: 0.9rem;
+}

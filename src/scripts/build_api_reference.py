@@ -207,7 +207,14 @@ def render_module(rel: Path, source: str, out: list[str]) -> None:
     if not classes and not funcs and not module_doc:
         return
 
-    out.append(f"## `{rel_to_module(rel)}`")
+    mod_name = rel_to_module(rel)
+    anchor = "api-" + mod_name.replace(".", "-")
+    out.append(f'<details class="api-module" id="{anchor}-wrap">')
+    out.append(
+        f'<summary class="api-module-summary">'
+        f'<h2 id="{anchor}" class="api-module-heading">'
+        f"<code>{mod_name}</code></h2></summary>"
+    )
     out.append("")
     if module_doc:
         out.append(indent_docstring(module_doc))
@@ -216,6 +223,8 @@ def render_module(rel: Path, source: str, out: list[str]) -> None:
         render_class(cls, out)
     for f in funcs:
         render_function(f, out, heading="###")
+    out.append("</details>")
+    out.append("")
 
 
 def should_skip(rel: Path) -> bool:

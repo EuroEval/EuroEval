@@ -52,6 +52,7 @@ const attachObserver = () => {
 const reattach = async () => {
   await nextTick();
   attachObserver();
+  openHashTarget();
 };
 
 onMounted(reattach);
@@ -59,12 +60,41 @@ onBeforeUnmount(() => observer?.disconnect());
 watch(() => props.path, reattach);
 watch(() => route.fullPath, reattach);
 
+// Open any ancestor <details> elements so a TOC target that lives inside a
+// collapsed module section becomes visible before we scroll to it.
+const openAncestorDetails = (el: HTMLElement) => {
+  let cur: HTMLElement | null = el;
+  while (cur) {
+    if (cur instanceof HTMLDetailsElement && !cur.open) cur.open = true;
+    cur = cur.parentElement;
+  }
+};
+
 const onClick = (e: MouseEvent, id: string) => {
   const el = document.getElementById(id);
   if (!el) return;
   e.preventDefault();
-  el.scrollIntoView({ behavior: "smooth", block: "start" });
-  history.replaceState(null, "", `#${id}`);
+  openAncestorDetails(el);
+  // Wait a frame so the now-expanded <details> contributes to layout before
+  // we measure the scroll target.
+  requestAnimationFrame(() => {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    history.replaceState(null, "", `#${id}`);
+  });
+};
+
+// If the page loads with a hash pointing inside a collapsed module, expand
+// the ancestor <details> so the heading is visible.
+const openHashTarget = () => {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return;
+  const el = document.getElementById(hash);
+  if (el) {
+    openAncestorDetails(el);
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ block: "start" });
+    });
+  }
 };
 </script>
 
