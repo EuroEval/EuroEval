@@ -90,6 +90,64 @@ const transformTabs = (text: string): string => {
   return out.join("\n");
 };
 
+// Transform mkdocs-style collapsible admonitions:
+//   ??? example          → collapsed <details> with summary "Example"
+//   ???+ example         → expanded  <details open>
+//   ??? note "My title"  → summary uses the explicit title
+// Indented (≥4 spaces) lines below belong to the block; the indent is stripped.
+const transformAdmonitions = (text: string): string => {
+  const lines = text.split("\n");
+  const out: string[] = [];
+  const openRe = /^(\?\?\?\+?)\s+(\S+)(?:\s+"([^"]+)")?\s*$/;
+  const capitalize = (s: string): string =>
+    s.charAt(0).toUpperCase() + s.slice(1);
+  let i = 0;
+  while (i < lines.length) {
+    const m = lines[i].match(openRe);
+    if (!m) {
+      out.push(lines[i]);
+      i++;
+      continue;
+    }
+    const marker = m[1];
+    const type = m[2].toLowerCase();
+    const title = m[3] ?? capitalize(m[2]);
+    const openAttr = marker.endsWith("+") ? " open" : "";
+    i++;
+    // Skip a single blank line directly after the marker, if present.
+    if (i < lines.length && lines[i].trim() === "") i++;
+    const contentLines: string[] = [];
+    while (i < lines.length) {
+      const line = lines[i];
+      if (line.trim() === "") {
+        contentLines.push("");
+        i++;
+        continue;
+      }
+      if (/^ {4}/.test(line)) {
+        contentLines.push(line.slice(4));
+        i++;
+        continue;
+      }
+      break;
+    }
+    while (contentLines.length && contentLines[contentLines.length - 1] === "")
+      contentLines.pop();
+    out.push(
+      `<details class="md-admonition md-admonition-${escapeHtml(type)}"${openAttr}>`,
+    );
+    out.push(
+      `<summary class="md-admonition-title">${escapeHtml(title)}</summary>`,
+    );
+    out.push("");
+    out.push(contentLines.join("\n"));
+    out.push("");
+    out.push(`</details>`);
+    out.push("");
+  }
+  return out.join("\n");
+};
+
 const stripFrontmatter = (text: string): string => {
   if (text.startsWith("---")) {
     const end = text.indexOf("\n---", 3);
@@ -211,7 +269,10 @@ export function renderMarkdown(path: string): RenderedMarkdown | undefined {
   if (!raw) return undefined;
 
   const env: Record<string, unknown> = {};
-  const html = md.render(transformTabs(stripFrontmatter(raw)), env);
+  const html = md.render(
+    transformTabs(transformAdmonitions(stripFrontmatter(raw))),
+    env,
+  );
 
   // Walk the html to extract heading info for TOC (h2 + h3 only).
   const toc: TocItem[] = [];

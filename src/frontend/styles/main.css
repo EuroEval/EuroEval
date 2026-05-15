@@ -366,3 +366,117 @@ button {
 .md-tab-pane > :last-child {
   margin-bottom: 0;
 }
+
+/* Collapsible admonitions emitted from `??? type "title"` blocks. The accent
+   colour is set per-type below; the base box reuses it via --md-adm-accent. */
+.md-admonition {
+  --md-adm-accent: #5b9dd9;
+  --md-adm-accent-soft: rgba(91, 157, 217, 0.12);
+  margin: 1em 0;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--md-adm-accent);
+  border-radius: 6px;
+  background: var(--md-adm-accent-soft);
+  padding: 0;
+  overflow: hidden;
+}
+
+.md-admonition-title {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.5rem 0.85rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--md-adm-accent);
+  user-select: none;
+  position: relative;
+  padding-right: 2rem;
+}
+
+.md-admonition-title::-webkit-details-marker {
+  display: none;
+}
+
+.md-admonition-title::after {
+  content: "▸";
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: transform 0.15s ease;
+  font-size: 0.75rem;
+}
+
+.md-admonition[open] > .md-admonition-title::after {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.md-admonition[open] > .md-admonition-title {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.md-admonition > :not(.md-admonition-title) {
+  margin: 0.75rem 0.85rem;
+}
+
+.md-admonition > :not(.md-admonition-title):first-of-type {
+  margin-top: 0.75rem;
+}
+
+.md-admonition > :not(.md-admonition-title):last-child {
+  margin-bottom: 0.75rem;
+}
+
+/* Per-type accents. */
+.md-admonition-note,
+.md-admonition-info {
+  --md-adm-accent: #5b9dd9;
+  --md-adm-accent-soft: rgba(91, 157, 217, 0.12);
+}
+
+.md-admonition-tip,
+.md-admonition-hint,
+.md-admonition-success {
+  --md-adm-accent: #4caf76;
+  --md-adm-accent-soft: rgba(76, 175, 118, 0.12);
+}
+
+.md-admonition-warning,
+.md-admonition-caution,
+.md-admonition-attention {
+  --md-adm-accent: #e0a23a;
+  --md-adm-accent-soft: rgba(224, 162, 58, 0.15);
+}
+
+.md-admonition-danger,
+.md-admonition-error,
+.md-admonition-failure,
+.md-admonition-bug {
+  --md-adm-accent: #d8645a;
+  --md-adm-accent-soft: rgba(216, 100, 90, 0.13);
+}
+
+.md-admonition-example {
+  --md-adm-accent: #a06ddb;
+  --md-adm-accent-soft: rgba(160, 109, 219, 0.13);
+}
+
+.md-admonition-abstract,
+.md-admonition-summary,
+.md-admonition-tldr {
+  --md-adm-accent: #4ab2c7;
+  --md-adm-accent-soft: rgba(74, 178, 199, 0.13);
+}
+
+.md-admonition-question,
+.md-admonition-help,
+.md-admonition-faq {
+  --md-adm-accent: #6ec07e;
+  --md-adm-accent-soft: rgba(110, 192, 126, 0.13);
+}
+
+.md-admonition-quote,
+.md-admonition-cite {
+  --md-adm-accent: #9aa0a6;
+  --md-adm-accent-soft: rgba(154, 160, 166, 0.12);
+}
