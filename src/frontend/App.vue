@@ -55,9 +55,11 @@ const layoutClass = computed(() => {
   return "with-none";
 });
 
-// Strip emoji prefixes (flags etc.) for the document title.
+// Strip emoji prefixes (flags etc.) and any inline HTML (e.g. SVG flag <img>
+// tags used when no Unicode flag emoji exists) for the document title.
 const stripEmoji = (s: string): string =>
   s
+    .replace(/<[a-z][a-z0-9]*\b(?:[^>'"]|'[^']*'|"[^"]*")*>/gi, "")
     .replace(
       /[\p{Extended_Pictographic}\p{Regional_Indicator}‍️]/gu,
       "",

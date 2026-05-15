@@ -20,9 +20,10 @@ const CONFIG_PATH = path.join(REPO_ROOT, "src/frontend/config.yaml");
 const CSV_DIR = path.join(REPO_ROOT, "src/frontend/csv");
 const BASE_URL = "https://euroeval.com";
 
-/** Convert a sidebar title to a plain text label (drop emojis). */
+/** Convert a sidebar title to a plain text label (drop HTML and emojis). */
 function stripEmoji(s) {
   return s
+    .replace(/<[a-z][a-z0-9]*\b(?:[^>'"]|'[^']*'|"[^"]*")*>/gi, "")
     .replace(/[\p{Extended_Pictographic}\p{Regional_Indicator}‍️]/gu, "")
     .trim();
 }

@@ -26,7 +26,7 @@ const pageTitle = computed(() => {
     <nav class="breadcrumb" v-if="pageTitle">
       <router-link :to="`/${section.id}`">{{ section.title }}</router-link>
       <span class="sep">›</span>
-      <span class="current">{{ pageTitle }}</span>
+      <span class="current" v-html="pageTitle" />
     </nav>
     <div v-if="!rendered" class="error">Failed to load content: {{ path }}</div>
     <div v-else class="markdown-body" v-html="rendered.html" />

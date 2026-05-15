@@ -197,7 +197,7 @@ onMounted(() => {
             <div class="sr-title">
               <span class="sr-section">{{ r.entry.sectionTitle }}</span>
               <span class="sr-sep">›</span>
-              <span>{{ r.entry.pageTitle }}</span>
+              <span v-html="r.entry.pageTitle" />
             </div>
             <div class="sr-snippet">{{ r.snippet }}</div>
           </a>

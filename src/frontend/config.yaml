@@ -15,7 +15,7 @@ sections:
       - { group: Monolingual, csv: albanian, title: "🇦🇱 Albanian" }
       - { group: Monolingual, csv: bosnian, title: "🇧🇦 Bosnian" }
       - { group: Monolingual, csv: bulgarian, title: "🇧🇬 Bulgarian" }
-      - { group: Monolingual, csv: catalan, title: "Catalan" }
+      - { group: Monolingual, csv: catalan, title: "<img src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 27 18\"><path fill=\"%23FCDD09\" d=\"M0 0h27v18H0z\"/><path fill=\"%23DA121A\" d=\"M0 2h27v2H0zM0 6h27v2H0zM0 10h27v2H0zM0 14h27v2H0z\"/></svg>' alt='' style='height:0.9em;vertical-align:-0.05em;display:inline-block'> Catalan" }
       - { group: Monolingual, csv: croatian, title: "🇭🇷 Croatian" }
       - { group: Monolingual, csv: czech, title: "🇨🇿 Czech" }
       - { group: Monolingual, csv: danish, title: "🇩🇰 Danish" }
@@ -80,7 +80,7 @@ sections:
       - { path: datasets/belarusian.md, title: "🇧🇾 Belarusian" }
       - { path: datasets/bosnian.md, title: "🇧🇦 Bosnian" }
       - { path: datasets/bulgarian.md, title: "🇧🇬 Bulgarian" }
-      - { path: datasets/catalan.md, title: "Catalan" }
+      - { path: datasets/catalan.md, title: "<img src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 27 18\"><path fill=\"%23FCDD09\" d=\"M0 0h27v18H0z\"/><path fill=\"%23DA121A\" d=\"M0 2h27v2H0zM0 6h27v2H0zM0 10h27v2H0zM0 14h27v2H0z\"/></svg>' alt='' style='height:0.9em;vertical-align:-0.05em;display:inline-block'> Catalan" }
       - { path: datasets/croatian.md, title: "🇭🇷 Croatian" }
       - { path: datasets/czech.md, title: "🇨🇿 Czech" }
       - { path: datasets/danish.md, title: "🇩🇰 Danish" }

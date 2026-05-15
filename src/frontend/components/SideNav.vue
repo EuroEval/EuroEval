@@ -46,9 +46,8 @@ watch(
             :to="pageUrl(section.id, page)"
             class="side-link"
             :class="{ active: isActivePage(page) }"
-          >
-            {{ page.title }}
-          </router-link>
+            v-html="page.title"
+          />
         </li>
       </ul>
     </div>
