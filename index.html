@@ -3,11 +3,78 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EuroEval</title>
-    <link rel="icon" href="/gfx/favicon.png" />
+
+    <title>EuroEval — The robust European language model benchmark</title>
+    <meta
+      name="description"
+      content="EuroEval is the standard benchmark for evaluating language models across 30+ European languages. Browse leaderboards by language or language family, inspect per-task scores, and reproduce results with the open-source Python package."
+    />
+    <meta name="theme-color" content="#546e7a" />
+    <link rel="canonical" href="https://euroeval.com/" />
+    <link rel="icon" href="/gfx/euroeval.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/gfx/euroeval.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="EuroEval" />
+    <meta property="og:title" content="EuroEval — The robust European language model benchmark" />
+    <meta
+      property="og:description"
+      content="Evaluate language models across 30+ European languages with reproducible benchmarks and live leaderboards."
+    />
+    <meta property="og:image" content="https://euroeval.com/gfx/euroeval.png" />
+    <meta property="og:url" content="https://euroeval.com/" />
+    <meta property="og:locale" content="en_GB" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="EuroEval — The robust European language model benchmark" />
+    <meta
+      name="twitter:description"
+      content="Evaluate language models across 30+ European languages with reproducible benchmarks and live leaderboards."
+    />
+    <meta name="twitter:image" content="https://euroeval.com/gfx/euroeval.png" />
+
+    <!-- Structured data: WebSite + SoftwareApplication -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "EuroEval",
+        "url": "https://euroeval.com/",
+        "description": "EuroEval is the standard benchmark for evaluating language models across 30+ European languages.",
+        "publisher": {
+          "@type": "Organization",
+          "name": "Alexandra Institute",
+          "url": "https://alexandra.dk/"
+        }
+      }
+    </script>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- Server-discoverable fallback content for crawlers without JS. -->
+      <noscript>
+        <main>
+          <h1>EuroEval — The robust European language model benchmark</h1>
+          <p>
+            EuroEval is a language-model benchmarking framework that supports
+            evaluating all types of language models (encoders, decoders,
+            encoder-decoders, base models, and instruction-tuned models)
+            across 30+ European languages.
+          </p>
+          <p>
+            This site needs JavaScript to render interactive leaderboards.
+            For static information see:
+          </p>
+          <ul>
+            <li><a href="https://github.com/EuroEval/EuroEval">Source repository</a></li>
+            <li><a href="/llms.txt">/llms.txt — index for AI crawlers</a></li>
+            <li><a href="/sitemap.xml">/sitemap.xml — full URL list</a></li>
+          </ul>
+        </main>
+      </noscript>
+    </div>
     <script type="module" src="/src/frontend/main.ts"></script>
   </body>
 </html>

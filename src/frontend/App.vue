@@ -13,6 +13,7 @@ import {
   findSection,
   resolveMdPath,
 } from "@/nav";
+import { useHead } from "@/useHead";
 
 const route = useRoute();
 
@@ -50,6 +51,38 @@ const layoutClass = computed(() => {
   if (hasSidebar.value) return "with-sidebar";
   if (hasToc.value) return "with-toc";
   return "with-none";
+});
+
+// Strip emoji prefixes (flags etc.) for the document title.
+const stripEmoji = (s: string): string =>
+  s
+    .replace(
+      /[\p{Extended_Pictographic}\p{Regional_Indicator}‍️]/gu,
+      "",
+    )
+    .trim();
+
+useHead(() => {
+  const section = activeSection.value;
+  const page = activePage.value;
+  if (page) {
+    const pageTitle = stripEmoji(page.title);
+    return {
+      title: `${pageTitle} · ${section.title}`,
+      description: isLeaderboard.value
+        ? `${pageTitle} leaderboard: ranks language models across EuroEval tasks for this language.`
+        : `${pageTitle} — ${section.title} documentation for the EuroEval benchmark.`,
+      path: route.fullPath,
+    };
+  }
+  if (section.id !== defaultSection.id) {
+    return {
+      title: section.title,
+      description: `${section.title} section of the EuroEval benchmark documentation.`,
+      path: route.fullPath,
+    };
+  }
+  return { path: route.fullPath };
 });
 </script>
 

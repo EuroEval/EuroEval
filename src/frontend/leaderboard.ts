@@ -329,3 +329,14 @@ export async function loadLeaderboard(
   const text = await entry[1]();
   return parseLeaderboard(text);
 }
+
+/** Load a leaderboard's raw CSV text (e.g. for a download button). */
+export async function loadLeaderboardCsv(
+  stem: string,
+): Promise<string | undefined> {
+  const entry = Object.entries(csvModules).find(([path]) =>
+    path.endsWith(`/${stem}.csv`),
+  );
+  if (!entry) return undefined;
+  return await entry[1]();
+}

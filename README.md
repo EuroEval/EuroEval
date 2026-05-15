@@ -31,6 +31,31 @@ ______________________________________________________________________
 
 See the [documentation](https://euroeval.com/python-package/) for more information.
 
+## Frontend and Vercel deployment
+
+The website at <https://euroeval.com> is a Vite + Vue 3 SPA. Local dev:
+
+```bash
+npm install        # one-off
+npm run dev        # http://localhost:5173
+npm run build      # produces dist/
+```
+
+The build emits `sitemap.xml`, `robots.txt`, and `llms.txt` plus a
+direct-download mirror of every leaderboard CSV at
+`/leaderboards-csv/<stem>.csv`.
+
+A `vercel.json` is checked in with SPA-style rewrites and cache headers
+for the generated artefacts. To deploy from a fresh Vercel project:
+
+1. Import the repo at <https://vercel.com/new>.
+2. Framework preset: **Other**.
+3. Build command: `npm run build`.
+4. Output directory: `dist`.
+5. (Optional) Set up a custom domain — Vercel will issue the TLS cert.
+
+Every push to `main` redeploys; previews are generated for PR branches.
+
 ## Reproducing the evaluation datasets
 
 All datasets used in this project are generated using the scripts located in the

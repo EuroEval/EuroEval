@@ -2,7 +2,11 @@
 import { computed, ref, watch } from "vue";
 import LeaderboardTable from "@/components/LeaderboardTable.vue";
 import LeaderboardScatter from "@/components/LeaderboardScatter.vue";
-import { loadLeaderboard, type LeaderboardTable as LBTable } from "@/leaderboard";
+import {
+  loadLeaderboard,
+  loadLeaderboardCsv,
+  type LeaderboardTable as LBTable,
+} from "@/leaderboard";
 
 const props = defineProps<{
   stem: string;
@@ -60,6 +64,35 @@ const tabs: { id: TabId; label: string }[] = [
   { id: "all-scatter", label: "Generative Scatter Plot" },
   { id: "nlu-scatter", label: "NLU Scatter Plot" },
 ];
+
+// Which CSV stem the current tab corresponds to, for the download button.
+const activeStem = computed<string>(() => {
+  const suffix =
+    tab.value === "all" || tab.value === "all-scatter" ? "all" : "nlu";
+  return `${props.stem}_${suffix}`;
+});
+
+const downloading = ref(false);
+
+const downloadCsv = async () => {
+  if (downloading.value) return;
+  downloading.value = true;
+  try {
+    const text = await loadLeaderboardCsv(activeStem.value);
+    if (!text) return;
+    const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${activeStem.value}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } finally {
+    downloading.value = false;
+  }
+};
 </script>
 
 <template>
@@ -82,6 +115,21 @@ const tabs: { id: TabId; label: string }[] = [
         @click="tab = t.id"
       >
         {{ t.label }}
+      </button>
+      <button
+        class="lb-download"
+        type="button"
+        :disabled="downloading"
+        :title="`Download ${activeStem}.csv`"
+        @click="downloadCsv"
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M8 1.5a.75.75 0 0 1 .75.75v6.69l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V2.25A.75.75 0 0 1 8 1.5zM2.75 12a.75.75 0 0 1 .75.75v1.25c0 .14.11.25.25.25h8.5c.14 0 .25-.11.25-.25v-1.25a.75.75 0 1 1 1.5 0v1.25c0 .97-.78 1.75-1.75 1.75h-8.5A1.75 1.75 0 0 1 2 14V12.75A.75.75 0 0 1 2.75 12z"
+          />
+        </svg>
+        {{ downloading ? "Downloading…" : "Download CSV" }}
       </button>
     </nav>
 
@@ -162,6 +210,36 @@ const tabs: { id: TabId; label: string }[] = [
   color: var(--color-link);
   border-bottom-color: var(--color-link);
   font-weight: 500;
+}
+
+.lb-download {
+  margin-left: auto;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: center;
+}
+
+.lb-download svg {
+  width: 13px;
+  height: 13px;
+}
+
+.lb-download:hover {
+  border-color: var(--color-link);
+  color: var(--color-link);
+}
+
+.lb-download:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .lb-status {
