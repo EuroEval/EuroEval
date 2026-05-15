@@ -8,7 +8,6 @@ const props = defineProps<{
 
 type FilterValue = string;
 const colFilters = ref<Record<string, FilterValue>>({});
-const globalSearch = ref("");
 const sortBy = ref<{ index: number; dir: "asc" | "desc" } | null>(null);
 const page = ref(1);
 const pageSize = 10;
@@ -38,19 +37,12 @@ const passesColumnFilter = (cellText: string, filter: string, col: Column) => {
 
 const filteredRows = computed<Row[]>(() => {
   const cols = props.table.columns;
-  const q = globalSearch.value.trim().toLowerCase();
   return props.table.rows.filter((row) => {
-    // Per-column filters.
     for (let i = 0; i < cols.length; i++) {
       const filter = colFilters.value[cols[i].key];
       if (filter && !passesColumnFilter(row.cells[i].text, filter, cols[i])) {
         return false;
       }
-    }
-    // Global search.
-    if (q) {
-      const hit = row.cells.some((c) => c.text.toLowerCase().includes(q));
-      if (!hit) return false;
     }
     return true;
   });
@@ -207,7 +199,6 @@ const toggleSort = (idx: number) => {
 
 const resetFilters = () => {
   colFilters.value = {};
-  globalSearch.value = "";
   page.value = 1;
 };
 </script>
@@ -215,14 +206,6 @@ const resetFilters = () => {
 <template>
   <div class="leaderboard">
     <div class="lb-toolbar">
-      <input
-        v-model="globalSearch"
-        class="lb-search"
-        type="search"
-        placeholder="Search in table"
-        aria-label="Search in table"
-        @input="page = 1"
-      />
       <button class="lb-reset" type="button" @click="resetFilters">
         Reset filters
       </button>
@@ -352,22 +335,6 @@ const resetFilters = () => {
   flex-wrap: wrap;
 }
 
-.lb-search {
-  flex: 1;
-  min-width: 200px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  padding: 0.4rem 0.6rem;
-  border-radius: 4px;
-  font: inherit;
-}
-
-.lb-search:focus {
-  outline: 2px solid var(--color-link);
-  outline-offset: -1px;
-}
-
 .lb-reset {
   background: var(--color-surface);
   color: var(--color-text);
@@ -384,6 +351,7 @@ const resetFilters = () => {
 .lb-pageinfo {
   color: var(--color-muted);
   font-size: 0.8rem;
+  margin-left: auto;
 }
 
 .lb-pageinfo select {
@@ -423,21 +391,14 @@ const resetFilters = () => {
   height: 44px;
 }
 
-/* First column (Model) stays left-aligned and ellipsis-truncates. */
+/* First column (Model) stays left-aligned; widen it so long model IDs
+   fit on a single line. The table itself scrolls horizontally inside
+   `.lb-scroll` when the total column width exceeds the container. */
 .lb-table th:first-child,
 .lb-table td:first-child {
   text-align: left;
-  max-width: 280px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.lb-table td:first-child > span {
-  display: inline-block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  vertical-align: middle;
+  min-width: 360px;
+  white-space: nowrap;
 }
 
 .lb-table thead th {
