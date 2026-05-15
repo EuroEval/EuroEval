@@ -152,7 +152,7 @@ async function onSubmit() {
     </label>
 
     <fieldset class="field">
-      <legend class="label">Language groups</legend>
+      <legend class="label">Language groups to evaluate the model on</legend>
       <div class="groups">
         <label v-for="g in LANGUAGE_GROUPS" :key="g" class="group">
           <input
