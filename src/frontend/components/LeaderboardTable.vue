@@ -11,7 +11,7 @@ const colFilters = ref<Record<string, FilterValue>>({});
 const globalSearch = ref("");
 const sortBy = ref<{ index: number; dir: "asc" | "desc" } | null>(null);
 const page = ref(1);
-const pageSize = 25;
+const pageSize = 10;
 
 // Default sort: rank ascending if present.
 watch(
@@ -89,6 +89,8 @@ const pagedRows = computed<Row[]>(() => {
 
 const COMPACT_COLS = new Set(["parameters", "vocabulary", "context"]);
 
+const PERCENT_COLS = new Set(["european values"]);
+
 const TICK_CROSS_COLS = new Set([
   "commercial",
   "merge",
@@ -108,6 +110,9 @@ const formatCompact = (n: number): string => {
 const isCompactCol = (col: Column) =>
   col.kind === "number" && COMPACT_COLS.has(col.key.toLowerCase());
 
+const isPercentCol = (col: Column) =>
+  col.kind === "number" && PERCENT_COLS.has(col.key.toLowerCase());
+
 const isTickCrossCol = (col: Column) =>
   col.kind === "icon" && TICK_CROSS_COLS.has(col.key.toLowerCase());
 
@@ -117,6 +122,12 @@ const cellDisplayHtml = (cell: { html: string; text: string; sortKey: number | s
   if (isCompactCol(col)) {
     if (typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
       return formatCompact(cell.sortKey);
+    }
+    return cell.text || "?";
+  }
+  if (isPercentCol(col)) {
+    if (typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
+      return `${Math.round(cell.sortKey)}%`;
     }
     return cell.text || "?";
   }
@@ -140,9 +151,9 @@ const tickCrossClass = (text: string): string => {
 
 // Fixed three-stop scale: 1.0 → green, 2.5 → yellow, 10.0 → red.
 // Sentinel-ranked rows (text "-", "?", "") get no background.
-const RANK_GREEN: [number, number, number] = [110, 186, 124];
-const RANK_YELLOW: [number, number, number] = [220, 200, 110];
-const RANK_RED: [number, number, number] = [220, 120, 120];
+const RANK_GREEN: [number, number, number] = [60, 175, 90];
+const RANK_YELLOW: [number, number, number] = [230, 200, 60];
+const RANK_RED: [number, number, number] = [220, 80, 80];
 
 const blendRgb = (
   a: [number, number, number],
@@ -172,7 +183,7 @@ const rankHeatmapStyle = (
     rgb = RANK_RED;
   }
   return {
-    backgroundColor: `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.32)`,
+    backgroundColor: `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.6)`,
   };
 };
 
