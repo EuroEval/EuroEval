@@ -227,6 +227,134 @@ def render_module(rel: Path, source: str, out: list[str]) -> None:
     out.append("")
 
 
+# Subpackages whose submodules are rendered nested inside the parent package's
+# collapsible section, with h4 (so they stay out of the TOC). Useful for
+# subpackages that are essentially a list of data modules — listing each in
+# the TOC would crowd it out.
+NESTED_SUBPACKAGES: frozenset[str] = frozenset({"dataset_configs"})
+
+
+def render_submodule_inline(rel: Path, source: str, out: list[str]) -> None:
+    """Render a submodule as an h4 entry inside its parent's collapsible.
+
+    Only the module docstring and any classes / functions are emitted; the
+    heading is an h4 so it doesn't appear in the right-hand table of
+    contents.
+
+    Args:
+        rel: Path relative to the package root.
+        source: The source code of the module.
+        out: The output buffer (mutated in place).
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as e:
+        out.append(f"#### `{rel_to_module(rel)}`")
+        out.append("")
+        out.append(f"_failed to parse: {e}_")
+        out.append("")
+        return
+
+    classes = [
+        n for n in tree.body if isinstance(n, ast.ClassDef) and is_public(n.name)
+    ]
+    funcs = [
+        n
+        for n in tree.body
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and is_public(n.name)
+    ]
+    module_doc = ast.get_docstring(tree, clean=True)
+    if not classes and not funcs and not module_doc:
+        return
+
+    out.append(f"#### <code>{rel_to_module(rel)}</code>")
+    out.append("")
+    if module_doc:
+        out.append(indent_docstring(module_doc))
+        out.append("")
+    for cls in classes:
+        # Bump class headings down a level so they remain below the submodule
+        # heading and out of the TOC.
+        render_class_inline(cls, out)
+    for f in funcs:
+        render_function(f, out, heading="#####")
+
+
+def render_class_inline(cls: ast.ClassDef, out: list[str]) -> None:
+    """Like `render_class` but with h5/h6 headings to stay out of the TOC.
+
+    Args:
+        cls: The class AST node.
+        out: The output buffer (mutated in place).
+    """
+    bases = ", ".join(ast.unparse(b) for b in cls.bases)
+    header = f"class {cls.name}" + (f"({bases})" if bases else "")
+    out.append(f"##### `{header}`")
+    out.append("")
+    doc = ast.get_docstring(cls, clean=True)
+    if doc:
+        out.append(indent_docstring(doc))
+        out.append("")
+    methods = [
+        n
+        for n in cls.body
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and (is_public(n.name) or n.name == "__init__")
+    ]
+    for m in methods:
+        render_function(m, out, heading="######", prefix=f"{cls.name}.")
+
+
+def render_nested_subpackage(
+    parent_rel: Path, parent_source: str, submodule_files: list[Path], out: list[str]
+) -> None:
+    """Render a subpackage with its submodules folded inside.
+
+    Args:
+        parent_rel: Path of the subpackage's `__init__.py` relative to the
+            package root.
+        parent_source: Source code of the `__init__.py`.
+        submodule_files: Absolute paths of submodule `.py` files to nest
+            inside the subpackage's collapsible.
+        out: The output buffer (mutated in place).
+    """
+    try:
+        tree = ast.parse(parent_source)
+    except SyntaxError:
+        tree = ast.parse("")
+    classes = [
+        n for n in tree.body if isinstance(n, ast.ClassDef) and is_public(n.name)
+    ]
+    funcs = [
+        n
+        for n in tree.body
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and is_public(n.name)
+    ]
+    module_doc = ast.get_docstring(tree, clean=True)
+
+    mod_name = rel_to_module(parent_rel)
+    anchor = "api-" + mod_name.replace(".", "-")
+    out.append(f'<details class="api-module" id="{anchor}-wrap">')
+    out.append(
+        f'<summary class="api-module-summary">'
+        f'<h2 id="{anchor}" class="api-module-heading">'
+        f"<code>{mod_name}</code></h2></summary>"
+    )
+    out.append("")
+    if module_doc:
+        out.append(indent_docstring(module_doc))
+        out.append("")
+    for cls in classes:
+        render_class(cls, out)
+    for f in funcs:
+        render_function(f, out, heading="###")
+    for sub in submodule_files:
+        rel = sub.relative_to(PKG_ROOT)
+        render_submodule_inline(rel, sub.read_text(encoding="utf-8"), out)
+    out.append("</details>")
+    out.append("")
+
+
 def should_skip(rel: Path) -> bool:
     """Decide whether a Python file should be excluded from the API reference.
 
@@ -267,9 +395,34 @@ def main() -> None:
         "change — so this page is always in sync with the installed package._",
         "",
     ]
+    rendered: set[Path] = set()
     for f in files:
         rel = f.relative_to(PKG_ROOT)
         if should_skip(rel):
+            continue
+        if f in rendered:
+            continue
+        # Nested subpackage handling: render the `__init__.py` together with
+        # its submodules in one collapsible.
+        if (
+            len(rel.parts) == 2
+            and rel.name == "__init__.py"
+            and rel.parts[0] in NESTED_SUBPACKAGES
+        ):
+            children = sorted(
+                g
+                for g in files
+                if g != f
+                and not should_skip(g.relative_to(PKG_ROOT))
+                and g.relative_to(PKG_ROOT).parts[0] == rel.parts[0]
+            )
+            render_nested_subpackage(rel, f.read_text(encoding="utf-8"), children, out)
+            rendered.add(f)
+            rendered.update(children)
+            continue
+        # Skip submodules of a nested subpackage — they're already rendered
+        # inside their parent above.
+        if len(rel.parts) > 1 and rel.parts[0] in NESTED_SUBPACKAGES:
             continue
         render_module(rel, f.read_text(encoding="utf-8"), out)
 
