@@ -5,7 +5,8 @@ import logging
 import re
 import tarfile
 from functools import cache
-from pathlib import Path
+
+from .paths import NEW_RESULTS_PATH, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ def load_raw_results() -> list[dict]:
         ValueError:
             If the raw results file contains invalid JSON.
     """
-    results_path = Path("results.tar.gz")
+    results_path = RESULTS_PATH
     if not results_path.exists():
         raise FileNotFoundError(f"Results file {results_path} not found.")
 
@@ -39,7 +40,7 @@ def load_raw_results() -> list[dict]:
         logger.info(f"Loaded {len(result_lines):,} existing results.")
 
     # If there are new results, add them to the existing results
-    new_results_path = Path("new_results.jsonl")
+    new_results_path = NEW_RESULTS_PATH
     if new_results_path.exists():
         with new_results_path.open() as f:
             new_result_lines = f.read().splitlines()
@@ -159,7 +160,7 @@ def load_processed_results() -> list[dict]:
         FileNotFoundError:
             If the processed results file is not found.
     """
-    results_path = Path("results.tar.gz")
+    results_path = RESULTS_PATH
     if not results_path.exists():
         raise FileNotFoundError("Processed results file not found.")
 

@@ -8,6 +8,7 @@ import warnings
 import click
 from dotenv import load_dotenv
 
+from leaderboards.backup import backup_results, restore_from_backup_if_missing
 from leaderboards.leaderboard_generation import generate_leaderboard
 from leaderboards.paths import CONFIGS_DIR
 from leaderboards.result_processing import process_results
@@ -96,6 +97,9 @@ def main(categories: tuple[t.Literal["all", "nlu"]], force: bool) -> None:
             Whether to force the generation of the leaderboard, even if no updates are
             found.
     """
+    # If results.tar.gz isn't here, pull the newest backup into place.
+    restore_from_backup_if_missing()
+
     process_results(
         min_version=MINIMUM_VERSION,
         min_number_of_model_records=MINIMUM_NUMBER_OF_MODEL_RECORDS,
@@ -111,6 +115,13 @@ def main(categories: tuple[t.Literal["all", "nlu"]], force: bool) -> None:
             categories=list(categories),
             force=force,
         )
+
+    # Snapshot the (possibly updated) results to the backup directory,
+    # rotating out oldest backups to keep total size under the cap.
+    try:
+        backup_results()
+    except OSError as exc:  # pCloud unavailable / disk full / etc.
+        logging.warning(f"Results backup failed: {exc}")
 
 
 if __name__ == "__main__":

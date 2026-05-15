@@ -1045,6 +1045,13 @@ generative = [
     { name = "vllm", version = "0.18.1", source = { git = "https://github.com/vllm-project/vllm.git?tag=v0.18.1#a26e8dc7ff2111a005144d775ecf9cebf56c45b2" }, marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
     { name = "vllm-metal", marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
 ]
+leaderboards = [
+    { name = "anthropic", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
+    { name = "openai", version = "2.24.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
+    { name = "openai", version = "2.30.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
+    { name = "scipy", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
+    { name = "tqdm", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -1087,6 +1094,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "accelerate", specifier = ">=1.9.0" },
+    { name = "anthropic", marker = "extra == 'leaderboards'", specifier = ">=0.49.0" },
     { name = "bert-score", specifier = ">=0.3.13" },
     { name = "bitsandbytes", marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=0.43.1" },
     { name = "bitsandbytes", marker = "sys_platform == 'linux' and extra == 'generative'", specifier = ">=0.43.1" },
@@ -1107,6 +1115,7 @@ requires-dist = [
     { name = "nltk", specifier = ">=3.9.1" },
     { name = "numpy", specifier = ">=2.0.0" },
     { name = "ollama", specifier = ">=0.5.1" },
+    { name = "openai", marker = "extra == 'leaderboards'", specifier = ">=1.66.3" },
     { name = "pandas", specifier = ">=2.2.0" },
     { name = "peft", specifier = ">=0.15.0" },
     { name = "protobuf", specifier = ">=2.0.0" },
@@ -1120,6 +1129,7 @@ requires-dist = [
     { name = "sacrebleu", specifier = ">=2.5.1" },
     { name = "sacremoses", specifier = ">=0.1.1" },
     { name = "scikit-learn", specifier = "==1.6.1" },
+    { name = "scipy", marker = "extra == 'leaderboards'", specifier = ">=1.14.1" },
     { name = "sentencepiece", specifier = ">=0.1.96" },
     { name = "seqeval", specifier = ">=1.2.2" },
     { name = "setuptools", specifier = ">=75.8.2" },
@@ -1128,6 +1138,7 @@ requires-dist = [
     { name = "timm", marker = "extra == 'all'", specifier = ">=1.0.19" },
     { name = "timm", marker = "extra == 'generative'", specifier = ">=1.0.19" },
     { name = "torch", specifier = ">=2.6.0" },
+    { name = "tqdm", marker = "extra == 'leaderboards'", specifier = ">=4.66.0" },
     { name = "vllm", marker = "sys_platform == 'darwin' and extra == 'all'", git = "https://github.com/vllm-project/vllm.git?tag=v0.18.1" },
     { name = "vllm", marker = "sys_platform == 'darwin' and extra == 'generative'", git = "https://github.com/vllm-project/vllm.git?tag=v0.18.1" },
     { name = "vllm", extras = ["flashinfer"], marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=0.14.1" },
@@ -1135,7 +1146,7 @@ requires-dist = [
     { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'all'", git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.1.0-20260404-164341" },
     { name = "vllm-metal", marker = "sys_platform == 'darwin' and extra == 'generative'", git = "https://github.com/vllm-project/vllm-metal.git?tag=v0.1.0-20260404-164341" },
 ]
-provides-extras = ["generative", "all"]
+provides-extras = ["generative", "all", "leaderboards"]
 
 [package.metadata.requires-dev]
 dev = [

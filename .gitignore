@@ -100,6 +100,11 @@ checkpoint-*
 scandeval_benchmark_results.jsonl
 euroeval_benchmark_results.jsonl
 
+# Leaderboard generation inputs (large, kept off-repo; see src/leaderboards/paths.py)
+results.tar.gz
+new_results.jsonl
+ucloud*_results.jsonl
+
 # Experiments
 gai-experiments.xlsx
 ~$gai-experiments.xlsx

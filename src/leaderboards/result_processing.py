@@ -8,7 +8,6 @@ import tarfile
 import warnings
 from collections import Counter, defaultdict
 from copy import deepcopy
-from pathlib import Path
 
 from huggingface_hub import HfApi
 from huggingface_hub.errors import HFValidationError
@@ -17,6 +16,7 @@ from tqdm.auto import tqdm
 
 from .cache import Cache
 from .link_generation import generate_anchor_tag
+from .paths import RESULTS_PATH
 from .result_loading import load_raw_results
 from .utils import extract_model_ids_from_record, get_record_hash, log_once
 
@@ -47,7 +47,7 @@ def process_results(
         trained_from_scratch_patterns:
             A list of regex patterns for trained-from-scratch models.
     """
-    results_path = Path("results.tar.gz")
+    results_path = RESULTS_PATH
 
     # Build the cache from the processed records file
     cache = Cache.from_processed_records(compressed_results_path=results_path)
