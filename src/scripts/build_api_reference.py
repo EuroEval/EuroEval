@@ -264,7 +264,12 @@ def render_submodule_inline(rel: Path, source: str, out: list[str]) -> None:
     if not classes and not funcs and not module_doc:
         return
 
-    out.append(f"#### <code>{rel_to_module(rel)}</code>")
+    mod_name = rel_to_module(rel)
+    anchor = "api-" + mod_name.replace(".", "-")
+    out.append(f'<details class="api-submodule" id="{anchor}-wrap">')
+    out.append(
+        f'<summary class="api-submodule-summary"><code>{mod_name}</code></summary>'
+    )
     out.append("")
     if module_doc:
         out.append(indent_docstring(module_doc))
@@ -275,6 +280,8 @@ def render_submodule_inline(rel: Path, source: str, out: list[str]) -> None:
         render_class_inline(cls, out)
     for f in funcs:
         render_function(f, out, heading="#####")
+    out.append("</details>")
+    out.append("")
 
 
 def render_class_inline(cls: ast.ClassDef, out: list[str]) -> None:

@@ -552,3 +552,50 @@ button {
 .markdown-body .api-module > :not(.api-module-summary):last-child {
   margin-bottom: 0.9rem;
 }
+
+/* Nested submodule collapsibles inside a module — same font weight as the
+   surrounding body text, just slightly indented so the hierarchy is
+   obvious without the panel feeling cramped. */
+.markdown-body .api-submodule {
+  margin: 0.4rem 0 0.4rem 0.5rem;
+  border-left: 2px solid var(--color-border);
+}
+
+.markdown-body .api-submodule-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.3rem 0.5rem 0.3rem 1.6rem;
+  position: relative;
+  user-select: none;
+  font-weight: 500;
+}
+
+.markdown-body .api-submodule-summary::-webkit-details-marker {
+  display: none;
+}
+
+.markdown-body .api-submodule-summary::before {
+  content: "▸";
+  position: absolute;
+  left: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  transition: transform 0.15s ease;
+}
+
+.markdown-body .api-submodule[open] > .api-submodule-summary::before {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.markdown-body .api-submodule-summary code {
+  background: transparent;
+  padding: 0;
+  font-size: 1rem;
+}
+
+.markdown-body .api-submodule > :not(.api-submodule-summary) {
+  margin-left: 1.6rem;
+  margin-right: 0.5rem;
+}
