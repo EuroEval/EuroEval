@@ -520,13 +520,14 @@ const onLeave = () => {
 }
 
 .grid line {
-  stroke: var(--color-border);
-  stroke-dasharray: 2 4;
-  opacity: 0.4;
+  stroke: var(--color-muted);
+  stroke-dasharray: 3 3;
+  opacity: 0.55;
 }
 
 .grid line.minor {
-  opacity: 0.18;
+  opacity: 0.3;
+  stroke-dasharray: 2 5;
 }
 
 .tick-label,
