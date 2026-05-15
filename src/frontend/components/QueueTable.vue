@@ -20,7 +20,6 @@ const emit = defineEmits<{
 <template>
   <section class="queue">
     <div class="queue-header">
-      <h2>Queue</h2>
       <button
         type="button"
         class="refresh"
@@ -95,13 +94,9 @@ const emit = defineEmits<{
 
 .queue-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 0.5rem;
-}
-
-.queue-header h2 {
-  margin: 0;
 }
 
 .refresh {
