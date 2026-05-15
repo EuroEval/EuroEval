@@ -149,14 +149,26 @@ def extract_language_groups(body: str | None) -> list[str]:
     return selected
 
 
-def huggingface_model_exists(model_id: str) -> bool:
-    """Return whether the model id resolves on the public Hugging Face Hub."""
+def huggingface_model_info(model_id: str) -> object | None:
+    """Return HF Hub metadata for ``model_id``, or ``None`` if unavailable."""
     try:
-        HfApi().model_info(repo_id=model_id)
-        return True
+        return HfApi().model_info(repo_id=model_id)
     except Exception as e:  # noqa: BLE001
         logger.warning("HF model lookup failed for %s: %s", model_id, e)
-        return False
+        return None
+
+
+def huggingface_param_count(info: object) -> int:
+    """Return the model's parameter count, or a large fallback if unknown.
+
+    Falls back to ``sys.maxsize`` so that models with unknown size are
+    deprioritised by the queue sorter.
+    """
+    safetensors = getattr(info, "safetensors", None)
+    total = getattr(safetensors, "total", None) if safetensors else None
+    if isinstance(total, int) and total > 0:
+        return total
+    return sys.maxsize
 
 
 def assign_issue(number: int) -> None:
@@ -204,26 +216,9 @@ def run_euroeval(model_id: str, languages: list[str]) -> bool:
         return False
 
 
-def process_issue(issue: dict) -> None:
+def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     """Claim, evaluate, and report back on a single queue issue."""
     number = issue["number"]
-    title = issue.get("title", "")
-    body = issue.get("body") or ""
-
-    model_id = extract_model_id(title)
-    if not model_id:
-        logger.info("#%s: skipping — could not parse model id from title.", number)
-        return
-
-    groups = extract_language_groups(body)
-    if not groups:
-        logger.info("#%s: skipping — no language groups selected.", number)
-        return
-
-    if not huggingface_model_exists(model_id):
-        logger.info("#%s: skipping — model %r not on HF Hub.", number, model_id)
-        return
-
     languages: list[str] = []
     for g in groups:
         languages.extend(LANGUAGE_GROUP_CODES[g])
@@ -257,17 +252,56 @@ def process_issue(issue: dict) -> None:
 
 
 def main() -> None:
-    """Process every unassigned model-evaluation-request issue once."""
+    """Process every unassigned model-evaluation-request issue once.
+
+    Issues are sorted by (parameter count asc, num-language-groups asc) so
+    that quicker evaluations are picked up first.
+    """
     try:
         issues = list_open_unassigned_issues()
     except urllib.error.HTTPError as e:
         logger.error("Failed to list issues: %s", e)
         sys.exit(1)
 
-    logger.info("Found %d unassigned issue(s).", len(issues))
+    # Resolve metadata (model id, language groups, param count) once per
+    # issue, then sort by that metadata before doing any heavy work.
+    candidates: list[tuple[int, int, dict, str, list[str]]] = []
     for issue in issues:
+        number = issue["number"]
+        title = issue.get("title", "")
+        body = issue.get("body") or ""
+
+        model_id = extract_model_id(title)
+        if not model_id:
+            logger.info("#%s: skipping — could not parse model id from title.", number)
+            continue
+
+        groups = extract_language_groups(body)
+        if not groups:
+            logger.info("#%s: skipping — no language groups selected.", number)
+            continue
+
+        info = huggingface_model_info(model_id)
+        if info is None:
+            logger.info("#%s: skipping — model %r not on HF Hub.", number, model_id)
+            continue
+
+        param_count = huggingface_param_count(info)
+        candidates.append((param_count, len(groups), issue, model_id, groups))
+
+    candidates.sort(key=lambda c: (c[0], c[1]))
+    logger.info("Found %d processable issue(s).", len(candidates))
+
+    for param_count, num_groups, issue, model_id, groups in candidates:
+        logger.info(
+            "#%s: queueing %r (%s params, %d group(s)).",
+            issue["number"],
+            model_id,
+            param_count,
+            num_groups,
+        )
         try:
-            process_issue(issue)
+            process_issue(issue, model_id, groups)
         except Exception as e:  # noqa: BLE001
             logger.exception("Error while processing issue #%s: %s", issue["number"], e)
         time.sleep(1)

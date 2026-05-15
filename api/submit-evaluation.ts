@@ -48,6 +48,21 @@ function buildIssueBody(modelId: string, groups: string[]): string {
   return `### Model ID\n\n${modelId}\n\n### Evaluation languages\n\n${checkboxes}\n`;
 }
 
+async function fetchEvaluatedGroups(
+  reqUrl: string,
+  modelId: string,
+): Promise<string[]> {
+  const url = new URL("/evaluated-models.json", reqUrl).toString();
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return [];
+    const data = (await r.json()) as Record<string, string[]>;
+    return data[modelId] ?? [];
+  } catch {
+    return [];
+  }
+}
+
 async function huggingFaceModelExists(modelId: string): Promise<boolean> {
   const r = await fetch(
     `https://huggingface.co/api/models/${encodeURIComponent(modelId)}`,
@@ -176,7 +191,19 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  const created = await createIssue(modelId, groups as string[], token);
+  const alreadyEvaluated = await fetchEvaluatedGroups(req.url, modelId);
+  const remaining = (groups as string[]).filter(
+    (g) => !alreadyEvaluated.includes(g),
+  );
+  if (remaining.length === 0) {
+    return json(409, {
+      error:
+        "This model has already been evaluated on every language group you" +
+        " requested. See the leaderboards.",
+    });
+  }
+
+  const created = await createIssue(modelId, remaining, token);
   if (!created) {
     return json(502, { error: "Failed to create the GitHub issue." });
   }

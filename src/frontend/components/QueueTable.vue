@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import type { QueueEntry } from "@/services/github";
+import { LANGUAGE_GROUPS, type QueueEntry } from "@/services/github";
+
+function displayGroups(groups: string[]): string {
+  if (groups.length === LANGUAGE_GROUPS.length) return "All language groups";
+  return groups.join(", ");
+}
 
 defineProps<{ entries: QueueEntry[]; loading: boolean; error: string | null }>();
 const emit = defineEmits<{
@@ -46,7 +51,7 @@ const emit = defineEmits<{
           </td>
           <td class="lg">
             <span v-if="e.languageGroups.length === 0" class="muted">—</span>
-            <span v-else>{{ e.languageGroups.join(", ") }}</span>
+            <span v-else>{{ displayGroups(e.languageGroups) }}</span>
           </td>
           <td>
             <span :class="['status', e.status.toLowerCase()]">
