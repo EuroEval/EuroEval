@@ -1,6 +1,11 @@
 import yaml from "js-yaml";
 import configYaml from "@/config.yaml?raw";
 
+declare const __PACKAGE_VERSION__: string | undefined;
+
+const packageVersion =
+  typeof __PACKAGE_VERSION__ !== "undefined" ? __PACKAGE_VERSION__ : "";
+
 export interface NavPage {
   title: string;
   /** Markdown path under src/frontend/md/. Mutually exclusive with `csv`. */
@@ -32,7 +37,17 @@ export interface NavConfig {
   sections: NavSection[];
 }
 
-export const navConfig = yaml.load(configYaml) as NavConfig;
+const rawConfig = yaml.load(configYaml) as Omit<NavConfig, "github"> & {
+  github: { repo: string };
+};
+
+export const navConfig: NavConfig = {
+  ...rawConfig,
+  github: {
+    ...rawConfig.github,
+    version: packageVersion ? `v${packageVersion}` : "",
+  },
+};
 
 export const defaultSection = navConfig.sections[0];
 
