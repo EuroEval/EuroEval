@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch, nextTick } from "vue";
+import { useRouter } from "vue-router";
 import type { NavSection } from "@/nav";
 import { pageSlug as pageSlugFn } from "@/nav";
 import { renderMarkdown, wireTabSync } from "@/markdown";
@@ -10,6 +11,7 @@ const props = defineProps<{
   pageSlug?: string;
 }>();
 
+const router = useRouter();
 const rendered = computed(() => renderMarkdown(props.path));
 
 const pageTitle = computed(() => {
@@ -22,6 +24,31 @@ const pageTitle = computed(() => {
 
 const bodyEl = ref<HTMLDivElement | null>(null);
 let tabCleanup: (() => void) | null = null;
+
+// Intercept clicks on internal links inside the rendered markdown so they go
+// through vue-router (no full page reload). External links and same-page
+// anchors fall through to the browser.
+const onClick = (e: MouseEvent) => {
+  if (e.defaultPrevented) return;
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+  const anchor = (e.target as HTMLElement | null)?.closest("a");
+  if (!anchor) return;
+  if (anchor.target && anchor.target !== "" && anchor.target !== "_self") return;
+  const href = anchor.getAttribute("href");
+  if (!href) return;
+  // Same-page anchor — let the browser handle it.
+  if (href.startsWith("#")) return;
+  // Resolve against the current location so we can compare hosts.
+  let url: URL;
+  try {
+    url = new URL(href, window.location.href);
+  } catch {
+    return;
+  }
+  if (url.origin !== window.location.origin) return;
+  e.preventDefault();
+  router.push(url.pathname + url.search + url.hash);
+};
 
 watch(
   [bodyEl, rendered],
@@ -49,7 +76,13 @@ onBeforeUnmount(() => {
       <span class="current" v-html="pageTitle" />
     </nav>
     <div v-if="!rendered" class="error">Failed to load content: {{ path }}</div>
-    <div v-else ref="bodyEl" class="markdown-body" v-html="rendered.html" />
+    <div
+      v-else
+      ref="bodyEl"
+      class="markdown-body"
+      v-html="rendered.html"
+      @click="onClick"
+    />
   </article>
 </template>
 
