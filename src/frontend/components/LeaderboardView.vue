@@ -13,28 +13,32 @@ const props = defineProps<{
   title: string;
 }>();
 
-type TabId = "all" | "nlu" | "all-scatter" | "nlu-scatter";
+type TabId =
+  | "generative"
+  | "all_models"
+  | "generative-scatter"
+  | "all_models-scatter";
 
-const tab = ref<TabId>("all");
+const tab = ref<TabId>("generative");
 
-const allTable = ref<LBTable | null>(null);
-const nluTable = ref<LBTable | null>(null);
+const generativeTable = ref<LBTable | null>(null);
+const allModelsTable = ref<LBTable | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
 const loadFor = async (stem: string) => {
   loading.value = true;
   error.value = null;
-  allTable.value = null;
-  nluTable.value = null;
+  generativeTable.value = null;
+  allModelsTable.value = null;
   try {
-    const [a, n] = await Promise.all([
-      loadLeaderboard(`${stem}_all`),
-      loadLeaderboard(`${stem}_nlu`),
+    const [g, a] = await Promise.all([
+      loadLeaderboard(`${stem}_generative`),
+      loadLeaderboard(`${stem}_all_models`),
     ]);
-    allTable.value = a ?? null;
-    nluTable.value = n ?? null;
-    if (!a && !n) {
+    generativeTable.value = g ?? null;
+    allModelsTable.value = a ?? null;
+    if (!g && !a) {
       error.value = `No leaderboard data found for "${stem}".`;
     }
   } catch (e) {
@@ -47,15 +51,16 @@ const loadFor = async (stem: string) => {
 watch(
   () => props.stem,
   (s) => {
-    tab.value = "all";
+    tab.value = "generative";
     loadFor(s);
   },
   { immediate: true },
 );
 
 const activeTable = computed<LBTable | null>(() => {
-  if (tab.value === "all" || tab.value === "all-scatter") return allTable.value;
-  return nluTable.value;
+  if (tab.value === "generative" || tab.value === "generative-scatter")
+    return generativeTable.value;
+  return allModelsTable.value;
 });
 
 const MULTILINGUAL_STEMS = new Set([
@@ -70,16 +75,18 @@ const MULTILINGUAL_STEMS = new Set([
 const isMultilingual = computed(() => MULTILINGUAL_STEMS.has(props.stem));
 
 const tabs: { id: TabId; label: string }[] = [
-  { id: "all", label: "Generative Leaderboard" },
-  { id: "nlu", label: "NLU Leaderboard" },
-  { id: "all-scatter", label: "Generative Scatter Plot" },
-  { id: "nlu-scatter", label: "NLU Scatter Plot" },
+  { id: "generative", label: "Generative Leaderboard" },
+  { id: "generative-scatter", label: "Generative Scatter Plot" },
+  { id: "all_models", label: "NLU Leaderboard" },
+  { id: "all_models-scatter", label: "NLU Scatter Plot" },
 ];
 
 // Which CSV stem the current tab corresponds to, for the download button.
 const activeStem = computed<string>(() => {
   const suffix =
-    tab.value === "all" || tab.value === "all-scatter" ? "all" : "nlu";
+    tab.value === "generative" || tab.value === "generative-scatter"
+      ? "generative"
+      : "all_models";
   return `${props.stem}_${suffix}`;
 });
 
@@ -219,7 +226,7 @@ const downloadCsv = async () => {
     <div v-if="loading" class="lb-status">Loading leaderboard…</div>
     <div v-else-if="error" class="lb-status error">{{ error }}</div>
     <template v-else>
-      <template v-if="tab === 'all' || tab === 'nlu'">
+      <template v-if="tab === 'generative' || tab === 'all_models'">
         <LeaderboardTable
           v-if="activeTable"
           :table="activeTable"
