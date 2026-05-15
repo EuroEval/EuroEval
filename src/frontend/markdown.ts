@@ -73,7 +73,7 @@ const transformTabs = (text: string): string => {
     tabs.forEach((t, idx) => {
       const checked = idx === 0 ? " checked" : "";
       out.push(
-        `<input type="radio" class="md-tab-radio md-tab-radio-${idx}" name="${gid}" id="${gid}-${idx}"${checked} aria-hidden="true">` +
+        `<input type="radio" class="md-tab-radio md-tab-radio-${idx}" name="${gid}" id="${gid}-${idx}"${checked} aria-hidden="true" data-tab-title="${escapeHtml(t.title)}">` +
           `<label class="md-tab-label" for="${gid}-${idx}">${escapeHtml(t.title)}</label>`,
       );
     });
@@ -149,6 +149,59 @@ md.core.ruler.push("inject-heading-ids", (state) => {
 });
 
 const cache = new Map<string, RenderedMarkdown>();
+
+// Cross-group tab sync: when a user picks a tab in one group (e.g. "Using the
+// command line"), every other group on the page that has a tab with the same
+// title switches to it too. The preference also persists across pages for the
+// session via localStorage.
+const TAB_PREF_KEY = "euroeval:preferredTabTitle";
+let preferredTabTitle: string | null = null;
+try {
+  preferredTabTitle = window.localStorage.getItem(TAB_PREF_KEY);
+} catch {
+  // localStorage may be unavailable; fall back to in-memory only.
+}
+
+const setPreferredTabTitle = (title: string): void => {
+  preferredTabTitle = title;
+  try {
+    window.localStorage.setItem(TAB_PREF_KEY, title);
+  } catch {
+    // ignore
+  }
+};
+
+const syncAllGroups = (root: ParentNode, title: string): void => {
+  const radios = root.querySelectorAll<HTMLInputElement>(
+    `.md-tabs > .md-tab-radio[data-tab-title="${CSS.escape(title)}"]`,
+  );
+  radios.forEach((r) => {
+    if (!r.checked) r.checked = true;
+  });
+};
+
+/**
+ * Wire up cross-group tab synchronisation on the given rendered-markdown
+ * container. Returns a cleanup function. Call this from a component that
+ * renders `renderMarkdown` output via `v-html`.
+ */
+export function wireTabSync(root: HTMLElement): () => void {
+  // Apply the stored preference on mount, if any.
+  if (preferredTabTitle) syncAllGroups(root, preferredTabTitle);
+
+  const onChange = (e: Event) => {
+    const target = e.target as HTMLElement | null;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (!target.classList.contains("md-tab-radio")) return;
+    const title = target.dataset.tabTitle;
+    if (!title) return;
+    setPreferredTabTitle(title);
+    // Document-wide sync so any other markdown root on screen also follows.
+    syncAllGroups(document, title);
+  };
+  root.addEventListener("change", onChange);
+  return () => root.removeEventListener("change", onChange);
+}
 
 export function renderMarkdown(path: string): RenderedMarkdown | undefined {
   const cached = cache.get(path);

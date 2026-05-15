@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, ref, watch, nextTick } from "vue";
 import type { NavSection } from "@/nav";
 import { pageSlug as pageSlugFn } from "@/nav";
-import { renderMarkdown } from "@/markdown";
+import { renderMarkdown, wireTabSync } from "@/markdown";
 
 const props = defineProps<{
   path: string;
@@ -19,6 +19,26 @@ const pageTitle = computed(() => {
   );
   return match?.title;
 });
+
+const bodyEl = ref<HTMLDivElement | null>(null);
+let tabCleanup: (() => void) | null = null;
+
+watch(
+  [bodyEl, rendered],
+  async () => {
+    if (tabCleanup) {
+      tabCleanup();
+      tabCleanup = null;
+    }
+    await nextTick();
+    if (bodyEl.value) tabCleanup = wireTabSync(bodyEl.value);
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(() => {
+  if (tabCleanup) tabCleanup();
+});
 </script>
 
 <template>
@@ -29,7 +49,7 @@ const pageTitle = computed(() => {
       <span class="current" v-html="pageTitle" />
     </nav>
     <div v-if="!rendered" class="error">Failed to load content: {{ path }}</div>
-    <div v-else class="markdown-body" v-html="rendered.html" />
+    <div v-else ref="bodyEl" class="markdown-body" v-html="rendered.html" />
   </article>
 </template>
 
