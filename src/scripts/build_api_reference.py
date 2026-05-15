@@ -227,13 +227,6 @@ def render_module(rel: Path, source: str, out: list[str]) -> None:
     out.append("")
 
 
-# Subpackages whose submodules are rendered nested inside the parent package's
-# collapsible section, with h4 (so they stay out of the TOC). Useful for
-# subpackages that are essentially a list of data modules — listing each in
-# the TOC would crowd it out.
-NESTED_SUBPACKAGES: frozenset[str] = frozenset({"dataset_configs"})
-
-
 def render_submodule_inline(rel: Path, source: str, out: list[str]) -> None:
     """Render a submodule as an h4 entry inside its parent's collapsible.
 
@@ -402,13 +395,10 @@ def main() -> None:
             continue
         if f in rendered:
             continue
-        # Nested subpackage handling: render the `__init__.py` together with
-        # its submodules in one collapsible.
-        if (
-            len(rel.parts) == 2
-            and rel.name == "__init__.py"
-            and rel.parts[0] in NESTED_SUBPACKAGES
-        ):
+        # Subpackage handling: render the `__init__.py` together with all of
+        # its descendant `.py` files in a single collapsible so the TOC stays
+        # focused on top-level modules.
+        if len(rel.parts) == 2 and rel.name == "__init__.py":
             children = sorted(
                 g
                 for g in files
@@ -420,9 +410,9 @@ def main() -> None:
             rendered.add(f)
             rendered.update(children)
             continue
-        # Skip submodules of a nested subpackage — they're already rendered
-        # inside their parent above.
-        if len(rel.parts) > 1 and rel.parts[0] in NESTED_SUBPACKAGES:
+        # Skip submodules of any subpackage — they're rendered inside their
+        # parent above.
+        if len(rel.parts) > 1:
             continue
         render_module(rel, f.read_text(encoding="utf-8"), out)
 
