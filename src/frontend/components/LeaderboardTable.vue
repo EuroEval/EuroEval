@@ -259,39 +259,27 @@ const resetFilters = () => {
               :key="`f-${col.key}-${i}`"
               @click.stop
             >
-              <template v-if="col.kind === 'icon' && col.distinctValues">
-                <select
-                  v-model="colFilters[col.key]"
-                  class="lb-filter"
-                  @change="page = 1"
-                  :aria-label="`Filter ${col.title}`"
-                >
-                  <option value="">any</option>
-                  <option v-for="v in col.distinctValues" :key="v" :value="v">
-                    {{ v }}
-                  </option>
-                </select>
-              </template>
-              <template v-else-if="col.kind === 'number' || col.kind === 'score'">
-                <input
-                  v-model="colFilters[col.key]"
-                  type="search"
-                  class="lb-filter"
-                  :placeholder="col.min !== undefined ? `≥ ${col.min}` : 'filter'"
-                  :aria-label="`Filter ${col.title}`"
-                  @input="page = 1"
-                />
-              </template>
-              <template v-else>
-                <input
-                  v-model="colFilters[col.key]"
-                  type="search"
-                  class="lb-filter"
-                  placeholder="filter"
-                  :aria-label="`Filter ${col.title}`"
-                  @input="page = 1"
-                />
-              </template>
+              <input
+                v-if="i === 0"
+                v-model="colFilters[col.key]"
+                type="search"
+                class="lb-filter"
+                placeholder="filter"
+                :aria-label="`Filter ${col.title}`"
+                @input="page = 1"
+              />
+              <select
+                v-else-if="col.kind === 'icon' && col.distinctValues"
+                v-model="colFilters[col.key]"
+                class="lb-filter"
+                :aria-label="`Filter ${col.title}`"
+                @change="page = 1"
+              >
+                <option value="">any</option>
+                <option v-for="v in col.distinctValues" :key="v" :value="v">
+                  {{ v }}
+                </option>
+              </select>
             </th>
           </tr>
         </thead>
