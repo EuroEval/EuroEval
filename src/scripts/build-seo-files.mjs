@@ -1,9 +1,12 @@
-// Build-time generator for sitemap.xml, robots.txt, and llms.txt.
+// Generator for sitemap.xml, robots.txt, and llms.txt.
 //
-// Reads `src/frontend/config.yaml` to enumerate every routable page and
-// writes the three SEO/AI-friendly files into Vite's `dist/` directory at
-// the end of `vite build`. Also mirrors the bundled CSVs into
-// `dist/leaderboards-csv/` so they can be downloaded by direct URL.
+// At `vite build`, writes the three files to the `dist/` directory and
+// mirrors every leaderboard CSV under `dist/leaderboards-csv/` so they can
+// be downloaded by direct URL.
+//
+// At `vite dev`, a dev-server middleware serves the same paths on the fly
+// so developers can sanity-check them at /sitemap.xml, /robots.txt,
+// /llms.txt, and /leaderboards-csv/<stem>.csv.
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -11,7 +14,8 @@ import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(__dirname, "..");
+// File lives at `src/scripts/`, so the repo root is two levels up.
+const REPO_ROOT = path.resolve(__dirname, "../..");
 const CONFIG_PATH = path.join(REPO_ROOT, "src/frontend/config.yaml");
 const CSV_DIR = path.join(REPO_ROOT, "src/frontend/csv");
 const BASE_URL = "https://euroeval.com";
@@ -40,6 +44,24 @@ async function listLeaderboardCsvs() {
   const all = await fs.readdir(CSV_DIR);
   // Only ship the user-facing variants (drop `_simplified` versions).
   return all.filter((f) => f.endsWith(".csv") && !f.includes("_simplified"));
+}
+
+async function loadConfig() {
+  const text = await fs.readFile(CONFIG_PATH, "utf-8");
+  return yaml.load(text);
+}
+
+function collectUrls(config) {
+  const urls = [];
+  config.sections.forEach((section, i) => {
+    urls.push(urlFor(i, section.id, undefined));
+    if (section.pages) {
+      for (const page of section.pages) {
+        urls.push(urlFor(i, section.id, pageSlug(page)));
+      }
+    }
+  });
+  return urls;
 }
 
 function buildSitemap(urls) {
@@ -121,11 +143,62 @@ async function copyCsvsTo(distDir) {
   }
 }
 
-/** Vite plugin entry point. */
+/** Vite plugin entry point — works in both dev and build. */
 export default function seoFilesPlugin() {
   return {
     name: "euroeval:seo-files",
-    apply: "build",
+
+    // Dev: serve the generated files on the fly.
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const url = req.url?.split("?")[0] ?? "";
+        try {
+          if (url === "/sitemap.xml") {
+            const config = await loadConfig();
+            res.setHeader("Content-Type", "application/xml; charset=utf-8");
+            res.end(buildSitemap(collectUrls(config)));
+            return;
+          }
+          if (url === "/robots.txt") {
+            res.setHeader("Content-Type", "text/plain; charset=utf-8");
+            res.end(buildRobots());
+            return;
+          }
+          if (url === "/llms.txt") {
+            const config = await loadConfig();
+            const csvs = await listLeaderboardCsvs();
+            res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+            res.end(buildLlmsIndex(config, csvs));
+            return;
+          }
+          const csvMatch = url.match(/^\/leaderboards-csv\/([^/]+\.csv)$/);
+          if (csvMatch) {
+            const filePath = path.join(CSV_DIR, csvMatch[1]);
+            try {
+              const data = await fs.readFile(filePath);
+              res.setHeader("Content-Type", "text/csv; charset=utf-8");
+              res.setHeader(
+                "Content-Disposition",
+                `attachment; filename="${csvMatch[1]}"`,
+              );
+              res.end(data);
+              return;
+            } catch {
+              res.statusCode = 404;
+              res.end("Not found");
+              return;
+            }
+          }
+        } catch (err) {
+          server.config.logger.error(
+            `[seo-files] dev middleware error: ${err}`,
+          );
+        }
+        next();
+      });
+    },
+
+    // Build: emit files into dist/.
     async closeBundle() {
       const distDir = path.join(REPO_ROOT, "dist");
       try {
@@ -134,19 +207,8 @@ export default function seoFilesPlugin() {
         return; // dist not produced (e.g. --watch failed); nothing to do
       }
 
-      const configText = await fs.readFile(CONFIG_PATH, "utf-8");
-      const config = yaml.load(configText);
-
-      const urls = [];
-      config.sections.forEach((section, i) => {
-        urls.push(urlFor(i, section.id, undefined));
-        if (section.pages) {
-          for (const page of section.pages) {
-            urls.push(urlFor(i, section.id, pageSlug(page)));
-          }
-        }
-      });
-
+      const config = await loadConfig();
+      const urls = collectUrls(config);
       const csvs = await listLeaderboardCsvs();
 
       await fs.writeFile(

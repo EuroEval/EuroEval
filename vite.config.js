@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
-import seoFiles from "./scripts/build-seo-files.mjs";
+import seoFiles from "./src/scripts/build-seo-files.mjs";
 
 export default defineConfig({
   plugins: [vue(), seoFiles()],
