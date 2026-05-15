@@ -85,6 +85,13 @@ const pagedRows = computed<Row[]>(() => {
   return sortedRows.value.slice(start, start + pageSize);
 });
 
+// How many filler rows to render after the data so each page has a constant
+// height — keeps the pager controls from jumping when the last page is short.
+const fillerRowCount = computed(() => {
+  if (sortedRows.value.length === 0) return 0;
+  return Math.max(0, pageSize - pagedRows.value.length);
+});
+
 // --- Display helpers ------------------------------------------------------
 
 const COMPACT_COLS = new Set(["parameters", "vocabulary", "context"]);
@@ -309,6 +316,16 @@ const resetFilters = () => {
               No rows match these filters.
             </td>
           </tr>
+          <!-- Filler rows so every page has the same height, keeping the
+               pager controls in a fixed position. -->
+          <tr
+            v-for="i in fillerRowCount"
+            :key="`filler-${i}`"
+            class="filler-row"
+            aria-hidden="true"
+          >
+            <td :colspan="table.columns.length"></td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -436,6 +453,10 @@ const resetFilters = () => {
 
 .th-label :deep(a) {
   color: inherit;
+  text-decoration: none;
+}
+
+.th-label :deep(a:hover) {
   text-decoration: underline;
 }
 
@@ -473,6 +494,13 @@ const resetFilters = () => {
 
 .cell-rank {
   font-weight: 500;
+}
+
+.filler-row td {
+  /* Approximate average single-line data-row height so the table stays the
+     same overall size regardless of how many real rows fill the last page. */
+  height: 44px;
+  border-bottom-color: transparent;
 }
 
 .cell-tc.tc-good {
