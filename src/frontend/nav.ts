@@ -25,6 +25,8 @@ export interface NavSection {
   indexPath?: string;
   pages?: NavPage[];
   toc?: boolean;
+  /** Render a custom Vue component instead of markdown/CSV. */
+  view?: string;
 }
 
 export interface GithubInfo {

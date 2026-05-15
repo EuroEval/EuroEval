@@ -1,11 +1,10 @@
 github:
   repo: EuroEval/EuroEval
-  version: v17.2.0
 
 sections:
   - id: about
     title: About
-    path: doc-README.md
+    path: about.md
 
   - id: leaderboards
     title: Leaderboards
@@ -50,6 +49,10 @@ sections:
       - { group: Monolingual, csv: spanish, title: "🇪🇸 Spanish" }
       - { group: Monolingual, csv: swedish, title: "🇸🇪 Swedish" }
       - { group: Monolingual, csv: ukrainian, title: "🇺🇦 Ukrainian" }
+
+  - id: evaluation-queue
+    title: Evaluation Queue
+    view: EvaluationQueue
 
   - id: tasks
     title: Tasks

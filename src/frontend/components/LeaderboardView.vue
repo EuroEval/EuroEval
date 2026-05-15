@@ -150,6 +150,11 @@ const downloadCsv = async () => {
       <router-link to="/leaderboards">leaderboard page</router-link>
       for more information about all the columns.
     </p>
+    <p class="lb-help">
+      Want a model evaluated? Submit it on the
+      <router-link to="/evaluation-queue">Evaluation Queue</router-link>
+      page.
+    </p>
 
     <nav class="lb-tabs" role="tablist">
       <button

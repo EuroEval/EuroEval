@@ -6,6 +6,7 @@ import SectionTabs from "@/components/SectionTabs.vue";
 import SideNav from "@/components/SideNav.vue";
 import MarkdownRenderer from "@/components/MarkdownRenderer.vue";
 import LeaderboardView from "@/components/LeaderboardView.vue";
+import EvaluationQueueView from "@/components/EvaluationQueueView.vue";
 import TableOfContents from "@/components/TableOfContents.vue";
 import {
   defaultSection,
@@ -36,8 +37,13 @@ const activePage = computed(() =>
 
 const isLeaderboard = computed(() => Boolean(activePage.value?.csv));
 
+const customView = computed(() =>
+  !activePage.value ? activeSection.value.view : undefined,
+);
+
 const mdPath = computed(() => {
   if (isLeaderboard.value) return undefined;
+  if (customView.value) return undefined;
   return resolveMdPath(sectionId.value, pageSlug.value);
 });
 
@@ -105,6 +111,9 @@ useHead(() => {
           v-if="isLeaderboard && activePage"
           :stem="activePage.csv!"
           :title="activePage.title"
+        />
+        <EvaluationQueueView
+          v-else-if="customView === 'EvaluationQueue'"
         />
         <MarkdownRenderer
           v-else-if="mdPath"

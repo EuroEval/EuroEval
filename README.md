@@ -56,6 +56,34 @@ for the generated artefacts. To deploy from a fresh Vercel project:
 
 Every push to `main` redeploys; previews are generated for PR branches.
 
+### Evaluation Queue serverless function
+
+The `/evaluation-queue` page lets visitors submit Hugging Face models for
+evaluation. The submission form POSTs to `api/submit-evaluation.ts`, a
+Vercel edge function that opens a GitHub issue on the maintainer's behalf.
+Configure these env vars in the Vercel project:
+
+| Var | Description |
+| --- | --- |
+| `GITHUB_TOKEN` | Fine-grained PAT for `EuroEval/EuroEval` with **issues: read & write**. |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint, used for IP rate-limiting (5 submissions / hour / IP). |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token. |
+
+### Compute-server and laptop scripts
+
+Two helper scripts orchestrate the queue. Both read `GITHUB_TOKEN` from the
+environment:
+
+- `src/scripts/process_evaluation_queue.py` — runs on the GPU server.
+  Pulls unassigned model-evaluation-request issues, assigns them to
+  `saattrupdan`, runs `euroeval`, and posts the new
+  `euroeval_benchmark_results.jsonl` lines back as a comment.
+- `src/scripts/collect_evaluation_results.py` — runs on the maintainer's
+  laptop. Finds finished issues, extracts the first ```` ```jsonl ```` block
+  from their comments into `new_results.jsonl`, regenerates the
+  leaderboards, then closes the issues (which removes them from the
+  frontend queue).
+
 ## Reproducing the evaluation datasets
 
 All datasets used in this project are generated using the scripts located in the

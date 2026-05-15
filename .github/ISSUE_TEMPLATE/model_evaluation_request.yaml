@@ -8,7 +8,7 @@ body:
 - type: input
   attributes:
     label: Model ID
-    description: What is the model ID, either on the Hugging Face Hub or on LiteLLM?
+    description: What is the model ID on the Hugging Face Hub?
   validations:
     required: true
 - type: checkboxes
@@ -27,37 +27,6 @@ body:
       - label: Albanian
       - label: Greek
       - label: Hungarian
-  validations:
-    required: true
-- type: dropdown
-  attributes:
-    label: Model type
-    description: What is the architecture of the model?
-    options:
-      - Decoder model (e.g., GPT)
-      - Encoder model (e.g., BERT)
-      - Sequence-to-sequence model (e.g., T5)
-  validations:
-    required: true
-- type: dropdown
-  attributes:
-    label: Model size
-    description: What is the size of the model?
-    options:
-      - Small (<=8B parameters)
-      - Large (>8B parameters)
-      - N/A
-  validations:
-    required: true
-- type: dropdown
-  attributes:
-    label: Merged model
-    description: >
-      Is the model a merge of other models, or built on top of a merged model?
-    options:
-      - Not a merged model
-      - Merged model
-      - N/A
   validations:
     required: true
 - type: markdown
