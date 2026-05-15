@@ -621,21 +621,17 @@ button {
   border-color: var(--color-link);
 }
 
-/* Raw HTML headings emitted for classes / functions / methods. Reuse the
-   same shared heading style by inheritance — these rules only handle the
-   per-level sizing that the markdown headings would normally inherit. */
-.markdown-body h3.api-symbol {
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin: 1.2em 0 0.4em;
-}
-
+/* Raw HTML headings emitted for classes / functions / methods. Same visual
+   weight across every nesting level — the surrounding collapsible boxes
+   already convey the hierarchy, and varying the type size just makes deep
+   signatures (like `Class.__init__(self, …)`) hard to read. */
+.markdown-body h3.api-symbol,
 .markdown-body h4.api-symbol,
 .markdown-body h5.api-symbol,
 .markdown-body h6.api-symbol {
-  font-size: 0.95rem;
-  font-weight: 500;
-  margin: 0.9em 0 0.35em;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1em 0 0.4em;
 }
 
 .markdown-body .api-symbol code {

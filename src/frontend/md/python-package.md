@@ -6,7 +6,7 @@ hide:
 
 The `euroeval` Python package is the Python package used to evaluate language models in
 EuroEval. This page will give you a brief overview of the package and how to use it.
-You can also check out the [full API reference](/api/euroeval/) for more details.
+You can also check out the [full API reference](/api) for more details.
 
 ## Installation
 
