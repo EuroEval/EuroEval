@@ -38,5 +38,6 @@ since grown to cover at least one national language in every European country, w
 more on its way.
 
 EuroEval is maintained by [Dan Saattrup Smart](https://www.saattrupdan.com/) from the
-[Alexandra Institute](https://alexandra.dk), and is funded by the EU project
-[TrustLLM](https://trustllm.eu/).
+[Alexandra Institute](https://alexandra.dk), and is funded by both the EU project
+[TrustLLM](https://trustllm.eu/) and the [Danish Foundation Models
+project](https://www.foundationmodels.dk/).
