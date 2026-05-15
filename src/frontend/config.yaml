@@ -44,12 +44,12 @@ sections:
       - { group: Monolingual, csv: ukrainian, title: "🇺🇦 Ukrainian" }
       # Multilingual
       - { group: Multilingual, csv: european, slug: european, title: "🇪🇺 European" }
-      - { group: Multilingual, csv: baltic, slug: baltic, title: "Baltic" }
-      - { group: Multilingual, csv: finnic, slug: finnic, title: "Finnic" }
-      - { group: Multilingual, csv: germanic, slug: germanic, title: "Germanic" }
-      - { group: Multilingual, csv: mainland_scandinavian, slug: mainland-scandinavian, title: "Mainland Scandinavian" }
-      - { group: Multilingual, csv: romance, slug: romance, title: "Romance" }
-      - { group: Multilingual, csv: slavic, slug: slavic, title: "Slavic" }
+      - { group: Multilingual, csv: baltic, slug: baltic, title: "🇱🇻🇱🇹 Baltic" }
+      - { group: Multilingual, csv: finnic, slug: finnic, title: "🇫🇮🇪🇪 Finnic" }
+      - { group: Multilingual, csv: germanic, slug: germanic, title: "🇩🇰🇳🇱🇬🇧🇫🇴🇩🇪🇮🇸🇳🇴🇸🇪 Germanic" }
+      - { group: Multilingual, csv: mainland_scandinavian, slug: mainland-scandinavian, title: "🇩🇰🇳🇴🇸🇪 Mainland Scandinavian" }
+      - { group: Multilingual, csv: romance, slug: romance, title: "🇫🇷🇮🇹🇵🇹🇷🇴🇪🇸 Romance" }
+      - { group: Multilingual, csv: slavic, slug: slavic, title: "🇧🇦🇧🇬🇭🇷🇨🇿🇵🇱🇷🇸🇸🇰🇸🇮🇺🇦 Slavic" }
 
   - id: tasks
     title: Tasks

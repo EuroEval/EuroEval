@@ -29,6 +29,13 @@
   --hljs-type: #e5c07b;
   --hljs-builtin: #56b6c2;
   --hljs-meta: #abb2bf;
+
+  /* Leaderboard cell colors. */
+  --color-icon-good: #6dba6d;
+  --color-icon-bad: #d57676;
+  --color-icon-unknown: #9aa0a6;
+  --heatmap-best: 110, 186, 124;   /* greenish RGB */
+  --heatmap-worst: 220, 120, 120;  /* reddish RGB */
 }
 
 [data-theme="light"] {
@@ -61,6 +68,13 @@
   --hljs-type: #c18401;
   --hljs-builtin: #0184bc;
   --hljs-meta: #383a42;
+
+  /* Leaderboard cell colors. */
+  --color-icon-good: #2e8b57;
+  --color-icon-bad: #c0392b;
+  --color-icon-unknown: #57606a;
+  --heatmap-best: 90, 170, 110;
+  --heatmap-worst: 200, 100, 100;
 }
 
 * {

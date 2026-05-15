@@ -85,6 +85,97 @@ const pagedRows = computed<Row[]>(() => {
   return sortedRows.value.slice(start, start + pageSize);
 });
 
+// --- Display helpers ------------------------------------------------------
+
+const COMPACT_COLS = new Set(["parameters", "vocabulary", "context"]);
+
+const TICK_CROSS_COLS = new Set([
+  "commercial",
+  "merge",
+  "open",
+  "trained from scratch",
+]);
+
+const formatCompact = (n: number): string => {
+  const abs = Math.abs(n);
+  if (abs >= 1e12) return Math.round(n / 1e12) + "T";
+  if (abs >= 1e9) return Math.round(n / 1e9) + "B";
+  if (abs >= 1e6) return Math.round(n / 1e6) + "M";
+  if (abs >= 1e3) return Math.round(n / 1e3) + "K";
+  return String(Math.round(n));
+};
+
+const isCompactCol = (col: Column) =>
+  col.kind === "number" && COMPACT_COLS.has(col.key.toLowerCase());
+
+const isTickCrossCol = (col: Column) =>
+  col.kind === "icon" && TICK_CROSS_COLS.has(col.key.toLowerCase());
+
+const isRankCol = (col: Column) => col.key.toLowerCase() === "rank";
+
+const cellDisplayHtml = (cell: { html: string; text: string; sortKey: number | string }, col: Column): string => {
+  if (isCompactCol(col)) {
+    if (typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
+      return formatCompact(cell.sortKey);
+    }
+    return cell.text || "?";
+  }
+  return cell.html;
+};
+
+const tickCrossClass = (text: string): string => {
+  switch (text) {
+    case "✓":
+    case "(✓)":
+      return "tc-good";
+    case "✗":
+    case "(✗)":
+      return "tc-bad";
+    default:
+      return "tc-unknown";
+  }
+};
+
+// --- Rank heatmap ---------------------------------------------------------
+
+// Fixed three-stop scale: 1.0 → green, 2.5 → yellow, 10.0 → red.
+// Sentinel-ranked rows (text "-", "?", "") get no background.
+const RANK_GREEN: [number, number, number] = [110, 186, 124];
+const RANK_YELLOW: [number, number, number] = [220, 200, 110];
+const RANK_RED: [number, number, number] = [220, 120, 120];
+
+const blendRgb = (
+  a: [number, number, number],
+  b: [number, number, number],
+  t: number,
+): [number, number, number] => [
+  Math.round(a[0] + (b[0] - a[0]) * t),
+  Math.round(a[1] + (b[1] - a[1]) * t),
+  Math.round(a[2] + (b[2] - a[2]) * t),
+];
+
+const rankHeatmapStyle = (
+  cell: { text: string; sortKey: number | string },
+): Record<string, string> => {
+  if (cell.text === "-" || cell.text === "?" || cell.text === "") return {};
+  const v = cell.sortKey;
+  if (typeof v !== "number" || !Number.isFinite(v)) return {};
+
+  let rgb: [number, number, number];
+  if (v <= 1) {
+    rgb = RANK_GREEN;
+  } else if (v <= 2.5) {
+    rgb = blendRgb(RANK_GREEN, RANK_YELLOW, (v - 1) / 1.5);
+  } else if (v <= 10) {
+    rgb = blendRgb(RANK_YELLOW, RANK_RED, (v - 2.5) / 7.5);
+  } else {
+    rgb = RANK_RED;
+  }
+  return {
+    backgroundColor: `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.32)`,
+  };
+};
+
 const toggleSort = (idx: number) => {
   if (sortBy.value?.index === idx) {
     sortBy.value =
@@ -191,9 +282,15 @@ const resetFilters = () => {
             <td
               v-for="(cell, ci) in row.cells"
               :key="ci"
-              :class="['cell', `kind-${table.columns[ci].kind}`]"
+              :class="[
+                'cell',
+                `kind-${table.columns[ci].kind}`,
+                isRankCol(table.columns[ci]) ? 'cell-rank' : '',
+                isTickCrossCol(table.columns[ci]) ? `cell-tc ${tickCrossClass(cell.text)}` : '',
+              ]"
+              :style="isRankCol(table.columns[ci]) ? rankHeatmapStyle(cell) : undefined"
             >
-              <span v-html="cell.html" />
+              <span v-html="cellDisplayHtml(cell, table.columns[ci])" />
             </td>
           </tr>
           <tr v-if="pagedRows.length === 0">
@@ -297,9 +394,15 @@ const resetFilters = () => {
 .lb-table td {
   border-bottom: 1px solid var(--color-border);
   padding: 0.45rem 0.6rem;
-  text-align: left;
+  text-align: center;
   vertical-align: top;
   white-space: nowrap;
+}
+
+/* First column (Model) stays left-aligned. */
+.lb-table th:first-child,
+.lb-table td:first-child {
+  text-align: left;
 }
 
 .lb-table thead th {
@@ -354,12 +457,25 @@ const resetFilters = () => {
 
 .cell.kind-number,
 .cell.kind-score {
-  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-.cell.kind-icon {
-  text-align: center;
+.cell-rank {
+  font-weight: 500;
+}
+
+.cell-tc.tc-good {
+  color: var(--color-icon-good);
+  font-weight: 600;
+}
+
+.cell-tc.tc-bad {
+  color: var(--color-icon-bad);
+  font-weight: 600;
+}
+
+.cell-tc.tc-unknown {
+  color: var(--color-icon-unknown);
 }
 
 .cell :deep(a) {
