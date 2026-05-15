@@ -376,7 +376,7 @@ export const csvKeys: string[] = Object.keys(csvModules).map((k) =>
   k.replace(/^.*\/csv\//, "").replace(/\.csv$/, ""),
 );
 
-/** Async-load and parse a leaderboard by stem (e.g. `danish_all`). */
+/** Async-load and parse a leaderboard by stem (e.g. `danish_generative`). */
 export async function loadLeaderboard(
   stem: string,
 ): Promise<LeaderboardTable | undefined> {

@@ -76,9 +76,12 @@ TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern] = [
 @click.option(
     "--categories",
     "-c",
-    default=["all", "nlu"],
+    default=["generative", "all_models"],
     multiple=True,
-    help="Categories to generate leaderboards for. Defaults to 'all' and 'nlu'.",
+    help=(
+        "Categories to generate leaderboards for. Defaults to 'generative' and "
+        "'all_models'."
+    ),
 )
 @click.option(
     "--force/--no-force",
@@ -87,12 +90,13 @@ TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern] = [
     show_default=True,
     help="Force the generation of the leaderboard, even if no updates are found.",
 )
-def main(categories: tuple[t.Literal["all", "nlu"]], force: bool) -> None:
+def main(categories: tuple[t.Literal["generative", "all_models"]], force: bool) -> None:
     """Generate all leaderboards.
 
     Args:
         categories:
-            Categories to generate leaderboards for. Defaults to 'all' and 'nlu'.
+            Categories to generate leaderboards for. Defaults to 'generative' and
+            'all_models'.
         force:
             Whether to force the generation of the leaderboard, even if no updates are
             found.

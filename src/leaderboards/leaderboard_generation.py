@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def generate_leaderboard(
     leaderboard_config_path: Path,
-    categories: list[t.Literal["all", "nlu"]],
+    categories: list[t.Literal["generative", "all_models"]],
     force: bool,
 ) -> None:
     """Generate leaderboard CSV files from the EuroEval results.
@@ -36,7 +36,7 @@ def generate_leaderboard(
             The path to the leaderboard configuration file.
         categories:
             The categories of leaderboards to generate. Should be a list containing
-            "all" and/or "nlu".
+            "generative" and/or "all_models".
         force:
             Force the generation of the leaderboard, even if no updates are found.
     """
@@ -320,7 +320,7 @@ def generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     ranks: dict[str, dict[str, dict[str, float]]],
     metadata_dict: dict[str, dict],
-    categories: list[t.Literal["all", "nlu"]],
+    categories: list[t.Literal["generative", "all_models"]],
     task_config: dict[str, dict[str, str]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
     include_dataset_columns: bool,
@@ -351,14 +351,16 @@ def generate_dataframe(
         logger.error("No model results found, skipping leaderboard generation.")
         return list()
 
-    # Mapping from category to dataset names
+    # Mapping from category to dataset names. The "generative" leaderboard
+    # includes all tasks; the "all_models" leaderboard is restricted to NLU
+    # tasks so non-generative models can be compared.
     category_to_datasets = {
         category: [
             dataset
             for config in leaderboard_configs.values()
             for task, task_datasets in config.items()
             for dataset in task_datasets
-            if task_config[task]["category"] == category or category == "all"
+            if category == "generative" or task_config[task]["category"] == "nlu"
         ]
         for category in categories
     }
@@ -371,7 +373,7 @@ def generate_dataframe(
             for task, task_datasets in config.items()
             for dataset in task_datasets
             if task_config[task].get("orthogonal", False)
-            and (task_config[task]["category"] == category or category == "all")
+            and (category == "generative" or task_config[task]["category"] == "nlu")
         }
         for category in categories
     }

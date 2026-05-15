@@ -101,9 +101,12 @@ def compute_ranks(
                     ]
                 ).item()
 
-    categories = {
-        task_config[task]["category"] for config in configs.values() for task in config
-    } | {"all"}
+    # Leaderboard categories: "generative" covers all tasks; "all_models" is
+    # restricted to NLU tasks so non-generative models can be compared.
+    categories = {"generative", "all_models"}
+
+    def category_includes_task(category: str, task: str) -> bool:
+        return category == "generative" or task_config[task]["category"] == "nlu"
 
     # Aggregate task ranks into language ranks.
     # model_id -> category -> language/overall -> language_rank
@@ -117,18 +120,12 @@ def compute_ranks(
                     [
                         score_dict[language][task]
                         for task in config
-                        if (
-                            task_config[task]["category"] == category
-                            or category == "all"
-                        )
+                        if category_includes_task(category, task)
                         and task not in orthogonal_tasks
                     ]
                 ).item()
                 for language, config in configs.items()
-                if any(
-                    task_config[task]["category"] == category or category == "all"
-                    for task in config
-                )
+                if any(category_includes_task(category, task) for task in config)
             ]
             model_rank_scores = dict(overall=np.mean(language_scores).item())
             if len(language_scores) > 1:
