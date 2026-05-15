@@ -162,11 +162,21 @@ export function parseCell(raw: string, kind: CellKind): ParsedCell {
 
   let sortKey: number | string;
   if (sort !== null) {
+    // Legacy `value@@sortkey` syntax (kept for backward compatibility with
+    // older CSVs). New CSVs derive the sort key from the displayed value.
     const n = parseNumberSafe(sort);
     sortKey = n !== null ? n : sort.toLowerCase();
   } else if (kind === "number") {
     const n = parseNumberSafe(text);
     sortKey = n !== null ? n : Number.POSITIVE_INFINITY;
+  } else if (kind === "score") {
+    // Score cells look like "60.17 ± 1.40 / 72.92 ± 1.18" — sort by the
+    // leading number, with sentinels going to the bottom.
+    const m = text.match(/^-?\d+(?:\.\d+)?/);
+    sortKey =
+      m && parseNumberSafe(m[0]) !== null
+        ? parseNumberSafe(m[0])!
+        : Number.POSITIVE_INFINITY;
   } else if (kind === "icon") {
     // Order common icons for sensible sort (✓ > (✓) > ? > (✗) > ✗).
     const order: Record<string, number> = {

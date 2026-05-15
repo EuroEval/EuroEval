@@ -713,21 +713,9 @@ def extract_model_metadata(results: list[dict]) -> dict[str, dict]:
                 )
             )
 
+        # Version column. The frontend hides these and doesn't sort by them,
+        # so the plain version string is sufficient.
         version = record.get("euroeval_version", "<9.2.0")
-        if version != "<9.2.0":
-            version_sort_value = int(
-                "".join(
-                    [
-                        f"{version_part:0>2}"
-                        for version_part in re.sub(
-                            pattern=r"\.dev[0-9]+", repl="", string=version
-                        ).split(".")
-                    ]
-                )
-            )
-            version += f"@@{version_sort_value}"
-        else:
-            version += "@@0"
         metadata_dict[model_id][f"{record['dataset']}_version"] = version
 
     return metadata_dict

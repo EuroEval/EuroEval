@@ -390,7 +390,7 @@ def generate_dataframe(
             # Get the default values for the dataset columns
             default_dataset_values = {
                 ds: float("nan") for ds in category_to_datasets[category]
-            } | {f"{ds}_version": "-@@0" for ds in category_to_datasets[category]}
+            } | {f"{ds}_version": "-" for ds in category_to_datasets[category]}
             default_orthogonal_values = {
                 task: float("nan")
                 for task in category_to_orthogonal_datasets[category].values()
@@ -406,12 +406,9 @@ def generate_dataframe(
                     scores = [(list(), float("nan"), 0)]
                 main_score = scores[0][1]
                 if not math.isnan(main_score):
-                    score_str = (
-                        " / ".join(
-                            f"{total_score:,.2f} ± {std_err:,.2f}"
-                            for _, total_score, std_err in scores
-                        )
-                        + f"@@{main_score:.2f}"
+                    score_str = " / ".join(
+                        f"{total_score:,.2f} ± {std_err:,.2f}"
+                        for _, total_score, std_err in scores
                     )
                     if dataset in category_to_orthogonal_datasets[category]:
                         orthogonal_task = category_to_orthogonal_datasets[category][
@@ -419,7 +416,7 @@ def generate_dataframe(
                         ]
                         orthogonal_scores[orthogonal_task].append(main_score)
                 else:
-                    score_str = "-@@-1"
+                    score_str = "-"
                 total_results[dataset] = score_str
 
             # Aggregate orthogonal scores by taking their mean
@@ -460,31 +457,22 @@ def generate_dataframe(
                 f"{dict([(key, len(values)) for key, values in data_dict.items()])}."
             )
 
-        # Create dataframe and sort by rank
+        # Create dataframe and sort by rank (numeric, NaN sinks to the bottom)
         df = (
             pd.DataFrame(data_dict)
-            .sort_values(
-                by="rank",
-                key=lambda series: series.map(
-                    lambda x: float(x.split("@@")[1]) if isinstance(x, str) else x
-                ),
-            )
+            .sort_values(by="rank", na_position="last")
             .reset_index(drop=True)
         )
 
-        # Ensure that inf values appear at the bottom
         rank_cols = ["rank"]
         if len(leaderboard_configs) > 1:
             rank_cols += list(leaderboard_configs.keys())
 
-        # Convert rank to string, where {shown value}@@{sort value} to ensures that NaN
-        # values appear at the bottom.
+        # Format rank as a display string with a "-" sentinel for NaN. The
+        # frontend derives sort order from the numeric value itself.
         for col in rank_cols:
             df[col] = [
-                f"{value:.2f}@@{value:.2f}"
-                if math.isfinite(value)
-                else "-@@100"  # just a large number
-                for value in df[col]
+                f"{value:.2f}" if math.isfinite(value) else "-" for value in df[col]
             ]
 
         # Replace dashes with underlines in all column names
@@ -527,9 +515,7 @@ def generate_dataframe(
         num_before = len(df)
         value_cols = [col for col in dataset_cols + rank_cols[1:] if col in df.columns]
         model_ids_with_dataset_values = df.query(
-            " or ".join(
-                [f"({col} != '-@@-1' and {col} != '-@@100')" for col in value_cols]
-            )
+            " or ".join([f"({col} != '-')" for col in value_cols])
         ).model.tolist()
         model_ids_with_orthogonal_values = df[
             df[orthogonal_cols].notna().any(axis=1)
@@ -597,9 +583,6 @@ def generate_dataframe(
                 "trained_from_scratch",
             ]
         ]
-        df_simplified = df_simplified.map(
-            lambda x: x.split("@@")[0] if isinstance(x, str) else x
-        )
         df_simplified = df_simplified.query(  # pyrefly: ignore[not-callable]
             "rank != '-'"
         )

@@ -74,6 +74,35 @@ const activeStem = computed<string>(() => {
 
 const downloading = ref(false);
 
+// Embed dialog.
+const embedOpen = ref(false);
+const embedCopied = ref(false);
+
+const embedUrl = computed(() => {
+  const base =
+    typeof window !== "undefined"
+      ? `${window.location.origin}${window.location.pathname}`
+      : `https://euroeval.com/leaderboards/${props.stem}`;
+  return `${base}?embed=1`;
+});
+
+const embedSnippet = computed(
+  () =>
+    `<iframe src="${embedUrl.value}" width="100%" height="640" frameborder="0" style="border: 1px solid #d0d7de; border-radius: 6px;" loading="lazy" referrerpolicy="no-referrer" title="EuroEval leaderboard"></iframe>`,
+);
+
+const copyEmbed = async () => {
+  try {
+    await navigator.clipboard.writeText(embedSnippet.value);
+    embedCopied.value = true;
+    setTimeout(() => {
+      embedCopied.value = false;
+    }, 1600);
+  } catch {
+    /* clipboard unavailable; user can copy manually */
+  }
+};
+
 const downloadCsv = async () => {
   if (downloading.value) return;
   downloading.value = true;
@@ -131,7 +160,50 @@ const downloadCsv = async () => {
         </svg>
         {{ downloading ? "Downloading…" : "Download CSV" }}
       </button>
+      <button
+        class="lb-embed"
+        type="button"
+        title="Embed this leaderboard on another site"
+        @click="embedOpen = true"
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M4.78 5.22a.75.75 0 0 1 0 1.06L3.06 8l1.72 1.72a.75.75 0 1 1-1.06 1.06L1.47 8.53a.75.75 0 0 1 0-1.06L3.72 5.22a.75.75 0 0 1 1.06 0zm6.44 0a.75.75 0 0 1 1.06 0l2.25 2.25a.75.75 0 0 1 0 1.06l-2.25 2.25a.75.75 0 1 1-1.06-1.06L12.94 8l-1.72-1.72a.75.75 0 0 1 0-1.06zM9.55 2.04a.75.75 0 0 1 .41.98l-3 8a.75.75 0 1 1-1.4-.53l3-8a.75.75 0 0 1 .99-.45z"
+          />
+        </svg>
+        Embed
+      </button>
     </nav>
+
+    <div v-if="embedOpen" class="embed-modal" @click.self="embedOpen = false">
+      <div class="embed-dialog" role="dialog" aria-labelledby="embed-title">
+        <div class="embed-header">
+          <h2 id="embed-title">Embed this leaderboard</h2>
+          <button
+            class="embed-close"
+            type="button"
+            aria-label="Close"
+            @click="embedOpen = false"
+          >
+            ×
+          </button>
+        </div>
+        <p>
+          Paste this snippet into any HTML page to embed the live
+          leaderboard. The iframe stays in sync with the published data.
+        </p>
+        <textarea class="embed-snippet" readonly :value="embedSnippet" />
+        <div class="embed-actions">
+          <button class="embed-copy" type="button" @click="copyEmbed">
+            {{ embedCopied ? "Copied!" : "Copy snippet" }}
+          </button>
+          <a class="embed-preview" :href="embedUrl" target="_blank" rel="noopener">
+            Preview embed →
+          </a>
+        </div>
+      </div>
+    </div>
 
     <div v-if="loading" class="lb-status">Loading leaderboard…</div>
     <div v-else-if="error" class="lb-status error">{{ error }}</div>
@@ -240,6 +312,130 @@ const downloadCsv = async () => {
 .lb-download:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.lb-embed {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: center;
+  margin-left: 0.4rem;
+}
+
+.lb-embed svg {
+  width: 13px;
+  height: 13px;
+}
+
+.lb-embed:hover {
+  border-color: var(--color-link);
+  color: var(--color-link);
+}
+
+.embed-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+.embed-dialog {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.2rem 1.4rem 1.4rem;
+  max-width: 560px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.embed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.embed-header h2 {
+  font-size: 1.05rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.embed-close {
+  background: transparent;
+  border: 0;
+  color: var(--color-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.4rem;
+}
+
+.embed-close:hover {
+  color: var(--color-text);
+}
+
+.embed-dialog p {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+.embed-snippet {
+  width: 100%;
+  min-height: 110px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  resize: vertical;
+}
+
+.embed-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.embed-copy {
+  background: var(--color-link);
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.embed-copy:hover {
+  background: var(--color-link-hover);
+}
+
+.embed-preview {
+  color: var(--color-link);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.embed-preview:hover {
+  text-decoration: underline;
 }
 
 .lb-status {

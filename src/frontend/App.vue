@@ -47,6 +47,8 @@ const hasSidebar = computed(
 
 const hasToc = computed(() => Boolean(activeSection.value.toc));
 
+const isEmbed = computed(() => route.query.embed === "1");
+
 const layoutClass = computed(() => {
   if (hasSidebar.value) return "with-sidebar";
   if (hasToc.value) return "with-toc";
@@ -87,12 +89,12 @@ useHead(() => {
 </script>
 
 <template>
-  <div class="app">
-    <TopHeader />
-    <SectionTabs :active-id="activeSection.id" />
+  <div class="app" :class="{ embed: isEmbed }">
+    <TopHeader v-if="!isEmbed" />
+    <SectionTabs v-if="!isEmbed" :active-id="activeSection.id" />
     <div class="page" :class="layoutClass">
       <SideNav
-        v-if="hasSidebar"
+        v-if="hasSidebar && !isEmbed"
         :section="activeSection"
         :active-page-slug="pageSlug"
       />
@@ -111,11 +113,11 @@ useHead(() => {
         <div v-else class="error">Page not found.</div>
       </main>
       <TableOfContents
-        v-if="hasToc && mdPath && !isLeaderboard"
+        v-if="hasToc && mdPath && !isLeaderboard && !isEmbed"
         :path="mdPath"
       />
     </div>
-    <footer class="site-footer">
+    <footer v-if="!isEmbed" class="site-footer">
       Made by
       <a href="https://www.saattrupdan.com/" target="_blank" rel="noopener">
         Dan Saattrup Smart
@@ -133,6 +135,21 @@ useHead(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* Embed mode: stripped-down layout for iframing. */
+.app.embed {
+  min-height: auto;
+}
+
+.app.embed .page {
+  padding: 0.75rem 1rem;
+  max-width: none;
+  grid-template-columns: 1fr !important;
+}
+
+.app.embed .content-wrap {
+  padding: 0;
 }
 
 .page {
