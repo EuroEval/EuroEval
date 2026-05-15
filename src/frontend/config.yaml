@@ -121,3 +121,8 @@ sections:
     title: Python Package
     path: python-package.md
     toc: true
+
+  - id: api
+    title: API Reference
+    path: api.md
+    toc: true

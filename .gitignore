@@ -139,3 +139,6 @@ debug*.py
 
 # Node
 node_modules/
+
+# Auto-generated API reference (rebuilt from src/euroeval/ on dev + build).
+src/frontend/md/api.md
