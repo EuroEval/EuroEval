@@ -295,6 +295,7 @@ const resetFilters = () => {
                 isTickCrossCol(table.columns[ci]) ? `cell-tc ${tickCrossClass(cell.text)}` : '',
               ]"
               :style="isRankCol(table.columns[ci]) ? rankHeatmapStyle(cell) : undefined"
+              :title="ci === 0 ? cell.text : undefined"
             >
               <span v-html="cellDisplayHtml(cell, table.columns[ci])" />
             </td>
@@ -411,14 +412,32 @@ const resetFilters = () => {
   border-bottom: 1px solid var(--color-border);
   padding: 0.45rem 0.6rem;
   text-align: center;
-  vertical-align: top;
+  vertical-align: middle;
   white-space: nowrap;
 }
 
-/* First column (Model) stays left-aligned. */
+/* Force every data row to the same height so the table is a fixed size
+   across pages. The Model column truncates with an ellipsis instead of
+   wrapping; the full text is available via the cell title tooltip. */
+.lb-table tbody tr {
+  height: 44px;
+}
+
+/* First column (Model) stays left-aligned and ellipsis-truncates. */
 .lb-table th:first-child,
 .lb-table td:first-child {
   text-align: left;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-table td:first-child > span {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }
 
 .lb-table thead th {
@@ -471,7 +490,6 @@ const resetFilters = () => {
 }
 
 .cell.kind-model {
-  white-space: normal;
   min-width: 220px;
 }
 
