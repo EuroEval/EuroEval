@@ -17,21 +17,18 @@ models feel free to open an [issue](https://github.com/EuroEval/EuroEval/issues)
 
 ## How is the overall rank computed across tasks and languages?
 
-Ranks are built bottom-up from individual datasets. For every dataset we sort the models
-by their primary score (best first) and walk down the list: the top model gets rank 1,
-and each subsequent model only gets a worse rank if its score is *significantly* worse
-than the previous model's (a statistical test on the per-iteration raw scores). When it
-is significantly worse, the rank increases by the score gap divided by the standard
-deviation of all scores on that dataset — so the gap between models is measured in
-"how unusual is this gap, given the spread of scores on this dataset". Models that are
-statistically tied therefore share the same rank, and models without a score on the
-dataset get rank infinity.
+On each dataset, the best model gets rank 1. The next model gets a worse rank only if
+it's *significantly* worse; if it is, the rank goes up by the score gap measured in
+standard deviations on that dataset. Statistically tied models share the same rank.
 
-These dataset ranks are then averaged into a task rank per language (e.g. NER in
-Danish), task ranks are averaged into a per-language rank, and per-language ranks are
-averaged into the overall rank shown at the top of each leaderboard. Tasks flagged as
-"orthogonal" — currently the speed task — are excluded from rank aggregation and shown
-with their raw scores only.
+These per-dataset ranks are then averaged up — first into per-task ranks, then
+per-language ranks, then into the overall rank shown at the top of each leaderboard.
+The intuition for the resulting number: a mean rank of 1 means the model beats every
+other model on every dataset, and a mean rank of 2 means it's on average one standard
+deviation behind the best model.
+
+The speed task is "orthogonal" and excluded from rank aggregation — it's shown with
+its raw score only.
 
 ## How are the confidence intervals (`± x.xx`) computed?
 
@@ -158,12 +155,17 @@ GitHub README — copy from there to make sure you're citing the most recent ver
 
 ## Why do some cells in the leaderboard show `-` or `?`?
 
-A dash means we simply haven't run that model on that dataset yet. We maintain a
+A dash (`-`) means we simply haven't run that model on that dataset yet. We maintain a
 [prioritised list of models](https://github.com/EuroEval/EuroEval/issues/1186) that we
 try to keep fully covered, but other models will have gaps — especially as new
 datasets are released and existing models haven't yet been rerun against them. If
 there's a specific model/dataset combination you'd like to see filled in, please open
 a [model evaluation request](https://github.com/EuroEval/EuroEval/issues/new?template=model_evaluation_request.yaml).
+
+A question mark (`?`) means the value is unknown — typically because the information
+isn't publicly available. For instance, a closed model's parameter count or training
+data is often undisclosed, in which case we mark the corresponding column as `?`
+rather than guessing.
 
 ## Not finding the answer that you are looking for?
 
