@@ -12,7 +12,13 @@ const router = createRouter({
     { path: "/:section", name: "section", component: PageStub },
     { path: "/:section/:page", name: "section-page", component: PageStub },
   ],
-  scrollBehavior: () => ({ top: 0 }),
+  scrollBehavior: (to) => {
+    // If the target has a hash, let the markdown components scroll to it
+    // after they've expanded any <details> wrappers. Otherwise jump to the
+    // top of the page on every navigation.
+    if (to.hash) return false;
+    return { top: 0 };
+  },
 });
 
 export default router;

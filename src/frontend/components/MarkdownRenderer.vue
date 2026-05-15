@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch, nextTick } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import type { NavSection } from "@/nav";
 import { pageSlug as pageSlugFn } from "@/nav";
 import { renderMarkdown, wireTabSync } from "@/markdown";
@@ -12,7 +12,28 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
+const route = useRoute();
 const rendered = computed(() => renderMarkdown(props.path));
+
+// Open ancestor <details> blocks and scroll the URL fragment into view —
+// triggered after the markdown body is mounted so deep links from the
+// search dropdown (e.g. `/faq#how-…`) work even when the target heading
+// sits inside a collapsed module.
+const scrollToHash = async () => {
+  await nextTick();
+  const hash = (route.hash || window.location.hash || "").replace(/^#/, "");
+  if (!hash) return;
+  const el = document.getElementById(hash);
+  if (!el) return;
+  let cur: HTMLElement | null = el;
+  while (cur) {
+    if (cur instanceof HTMLDetailsElement && !cur.open) cur.open = true;
+    cur = cur.parentElement;
+  }
+  requestAnimationFrame(() => {
+    el.scrollIntoView({ block: "start" });
+  });
+};
 
 const pageTitle = computed(() => {
   if (!props.pageSlug) return undefined;
@@ -59,9 +80,12 @@ watch(
     }
     await nextTick();
     if (bodyEl.value) tabCleanup = wireTabSync(bodyEl.value);
+    scrollToHash();
   },
   { immediate: true },
 );
+
+watch(() => route.fullPath, scrollToHash);
 
 onBeforeUnmount(() => {
   if (tabCleanup) tabCleanup();
