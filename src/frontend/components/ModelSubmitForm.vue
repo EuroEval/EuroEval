@@ -106,15 +106,20 @@ async function onSubmit() {
 
 <template>
   <form class="submit-form" @submit.prevent="onSubmit">
-    <h2>Submit a model</h2>
-    <p class="hint">
-      Pick a public model on the
-      <a href="https://huggingface.co/models" target="_blank" rel="noopener">
-        Hugging Face Hub
-      </a>
-      and choose which language groups it should be evaluated on. API-only
-      models are not accepted.
-    </p>
+    <details class="submit-details">
+      <summary class="submit-summary">
+        <h2>Submit a model</h2>
+        <span class="chev" aria-hidden="true">▸</span>
+      </summary>
+
+      <p class="hint">
+        Pick a public model on the
+        <a href="https://huggingface.co/models" target="_blank" rel="noopener">
+          Hugging Face Hub
+        </a>
+        and choose which language groups it should be evaluated on. API-only
+        models are not accepted.
+      </p>
 
     <label class="field">
       <span class="label">Model ID</span>
@@ -171,8 +176,9 @@ async function onSubmit() {
       </button>
     </div>
 
-    <p v-if="errorMsg" class="msg error">{{ errorMsg }}</p>
-    <p v-if="successMsg" class="msg success">{{ successMsg }}</p>
+      <p v-if="errorMsg" class="msg error">{{ errorMsg }}</p>
+      <p v-if="successMsg" class="msg success">{{ successMsg }}</p>
+    </details>
   </form>
 </template>
 
@@ -186,7 +192,39 @@ async function onSubmit() {
 }
 
 h2 {
-  margin: 0 0 0.5rem;
+  margin: 0;
+}
+
+.submit-details {
+  /* defaults to closed because no [open] attribute is set */
+}
+
+.submit-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.submit-summary::-webkit-details-marker {
+  display: none;
+}
+
+.submit-details[open] .submit-summary {
+  margin-bottom: 0.5rem;
+}
+
+.chev {
+  display: inline-block;
+  transition: transform 0.15s ease;
+  color: var(--color-text-muted, #888);
+}
+
+.submit-details[open] .chev {
+  transform: rotate(90deg);
 }
 
 .hint {
