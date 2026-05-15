@@ -108,8 +108,12 @@ async function onSubmit() {
   <form class="submit-form" @submit.prevent="onSubmit">
     <details class="submit-details">
       <summary class="submit-summary">
-        <h2>Submit a model</h2>
         <span class="chev" aria-hidden="true">▸</span>
+        <h2>Submit a model</h2>
+        <span class="toggle-hint">
+          <span class="hint-open">Click to expand</span>
+          <span class="hint-close">Click to collapse</span>
+        </span>
       </summary>
 
       <p class="hint">
@@ -186,45 +190,87 @@ async function onSubmit() {
 .submit-form {
   border: 1px solid var(--color-border);
   border-radius: 0.5rem;
-  padding: 1.25rem 1.5rem;
   background: var(--color-card-bg, transparent);
   margin-bottom: 2rem;
+  overflow: hidden;
 }
 
 h2 {
   margin: 0;
-}
-
-.submit-details {
-  /* defaults to closed because no [open] attribute is set */
+  font-size: 1.1rem;
 }
 
 .submit-summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.6rem;
   list-style: none;
   cursor: pointer;
   user-select: none;
+  padding: 0.85rem 1.25rem;
+  background: var(--color-hover-bg, rgba(31, 111, 235, 0.06));
+  transition: background 0.12s ease;
 }
 
 .submit-summary::-webkit-details-marker {
   display: none;
 }
 
+.submit-summary:hover,
+.submit-summary:focus-visible {
+  background: var(--color-hover-bg-strong, rgba(31, 111, 235, 0.12));
+  outline: none;
+}
+
 .submit-details[open] .submit-summary {
-  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .chev {
   display: inline-block;
+  font-size: 0.85rem;
   transition: transform 0.15s ease;
-  color: var(--color-text-muted, #888);
+  color: var(--color-link, #1f6feb);
 }
 
 .submit-details[open] .chev {
   transform: rotate(90deg);
+}
+
+.toggle-hint {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #666);
+}
+
+.hint-open,
+.hint-close {
+  display: none;
+}
+
+.submit-details:not([open]) .hint-open {
+  display: inline;
+}
+
+.submit-details[open] .hint-close {
+  display: inline;
+}
+
+.submit-details > :not(.submit-summary) {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.submit-details > .hint {
+  padding-top: 1rem;
+}
+
+.submit-details > .msg:last-child {
+  margin-bottom: 1.25rem;
+}
+
+.submit-details > .actions {
+  padding-bottom: 1.25rem;
 }
 
 .hint {
