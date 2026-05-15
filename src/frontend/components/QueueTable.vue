@@ -6,6 +6,10 @@ function displayGroups(groups: string[]): string {
   return groups.join(", ");
 }
 
+function statusClass(status: string): string {
+  return status.toLowerCase().replace(/\s+/g, "-");
+}
+
 defineProps<{ entries: QueueEntry[]; loading: boolean; error: string | null }>();
 const emit = defineEmits<{
   refresh: [];
@@ -54,7 +58,14 @@ const emit = defineEmits<{
             <span v-else>{{ displayGroups(e.languageGroups) }}</span>
           </td>
           <td>
-            <span :class="['status', e.status.toLowerCase()]">
+            <span
+              :class="['status', statusClass(e.status)]"
+              :title="
+                e.erroredOnVersion
+                  ? `Errored on EuroEval v${e.erroredOnVersion}`
+                  : undefined
+              "
+            >
               {{ e.status }}
             </span>
           </td>
@@ -149,6 +160,16 @@ const emit = defineEmits<{
 .status.waiting {
   background: rgba(108, 117, 125, 0.18);
   color: #57606a;
+}
+
+.status.error {
+  background: rgba(220, 53, 69, 0.14);
+  color: #b00020;
+}
+
+.status.waiting-for-bug-fix {
+  background: rgba(255, 165, 0, 0.18);
+  color: #b15400;
 }
 
 .sub-col {

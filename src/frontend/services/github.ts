@@ -27,7 +27,11 @@ export interface RawIssue {
   labels: Array<{ name: string } | string>;
 }
 
-export type QueueStatus = "Evaluating" | "Waiting";
+export type QueueStatus =
+  | "Evaluating"
+  | "Waiting"
+  | "Error"
+  | "Waiting for bug fix";
 
 export interface QueueEntry {
   number: number;
@@ -35,7 +39,40 @@ export interface QueueEntry {
   modelId: string;
   languageGroups: string[];
   status: QueueStatus;
+  erroredOnVersion: string | null;
   createdAt: string;
+}
+
+declare const __PACKAGE_VERSION__: string | undefined;
+const currentVersion =
+  typeof __PACKAGE_VERSION__ !== "undefined" ? __PACKAGE_VERSION__ : "";
+
+const ERROR_MARKER_RE = /<!--\s*errored-on:\s*v([^\s>-]+)\s*-->/;
+
+export function extractErroredOnVersion(body: string | null): string | null {
+  if (!body) return null;
+  const m = body.match(ERROR_MARKER_RE);
+  return m ? m[1] : null;
+}
+
+function versionTuple(v: string): number[] {
+  return v
+    .split(".")
+    .map((p) => parseInt(p, 10))
+    .filter((n) => !Number.isNaN(n));
+}
+
+/** Return whether ``a`` is strictly newer than ``b`` in dotted-numeric order. */
+export function isVersionNewer(a: string, b: string): boolean {
+  const ta = versionTuple(a);
+  const tb = versionTuple(b);
+  const n = Math.max(ta.length, tb.length);
+  for (let i = 0; i < n; i++) {
+    const av = ta[i] ?? 0;
+    const bv = tb[i] ?? 0;
+    if (av !== bv) return av > bv;
+  }
+  return false;
 }
 
 export function extractModelId(title: string): string | null {
@@ -54,19 +91,30 @@ export function extractLanguageGroups(body: string | null): string[] {
   });
 }
 
-export function issueStatus(issue: RawIssue): QueueStatus {
-  return issue.assignee || issue.assignees.length > 0 ? "Evaluating" : "Waiting";
+export function issueStatus(
+  issue: RawIssue,
+  erroredOn: string | null,
+): QueueStatus {
+  if (issue.assignee || issue.assignees.length > 0) return "Evaluating";
+  if (erroredOn) {
+    return currentVersion && isVersionNewer(currentVersion, erroredOn)
+      ? "Error"
+      : "Waiting for bug fix";
+  }
+  return "Waiting";
 }
 
 export function toQueueEntry(issue: RawIssue): QueueEntry | null {
   const modelId = extractModelId(issue.title);
   if (!modelId) return null;
+  const erroredOnVersion = extractErroredOnVersion(issue.body);
   return {
     number: issue.number,
     url: issue.html_url,
     modelId,
     languageGroups: extractLanguageGroups(issue.body),
-    status: issueStatus(issue),
+    status: issueStatus(issue, erroredOnVersion),
+    erroredOnVersion,
     createdAt: issue.created_at,
   };
 }
@@ -80,11 +128,17 @@ export async function listOpenEvalIssues(): Promise<QueueEntry[]> {
     throw new Error(`Failed to load queue (${r.status}).`);
   }
   const raw = (await r.json()) as RawIssue[];
+  const order: Record<QueueStatus, number> = {
+    Evaluating: 0,
+    Waiting: 1,
+    Error: 2,
+    "Waiting for bug fix": 3,
+  };
   return raw
     .map(toQueueEntry)
     .filter((e): e is QueueEntry => e !== null)
     .sort((a, b) => {
-      if (a.status !== b.status) return a.status === "Evaluating" ? -1 : 1;
+      if (a.status !== b.status) return order[a.status] - order[b.status];
       return a.createdAt.localeCompare(b.createdAt);
     });
 }

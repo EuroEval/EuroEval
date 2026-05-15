@@ -21,6 +21,7 @@ EUROEVAL_RESULTS_PATH Optional override for the path to
 
 from __future__ import annotations
 
+import importlib.metadata
 import json
 import logging
 import os
@@ -58,6 +59,11 @@ _SLAVIC = (
     " Serbian, Slovak, Slovenian, Ukrainian)"
 )
 _WGERMANIC = "West Germanic languages (Dutch, English, German)"
+
+# Marker the script appends to an issue body when an evaluation fails. The
+# frontend parses this to display "Error" / "Waiting for bug fix" statuses.
+ERROR_MARKER_RE = re.compile(r"<!--\s*errored-on:\s*v([^\s>-]+)\s*-->")
+
 
 LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
     _BALTIC: ["lv", "lt"],
@@ -180,6 +186,54 @@ def assign_issue(number: int) -> None:
     )
 
 
+def unassign_issue(number: int) -> None:
+    """Remove ``ASSIGNEE`` so the issue returns to the unassigned pool."""
+    gh_request(
+        f"/repos/{REPO}/issues/{number}/assignees",
+        method="DELETE",
+        body={"assignees": [ASSIGNEE]},
+    )
+
+
+def euroeval_version() -> str:
+    """Return the locally installed EuroEval package version."""
+    try:
+        return importlib.metadata.version("euroeval")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
+
+
+def version_tuple(v: str) -> tuple[int, ...]:
+    """Return a comparable tuple for a dotted-numeric version like ``17.2.0``.
+
+    Non-numeric or unknown components yield ``(-1,)`` so they sort before
+    anything else and never block retries.
+    """
+    if v == "unknown":
+        return (-1,)
+    try:
+        return tuple(int(p) for p in v.split(".") if p.isdigit())
+    except ValueError:
+        return (-1,)
+
+
+def errored_on_version(body: str | None) -> str | None:
+    """Return the EuroEval version recorded in the issue body, if any."""
+    if not body:
+        return None
+    m = ERROR_MARKER_RE.search(body)
+    return m.group(1) if m else None
+
+
+def set_errored_marker(number: int, body: str | None, version: str) -> None:
+    """Append/replace the ``errored-on`` marker in the issue body."""
+    cleaned = ERROR_MARKER_RE.sub("", body or "").rstrip()
+    new_body = f"{cleaned}\n\n<!-- errored-on: v{version} -->\n"
+    gh_request(
+        f"/repos/{REPO}/issues/{number}", method="PATCH", body={"body": new_body}
+    )
+
+
 def comment_on_issue(number: int, comment: str) -> None:
     """Post ``comment`` to the issue with the given number."""
     gh_request(
@@ -195,11 +249,13 @@ def read_jsonl_lines(path: str) -> list[str]:
         return [line.rstrip("\n") for line in f if line.strip()]
 
 
-def run_euroeval(model_id: str, languages: list[str]) -> bool:
+def run_euroeval(model_id: str, languages: list[str]) -> tuple[bool, str]:
     """Run the euroeval CLI for the given model and language list.
 
     Returns:
-        ``True`` if the CLI exited cleanly, otherwise ``False``.
+        ``(success, captured_stderr)``. ``captured_stderr`` is populated
+        with the tail of the subprocess's combined output when the run
+        fails, so it can be posted back to the issue.
     """
     cmd = ["euroeval", "--model", model_id]
     for lang in languages:
@@ -207,13 +263,21 @@ def run_euroeval(model_id: str, languages: list[str]) -> bool:
     logger.info("Running: %s", " ".join(cmd))
     try:
         subprocess.run(cmd, check=True)
-        return True
+        return True, ""
     except subprocess.CalledProcessError as e:
+        # Re-run with capture so we have a stack trace to report. The first
+        # run already crashed, so this is at worst a second crash on the
+        # same input — far cheaper than the eval itself.
+        captured = subprocess.run(  # noqa: S603
+            cmd, capture_output=True, text=True, check=False
+        )
+        output = (captured.stderr or "") + (captured.stdout or "")
         logger.error("euroeval failed (exit %s) for %s.", e.returncode, model_id)
-        return False
+        # Keep only the last ~6 KiB so the comment doesn't blow up.
+        return False, output[-6000:].strip()
     except FileNotFoundError:
         logger.error("`euroeval` CLI not found on PATH. Is it installed?")
-        return False
+        return False, "`euroeval` CLI not found on PATH."
 
 
 def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
@@ -228,9 +292,22 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     assign_issue(number)
 
     before = set(read_jsonl_lines(RESULTS_PATH))
-    ok = run_euroeval(model_id, languages)
+    ok, error_output = run_euroeval(model_id, languages)
     after = read_jsonl_lines(RESULTS_PATH)
     new_lines = [line for line in after if line not in before]
+
+    if not ok:
+        version = euroeval_version()
+        comment = (
+            f"Error encountered during evaluation:\n\n"
+            f"```bash\n{error_output or '(no output captured)'}\n```\n\n"
+            f"EuroEval version: v{version}\n"
+        )
+        comment_on_issue(number, comment)
+        set_errored_marker(number, issue.get("body"), version)
+        unassign_issue(number)
+        logger.info("#%s: marked errored on v%s, returned to queue.", number, version)
+        return
 
     if not new_lines:
         logger.warning(
@@ -239,10 +316,6 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
             number,
             RESULTS_PATH,
         )
-        if not ok:
-            comment_on_issue(
-                number, "⚠️ The evaluation run failed. See compute-server logs."
-            )
         return
 
     payload = "\n".join(new_lines)
@@ -263,9 +336,13 @@ def main() -> None:
         logger.error("Failed to list issues: %s", e)
         sys.exit(1)
 
-    # Resolve metadata (model id, language groups, param count) once per
-    # issue, then sort by that metadata before doing any heavy work.
-    candidates: list[tuple[int, int, dict, str, list[str]]] = []
+    current_version = euroeval_version()
+    current_v = version_tuple(current_version)
+
+    # Resolve metadata once per issue, then sort by that metadata before
+    # doing any heavy work. Tuple is (is_errored, param count, num groups,
+    # issue, model id, groups) so errored issues sort after fresh ones.
+    candidates: list[tuple[int, int, int, dict, str, list[str]]] = []
     for issue in issues:
         number = issue["number"]
         title = issue.get("title", "")
@@ -281,24 +358,38 @@ def main() -> None:
             logger.info("#%s: skipping — no language groups selected.", number)
             continue
 
+        errored_v = errored_on_version(body)
+        if errored_v is not None and version_tuple(errored_v) >= current_v:
+            logger.info(
+                "#%s: skipping — errored on v%s and current version is v%s.",
+                number,
+                errored_v,
+                current_version,
+            )
+            continue
+
         info = huggingface_model_info(model_id)
         if info is None:
             logger.info("#%s: skipping — model %r not on HF Hub.", number, model_id)
             continue
 
         param_count = huggingface_param_count(info)
-        candidates.append((param_count, len(groups), issue, model_id, groups))
+        is_errored = 1 if errored_v is not None else 0
+        candidates.append(
+            (is_errored, param_count, len(groups), issue, model_id, groups)
+        )
 
-    candidates.sort(key=lambda c: (c[0], c[1]))
+    candidates.sort(key=lambda c: (c[0], c[1], c[2]))
     logger.info("Found %d processable issue(s).", len(candidates))
 
-    for param_count, num_groups, issue, model_id, groups in candidates:
+    for is_errored, param_count, num_groups, issue, model_id, groups in candidates:
         logger.info(
-            "#%s: queueing %r (%s params, %d group(s)).",
+            "#%s: queueing %r (%s params, %d group(s), %s).",
             issue["number"],
             model_id,
             param_count,
             num_groups,
+            "retry of errored eval" if is_errored else "fresh",
         )
         try:
             process_issue(issue, model_id, groups)
