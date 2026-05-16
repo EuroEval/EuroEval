@@ -1,11 +1,14 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "build_command": "npm run build",
+  "output_directory": "dist",
   "framework": null,
-  "trailingSlash": false,
-  "cleanUrls": true,
+  "trailing_slash": false,
+  "clean_urls": true,
+  "functions": {
+    "src/scripts/submit-evaluation.ts": {}
+  },
   "rewrites": [
-    { "source": "/((?!api|assets|gfx|csv|leaderboards-csv|sitemap.xml|robots.txt|llms.txt|evaluated-models.json|favicon.ico|.*\\..+).*)", "destination": "/index.html" }
+    { "source": "/((?!api|assets|gfx|csv|leaderboards-csv|sitemap.xml|robots.txt|llms.txt|evaluated-models.json|favicon.ico|.*\..+).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
