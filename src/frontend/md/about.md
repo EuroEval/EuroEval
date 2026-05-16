@@ -6,12 +6,8 @@ hide:
 #
 
 <div align='center'>
-<img
-    src="https://raw.githubusercontent.com/EuroEval/EuroEval/main/gfx/euroeval.png"
-    height="500"
-    width="372"
->
-<h3>The robust European language model benchmark.</h3>
+  <img src="/gfx/euroeval.png" alt="EuroEval logo" height="500" width="372">
+  <h3>The robust European language model benchmark.</h3>
 </div>
 
 ---
