@@ -32,31 +32,6 @@ Key directories and their purposes:
 - **`src/frontend/md/python-package.md`** — Python package documentation (main docs)
 - **`README.md`** — Main project overview
 
-## Exploration Guidelines
-
-When exploring this codebase:
-
-1. **Be targeted.** EuroEval has a well-organized structure. If you need
-  to understand the evaluation queue, start with
-  `src/scripts/process_evaluation_queue.py`. Don't explore the entire
-  frontend when you only need the server script.
-
-2. **Know the entry points.** The server script is the compute server's
-  entry point. The frontend is Vue.js with Vite. The API is Vercel
-  serverless functions.
-
-3. **Read specific functions.** When looking for how something works,
-  read the specific function, not the entire file. For example, if you
-  need `huggingface_model_info()`, read just that function.
-
-## Planning
-
-Before starting work on multi-step tasks, take time to plan. Break down the work into:
-
-- Steps that require understanding existing code
-- Steps that involve editing files
-- Independent steps that can be done in parallel
-
 ## File Reading Best Practices
 
 - **Don't read the entire `process_evaluation_queue.py`** — read only
