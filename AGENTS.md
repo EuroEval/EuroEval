@@ -15,12 +15,10 @@ Key directories and their purposes:
 
 ### Server-Side Evaluation
 
-- **`src/scripts/process_evaluation_queue.py`**
-  — GPU compute server script that picks up GitHub
-  issues, runs `euroeval`, and posts results
-- **`src/scripts/collect_evaluation_results.py`**
-  — Laptop script that collects results from
-  GitHub comments and updates leaderboards
+- **`src/scripts/process_evaluation_queue.py`** — GPU compute server script
+  that picks up GitHub issues, runs `euroeval`, and posts results
+- **`src/scripts/collect_evaluation_results.py`** — Laptop script that
+  collects results from GitHub comments and updates leaderboards
 
 ### Frontend
 
@@ -34,46 +32,40 @@ Key directories and their purposes:
 - **`src/frontend/md/python-package.md`** — Python package documentation (main docs)
 - **`README.md`** — Main project overview
 
-## Exploration Guidelines for EuroEval
+## Exploration Guidelines
 
 When exploring this codebase:
 
-1. **Be targeted.** EuroEval has a well-organized
-  structure. If you need to understand the evaluation
-  queue, start with
-  `src/scripts/process_evaluation_queue.py`. Don't
-  explore the entire frontend when you only need the
-  server script.
+1. **Be targeted.** EuroEval has a well-organized structure. If you need
+  to understand the evaluation queue, start with
+  `src/scripts/process_evaluation_queue.py`. Don't explore the entire
+  frontend when you only need the server script.
 
-2. **Know the entry points.** The server script is
-  the compute server's entry point. The frontend is
-  Vue.js with Vite. The API is Vercel serverless
-  functions.
+2. **Know the entry points.** The server script is the compute server's
+  entry point. The frontend is Vue.js with Vite. The API is Vercel
+  serverless functions.
 
-3. **Read specific functions.** When looking for how
-  something works, read the specific function, not the
-  entire file. For example, if you need
-  `huggingface_model_info()`, read just that function.
+3. **Read specific functions.** When looking for how something works,
+  read the specific function, not the entire file. For example, if you
+  need `huggingface_model_info()`, read just that function.
 
-## Planning Guidelines
+## Planning
 
-Always use the @plan subagent for multi-step tasks. The plan should:
+Before starting work on multi-step tasks, take time to plan. Break down the work into:
 
-1. Identify which files need to be read (e.g., `process_evaluation_queue.py` for queue changes)
-2. Break down work into independent steps
-3. Produce a todo list with concrete actions
+- Steps that require understanding existing code
+- Steps that involve editing files
+- Independent steps that can be done in parallel
 
 ## File Reading Best Practices
 
-- **Don't read the entire `process_evaluation_queue.py`**
-  — read only the functions you need (e.g.,
-  `huggingface_model_info()`, `run_euroeval()`, `main()`)
-- **Don't explore the entire frontend** — if you need
-  the GitHub service, read `src/frontend/services/github.ts`
-  only
-- **Read documentation files once** —
-  `src/frontend/md/python-package.md` is the main docs
-  file; read it once and note the sections you need
+- **Don't read the entire `process_evaluation_queue.py`** — read only
+  the functions you need (e.g., `huggingface_model_info()`,
+  `run_euroeval()`, `main()`)
+- **Don't explore the entire frontend** — if you need the GitHub
+  service, read `src/frontend/services/github.ts` only
+- **Read documentation files once** — `src/frontend/md/python-package.md`
+  is the main docs file; read it once and note the sections you need
 
 ## EuroEval-Specific Patterns
 
@@ -93,7 +85,6 @@ Always use the @plan subagent for multi-step tasks. The plan should:
 
 ### Documentation Structure
 
-The documentation uses MkDocs with markdown files in
-`src/frontend/md/`. The main package docs are in
-`python-package.md`. New sections should use `##`
-headings for automatic sidebar navigation.
+The documentation uses MkDocs with markdown files in `src/frontend/md/`.
+The main package docs are in `python-package.md`. New sections should use
+`##` headings for automatic sidebar navigation.
