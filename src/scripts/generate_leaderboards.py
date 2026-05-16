@@ -94,12 +94,12 @@ def main(categories: tuple[t.Literal["generative", "all_models"]], force: bool) 
     """Generate all leaderboards.
 
     Args:
-        categories:
+        categories (optional):
             Categories to generate leaderboards for. Defaults to 'generative' and
             'all_models'.
-        force:
-            Whether to force the generation of the leaderboard, even if no updates are
-            found.
+        force (optional):
+            Whether to force the generation of the leaderboard, even if no updates
+            are found. Defaults to False.
     """
     # If results.tar.gz isn't here, pull the newest backup into place.
     restore_from_backup_if_missing()
