@@ -631,7 +631,7 @@ features a manually annotated reading comprehension dataset based on Norwegian n
 articles. This dataset is an _abstractive_ question answering dataset, meaning that the
 answers do not always feature in the context. To fix this, they were rephrased using
 [this
-script](https://github.com/EuroEval/EuroEval/blob/main/src/scripts/create_norglm_multiqa.py),
+script](https://github.com/EuroEval/EuroEval/blob/main/src/scripts/dataset_creation/create_norglm_multiqa.py),
 which utilised the `gpt-4o-2024-05-13` model.
 
 The original dataset contains 2,406 samples, which we split into 1,024 / 256 / 1,126

@@ -1348,7 +1348,7 @@ the dataset is used to ensure consistency and partially reduce the risk of data
 contamination.
 
 After running the filtering and splitting script (
-`scripts/create_duidelijke_taal_nl.py`), the dataset
+`scripts/dataset_creation/create_duidelijke_taal_nl.py`), the dataset
 contains 50 / 51 / 90 samples for training, validation and testing, respectively.
 
 Here are a few examples from the training split:

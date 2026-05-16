@@ -245,6 +245,7 @@ testpaths = [
 pythonpath = [
     "src",
     "src/scripts",
+    "src/scripts/dataset_creation",
 ]
 
 [build-system]

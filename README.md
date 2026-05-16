@@ -87,17 +87,17 @@ environment:
 ## Reproducing the evaluation datasets
 
 All datasets used in this project are generated using the scripts located in the
-[src/scripts](src/scripts) folder. To reproduce a dataset, run the corresponding script
-with the following command
+[src/scripts/dataset_creation](src/scripts/dataset_creation) folder. To reproduce a
+dataset, run the corresponding script with the following command
 
 ```bash
-uv run src/scripts/<name-of-script>.py
+uv run src/scripts/dataset_creation/<name-of-script>.py
 ```
 
 Replace <name-of-script> with the specific script you wish to execute, e.g.,
 
 ```bash
-uv run src/scripts/create_allocine.py
+uv run src/scripts/dataset_creation/create_allocine.py
 ```
 
 ## Contributors :pray:

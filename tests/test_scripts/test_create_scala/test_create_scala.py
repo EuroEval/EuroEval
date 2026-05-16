@@ -1,4 +1,4 @@
-"""Tests for scripts/create_scala.py."""
+"""Tests for scripts/dataset_creation/create_scala.py."""
 
 import re
 from pathlib import Path
@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from pytest import FixtureRequest
 
-from scripts.create_scala import prepare_df
+from scripts.dataset_creation.create_scala import prepare_df
 from scripts.load_ud_pos import load_ud_pos
 
 

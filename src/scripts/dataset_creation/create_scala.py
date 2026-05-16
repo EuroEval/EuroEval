@@ -20,10 +20,7 @@ from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # no
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
-from pandas.errors import SettingWithCopyWarning
-from tqdm.auto import tqdm
-
-from .load_ud_pos import (
+from load_ud_pos import (
     load_bgdt_pos,
     load_cadt_pos,
     load_csdt_pos,
@@ -55,6 +52,8 @@ from .load_ud_pos import (
     load_svdt_pos,
     load_ukdt_pos,
 )
+from pandas.errors import SettingWithCopyWarning
+from tqdm.auto import tqdm
 
 
 def main() -> None:

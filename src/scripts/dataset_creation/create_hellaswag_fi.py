@@ -38,7 +38,7 @@ def main() -> None:
 
     HellaSwag-fi is designed to EuroEval so it already has a 1,024 / 256 / 2,048
     train/val/test split. This script therefore does not perform the same filtering as
-    seen in `src/scripts/create_hellaswag.py`.
+    seen in `src/scripts/dataset_creation/create_hellaswag.py`.
     """
     # Define the base download URL
     repo_id = "Finnish-NLP/hellaswag-fi-google-translate"
@@ -199,7 +199,7 @@ def _print_filtering_stats(df: pd.DataFrame, split: str) -> None:
     For the Finnish HellaSwag-mini dataset, we don't want to filter
     any samples. These prints give an overview about how many samples
     in the dataset that would be filtered out by the different filters
-    that are applied in `src/scripts/create_hellaswag.py`.
+    that are applied in `src/scripts/dataset_creation/create_hellaswag.py`.
 
     Args:
         df: The dataframe to print statistics for.
