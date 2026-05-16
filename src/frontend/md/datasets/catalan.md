@@ -1,4 +1,5 @@
-# Catalan
+<!-- markdownlint-disable-next-line MD013 -->
+# <img src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 27 18"><path fill="%23FCDD09" d="M0 0h27v18H0z"/><path fill="%23DA121A" d="M0 2h27v2H0zM0 6h27v2H0zM0 10h27v2H0zM0 14h27v2H0z"/></svg>' alt='' style='height:0.9em;vertical-align:-0.05em;display:inline-block'> Catalan
 
 This is an overview of all the datasets used in the Catalan part of EuroEval. The
 datasets are grouped by their task - see the [task overview](/tasks) for more

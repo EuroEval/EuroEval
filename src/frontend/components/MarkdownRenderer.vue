@@ -38,7 +38,7 @@ const scrollToHash = async () => {
 const pageTitle = computed(() => {
   if (!props.pageSlug) return undefined;
   const match = props.section.pages?.find(
-    (p) => pageSlugFn(p.path) === props.pageSlug,
+    (p) => pageSlugFn(p) === props.pageSlug,
   );
   return match?.title;
 });
