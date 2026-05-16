@@ -56,6 +56,7 @@ const hasToc = computed(() => Boolean(activeSection.value.toc));
 const isEmbed = computed(() => route.query.embed === "1");
 
 const layoutClass = computed(() => {
+  if (hasSidebar.value && hasToc.value) return "with-sidebar with-toc";
   if (hasSidebar.value) return "with-sidebar";
   if (hasToc.value) return "with-toc";
   return "with-none";
@@ -182,6 +183,10 @@ useHead(() => {
   grid-template-columns: 1fr 220px;
 }
 
+.page.with-sidebar.with-toc {
+  grid-template-columns: 240px 1fr 220px;
+}
+
 .content-wrap {
   min-width: 0;
   padding: 1.5rem 0 3rem;
@@ -209,10 +214,14 @@ useHead(() => {
   .page.with-toc {
     grid-template-columns: 1fr;
   }
+  .page.with-sidebar.with-toc {
+    grid-template-columns: 240px 1fr;
+  }
 }
 
 @media (max-width: 768px) {
-  .page.with-sidebar {
+  .page.with-sidebar,
+  .page.with-sidebar.with-toc {
     grid-template-columns: 1fr;
   }
 }

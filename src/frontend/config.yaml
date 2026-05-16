@@ -78,6 +78,7 @@ sections:
   - id: datasets
     title: Datasets
     indexPath: datasets/README.md
+    toc: true
     pages:
       - { path: datasets/albanian.md, title: "🇦🇱 Albanian" }
       - { path: datasets/belarusian.md, title: "🇧🇾 Belarusian" }
