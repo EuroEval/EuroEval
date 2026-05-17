@@ -743,6 +743,72 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset arc-nl
 ```
 
+### Unofficial: Dutch Proverbs
+
+This dataset contains scenarios in Dutch with two accompanying proverbs: one that
+fits the scenario and one that fits less or not at all.
+The dataset was created for the [GPT-NL](https://gpt-nl.nl/) project, _Work
+Package_ Evaluation \& Benchmarking. All samples were created manually and have been reviewed.
+
+The dataset consists of 32 / 0 / 98 samples for training,
+validation and testing, respectively. This means the dataset is not suitable for
+encoder models that need to be trained on the dataset.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Scenario: Nadat er twee treinen geannuleerd waren, zat de volgende stampensvol. De mensen stonden in het gangpad tegen elkaar aan.\nWelk spreekwoord past hier het beste bij?\na. Als sardientjes in een blik\nb. Er gaan vele makke schapen in een hok",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Scenario: Het nieuwe hippe merk e-bike was een grote hit, ze waren bijna overal uitverkocht en de besteltijd liep op tot een half jaar.\nWelk spreekwoord past hier het beste bij?\na. Als warme broodjes over de toonbank gaan\nb. Als er één schaap over de dam is, volgen er meer",
+  "label": "a"
+}
+```
+
+```json
+{
+  "text": "Scenario: Jaime kon niet eens meer rechtdoor lopen na het avondje feesten. Haar vriendin had de autosleutels maar afgenomen.\nWelk spreekwoord past hier het beste bij?\na. Iemand van de sokken rijden\nb. Boven zijn theewater zijn",
+  "label": "b"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 5
+
+- Prefix prompt:
+
+  ```text
+  Hieronder staan meerkeuzevragen (met antwoorden).
+  ```
+
+- Base prompt template:
+
+  ```text
+  Vraag: {text}
+  Antwoord: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Vraag: {text}
+  
+  Beantwoord de bovenstaande vraag met {labels_str}, en niets anders.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dutch-proverbs
+```
+
 ### Unofficial: INCLUDE-nl
 
 This dataset is part of [INCLUDE](https://doi.org/10.48550/arXiv.2411.19799), a
