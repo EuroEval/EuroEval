@@ -554,6 +554,12 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
         languages.extend(LANGUAGE_GROUP_CODES[g])
     languages = sorted(set(languages))
 
+    if not issue_is_still_claimable(number=number):
+        logger.info(
+            f"#{number}: skipping -- no longer open and unassigned at claim time."
+        )
+        return
+
     logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
     assign_issue(number=number)
 
@@ -637,6 +643,32 @@ def format_dataset_language_pairs(dataset_language_pairs: set[tuple[str, str]]) 
     if len(sorted_pairs) > 10:
         suffix = f" (+{len(sorted_pairs) - 10} more)"
     return ", ".join(preview) + suffix
+
+
+def issue_is_still_claimable(number: int) -> bool:
+    """Return True if the issue is still open with no assignees.
+
+    Re-fetches the issue at claim time so that issues which were closed or
+    assigned between the initial snapshot and now are not double-processed.
+
+    Args:
+        number:
+            The issue number to verify.
+
+    Returns:
+        True if the issue is currently open and has no assignees; False
+        otherwise (including when the lookup fails).
+    """
+    try:
+        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not re-check issue state: {e}")
+        return False
+    if not isinstance(current, dict):
+        return False
+    if current.get("state") != "open":
+        return False
+    return not current.get("assignees")
 
 
 def assign_issue(number: int) -> None:
