@@ -157,19 +157,20 @@ export async function listOpenEvalIssues(): Promise<QueueEntry[]> {
     });
 }
 
-export interface SubmitterCount {
+export interface EvaluatorCount {
   login: string;
   count: number;
   avatarUrl: string;
 }
 
-interface RawIssueWithUser extends RawIssue {
-  user: { login: string; avatar_url: string } | null;
+interface RawIssueWithAssignees extends RawIssue {
+  assignees: Array<{ login: string; avatar_url: string }>;
+  assignee: { login: string; avatar_url: string } | null;
 }
 
 const HALL_OF_FAME_EXCLUDE = new Set(["saattrupdan"]);
 
-export async function listEvalSubmitters(): Promise<SubmitterCount[]> {
+export async function listEvaluators(): Promise<EvaluatorCount[]> {
   const perPage = 100;
   const maxPages = 10;
   const base =
@@ -183,26 +184,35 @@ export async function listEvalSubmitters(): Promise<SubmitterCount[]> {
         if (!r.ok) {
           throw new Error(`Failed to load hall of fame (${r.status}).`);
         }
-        return r.json() as Promise<RawIssueWithUser[]>;
+        return r.json() as Promise<RawIssueWithAssignees[]>;
       }),
     ),
   );
-  const counts = new Map<string, SubmitterCount>();
+  const counts = new Map<string, EvaluatorCount>();
   for (const page of pages) {
     for (const issue of page) {
-      if (!issue.user) continue;
       if (!extractModelId(issue.title)) continue;
-      const login = issue.user.login;
-      if (HALL_OF_FAME_EXCLUDE.has(login)) continue;
-      const cur = counts.get(login);
-      if (cur) {
-        cur.count += 1;
-      } else {
-        counts.set(login, {
-          login,
-          count: 1,
-          avatarUrl: issue.user.avatar_url,
-        });
+      const assignees =
+        issue.assignees && issue.assignees.length > 0
+          ? issue.assignees
+          : issue.assignee
+            ? [issue.assignee]
+            : [];
+      const seen = new Set<string>();
+      for (const a of assignees) {
+        if (HALL_OF_FAME_EXCLUDE.has(a.login)) continue;
+        if (seen.has(a.login)) continue;
+        seen.add(a.login);
+        const cur = counts.get(a.login);
+        if (cur) {
+          cur.count += 1;
+        } else {
+          counts.set(a.login, {
+            login: a.login,
+            count: 1,
+            avatarUrl: a.avatar_url,
+          });
+        }
       }
     }
   }

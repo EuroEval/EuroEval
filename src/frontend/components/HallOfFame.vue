@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { listEvalSubmitters, type SubmitterCount } from "@/services/github";
+import { listEvaluators, type EvaluatorCount } from "@/services/github";
 
 const TOP_N = 10;
-const CACHE_KEY = "euroeval:hall-of-fame";
+const CACHE_KEY = "euroeval:hall-of-fame:evaluators";
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
 interface CachedPayload {
   ts: number;
-  data: SubmitterCount[];
+  data: EvaluatorCount[];
 }
 
-const entries = ref<SubmitterCount[]>([]);
+const entries = ref<EvaluatorCount[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-function readCache(): SubmitterCount[] | null {
+function readCache(): EvaluatorCount[] | null {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return null;
@@ -27,7 +27,7 @@ function readCache(): SubmitterCount[] | null {
   }
 }
 
-function writeCache(data: SubmitterCount[]): void {
+function writeCache(data: EvaluatorCount[]): void {
   try {
     sessionStorage.setItem(
       CACHE_KEY,
@@ -50,7 +50,7 @@ onMounted(async () => {
   }
   loading.value = true;
   try {
-    const all = await listEvalSubmitters();
+    const all = await listEvaluators();
     writeCache(all);
     entries.value = all.slice(0, TOP_N);
   } catch (e) {
@@ -64,7 +64,7 @@ onMounted(async () => {
 <template>
   <aside class="hof">
     <h2>🏆 Hall of Fame</h2>
-    <p class="sub">Most evaluations submitted</p>
+    <p class="sub">Most models evaluated</p>
 
     <p v-if="loading" class="msg">Loading…</p>
     <p v-else-if="error" class="msg err">{{ error }}</p>
