@@ -35,4 +35,29 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes("node_modules/vue/") ||
+            id.includes("node_modules/vue-router/") ||
+            id.includes("node_modules/@vue/")
+          ) {
+            return "vendor";
+          }
+          if (
+            id.includes("node_modules/highlight.js") ||
+            id.includes("node_modules/js-yaml") ||
+            id.includes("node_modules/markdown-it")
+          ) {
+            return "utils";
+          }
+          if (id.includes("node_modules")) {
+            return "external";
+          }
+        },
+      },
+    },
+  },
 });
