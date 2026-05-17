@@ -39,6 +39,7 @@ export interface QueueEntry {
   modelId: string;
   languageGroups: string[];
   status: QueueStatus;
+  evaluator: string | null;
   erroredOnVersion: string | null;
   createdAt: string;
 }
@@ -108,12 +109,15 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
   const modelId = extractModelId(issue.title);
   if (!modelId) return null;
   const erroredOnVersion = extractErroredOnVersion(issue.body);
+  const evaluator =
+    issue.assignee?.login ?? issue.assignees[0]?.login ?? null;
   return {
     number: issue.number,
     url: issue.html_url,
     modelId,
     languageGroups: extractLanguageGroups(issue.body),
     status: issueStatus(issue, erroredOnVersion),
+    evaluator,
     erroredOnVersion,
     createdAt: issue.created_at,
   };

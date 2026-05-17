@@ -38,6 +38,7 @@ const emit = defineEmits<{
           <th>Model</th>
           <th>Language groups</th>
           <th>Status</th>
+          <th>Evaluator</th>
           <th class="sub-col"></th>
         </tr>
       </thead>
@@ -67,6 +68,17 @@ const emit = defineEmits<{
             >
               {{ e.status }}
             </span>
+          </td>
+          <td>
+            <a
+              v-if="e.evaluator"
+              :href="`https://github.com/${e.evaluator}`"
+              target="_blank"
+              rel="noopener"
+            >
+              @{{ e.evaluator }}
+            </a>
+            <span v-else class="muted">—</span>
           </td>
           <td class="sub-col">
             <button
