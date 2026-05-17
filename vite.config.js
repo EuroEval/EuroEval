@@ -46,16 +46,19 @@ export default defineConfig({
           ) {
             return "vendor";
           }
+          if (id.includes("node_modules/highlight.js")) {
+            return "highlight";
+          }
           if (
-            id.includes("node_modules/highlight.js") ||
             id.includes("node_modules/js-yaml") ||
             id.includes("node_modules/markdown-it")
           ) {
-            return "utils";
+            return "markdown";
           }
           if (id.includes("node_modules")) {
             return "external";
           }
+          return "index";
         },
       },
     },
