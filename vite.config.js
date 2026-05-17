@@ -25,4 +25,14 @@ export default defineConfig({
   define: {
     __PACKAGE_VERSION__: JSON.stringify(readPackageVersion()),
   },
+  server: {
+    proxy: {
+      "/api": {
+        target:
+          process.env.VERCEL_DEPLOYMENT_URL || "https://euroeval.vercel.app",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 });
