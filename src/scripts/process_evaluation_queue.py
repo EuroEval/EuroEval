@@ -38,7 +38,7 @@ from pathlib import Path
 
 import psutil
 import torch
-from huggingface_hub import HfApi, get_safetensors_metadata
+from huggingface_hub import HfApi, HfFolder, get_safetensors_metadata
 from huggingface_hub.errors import (
     GatedRepoError,
     HfHubHTTPError,
@@ -807,6 +807,25 @@ def read_jsonl_lines(path: Path) -> list[str]:
     ]
 
 
+def resolve_hf_token() -> str | None:
+    """Return the HF token from env or the ``hf auth login`` cache.
+
+    The queue script's parent process is authenticated via ``HfApi().whoami()``
+    in :func:`ensure_credentials`, so a token is reachable somewhere -- but
+    the euroeval subprocess only picks it up if ``HF_TOKEN`` /
+    ``HUGGINGFACE_API_KEY`` are set in its env, not from the cached login
+    file. Resolve it here so the caller can inject it into the subprocess.
+
+    Returns:
+        The token string, or None if neither env nor cache yields one.
+    """
+    return (
+        os.environ.get("HF_TOKEN")
+        or os.environ.get("HUGGINGFACE_API_KEY")
+        or HfFolder.get_token()
+    )
+
+
 def run_euroeval(model_id: str, languages: list[str]) -> tuple[int, str]:
     """Run the euroeval CLI for the given model and language list.
 
@@ -835,9 +854,20 @@ def run_euroeval(model_id: str, languages: list[str]) -> tuple[int, str]:
         cmd += ["--language", lang]
     logger.info(f"Running: {' '.join(cmd)}")
 
+    env = os.environ.copy()
+    token = resolve_hf_token()
+    if token:
+        env.setdefault("HF_TOKEN", token)
+        env.setdefault("HUGGINGFACE_API_KEY", token)
+
     try:
         proc = subprocess.Popen(  # noqa: S603
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            env=env,
         )
     except FileNotFoundError:
         logger.error("`euroeval` CLI not found on PATH. Is it installed?")
