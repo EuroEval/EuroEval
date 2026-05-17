@@ -1,9 +1,18 @@
 <script setup lang="ts">
-import { LANGUAGE_GROUPS, type QueueEntry } from "@/services/github";
+import { type QueueEntry } from "@/services/github";
 
-function displayGroups(groups: string[]): string {
-  if (groups.length === LANGUAGE_GROUPS.length) return "All language groups";
-  return groups.join(", ");
+function displayLanguages(groups: string[]): string {
+  const langs: string[] = [];
+  for (const g of groups) {
+    const parenIndex = g.indexOf("(");
+    if (parenIndex !== -1) {
+      const inside = g.slice(parenIndex + 1).replace(")", "");
+      const parts = inside.split(",").map((s) => s.trim());
+      langs.push(...parts);
+    }
+  }
+  if (langs.length === 0) return "—"
+  return langs.join(", ");
 }
 
 function statusClass(status: string): string {
@@ -36,7 +45,7 @@ const emit = defineEmits<{
       <thead>
         <tr>
           <th>Model</th>
-          <th>Language groups</th>
+          <th>Languages</th>
           <th class="status-col">Status</th>
           <th>Evaluator</th>
           <th class="sub-col"></th>
@@ -55,7 +64,7 @@ const emit = defineEmits<{
           </td>
           <td class="lg">
             <span v-if="e.languageGroups.length === 0" class="muted">—</span>
-            <span v-else>{{ displayGroups(e.languageGroups) }}</span>
+            <span v-else>{{ displayLanguages(e.languageGroups) }}</span>
           </td>
           <td>
             <span
