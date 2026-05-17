@@ -4,288 +4,274 @@ hide:
 ---
 # The `euroeval` Python Package
 
-The `euroeval` Python package is the Python package used to evaluate language models in
-EuroEval. This page will give you a brief overview of the package and how to use it.
-You can also check out the [full API reference](/api) for more details.
+`euroeval` is the engine behind the EuroEval leaderboards. It runs the same task
+definitions, prompts, metrics, and bootstrap confidence intervals that produce the
+numbers on [euroeval.com](https://euroeval.com), so a result you produce locally is
+directly comparable to anything published on the site.
+
+You can drive it three ways:
+
+- **Command line** — `euroeval --model <model-id>`; the fastest path to a result.
+- **Python API** — `from euroeval import Benchmarker`; same arguments as keyword
+  parameters, plus programmatic access to the returned `BenchmarkResult` objects.
+- **Docker** — a self-contained image with all extras; useful for CI and shared GPUs.
+
+Every CLI flag has a matching keyword argument on `Benchmarker.benchmark()`, so the two
+interfaces stay in lockstep. For the complete list, run `euroeval --help` at your
+terminal or browse the [full API reference](/api).
 
 ## Installation
-
-To install the package simply write the following command in your favorite terminal:
 
 ```bash
 pip install euroeval[all]
 ```
 
-This will install the EuroEval package with all extras. You can also install the
-minimal version by leaving out the `[all]`, in which case the package will let you know
-when an evaluation requires a certain extra dependency, and how you install it.
+The `[all]` extra pulls in every optional dependency (vLLM, HuggingFace extras,
+evaluation backends). If you'd rather stay minimal, install plain `euroeval` and the
+package will print the exact `pip install` command you need the first time it hits a
+missing dependency.
 
 ## Quickstart
 
-### Benchmarking
-
-`euroeval` allows for benchmarking both via. script and using the command line.
-
-/// tab | Using the command line
-
-The easiest way to benchmark pretrained models is via the command line interface. After
-having installed the package, you can benchmark your favorite model like so:
+### Command line
 
 ```bash
-euroeval --model <model-id>
+euroeval --model meta-llama/Llama-3.1-8B-Instruct
 ```
 
-Here `model` is the HuggingFace model ID, which can be found on the [HuggingFace
-Hub](https://huggingface.co/models). By default this will benchmark the model on all
-the tasks available. If you want to benchmark on a particular task, then use the
-`--task` argument:
+That's it. EuroEval picks every dataset compatible with the model (encoder vs decoder,
+generative or not) across every supported language and writes one line per
+(model, dataset) combination to `euroeval_benchmark_results.jsonl` in the current
+directory.
 
-```bash
-euroeval --model <model-id> --task sentiment-classification
-```
-
-We can also narrow down which languages we would like to benchmark on. This can be done
-by setting the `--language` argument. Here we thus benchmark the model on the Danish
-sentiment classification task:
+Most runs narrow the scope with `--task` and/or `--language`:
 
 ```bash
 euroeval --model <model-id> --task sentiment-classification --language da
 ```
 
-Multiple models, datasets and/or languages can be specified by just attaching multiple
-arguments. Here is an example with two models:
+Any flag can be repeated to fan out:
 
 ```bash
-euroeval --model <model-id1> --model <model-id2>
+euroeval --model gpt-4o-mini --model claude-sonnet-4-5 --language en --language de
 ```
 
-The specific model version/revision to use can also be added after the suffix '@':
+Pin a model revision (branch, tag, or commit) by suffixing `@`:
 
 ```bash
-euroeval --model <model-id>@<commit>
+euroeval --model <model-id>@<sha>
 ```
 
-This can be a branch name, a tag name, or a commit id. It defaults to 'main' for latest.
+Run `euroeval --help` for the complete flag list.
 
-See all the arguments and options available for the `euroeval` command by typing
-
-```bash
-euroeval --help
-```
-
-///
-
-/// tab | Using a script
-
-In a script, the syntax is similar to the command line interface. You simply initialise
-an object of the `Benchmarker` class, and call this benchmark object with your favorite
-model:
+### Python
 
 ```python
->>> from euroeval import Benchmarker
->>> benchmarker = Benchmarker()
->>> benchmarker.benchmark(model="<model-id>")
+from euroeval import Benchmarker
+
+benchmarker = Benchmarker()
+results = benchmarker.benchmark(
+    model="meta-llama/Llama-3.1-8B-Instruct",
+    task="sentiment-classification",
+    language="da",
+)
 ```
 
-To benchmark on a specific task and/or language, you simply specify the `task` or
-`language` arguments, shown here with same example as above:
+Every CLI flag maps to a snake_case keyword argument. Omitting `model` benchmarks every
+matching model on the Hugging Face Hub — for example, every Danish model on the Danish
+sentiment task:
 
 ```python
->>> benchmarker.benchmark(
-...     model="<model-id>",
-...     task="sentiment-classification",
-...     language="da",
-... )
+benchmarker.benchmark(task="sentiment-classification", language="da")
 ```
 
-If you want to benchmark a subset of all the models on the Hugging Face Hub, you can
-simply leave out the `model` argument. In this example, we're benchmarking all Danish
-models on the Danish sentiment classification task:
+`benchmark()` returns a list of `BenchmarkResult` objects; see
+[Output format](#output-format-every-eval-ever-eee) for the schema.
 
-```python
->>> benchmarker.benchmark(task="sentiment-classification", language="da")
-```
-
-///
-
-/// tab | Using Docker
-
-A Dockerfile is provided in the repo, which can be downloaded and run, without needing
-to clone the repo and installing from source. This can be fetched programmatically by
-running the following:
+### Docker
 
 ```bash
 wget https://raw.githubusercontent.com/EuroEval/EuroEval/main/Dockerfile
-```
-
-Next, to be able to build the Docker image, first ensure that the NVIDIA Container
-Toolkit is
-[installed](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installation)
-and
-[configured](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuring-docker).
-Ensure that the the CUDA version stated at the top of the Dockerfile matches the CUDA
-version installed (which you can check using `nvidia-smi`). After that, we build the
-image as follows:
-
-```bash
 docker build --pull -t euroeval .
+docker run --rm --gpus 1 euroeval --model <model-id>
 ```
 
-With the Docker image built, we can now evaluate any model as follows:
+Two prerequisites on the host:
+
+- The [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installation)
+  is installed and configured for Docker.
+- The CUDA version at the top of the `Dockerfile` matches the one reported by
+  `nvidia-smi` on the host.
+
+Everything after `euroeval` on the `docker run` line is passed through as CLI flags.
+
+## Recipes
+
+Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
+
+### Evaluate a HF model on a single language
 
 ```bash
-docker run --rm --gpus 1 euroeval <euroeval-arguments>
+euroeval --model meta-llama/Llama-3.1-8B-Instruct --language da
 ```
 
-Here `<euroeval-arguments>` consists of the arguments added to the `euroeval` CLI
-argument. This could for instance be `--model <model-id> --task
-sentiment-classification`.
-///
+### Evaluate a model served by vLLM, Ollama, or another OpenAI-compatible API
 
-## Benchmarking custom inference APIs
-
-If the model you want to benchmark is hosted by a custom inference provider, such as a
-[vLLM server](https://docs.vllm.ai/en/stable/), then this is also supported in EuroEval.
-
-When benchmarking, you simply have to set the `--api-base` argument (`api_base` when
-using the `Benchmarker` API) to the URL of the inference API, and optionally the
-`--api-key` argument (`api_key`) to the API key, if authentication is required.
-
-If you're benchmarking an Ollama model, then you're urged to add the prefix
-`ollama_chat/` to the model name, as that will also fetch model metadata as well as pull
-the models from the Ollama model repository before evaluating it, e.g.:
+Point `--api-base` at the inference server.  For Ollama, prefix the model name with
+`ollama_chat/` so EuroEval fetches metadata and triggers a `pull` for you:
 
 ```bash
 euroeval --model ollama_chat/mymodel --api-base http://localhost:11434
 ```
 
-For all other OpenAI-compatible inference APIs, you simply provide the model name as
-is, e.g.:
+For any other OpenAI-compatible API, pass the model name as-is and supply an API key if
+the server requires one:
 
 ```bash
-euroeval --model my-model --api-base http://localhost:8000
+euroeval --model my-model --api-base http://localhost:8000 --api-key sk-secret
 ```
 
-Again, if the inference API requires authentication, you simply add the `--api-key`
-argument:
-
-```bash
-euroeval --model my-model --api-base http://localhost:8000 --api-key my-secret-key
-```
-
-If your model is a reasoning model, then you need to specify this as follows:
+If the served model is a reasoning model or a base (completion-only) decoder, declare
+it explicitly so EuroEval picks the right prompts:
 
 ```bash
 euroeval --model my-reasoning-model --api-base http://localhost:8000 --generative-type reasoning
+euroeval --model my-base-decoder    --api-base http://localhost:8000 --generative-type base
 ```
 
-Likewise, if it is a pretrained decoder model (aka a completion model), then you specify
-this as follows:
-
-```bash
-euroeval --model my-base-decoder-model --api-base http://localhost:8000 --generative-type base
-```
-
-When using the `Benchmarker` API, the same applies. Here is an example of benchmarking
-an Ollama model hosted locally:
-
-```python
->>> benchmarker.benchmark(
-...     model="ollama_chat/mymodel",
-...     api_base="http://localhost:11434",
-... )
-```
-
-## Benchmarking local models
-
-If your model is stored on disk in the Hugging Face format — i.e. a directory
-containing the `config.json`, weights, tokenizer files, etc. — you don't need to upload
-it anywhere or spin up a separate inference server. Just point `--model` at the local
-path and EuroEval will load it the same way it loads a model from the Hub:
-
-/// tab | Using the command line
-
-```bash
-euroeval --model /path/to/my-model
-```
-
-///
-
-/// tab | Using a script
-
-```python
->>> from euroeval import Benchmarker
->>> benchmarker = Benchmarker()
->>> benchmarker.benchmark(model="/path/to/my-model")
-```
-
-///
-
-This works for both encoder and decoder checkpoints, and accepts any path the local
-Hugging Face loader can resolve. If you'd rather serve the model through an inference
-server (vLLM, Ollama, …) and benchmark over HTTP, see
-[Benchmarking custom inference APIs](#benchmarking-custom-inference-apis) instead.
-
-## Benchmarking in an offline environment
-
-If you need to benchmark in an offline environment, you need to download the models,
-datasets and metrics beforehand. For example to download the model you want and all of
-the Danish sentiment classification datasets:
-
-/// tab | Using the command line
-This can be done by adding the `--download-only` argument, from the command line:
-
-```bash
-euroeval --model <model-id> --task sentiment-classification --language da --download-only
-```
-
-///
-/// tab | Using a script
-This can be done using the `download_only` argument, if benchmarking from a script:
+The Python equivalent mirrors the flags as keyword arguments:
 
 ```python
 benchmarker.benchmark(
-  model="<model-id>",
-  task="sentiment-classification",
-  language="da",
-  download_only=True,
+    model="ollama_chat/mymodel",
+    api_base="http://localhost:11434",
 )
 ```
 
-///
+### Evaluate a checkpoint stored on disk
 
-!!! note
-    Offline benchmarking of adapter models is not currently supported, meaning that we
-    still require an internet connection during the evaluation of these. If offline
-    support of adapters is important to you, please consider [opening an
-    issue](https://github.com/EuroEval/EuroEval/issues).
+If your model directory contains `config.json`, weights, and tokenizer files (i.e.
+anything `transformers.AutoModel.from_pretrained()` can load), point `--model` directly
+at the path — no upload, no inference server:
 
-## Overriding model metadata
+```bash
+euroeval --model /path/to/my-checkpoint
+```
 
-Some models do not have metadata (maximum context length and vocabulary size) specified,
-or have it specified incorrectly. This leads to incorrect values on the leaderboards.
-To work around this you can manually override these values using the
-`--max-context-length` and `--vocabulary-size` arguments:
+This works for both encoder and decoder checkpoints. If you'd rather serve the model
+through an inference server and benchmark over HTTP, see the previous recipe.
 
-/// tab | Using the command line
+### Override missing or incorrect model metadata
+
+Some models on the Hub report no maximum context length or vocabulary size, which leaves
+blanks on the leaderboard. Patch both at the command line:
 
 ```bash
 euroeval --model <model-id> --max-context-length 4096 --vocabulary-size 32000
 ```
 
-///
-
-/// tab | Using a script
+The Python equivalent:
 
 ```python
->>> benchmarker.benchmark(
-...     model="<model-id>",
-...     max_context_length=4096,
-...     vocabulary_size=32000,
-... )
+benchmarker.benchmark(
+    model="<model-id>",
+    max_context_length=4096,
+    vocabulary_size=32000,
+)
 ```
 
-///
+### Run offline / in an air-gapped environment
+
+First, pre-download everything you'll need with `--download-only`:
+
+```bash
+euroeval --model <model-id> --task sentiment-classification --language da --download-only
+```
+
+Then disconnect and re-run the same command without `--download-only` — the data,
+model, and metric files are now served from your Hugging Face cache. The Python form
+takes `download_only=True`.
+
+!!! note
+    Adapter models still require a live connection during evaluation. If offline adapter
+    support matters to you, please open an
+    [issue](https://github.com/EuroEval/EuroEval/issues).
+
+### Evaluate on a private dataset (no upload)
+
+Store your three splits as local CSVs and describe them in a `custom_datasets.py` next
+to the data:
+
+```python title="custom_datasets.py"
+from euroeval import DatasetConfig, TEXT_CLASSIFICATION
+from euroeval.languages import ENGLISH
+
+MY_CONFIG = DatasetConfig(
+    name="my-dataset",
+    pretty_name="My Dataset",
+    source=dict(train="train.csv", val="val.csv", test="test.csv"),
+    task=TEXT_CLASSIFICATION,
+    languages=[ENGLISH],
+    labels=["positive", "negative"],
+)
+```
+
+Then either reference the dataset by name on the CLI, or pass the config object
+directly from Python:
+
+```bash
+euroeval --dataset my-dataset --model <model-id>
+```
+
+```python
+benchmarker.benchmark(model="<model-id>", dataset=MY_CONFIG)
+```
+
+For the full set of options (column mapping, custom preprocessing, multiple-choice
+datasets, etc.), see [Custom datasets](#benchmarking-custom-datasets) below.
+
+### Publish a dataset on HF Hub so others can evaluate against it
+
+Drop an `eval.yaml` at the root of your Hugging Face dataset repo — no Python code
+required, no `--trust-remote-code` flag. The format is shared with
+[Inspect AI's `eval.yaml`](https://inspect.aisi.org.uk/tasks.html#hugging-face), so the
+same file works for both frameworks. See
+[Hugging Face Hub dataset (YAML config)](#benchmarking-custom-datasets) for the schema.
+
+### Inspect why a generative model failed
+
+Add `--debug` (or `debug=True` in Python). EuroEval writes the full prompts, model
+outputs, predicted labels, and logprobs to
+`<model-id>-<dataset-name>-model-outputs.json`. Load and sort it with pandas:
+
+```python
+import json, pandas as pd
+
+with open("<model-id>-<dataset-name>-model-outputs.json") as f:
+    data = json.load(f)
+df = pd.DataFrame(data.values()).set_index("index").sort_index()
+```
+
+See [Detailed model outputs](#detailed-model-outputs) for the full schema and
+[Failed instances](#failed-instances) for parsing per-iteration failure lists.
+
+### Read existing results back into Python
+
+The results file is JSON Lines in the
+[Every Eval Ever (EEE)](#output-format-every-eval-ever-eee) format. Loading every line
+back into a `BenchmarkResult` is a one-liner:
+
+```python
+import json
+from euroeval.data_models import BenchmarkResult
+
+with open("euroeval_benchmark_results.jsonl") as f:
+    results = [
+        BenchmarkResult.from_dict(json.loads(line))
+        for line in f
+        if line.strip()
+    ]
+```
 
 ## Benchmarking custom datasets
 
