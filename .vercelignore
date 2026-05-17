@@ -22,7 +22,6 @@ src/euroeval
 src/leaderboards
 src/frontend/csv
 src/frontend/md
-src/frontend/config.yaml
 src/frontend/drawer.ts
 src/frontend/leaderboard.ts
 src/frontend/nav.ts
