@@ -16,7 +16,13 @@ def test_process_issue_fails_when_official_results_are_missing(
     unassigned: list[int] = []
     assigned: list[int] = []
 
-    lines_per_read = iter([["before"], ["before", '{"foo":"bar"}']])
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="issue_is_still_claimable",
+        value=lambda number: True,
+    )
+
+    lines_per_read = iter([["before"], ["before", '{"foo":"bar"}', '{"baz":"qux"}']])
 
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -85,6 +91,12 @@ def test_process_issue_does_not_special_case_oom_anymore(
     comments: list[str] = []
     marker_versions: list[str] = []
     unassigned: list[int] = []
+
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="issue_is_still_claimable",
+        value=lambda number: True,
+    )
 
     lines_per_read = iter([["before"], ["before"]])
 
