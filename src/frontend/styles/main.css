@@ -94,6 +94,7 @@ body {
 
 html {
   scroll-padding-top: 120px;
+  scrollbar-gutter: stable;
 }
 
 #app {
