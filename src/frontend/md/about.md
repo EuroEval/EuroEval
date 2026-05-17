@@ -6,7 +6,12 @@ hide:
 #
 
 <div align='center'>
-  <img src="/gfx/euroeval.png" alt="EuroEval logo" height="500" width="372">
+  <picture>
+    <source srcset="/gfx/euroeval.webp" type="image/webp">
+    <img src="/gfx/euroeval.png" alt="EuroEval logo"
+         height="500" width="372"
+         decoding="async" fetchpriority="high">
+  </picture>
   <h3>The robust European language model benchmark.</h3>
 </div>
 
