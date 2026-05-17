@@ -90,6 +90,11 @@ _WGERMANIC = "West Germanic languages (Dutch, English, German)"
 # "Waiting for bug fix" statuses.
 ERROR_MARKER_RE = re.compile(r"<!--\s*errored-on:\s*v([^\s>-]+)\s*-->")
 
+# The frontend parses this marker on issue bodies to display the
+# "Gated model" status, which means the requested HF repo is gated and
+# saattrupdan does not yet have read access.
+GATED_MARKER_RE = re.compile(r"<!--\s*gated-model\s*-->")
+
 # euroeval emits a summary line like "errored 3 benchmarks" when individual
 # (dataset, language) combinations fail without crashing the whole run. We use
 # this to detect partial failures even when the subprocess exited 0.
@@ -197,8 +202,11 @@ def acquire_single_instance_lock() -> None:
 def main() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
-    Issues are sorted by (parameter count asc, num-language-groups asc) so
-    that quicker evaluations are picked up first.
+    Issues are sorted by (status priority asc, parameter count asc,
+    num-language-groups asc). Status priority is 0 for fresh issues, 1 for
+    gated repos (cheap marker refresh), and 2 for retries of previously
+    errored evaluations, so that quicker work is picked up first and gated
+    items are surfaced ahead of errored ones.
     """
     # Held for the lifetime of the process; released by the kernel on exit.
     acquire_single_instance_lock()
@@ -229,7 +237,12 @@ def main() -> None:
             continue
 
         errored_v = errored_on_version(body=body)
-        if errored_v is not None and version_tuple(v=errored_v) >= current_v:
+        body_gated = gated_marker_present(body=body)
+        if (
+            errored_v is not None
+            and version_tuple(v=errored_v) >= current_v
+            and not body_gated
+        ):
             logger.info(
                 f"#{number}: skipping -- errored on v{errored_v} and current "
                 f"version is v{current_version}."
@@ -242,9 +255,14 @@ def main() -> None:
             continue
 
         param_count = summary["param_count"]
-        is_errored = 1 if errored_v is not None else 0
+        if summary.get("gated"):
+            status_priority = 1
+        elif errored_v is not None:
+            status_priority = 2
+        else:
+            status_priority = 0
         candidates.append(
-            (is_errored, param_count, len(groups), issue, model_id, groups)
+            (status_priority, param_count, len(groups), issue, model_id, groups)
         )
 
     candidates.sort(key=lambda c: (c[0], c[1], c[2]))
@@ -258,8 +276,8 @@ def main() -> None:
     else:
         logger.info(f"Local GPU memory: {gpu_bytes / (1024**3):.1f} GiB.")
 
-    for is_errored, param_count, num_groups, issue, model_id, groups in candidates:
-        status = "retry of errored eval" if is_errored else "fresh"
+    for status_priority, param_count, num_groups, issue, model_id, groups in candidates:
+        status = {0: "fresh", 1: "gated", 2: "retry of errored eval"}[status_priority]
         logger.info(
             f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
             f"{num_groups} group(s), {status})."
@@ -413,15 +431,21 @@ def cached_model_summary(model_id: str) -> dict | None:
 
     Returns:
         A dict with keys ``param_count`` (int, possibly ``sys.maxsize`` for
-        unknown), or None when the model is not on the Hub.
+        unknown) and ``gated`` (bool, True when saattrupdan does not have
+        read access to a gated repo), or None when the model is not on the
+        Hub.
     """
     cache = _load_hf_cache()
     entry = cache.get(model_id)
     if entry is not None and "param_count" in entry:
-        return {"param_count": int(entry["param_count"])}
+        return {"param_count": int(entry["param_count"]), "gated": False}
 
     try:
         info = HfApi().model_info(repo_id=model_id)
+    except GatedRepoError:
+        # Don't cache: access can be granted at any time, and we want to
+        # pick that up on the next run.
+        return {"param_count": sys.maxsize, "gated": True}
     except Exception as e:  # noqa: BLE001
         logger.warning(f"HF model lookup failed for {model_id}: {e}")
         return None
@@ -432,7 +456,7 @@ def cached_model_summary(model_id: str) -> dict | None:
 
     cache[model_id] = {"timestamp": time.time(), "param_count": param_count}
     _write_hf_cache(cache=cache)
-    return {"param_count": param_count}
+    return {"param_count": param_count, "gated": False}
 
 
 def gpu_total_memory_bytes() -> int | None:
@@ -559,6 +583,23 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
             f"#{number}: skipping -- no longer open and unassigned at claim time."
         )
         return
+
+    # Re-check gated status here so a stale snapshot from main() doesn't make
+    # us run a doomed evaluation, and so we can also pick up newly granted
+    # access when the body marker says gated but HF now says otherwise.
+    live_summary = cached_model_summary(model_id=model_id)
+    body = issue.get("body")
+    body_gated = gated_marker_present(body=body)
+    if live_summary is not None and live_summary.get("gated"):
+        if not body_gated:
+            set_gated_marker(number=number, body=body)
+            logger.info(f"#{number}: marked gated -- saattrupdan lacks read access.")
+        else:
+            logger.info(f"#{number}: still gated -- leaving marker in place.")
+        return
+    if body_gated:
+        clear_gated_marker(number=number, body=body)
+        logger.info(f"#{number}: access granted, cleared gated marker.")
 
     logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
     assign_issue(number=number)
@@ -735,7 +776,13 @@ def run_euroeval(model_id: str, languages: list[str]) -> tuple[int, str]:
         and stderr in interleaved order. A returncode of 127 signals that the
         CLI was not found on PATH.
     """
-    cmd = ["euroeval", "--model", model_id]
+    cmd = [
+        "euroeval",
+        "--model",
+        model_id,
+        "--clear-model-cache",
+        "--trust-remote-code",
+    ]
     for lang in languages:
         cmd += ["--language", lang]
     logger.info(f"Running: {' '.join(cmd)}")
@@ -794,6 +841,9 @@ def comment_on_issue(number: int, comment: str) -> None:
 def set_errored_marker(number: int, body: str | None, version: str) -> None:
     """Append/replace the ``errored-on`` marker in the issue body.
 
+    Also strips any ``gated-model`` marker so the two states stay mutually
+    exclusive.
+
     Args:
         number:
             The issue number to update.
@@ -803,9 +853,58 @@ def set_errored_marker(number: int, body: str | None, version: str) -> None:
             The EuroEval version that produced the failure.
     """
     cleaned = ERROR_MARKER_RE.sub("", body or "").rstrip()
+    cleaned = GATED_MARKER_RE.sub("", cleaned).rstrip()
     new_body = f"{cleaned}\n\n<!-- errored-on: v{version} -->\n"
     gh_request(
         path=f"/repos/{REPO}/issues/{number}", method="PATCH", body={"body": new_body}
+    )
+
+
+def gated_marker_present(body: str | None) -> bool:
+    """Return True if the body carries the ``gated-model`` marker.
+
+    Args:
+        body:
+            The markdown body of the issue, or None.
+
+    Returns:
+        True if the marker is present, False otherwise.
+    """
+    return bool(body) and bool(GATED_MARKER_RE.search(body))
+
+
+def set_gated_marker(number: int, body: str | None) -> None:
+    """Append the ``gated-model`` marker to the issue body.
+
+    Also strips any ``errored-on`` marker so the two states stay mutually
+    exclusive.
+
+    Args:
+        number:
+            The issue number to update.
+        body:
+            The current issue body, or None.
+    """
+    cleaned = GATED_MARKER_RE.sub("", body or "").rstrip()
+    cleaned = ERROR_MARKER_RE.sub("", cleaned).rstrip()
+    new_body = f"{cleaned}\n\n<!-- gated-model -->\n"
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}", method="PATCH", body={"body": new_body}
+    )
+
+
+def clear_gated_marker(number: int, body: str | None) -> None:
+    """Remove the ``gated-model`` marker from the issue body.
+
+    Args:
+        number:
+            The issue number to update.
+        body:
+            The current issue body, or None.
+    """
+    cleaned = GATED_MARKER_RE.sub("", body or "").rstrip() + "\n"
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}", method="PATCH", body={"body": cleaned}
     )
 
 

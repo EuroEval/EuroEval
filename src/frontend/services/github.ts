@@ -30,6 +30,7 @@ export interface RawIssue {
 export type QueueStatus =
   | "Evaluating"
   | "Waiting"
+  | "Gated model"
   | "Error"
   | "Waiting for bug fix";
 
@@ -49,11 +50,16 @@ const currentVersion =
   typeof __PACKAGE_VERSION__ !== "undefined" ? __PACKAGE_VERSION__ : "";
 
 const ERROR_MARKER_RE = /<!--\s*errored-on:\s*v([^\s>-]+)\s*-->/;
+const GATED_MARKER_RE = /<!--\s*gated-model\s*-->/;
 
 export function extractErroredOnVersion(body: string | null): string | null {
   if (!body) return null;
   const m = body.match(ERROR_MARKER_RE);
   return m ? m[1] : null;
+}
+
+export function isGatedModel(body: string | null): boolean {
+  return !!body && GATED_MARKER_RE.test(body);
 }
 
 function versionTuple(v: string): number[] {
@@ -95,8 +101,10 @@ export function extractLanguageGroups(body: string | null): string[] {
 export function issueStatus(
   issue: RawIssue,
   erroredOn: string | null,
+  gated: boolean,
 ): QueueStatus {
   if (issue.assignee || issue.assignees.length > 0) return "Evaluating";
+  if (gated) return "Gated model";
   if (erroredOn) {
     return currentVersion && isVersionNewer(currentVersion, erroredOn)
       ? "Error"
@@ -109,6 +117,7 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
   const modelId = extractModelId(issue.title);
   if (!modelId) return null;
   const erroredOnVersion = extractErroredOnVersion(issue.body);
+  const gated = isGatedModel(issue.body);
   const evaluator =
     issue.assignee?.login ?? issue.assignees[0]?.login ?? null;
   return {
@@ -116,7 +125,7 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
     url: issue.html_url,
     modelId,
     languageGroups: extractLanguageGroups(issue.body),
-    status: issueStatus(issue, erroredOnVersion),
+    status: issueStatus(issue, erroredOnVersion, gated),
     evaluator,
     erroredOnVersion,
     createdAt: issue.created_at,
@@ -135,8 +144,9 @@ export async function listOpenEvalIssues(): Promise<QueueEntry[]> {
   const order: Record<QueueStatus, number> = {
     Evaluating: 0,
     Waiting: 1,
-    Error: 2,
-    "Waiting for bug fix": 3,
+    "Gated model": 2,
+    Error: 3,
+    "Waiting for bug fix": 4,
   };
   return raw
     .map(toQueueEntry)
