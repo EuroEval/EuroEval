@@ -1,9 +1,9 @@
 {
-  "build_command": "npm run build",
-  "output_directory": "dist",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "framework": null,
-  "trailing_slash": false,
-  "clean_urls": true,
+  "trailingSlash": false,
+  "cleanUrls": true,
   "functions": {
     "src/scripts/submit-evaluation.ts": {}
   },
