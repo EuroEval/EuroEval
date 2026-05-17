@@ -5,7 +5,7 @@
   "trailingSlash": false,
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/((?!api|assets|gfx|csv|leaderboards-csv|sitemap.xml|robots.txt|llms.txt|evaluated-models.json|favicon.ico|.*\\.+).*)", "destination": "/index.html" }
+    { "source": "/:path*", "destination": "/index.html" }
   ],
   "headers": [
     {
