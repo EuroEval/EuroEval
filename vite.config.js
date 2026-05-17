@@ -39,28 +39,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (
-            id.includes("node_modules/vue/") ||
-            id.includes("node_modules/vue-router/") ||
-            id.includes("node_modules/@vue/")
-          ) {
+          if (id.includes("node_modules")) {
             return "vendor";
           }
-          if (id.includes("node_modules/highlight.js")) {
-            return "highlight";
-          }
-          if (
-            id.includes("node_modules/js-yaml") ||
-            id.includes("node_modules/markdown-it")
-          ) {
-            return "markdown";
-          }
-          if (id.includes("node_modules")) {
-            return "external";
-          }
-          return "index";
         },
       },
     },
+    chunkSizeWarningLimit: 1000,
   },
 });
