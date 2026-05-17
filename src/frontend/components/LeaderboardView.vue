@@ -168,6 +168,7 @@ const downloadCsv = async () => {
       >
         {{ t.label }}
       </button>
+      <div class="lb-actions">
       <button
         v-if="tab === 'generative' || tab === 'all_models'"
         class="lb-download"
@@ -198,6 +199,7 @@ const downloadCsv = async () => {
         </svg>
         Embed
       </button>
+      </div>
     </nav>
 
     <div v-if="embedOpen" class="embed-modal" @click.self="embedOpen = false">
@@ -353,11 +355,14 @@ const downloadCsv = async () => {
   align-items: center;
   gap: 0.35rem;
   align-self: center;
-  margin-left: auto;
 }
 
-.lb-download + .lb-embed {
-  margin-left: 0.4rem;
+.lb-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: center;
 }
 
 .lb-embed svg {
