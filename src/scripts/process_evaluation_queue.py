@@ -32,9 +32,13 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from functools import lru_cache
 from pathlib import Path
 
 from huggingface_hub import HfApi
+
+from euroeval.data_models import BenchmarkResult
+from euroeval.dataset_configs import get_all_dataset_configs
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -63,19 +67,6 @@ _WGERMANIC = "West Germanic languages (Dutch, English, German)"
 # "Waiting for bug fix" statuses.
 ERROR_MARKER_RE = re.compile(r"<!--\s*errored-on:\s*v([^\s>-]+)\s*-->")
 
-# Patterns we treat as OOM in the captured euroeval output. When any of these
-# match we leave the issue unassigned and unmarked so a larger machine can pick
-# it up, rather than recording a hard error on the issue.
-OOM_PATTERN = re.compile(
-    r"cuda out of memory"
-    r"|cuda error:?\s*out of memory"
-    r"|outofmemoryerror"
-    r"|torch\.cuda\.outofmemoryerror"
-    r"|hip out of memory"
-    r"|killed.*\(out of memory\)",
-    re.IGNORECASE,
-)
-
 # euroeval emits a summary line like "errored 3 benchmarks" when individual
 # (dataset, language) combinations fail without crashing the whole run. We use
 # this to detect partial failures even when the subprocess exited 0.
@@ -93,6 +84,25 @@ LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
     "Greek": ["el"],
     "Hungarian": ["hu"],
 }
+
+
+@lru_cache(maxsize=1)
+def official_dataset_language_pairs() -> set[tuple[str, str]]:
+    """Return all official dataset/language pairs used by EuroEval."""
+    all_dataset_configs = get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    return {
+        (dataset_config.name, language.code)
+        for dataset_config in all_dataset_configs.values()
+        if not dataset_config.unofficial
+        for language in dataset_config.languages
+    }
 
 
 def main() -> None:
@@ -300,18 +310,14 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     new_lines = [line for line in after if line not in before]
 
     num_errored = num_errored_benchmarks(output=output)
+    missing_official = missing_official_dataset_language_pairs(
+        lines=new_lines, requested_languages=languages
+    )
     crashed = returncode != 0
     produced_nothing = not new_lines
     partial = num_errored > 0
-    failed = crashed or produced_nothing or partial
-
-    if failed and OOM_PATTERN.search(output):
-        unassign_issue(number=number)
-        logger.info(
-            f"#{number}: OOM detected in euroeval output; returning issue to "
-            "queue without marking it errored."
-        )
-        return
+    incomplete_official = bool(missing_official)
+    failed = crashed or produced_nothing or partial or incomplete_official
 
     if failed:
         version = euroeval_version()
@@ -319,6 +325,12 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
             reason = f"euroeval exited with code {returncode}"
         elif produced_nothing:
             reason = "euroeval produced no new result lines"
+        elif incomplete_official:
+            reason = (
+                "missing results for "
+                f"{len(missing_official)} official dataset-language pair(s): "
+                f"{format_dataset_language_pairs(dataset_language_pairs=missing_official)}"
+            )
         else:
             reason = f"euroeval reported {num_errored} errored benchmark(s)"
         tail = output[-6000:].strip() or "(no output captured)"
@@ -337,6 +349,41 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     comment = f"Results for `{model_id}`:\n\n```jsonl\n{payload}\n```\n"
     comment_on_issue(number=number, comment=comment)
     logger.info(f"#{number}: posted {len(new_lines)} result line(s) as comment.")
+
+
+def missing_official_dataset_language_pairs(
+    lines: list[str], requested_languages: list[str]
+) -> set[tuple[str, str]]:
+    """Return missing official dataset/language pairs for the requested languages."""
+    expected_pairs = {
+        pair
+        for pair in official_dataset_language_pairs()
+        if pair[1] in set(requested_languages)
+    }
+    observed_pairs = result_dataset_language_pairs(lines=lines)
+    return expected_pairs - observed_pairs
+
+
+def result_dataset_language_pairs(lines: list[str]) -> set[tuple[str, str]]:
+    """Return dataset/language pairs parsed from benchmark-result JSONL lines."""
+    pairs: set[tuple[str, str]] = set()
+    for line in lines:
+        try:
+            parsed = BenchmarkResult.from_dict(config=json.loads(line))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+        pairs.update((parsed.dataset, language) for language in parsed.languages)
+    return pairs
+
+
+def format_dataset_language_pairs(dataset_language_pairs: set[tuple[str, str]]) -> str:
+    """Return a compact stable string representation of dataset/language pairs."""
+    sorted_pairs = sorted(dataset_language_pairs)
+    preview = [f"{dataset}/{language}" for dataset, language in sorted_pairs[:10]]
+    suffix = ""
+    if len(sorted_pairs) > 10:
+        suffix = f" (+{len(sorted_pairs) - 10} more)"
+    return ", ".join(preview) + suffix
 
 
 def assign_issue(number: int) -> None:
