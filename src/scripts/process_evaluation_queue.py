@@ -43,6 +43,8 @@ from huggingface_hub.errors import (
     SafetensorsParsingError,
 )
 
+from euroeval.string_utils import split_model_id
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
@@ -359,8 +361,9 @@ def estimated_model_bytes(model_id: str) -> int | None:
         The total weight bytes across all tensors, or None when the repo is
         not a safetensors repo or the metadata cannot be parsed.
     """
-    repo, _, revision = model_id.partition("@")
-    revision = revision or None
+    components = split_model_id(model_id=model_id)
+    repo = components.model_id
+    revision = components.revision
     token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
     try:
         meta = get_safetensors_metadata(repo_id=repo, revision=revision, token=token)
@@ -376,15 +379,36 @@ def estimated_model_bytes(model_id: str) -> int | None:
 
     total = 0
     for dtype, count in meta.parameter_count.items():
-        bytes_per = DTYPE_BYTES.get(dtype.upper())
-        if bytes_per is None:
+        dtype_bits = _dtype_bits(dtype=dtype)
+        if dtype_bits is None:
             logger.debug(
                 f"Unknown safetensors dtype {dtype!r} for {model_id}; "
                 "assuming 2 bytes/param."
             )
-            bytes_per = 2
-        total += count * bytes_per
+            dtype_bits = 16
+        total += (count * dtype_bits + 7) // 8
     return total
+
+
+def _dtype_bits(dtype: str) -> int | None:
+    """Infer the number of bits used by a safetensors dtype string.
+
+    Args:
+        dtype:
+            The safetensors dtype string.
+
+    Returns:
+        The bit-width, or None when it cannot be inferred.
+    """
+    normalized_dtype = dtype.upper()
+    if normalized_dtype in DTYPE_BYTES:
+        return DTYPE_BYTES[normalized_dtype] * 8
+
+    for match in re.findall(pattern=r"\d+", string=normalized_dtype):
+        bits = int(match)
+        if bits > 0:
+            return bits
+    return None
 
 
 def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
