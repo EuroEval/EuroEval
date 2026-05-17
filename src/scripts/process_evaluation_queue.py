@@ -274,7 +274,6 @@ def main() -> None:
 
         summary = cached_model_summary(model_id=model_id)
         if summary is None:
-            logger.info(f"#{number}: skipping -- model {model_id!r} not on HF Hub.")
             continue
 
         param_count = summary["param_count"]
@@ -482,6 +481,9 @@ def cached_model_summary(model_id: str) -> dict | None:
         # Don't cache: access can be granted at any time, and we want to
         # pick that up on the next run.
         return {"param_count": sys.maxsize, "gated": True}
+    except RepositoryNotFoundError:
+        # Expected for typo-d / since-deleted repos; just drop the candidate.
+        return None
     except Exception as e:  # noqa: BLE001
         logger.warning(f"HF model lookup failed for {model_id}: {e}")
         return None
