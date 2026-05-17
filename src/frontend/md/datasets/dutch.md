@@ -799,7 +799,7 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Vraag: {text}
-  
+
   Beantwoord de bovenstaande vraag met {labels_str}, en niets anders.
   ```
 
