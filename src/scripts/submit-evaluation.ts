@@ -1,6 +1,8 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
+declare const process: { env: Record<string, string | undefined> };
+
 export const config = { runtime: "edge" };
 
 const REPO = "EuroEval/EuroEval";
@@ -71,7 +73,7 @@ async function huggingFaceModelExists(modelId: string): Promise<boolean> {
   if (r.status === 200) {
     const data = (await r.json()) as { private?: boolean; gated?: boolean | string };
     if (data.private) return false;
-    if (data.gated && data.gated !== false) return false;
+    if (data.gated) return false;
     return true;
   }
   return false;
