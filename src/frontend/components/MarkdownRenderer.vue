@@ -15,13 +15,17 @@ const props = defineProps<{
 const router = useRouter();
 const route = useRoute();
 const rendered = shallowRef<RenderedMarkdown | undefined>(undefined);
+const loadFailed = ref(false);
 watch(
   () => props.path,
   async (p) => {
     rendered.value = undefined;
+    loadFailed.value = false;
     const r = await renderMarkdown(p);
     // Guard against out-of-order completions when path changes rapidly.
-    if (p === props.path) rendered.value = r;
+    if (p !== props.path) return;
+    rendered.value = r;
+    if (!r) loadFailed.value = true;
   },
   { immediate: true },
 );
@@ -110,9 +114,9 @@ onBeforeUnmount(() => {
       <span class="sep">›</span>
       <span class="current" v-html="pageTitle" />
     </nav>
-    <div v-if="!rendered" class="error">Failed to load content: {{ path }}</div>
+    <div v-if="loadFailed" class="error">Failed to load content: {{ path }}</div>
     <div
-      v-else
+      v-else-if="rendered"
       ref="bodyEl"
       class="markdown-body"
       v-html="rendered.html"
