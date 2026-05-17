@@ -36,6 +36,8 @@ import urllib.request
 from functools import lru_cache
 from pathlib import Path
 
+import psutil
+import torch
 from huggingface_hub import HfApi, get_safetensors_metadata
 from huggingface_hub.errors import (
     GatedRepoError,
@@ -293,10 +295,10 @@ def main() -> None:
     gpu_bytes = gpu_total_memory_bytes()
     if gpu_bytes is None:
         logger.info(
-            "Could not determine local GPU memory; skipping the GPU-fit pre-check."
+            "Could not determine local memory budget; skipping the fit pre-check."
         )
     else:
-        logger.info(f"Local GPU memory: {gpu_bytes / (1024**3):.1f} GiB.")
+        logger.info(f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB.")
 
     for status_priority, param_count, num_groups, issue, model_id, groups in candidates:
         status = {0: "fresh", 1: "gated", 2: "retry of errored eval"}[status_priority]
@@ -498,14 +500,18 @@ def cached_model_summary(model_id: str) -> dict | None:
 
 
 def gpu_total_memory_bytes() -> int | None:
-    """Return the total memory of the largest local GPU in bytes.
+    """Return the total memory available for model weights on this host, in bytes.
 
     Honors the ``EUROEVAL_GPU_MEMORY_BYTES`` env var for overrides (useful in
-    tests). Otherwise shells out to ``nvidia-smi`` and reports the largest
-    device on the host.
+    tests). Otherwise mirrors ``alexandra_llm_inference.memory_utils``: when
+    CUDA is available and the host is not flagged as ``UNIFIED_MEMORY=1``,
+    report the largest CUDA device's total memory; otherwise (CPU-only host,
+    or unified-memory boxes like DGX Spark whose Grace-Blackwell pool is not
+    exposed via ``nvidia-smi --query-gpu=memory.total``) report total system
+    RAM via ``psutil``.
 
     Returns:
-        The total memory in bytes, or None if it cannot be determined.
+        The total memory in bytes, or None if the override is unparseable.
     """
     override = os.environ.get("EUROEVAL_GPU_MEMORY_BYTES")
     if override:
@@ -513,26 +519,16 @@ def gpu_total_memory_bytes() -> int | None:
             return int(override)
         except ValueError:
             logger.warning(f"Ignoring invalid EUROEVAL_GPU_MEMORY_BYTES={override!r}.")
-    try:
-        out = subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
-            text=True,
-            stderr=subprocess.DEVNULL,
-        )
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        return None
-    values: list[int] = []
-    for line in out.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            values.append(int(line))
-        except ValueError:
-            continue
-    if not values:
-        return None
-    return max(values) * 1024 * 1024  # nvidia-smi reports MiB
+
+    unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
+    if torch.cuda.is_available() and not unified:
+        sizes = [
+            torch.cuda.get_device_properties(i).total_memory
+            for i in range(torch.cuda.device_count())
+        ]
+        if sizes:
+            return max(sizes)
+    return int(psutil.virtual_memory().total)
 
 
 def estimated_model_bytes(model_id: str) -> int | None:
