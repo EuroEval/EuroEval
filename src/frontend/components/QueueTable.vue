@@ -12,7 +12,7 @@ function displayLanguages(groups: string[]): string {
     }
   }
   if (langs.length === 0) return "—"
-  return langs.join(", ");
+  return langs.sort((a, b) => a.localeCompare(b)).join(", ");
 }
 
 function statusClass(status: string): string {
