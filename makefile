@@ -81,7 +81,7 @@ test:  ## Run tests
 	@uv run pytest && uv run readme-cov && rm .coverage*
 
 frontend:  ## Build and deploy the frontend
-	@vercel build --prod && vercel deploy --prod
+	@vercel build --prod 2>&1 | grep -v "^WARNING!" && vercel deploy --prod
 
 tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
