@@ -1029,7 +1029,6 @@ dependencies = [
 [package.optional-dependencies]
 all = [
     { name = "bitsandbytes", marker = "sys_platform == 'linux'" },
-    { name = "fbgemm-gpu", marker = "sys_platform == 'linux'" },
     { name = "ray", marker = "sys_platform == 'linux'" },
     { name = "timm", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "vllm", version = "0.14.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'linux'" },
@@ -1038,7 +1037,6 @@ all = [
 ]
 generative = [
     { name = "bitsandbytes", marker = "sys_platform == 'linux'" },
-    { name = "fbgemm-gpu", marker = "sys_platform == 'linux'" },
     { name = "ray", marker = "sys_platform == 'linux'" },
     { name = "timm", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "vllm", version = "0.14.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'linux'" },
@@ -1103,8 +1101,6 @@ requires-dist = [
     { name = "datasets", specifier = ">=3.5.0" },
     { name = "demjson3", specifier = ">=3.0.6" },
     { name = "evaluate", specifier = ">=0.4.1" },
-    { name = "fbgemm-gpu", marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=1.0.0" },
-    { name = "fbgemm-gpu", marker = "sys_platform == 'linux' and extra == 'generative'", specifier = ">=1.0.0" },
     { name = "huggingface-hub", specifier = ">=0.30.1" },
     { name = "langdetect", specifier = ">=1.0.9" },
     { name = "levenshtein", specifier = ">=0.24.0" },
@@ -1376,19 +1372,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e0/c8/2ce1c78f983a2c4987ea865d9516dbdfb141a120fd3abb977ae6f02ba7ca/fastuuid-0.14.0-cp314-cp314-musllinux_1_1_x86_64.whl", hash = "sha256:ec27778c6ca3393ef662e2762dba8af13f4ec1aaa32d08d77f71f2a70ae9feb8", size = 450837, upload-time = "2025-10-19T22:34:37.178Z" },
     { url = "https://files.pythonhosted.org/packages/df/60/dad662ec9a33b4a5fe44f60699258da64172c39bd041da2994422cdc40fe/fastuuid-0.14.0-cp314-cp314-win32.whl", hash = "sha256:e23fc6a83f112de4be0cc1990e5b127c27663ae43f866353166f87df58e73d06", size = 154532, upload-time = "2025-10-19T22:35:18.217Z" },
     { url = "https://files.pythonhosted.org/packages/1f/f6/da4db31001e854025ffd26bc9ba0740a9cbba2c3259695f7c5834908b336/fastuuid-0.14.0-cp314-cp314-win_amd64.whl", hash = "sha256:df61342889d0f5e7a32f7284e55ef95103f2110fee433c2ae7c2c0956d76ac8a", size = 156457, upload-time = "2025-10-19T22:33:44.579Z" },
-]
-
-[[package]]
-name = "fbgemm-gpu"
-version = "1.6.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy", marker = "sys_platform != 'darwin'" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/f1/67e0d5efbc0a294b82c8ba7a0b5d53ecb57b3b84123deb433bf769c0e93a/fbgemm_gpu-1.6.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:603ec98ebb234b485e69502ded37a4059157342f061891bee6a8e3d4d325225c", size = 464960817, upload-time = "2026-03-30T18:42:48.994Z" },
-    { url = "https://files.pythonhosted.org/packages/7c/d4/44c2b46b69a82c328a7ccb699b0e7ef6c2a41d96e67ff4a5173dd7eeb54a/fbgemm_gpu-1.6.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:b82b24f6c2dc39d25e6a75549124a93752adde03f5a6e933d647fddbbf7c86b4", size = 467930355, upload-time = "2026-03-26T21:55:13.288Z" },
-    { url = "https://files.pythonhosted.org/packages/3f/84/b0544bd5dd36ceeb8d25acb008d629bd310b170c82aae740c8f0865e17e0/fbgemm_gpu-1.6.0-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:39ecaec168d90516a6ebfe7ae93040d0322cd86c883a689d2eb0ab0f364e43dc", size = 464962295, upload-time = "2026-03-26T21:55:19.657Z" },
 ]
 
 [[package]]
