@@ -266,8 +266,33 @@ def main() -> None:
             logger.info(f"#{number}: skipping -- no language groups selected.")
             continue
 
+        summary = cached_model_summary(model_id=model_id)
+        if summary is None:
+            continue
+
         errored_v = errored_on_version(body=body)
         body_gated = gated_marker_present(body=body)
+        is_gated_repo = bool(summary.get("gated") or summary.get("gated_repo"))
+
+        # One-off migration: issues stuck with an errored-on marker on the
+        # current version whose repo is actually gated on the Hub. Those
+        # errored markers were almost certainly written by a pre-fix run that
+        # mis-classified a gating failure as a generic error. Add the gated
+        # marker so the UI reflects reality; keep the errored marker so the
+        # script doesn't waste a fresh euroeval invocation on every cron tick.
+        if (
+            is_gated_repo
+            and not body_gated
+            and errored_v is not None
+            and version_tuple(v=errored_v) >= current_v
+        ):
+            set_gated_with_errored_block(number=number, body=body, version=errored_v)
+            logger.info(
+                f"#{number}: migrated stuck errored-on marker to gated for "
+                f"gated repo {model_id!r}."
+            )
+            continue
+
         if (
             errored_v is not None
             and version_tuple(v=errored_v) >= current_v
@@ -277,10 +302,6 @@ def main() -> None:
                 f"#{number}: skipping -- errored on v{errored_v} and current "
                 f"version is v{current_version}."
             )
-            continue
-
-        summary = cached_model_summary(model_id=model_id)
-        if summary is None:
             continue
 
         param_count = summary["param_count"]
@@ -461,7 +482,7 @@ def _write_hf_cache(cache: dict[str, dict]) -> None:
 
 
 def cached_model_summary(model_id: str) -> dict | None:
-    """Return a cached ``{exists, param_count}`` summary for a HF model id.
+    """Return a cached ``{param_count, gated, gated_repo}`` summary for a HF model id.
 
     Looks up ``HF_CACHE_PATH`` first and falls back to ``HfApi.model_info``
     only on cache miss or stale entry. Negative results (model not found) are
@@ -472,22 +493,34 @@ def cached_model_summary(model_id: str) -> dict | None:
             The Hugging Face repo id to look up.
 
     Returns:
-        A dict with keys ``param_count`` (int, possibly ``sys.maxsize`` for
-        unknown) and ``gated`` (bool, True when saattrupdan does not have
-        read access to a gated repo), or None when the model is not on the
-        Hub.
+        A dict with keys:
+
+        - ``param_count`` (int, possibly ``sys.maxsize`` for unknown).
+        - ``gated`` (bool, True when ``saattrupdan`` does not have read
+          access to a gated repo -- i.e. ``model_info`` raised
+          ``GatedRepoError``).
+        - ``gated_repo`` (bool, True when ``model_info`` reports the repo as
+          gated even though we *do* have read access -- the token used by
+          the euroeval subprocess may still lack download permission for
+          this specific repo).
+
+        Returns None when the model is not on the Hub.
     """
     cache = _load_hf_cache()
     entry = cache.get(model_id)
     if entry is not None and "param_count" in entry:
-        return {"param_count": int(entry["param_count"]), "gated": False}
+        return {
+            "param_count": int(entry["param_count"]),
+            "gated": False,
+            "gated_repo": bool(entry.get("gated_repo", False)),
+        }
 
     try:
         info = HfApi().model_info(repo_id=model_id)
     except GatedRepoError:
         # Don't cache: access can be granted at any time, and we want to
         # pick that up on the next run.
-        return {"param_count": sys.maxsize, "gated": True}
+        return {"param_count": sys.maxsize, "gated": True, "gated_repo": True}
     except RepositoryNotFoundError:
         # Expected for typo-d / since-deleted repos; just drop the candidate.
         return None
@@ -498,10 +531,17 @@ def cached_model_summary(model_id: str) -> dict | None:
     safetensors = getattr(info, "safetensors", None)
     total = getattr(safetensors, "total", None) if safetensors else None
     param_count = total if isinstance(total, int) and total > 0 else sys.maxsize
+    # ``info.gated`` is ``False`` for public repos and ``"auto"`` / ``"manual"``
+    # for gated ones; coerce to a plain bool.
+    gated_repo = bool(getattr(info, "gated", False))
 
-    cache[model_id] = {"timestamp": time.time(), "param_count": param_count}
+    cache[model_id] = {
+        "timestamp": time.time(),
+        "param_count": param_count,
+        "gated_repo": gated_repo,
+    }
     _write_hf_cache(cache=cache)
-    return {"param_count": param_count, "gated": False}
+    return {"param_count": param_count, "gated": False, "gated_repo": gated_repo}
 
 
 def gpu_total_memory_bytes() -> int | None:
@@ -659,11 +699,14 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     failed = crashed or produced_nothing or partial or incomplete_official
 
     if failed and GATED_OUTPUT_RE.search(output):
-        set_gated_marker(number=number, body=issue.get("body"))
+        version = euroeval_version()
+        set_gated_with_errored_block(
+            number=number, body=issue.get("body"), version=version
+        )
         unassign_issue(number=number)
         logger.info(
             f"#{number}: euroeval reported a gated repo for {model_id!r}; "
-            "marked gated and returned to queue."
+            f"marked gated and errored-on v{version} to avoid retry loops."
         )
         return
 
@@ -966,6 +1009,32 @@ def set_gated_marker(number: int, body: str | None) -> None:
     cleaned = GATED_MARKER_RE.sub("", body or "").rstrip()
     cleaned = ERROR_MARKER_RE.sub("", cleaned).rstrip()
     new_body = f"{cleaned}\n\n<!-- gated-model -->\n"
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}", method="PATCH", body={"body": new_body}
+    )
+
+
+def set_gated_with_errored_block(number: int, body: str | None, version: str) -> None:
+    """Set both the ``gated-model`` and ``errored-on`` markers in one PATCH.
+
+    Used when euroeval reports a gated repository despite ``model_info``
+    succeeding: the script and the subprocess disagree on the token's
+    download permission. The gated marker drives the UI status (it wins over
+    ``erroredOn`` in ``issueStatus``), while the errored marker prevents the
+    script from re-running euroeval on every cron tick until the version
+    bumps or access is reconfirmed.
+
+    Args:
+        number:
+            The issue number to update.
+        body:
+            The current issue body, or None.
+        version:
+            The EuroEval version that observed the gated failure.
+    """
+    cleaned = GATED_MARKER_RE.sub("", body or "").rstrip()
+    cleaned = ERROR_MARKER_RE.sub("", cleaned).rstrip()
+    new_body = f"{cleaned}\n\n<!-- gated-model -->\n<!-- errored-on: v{version} -->\n"
     gh_request(
         path=f"/repos/{REPO}/issues/{number}", method="PATCH", body={"body": new_body}
     )
