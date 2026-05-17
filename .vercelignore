@@ -37,7 +37,6 @@ src/frontend/main.ts
 tests
 docs
 site
-gfx
 __pycache__
 
 # Dotfiles & misc
