@@ -10,7 +10,9 @@ been picked up by the compute server) and has at least one comment with a
    root, overwriting any previous file.
 3. Runs ``python -m scripts.generate_leaderboards`` to merge the new
    results into the leaderboards.
-4. Closes the corresponding GitHub issues -- which removes them from the
+4. Builds the frontend and deploys it to Vercel as a prebuilt artifact
+   (so Vercel's CLI never has to upload the >100 MB ``.git`` packfile).
+5. Closes the corresponding GitHub issues -- which removes them from the
    queue in the frontend.
 
 Required env vars
@@ -77,6 +79,10 @@ def main() -> None:
         logger.error(
             "Aborting: not closing issues because leaderboard regeneration failed."
         )
+        sys.exit(1)
+
+    if not deploy_to_vercel():
+        logger.error("Aborting: not closing issues because the Vercel deploy failed.")
         sys.exit(1)
 
     for number, _ in completed:
@@ -170,6 +176,33 @@ def regenerate_leaderboards() -> bool:
     except subprocess.CalledProcessError as e:
         logger.error(f"generate_leaderboards failed (exit {e.returncode}).")
         return False
+
+
+def deploy_to_vercel() -> bool:
+    """Build the frontend locally and ship it to Vercel as a prebuilt deploy.
+
+    Using ``--prebuilt`` keeps the upload limited to ``.vercel/output/`` so
+    Vercel never sees the multi-hundred-MB ``.git`` packfile or local caches.
+
+    Returns:
+        True if both ``vercel build`` and ``vercel deploy`` exit cleanly.
+    """
+    for cmd in (
+        ["vercel", "build", "--prod"],
+        ["vercel", "deploy", "--prebuilt", "--prod"],
+    ):
+        logger.info(f"Running: {' '.join(cmd)}")
+        try:
+            subprocess.run(cmd, check=True, cwd=REPO_ROOT)
+        except FileNotFoundError:
+            logger.error(
+                "`vercel` CLI not found on PATH. Install with `npm i -g vercel`."
+            )
+            return False
+        except subprocess.CalledProcessError as e:
+            logger.error(f"{cmd[0]} {cmd[1]} failed (exit {e.returncode}).")
+            return False
+    return True
 
 
 def comment_on_issue(number: int, body: str) -> None:

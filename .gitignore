@@ -105,6 +105,9 @@ results.tar.gz
 new_results.jsonl
 ucloud*_results.jsonl
 
+# Leaderboard CSVs (regenerated build artifact; bundled by Vite at build time).
+src/frontend/csv/
+
 # Experiments
 gai-experiments.xlsx
 ~$gai-experiments.xlsx

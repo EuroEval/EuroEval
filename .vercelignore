@@ -1,0 +1,32 @@
+# Keep upload payload small and avoid Vercel's 100 MB per-file limit
+# (the .git packfile alone is >100 MB).
+
+.git
+.github
+.venv
+.euroeval_cache
+.scandeval_cache
+.pytest_cache
+.ruff_cache
+.mypy_cache
+node_modules
+
+# Local maintainer artifacts (large, never needed at runtime).
+results.tar.gz
+new_results.jsonl
+ucloud*_results.jsonl
+*outputs.json
+
+# Python sources & docs — Vercel only needs `api/`, `dist/`, `vercel.json`.
+src
+tests
+docs
+site
+gfx
+__pycache__
+
+# Dotfiles & misc
+.env*
+.vercel
+.DS_Store
+*.log
