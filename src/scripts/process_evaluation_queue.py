@@ -105,6 +105,11 @@ GATED_MARKER_RE = re.compile(r"<!--\s*gated-model\s*-->")
 # (dataset, language) combinations fail without crashing the whole run. We use
 # this to detect partial failures even when the subprocess exited 0.
 ERRORED_BENCHMARKS_RE = re.compile(r"errored\s+(\d+)\s+benchmarks?", re.IGNORECASE)
+
+# Phrase euroeval prints when it cannot load a model because the repo is gated
+# and the subprocess lacks the necessary HF token / accepted access terms.
+# We treat this as "gated, please grant access" rather than as a code error.
+GATED_OUTPUT_RE = re.compile(r"is a gated repository", re.IGNORECASE)
 # Bytes-per-parameter for each safetensors dtype string. Used to compute the
 # weight footprint of a model from its safetensors header before deciding
 # whether it can fit on the local GPU.
@@ -652,6 +657,15 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     partial = num_errored > 0
     incomplete_official = bool(missing_official)
     failed = crashed or produced_nothing or partial or incomplete_official
+
+    if failed and GATED_OUTPUT_RE.search(output):
+        set_gated_marker(number=number, body=issue.get("body"))
+        unassign_issue(number=number)
+        logger.info(
+            f"#{number}: euroeval reported a gated repo for {model_id!r}; "
+            "marked gated and returned to queue."
+        )
+        return
 
     if failed:
         version = euroeval_version()
