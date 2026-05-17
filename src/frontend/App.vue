@@ -173,6 +173,7 @@ useHead(() => {
   margin: 0 auto;
   padding: 0 1.5rem;
   gap: 2rem;
+  min-height: calc(100vh - 120px);
 }
 
 .page.with-sidebar {
