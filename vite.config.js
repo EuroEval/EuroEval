@@ -39,9 +39,20 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules")) {
-            return "vendor";
+          if (!id.includes("node_modules")) return;
+          // Split the heaviest deps into their own chunks so they can be
+          // cached independently and not block the initial paint.
+          if (id.includes("highlight.js")) return "highlight";
+          if (id.includes("markdown-it") || id.includes("entities") ||
+              id.includes("linkify-it") || id.includes("mdurl") ||
+              id.includes("uc.micro") || id.includes("punycode")) {
+            return "markdown";
           }
+          if (id.includes("/vue/") || id.includes("vue-router") ||
+              id.includes("@vue/")) {
+            return "vue";
+          }
+          return "vendor";
         },
       },
     },

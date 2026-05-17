@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { navConfig } from "@/nav";
-import { searchAll, type SearchResult } from "@/search";
+import { searchAll, ensureSearchIndex, type SearchResult } from "@/search";
 import { toggleDrawer } from "@/drawer";
-import { ref, onMounted, watch, computed, nextTick } from "vue";
+import { ref, onMounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
@@ -73,10 +73,32 @@ const searchOpen = ref(false);
 const searchInput = ref<HTMLInputElement | null>(null);
 const activeIdx = ref(-1);
 
-const results = computed<SearchResult[]>(() => searchAll(searchQuery.value));
+const results = ref<SearchResult[]>([]);
+watch(
+  searchQuery,
+  async (q) => {
+    const r = await searchAll(q);
+    // Guard against out-of-order completions when typing quickly.
+    if (q !== searchQuery.value) return;
+    results.value = r;
+    activeIdx.value = -1;
+  },
+  { immediate: true },
+);
 
-watch(results, () => {
-  activeIdx.value = -1;
+// Prefetch the search index after first paint so the first keystroke doesn't
+// pay the cost of fetching every markdown chunk. Uses requestIdleCallback
+// where available; falls back to a short timeout.
+onMounted(() => {
+  const kick = () => {
+    ensureSearchIndex().catch(() => {
+      // Best-effort: a network failure here just defers the cost to first use.
+    });
+  };
+  const ric = (window as unknown as { requestIdleCallback?: (cb: () => void) => void })
+    .requestIdleCallback;
+  if (ric) ric(kick);
+  else setTimeout(kick, 1500);
 });
 
 const onFocus = () => {

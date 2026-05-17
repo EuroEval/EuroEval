@@ -1,5 +1,16 @@
 import MarkdownIt from "markdown-it";
-import hljs from "highlight.js";
+// Use the core build and register only the languages that actually appear in
+// our docs, instead of pulling in highlight.js's full ~600KB language pack.
+import hljs from "highlight.js/lib/core";
+import bash from "highlight.js/lib/languages/bash";
+import json from "highlight.js/lib/languages/json";
+import python from "highlight.js/lib/languages/python";
+import yaml from "highlight.js/lib/languages/yaml";
+
+hljs.registerLanguage("bash", bash);
+hljs.registerLanguage("json", json);
+hljs.registerLanguage("python", python);
+hljs.registerLanguage("yaml", yaml);
 
 export interface TocItem {
   id: string;
@@ -15,13 +26,21 @@ export interface RenderedMarkdown {
 const mdModules = import.meta.glob("@/md/**/*.md", {
   query: "?raw",
   import: "default",
-  eager: true,
-}) as Record<string, string>;
+}) as Record<string, () => Promise<string>>;
 
-export const mdLookup: Record<string, string> = {};
+const mdLoaders: Record<string, () => Promise<string>> = {};
 for (const fullPath in mdModules) {
   const key = fullPath.replace(/^.*\/md\//, "");
-  mdLookup[key] = mdModules[fullPath];
+  mdLoaders[key] = mdModules[fullPath];
+}
+
+export const mdKeys: string[] = Object.keys(mdLoaders);
+
+export async function loadRawMarkdown(
+  path: string,
+): Promise<string | undefined> {
+  const loader = mdLoaders[path];
+  return loader ? await loader() : undefined;
 }
 
 // Transform mkdocs-blocks-style tab groups (`/// tab | Title` … `///`) into
@@ -295,11 +314,13 @@ export function wireTabSync(root: HTMLElement): () => void {
   return () => root.removeEventListener("change", onChange);
 }
 
-export function renderMarkdown(path: string): RenderedMarkdown | undefined {
+export async function renderMarkdown(
+  path: string,
+): Promise<RenderedMarkdown | undefined> {
   const cached = cache.get(path);
   if (cached) return cached;
 
-  const raw = mdLookup[path];
+  const raw = await loadRawMarkdown(path);
   if (!raw) return undefined;
 
   const env: Record<string, unknown> = {};

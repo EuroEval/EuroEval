@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch, nextTick } from "vue";
+import { onMounted, onBeforeUnmount, ref, watch, nextTick } from "vue";
 import { useRoute } from "vue-router";
 import type { TocItem } from "@/markdown";
 import { renderMarkdown } from "@/markdown";
@@ -10,7 +10,18 @@ const props = defineProps<{
 
 const route = useRoute();
 
-const toc = computed<TocItem[]>(() => renderMarkdown(props.path)?.toc ?? []);
+const toc = ref<TocItem[]>([]);
+watch(
+  () => props.path,
+  async (p) => {
+    const r = await renderMarkdown(p);
+    if (p !== props.path) return;
+    toc.value = r?.toc ?? [];
+    await nextTick();
+    attachObserver();
+  },
+  { immediate: true },
+);
 
 const activeId = ref<string | null>(null);
 

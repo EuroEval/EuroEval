@@ -17,10 +17,10 @@ new_results.jsonl
 ucloud*_results.jsonl
 *outputs.json
 
-# Source directories not consumed by the Vite build. `src/scripts`,
-# `src/frontend`, and `src/euroeval` are all needed remotely (the api-reference
-# Vite plugin walks the Python package), so only `src/leaderboards` is dropped.
-src/leaderboards
+# Python sources & docs — `vercel deploy --prebuilt` only uploads
+# `.vercel/output/`, but this acts as a safety net for accidental remote
+# rebuilds (e.g. Vercel git integration) and trims the upload payload.
+src
 tests
 docs
 site

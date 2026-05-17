@@ -1,5 +1,5 @@
 import { navConfig, pageSlug } from "@/nav";
-import { mdLookup } from "@/markdown";
+import { mdKeys, loadRawMarkdown } from "@/markdown";
 
 export interface SearchEntry {
   sectionId: string;
@@ -88,8 +88,13 @@ const splitByH2 = (
   };
 };
 
-const buildIndex = (): SearchEntry[] => {
-  const lookup = mdLookup;
+const buildIndex = async (): Promise<SearchEntry[]> => {
+  // Fetch every md file in parallel — happens once, on first search or prefetch.
+  const pairs = await Promise.all(
+    mdKeys.map(async (k) => [k, await loadRawMarkdown(k)] as const),
+  );
+  const lookup: Record<string, string> = {};
+  for (const [k, v] of pairs) if (v) lookup[k] = v;
   const entries: SearchEntry[] = [];
 
   const addPageEntries = (
@@ -176,7 +181,13 @@ const buildIndex = (): SearchEntry[] => {
   return entries;
 };
 
-const index = buildIndex();
+let indexPromise: Promise<SearchEntry[]> | null = null;
+/** Build (or return the in-flight build of) the search index. Safe to call
+ *  multiple times — only the first call kicks off the work. */
+export const ensureSearchIndex = (): Promise<SearchEntry[]> => {
+  if (!indexPromise) indexPromise = buildIndex();
+  return indexPromise;
+};
 
 const makeSnippet = (text: string, query: string): string => {
   const lower = text.toLowerCase();
@@ -189,10 +200,14 @@ const makeSnippet = (text: string, query: string): string => {
   return prefix + text.slice(start, end) + suffix;
 };
 
-export function searchAll(query: string, limit = 8): SearchResult[] {
+export async function searchAll(
+  query: string,
+  limit = 8,
+): Promise<SearchResult[]> {
   const q = query.trim().toLowerCase();
   if (q.length < 2) return [];
 
+  const index = await ensureSearchIndex();
   const tokens = q.split(/\s+/).filter(Boolean);
   const results: SearchResult[] = [];
 

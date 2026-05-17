@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch, nextTick } from "vue";
+import { computed, onBeforeUnmount, ref, shallowRef, watch, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import type { NavSection } from "@/nav";
 import { pageSlug as pageSlugFn } from "@/nav";
+import type { RenderedMarkdown } from "@/markdown";
 import { renderMarkdown, wireTabSync } from "@/markdown";
 
 const props = defineProps<{
@@ -13,7 +14,17 @@ const props = defineProps<{
 
 const router = useRouter();
 const route = useRoute();
-const rendered = computed(() => renderMarkdown(props.path));
+const rendered = shallowRef<RenderedMarkdown | undefined>(undefined);
+watch(
+  () => props.path,
+  async (p) => {
+    rendered.value = undefined;
+    const r = await renderMarkdown(p);
+    // Guard against out-of-order completions when path changes rapidly.
+    if (p === props.path) rendered.value = r;
+  },
+  { immediate: true },
+);
 
 // Open ancestor <details> blocks and scroll the URL fragment into view —
 // triggered after the markdown body is mounted so deep links from the
