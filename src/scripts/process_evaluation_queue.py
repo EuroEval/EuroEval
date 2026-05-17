@@ -932,6 +932,7 @@ def run_euroeval(model_id: str, languages: list[str]) -> tuple[int, str]:
         model_id,
         "--clear-model-cache",
         "--trust-remote-code",
+        "--evaluate-test-split",
     ]
     for lang in languages:
         cmd += ["--language", lang]
