@@ -33,7 +33,7 @@ missing dependency.
 
 ## Quickstart
 
-### Command line
+/// tab | Command line
 
 ```bash
 euroeval --model meta-llama/Llama-3.1-8B-Instruct
@@ -64,7 +64,8 @@ euroeval --model <model-id>@<sha>
 
 Run `euroeval --help` for the complete flag list.
 
-### Python
+///
+/// tab | Python
 
 ```python
 from euroeval import Benchmarker
@@ -88,7 +89,8 @@ benchmarker.benchmark(task="sentiment-classification", language="da")
 `benchmark()` returns a list of `BenchmarkResult` objects; see
 [Output format](#output-format-every-eval-ever-eee) for the schema.
 
-### Docker
+///
+/// tab | Docker
 
 ```bash
 wget https://raw.githubusercontent.com/EuroEval/EuroEval/main/Dockerfile
@@ -105,173 +107,175 @@ Two prerequisites on the host:
 
 Everything after `euroeval` on the `docker run` line is passed through as CLI flags.
 
+///
+
 ## Recipes
 
 Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
 
-### Evaluate a HF model on a single language
+??? example "Evaluate a HF model on a single language"
 
-```bash
-euroeval --model meta-llama/Llama-3.1-8B-Instruct --language da
-```
+    ```bash
+    euroeval --model meta-llama/Llama-3.1-8B-Instruct --language da
+    ```
 
-### Evaluate a model served by vLLM, Ollama, or another OpenAI-compatible API
+??? example "Evaluate a model served by vLLM, Ollama, or another OpenAI-compatible API"
 
-Point `--api-base` at the inference server.  For Ollama, prefix the model name with
-`ollama_chat/` so EuroEval fetches metadata and triggers a `pull` for you:
+    Point `--api-base` at the inference server.  For Ollama, prefix the model name with
+    `ollama_chat/` so EuroEval fetches metadata and triggers a `pull` for you:
 
-```bash
-euroeval --model ollama_chat/mymodel --api-base http://localhost:11434
-```
+    ```bash
+    euroeval --model ollama_chat/mymodel --api-base http://localhost:11434
+    ```
 
-For any other OpenAI-compatible API, pass the model name as-is and supply an API key if
-the server requires one:
+    For any other OpenAI-compatible API, pass the model name as-is and supply an API key if
+    the server requires one:
 
-```bash
-euroeval --model my-model --api-base http://localhost:8000 --api-key sk-secret
-```
+    ```bash
+    euroeval --model my-model --api-base http://localhost:8000 --api-key sk-secret
+    ```
 
-If the served model is a reasoning model or a base (completion-only) decoder, declare
-it explicitly so EuroEval picks the right prompts:
+    If the served model is a reasoning model or a base (completion-only) decoder, declare
+    it explicitly so EuroEval picks the right prompts:
 
-```bash
-euroeval --model my-reasoning-model --api-base http://localhost:8000 --generative-type reasoning
-euroeval --model my-base-decoder    --api-base http://localhost:8000 --generative-type base
-```
+    ```bash
+    euroeval --model my-reasoning-model --api-base http://localhost:8000 --generative-type reasoning
+    euroeval --model my-base-decoder    --api-base http://localhost:8000 --generative-type base
+    ```
 
-The Python equivalent mirrors the flags as keyword arguments:
+    The Python equivalent mirrors the flags as keyword arguments:
 
-```python
-benchmarker.benchmark(
-    model="ollama_chat/mymodel",
-    api_base="http://localhost:11434",
-)
-```
+    ```python
+    benchmarker.benchmark(
+        model="ollama_chat/mymodel",
+        api_base="http://localhost:11434",
+    )
+    ```
 
-### Evaluate a checkpoint stored on disk
+??? example "Evaluate a checkpoint stored on disk"
 
-If your model directory contains `config.json`, weights, and tokenizer files (i.e.
-anything `transformers.AutoModel.from_pretrained()` can load), point `--model` directly
-at the path — no upload, no inference server:
+    If your model directory contains `config.json`, weights, and tokenizer files (i.e.
+    anything `transformers.AutoModel.from_pretrained()` can load), point `--model` directly
+    at the path — no upload, no inference server:
 
-```bash
-euroeval --model /path/to/my-checkpoint
-```
+    ```bash
+    euroeval --model /path/to/my-checkpoint
+    ```
 
-This works for both encoder and decoder checkpoints. If you'd rather serve the model
-through an inference server and benchmark over HTTP, see the previous recipe.
+    This works for both encoder and decoder checkpoints. If you'd rather serve the model
+    through an inference server and benchmark over HTTP, see the previous recipe.
 
-### Override missing or incorrect model metadata
+??? example "Override missing or incorrect model metadata"
 
-Some models on the Hub report no maximum context length or vocabulary size, which leaves
-blanks on the leaderboard. Patch both at the command line:
+    Some models on the Hub report no maximum context length or vocabulary size, which leaves
+    blanks on the leaderboard. Patch both at the command line:
 
-```bash
-euroeval --model <model-id> --max-context-length 4096 --vocabulary-size 32000
-```
+    ```bash
+    euroeval --model <model-id> --max-context-length 4096 --vocabulary-size 32000
+    ```
 
-The Python equivalent:
+    The Python equivalent:
 
-```python
-benchmarker.benchmark(
-    model="<model-id>",
-    max_context_length=4096,
-    vocabulary_size=32000,
-)
-```
+    ```python
+    benchmarker.benchmark(
+        model="<model-id>",
+        max_context_length=4096,
+        vocabulary_size=32000,
+    )
+    ```
 
-### Run offline / in an air-gapped environment
+??? example "Run offline / in an air-gapped environment"
 
-First, pre-download everything you'll need with `--download-only`:
+    First, pre-download everything you'll need with `--download-only`:
 
-```bash
-euroeval --model <model-id> --task sentiment-classification --language da --download-only
-```
+    ```bash
+    euroeval --model <model-id> --task sentiment-classification --language da --download-only
+    ```
 
-Then disconnect and re-run the same command without `--download-only` — the data,
-model, and metric files are now served from your Hugging Face cache. The Python form
-takes `download_only=True`.
+    Then disconnect and re-run the same command without `--download-only` — the data,
+    model, and metric files are now served from your Hugging Face cache. The Python form
+    takes `download_only=True`.
 
-!!! note
-    Adapter models still require a live connection during evaluation. If offline adapter
-    support matters to you, please open an
-    [issue](https://github.com/EuroEval/EuroEval/issues).
+    !!! note
+        Adapter models still require a live connection during evaluation. If offline adapter
+        support matters to you, please open an
+        [issue](https://github.com/EuroEval/EuroEval/issues).
 
-### Evaluate on a private dataset (no upload)
+??? example "Evaluate on a private dataset (no upload)"
 
-Store your three splits as local CSVs and describe them in a `custom_datasets.py` next
-to the data:
+    Store your three splits as local CSVs and describe them in a `custom_datasets.py` next
+    to the data:
 
-```python title="custom_datasets.py"
-from euroeval import DatasetConfig, TEXT_CLASSIFICATION
-from euroeval.languages import ENGLISH
+    ```python title="custom_datasets.py"
+    from euroeval import DatasetConfig, TEXT_CLASSIFICATION
+    from euroeval.languages import ENGLISH
 
-MY_CONFIG = DatasetConfig(
-    name="my-dataset",
-    pretty_name="My Dataset",
-    source=dict(train="train.csv", val="val.csv", test="test.csv"),
-    task=TEXT_CLASSIFICATION,
-    languages=[ENGLISH],
-    labels=["positive", "negative"],
-)
-```
+    MY_CONFIG = DatasetConfig(
+        name="my-dataset",
+        pretty_name="My Dataset",
+        source=dict(train="train.csv", val="val.csv", test="test.csv"),
+        task=TEXT_CLASSIFICATION,
+        languages=[ENGLISH],
+        labels=["positive", "negative"],
+    )
+    ```
 
-Then either reference the dataset by name on the CLI, or pass the config object
-directly from Python:
+    Then either reference the dataset by name on the CLI, or pass the config object
+    directly from Python:
 
-```bash
-euroeval --dataset my-dataset --model <model-id>
-```
+    ```bash
+    euroeval --dataset my-dataset --model <model-id>
+    ```
 
-```python
-benchmarker.benchmark(model="<model-id>", dataset=MY_CONFIG)
-```
+    ```python
+    benchmarker.benchmark(model="<model-id>", dataset=MY_CONFIG)
+    ```
 
-For the full set of options (column mapping, custom preprocessing, multiple-choice
-datasets, etc.), see [Custom datasets](#benchmarking-custom-datasets) below.
+    For the full set of options (column mapping, custom preprocessing, multiple-choice
+    datasets, etc.), see [Custom datasets](#benchmarking-custom-datasets) below.
 
-### Publish a dataset on HF Hub so others can evaluate against it
+??? example "Publish a dataset on HF Hub so others can evaluate against it"
 
-Drop an `eval.yaml` at the root of your Hugging Face dataset repo — no Python code
-required, no `--trust-remote-code` flag. The format is shared with
-[Inspect AI's `eval.yaml`](https://inspect.aisi.org.uk/tasks.html#hugging-face), so the
-same file works for both frameworks. See
-[Hugging Face Hub dataset (YAML config)](#benchmarking-custom-datasets) for the schema.
+    Drop an `eval.yaml` at the root of your Hugging Face dataset repo — no Python code
+    required, no `--trust-remote-code` flag. The format is shared with
+    [Inspect AI's `eval.yaml`](https://inspect.aisi.org.uk/tasks.html#hugging-face), so the
+    same file works for both frameworks. See
+    [Hugging Face Hub dataset (YAML config)](#benchmarking-custom-datasets) for the schema.
 
-### Inspect why a generative model failed
+??? example "Inspect why a generative model failed"
 
-Add `--debug` (or `debug=True` in Python). EuroEval writes the full prompts, model
-outputs, predicted labels, and logprobs to
-`<model-id>-<dataset-name>-model-outputs.json`. Load and sort it with pandas:
+    Add `--debug` (or `debug=True` in Python). EuroEval writes the full prompts, model
+    outputs, predicted labels, and logprobs to
+    `<model-id>-<dataset-name>-model-outputs.json`. Load and sort it with pandas:
 
-```python
-import json, pandas as pd
+    ```python
+    import json, pandas as pd
 
-with open("<model-id>-<dataset-name>-model-outputs.json") as f:
-    data = json.load(f)
-df = pd.DataFrame(data.values()).set_index("index").sort_index()
-```
+    with open("<model-id>-<dataset-name>-model-outputs.json") as f:
+        data = json.load(f)
+    df = pd.DataFrame(data.values()).set_index("index").sort_index()
+    ```
 
-See [Detailed model outputs](#detailed-model-outputs) for the full schema and
-[Failed instances](#failed-instances) for parsing per-iteration failure lists.
+    See [Detailed model outputs](#detailed-model-outputs) for the full schema and
+    [Failed instances](#failed-instances) for parsing per-iteration failure lists.
 
-### Read existing results back into Python
+??? example "Read existing results back into Python"
 
-The results file is JSON Lines in the
-[Every Eval Ever (EEE)](#output-format-every-eval-ever-eee) format. Loading every line
-back into a `BenchmarkResult` is a one-liner:
+    The results file is JSON Lines in the
+    [Every Eval Ever (EEE)](#output-format-every-eval-ever-eee) format. Loading every line
+    back into a `BenchmarkResult` is a one-liner:
 
-```python
-import json
-from euroeval.data_models import BenchmarkResult
+    ```python
+    import json
+    from euroeval.data_models import BenchmarkResult
 
-with open("euroeval_benchmark_results.jsonl") as f:
-    results = [
-        BenchmarkResult.from_dict(json.loads(line))
-        for line in f
-        if line.strip()
-    ]
-```
+    with open("euroeval_benchmark_results.jsonl") as f:
+        results = [
+            BenchmarkResult.from_dict(json.loads(line))
+            for line in f
+            if line.strip()
+        ]
+    ```
 
 ## Benchmarking custom datasets
 
