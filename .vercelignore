@@ -18,7 +18,23 @@ ucloud*_results.jsonl
 *outputs.json
 
 # Python sources & docs — Vercel only needs `api/`, `dist/`, `vercel.json`.
-src
+src/euroeval
+src/leaderboards
+src/frontend/csv
+src/frontend/md
+src/frontend/config.yaml
+src/frontend/drawer.ts
+src/frontend/leaderboard.ts
+src/frontend/nav.ts
+src/frontend/search.ts
+src/frontend/router
+src/frontend/services
+src/frontend/styles
+src/frontend/useHead.ts
+src/frontend/vite-env.d.ts
+src/frontend/App.vue
+src/frontend/components
+src/frontend/main.ts
 tests
 docs
 site
