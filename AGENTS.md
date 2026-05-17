@@ -37,3 +37,8 @@ no tests for the frontend or leaderboard generation.
 
 All checks be run with `make check`, which runs all the pre-commit hooks. This includes
 the Ruff formatter and linter, pyrefly type checker, and markdown and notebook linting.
+
+## Changelog
+
+If any changes are made to the evaluation framework, the changelog should be updated in
+`CHANGELOG.md`.
