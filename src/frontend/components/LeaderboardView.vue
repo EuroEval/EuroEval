@@ -169,6 +169,7 @@ const downloadCsv = async () => {
         {{ t.label }}
       </button>
       <button
+        v-if="tab === 'generative' || tab === 'all_models'"
         class="lb-download"
         type="button"
         :disabled="downloading"
@@ -312,7 +313,6 @@ const downloadCsv = async () => {
 }
 
 .lb-download {
-  margin-left: auto;
   background: var(--color-surface);
   color: var(--color-text);
   border: 1px solid var(--color-border);
@@ -353,6 +353,10 @@ const downloadCsv = async () => {
   align-items: center;
   gap: 0.35rem;
   align-self: center;
+  margin-left: auto;
+}
+
+.lb-download + .lb-embed {
   margin-left: 0.4rem;
 }
 
