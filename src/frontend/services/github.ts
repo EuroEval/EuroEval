@@ -82,11 +82,38 @@ export function isVersionNewer(a: string, b: string): boolean {
   return false;
 }
 
-export function extractModelId(title: string): string | null {
+const MODEL_ID_BODY_RE = /(?:^|\n)#{1,6}\s*Model ID\s*\n+([^\n]+)/i;
+
+export function extractModelId(
+  title: string,
+  body: string | null = null,
+): string | null {
+  if (body) {
+    const m = body.match(MODEL_ID_BODY_RE);
+    if (m) {
+      const id = m[1].trim().replace(/^[`*_]+|[`*_]+$/g, "").trim();
+      if (id && id !== "<model-name>") return id;
+    }
+  }
   const prefix = `${TITLE_PREFIX} `;
   if (!title.startsWith(prefix)) return null;
   const rest = title.slice(prefix.length).trim();
   return rest && rest !== "<model-name>" ? rest : null;
+}
+
+export async function huggingFaceModelExists(
+  modelId: string,
+): Promise<boolean> {
+  try {
+    const r = await fetch(
+      `https://huggingface.co/api/models/${encodeURI(modelId)}`,
+      { method: "GET", headers: { accept: "application/json" } },
+    );
+    // 200 = exists, 401/403 = exists but gated/private, 404 = not found
+    return r.status !== 404;
+  } catch {
+    return true;
+  }
 }
 
 export function extractLanguageGroups(body: string | null): string[] {
@@ -114,7 +141,7 @@ export function issueStatus(
 }
 
 export function toQueueEntry(issue: RawIssue): QueueEntry | null {
-  const modelId = extractModelId(issue.title);
+  const modelId = extractModelId(issue.title, issue.body);
   if (!modelId) return null;
   const erroredOnVersion = extractErroredOnVersion(issue.body);
   const gated = isGatedModel(issue.body);
@@ -148,9 +175,14 @@ export async function listOpenEvalIssues(): Promise<QueueEntry[]> {
     Error: 3,
     "Waiting for bug fix": 4,
   };
-  return raw
+  const entries = raw
     .map(toQueueEntry)
-    .filter((e): e is QueueEntry => e !== null)
+    .filter((e): e is QueueEntry => e !== null);
+  const existence = await Promise.all(
+    entries.map((e) => huggingFaceModelExists(e.modelId)),
+  );
+  return entries
+    .filter((_, i) => existence[i])
     .sort((a, b) => {
       if (a.status !== b.status) return order[a.status] - order[b.status];
       return a.createdAt.localeCompare(b.createdAt);
@@ -191,7 +223,7 @@ export async function listEvaluators(): Promise<EvaluatorCount[]> {
   const counts = new Map<string, EvaluatorCount>();
   for (const page of pages) {
     for (const issue of page) {
-      if (!extractModelId(issue.title)) continue;
+      if (!extractModelId(issue.title, issue.body)) continue;
       const assignees =
         issue.assignees && issue.assignees.length > 0
           ? issue.assignees
