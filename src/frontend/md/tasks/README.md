@@ -4,7 +4,7 @@ hide:
 ---
 # Tasks
 
-👉 Choose a task from the menu to see detailed information about that task.
+👆 Choose a task from the top left menu to see detailed information about that task.
 
 ## 📚 Overview
 
