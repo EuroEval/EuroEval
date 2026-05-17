@@ -21,6 +21,7 @@ EUROEVAL_RESULTS_PATH Optional override for the path to
 
 from __future__ import annotations
 
+import fcntl
 import importlib.metadata
 import json
 import logging
@@ -48,6 +49,9 @@ ASSIGNEE = "saattrupdan"
 RESULTS_PATH = Path(
     os.environ.get("EUROEVAL_RESULTS_PATH", "euroeval_benchmark_results.jsonl")
 )
+LOCK_PATH = Path(os.environ.get("EUROEVAL_QUEUE_LOCK", "/tmp/euroeval_queue.lock"))
+# Keep the lock file descriptor alive for the whole process lifetime.
+_LOCK_FD: int | None = None
 
 _BALTIC = "Baltic languages (Latvian, Lithuanian)"
 _FINNIC = "Finnic languages (Estonian, Finnish)"
@@ -77,12 +81,57 @@ LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
 }
 
 
+def acquire_single_instance_lock() -> None:
+    """Acquire an exclusive flock on ``LOCK_PATH`` or exit with an error.
+
+    The lock is held for the lifetime of the process-level file descriptor (i.e.
+    the lifetime of the process) and is released automatically by the kernel
+    when the process exits, so no stale lock file is left behind.
+    """
+    global _LOCK_FD
+    try:
+        # Open (or create) the lock file as read/write so we can both lock it
+        # and update its contents with the current process PID.
+        fd = os.open(LOCK_PATH, os.O_RDWR | os.O_CREAT, 0o644)
+    except OSError as e:
+        logger.error(f"Failed to open lock file {LOCK_PATH}: {e}")
+        sys.exit(1)
+    try:
+        # Request a non-blocking exclusive lock: fail immediately instead of
+        # waiting if another process already holds the queue lock.
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        existing_pid = "unknown"
+        try:
+            existing_pid = LOCK_PATH.read_text(encoding="utf-8").strip() or "unknown"
+        except OSError:
+            pass
+        os.close(fd)
+        logger.error(
+            f"Another process_evaluation_queue.py is already running "
+            f"(pid {existing_pid}); aborting. Set EUROEVAL_QUEUE_LOCK to a "
+            f"different path if you need to run a second instance."
+        )
+        sys.exit(1)
+    # Truncate the lock file first so stale bytes from a longer old PID are
+    # removed before writing the current PID.
+    os.ftruncate(fd, 0)
+    os.write(fd, f"{os.getpid()}\n".encode())
+    # Flush file contents to disk so other processes can reliably read the PID
+    # associated with the lock holder.
+    os.fsync(fd)
+    _LOCK_FD = fd
+
+
 def main() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
     Issues are sorted by (parameter count asc, num-language-groups asc) so
     that quicker evaluations are picked up first.
     """
+    # Held for the lifetime of the process; released by the kernel on exit.
+    acquire_single_instance_lock()
+
     try:
         issues = list_open_unassigned_issues()
     except urllib.error.HTTPError as e:
