@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc && vite build",
-    "preview": "vite preview"
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@huggingface/hub": "^1.0.0",
