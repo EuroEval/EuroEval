@@ -46,8 +46,8 @@ const emit = defineEmits<{
         <tr>
           <th>Model</th>
           <th>Languages</th>
-          <th class="status-col">Status</th>
-          <th>Evaluator</th>
+          <th class="status-col" style="text-align: center">Status</th>
+          <th style="text-align: center">Evaluator</th>
           <th class="sub-col"></th>
         </tr>
       </thead>
@@ -66,7 +66,7 @@ const emit = defineEmits<{
             <span v-if="e.languageGroups.length === 0" class="muted">—</span>
             <span v-else>{{ displayLanguages(e.languageGroups) }}</span>
           </td>
-          <td>
+          <td style="text-align: center">
             <span
               :class="['status', statusClass(e.status)]"
               :title="
@@ -80,7 +80,7 @@ const emit = defineEmits<{
               {{ e.status }}
             </span>
           </td>
-          <td>
+          <td style="text-align: center">
             <a
               v-if="e.evaluator"
               :href="`https://github.com/${e.evaluator}`"
@@ -205,11 +205,11 @@ th.status-col {
 }
 
 .subscribe {
-  padding: 0.3rem 0.7rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
   border: 1px solid var(--color-border);
   border-radius: 0.375rem;
   background: var(--color-bg, white);
-  font: inherit;
   cursor: pointer;
 }
 
