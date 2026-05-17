@@ -21,6 +21,7 @@ EUROEVAL_RESULTS_PATH Optional override for the path to
 
 from __future__ import annotations
 
+import fcntl
 import importlib.metadata
 import json
 import logging
@@ -34,7 +35,16 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from huggingface_hub import HfApi
+from huggingface_hub import HfApi, get_safetensors_metadata
+from huggingface_hub.errors import (
+    GatedRepoError,
+    HfHubHTTPError,
+    NotASafetensorsRepoError,
+    RepositoryNotFoundError,
+    SafetensorsParsingError,
+)
+
+from euroeval.string_utils import split_model_id
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -48,6 +58,9 @@ ASSIGNEE = "saattrupdan"
 RESULTS_PATH = Path(
     os.environ.get("EUROEVAL_RESULTS_PATH", "euroeval_benchmark_results.jsonl")
 )
+LOCK_PATH = Path(os.environ.get("EUROEVAL_QUEUE_LOCK", "/tmp/euroeval_queue.lock"))
+# Keep the lock file descriptor alive for the whole process lifetime.
+_LOCK_FD: int | None = None
 
 # On-disk cache for Hugging Face Hub lookups so that repeated runs of the
 # queue processor (e.g. on a cron) do not re-hit the API for the same models
@@ -74,6 +87,31 @@ _WGERMANIC = "West Germanic languages (Dutch, English, German)"
 # "Waiting for bug fix" statuses.
 ERROR_MARKER_RE = re.compile(r"<!--\s*errored-on:\s*v([^\s>-]+)\s*-->")
 
+# Bytes-per-parameter for each safetensors dtype string. Used to compute the
+# weight footprint of a model from its safetensors header before deciding
+# whether it can fit on the local GPU.
+DTYPE_BYTES: dict[str, int] = {
+    "F64": 8,
+    "I64": 8,
+    "U64": 8,
+    "F32": 4,
+    "I32": 4,
+    "U32": 4,
+    "F16": 2,
+    "BF16": 2,
+    "I16": 2,
+    "U16": 2,
+    "F8_E4M3": 1,
+    "F8_E5M2": 1,
+    "I8": 1,
+    "U8": 1,
+    "BOOL": 1,
+}
+
+# Multiplier applied to weight bytes to leave room for activations, KV cache,
+# and framework overhead when judging whether a model fits in GPU memory.
+GPU_FIT_OVERHEAD = 1.2
+
 
 LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
     _BALTIC: ["lv", "lt"],
@@ -88,12 +126,57 @@ LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
 }
 
 
+def acquire_single_instance_lock() -> None:
+    """Acquire an exclusive flock on ``LOCK_PATH`` or exit with an error.
+
+    The lock is held for the lifetime of the process-level file descriptor (i.e.
+    the lifetime of the process) and is released automatically by the kernel
+    when the process exits, so no stale lock file is left behind.
+    """
+    global _LOCK_FD
+    try:
+        # Open (or create) the lock file as read/write so we can both lock it
+        # and update its contents with the current process PID.
+        fd = os.open(LOCK_PATH, os.O_RDWR | os.O_CREAT, 0o644)
+    except OSError as e:
+        logger.error(f"Failed to open lock file {LOCK_PATH}: {e}")
+        sys.exit(1)
+    try:
+        # Request a non-blocking exclusive lock: fail immediately instead of
+        # waiting if another process already holds the queue lock.
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        existing_pid = "unknown"
+        try:
+            existing_pid = LOCK_PATH.read_text(encoding="utf-8").strip() or "unknown"
+        except OSError:
+            pass
+        os.close(fd)
+        logger.error(
+            f"Another process_evaluation_queue.py is already running "
+            f"(pid {existing_pid}); aborting. Set EUROEVAL_QUEUE_LOCK to a "
+            f"different path if you need to run a second instance."
+        )
+        sys.exit(1)
+    # Truncate the lock file first so stale bytes from a longer old PID are
+    # removed before writing the current PID.
+    os.ftruncate(fd, 0)
+    os.write(fd, f"{os.getpid()}\n".encode())
+    # Flush file contents to disk so other processes can reliably read the PID
+    # associated with the lock holder.
+    os.fsync(fd)
+    _LOCK_FD = fd
+
+
 def main() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
     Issues are sorted by (parameter count asc, num-language-groups asc) so
     that quicker evaluations are picked up first.
     """
+    # Held for the lifetime of the process; released by the kernel on exit.
+    acquire_single_instance_lock()
+
     try:
         issues = list_open_unassigned_issues()
     except urllib.error.HTTPError as e:
@@ -141,12 +224,31 @@ def main() -> None:
     candidates.sort(key=lambda c: (c[0], c[1], c[2]))
     logger.info(f"Found {len(candidates)} processable issue(s).")
 
+    gpu_bytes = gpu_total_memory_bytes()
+    if gpu_bytes is None:
+        logger.info(
+            "Could not determine local GPU memory; skipping the GPU-fit pre-check."
+        )
+    else:
+        logger.info(f"Local GPU memory: {gpu_bytes / (1024**3):.1f} GiB.")
+
     for is_errored, param_count, num_groups, issue, model_id, groups in candidates:
         status = "retry of errored eval" if is_errored else "fresh"
         logger.info(
             f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
             f"{num_groups} group(s), {status})."
         )
+        if gpu_bytes is not None:
+            needed = estimated_model_bytes(model_id=model_id)
+            if needed is not None and int(needed * GPU_FIT_OVERHEAD) > gpu_bytes:
+                logger.info(
+                    f"#{issue['number']}: skipping -- model {model_id!r} needs "
+                    f"~{needed / (1024**3):.1f} GiB of weights "
+                    f"(× {GPU_FIT_OVERHEAD} overhead), which exceeds the local "
+                    f"GPU memory of {gpu_bytes / (1024**3):.1f} GiB. Leaving the "
+                    "issue unassigned so a larger machine can pick it up."
+                )
+                continue
         try:
             process_issue(issue=issue, model_id=model_id, groups=groups)
         except Exception as e:  # noqa: BLE001
@@ -305,6 +407,108 @@ def cached_model_summary(model_id: str) -> dict | None:
     cache[model_id] = {"timestamp": time.time(), "param_count": param_count}
     _write_hf_cache(cache=cache)
     return {"param_count": param_count}
+
+
+def gpu_total_memory_bytes() -> int | None:
+    """Return the total memory of the largest local GPU in bytes.
+
+    Honors the ``EUROEVAL_GPU_MEMORY_BYTES`` env var for overrides (useful in
+    tests). Otherwise shells out to ``nvidia-smi`` and reports the largest
+    device on the host.
+
+    Returns:
+        The total memory in bytes, or None if it cannot be determined.
+    """
+    override = os.environ.get("EUROEVAL_GPU_MEMORY_BYTES")
+    if override:
+        try:
+            return int(override)
+        except ValueError:
+            logger.warning(f"Ignoring invalid EUROEVAL_GPU_MEMORY_BYTES={override!r}.")
+    try:
+        out = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return None
+    values: list[int] = []
+    for line in out.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            values.append(int(line))
+        except ValueError:
+            continue
+    if not values:
+        return None
+    return max(values) * 1024 * 1024  # nvidia-smi reports MiB
+
+
+def estimated_model_bytes(model_id: str) -> int | None:
+    """Estimate the weight footprint of a model in bytes.
+
+    Reads the safetensors header(s) so that quantised checkpoints (int8, fp8,
+    int4) are sized correctly rather than assumed to be fp16/bf16.
+
+    Args:
+        model_id:
+            The Hugging Face repo id, optionally suffixed with ``@<revision>``.
+
+    Returns:
+        The total weight bytes across all tensors, or None when the repo is
+        not a safetensors repo or the metadata cannot be parsed.
+    """
+    components = split_model_id(model_id=model_id)
+    repo = components.model_id
+    revision = components.revision
+    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
+    try:
+        meta = get_safetensors_metadata(repo_id=repo, revision=revision, token=token)
+    except (
+        NotASafetensorsRepoError,
+        SafetensorsParsingError,
+        RepositoryNotFoundError,
+        GatedRepoError,
+        HfHubHTTPError,
+    ) as e:
+        logger.debug(f"safetensors metadata unavailable for {model_id}: {e}")
+        return None
+
+    total = 0
+    for dtype, count in meta.parameter_count.items():
+        dtype_bits = _dtype_bits(dtype=dtype)
+        if dtype_bits is None:
+            logger.debug(
+                f"Unknown safetensors dtype {dtype!r} for {model_id}; "
+                "assuming 2 bytes/param."
+            )
+            dtype_bits = 16
+        total += (count * dtype_bits + 7) // 8
+    return total
+
+
+def _dtype_bits(dtype: str) -> int | None:
+    """Infer the number of bits used by a safetensors dtype string.
+
+    Args:
+        dtype:
+            The safetensors dtype string.
+
+    Returns:
+        The bit-width, or None when it cannot be inferred.
+    """
+    normalized_dtype = dtype.upper()
+    if normalized_dtype in DTYPE_BYTES:
+        return DTYPE_BYTES[normalized_dtype] * 8
+
+    for match in re.findall(pattern=r"\d+", string=normalized_dtype):
+        bits = int(match)
+        if bits > 0:
+            return bits
+    return None
 
 
 def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
