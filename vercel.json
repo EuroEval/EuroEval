@@ -4,9 +4,6 @@
   "framework": null,
   "trailingSlash": false,
   "cleanUrls": true,
-  "functions": {
-    "src/scripts/submit-evaluation.ts": {}
-  },
   "rewrites": [
     { "source": "/((?!api|assets|gfx|csv|leaderboards-csv|sitemap.xml|robots.txt|llms.txt|evaluated-models.json|favicon.ico|.*\\.+).*)", "destination": "/index.html" }
   ],
