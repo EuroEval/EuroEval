@@ -2,8 +2,8 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import fs from "fs";
 import path from "path";
-import seoFiles from "./src/scripts/build-seo-files.mjs";
-import apiReference from "./src/scripts/build-api-reference.mjs";
+import seoFiles from "./build-seo-files.mjs";
+import apiReference from "./build-api-reference.mjs";
 
 function readPackageVersion() {
   const pyproject = fs.readFileSync(
