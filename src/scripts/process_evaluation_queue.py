@@ -86,6 +86,10 @@ _SLAVIC = (
 )
 _WGERMANIC = "West Germanic languages (Dutch, English, German)"
 
+# Matches the "Model ID" section in an issue body (the form template renders
+# the model id as the line immediately following a "### Model ID" heading).
+MODEL_ID_BODY_RE = re.compile(r"(?:^|\n)#{1,6}\s*Model ID\s*\n+([^\n]+)")
+
 # The frontend parses this marker on issue bodies to display "Error" /
 # "Waiting for bug fix" statuses.
 ERROR_MARKER_RE = re.compile(r"<!--\s*errored-on:\s*v([^\s>-]+)\s*-->")
@@ -245,9 +249,9 @@ def main() -> None:
         title = issue.get("title", "")
         body = issue.get("body") or ""
 
-        model_id = extract_model_id(title=title)
+        model_id = extract_model_id(title=title, body=body)
         if not model_id:
-            logger.info(f"#{number}: skipping -- could not parse model id from title.")
+            logger.info(f"#{number}: skipping -- could not parse model id.")
             continue
 
         groups = extract_language_groups(body=body)
@@ -338,17 +342,30 @@ def list_open_unassigned_issues() -> list[dict]:
     return [i for i in issues if "pull_request" not in i]
 
 
-def extract_model_id(title: str) -> str | None:
-    """Return the model id from an issue title, or None if not parseable.
+def extract_model_id(title: str, body: str | None = None) -> str | None:
+    """Return the model id for an issue, preferring the body's Model ID section.
+
+    Mirrors the frontend's ``extractModelId`` so the queue processor reads the
+    same source of truth as the UI: the issue body's ``### Model ID`` section
+    (rendered by the form template), falling back to the title prefix for
+    legacy issues that lack the section.
 
     Args:
         title:
             The full GitHub issue title.
+        body:
+            The markdown body of the issue, or None.
 
     Returns:
-        The model id following the title prefix, or None if the title does
-        not match the expected pattern.
+        The parsed model id, or None if neither the body nor the title yield
+        a usable value.
     """
+    if body:
+        m = MODEL_ID_BODY_RE.search(body)
+        if m:
+            candidate = m.group(1).strip().strip("`*_").strip()
+            if candidate and candidate != "<model-name>":
+                return candidate
     prefix = f"{TITLE_PREFIX} "
     if not title.startswith(prefix):
         return None
