@@ -27,6 +27,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -157,6 +158,34 @@ def official_dataset_language_pairs() -> set[tuple[str, str]]:
     }
 
 
+def ensure_gh_available() -> None:
+    """Verify that the GitHub CLI is installed and authenticated, or exit.
+
+    Checks ``gh`` is on PATH and that ``gh auth status`` succeeds, so the
+    operator gets a clear error before any GitHub API work begins.
+    """
+    if shutil.which("gh") is None:
+        logger.error(
+            "GitHub CLI (`gh`) not found on PATH. Install it from "
+            "https://cli.github.com/ and re-run."
+        )
+        sys.exit(1)
+    try:
+        result = subprocess.run(
+            ["gh", "auth", "status"], capture_output=True, text=True, check=False
+        )
+    except OSError as e:
+        logger.error(f"Failed to run `gh auth status`: {e}")
+        sys.exit(1)
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        logger.error(
+            "Not logged in to GitHub CLI. Run `gh auth login` and re-run."
+            + (f"\n{detail}" if detail else "")
+        )
+        sys.exit(1)
+
+
 def acquire_single_instance_lock() -> None:
     """Acquire an exclusive flock on ``LOCK_PATH`` or exit with an error.
 
@@ -208,6 +237,8 @@ def main() -> None:
     errored evaluations, so that quicker work is picked up first and gated
     items are surfaced ahead of errored ones.
     """
+    ensure_gh_available()
+
     # Held for the lifetime of the process; released by the kernel on exit.
     acquire_single_instance_lock()
 
