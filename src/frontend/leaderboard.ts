@@ -31,6 +31,10 @@ export interface Column {
   title: string;
   titleHtml: string;
   kind: CellKind;
+  /** Task-group label shown in a merged header row above the column title.
+   *  Empty when the column has no task grouping (e.g. metadata columns). */
+  taskTitle: string;
+  taskTitleHtml: string;
   /** Distinct values across the rows (when small) — for dropdown filters. */
   distinctValues?: string[];
   /** Numeric min/max — for range filters. */
@@ -261,8 +265,29 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
   if (rows.length < 2) return { columns: [], rows: [] };
 
   // Row 0 is a task-type grouping; row 1 is the real header.
+  const taskRow = rows[0];
   const headerRow = rows[1];
   const dataRows = rows.slice(2);
+
+  // Parse the task-grouping row. Cells wrapped in `~~~...~~~` are merged-cell
+  // markers — the following empty cells inherit that task label. Bare labels
+  // apply only to their own column.
+  const taskLabels: { title: string; titleHtml: string }[] = [];
+  let span: { title: string; titleHtml: string } | null = null;
+  for (let i = 0; i < headerRow.length; i++) {
+    const raw = taskRow[i] ?? "";
+    const text = stripTags(raw);
+    if (text === "") {
+      taskLabels.push(span ?? { title: "", titleHtml: "" });
+      continue;
+    }
+    const merge = /^~~~([\s\S]*)~~~$/.exec(raw);
+    const inner = merge ? merge[1] : raw;
+    const innerText = stripTags(inner);
+    const entry = { title: innerText, titleHtml: sanitizeHtml(inner) };
+    taskLabels.push(entry);
+    span = merge ? entry : null;
+  }
 
   // Build column metadata.
   const columns: Column[] = headerRow.map((rawTitle, idx) => {
@@ -276,11 +301,14 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
       titleHtml = titleHtml.replace(/Open/i, "Open-weight");
       title = "Open-weight";
     }
+    const task = taskLabels[idx] ?? { title: "", titleHtml: "" };
     return {
       key: title || `col_${idx}`,
       title,
       titleHtml,
       kind,
+      taskTitle: task.title,
+      taskTitleHtml: task.titleHtml,
     };
   });
 

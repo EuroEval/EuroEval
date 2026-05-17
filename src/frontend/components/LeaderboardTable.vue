@@ -237,6 +237,49 @@ const resetFilters = () => {
 
 const isModelCol = (col: Column) => col.key.toLowerCase() === "model";
 
+// --- Header grouping ------------------------------------------------------
+//
+// Score columns can carry a "task" label (e.g. "Knowledge", "Summarization")
+// that is rendered as a merged cell above one or more consecutive dataset
+// columns. Non-score columns are rendered as a single cell that spans both
+// header rows.
+
+interface HeaderGroup {
+  /** Indexes (into table.columns) covered by this group. */
+  indexes: number[];
+  /** Task label HTML (empty when the group has no task heading). */
+  taskTitleHtml: string;
+}
+
+const headerGroups = computed<HeaderGroup[]>(() => {
+  const cols = props.table.columns;
+  const groups: HeaderGroup[] = [];
+  for (let i = 0; i < cols.length; i++) {
+    const col = cols[i];
+    const task = col.kind === "score" ? col.taskTitleHtml || "" : "";
+    if (
+      task &&
+      groups.length > 0 &&
+      groups[groups.length - 1].taskTitleHtml === task
+    ) {
+      groups[groups.length - 1].indexes.push(i);
+    } else {
+      groups.push({ indexes: [i], taskTitleHtml: task });
+    }
+  }
+  return groups;
+});
+
+/** Indexes of columns that are part of a task group — their dataset names
+ *  render in the filter row instead of as a normal header cell. */
+const taskGroupedIndexes = computed<Set<number>>(() => {
+  const set = new Set<number>();
+  for (const g of headerGroups.value) {
+    if (g.taskTitleHtml) for (const i of g.indexes) set.add(i);
+  }
+  return set;
+});
+
 /** Pull the bare "org/name" id out of the model cell's display text. */
 const modelIdFromCell = (text: string): string =>
   text.replace(/\s*\([^)]*\)\s*$/, "").trim();
@@ -280,33 +323,57 @@ const reportBadEval = (modelId: string) => {
       <table class="lb-table">
         <thead>
           <tr>
-            <th
-              v-for="(col, i) in table.columns"
-              :key="col.key + i"
-              :class="['col', `kind-${col.kind}`]"
-              @click="toggleSort(i)"
-            >
-              <span class="th-label" v-html="col.titleHtml || col.title" />
-              <span class="th-sort">
-                <template v-if="sortBy?.index === i">
-                  {{ sortBy.dir === "asc" ? "▲" : "▼" }}
-                </template>
-              </span>
-            </th>
+            <template v-for="(group, gi) in headerGroups" :key="`g-${gi}`">
+              <th
+                v-if="group.taskTitleHtml"
+                class="task-group"
+                :colspan="group.indexes.length"
+              >
+                <span class="task-label" v-html="group.taskTitleHtml" />
+              </th>
+              <th
+                v-else
+                :class="['col', `kind-${table.columns[group.indexes[0]].kind}`]"
+                @click="toggleSort(group.indexes[0])"
+              >
+                <span
+                  class="th-label"
+                  v-html="
+                    table.columns[group.indexes[0]].titleHtml ||
+                    table.columns[group.indexes[0]].title
+                  "
+                />
+                <span class="th-sort">
+                  <template v-if="sortBy?.index === group.indexes[0]">
+                    {{ sortBy.dir === "asc" ? "▲" : "▼" }}
+                  </template>
+                </span>
+              </th>
+            </template>
           </tr>
           <tr class="filter-row">
             <th
               v-for="(col, i) in table.columns"
               :key="`f-${col.key}-${i}`"
-              @click.stop
+              :class="taskGroupedIndexes.has(i) ? 'dataset-cell' : ''"
+              @click="taskGroupedIndexes.has(i) ? toggleSort(i) : undefined"
             >
+              <template v-if="taskGroupedIndexes.has(i)">
+                <span class="th-label" v-html="col.titleHtml || col.title" />
+                <span class="th-sort">
+                  <template v-if="sortBy?.index === i">
+                    {{ sortBy.dir === "asc" ? "▲" : "▼" }}
+                  </template>
+                </span>
+              </template>
               <input
-                v-if="i === 0"
+                v-else-if="i === 0"
                 v-model="colFilters[col.key]"
                 type="search"
                 class="lb-filter"
                 placeholder="filter"
                 :aria-label="`Filter ${col.title}`"
+                @click.stop
                 @input="page = 1"
               />
               <select
@@ -314,6 +381,7 @@ const reportBadEval = (modelId: string) => {
                 v-model="colFilters[col.key]"
                 class="lb-filter"
                 :aria-label="`Filter ${col.title}`"
+                @click.stop
                 @change="page = 1"
               >
                 <option value=""></option>
@@ -491,6 +559,28 @@ const reportBadEval = (modelId: string) => {
   cursor: default;
   font-weight: normal;
   padding: 0.3rem 0.4rem;
+}
+
+.lb-table thead th.task-group {
+  cursor: default;
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.35rem 0.6rem;
+}
+
+.lb-table thead .filter-row th.dataset-cell {
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+}
+
+.task-label :deep(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.task-label :deep(a:hover) {
+  text-decoration: underline;
 }
 
 .th-label :deep(a) {
