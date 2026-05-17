@@ -305,7 +305,7 @@ button {
   margin: 2em 0;
 }
 
-/* Pure-CSS tab group emitted from mkdocs-style `/// tab | Title` blocks. */
+/* Pure-CSS tab group emitted from `/// tab | Title` blocks. */
 .md-tabs {
   display: block;
   margin: 1em 0;

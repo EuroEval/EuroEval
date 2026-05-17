@@ -4,5 +4,5 @@ hide:
 ---
 # Datasets
 
-👈 Choose a language on the left to see all the evaluation datasets available for that
+👉 Choose a language from the menu to see all the evaluation datasets available for that
 language.

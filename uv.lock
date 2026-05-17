@@ -1125,9 +1125,6 @@ dev = [
     { name = "debugpy", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "lxml", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "mkapi", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "mkdocs-include-dir-to-nav", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "mkdocs-include-markdown-plugin", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "mkdocs-material", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "nbstripout", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "pip", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "pre-commit", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
@@ -1218,9 +1215,6 @@ dev = [
     { name = "debugpy", specifier = ">=1.8.13" },
     { name = "lxml", specifier = ">=5.1.0" },
     { name = "mkapi", specifier = ">=3.0.22" },
-    { name = "mkdocs-include-dir-to-nav", specifier = ">=1.2.0" },
-    { name = "mkdocs-include-markdown-plugin", specifier = ">=7.0.1" },
-    { name = "mkdocs-material", specifier = ">=9.5.45" },
     { name = "nbstripout", specifier = ">=0.7.1" },
     { name = "pip", specifier = ">=24.3.1" },
     { name = "pre-commit", specifier = ">=4.5.1" },
@@ -2679,106 +2673,10 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astdoc", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "jinja2", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "mkdocs", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "mkdocs-material", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/3f/84/0b8514d277cde5f20463b6622b816270e93f569945d6fac93e26fc3fe094/mkapi-4.5.0.tar.gz", hash = "sha256:214c34c223d7e33ac966175365ef672d5133154784589416960333ce48a21265", size = 24183, upload-time = "2025-10-11T21:40:15.93Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2b/73/09023a08566a8ee09348fa373ea22d8d2f6410c0ee62f44b3ab3629d1e8e/mkapi-4.5.0-py3-none-any.whl", hash = "sha256:2747b69a4d9bd7d46312d604f9eeb51a740db5d345cd3d37cf03f38c9cfe98fd", size = 28421, upload-time = "2025-10-11T21:40:14.91Z" },
-]
-
-[[package]]
-name = "mkdocs"
-version = "1.6.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "colorama", marker = "sys_platform == 'win32'" },
-    { name = "ghp-import", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "jinja2", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "markdown", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "markupsafe", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "mergedeep", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "mkdocs-get-deps", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "packaging", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "pathspec", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "pyyaml", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "pyyaml-env-tag", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "watchdog", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/bc/c6/bbd4f061bd16b378247f12953ffcb04786a618ce5e904b8c5a01a0309061/mkdocs-1.6.1.tar.gz", hash = "sha256:7b432f01d928c084353ab39c57282f29f92136665bdd6abf7c1ec8d822ef86f2", size = 3889159, upload-time = "2024-08-30T12:24:06.899Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/22/5b/dbc6a8cddc9cfa9c4971d59fb12bb8d42e161b7e7f8cc89e49137c5b279c/mkdocs-1.6.1-py3-none-any.whl", hash = "sha256:db91759624d1647f3f34aa0c3f327dd2601beae39a366d6e064c03468d35c20e", size = 3864451, upload-time = "2024-08-30T12:24:05.054Z" },
-]
-
-[[package]]
-name = "mkdocs-get-deps"
-version = "0.2.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "mergedeep", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "platformdirs", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "pyyaml", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/25/b3cccb187655b9393572bde9b09261d267c3bf2f2cdabe347673be5976a6/mkdocs_get_deps-0.2.2.tar.gz", hash = "sha256:8ee8d5f316cdbbb2834bc1df6e69c08fe769a83e040060de26d3c19fad3599a1", size = 11047, upload-time = "2026-03-10T02:46:33.632Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/29/744136411e785c4b0b744d5413e56555265939ab3a104c6a4b719dad33fd/mkdocs_get_deps-0.2.2-py3-none-any.whl", hash = "sha256:e7878cbeac04860b8b5e0ca31d3abad3df9411a75a32cde82f8e44b6c16ff650", size = 9555, upload-time = "2026-03-10T02:46:32.256Z" },
-]
-
-[[package]]
-name = "mkdocs-include-dir-to-nav"
-version = "1.2.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "mkdocs", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/d9/899622cb7cd99d0d53e696b63294c2a8e73196d17c7941fd9cfefbe575f2/mkdocs_include_dir_to_nav-1.2.0.tar.gz", hash = "sha256:2d7b0bb581471fce6f215b6381f1f4d90a3a069829281b7f5d01a5b7abee15d0", size = 5279, upload-time = "2022-03-01T08:50:48.713Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/78/4f/4e48a2757eb3d271084823cbafc2993ce0dede4f4b05f03fe8f77f14c763/mkdocs_include_dir_to_nav-1.2.0-py3-none-any.whl", hash = "sha256:b09de17ad754aa93aec7ba64acf8fdd53f7a2ceb92e8cffe21646b0e97f4ddf0", size = 5993, upload-time = "2022-03-01T08:50:46.155Z" },
-]
-
-[[package]]
-name = "mkdocs-include-markdown-plugin"
-version = "7.2.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "mkdocs", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "wcmatch", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ad/2d/bdf1aee3f4f7b34148b0f62298b62f03415160cb2707f09503c99a0a7cd5/mkdocs_include_markdown_plugin-7.2.2.tar.gz", hash = "sha256:f052ccb741eccf498116b826c1d78a2d761c56747372594709441cee0963fbc9", size = 25415, upload-time = "2026-03-29T15:15:14.2Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/38/a5/f6b2f0aa805dbda52f6265e9aff1450c8643195442facf29d475bdeba15d/mkdocs_include_markdown_plugin-7.2.2-py3-none-any.whl", hash = "sha256:f2ec4487cf32d3e33ca528f9366f20fb9280ded9c8d1630eb2bbda244962dcd1", size = 29528, upload-time = "2026-03-29T15:15:13.079Z" },
-]
-
-[[package]]
-name = "mkdocs-material"
-version = "9.7.6"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "babel", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "backrefs", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "colorama", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "jinja2", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "markdown", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "mkdocs", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "mkdocs-material-extensions", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "paginate", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "pygments", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "pymdown-extensions", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "requests", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/45/29/6d2bcf41ae40802c4beda2432396fff97b8456fb496371d1bc7aad6512ec/mkdocs_material-9.7.6.tar.gz", hash = "sha256:00bdde50574f776d328b1862fe65daeaf581ec309bd150f7bff345a098c64a69", size = 4097959, upload-time = "2026-03-19T15:41:58.161Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2c/01/bc663630c510822c95c47a66af9fa7a443c295b47d5f041e5e6ae62ef659/mkdocs_material-9.7.6-py3-none-any.whl", hash = "sha256:71b84353921b8ea1ba84fe11c50912cc512da8fe0881038fcc9a0761c0e635ba", size = 9305470, upload-time = "2026-03-19T15:41:55.217Z" },
-]
-
-[[package]]
-name = "mkdocs-material-extensions"
-version = "1.3.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/79/9b/9b4c96d6593b2a541e1cb8b34899a6d021d208bb357042823d4d2cabdbe7/mkdocs_material_extensions-1.3.1.tar.gz", hash = "sha256:10c9511cea88f568257f960358a467d12b970e1f7b2c0e5fb2bb48cab1928443", size = 11847, upload-time = "2023-11-22T19:09:45.208Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/5b/54/662a4743aa81d9582ee9339d4ffa3c8fd40a4965e033d77b9da9774d3960/mkdocs_material_extensions-1.3.1-py3-none-any.whl", hash = "sha256:adff8b62700b25cb77b53358dad940f3ef973dd6db797907c49e3c2ef3ab4e31", size = 8728, upload-time = "2023-11-22T19:09:43.465Z" },
 ]
 
 [[package]]

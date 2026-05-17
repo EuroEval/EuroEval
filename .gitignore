@@ -118,7 +118,7 @@ src/upload/
 # Model outputs in debugging mode
 *outputs.json
 
-# Mkdocs
+# Documentation site output
 site/
 
 # Helper files for docs

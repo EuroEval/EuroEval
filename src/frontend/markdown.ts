@@ -43,7 +43,7 @@ export async function loadRawMarkdown(
   return loader ? await loader() : undefined;
 }
 
-// Transform mkdocs-blocks-style tab groups (`/// tab | Title` … `///`) into
+// Transform tab groups (`/// tab | Title` … `///`) into
 // pure-CSS radio-driven tab containers. Consecutive tab blocks form a single
 // group; isolated blocks become a one-tab group.
 let tabGroupCounter = 0;
@@ -109,7 +109,7 @@ const transformTabs = (text: string): string => {
   return out.join("\n");
 };
 
-// Transform mkdocs-style collapsible admonitions:
+// Transform collapsible admonitions:
 //   ??? example          → collapsed <details> with summary "Example"
 //   ???+ example         → expanded  <details open>
 //   ??? note "My title"  → summary uses the explicit title

@@ -70,12 +70,10 @@ install-pre-commit:
 	@uv run pre-commit autoupdate
 
 docs:  ## View documentation locally
-	@echo "Viewing documentation - run 'make publish-docs' to publish the documentation website."
-	@uv run mkdocs serve
+	@echo "Documentation builds are automated. See README.md for details."
 
 publish-docs:  ## Publish documentation to GitHub Pages
-	@uv run mkdocs gh-deploy
-	@echo "Updated documentation website: https://euroeval.com/"
+	@echo "Documentation publishing is automated. See README.md for details."
 
 test:  ## Run tests
 	@uv run pytest && uv run readme-cov && rm .coverage*
