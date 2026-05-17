@@ -83,7 +83,9 @@ onMounted(refresh);
 
 .sidebar {
   position: sticky;
-  top: 1rem;
+  top: 5rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
 }
 
 h1 {
