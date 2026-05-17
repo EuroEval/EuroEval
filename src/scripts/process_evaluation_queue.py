@@ -50,6 +50,8 @@ RESULTS_PATH = Path(
     os.environ.get("EUROEVAL_RESULTS_PATH", "euroeval_benchmark_results.jsonl")
 )
 LOCK_PATH = Path(os.environ.get("EUROEVAL_QUEUE_LOCK", "/tmp/euroeval_queue.lock"))
+# Keep the lock file descriptor alive for the whole process lifetime.
+_LOCK_FD: int | None = None
 
 _BALTIC = "Baltic languages (Latvian, Lithuanian)"
 _FINNIC = "Finnic languages (Estonian, Finnish)"
@@ -79,23 +81,24 @@ LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
 }
 
 
-def acquire_single_instance_lock() -> int:
+def acquire_single_instance_lock() -> None:
     """Acquire an exclusive flock on ``LOCK_PATH`` or exit with an error.
 
-    The lock is held for the lifetime of the returned file descriptor (i.e.
+    The lock is held for the lifetime of the process-level file descriptor (i.e.
     the lifetime of the process) and is released automatically by the kernel
     when the process exits, so no stale lock file is left behind.
-
-    Returns:
-        The open file descriptor that holds the lock. The caller does not
-        need to do anything with it -- keeping it referenced is enough.
     """
+    global _LOCK_FD
     try:
+        # Open (or create) the lock file as read/write so we can both lock it
+        # and update its contents with the current process PID.
         fd = os.open(LOCK_PATH, os.O_RDWR | os.O_CREAT, 0o644)
     except OSError as e:
         logger.error(f"Failed to open lock file {LOCK_PATH}: {e}")
         sys.exit(1)
     try:
+        # Request a non-blocking exclusive lock: fail immediately instead of
+        # waiting if another process already holds the queue lock.
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError:
         existing_pid = "unknown"
@@ -110,10 +113,14 @@ def acquire_single_instance_lock() -> int:
             f"different path if you need to run a second instance."
         )
         sys.exit(1)
+    # Truncate the lock file first so stale bytes from a longer old PID are
+    # removed before writing the current PID.
     os.ftruncate(fd, 0)
     os.write(fd, f"{os.getpid()}\n".encode())
+    # Flush file contents to disk so other processes can reliably read the PID
+    # associated with the lock holder.
     os.fsync(fd)
-    return fd
+    _LOCK_FD = fd
 
 
 def main() -> None:
@@ -123,7 +130,7 @@ def main() -> None:
     that quicker evaluations are picked up first.
     """
     # Held for the lifetime of the process; released by the kernel on exit.
-    _lock_fd = acquire_single_instance_lock()  # noqa: F841
+    acquire_single_instance_lock()
 
     try:
         issues = list_open_unassigned_issues()
