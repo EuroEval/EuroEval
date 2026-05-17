@@ -37,7 +37,7 @@ const emit = defineEmits<{
         <tr>
           <th>Model</th>
           <th>Language groups</th>
-          <th>Status</th>
+          <th class="status-col">Status</th>
           <th>Evaluator</th>
           <th class="sub-col"></th>
         </tr>
@@ -189,6 +189,10 @@ const emit = defineEmits<{
 .sub-col {
   width: 1%;
   white-space: nowrap;
+}
+
+th.status-col {
+  min-width: 150px;
 }
 
 .subscribe {
