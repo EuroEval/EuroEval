@@ -157,6 +157,58 @@ export async function listOpenEvalIssues(): Promise<QueueEntry[]> {
     });
 }
 
+export interface SubmitterCount {
+  login: string;
+  count: number;
+  avatarUrl: string;
+}
+
+interface RawIssueWithUser extends RawIssue {
+  user: { login: string; avatar_url: string } | null;
+}
+
+const HALL_OF_FAME_EXCLUDE = new Set(["saattrupdan"]);
+
+export async function listEvalSubmitters(): Promise<SubmitterCount[]> {
+  const perPage = 100;
+  const maxPages = 10;
+  const base =
+    `https://api.github.com/repos/${REPO}/issues` +
+    `?state=closed&per_page=${perPage}&labels=${encodeURIComponent(LABEL)}`;
+  const pages = await Promise.all(
+    Array.from({ length: maxPages }, (_, i) =>
+      fetch(`${base}&page=${i + 1}`, {
+        headers: { accept: "application/vnd.github+json" },
+      }).then((r) => {
+        if (!r.ok) {
+          throw new Error(`Failed to load hall of fame (${r.status}).`);
+        }
+        return r.json() as Promise<RawIssueWithUser[]>;
+      }),
+    ),
+  );
+  const counts = new Map<string, SubmitterCount>();
+  for (const page of pages) {
+    for (const issue of page) {
+      if (!issue.user) continue;
+      if (!extractModelId(issue.title)) continue;
+      const login = issue.user.login;
+      if (HALL_OF_FAME_EXCLUDE.has(login)) continue;
+      const cur = counts.get(login);
+      if (cur) {
+        cur.count += 1;
+      } else {
+        counts.set(login, {
+          login,
+          count: 1,
+          avatarUrl: issue.user.avatar_url,
+        });
+      }
+    }
+  }
+  return Array.from(counts.values()).sort((a, b) => b.count - a.count);
+}
+
 export interface SubmitResult {
   ok: boolean;
   status: number;

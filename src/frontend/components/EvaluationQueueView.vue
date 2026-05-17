@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import HallOfFame from "@/components/HallOfFame.vue";
 import ModelSubmitForm from "@/components/ModelSubmitForm.vue";
 import QueueTable from "@/components/QueueTable.vue";
 import SubscribeRedirectModal from "@/components/SubscribeRedirectModal.vue";
@@ -35,23 +36,29 @@ onMounted(refresh);
 
 <template>
   <div class="eq-view">
-    <h1>Evaluation Queue</h1>
-    <p class="intro">
-      Anyone can submit a public model on the Hugging Face Hub for evaluation
-      on EuroEval. Submissions become GitHub issues, and our compute servers
-      pick them up automatically; results are then merged into the
-      leaderboards.
-    </p>
+    <div class="main">
+      <h1>Evaluation Queue</h1>
+      <p class="intro">
+        Anyone can submit a public model on the Hugging Face Hub for evaluation
+        on EuroEval. Submissions become GitHub issues, and our compute servers
+        pick them up automatically; results are then merged into the
+        leaderboards.
+      </p>
 
-    <ModelSubmitForm @submitted="onSubmitted" />
+      <ModelSubmitForm @submitted="onSubmitted" />
 
-    <QueueTable
-      :entries="entries"
-      :loading="loading"
-      :error="error"
-      @refresh="refresh"
-      @subscribe="onSubscribe"
-    />
+      <QueueTable
+        :entries="entries"
+        :loading="loading"
+        :error="error"
+        @refresh="refresh"
+        @subscribe="onSubscribe"
+      />
+    </div>
+
+    <div class="sidebar">
+      <HallOfFame />
+    </div>
 
     <SubscribeRedirectModal
       v-if="subscribeUrl"
@@ -63,7 +70,20 @@ onMounted(refresh);
 
 <style scoped>
 .eq-view {
-  max-width: 920px;
+  max-width: 1200px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.main {
+  min-width: 0;
+}
+
+.sidebar {
+  position: sticky;
+  top: 1rem;
 }
 
 h1 {
@@ -73,5 +93,15 @@ h1 {
 .intro {
   margin: 0 0 1.5rem;
   color: var(--color-text-muted, #555);
+}
+
+@media (max-width: 900px) {
+  .eq-view {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
 }
 </style>
