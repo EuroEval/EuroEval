@@ -63,6 +63,24 @@ _WGERMANIC = "West Germanic languages (Dutch, English, German)"
 # "Waiting for bug fix" statuses.
 ERROR_MARKER_RE = re.compile(r"<!--\s*errored-on:\s*v([^\s>-]+)\s*-->")
 
+# Patterns we treat as OOM in the captured euroeval output. When any of these
+# match we leave the issue unassigned and unmarked so a larger machine can pick
+# it up, rather than recording a hard error on the issue.
+OOM_PATTERN = re.compile(
+    r"cuda out of memory"
+    r"|cuda error:?\s*out of memory"
+    r"|outofmemoryerror"
+    r"|torch\.cuda\.outofmemoryerror"
+    r"|hip out of memory"
+    r"|killed.*\(out of memory\)",
+    re.IGNORECASE,
+)
+
+# euroeval emits a summary line like "errored 3 benchmarks" when individual
+# (dataset, language) combinations fail without crashing the whole run. We use
+# this to detect partial failures even when the subprocess exited 0.
+ERRORED_BENCHMARKS_RE = re.compile(r"errored\s+(\d+)\s+benchmarks?", re.IGNORECASE)
+
 
 LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
     _BALTIC: ["lv", "lt"],
@@ -277,28 +295,42 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     assign_issue(number=number)
 
     before = set(read_jsonl_lines(path=RESULTS_PATH))
-    ok, error_output = run_euroeval(model_id=model_id, languages=languages)
+    returncode, output = run_euroeval(model_id=model_id, languages=languages)
     after = read_jsonl_lines(path=RESULTS_PATH)
     new_lines = [line for line in after if line not in before]
 
-    if not ok:
+    num_errored = num_errored_benchmarks(output=output)
+    crashed = returncode != 0
+    produced_nothing = not new_lines
+    partial = num_errored > 0
+    failed = crashed or produced_nothing or partial
+
+    if failed and OOM_PATTERN.search(output):
+        unassign_issue(number=number)
+        logger.info(
+            f"#{number}: OOM detected in euroeval output; returning issue to "
+            "queue without marking it errored."
+        )
+        return
+
+    if failed:
         version = euroeval_version()
+        if crashed:
+            reason = f"euroeval exited with code {returncode}"
+        elif produced_nothing:
+            reason = "euroeval produced no new result lines"
+        else:
+            reason = f"euroeval reported {num_errored} errored benchmark(s)"
+        tail = output[-6000:].strip() or "(no output captured)"
         comment = (
-            f"Error encountered during evaluation:\n\n"
-            f"```bash\n{error_output or '(no output captured)'}\n```\n\n"
+            f"Error encountered during evaluation ({reason}):\n\n"
+            f"```bash\n{tail}\n```\n\n"
             f"EuroEval version: v{version}\n"
         )
         comment_on_issue(number=number, comment=comment)
         set_errored_marker(number=number, body=issue.get("body"), version=version)
         unassign_issue(number=number)
         logger.info(f"#{number}: marked errored on v{version}, returned to queue.")
-        return
-
-    if not new_lines:
-        logger.warning(
-            f"#{number}: no new lines produced in {RESULTS_PATH} -- leaving "
-            f"issue assigned for manual inspection."
-        )
         return
 
     payload = "\n".join(new_lines)
@@ -354,8 +386,11 @@ def read_jsonl_lines(path: Path) -> list[str]:
     ]
 
 
-def run_euroeval(model_id: str, languages: list[str]) -> tuple[bool, str]:
+def run_euroeval(model_id: str, languages: list[str]) -> tuple[int, str]:
     """Run the euroeval CLI for the given model and language list.
+
+    Output is streamed live to stderr (so the operator can follow progress on
+    long evaluations) while also being captured for post-run inspection.
 
     Args:
         model_id:
@@ -364,31 +399,48 @@ def run_euroeval(model_id: str, languages: list[str]) -> tuple[bool, str]:
             ISO codes of the languages to pass via ``--language``.
 
     Returns:
-        A ``(success, captured_stderr)`` pair. ``captured_stderr`` is
-        populated with the tail of the subprocess's combined output when
-        the run fails, so it can be posted back to the issue.
+        A ``(returncode, combined_output)`` pair. The output combines stdout
+        and stderr in interleaved order. A returncode of 127 signals that the
+        CLI was not found on PATH.
     """
     cmd = ["euroeval", "--model", model_id]
     for lang in languages:
         cmd += ["--language", lang]
     logger.info(f"Running: {' '.join(cmd)}")
+
     try:
-        subprocess.run(cmd, check=True)
-        return True, ""
-    except subprocess.CalledProcessError as e:
-        # Re-run with capture so we have a stack trace to report. The first
-        # run already crashed, so this is at worst a second crash on the
-        # same input -- far cheaper than the eval itself.
-        captured = subprocess.run(  # noqa: S603
-            cmd, capture_output=True, text=True, check=False
+        proc = subprocess.Popen(  # noqa: S603
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
         )
-        output = (captured.stderr or "") + (captured.stdout or "")
-        logger.error(f"euroeval failed (exit {e.returncode}) for {model_id}.")
-        # Keep only the last ~6 KiB so the comment doesn't blow up.
-        return False, output[-6000:].strip()
     except FileNotFoundError:
         logger.error("`euroeval` CLI not found on PATH. Is it installed?")
-        return False, "`euroeval` CLI not found on PATH."
+        return 127, "`euroeval` CLI not found on PATH."
+
+    assert proc.stdout is not None
+    captured: list[str] = []
+    for line in proc.stdout:
+        sys.stderr.write(line)
+        sys.stderr.flush()
+        captured.append(line)
+    proc.wait()
+    return proc.returncode, "".join(captured)
+
+
+def num_errored_benchmarks(output: str) -> int:
+    """Return the number of errored benchmarks parsed from euroeval output.
+
+    Args:
+        output:
+            The full captured combined-output of the euroeval subprocess.
+
+    Returns:
+        The integer reported by the last ``errored N benchmarks`` line, or 0
+        if no such line is present.
+    """
+    last = 0
+    for m in ERRORED_BENCHMARKS_RE.finditer(output):
+        last = int(m.group(1))
+    return last
 
 
 def comment_on_issue(number: int, comment: str) -> None:
