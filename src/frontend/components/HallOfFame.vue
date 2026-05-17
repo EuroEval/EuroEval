@@ -63,7 +63,7 @@ onMounted(async () => {
 
 <template>
   <aside class="hof">
-    <h2>🏆 Hall of Fame</h2>
+    <h2>🏆 Contributor Hall of Fame</h2>
     <p class="sub">Most models evaluated</p>
 
     <p v-if="loading" class="msg">Loading…</p>
