@@ -38,7 +38,7 @@ from pathlib import Path
 
 import psutil
 import torch
-from huggingface_hub import HfApi, HfFolder, get_safetensors_metadata
+from huggingface_hub import HfApi, get_safetensors_metadata, get_token
 from huggingface_hub.errors import (
     GatedRepoError,
     HfHubHTTPError,
@@ -822,7 +822,7 @@ def resolve_hf_token() -> str | None:
     return (
         os.environ.get("HF_TOKEN")
         or os.environ.get("HUGGINGFACE_API_KEY")
-        or HfFolder.get_token()
+        or get_token()
     )
 
 
