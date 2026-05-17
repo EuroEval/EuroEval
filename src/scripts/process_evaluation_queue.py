@@ -58,6 +58,7 @@ logger = logging.getLogger("process_evaluation_queue")
 
 REPO = "EuroEval/EuroEval"
 LABEL = "model evaluation request"
+FAILED_LABEL = "evaluation-failed"
 TITLE_PREFIX = "[MODEL EVALUATION REQUEST]"
 ASSIGNEE = "saattrupdan"
 RESULTS_PATH = Path(
@@ -703,6 +704,7 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
         set_gated_with_errored_block(
             number=number, body=issue.get("body"), version=version
         )
+        add_failed_label(number=number)
         unassign_issue(number=number)
         logger.info(
             f"#{number}: euroeval reported a gated repo for {model_id!r}; "
@@ -732,6 +734,7 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
         )
         comment_on_issue(number=number, comment=comment)
         set_errored_marker(number=number, body=issue.get("body"), version=version)
+        add_failed_label(number=number)
         unassign_issue(number=number)
         logger.info(f"#{number}: marked errored on v{version}, returned to queue.")
         return
@@ -739,6 +742,7 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     payload = "\n".join(new_lines)
     comment = f"Results for `{model_id}`:\n\n```jsonl\n{payload}\n```\n"
     comment_on_issue(number=number, comment=comment)
+    remove_failed_label(number=number)
     logger.info(f"#{number}: posted {len(new_lines)} result line(s) as comment.")
 
 
@@ -829,6 +833,42 @@ def unassign_issue(number: int) -> None:
         method="DELETE",
         body={"assignees": [ASSIGNEE]},
     )
+
+
+def add_failed_label(number: int) -> None:
+    """Attach the ``evaluation-failed`` label to an issue.
+
+    Args:
+        number:
+            The issue number to label.
+    """
+    try:
+        gh_request(
+            path=f"/repos/{REPO}/issues/{number}/labels",
+            method="POST",
+            body={"labels": [FAILED_LABEL]},
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not add {FAILED_LABEL!r} label: {e}")
+
+
+def remove_failed_label(number: int) -> None:
+    """Remove the ``evaluation-failed`` label from an issue if present.
+
+    Args:
+        number:
+            The issue number to unlabel.
+    """
+    try:
+        gh_request(
+            path=f"/repos/{REPO}/issues/{number}/labels/"
+            + urllib.parse.quote(FAILED_LABEL),
+            method="DELETE",
+        )
+    except urllib.error.HTTPError as e:
+        # 404 just means the label wasn't applied; anything else is worth noting.
+        if e.code != 404:
+            logger.warning(f"#{number}: could not remove {FAILED_LABEL!r} label: {e}")
 
 
 def read_jsonl_lines(path: Path) -> list[str]:
