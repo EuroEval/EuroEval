@@ -18,7 +18,31 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../..");
 const CONFIG_PATH = path.join(REPO_ROOT, "src/frontend/config.yaml");
 const CSV_DIR = path.join(REPO_ROOT, "src/frontend/csv");
+const GFX_DIR = path.join(REPO_ROOT, "gfx");
 const BASE_URL = "https://euroeval.com";
+
+// Image extensions to ship from the gfx/ directory. The .xcf source files are
+// intentionally excluded.
+const GFX_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico"]);
+
+async function listGfxFiles() {
+  try {
+    const all = await fs.readdir(GFX_DIR);
+    return all.filter((f) => GFX_EXTENSIONS.has(path.extname(f).toLowerCase()));
+  } catch {
+    return [];
+  }
+}
+
+const GFX_MIME = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+};
 
 /** Convert a sidebar title to a plain text label (drop HTML and emojis). */
 function stripEmoji(s) {
@@ -133,6 +157,16 @@ function buildLlmsIndex(config, csvs) {
   }
   lines.push("");
   return lines.join("\n");
+}
+
+async function copyGfxTo(distDir) {
+  const target = path.join(distDir, "gfx");
+  await fs.mkdir(target, { recursive: true });
+  const files = await listGfxFiles();
+  for (const name of files) {
+    await fs.copyFile(path.join(GFX_DIR, name), path.join(target, name));
+  }
+  return files.length;
 }
 
 async function copyCsvsTo(distDir) {
@@ -313,6 +347,23 @@ export default function seoFilesPlugin() {
             res.end(buildLlmsIndex(config, csvs));
             return;
           }
+          const gfxMatch = url.match(/^\/gfx\/([^/]+)$/);
+          if (gfxMatch) {
+            const name = gfxMatch[1];
+            const ext = path.extname(name).toLowerCase();
+            if (GFX_EXTENSIONS.has(ext)) {
+              try {
+                const data = await fs.readFile(path.join(GFX_DIR, name));
+                res.setHeader("Content-Type", GFX_MIME[ext] || "application/octet-stream");
+                res.end(data);
+                return;
+              } catch {
+                res.statusCode = 404;
+                res.end("Not found");
+                return;
+              }
+            }
+          }
           const csvMatch = url.match(/^\/leaderboards-csv\/([^/]+\.csv)$/);
           if (csvMatch) {
             const filePath = path.join(CSV_DIR, csvMatch[1]);
@@ -369,6 +420,7 @@ export default function seoFilesPlugin() {
         "utf-8",
       );
       await copyCsvsTo(distDir);
+      const gfxCount = await copyGfxTo(distDir);
 
       const evaluatedIndex = await buildEvaluatedModelsIndex();
       await fs.writeFile(
@@ -378,7 +430,7 @@ export default function seoFilesPlugin() {
       );
 
       this.info?.(
-        `[seo-files] sitemap (${urls.length} URLs), robots.txt, llms.txt, copied ${csvs.length} CSVs, indexed ${Object.keys(evaluatedIndex).length} evaluated models.`,
+        `[seo-files] sitemap (${urls.length} URLs), robots.txt, llms.txt, copied ${csvs.length} CSVs, ${gfxCount} gfx files, indexed ${Object.keys(evaluatedIndex).length} evaluated models.`,
       );
     },
   };
