@@ -49,6 +49,17 @@ RESULTS_PATH = Path(
     os.environ.get("EUROEVAL_RESULTS_PATH", "euroeval_benchmark_results.jsonl")
 )
 
+# On-disk cache for Hugging Face Hub lookups so that repeated runs of the
+# queue processor (e.g. on a cron) do not re-hit the API for the same models
+# and trip rate limits.
+HF_CACHE_PATH = Path(
+    os.environ.get(
+        "EUROEVAL_QUEUE_HF_CACHE",
+        str(Path.home() / ".cache" / "euroeval" / "queue_hf_cache.json"),
+    )
+)
+HF_CACHE_TTL_SECONDS = 6 * 60 * 60
+
 _BALTIC = "Baltic languages (Latvian, Lithuanian)"
 _FINNIC = "Finnic languages (Estonian, Finnish)"
 _ROMANCE = "Romance languages (Catalan, French, Italian, Portuguese, Romanian, Spanish)"
@@ -116,12 +127,12 @@ def main() -> None:
             )
             continue
 
-        info = huggingface_model_info(model_id=model_id)
-        if info is None:
+        summary = cached_model_summary(model_id=model_id)
+        if summary is None:
             logger.info(f"#{number}: skipping -- model {model_id!r} not on HF Hub.")
             continue
 
-        param_count = huggingface_param_count(info=info)
+        param_count = summary["param_count"]
         is_errored = 1 if errored_v is not None else 0
         candidates.append(
             (is_errored, param_count, len(groups), issue, model_id, groups)
@@ -217,43 +228,83 @@ def errored_on_version(body: str | None) -> str | None:
     return m.group(1) if m else None
 
 
-def huggingface_model_info(model_id: str) -> object | None:
-    """Return HF Hub metadata for ``model_id``, or None if unavailable.
+def _load_hf_cache() -> dict[str, dict]:
+    """Read the on-disk HF Hub lookup cache, or return an empty dict.
+
+    Stale or malformed entries are silently dropped so callers always see a
+    well-formed mapping of model id -> cache entry.
+
+    Returns:
+        A dict mapping model id to a cache entry containing at least
+        ``timestamp`` and ``param_count``.
+    """
+    try:
+        data = json.loads(HF_CACHE_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return dict()
+    if not isinstance(data, dict):
+        return dict()
+    now = time.time()
+    fresh: dict[str, dict] = dict()
+    for key, value in data.items():
+        if not isinstance(value, dict):
+            continue
+        ts = value.get("timestamp")
+        if not isinstance(ts, (int, float)) or now - ts > HF_CACHE_TTL_SECONDS:
+            continue
+        fresh[key] = value
+    return fresh
+
+
+def _write_hf_cache(cache: dict[str, dict]) -> None:
+    """Persist ``cache`` to ``HF_CACHE_PATH`` atomically.
+
+    Args:
+        cache:
+            The mapping of model id to cache entry to persist.
+    """
+    try:
+        HF_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = HF_CACHE_PATH.with_suffix(HF_CACHE_PATH.suffix + ".tmp")
+        tmp.write_text(json.dumps(cache, indent=2), encoding="utf-8")
+        tmp.replace(HF_CACHE_PATH)
+    except OSError as e:
+        logger.warning(f"Could not write HF cache to {HF_CACHE_PATH}: {e}")
+
+
+def cached_model_summary(model_id: str) -> dict | None:
+    """Return a cached ``{exists, param_count}`` summary for a HF model id.
+
+    Looks up ``HF_CACHE_PATH`` first and falls back to ``HfApi.model_info``
+    only on cache miss or stale entry. Negative results (model not found) are
+    not cached so that typo corrections take effect immediately.
 
     Args:
         model_id:
             The Hugging Face repo id to look up.
 
     Returns:
-        The ``ModelInfo`` object returned by ``HfApi``, or None when the
-        lookup fails for any reason.
+        A dict with keys ``param_count`` (int, possibly ``sys.maxsize`` for
+        unknown), or None when the model is not on the Hub.
     """
+    cache = _load_hf_cache()
+    entry = cache.get(model_id)
+    if entry is not None and "param_count" in entry:
+        return {"param_count": int(entry["param_count"])}
+
     try:
-        return HfApi().model_info(repo_id=model_id)
+        info = HfApi().model_info(repo_id=model_id)
     except Exception as e:  # noqa: BLE001
         logger.warning(f"HF model lookup failed for {model_id}: {e}")
         return None
 
-
-def huggingface_param_count(info: object) -> int:
-    """Return the model's parameter count, or a large fallback if unknown.
-
-    Falls back to ``sys.maxsize`` so that models with unknown size are
-    deprioritised by the queue sorter.
-
-    Args:
-        info:
-            The ``ModelInfo`` object returned by ``HfApi``.
-
-    Returns:
-        The total parameter count when present and positive, otherwise
-        ``sys.maxsize``.
-    """
     safetensors = getattr(info, "safetensors", None)
     total = getattr(safetensors, "total", None) if safetensors else None
-    if isinstance(total, int) and total > 0:
-        return total
-    return sys.maxsize
+    param_count = total if isinstance(total, int) and total > 0 else sys.maxsize
+
+    cache[model_id] = {"timestamp": time.time(), "param_count": param_count}
+    _write_hf_cache(cache=cache)
+    return {"param_count": param_count}
 
 
 def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
