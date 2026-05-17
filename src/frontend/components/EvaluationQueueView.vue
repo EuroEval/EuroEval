@@ -89,7 +89,11 @@ onMounted(refresh);
 }
 
 h1 {
-  margin: 0 0 0.5rem;
+  font-size: 2rem;
+  font-weight: 300;
+  margin: 0 0 0.25rem;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .intro {
