@@ -640,3 +640,22 @@ button {
   padding: 0;
   font-size: inherit;
 }
+
+/* Viewport-based visibility for intro guidance text */
+.viewport-desktop {
+  display: block;
+}
+
+.viewport-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .viewport-desktop {
+    display: none;
+  }
+
+  .viewport-mobile {
+    display: block;
+  }
+}

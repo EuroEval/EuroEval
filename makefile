@@ -69,12 +69,6 @@ install-pre-commit:
 	@uv run pre-commit install
 	@uv run pre-commit autoupdate
 
-docs:  ## View documentation locally
-	@echo "Documentation builds are automated. See README.md for details."
-
-publish-docs:  ## Publish documentation to GitHub Pages
-	@echo "Documentation publishing is automated. See README.md for details."
-
 test:  ## Run tests
 	@uv run pytest && uv run readme-cov && rm .coverage*
 
@@ -118,7 +112,6 @@ publish:
 		echo "Publishing to PyPI..."; \
 		$(MAKE) --quiet publish-euroeval \
 			&& $(MAKE) --quiet publish-scandeval \
-			&& $(MAKE) --quiet publish-docs \
 			&& $(MAKE) --quiet add-dev-version \
 			&& echo "Published!"; \
 	fi

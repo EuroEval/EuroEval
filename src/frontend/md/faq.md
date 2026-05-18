@@ -1,8 +1,3 @@
----
-hide:
-    - navigation
-    - toc
----
 # Frequently Asked Questions
 
 ## How do you determine if a model is "Commercial" or not?

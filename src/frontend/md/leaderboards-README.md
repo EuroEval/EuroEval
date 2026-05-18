@@ -4,7 +4,9 @@ hide:
 ---
 # Leaderboards
 
-👆 Choose a leaderboard from the top left menu to see the results.
+<span class="viewport-desktop">Choose a leaderboard from the menu on the left to see the
+results.</span><span class="viewport-mobile">👆 Choose a leaderboard from the top
+left menu to see the results.</span>
 
 ## 🏷️ Types of Leaderboards
 
