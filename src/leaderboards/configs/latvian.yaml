@@ -1,0 +1,12 @@
+sentiment-classification:
+  - latvian-twitter-sentiment
+named-entity-recognition:
+  - fullstack-ner-lv
+linguistic-acceptability:
+  - scala-lv
+reading-comprehension:
+  - multi-wiki-qa-lv
+knowledge:
+  - mmlu-lv
+common-sense-reasoning:
+  - copa-lv

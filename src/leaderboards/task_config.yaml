@@ -1,0 +1,44 @@
+sentiment-classification:
+  category: nlu
+  primary_metric: mcc
+  secondary_metric: macro_f1
+
+named-entity-recognition:
+  category: nlu
+  primary_metric: micro_f1_no_misc
+  secondary_metric: micro_f1
+
+linguistic-acceptability:
+  category: nlu
+  primary_metric: mcc
+  secondary_metric: macro_f1
+
+reading-comprehension:
+  category: nlu
+  primary_metric: f1
+  secondary_metric: em
+
+knowledge:
+  category: nlg
+  primary_metric: mcc
+  secondary_metric: accuracy
+
+common-sense-reasoning:
+  category: nlg
+  primary_metric: mcc
+  secondary_metric: accuracy
+
+summarization:
+  category: nlg
+  primary_metric: chr_f3pp
+  secondary_metric: chr_f4pp
+
+simplification:
+  category: nlg
+  primary_metric: meteor
+  secondary_metric: sari
+
+european-values:
+  category: nlg
+  primary_metric: european_values
+  orthogonal: true

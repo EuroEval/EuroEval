@@ -1,0 +1,12 @@
+sentiment-classification:
+  - cinexio
+named-entity-recognition:
+  - bg-ner-bsnlp
+linguistic-acceptability:
+  - scala-bg
+reading-comprehension:
+  - multi-wiki-qa-bg
+knowledge:
+  - exams-bg
+common-sense-reasoning:
+  - winogrande-bg

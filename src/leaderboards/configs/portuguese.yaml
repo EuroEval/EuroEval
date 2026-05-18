@@ -1,0 +1,16 @@
+sentiment-classification:
+  - sst2-pt
+named-entity-recognition:
+  - harem
+linguistic-acceptability:
+  - scala-pt
+reading-comprehension:
+  - multi-wiki-qa-pt
+summarization:
+  - publico
+knowledge:
+  - mmlu-pt
+common-sense-reasoning:
+  - goldenswag-pt
+european-values:
+  - valeu-pt

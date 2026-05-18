@@ -1,0 +1,16 @@
+sentiment-classification:
+  - hotter-and-colder-sentiment
+named-entity-recognition:
+  - mim-gold-ner
+linguistic-acceptability:
+  - scala-is
+reading-comprehension:
+  - nqii
+summarization:
+  - rrn
+knowledge:
+  - icelandic-knowledge
+common-sense-reasoning:
+  - winogrande-is
+european-values:
+  - valeu-is

@@ -1,0 +1,12 @@
+sentiment-classification:
+  - sentinews
+named-entity-recognition:
+  - ssj500k-ner
+linguistic-acceptability:
+  - scala-sl
+reading-comprehension:
+  - multi-wiki-qa-sl
+knowledge:
+  - mmlu-sl
+common-sense-reasoning:
+  - winogrande-sl

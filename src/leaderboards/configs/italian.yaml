@@ -1,0 +1,16 @@
+sentiment-classification:
+  - sentipolc16
+named-entity-recognition:
+  - multinerd-it
+linguistic-acceptability:
+  - scala-it
+reading-comprehension:
+  - squad-it
+summarization:
+  - ilpost-sum
+knowledge:
+  - mmlu-it
+common-sense-reasoning:
+  - hellaswag-it
+european-values:
+  - valeu-it

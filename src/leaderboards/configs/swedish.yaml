@@ -1,0 +1,16 @@
+sentiment-classification:
+  - swerec
+named-entity-recognition:
+  - suc3
+linguistic-acceptability:
+  - scala-sv
+reading-comprehension:
+  - multi-wiki-qa-sv
+summarization:
+  - swedn
+knowledge:
+  - mmlu-sv
+common-sense-reasoning:
+  - hellaswag-sv
+european-values:
+  - valeu-sv

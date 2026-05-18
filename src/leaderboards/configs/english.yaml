@@ -1,0 +1,16 @@
+sentiment-classification:
+  - sst5
+named-entity-recognition:
+  - conll-en
+linguistic-acceptability:
+  - scala-en
+reading-comprehension:
+  - squad
+summarization:
+  - cnn-dailymail
+knowledge:
+  - life-in-the-uk
+common-sense-reasoning:
+  - hellaswag
+european-values:
+  - valeu-en

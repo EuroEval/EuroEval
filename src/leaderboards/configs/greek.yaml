@@ -1,0 +1,14 @@
+sentiment-classification:
+  - greek-sa
+named-entity-recognition:
+  - elner
+linguistic-acceptability:
+  - scala-el
+reading-comprehension:
+  - multi-wiki-qa-el
+summarization:
+  - greek-wikipedia
+knowledge:
+  - global-mmlu-el
+common-sense-reasoning:
+  - winogrande-el

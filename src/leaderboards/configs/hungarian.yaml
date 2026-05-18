@@ -1,0 +1,14 @@
+sentiment-classification:
+  - husst
+named-entity-recognition:
+  - szeged-ner
+linguistic-acceptability:
+  - scala-hu
+reading-comprehension:
+  - multi-wiki-qa-hu
+summarization:
+  - hunsum
+knowledge:
+  - mmlu-hu
+common-sense-reasoning:
+  - winogrande-hu

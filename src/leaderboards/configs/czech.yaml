@@ -1,0 +1,14 @@
+sentiment-classification:
+  - csfd-sentiment
+named-entity-recognition:
+  - poner
+linguistic-acceptability:
+  - cs-gec
+reading-comprehension:
+  - sqad
+summarization:
+  - czech-news
+knowledge:
+  - umimeto-qa
+common-sense-reasoning:
+  - hellaswag-cs

@@ -1,0 +1,17 @@
+sentiment-classification:
+  - angry-tweets
+named-entity-recognition:
+  - dansk
+linguistic-acceptability:
+  - scala-da
+reading-comprehension:
+  - multi-wiki-qa-da
+summarization:
+  - nordjylland-news
+knowledge:
+  - danske-talemaader
+  - danish-citizen-tests
+common-sense-reasoning:
+  - hellaswag-da
+european-values:
+  - valeu-da

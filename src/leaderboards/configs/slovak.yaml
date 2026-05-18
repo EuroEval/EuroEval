@@ -1,0 +1,12 @@
+sentiment-classification:
+  - csfd-sentiment-sk
+named-entity-recognition:
+  - uner-sk
+linguistic-acceptability:
+  - scala-sk
+reading-comprehension:
+  - multi-wiki-qa-sk
+knowledge:
+  - mmlu-sk
+common-sense-reasoning:
+  - winogrande-sk

@@ -14,6 +14,7 @@ from types import ModuleType
 from huggingface_hub import HfApi
 
 from .data_models import DatasetConfig
+from .hf_hub_utils import _list_repo_files, _repo_exists
 from .logging_utils import log_once
 from .split_utils import get_repo_splits
 from .utils import get_hf_token
@@ -91,12 +92,10 @@ def try_get_dataset_config_from_repo(
     """
     token = get_hf_token(api_key=api_key)
     hf_api = HfApi(token=token)
-    if not hf_api.repo_exists(repo_id=dataset_id, repo_type="dataset"):
+    if not _repo_exists(hf_api=hf_api, dataset_id=dataset_id):
         return None
 
-    repo_files = list(
-        hf_api.list_repo_files(repo_id=dataset_id, repo_type="dataset", revision="main")
-    )
+    repo_files = _list_repo_files(hf_api=hf_api, dataset_id=dataset_id, revision="main")
 
     if "eval.yaml" in repo_files:
         try:
@@ -146,9 +145,7 @@ def load_python_config(
     Returns:
         The dataset config if it exists, otherwise None.
     """
-    repo_files = list(
-        hf_api.list_repo_files(repo_id=dataset_id, repo_type="dataset", revision="main")
-    )
+    repo_files = _list_repo_files(hf_api=hf_api, dataset_id=dataset_id, revision="main")
 
     if "euroeval_config.py" not in repo_files:
         log_once(

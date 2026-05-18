@@ -1,0 +1,16 @@
+sentiment-classification:
+  - allocine
+named-entity-recognition:
+  - eltec
+linguistic-acceptability:
+  - scala-fr
+reading-comprehension:
+  - fquad
+summarization:
+  - orange-sum
+knowledge:
+  - mmlu-fr
+common-sense-reasoning:
+  - hellaswag-fr
+european-values:
+  - valeu-fr
