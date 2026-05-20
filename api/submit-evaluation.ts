@@ -67,7 +67,7 @@ async function fetchEvaluatedGroups(
 
 async function huggingFaceModelExists(modelId: string): Promise<boolean> {
   const r = await fetch(
-    `https://huggingface.co/api/models/${encodeURIComponent(modelId)}`,
+    `https://huggingface.co/api/models/${modelId}`,
     { method: "GET" },
   );
   if (r.status === 200) {
