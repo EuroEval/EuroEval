@@ -119,14 +119,19 @@ export async function listOpenEvalIssues(
   // GitHub. `fresh: true` bypasses both the browser and edge caches via a
   // cache-buster + no-store — needed right after submitting a new issue, where
   // a 30s-stale list would miss the just-created entry.
-  const url = fresh
-    ? `/api/issues?state=open&_=${Date.now()}`
-    : `/api/issues?state=open`;
-  const r = await fetch(url, fresh ? { cache: "no-store" } : undefined);
-  if (!r.ok) {
-    throw new Error(`Failed to load queue (${r.status}).`);
+  const buster = fresh ? `&_=${Date.now()}` : "";
+  const init = fresh ? { cache: "no-store" as const } : undefined;
+  const raw: RawIssue[] = [];
+  const maxPages = 10;
+  for (let page = 1; page <= maxPages; page++) {
+    const r = await fetch(`/api/issues?state=open&page=${page}${buster}`, init);
+    if (!r.ok) {
+      throw new Error(`Failed to load queue (${r.status}).`);
+    }
+    const chunk = (await r.json()) as RawIssue[];
+    raw.push(...chunk);
+    if (chunk.length < 100) break;
   }
-  const raw = (await r.json()) as RawIssue[];
   const order: Record<QueueStatus, number> = {
     Evaluating: 0,
     Waiting: 1,
