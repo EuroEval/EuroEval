@@ -495,16 +495,16 @@ def generate_dataframe(
             if dataset not in category_to_orthogonal_datasets[category]
         ]
         cols = (
-            ["model", "generative_type", "rank"]
+            ["generative_type", "model", "rank"]
             + orthogonal_cols
             + [
+                "open",
+                "commercial",
+                "merge",
+                "trained_from_scratch",
                 "parameters",
                 "vocabulary_size",
                 "context",
-                "commercial",
-                "merge",
-                "open",
-                "trained_from_scratch",
             ]
             + rank_cols[1:]
         )
@@ -573,16 +573,16 @@ def generate_dataframe(
         df_simplified = df.copy()
         df_simplified = df[
             [
-                "model",
                 "generative_type",
+                "model",
                 "rank",
+                "open",
+                "commercial",
+                "merge",
+                "trained_from_scratch",
                 "parameters",
                 "vocabulary_size",
                 "context",
-                "commercial",
-                "merge",
-                "open",
-                "trained_from_scratch",
             ]
         ]
         df_simplified = df_simplified.query(  # pyrefly: ignore[not-callable]
