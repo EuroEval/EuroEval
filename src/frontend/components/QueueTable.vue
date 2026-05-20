@@ -98,9 +98,9 @@ const emit = defineEmits<{
       <thead>
         <tr>
           <th>Model</th>
-          <th>Languages</th>
+          <th class="lang-col">Languages</th>
           <th class="status-col" style="text-align: center">Status</th>
-          <th style="text-align: center">Evaluator</th>
+          <th class="evaluator-col" style="text-align: center">Evaluator</th>
           <th class="sub-col"></th>
         </tr>
       </thead>
@@ -115,7 +115,7 @@ const emit = defineEmits<{
               {{ e.modelId }}
             </a>
           </td>
-          <td class="lg">
+          <td class="lg lang-col">
             <span v-if="e.languageGroups.length === 0" class="muted">—</span>
             <span v-else v-html="displayLanguages(e.languageGroups)"></span>
           </td>
@@ -133,7 +133,7 @@ const emit = defineEmits<{
               {{ e.status }}
             </span>
           </td>
-          <td style="text-align: center">
+          <td class="evaluator-col" style="text-align: center">
             <a
               v-if="e.evaluator"
               :href="`https://github.com/${e.evaluator}`"
@@ -270,6 +270,33 @@ th.status-col {
   padding: 1.5rem 0;
   color: var(--color-text-muted, #777);
   text-align: center;
+}
+
+@media (max-width: 640px) {
+  .qtable th.lang-col,
+  .qtable td.lang-col,
+  .qtable th.evaluator-col,
+  .qtable td.evaluator-col {
+    display: none;
+  }
+
+  .qtable {
+    font-size: 0.85rem;
+  }
+
+  .qtable th,
+  .qtable td {
+    padding: 0.5rem 0.35rem;
+  }
+
+  th.status-col {
+    min-width: 0;
+  }
+
+  .subscribe {
+    padding: 0.25rem 0.45rem;
+    font-size: 0.75rem;
+  }
 }
 
 .msg.error {
