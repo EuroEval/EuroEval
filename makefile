@@ -75,6 +75,9 @@ test:  ## Run tests
 frontend:  ## Build and deploy the frontend
 	@vercel build --prod 2>&1 | grep -v "^WARNING!" && vercel deploy --prebuilt --prod
 
+leaderboards:  ## Collect finished evaluation results and regenerate leaderboards
+	@uv run python -m src.scripts.collect_evaluation_results
+
 tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
 
