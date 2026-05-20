@@ -40,5 +40,13 @@ the Ruff formatter and linter, pyrefly type checker, and markdown and notebook l
 
 ## Changelog
 
-If any changes are made to the evaluation framework, the changelog should be updated in
-`CHANGELOG.md`.
+`CHANGELOG.md` is the release notes for the `euroeval` Python package published to
+PyPI. Only add a changelog entry when the change touches the package itself (i.e.
+files under `src/euroeval/`).
+
+Do **not** add changelog entries for changes to:
+
+- the frontend (`src/frontend/`)
+- the Vercel API endpoints (`api/`)
+- scripts (`src/scripts/`)
+- tests, CI, build configuration, or documentation
