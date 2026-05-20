@@ -10,12 +10,18 @@ const entries = ref<QueueEntry[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const subscribeUrl = ref<string | null>(null);
+const pending = ref<Map<number, QueueEntry>>(new Map());
 
 async function refresh() {
   loading.value = true;
   error.value = null;
   try {
-    entries.value = await listOpenEvalIssues();
+    const fresh = await listOpenEvalIssues();
+    const seen = new Set(fresh.map((e) => e.number));
+    for (const n of [...pending.value.keys()]) {
+      if (seen.has(n)) pending.value.delete(n);
+    }
+    entries.value = [...fresh, ...pending.value.values()];
   } catch (e) {
     error.value = (e as Error).message;
   } finally {
@@ -23,7 +29,26 @@ async function refresh() {
   }
 }
 
-function onSubmitted() {
+function onSubmitted(payload: {
+  url: string;
+  modelId: string;
+  number: number;
+  languageGroups: string[];
+}) {
+  const entry: QueueEntry = {
+    number: payload.number,
+    url: payload.url,
+    modelId: payload.modelId,
+    languageGroups: payload.languageGroups,
+    status: "Waiting",
+    evaluator: null,
+    erroredOnVersion: null,
+    createdAt: new Date().toISOString(),
+  };
+  pending.value.set(payload.number, entry);
+  if (!entries.value.some((e) => e.number === payload.number)) {
+    entries.value = [...entries.value, entry];
+  }
   void refresh();
 }
 

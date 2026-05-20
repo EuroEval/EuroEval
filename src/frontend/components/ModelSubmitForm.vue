@@ -3,7 +3,16 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { LANGUAGE_GROUPS, submitEvalRequest } from "@/services/github";
 import { searchHfModels, type HfModelSuggestion } from "@/services/huggingface";
 
-const emit = defineEmits<{ submitted: [{ url: string; modelId: string }] }>();
+const emit = defineEmits<{
+  submitted: [
+    {
+      url: string;
+      modelId: string;
+      number: number;
+      languageGroups: string[];
+    },
+  ];
+}>();
 
 const modelId = ref("");
 const selectedGroups = ref<Set<string>>(new Set());
@@ -90,9 +99,14 @@ async function onSubmit() {
     Array.from(selectedGroups.value),
   );
   submitting.value = false;
-  if (result.ok && result.url) {
+  if (result.ok && result.url && result.number != null) {
     successMsg.value = `Submitted — your model is in the queue.`;
-    emit("submitted", { url: result.url, modelId: modelId.value.trim() });
+    emit("submitted", {
+      url: result.url,
+      modelId: modelId.value.trim(),
+      number: result.number,
+      languageGroups: Array.from(selectedGroups.value),
+    });
     modelId.value = "";
     selectedGroups.value = new Set();
     suggestions.value = [];
