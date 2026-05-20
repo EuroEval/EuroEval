@@ -332,6 +332,7 @@ const reportBadEval = (modelId: string) => {
         </select>
         of {{ pageCount }} · {{ sortedRows.length }} rows
       </div>
+      <slot name="actions" />
     </div>
 
     <div class="lb-scroll">
