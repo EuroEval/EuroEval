@@ -325,14 +325,16 @@ const reportBadEval = (modelId: string) => {
       <button class="lb-reset" type="button" @click="resetFilters">
         Reset filters
       </button>
-      <div class="lb-pageinfo">
-        Page
-        <select v-model.number="page" aria-label="Page">
-          <option v-for="n in pageCount" :key="n" :value="n">{{ n }}</option>
-        </select>
-        of {{ pageCount }} · {{ sortedRows.length }} rows
+      <div class="lb-toolbar-right">
+        <slot name="actions" />
+        <div class="lb-pageinfo">
+          Page
+          <select v-model.number="page" aria-label="Page">
+            <option v-for="n in pageCount" :key="n" :value="n">{{ n }}</option>
+          </select>
+          of {{ pageCount }} · {{ sortedRows.length }} rows
+        </div>
       </div>
-      <slot name="actions" />
     </div>
 
     <div class="lb-scroll">
@@ -506,10 +508,17 @@ const reportBadEval = (modelId: string) => {
   background: var(--color-border);
 }
 
+.lb-toolbar-right {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .lb-pageinfo {
   color: var(--color-muted);
   font-size: 0.8rem;
-  margin-left: auto;
 }
 
 .lb-pageinfo select {
