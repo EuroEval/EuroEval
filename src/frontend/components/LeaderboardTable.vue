@@ -219,6 +219,21 @@ const scoreHeatmapStyle = (
 const isHeatmapScoreCol = (col: Column): boolean =>
   props.heatmapScoreCols && col.kind === "score";
 
+// On multilingual leaderboards, the per-language columns are rank-like
+// (1 = best). Identify them as numeric columns that aren't one of the
+// fixed metadata columns.
+const NON_LANGUAGE_NUMBER_COLS = new Set([
+  "rank",
+  "parameters",
+  "vocabulary",
+  "context",
+  "european values",
+]);
+const isLanguageRankCol = (col: Column): boolean =>
+  props.heatmapScoreCols &&
+  col.kind === "number" &&
+  !NON_LANGUAGE_NUMBER_COLS.has(col.key.toLowerCase());
+
 const toggleSort = (idx: number) => {
   if (sortBy.value?.index === idx) {
     sortBy.value =
@@ -404,7 +419,7 @@ const reportBadEval = (modelId: string) => {
                 isTickCrossCol(table.columns[ci]) ? `cell-tc ${tickCrossClass(cell.text)}` : '',
               ]"
               :style="
-                isRankCol(table.columns[ci])
+                isRankCol(table.columns[ci]) || isLanguageRankCol(table.columns[ci])
                   ? rankHeatmapStyle(cell)
                   : isHeatmapScoreCol(table.columns[ci])
                     ? scoreHeatmapStyle(cell, table.columns[ci])
