@@ -1,6 +1,7 @@
 export const REPO = "EuroEval/EuroEval";
 export const LABEL = "model evaluation request";
 export const FAILED_LABEL = "evaluation-failed";
+export const RESULTS_READY_LABEL = "results-ready";
 export const TITLE_PREFIX = "[MODEL EVALUATION REQUEST]";
 
 export const LANGUAGE_GROUPS = [
@@ -29,6 +30,7 @@ export interface RawIssue {
 }
 
 export type QueueStatus =
+  | "Awaiting publish"
   | "Evaluating"
   | "Waiting"
   | "Gated model"
@@ -86,7 +88,9 @@ export function issueStatus(
   issue: RawIssue,
   failed: boolean,
   gated: boolean,
+  resultsReady: boolean,
 ): QueueStatus {
+  if (resultsReady) return "Awaiting publish";
   if (issue.assignee || issue.assignees.length > 0) return "Evaluating";
   if (gated) return "Gated model";
   if (failed) return "Error";
@@ -97,6 +101,7 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
   const modelId = extractModelId(issue.title, issue.body);
   if (!modelId) return null;
   const failed = hasLabel(issue, FAILED_LABEL);
+  const resultsReady = hasLabel(issue, RESULTS_READY_LABEL);
   const gated = isGatedModel(issue.body);
   const evaluator =
     issue.assignee?.login ?? issue.assignees[0]?.login ?? null;
@@ -105,7 +110,7 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
     url: issue.html_url,
     modelId,
     languageGroups: extractLanguageGroups(issue.body),
-    status: issueStatus(issue, failed, gated),
+    status: issueStatus(issue, failed, gated, resultsReady),
     evaluator,
     createdAt: issue.created_at,
   };
@@ -133,10 +138,11 @@ export async function listOpenEvalIssues(
     if (chunk.length < 100) break;
   }
   const order: Record<QueueStatus, number> = {
-    Evaluating: 0,
-    Waiting: 1,
-    "Gated model": 2,
-    Error: 3,
+    "Awaiting publish": 0,
+    Evaluating: 1,
+    Waiting: 2,
+    "Gated model": 3,
+    Error: 4,
   };
   return raw
     .map(toQueueEntry)

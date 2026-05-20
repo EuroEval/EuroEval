@@ -125,6 +125,8 @@ const emit = defineEmits<{
               :title="
                 e.status === 'Gated model'
                   ? 'Repo is gated; access pending for the evaluator.'
+                  : e.status === 'Awaiting publish'
+                  ? 'Evaluation finished; waiting to be merged into the leaderboards.'
                   : undefined
               "
             >
@@ -224,6 +226,11 @@ const emit = defineEmits<{
 .status.evaluating {
   background: rgba(40, 167, 69, 0.12);
   color: #1a7f37;
+}
+
+.status.awaiting-publish {
+  background: rgba(13, 110, 253, 0.14);
+  color: #0d6efd;
 }
 
 .status.waiting {

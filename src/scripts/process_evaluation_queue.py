@@ -73,6 +73,7 @@ logger = logging.getLogger("process_evaluation_queue")
 REPO = "EuroEval/EuroEval"
 LABEL = "model evaluation request"
 FAILED_LABEL = "evaluation-failed"
+RESULTS_READY_LABEL = "results-ready"
 TITLE_PREFIX = "[MODEL EVALUATION REQUEST]"
 ASSIGNEE = ""
 VM_ID = os.environ.get("EUROEVAL_VM_ID", "")
@@ -966,6 +967,7 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     comment = f"Results for `{model_id}`:\n\n```jsonl\n{payload}\n```\n"
     comment_on_issue(number=number, comment=comment)
     remove_failed_label(number=number)
+    add_results_ready_label(number=number)
     clear_vm_marker(number=number)
     logger.info(f"#{number}: posted {len(new_lines)} result line(s) as comment.")
 
@@ -1093,6 +1095,23 @@ def remove_failed_label(number: int) -> None:
         # 404 just means the label wasn't applied; anything else is worth noting.
         if e.code != 404:
             logger.warning(f"#{number}: could not remove {FAILED_LABEL!r} label: {e}")
+
+
+def add_results_ready_label(number: int) -> None:
+    """Attach the ``results-ready`` label to an issue.
+
+    Args:
+        number:
+            The issue number to label.
+    """
+    try:
+        gh_request(
+            path=f"/repos/{REPO}/issues/{number}/labels",
+            method="POST",
+            body={"labels": [RESULTS_READY_LABEL]},
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not add {RESULTS_READY_LABEL!r} label: {e}")
 
 
 def read_jsonl_lines(path: Path) -> list[str]:
