@@ -252,6 +252,25 @@ const resetFilters = () => {
 
 const isModelCol = (col: Column) => col.key.toLowerCase() === "model";
 
+const TYPE_EMOJI_TOOLTIPS: Record<string, string> = {
+  "🧠": "Base model",
+  "📝": "Instruction-tuned model",
+  "🤔": "Reasoning model",
+  "🔍": "Unknown type",
+};
+
+const isTypeCol = (col: Column) => col.key.toLowerCase() === "type";
+
+const cellTitle = (
+  cell: { text: string },
+  col: Column,
+  ci: number,
+): string | undefined => {
+  if (ci === 0) return cell.text;
+  if (isTypeCol(col)) return TYPE_EMOJI_TOOLTIPS[cell.text];
+  return undefined;
+};
+
 // --- Header grouping ------------------------------------------------------
 //
 // Score columns can carry a "task" label (e.g. "Knowledge", "Summarization")
@@ -428,7 +447,7 @@ const reportBadEval = (modelId: string) => {
                     ? scoreHeatmapStyle(cell, table.columns[ci])
                     : undefined
               "
-              :title="ci === 0 ? cell.text : undefined"
+              :title="cellTitle(cell, table.columns[ci], ci)"
             >
               <button
                 v-if="isModelCol(table.columns[ci])"
@@ -632,6 +651,15 @@ const reportBadEval = (modelId: string) => {
   padding: 0.2rem 0.35rem;
   font: inherit;
   font-size: 0.78rem;
+}
+
+select.lb-filter {
+  text-align: center;
+  text-align-last: center;
+}
+
+select.lb-filter option {
+  text-align: center;
 }
 
 .lb-filter:focus {
