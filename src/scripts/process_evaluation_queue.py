@@ -266,9 +266,6 @@ def process_queue_once() -> None:
         logger.error(f"Failed to list issues: {e}")
         return
 
-    current_version = euroeval_version()
-    current_v = version_tuple(v=current_version)
-
     candidates: list[tuple[int, int, int, dict, str, list[str]]] = []
     for issue in issues:
         number = issue["number"]
@@ -289,44 +286,10 @@ def process_queue_once() -> None:
         if summary is None:
             continue
 
-        errored_v = errored_on_version(body=body)
-        body_gated = gated_marker_present(body=body)
-        is_gated_repo = bool(summary.get("gated") or summary.get("gated_repo"))
-
-        # One-off migration: issues stuck with an errored-on marker on the
-        # current version whose repo is actually gated on the Hub. Those
-        # errored markers were almost certainly written by a pre-fix run that
-        # mis-classified a gating failure as a generic error. Add the gated
-        # marker so the UI reflects reality; keep the errored marker so the
-        # script doesn't waste a fresh euroeval invocation on every cron tick.
-        if (
-            is_gated_repo
-            and not body_gated
-            and errored_v is not None
-            and version_tuple(v=errored_v) >= current_v
-        ):
-            set_gated_with_errored_block(number=number, body=body, version=errored_v)
-            logger.info(
-                f"#{number}: migrated stuck errored-on marker to gated for "
-                f"gated repo {model_id!r}."
-            )
-            continue
-
-        if (
-            errored_v is not None
-            and version_tuple(v=errored_v) >= current_v
-            and not body_gated
-        ):
-            logger.info(
-                f"#{number}: skipping -- errored on v{errored_v} and current "
-                f"version is v{current_version}."
-            )
-            continue
-
         param_count = summary["param_count"]
         if summary.get("gated"):
             status_priority = 1
-        elif errored_v is not None:
+        elif errored_marker_present(body=body):
             status_priority = 2
         else:
             status_priority = 0
@@ -439,21 +402,17 @@ def extract_language_groups(body: str | None) -> list[str]:
     return selected
 
 
-def errored_on_version(body: str | None) -> str | None:
-    """Return the EuroEval version recorded in the issue body, if any.
+def errored_marker_present(body: str | None) -> bool:
+    """Return True if the body carries an ``errored-on`` marker.
 
     Args:
         body:
             The markdown body of the issue, or None.
 
     Returns:
-        The version string from the ``errored-on`` marker, or None if no
-        marker is present.
+        True if the marker is present, False otherwise.
     """
-    if not body:
-        return None
-    m = ERROR_MARKER_RE.search(body)
-    return m.group(1) if m else None
+    return bool(body) and bool(ERROR_MARKER_RE.search(body))
 
 
 def _load_hf_cache() -> dict[str, dict]:
@@ -751,12 +710,13 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
             f"EuroEval version: v{version}\n"
         )
         if issue_has_matching_error_comment(number=number, reason=reason):
+            unassign_issue(number=number)
             logger.info(
                 f"#{number}: identical error already posted; "
-                "skipping duplicate comment."
+                "skipping comment and marker updates, returned to queue."
             )
-        else:
-            comment_on_issue(number=number, comment=comment)
+            return
+        comment_on_issue(number=number, comment=comment)
         set_errored_marker(number=number, body=issue.get("body"), version=version)
         add_failed_label(number=number)
         unassign_issue(number=number)
@@ -1164,27 +1124,6 @@ def euroeval_version() -> str:
         return importlib.metadata.version("euroeval")
     except importlib.metadata.PackageNotFoundError:
         return "unknown"
-
-
-def version_tuple(v: str) -> tuple[int, ...]:
-    """Return a comparable tuple for a dotted-numeric version like ``17.2.0``.
-
-    Non-numeric or unknown components yield ``(-1,)`` so they sort before
-    anything else and never block retries.
-
-    Args:
-        v:
-            The version string to parse.
-
-    Returns:
-        A tuple of ints suitable for comparison with other parsed versions.
-    """
-    if v == "unknown":
-        return (-1,)
-    try:
-        return tuple(int(p) for p in v.split(".") if p.isdigit())
-    except ValueError:
-        return (-1,)
 
 
 def gh_request(
