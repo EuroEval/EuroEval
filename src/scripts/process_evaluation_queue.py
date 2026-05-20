@@ -4,7 +4,7 @@ This script is meant to run on the compute server. For each open
 ``model evaluation request`` issue that is **not yet assigned** to anyone, it:
 
 1. Verifies that the requested model exists on the Hugging Face Hub.
-2. Assigns the issue to ``saattrupdan`` so the queue UI flips to "Evaluating".
+2. Assigns the issue to ``EUROEVAL_ASSIGNEE`` so the UI flips to "Evaluating".
 3. Runs ``euroeval`` for each requested language group.
 4. Posts the new ``euroeval_benchmark_results.jsonl`` lines as a comment on
    the issue, wrapped in a ``jsonl`` code fence so the local merge script
@@ -12,8 +12,18 @@ This script is meant to run on the compute server. For each open
 
 Required env vars
 -----------------
-GITHUB_TOKEN          A PAT with ``issues: write`` for the EuroEval repo
-                      (saattrupdan's PAT).
+GITHUB_TOKEN          A PAT with ``issues: write`` for the EuroEval repo,
+                      owned by the user named in ``EUROEVAL_ASSIGNEE``.
+EUROEVAL_ASSIGNEE     GitHub login that issues are assigned to while being
+                      evaluated. The PAT in ``GITHUB_TOKEN`` must belong to
+                      this user.
+EUROEVAL_VM_ID        Optional identifier for this VM/host, written into a
+                      hidden ``<!-- vm-id: ... -->`` marker on each issue
+                      while it is being evaluated. Used to reclaim
+                      orphaned issues after a crash without disturbing
+                      work in progress on other VMs sharing the same
+                      assignee. If unset, a stable id is read from (or
+                      written to) a ``.env`` file in the working directory.
 EUROEVAL_RESULTS_PATH Optional override for the path to
                       ``euroeval_benchmark_results.jsonl``. Defaults to
                       ``./euroeval_benchmark_results.jsonl``.
@@ -29,12 +39,14 @@ import os
 import pty
 import re
 import select
+import socket
 import subprocess
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from functools import lru_cache
 from pathlib import Path
 
@@ -62,7 +74,9 @@ REPO = "EuroEval/EuroEval"
 LABEL = "model evaluation request"
 FAILED_LABEL = "evaluation-failed"
 TITLE_PREFIX = "[MODEL EVALUATION REQUEST]"
-ASSIGNEE = "saattrupdan"
+ASSIGNEE = os.environ.get("EUROEVAL_ASSIGNEE", "")
+VM_ID = os.environ.get("EUROEVAL_VM_ID", "")
+VM_ID_ENV_PATH = Path(os.environ.get("EUROEVAL_DOTENV_PATH", ".env"))
 RESULTS_PATH = Path(
     os.environ.get("EUROEVAL_RESULTS_PATH", "euroeval_benchmark_results.jsonl")
 )
@@ -99,9 +113,14 @@ MODEL_ID_BODY_RE = re.compile(r"(?:^|\n)#{1,6}\s*Model ID\s*\n+([^\n]+)")
 # "Waiting for bug fix" statuses.
 ERROR_MARKER_RE = re.compile(r"<!--\s*errored-on:\s*v([^\s>-]+)\s*-->")
 
+# Per-VM ownership marker. Written before assignment, cleared on completion;
+# the startup reclaim step uses it to undo claims that crashed mid-run without
+# touching issues being actively processed by another VM.
+VM_MARKER_RE = re.compile(r"<!--\s*vm-id:\s*([^\s>]+)\s*-->")
+
 # The frontend parses this marker on issue bodies to display the
 # "Gated model" status, which means the requested HF repo is gated and
-# saattrupdan does not yet have read access.
+# the configured assignee does not yet have read access.
 GATED_MARKER_RE = re.compile(r"<!--\s*gated-model\s*-->")
 
 # euroeval emits a summary line like "errored 3 benchmarks" when individual
@@ -172,12 +191,22 @@ def official_dataset_language_pairs() -> set[tuple[str, str]]:
 
 
 def ensure_credentials() -> None:
-    """Verify that ``GITHUB_TOKEN`` is set and the user is logged into HF, or exit."""
+    """Verify required env vars are set and the user is logged into HF, or exit."""
     if not os.environ.get("GITHUB_TOKEN"):
         logger.error(
             f"GITHUB_TOKEN env var is required (a PAT with `issues: write` for {REPO})."
         )
         sys.exit(1)
+    if not ASSIGNEE:
+        logger.error(
+            "EUROEVAL_ASSIGNEE env var is required (GitHub login of the user "
+            "issues are assigned to while being evaluated)."
+        )
+        sys.exit(1)
+    global VM_ID
+    if not VM_ID:
+        VM_ID = resolve_vm_id()
+    logger.info(f"Using vm-id {VM_ID!r} (assignee {ASSIGNEE!r}).")
     try:
         HfApi().whoami()
     except Exception as e:  # noqa: BLE001
@@ -186,6 +215,52 @@ def ensure_credentials() -> None:
             f"(or set HF_TOKEN) and re-run. Underlying error: {e}"
         )
         sys.exit(1)
+
+
+def resolve_vm_id() -> str:
+    """Return a stable VM id, reading from or writing to a ``.env`` file.
+
+    Resolution order:
+
+    1. ``EUROEVAL_VM_ID`` env var (handled by the caller).
+    2. ``EUROEVAL_VM_ID=...`` line in ``VM_ID_ENV_PATH``.
+    3. Newly generated ``<hostname>-<8-char-uuid>``, appended to
+       ``VM_ID_ENV_PATH`` so subsequent runs reuse the same id.
+
+    Returns:
+        The resolved VM id. Failures to persist a freshly generated id are
+        logged and the in-memory id is still returned.
+    """
+    if VM_ID_ENV_PATH.is_file():
+        try:
+            for raw_line in VM_ID_ENV_PATH.read_text(encoding="utf-8").splitlines():
+                line = raw_line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                if key.strip() != "EUROEVAL_VM_ID":
+                    continue
+                value = value.strip().strip("'\"")
+                if value:
+                    return value
+        except OSError as e:
+            logger.warning(f"Could not read {VM_ID_ENV_PATH}: {e}")
+
+    generated = f"{socket.gethostname()}-{uuid.uuid4().hex[:8]}"
+    try:
+        existing = ""
+        if VM_ID_ENV_PATH.is_file():
+            existing = VM_ID_ENV_PATH.read_text(encoding="utf-8")
+        separator = "" if not existing or existing.endswith("\n") else "\n"
+        with VM_ID_ENV_PATH.open("a", encoding="utf-8") as f:
+            f.write(f"{separator}EUROEVAL_VM_ID={generated}\n")
+        logger.info(f"Generated new vm-id {generated!r}, saved to {VM_ID_ENV_PATH}.")
+    except OSError as e:
+        logger.warning(
+            f"Could not persist vm-id to {VM_ID_ENV_PATH}: {e}. "
+            f"Using ephemeral vm-id {generated!r}."
+        )
+    return generated
 
 
 def acquire_single_instance_lock() -> None:
@@ -243,6 +318,10 @@ def main() -> None:
 
     # Held for the lifetime of the process; released by the kernel on exit.
     acquire_single_instance_lock()
+
+    # The flock guarantees no other queue processor on this host is mid-run,
+    # so any issue still carrying this VM's marker is a crash-leftover.
+    reclaim_orphaned_issues()
 
     while True:
         process_queue_once()
@@ -332,6 +411,50 @@ def process_queue_once() -> None:
         except Exception as e:  # noqa: BLE001
             logger.exception(f"Error while processing issue #{issue['number']}: {e}")
         time.sleep(1)
+
+
+def reclaim_orphaned_issues() -> None:
+    """Unassign and clear the VM marker on issues this VM crashed mid-run on.
+
+    Lists issues currently assigned to ``ASSIGNEE`` and, for each one whose
+    body carries this VM's ``vm-id`` marker, clears the marker and removes
+    the assignee so the issue returns to the queue. Issues owned by other
+    VMs (different ``vm-id`` value) are left alone.
+    """
+    try:
+        issues = gh_request(
+            path=f"/repos/{REPO}/issues",
+            params={
+                "state": "open",
+                "labels": LABEL,
+                "per_page": "100",
+                "assignee": ASSIGNEE,
+            },
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"Could not list assigned issues for reclaim: {e}")
+        return
+    if not isinstance(issues, list):
+        return
+    reclaimed = 0
+    for issue in issues:
+        if not isinstance(issue, dict) or "pull_request" in issue:
+            continue
+        body = issue.get("body") or ""
+        m = VM_MARKER_RE.search(body)
+        if not m or m.group(1) != VM_ID:
+            continue
+        number = issue["number"]
+        try:
+            clear_vm_marker(number=number)
+            unassign_issue(number=number)
+        except urllib.error.HTTPError as e:
+            logger.warning(f"#{number}: failed to reclaim: {e}")
+            continue
+        reclaimed += 1
+        logger.info(f"#{number}: reclaimed orphaned issue (vm-id {VM_ID}).")
+    if reclaimed:
+        logger.info(f"Reclaimed {reclaimed} orphaned issue(s) for vm-id {VM_ID}.")
 
 
 def list_open_unassigned_issues() -> list[dict]:
@@ -476,8 +599,8 @@ def cached_model_summary(model_id: str) -> dict | None:
         A dict with keys:
 
         - ``param_count`` (int, possibly ``sys.maxsize`` for unknown).
-        - ``gated`` (bool, True when ``saattrupdan`` does not have read
-          access to a gated repo -- i.e. ``model_info`` raised
+        - ``gated`` (bool, True when the configured assignee does not have
+          read access to a gated repo -- i.e. ``model_info`` raised
           ``GatedRepoError``).
         - ``gated_repo`` (bool, True when ``model_info`` reports the repo as
           gated even though we *do* have read access -- the token used by
@@ -652,7 +775,7 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     if live_summary is not None and live_summary.get("gated"):
         if not body_gated:
             set_gated_marker(number=number, body=body)
-            logger.info(f"#{number}: marked gated -- saattrupdan lacks read access.")
+            logger.info(f"#{number}: marked gated -- {ASSIGNEE} lacks read access.")
         else:
             logger.info(f"#{number}: still gated -- leaving marker in place.")
         return
@@ -661,6 +784,9 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
         logger.info(f"#{number}: access granted, cleared gated marker.")
 
     logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
+    # Set the VM marker BEFORE assigning so a crash between the two leaves
+    # the issue unassigned (harmless) rather than assigned-but-unowned.
+    set_vm_marker(number=number)
     assign_issue(number=number)
 
     before = set(read_jsonl_lines(path=RESULTS_PATH))
@@ -684,6 +810,7 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
             number=number, body=issue.get("body"), version=version
         )
         add_failed_label(number=number)
+        clear_vm_marker(number=number)
         unassign_issue(number=number)
         logger.info(
             f"#{number}: euroeval reported a gated repo for {model_id!r}; "
@@ -712,6 +839,7 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
             f"EuroEval version: v{version}\n"
         )
         if issue_has_matching_error_comment(number=number, reason=reason):
+            clear_vm_marker(number=number)
             unassign_issue(number=number)
             logger.info(
                 f"#{number}: identical error already posted; "
@@ -721,6 +849,7 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
         comment_on_issue(number=number, comment=comment)
         set_errored_marker(number=number, body=issue.get("body"), version=version)
         add_failed_label(number=number)
+        clear_vm_marker(number=number)
         unassign_issue(number=number)
         logger.info(f"#{number}: marked errored on v{version}, returned to queue.")
         return
@@ -729,6 +858,7 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     comment = f"Results for `{model_id}`:\n\n```jsonl\n{payload}\n```\n"
     comment_on_issue(number=number, comment=comment)
     remove_failed_label(number=number)
+    clear_vm_marker(number=number)
     logger.info(f"#{number}: posted {len(new_lines)} result line(s) as comment.")
 
 
@@ -1143,6 +1273,56 @@ def clear_gated_marker(number: int, body: str | None) -> None:
     gh_request(
         path=f"/repos/{REPO}/issues/{number}", method="PATCH", body={"body": cleaned}
     )
+
+
+def set_vm_marker(number: int) -> None:
+    """Stamp the issue body with this VM's ``vm-id`` marker.
+
+    The issue body is re-fetched so concurrent updates earlier in the same
+    ``process_issue`` call (e.g. clearing a gated marker) are not clobbered.
+
+    Args:
+        number:
+            The issue number to mark.
+    """
+    body = _fetch_issue_body(number=number)
+    cleaned = VM_MARKER_RE.sub("", body).rstrip()
+    new_body = f"{cleaned}\n\n<!-- vm-id: {VM_ID} -->\n"
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}", method="PATCH", body={"body": new_body}
+    )
+
+
+def clear_vm_marker(number: int) -> None:
+    """Remove this VM's ``vm-id`` marker from the issue body.
+
+    Re-fetches the body before patching so other markers set during the run
+    are preserved. Markers belonging to other VMs are left untouched.
+
+    Args:
+        number:
+            The issue number to clean.
+    """
+    body = _fetch_issue_body(number=number)
+    m = VM_MARKER_RE.search(body)
+    if not m or m.group(1) != VM_ID:
+        return
+    cleaned = VM_MARKER_RE.sub("", body, count=1).rstrip() + "\n"
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}", method="PATCH", body={"body": cleaned}
+    )
+
+
+def _fetch_issue_body(number: int) -> str:
+    """Return the current body of an issue, or empty string on failure."""
+    try:
+        current = gh_request(path=f"/repos/{REPO}/issues/{number}")
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not fetch issue body: {e}")
+        return ""
+    if isinstance(current, dict):
+        return current.get("body") or ""
+    return ""
 
 
 def euroeval_version() -> str:
