@@ -24,6 +24,7 @@ const errorMsg = ref<string | null>(null);
 const successMsg = ref<string | null>(null);
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
+let suppressNextSearch = false;
 
 const canSubmit = computed(
   () =>
@@ -35,6 +36,10 @@ const canSubmit = computed(
 watch(modelId, (v) => {
   if (searchTimer) clearTimeout(searchTimer);
   highlight.value = -1;
+  if (suppressNextSearch) {
+    suppressNextSearch = false;
+    return;
+  }
   if (!v.trim()) {
     suggestions.value = [];
     showSuggestions.value = false;
@@ -68,7 +73,10 @@ function toggleAllGroups() {
 }
 
 function pickSuggestion(s: HfModelSuggestion) {
+  suppressNextSearch = true;
   modelId.value = s.id;
+  if (searchTimer) clearTimeout(searchTimer);
+  suggestions.value = [];
   showSuggestions.value = false;
 }
 
