@@ -400,11 +400,11 @@ def is_trained_from_scratch(
             cache.trained_from_scratch[model_id] = value
         return value
 
-    # Check if model is open or closed-source
+    # Check if model is open or closed
     model_openness = cache.open.get(model_id)
 
-    # For closed-source models, auto-return "scratch" without prompting
-    if model_openness == "closed-source":
+    # For closed models, auto-return "scratch" without prompting
+    if model_openness is False:
         cache.trained_from_scratch[model_id] = True
         return True
 
@@ -414,7 +414,7 @@ def is_trained_from_scratch(
     ):
         return True
 
-    # For open/open-weight models, prompt user
+    # For open models, prompt user
     while True:
         msg = f"Was {model_id!r} trained from scratch? "
         if "/" in model_id:
@@ -480,8 +480,8 @@ def is_merge(record: dict, cache: Cache) -> bool:
     return has_merge_tag
 
 
-def is_open(record: dict, cache: Cache) -> str:
-    """Determine if a model is open-source, open-weight, or closed-source.
+def is_open(record: dict, cache: Cache) -> bool:
+    """Determine if a model is open (open-weight) or closed.
 
     Args:
         record:
@@ -490,8 +490,7 @@ def is_open(record: dict, cache: Cache) -> str:
             The cache.
 
     Returns:
-        The openness status of the model: "open-source", "open-weight", or
-        "closed-source".
+        Whether the model is open (open-weight). Closed models return False.
     """
     # If model ID is anchor tag, extract the actual model ID
     model_id = record["model"]
@@ -521,30 +520,19 @@ def is_open(record: dict, cache: Cache) -> str:
             cache.open[model_id] = value
         return value
 
-    # Assume closed-source if not found on HF Hub
+    # Assume closed if not found on HF Hub
     try:
         api = HfApi()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             api.model_info(repo_id=model_id)
     except (RepositoryNotFoundError, HFValidationError):
-        cache.open[model_id] = "closed-source"
-        return "closed-source"
+        cache.open[model_id] = False
+        return False
 
-    # Ask user if it's open-source or open-weight
-    while True:
-        msg = f"Is {model_id!r} open-source [s] or open-weight [w]?"
-        if "/" in model_id:
-            msg += f" (https://hf.co/{model_id})"
-        msg += " [s/w] "
-        user_input = input(msg)
-        if user_input.lower() in {"open-source", "open source", "s"}:
-            cache.open[model_id] = "open-source"
-            return "open-source"
-        if user_input.lower() in {"open-weight", "open weight", "w"}:
-            cache.open[model_id] = "open-weight"
-            return "open-weight"
-        logger.error("Invalid input. Please try again.")
+    # Models found on the HF Hub are open-weight
+    cache.open[model_id] = True
+    return True
 
 
 def record_is_valid(

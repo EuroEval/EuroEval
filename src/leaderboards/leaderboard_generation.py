@@ -534,13 +534,9 @@ def generate_dataframe(
             )
 
         # Replace Boolean values by ✓ and ✗
-        boolean_columns = ["commercial", "merge"]
+        boolean_columns = ["commercial", "merge", "open"]
         for col in boolean_columns:
             df[col] = df[col].apply(lambda x: "✓" if x else "✗")
-
-        # Convert open values to symbols
-        open_mapping = {"open-source": "✓", "open-weight": "(✓)", "closed-source": "✗"}
-        df["open"] = df["open"].map(open_mapping)
 
         # Convert trained_from_scratch values to symbols
         trained_mapping = {True: "✓", False: "✗"}

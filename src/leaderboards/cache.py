@@ -29,8 +29,8 @@ class Cache:
         anchor_tag:
             A mapping from model IDs to their anchor tag.
         open:
-            A mapping from model IDs to their openness status
-            (open-source, open-weight, or closed-source).
+            A mapping from model IDs to whether they are open (open-weight) or
+            closed.
         trained_from_scratch:
             A mapping from model IDs to whether they were trained from scratch.
     """
@@ -39,7 +39,7 @@ class Cache:
     merge: dict[str, bool] = field(default_factory=dict)
     commercially_licensed: dict[str, bool] = field(default_factory=dict)
     anchor_tag: dict[str, str] = field(default_factory=dict)
-    open: dict[str, str] = field(default_factory=dict)
+    open: dict[str, bool] = field(default_factory=dict)
     trained_from_scratch: dict[str, bool] = field(default_factory=dict)
 
     @classmethod
@@ -101,7 +101,10 @@ class Cache:
             if "commercially_licensed" in record:
                 cache.commercially_licensed[model_id] = record["commercially_licensed"]
             if "open" in record:
-                cache.open[model_id] = record["open"]
+                value = record["open"]
+                if isinstance(value, str):
+                    value = value in {"open-source", "open-weight"}
+                cache.open[model_id] = value
             if "trained_from_scratch" in record:
                 cache.trained_from_scratch[model_id] = record["trained_from_scratch"]
             if record["model"].startswith("<a href="):

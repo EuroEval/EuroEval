@@ -155,9 +155,8 @@ const parseNumberSafe = (s: string): number | null => {
 /**
  * Parse a single cell, given the column's inferred kind.
  */
-// Collapse the partial-open-source tick into the standard tick: we no longer
-// distinguish "fully open source" from "open-weight only", just open-weight
-// vs. closed.
+// Older CSVs may still carry the partial-open-source tick. The backend now
+// emits a plain boolean tick/cross, but normalize on read for forward compat.
 const normalizeIconText = (s: string): string => (s === "(✓)" ? "✓" : s);
 
 export function parseCell(raw: string, kind: CellKind): ParsedCell {
@@ -295,8 +294,7 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
     let titleHtml = sanitizeHtml(rawTitle);
     const sampleValues = dataRows.map((r) => r[idx] ?? "");
     const kind = inferKind(title, sampleValues);
-    // Rename the "Open" column to "Open-weight" — we no longer distinguish
-    // fully open-source from open-weight-only.
+    // Display the boolean "Open" column as "Open-weight".
     if (title.toLowerCase() === "open") {
       titleHtml = titleHtml.replace(/Open/i, "Open-weight");
       title = "Open-weight";
