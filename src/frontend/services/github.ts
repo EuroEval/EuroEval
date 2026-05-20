@@ -73,21 +73,6 @@ export function extractModelId(
   return rest && rest !== "<model-name>" ? rest : null;
 }
 
-export async function huggingFaceModelExists(
-  modelId: string,
-): Promise<boolean> {
-  try {
-    const r = await fetch(
-      `https://huggingface.co/api/models/${encodeURI(modelId)}`,
-      { method: "GET", headers: { accept: "application/json" } },
-    );
-    // 200 = exists, 401/403 = exists but gated/private, 404 = not found
-    return r.status !== 404;
-  } catch {
-    return true;
-  }
-}
-
 export function extractLanguageGroups(body: string | null): string[] {
   if (!body) return [];
   return LANGUAGE_GROUPS.filter((g) => {
@@ -140,14 +125,9 @@ export async function listOpenEvalIssues(): Promise<QueueEntry[]> {
     "Gated model": 2,
     Error: 3,
   };
-  const entries = raw
+  return raw
     .map(toQueueEntry)
-    .filter((e): e is QueueEntry => e !== null);
-  const existence = await Promise.all(
-    entries.map((e) => huggingFaceModelExists(e.modelId)),
-  );
-  return entries
-    .filter((_, i) => existence[i])
+    .filter((e): e is QueueEntry => e !== null)
     .sort((a, b) => {
       if (a.status !== b.status) return order[a.status] - order[b.status];
       return a.createdAt.localeCompare(b.createdAt);
