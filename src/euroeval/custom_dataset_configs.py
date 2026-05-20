@@ -31,7 +31,7 @@ def load_custom_datasets_module(custom_datasets_file: Path) -> ModuleType | None
     Returns:
         The custom datasets module, or None if it does not exist.
     """
-    if custom_datasets_file.exists():
+    if custom_datasets_file.is_file():
         spec = importlib.util.spec_from_file_location(
             name="custom_datasets_module", location=str(custom_datasets_file.resolve())
         )
