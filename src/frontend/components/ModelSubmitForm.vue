@@ -57,6 +57,16 @@ function toggleGroup(g: string) {
   selectedGroups.value = next;
 }
 
+const allSelected = computed(
+  () => selectedGroups.value.size === LANGUAGE_GROUPS.length,
+);
+
+function toggleAllGroups() {
+  selectedGroups.value = allSelected.value
+    ? new Set()
+    : new Set(LANGUAGE_GROUPS);
+}
+
 function pickSuggestion(s: HfModelSuggestion) {
   modelId.value = s.id;
   showSuggestions.value = false;
@@ -182,7 +192,12 @@ async function onSubmit() {
     </label>
 
     <fieldset class="field">
-      <legend class="label">Language groups to evaluate the model on</legend>
+      <legend class="label">
+        <span>Language groups to evaluate the model on</span>
+        <button type="button" class="select-all" @click="toggleAllGroups">
+          {{ allSelected ? "Clear all" : "Select all" }}
+        </button>
+      </legend>
       <div class="groups">
         <label v-for="g in LANGUAGE_GROUPS" :key="g" class="group">
           <input
@@ -311,6 +326,28 @@ h2 {
   display: block;
   font-weight: 600;
   margin-bottom: 0.35rem;
+}
+
+legend.label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.select-all {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-link, #2563eb);
+  font: inherit;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.select-all:hover {
+  text-decoration: underline;
 }
 
 .autocomplete {
