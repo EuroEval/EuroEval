@@ -18,7 +18,7 @@ export async function searchHfModels(
 
   const url =
     `https://huggingface.co/api/models?search=${encodeURIComponent(q)}` +
-    `&limit=${limit}&sort=downloads&direction=-1`;
+    `&limit=${limit * 3}&sort=downloads&direction=-1`;
 
   try {
     const r = await fetch(url, { signal: controller.signal });
@@ -26,7 +26,8 @@ export async function searchHfModels(
     const data = (await r.json()) as Array<{ id?: string; modelId?: string; downloads?: number }>;
     return data
       .map((m) => ({ id: m.id ?? m.modelId ?? "", downloads: m.downloads }))
-      .filter((m) => m.id);
+      .filter((m) => m.id && !/gguf/i.test(m.id))
+      .slice(0, limit);
   } catch (e) {
     if ((e as Error).name === "AbortError") return [];
     return [];
