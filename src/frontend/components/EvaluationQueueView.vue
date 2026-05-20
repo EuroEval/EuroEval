@@ -42,7 +42,6 @@ function onSubmitted(payload: {
     languageGroups: payload.languageGroups,
     status: "Waiting",
     evaluator: null,
-    erroredOnVersion: null,
     createdAt: new Date().toISOString(),
   };
   pending.value.set(payload.number, entry);

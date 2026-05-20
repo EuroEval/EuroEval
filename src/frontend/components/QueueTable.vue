@@ -125,9 +125,7 @@ const emit = defineEmits<{
               :title="
                 e.status === 'Gated model'
                   ? 'Repo is gated; access pending for the evaluator.'
-                  : e.erroredOnVersion
-                    ? `Errored on EuroEval v${e.erroredOnVersion}`
-                    : undefined
+                  : undefined
               "
             >
               {{ e.status }}
@@ -236,11 +234,6 @@ const emit = defineEmits<{
 .status.error {
   background: rgba(220, 53, 69, 0.14);
   color: #b00020;
-}
-
-.status.waiting-for-bug-fix {
-  background: rgba(255, 165, 0, 0.18);
-  color: #b15400;
 }
 
 .status.gated-model {

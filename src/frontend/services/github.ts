@@ -1,5 +1,6 @@
 export const REPO = "EuroEval/EuroEval";
 export const LABEL = "model evaluation request";
+export const FAILED_LABEL = "evaluation-failed";
 export const TITLE_PREFIX = "[MODEL EVALUATION REQUEST]";
 
 export const LANGUAGE_GROUPS = [
@@ -31,8 +32,7 @@ export type QueueStatus =
   | "Evaluating"
   | "Waiting"
   | "Gated model"
-  | "Error"
-  | "Waiting for bug fix";
+  | "Error";
 
 export interface QueueEntry {
   number: number;
@@ -41,45 +41,17 @@ export interface QueueEntry {
   languageGroups: string[];
   status: QueueStatus;
   evaluator: string | null;
-  erroredOnVersion: string | null;
   createdAt: string;
 }
 
-declare const __PACKAGE_VERSION__: string | undefined;
-const currentVersion =
-  typeof __PACKAGE_VERSION__ !== "undefined" ? __PACKAGE_VERSION__ : "";
-
-const ERROR_MARKER_RE = /<!--\s*errored-on:\s*v([^\s>-]+)\s*-->/;
 const GATED_MARKER_RE = /<!--\s*gated-model\s*-->/;
-
-export function extractErroredOnVersion(body: string | null): string | null {
-  if (!body) return null;
-  const m = body.match(ERROR_MARKER_RE);
-  return m ? m[1] : null;
-}
 
 export function isGatedModel(body: string | null): boolean {
   return !!body && GATED_MARKER_RE.test(body);
 }
 
-function versionTuple(v: string): number[] {
-  return v
-    .split(".")
-    .map((p) => parseInt(p, 10))
-    .filter((n) => !Number.isNaN(n));
-}
-
-/** Return whether ``a`` is strictly newer than ``b`` in dotted-numeric order. */
-export function isVersionNewer(a: string, b: string): boolean {
-  const ta = versionTuple(a);
-  const tb = versionTuple(b);
-  const n = Math.max(ta.length, tb.length);
-  for (let i = 0; i < n; i++) {
-    const av = ta[i] ?? 0;
-    const bv = tb[i] ?? 0;
-    if (av !== bv) return av > bv;
-  }
-  return false;
+export function hasLabel(issue: RawIssue, name: string): boolean {
+  return issue.labels.some((l) => (typeof l === "string" ? l : l.name) === name);
 }
 
 const MODEL_ID_BODY_RE = /(?:^|\n)#{1,6}\s*Model ID\s*\n+([^\n]+)/i;
@@ -127,23 +99,19 @@ export function extractLanguageGroups(body: string | null): string[] {
 
 export function issueStatus(
   issue: RawIssue,
-  erroredOn: string | null,
+  failed: boolean,
   gated: boolean,
 ): QueueStatus {
   if (issue.assignee || issue.assignees.length > 0) return "Evaluating";
   if (gated) return "Gated model";
-  if (erroredOn) {
-    return currentVersion && isVersionNewer(currentVersion, erroredOn)
-      ? "Error"
-      : "Waiting for bug fix";
-  }
+  if (failed) return "Error";
   return "Waiting";
 }
 
 export function toQueueEntry(issue: RawIssue): QueueEntry | null {
   const modelId = extractModelId(issue.title, issue.body);
   if (!modelId) return null;
-  const erroredOnVersion = extractErroredOnVersion(issue.body);
+  const failed = hasLabel(issue, FAILED_LABEL);
   const gated = isGatedModel(issue.body);
   const evaluator =
     issue.assignee?.login ?? issue.assignees[0]?.login ?? null;
@@ -152,9 +120,8 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
     url: issue.html_url,
     modelId,
     languageGroups: extractLanguageGroups(issue.body),
-    status: issueStatus(issue, erroredOnVersion, gated),
+    status: issueStatus(issue, failed, gated),
     evaluator,
-    erroredOnVersion,
     createdAt: issue.created_at,
   };
 }
@@ -176,7 +143,6 @@ export async function listOpenEvalIssues(): Promise<QueueEntry[]> {
     Waiting: 1,
     "Gated model": 2,
     Error: 3,
-    "Waiting for bug fix": 4,
   };
   const entries = raw
     .map(toQueueEntry)
