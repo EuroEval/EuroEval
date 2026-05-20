@@ -10,6 +10,8 @@ from pathlib import Path
 
 from tqdm.auto import tqdm
 
+from euroeval.string_utils import split_model_id
+
 logger = logging.getLogger(__name__)
 
 
@@ -91,7 +93,7 @@ class Cache:
             model_id: str = record["model"]
             if (match := re.search(r">(.+?)<", record["model"])) is not None:
                 model_id = match.group(1)
-            model_id = model_id.split("@")[0].split("#")[0]
+            model_id = split_model_id(model_id=model_id).model_id
             if "generative_type" in record:
                 cache.generative_type[model_id] = record["generative_type"]
             if "merge" in record:
