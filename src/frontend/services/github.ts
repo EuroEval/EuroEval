@@ -160,7 +160,9 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
 }
 
 export async function listOpenEvalIssues(): Promise<QueueEntry[]> {
-  const url = `https://api.github.com/repos/${REPO}/issues?state=open&per_page=100&labels=${encodeURIComponent(LABEL)}`;
+  const url =
+    `https://api.github.com/repos/${REPO}/issues?state=open&per_page=100` +
+    `&labels=${encodeURIComponent(LABEL)}&_=${Date.now()}`;
   const r = await fetch(url, {
     headers: { accept: "application/vnd.github+json" },
     cache: "no-store",
