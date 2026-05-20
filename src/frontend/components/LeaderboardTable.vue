@@ -367,7 +367,7 @@ const reportBadEval = (modelId: string) => {
                 </span>
               </template>
               <input
-                v-else-if="i === 0"
+                v-else-if="col.key.toLowerCase() === 'model'"
                 v-model="colFilters[col.key]"
                 type="search"
                 class="lb-filter"
