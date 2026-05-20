@@ -112,9 +112,7 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
 }
 
 export async function listOpenEvalIssues(): Promise<QueueEntry[]> {
-  const r = await fetch(`/api/issues?state=open&_=${Date.now()}`, {
-    cache: "no-store",
-  });
+  const r = await fetch(`/api/issues?state=open`);
   if (!r.ok) {
     throw new Error(`Failed to load queue (${r.status}).`);
   }

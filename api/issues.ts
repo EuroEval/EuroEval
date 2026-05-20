@@ -13,7 +13,8 @@ function json(status: number, body: unknown, extra?: HeadersInit): Response {
       "access-control-allow-origin": "*",
       "access-control-allow-methods": "GET, OPTIONS",
       "access-control-allow-headers": "content-type",
-      "cache-control": "public, max-age=30",
+      "cache-control":
+        "public, max-age=30, s-maxage=30, stale-while-revalidate=300",
       ...(extra ?? {}),
     },
   });
