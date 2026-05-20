@@ -29,7 +29,7 @@ export default defineConfig({
     proxy: {
       "/api": {
         target:
-          process.env.VERCEL_DEPLOYMENT_URL || "https://euroeval.vercel.app",
+          process.env.VERCEL_DEPLOYMENT_URL || "https://euroeval.com",
         changeOrigin: true,
         secure: true,
       },
