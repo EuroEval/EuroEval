@@ -91,7 +91,7 @@ class Cache:
             model_id: str = record["model"]
             if (match := re.search(r">(.+?)<", record["model"])) is not None:
                 model_id = match.group(1)
-            model_id = model_id.split("@")[0]
+            model_id = model_id.split("@")[0].split("#")[0]
             if "generative_type" in record:
                 cache.generative_type[model_id] = record["generative_type"]
             if "merge" in record:
