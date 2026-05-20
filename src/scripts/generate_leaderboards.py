@@ -12,6 +12,7 @@ from leaderboards.backup import backup_results, restore_from_backup_if_missing
 from leaderboards.leaderboard_generation import generate_leaderboard
 from leaderboards.paths import CONFIGS_DIR
 from leaderboards.result_processing import process_results
+from scripts.generate_task_metrics import main as generate_task_metrics
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s ⋅ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
@@ -119,6 +120,9 @@ def main(categories: tuple[t.Literal["generative", "all_models"]], force: bool) 
             categories=list(categories),
             force=force,
         )
+
+    # Keep the frontend's task -> metric-names map in sync with euroeval.
+    generate_task_metrics()
 
     # Snapshot the (possibly updated) results to the backup directory,
     # rotating out oldest backups to keep total size under the cap.

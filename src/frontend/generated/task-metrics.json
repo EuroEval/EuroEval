@@ -1,0 +1,37 @@
+{
+  "common-sense-reasoning": [
+    "Matthew's Correlation Coefficient",
+    "Accuracy"
+  ],
+  "european-values": [
+    "European Values"
+  ],
+  "knowledge": [
+    "Matthew's Correlation Coefficient",
+    "Accuracy"
+  ],
+  "linguistic-acceptability": [
+    "Matthew's Correlation Coefficient",
+    "Macro-average F1-score"
+  ],
+  "named-entity-recognition": [
+    "Micro-average F1-score without MISC tags",
+    "Micro-average F1-score"
+  ],
+  "reading-comprehension": [
+    "F1-score",
+    "Exact Match"
+  ],
+  "sentiment-classification": [
+    "Matthew's Correlation Coefficient",
+    "Macro-average F1-score"
+  ],
+  "simplification": [
+    "METEOR",
+    "SARI"
+  ],
+  "summarization": [
+    "ChrF3++",
+    "ChrF4++"
+  ]
+}
