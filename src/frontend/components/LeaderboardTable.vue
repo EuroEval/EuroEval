@@ -264,6 +264,21 @@ const TYPE_EMOJI_TOOLTIPS: Record<string, string> = {
 
 const isTypeCol = (col: Column) => col.key.toLowerCase() === "type";
 
+// Pretty primary/secondary metric names per task, keyed by the task-group
+// label as it appears in the CSV. Used to label raw "x ± e / y ± e" scores
+// on monolingual leaderboards (where each score column sits under a task
+// heading). Multilingual leaderboards group by language instead and skip this.
+const TASK_METRIC_NAMES: Record<string, [string, string]> = {
+  "Sentiment classification": ["MCC", "Macro-average F1"],
+  "Named entity recognition": ["Micro-average F1 without MISC tags", "Micro-average F1"],
+  "Linguistic acceptability": ["MCC", "Macro-average F1"],
+  "Reading comprehension": ["F1", "Exact Match"],
+  Knowledge: ["MCC", "Accuracy"],
+  "Common-sense reasoning": ["MCC", "Accuracy"],
+  Summarization: ["ChrF3++", "ChrF4++"],
+  Simplification: ["METEOR", "SARI"],
+};
+
 const cellTitle = (
   cell: { text: string },
   col: Column,
@@ -271,6 +286,10 @@ const cellTitle = (
 ): string | undefined => {
   if (ci === 0) return cell.text;
   if (isTypeCol(col)) return TYPE_EMOJI_TOOLTIPS[cell.text];
+  if (col.kind === "score" && /±/.test(cell.text)) {
+    const metrics = TASK_METRIC_NAMES[col.taskTitle];
+    if (metrics) return `${metrics[0]} / ${metrics[1]}`;
+  }
   return undefined;
 };
 
