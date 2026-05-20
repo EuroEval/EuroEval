@@ -19,7 +19,7 @@ from .paths import CONFIGS_DIR, OUTPUT_DIR, TASK_CONFIG_PATH
 from .result_loading import load_processed_results
 from .result_processing import extract_model_metadata, group_results_by_model
 from .score_computation import compute_ranks
-from .utils import convert_to_float
+from .utils import convert_to_float, drop_val_duplicates
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +75,7 @@ def generate_leaderboard(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
         group_results_by_model(results=results, task_config=task_config)
     )
+    model_results = drop_val_duplicates(model_results=model_results)
     ranks = compute_ranks(
         model_results=model_results, task_config=task_config, configs=configs
     )

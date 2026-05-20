@@ -117,6 +117,53 @@ def get_record_hash(record: dict) -> str:
     return f"{model}{dataset}{validation_split}{generative * (few_shot + 1)}"
 
 
+def strip_val_suffix(model_id: str) -> str | None:
+    """Return the model ID with the 'val' note removed, or None if absent.
+
+    Args:
+        model_id:
+            The model ID, possibly wrapped in an anchor tag and possibly
+            carrying a parenthesised note like ``(val)`` or ``(zero-shot, val)``.
+
+    Returns:
+        The model ID with ``val`` removed from its note, or ``None`` if the
+        model ID did not contain a ``val`` note.
+    """
+    match = re.match(r"^(.*)\s*\(([^()]+)\)(\s*</a>)?$", model_id)
+    if not match:
+        return None
+    prefix, note, suffix = match.group(1), match.group(2), match.group(3) or ""
+    items = [item.strip() for item in note.split(",")]
+    if "val" not in items:
+        return None
+    items = [item for item in items if item != "val"]
+    if not items:
+        return f"{prefix.rstrip()}{suffix}"
+    return f"{prefix.rstrip()} ({', '.join(items)}){suffix}"
+
+
+def drop_val_duplicates(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
+    """Drop validation-split variants when the full test-split variant exists.
+
+    Args:
+        model_results:
+            The grouped model results, keyed by model ID.
+
+    Returns:
+        The model results with ``(val)``-suffixed entries removed whenever the
+        corresponding full test-split entry is also present.
+    """
+    filtered: dict[str, dict[str, list[tuple[list[float], float, float]]]] = {}
+    for model_id, results in model_results.items():
+        equivalent = strip_val_suffix(model_id=model_id)
+        if equivalent is not None and equivalent in model_results:
+            continue
+        filtered[model_id] = results
+    return filtered
+
+
 @cache
 def log_once(message: str, logging_level: int) -> None:
     """Log a message only once.
