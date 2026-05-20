@@ -1,20 +1,73 @@
 <script setup lang="ts">
 import { type QueueEntry } from "@/services/github";
 
-function displayLanguages(groups: string[]): string {
-  const langs: string[] = [];
-  for (const g of groups) {
-    const parenIndex = g.indexOf("(");
-    if (parenIndex !== -1) {
-      const inside = g.slice(parenIndex + 1).replace(")", "");
-      const parts = inside.split(",").map((s) => s.trim());
-      langs.push(...parts);
-    }
+const CATALAN_FLAG =
+  "<img src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 27 18\"><path fill=\"%23FCDD09\" d=\"M0 0h27v18H0z\"/><path fill=\"%23DA121A\" d=\"M0 2h27v2H0zM0 6h27v2H0zM0 10h27v2H0zM0 14h27v2H0z\"/></svg>' alt='Catalan' title='Catalan' style='height:0.9em;vertical-align:-0.05em;display:inline-block'>";
+
+const FLAGS: Record<string, string> = {
+  Albanian: "🇦🇱",
+  Belarusian: "🇧🇾",
+  Bosnian: "🇧🇦",
+  Bulgarian: "🇧🇬",
+  Catalan: CATALAN_FLAG,
+  Croatian: "🇭🇷",
+  Czech: "🇨🇿",
+  Danish: "🇩🇰",
+  Dutch: "🇳🇱",
+  English: "🇬🇧",
+  Estonian: "🇪🇪",
+  Faroese: "🇫🇴",
+  Finnish: "🇫🇮",
+  French: "🇫🇷",
+  German: "🇩🇪",
+  Greek: "🇬🇷",
+  Hungarian: "🇭🇺",
+  Icelandic: "🇮🇸",
+  Italian: "🇮🇹",
+  Latvian: "🇱🇻",
+  Lithuanian: "🇱🇹",
+  Norwegian: "🇳🇴",
+  Polish: "🇵🇱",
+  Portuguese: "🇵🇹",
+  Romanian: "🇷🇴",
+  Serbian: "🇷🇸",
+  Slovak: "🇸🇰",
+  Slovenian: "🇸🇮",
+  Spanish: "🇪🇸",
+  Swedish: "🇸🇪",
+  Ukrainian: "🇺🇦",
+};
+
+function languagesFromGroup(group: string): string[] {
+  const parenIndex = group.indexOf("(");
+  if (parenIndex !== -1) {
+    const inside = group.slice(parenIndex + 1).replace(")", "");
+    return inside.split(",").map((s) => s.trim());
   }
-  if (langs.length === 0) return "—"
-  return langs.sort((a, b) => a.localeCompare(b)).join(", ");
+  return [group.trim()];
 }
 
+function flagFor(language: string): string {
+  const flag = FLAGS[language];
+  if (flag) {
+    if (flag.startsWith("<")) return flag;
+    return `<span title="${language}">${flag}</span>`;
+  }
+  return language;
+}
+
+function displayLanguages(groups: string[]): string {
+  const langs = new Set<string>();
+  for (const g of groups) {
+    for (const l of languagesFromGroup(g)) langs.add(l);
+  }
+  if (langs.size === 0) return "—";
+  if (langs.size >= Object.keys(FLAGS).length) return "All languages";
+  return Array.from(langs)
+    .sort((a, b) => a.localeCompare(b))
+    .map(flagFor)
+    .join(" ");
+}
 function statusClass(status: string): string {
   return status.toLowerCase().replace(/\s+/g, "-");
 }
@@ -64,7 +117,7 @@ const emit = defineEmits<{
           </td>
           <td class="lg">
             <span v-if="e.languageGroups.length === 0" class="muted">—</span>
-            <span v-else>{{ displayLanguages(e.languageGroups) }}</span>
+            <span v-else v-html="displayLanguages(e.languageGroups)"></span>
           </td>
           <td style="text-align: center">
             <span
