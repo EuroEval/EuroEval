@@ -16,6 +16,7 @@ A dataset is included in a leaderboard iff:
 import importlib
 import pkgutil
 from collections import OrderedDict
+from functools import cache
 
 from euroeval import dataset_configs as _ds_module
 from euroeval.data_models import DatasetConfig
@@ -76,14 +77,23 @@ def task_metric_pretty_names(task_name: str) -> tuple[str, str | None]:
     return primary, secondary
 
 
-def _iter_all_dataset_configs() -> list[DatasetConfig]:
+@cache
+def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
+    """Collect every ``DatasetConfig`` defined in ``euroeval.dataset_configs``.
+
+    Cached because the leaderboard pipeline calls into this module once per
+    language and the set is fixed per process.
+
+    Returns:
+        Every ``DatasetConfig`` found in the lib, in module-discovery order.
+    """
     configs: list[DatasetConfig] = []
     for mod_info in pkgutil.iter_modules(_ds_module.__path__):
         mod = importlib.import_module(f"euroeval.dataset_configs.{mod_info.name}")
         for value in vars(mod).values():
             if isinstance(value, DatasetConfig):
                 configs.append(value)
-    return configs
+    return tuple(configs)
 
 
 def language_name_to_codes(name: str) -> set[str]:
@@ -138,7 +148,7 @@ def languages_with_official_datasets() -> list[str]:
     return sorted(names)
 
 
-def official_datasets_for_language(language_name: str) -> "OrderedDict[str, list[str]]":
+def official_datasets_for_language(language_name: str) -> OrderedDict[str, list[str]]:
     """Return ``{task: [dataset_name, ...]}`` for a single-language leaderboard.
 
     Tasks appear in `LEADERBOARD_TASKS` order; tasks with no matching dataset

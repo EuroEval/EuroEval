@@ -14,7 +14,18 @@ from leaderboards.leaderboard_generation import generate_leaderboard
 from leaderboards.paths import CONFIGS_DIR
 from leaderboards.result_processing import process_results
 from leaderboards.task_metadata import languages_with_official_datasets
-from scripts.generate_task_metrics import main as generate_task_metrics
+
+try:
+    # Normal invocation: `python -m scripts.generate_leaderboards`, with
+    # `src/` on `sys.path` so `scripts` resolves as a package.
+    from scripts.generate_task_metrics import main as generate_task_metrics
+except ImportError:
+    # File-path invocation (e.g. `uv run src/scripts/generate_leaderboards.py`)
+    # — `scripts` isn't a package on the path, so import the sibling module
+    # directly.
+    from generate_task_metrics import (
+        main as generate_task_metrics,  # type: ignore[no-redef]
+    )
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s ⋅ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
