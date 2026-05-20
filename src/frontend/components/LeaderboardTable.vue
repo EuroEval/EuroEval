@@ -533,11 +533,11 @@ const reportBadEval = (modelId: string) => {
   height: 44px;
 }
 
-/* First column (Model) stays left-aligned; widen it so long model IDs
-   fit on a single line. The table itself scrolls horizontally inside
-   `.lb-scroll` when the total column width exceeds the container. */
-.lb-table th:first-child,
-.lb-table td:first-child {
+/* Model column stays left-aligned; widen it so long model IDs fit on a
+   single line. The table itself scrolls horizontally inside `.lb-scroll`
+   when the total column width exceeds the container. */
+.lb-table th.kind-model,
+.lb-table td.kind-model {
   text-align: left;
   min-width: 360px;
   white-space: nowrap;
