@@ -46,7 +46,13 @@ onMounted(refresh);
       </p>
 
       <ModelSubmitForm @submitted="onSubmitted" />
+    </div>
 
+    <div class="sidebar">
+      <HallOfFame />
+    </div>
+
+    <div class="queue-wrap">
       <QueueTable
         :entries="entries"
         :loading="loading"
@@ -54,10 +60,6 @@ onMounted(refresh);
         @refresh="refresh"
         @subscribe="onSubscribe"
       />
-    </div>
-
-    <div class="sidebar">
-      <HallOfFame />
     </div>
 
     <SubscribeRedirectModal
@@ -73,15 +75,25 @@ onMounted(refresh);
   max-width: 1200px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
-  gap: 2rem;
+  grid-template-areas:
+    "main sidebar"
+    "queue sidebar";
+  column-gap: 2rem;
   align-items: start;
 }
 
 .main {
+  grid-area: main;
+  min-width: 0;
+}
+
+.queue-wrap {
+  grid-area: queue;
   min-width: 0;
 }
 
 .sidebar {
+  grid-area: sidebar;
   position: sticky;
   top: 8rem;
   max-height: calc(100vh - 9rem);
@@ -104,10 +116,17 @@ h1 {
 @media (max-width: 900px) {
   .eq-view {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "main"
+      "sidebar"
+      "queue";
+    row-gap: 1.5rem;
   }
 
   .sidebar {
     position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 }
 </style>

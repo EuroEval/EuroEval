@@ -219,6 +219,21 @@ const scoreHeatmapStyle = (
 const isHeatmapScoreCol = (col: Column): boolean =>
   props.heatmapScoreCols && col.kind === "score";
 
+// On multilingual leaderboards, the per-language columns are rank-like
+// (1 = best). Identify them as numeric columns that aren't one of the
+// fixed metadata columns.
+const NON_LANGUAGE_NUMBER_COLS = new Set([
+  "rank",
+  "parameters",
+  "vocabulary",
+  "context",
+  "european values",
+]);
+const isLanguageRankCol = (col: Column): boolean =>
+  props.heatmapScoreCols &&
+  col.kind === "number" &&
+  !NON_LANGUAGE_NUMBER_COLS.has(col.key.toLowerCase());
+
 const toggleSort = (idx: number) => {
   if (sortBy.value?.index === idx) {
     sortBy.value =
@@ -310,12 +325,15 @@ const reportBadEval = (modelId: string) => {
       <button class="lb-reset" type="button" @click="resetFilters">
         Reset filters
       </button>
-      <div class="lb-pageinfo">
-        Page
-        <select v-model.number="page" aria-label="Page">
-          <option v-for="n in pageCount" :key="n" :value="n">{{ n }}</option>
-        </select>
-        of {{ pageCount }} · {{ sortedRows.length }} rows
+      <div class="lb-toolbar-right">
+        <slot name="actions" />
+        <div class="lb-pageinfo">
+          Page
+          <select v-model.number="page" aria-label="Page">
+            <option v-for="n in pageCount" :key="n" :value="n">{{ n }}</option>
+          </select>
+          of {{ pageCount }} · {{ sortedRows.length }} rows
+        </div>
       </div>
     </div>
 
@@ -367,7 +385,7 @@ const reportBadEval = (modelId: string) => {
                 </span>
               </template>
               <input
-                v-else-if="i === 0"
+                v-else-if="col.key.toLowerCase() === 'model'"
                 v-model="colFilters[col.key]"
                 type="search"
                 class="lb-filter"
@@ -404,7 +422,7 @@ const reportBadEval = (modelId: string) => {
                 isTickCrossCol(table.columns[ci]) ? `cell-tc ${tickCrossClass(cell.text)}` : '',
               ]"
               :style="
-                isRankCol(table.columns[ci])
+                isRankCol(table.columns[ci]) || isLanguageRankCol(table.columns[ci])
                   ? rankHeatmapStyle(cell)
                   : isHeatmapScoreCol(table.columns[ci])
                     ? scoreHeatmapStyle(cell, table.columns[ci])
@@ -490,10 +508,17 @@ const reportBadEval = (modelId: string) => {
   background: var(--color-border);
 }
 
+.lb-toolbar-right {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .lb-pageinfo {
   color: var(--color-muted);
   font-size: 0.8rem;
-  margin-left: auto;
 }
 
 .lb-pageinfo select {
@@ -533,11 +558,11 @@ const reportBadEval = (modelId: string) => {
   height: 44px;
 }
 
-/* First column (Model) stays left-aligned; widen it so long model IDs
-   fit on a single line. The table itself scrolls horizontally inside
-   `.lb-scroll` when the total column width exceeds the container. */
-.lb-table th:first-child,
-.lb-table td:first-child {
+/* Model column stays left-aligned; widen it so long model IDs fit on a
+   single line. The table itself scrolls horizontally inside `.lb-scroll`
+   when the total column width exceeds the container. */
+.lb-table th.kind-model,
+.lb-table td.kind-model {
   text-align: left;
   min-width: 360px;
   white-space: nowrap;

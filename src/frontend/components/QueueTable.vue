@@ -1,20 +1,73 @@
 <script setup lang="ts">
 import { type QueueEntry } from "@/services/github";
 
-function displayLanguages(groups: string[]): string {
-  const langs: string[] = [];
-  for (const g of groups) {
-    const parenIndex = g.indexOf("(");
-    if (parenIndex !== -1) {
-      const inside = g.slice(parenIndex + 1).replace(")", "");
-      const parts = inside.split(",").map((s) => s.trim());
-      langs.push(...parts);
-    }
+const CATALAN_FLAG =
+  "<img src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 27 18\"><path fill=\"%23FCDD09\" d=\"M0 0h27v18H0z\"/><path fill=\"%23DA121A\" d=\"M0 2h27v2H0zM0 6h27v2H0zM0 10h27v2H0zM0 14h27v2H0z\"/></svg>' alt='Catalan' title='Catalan' style='height:0.9em;vertical-align:-0.05em;display:inline-block'>";
+
+const FLAGS: Record<string, string> = {
+  Albanian: "🇦🇱",
+  Belarusian: "🇧🇾",
+  Bosnian: "🇧🇦",
+  Bulgarian: "🇧🇬",
+  Catalan: CATALAN_FLAG,
+  Croatian: "🇭🇷",
+  Czech: "🇨🇿",
+  Danish: "🇩🇰",
+  Dutch: "🇳🇱",
+  English: "🇬🇧",
+  Estonian: "🇪🇪",
+  Faroese: "🇫🇴",
+  Finnish: "🇫🇮",
+  French: "🇫🇷",
+  German: "🇩🇪",
+  Greek: "🇬🇷",
+  Hungarian: "🇭🇺",
+  Icelandic: "🇮🇸",
+  Italian: "🇮🇹",
+  Latvian: "🇱🇻",
+  Lithuanian: "🇱🇹",
+  Norwegian: "🇳🇴",
+  Polish: "🇵🇱",
+  Portuguese: "🇵🇹",
+  Romanian: "🇷🇴",
+  Serbian: "🇷🇸",
+  Slovak: "🇸🇰",
+  Slovenian: "🇸🇮",
+  Spanish: "🇪🇸",
+  Swedish: "🇸🇪",
+  Ukrainian: "🇺🇦",
+};
+
+function languagesFromGroup(group: string): string[] {
+  const parenIndex = group.indexOf("(");
+  if (parenIndex !== -1) {
+    const inside = group.slice(parenIndex + 1).replace(")", "");
+    return inside.split(",").map((s) => s.trim());
   }
-  if (langs.length === 0) return "—"
-  return langs.sort((a, b) => a.localeCompare(b)).join(", ");
+  return [group.trim()];
 }
 
+function flagFor(language: string): string {
+  const flag = FLAGS[language];
+  if (flag) {
+    if (flag.startsWith("<")) return flag;
+    return `<span title="${language}">${flag}</span>`;
+  }
+  return language;
+}
+
+function displayLanguages(groups: string[]): string {
+  const langs = new Set<string>();
+  for (const g of groups) {
+    for (const l of languagesFromGroup(g)) langs.add(l);
+  }
+  if (langs.size === 0) return "—";
+  if (langs.size >= Object.keys(FLAGS).length) return "All languages";
+  return Array.from(langs)
+    .sort((a, b) => a.localeCompare(b))
+    .map(flagFor)
+    .join(" ");
+}
 function statusClass(status: string): string {
   return status.toLowerCase().replace(/\s+/g, "-");
 }
@@ -45,9 +98,9 @@ const emit = defineEmits<{
       <thead>
         <tr>
           <th>Model</th>
-          <th>Languages</th>
+          <th class="lang-col">Languages</th>
           <th class="status-col" style="text-align: center">Status</th>
-          <th style="text-align: center">Evaluator</th>
+          <th class="evaluator-col" style="text-align: center">Evaluator</th>
           <th class="sub-col"></th>
         </tr>
       </thead>
@@ -62,9 +115,9 @@ const emit = defineEmits<{
               {{ e.modelId }}
             </a>
           </td>
-          <td class="lg">
+          <td class="lg lang-col">
             <span v-if="e.languageGroups.length === 0" class="muted">—</span>
-            <span v-else>{{ displayLanguages(e.languageGroups) }}</span>
+            <span v-else v-html="displayLanguages(e.languageGroups)"></span>
           </td>
           <td style="text-align: center">
             <span
@@ -80,7 +133,7 @@ const emit = defineEmits<{
               {{ e.status }}
             </span>
           </td>
-          <td style="text-align: center">
+          <td class="evaluator-col" style="text-align: center">
             <a
               v-if="e.evaluator"
               :href="`https://github.com/${e.evaluator}`"
@@ -217,6 +270,33 @@ th.status-col {
   padding: 1.5rem 0;
   color: var(--color-text-muted, #777);
   text-align: center;
+}
+
+@media (max-width: 640px) {
+  .qtable th.lang-col,
+  .qtable td.lang-col,
+  .qtable th.evaluator-col,
+  .qtable td.evaluator-col {
+    display: none;
+  }
+
+  .qtable {
+    font-size: 0.85rem;
+  }
+
+  .qtable th,
+  .qtable td {
+    padding: 0.5rem 0.35rem;
+  }
+
+  th.status-col {
+    min-width: 0;
+  }
+
+  .subscribe {
+    padding: 0.25rem 0.45rem;
+    font-size: 0.75rem;
+  }
 }
 
 .msg.error {

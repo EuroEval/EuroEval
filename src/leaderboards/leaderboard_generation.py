@@ -495,16 +495,17 @@ def generate_dataframe(
             if dataset not in category_to_orthogonal_datasets[category]
         ]
         cols = (
-            ["model", "generative_type", "rank"]
+            ["model", "rank"]
             + orthogonal_cols
             + [
+                "generative_type",
+                "open",
+                "commercial",
+                "merge",
+                "trained_from_scratch",
                 "parameters",
                 "vocabulary_size",
                 "context",
-                "commercial",
-                "merge",
-                "open",
-                "trained_from_scratch",
             ]
             + rank_cols[1:]
         )
@@ -534,13 +535,9 @@ def generate_dataframe(
             )
 
         # Replace Boolean values by ✓ and ✗
-        boolean_columns = ["commercial", "merge"]
+        boolean_columns = ["commercial", "merge", "open"]
         for col in boolean_columns:
             df[col] = df[col].apply(lambda x: "✓" if x else "✗")
-
-        # Convert open values to symbols
-        open_mapping = {"open-source": "✓", "open-weight": "(✓)", "closed-source": "✗"}
-        df["open"] = df["open"].map(open_mapping)
 
         # Convert trained_from_scratch values to symbols
         trained_mapping = {True: "✓", False: "✗"}
@@ -574,15 +571,15 @@ def generate_dataframe(
         df_simplified = df[
             [
                 "model",
-                "generative_type",
                 "rank",
+                "generative_type",
+                "open",
+                "commercial",
+                "merge",
+                "trained_from_scratch",
                 "parameters",
                 "vocabulary_size",
                 "context",
-                "commercial",
-                "merge",
-                "open",
-                "trained_from_scratch",
             ]
         ]
         df_simplified = df_simplified.query(  # pyrefly: ignore[not-callable]

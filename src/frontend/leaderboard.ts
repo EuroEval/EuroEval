@@ -155,9 +155,8 @@ const parseNumberSafe = (s: string): number | null => {
 /**
  * Parse a single cell, given the column's inferred kind.
  */
-// Collapse the partial-open-source tick into the standard tick: we no longer
-// distinguish "fully open source" from "open-weight only", just open-weight
-// vs. closed.
+// Older CSVs may still carry the partial-open-source tick. The backend now
+// emits a plain boolean tick/cross, but normalize on read for forward compat.
 const normalizeIconText = (s: string): string => (s === "(✓)" ? "✓" : s);
 
 export function parseCell(raw: string, kind: CellKind): ParsedCell {
@@ -295,8 +294,7 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
     let titleHtml = sanitizeHtml(rawTitle);
     const sampleValues = dataRows.map((r) => r[idx] ?? "");
     const kind = inferKind(title, sampleValues);
-    // Rename the "Open" column to "Open-weight" — we no longer distinguish
-    // fully open-source from open-weight-only.
+    // Display the boolean "Open" column as "Open-weight".
     if (title.toLowerCase() === "open") {
       titleHtml = titleHtml.replace(/Open/i, "Open-weight");
       title = "Open-weight";
@@ -319,50 +317,16 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
     .filter(({ c }) => c.kind !== "version")
     .map(({ i }) => i);
 
-  let visibleColumns = visibleColIndexes.map((i) => columns[i]);
+  const visibleColumns = visibleColIndexes.map((i) => columns[i]);
 
-  // Parse cells.
-  let parsedRows: Row[] = dataRows
+  // Parse cells. Column order follows the CSV (ground truth).
+  const parsedRows: Row[] = dataRows
     .filter((r) => r.length > 1 && stripTags(r[0]).trim() !== "")
     .map((r) => ({
       cells: visibleColIndexes.map((i) =>
         parseCell(r[i] ?? "", columns[i].kind),
       ),
     }));
-
-  // Reorder columns so the high-signal filter columns sit together near the
-  // left, before the more variable per-task / per-language score columns.
-  // Model stays first (it has special styling); everything not explicitly
-  // ranked here keeps its original relative order.
-  const PRIORITY_ORDER: string[] = [
-    "model",
-    "rank",
-    "european values",
-    "commercial",
-    "merge",
-    "open-weight",
-    "trained from scratch",
-    "parameters",
-    "vocabulary",
-    "context",
-  ];
-  const priorityIndex = (col: Column): number => {
-    const idx = PRIORITY_ORDER.indexOf(col.key.toLowerCase());
-    return idx === -1 ? PRIORITY_ORDER.length : idx;
-  };
-  const reorder = visibleColumns
-    .map((col, idx) => ({ col, idx }))
-    .sort((a, b) => {
-      const pa = priorityIndex(a.col);
-      const pb = priorityIndex(b.col);
-      if (pa !== pb) return pa - pb;
-      return a.idx - b.idx;
-    })
-    .map(({ idx }) => idx);
-  visibleColumns = reorder.map((i) => visibleColumns[i]);
-  parsedRows = parsedRows.map((r) => ({
-    cells: reorder.map((i) => r.cells[i]),
-  }));
 
   // Augment columns with min/max + distinct values.
   for (let c = 0; c < visibleColumns.length; c++) {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import type { LeaderboardTable } from "@/leaderboard";
 
 const props = defineProps<{
@@ -299,11 +299,39 @@ const hoverPos = ref<{ x: number; y: number; flipX: boolean; flipY: boolean }>({
   flipY: false,
 });
 
+// On touch/coarse-pointer devices we show a minimal tooltip (model ID only),
+// triggered by tap, and dismissed by tapping anywhere else.
+const isCoarsePointer = ref(false);
+let coarseMq: MediaQueryList | null = null;
+const onCoarseChange = (e: MediaQueryListEvent) => {
+  isCoarsePointer.value = e.matches;
+};
+const onDocPointerDown = (e: PointerEvent) => {
+  if (!hovered.value) return;
+  const target = e.target as Element | null;
+  if (target && target.closest(".point")) return;
+  hovered.value = null;
+};
+
+onMounted(() => {
+  if (typeof window === "undefined" || !window.matchMedia) return;
+  coarseMq = window.matchMedia("(pointer: coarse)");
+  isCoarsePointer.value = coarseMq.matches;
+  coarseMq.addEventListener?.("change", onCoarseChange);
+  document.addEventListener("pointerdown", onDocPointerDown);
+});
+
+onBeforeUnmount(() => {
+  coarseMq?.removeEventListener?.("change", onCoarseChange);
+  if (typeof document !== "undefined") {
+    document.removeEventListener("pointerdown", onDocPointerDown);
+  }
+});
+
 const TOOLTIP_W = 280; // approximate, kept in sync with .tooltip max-width
 const TOOLTIP_H = 240; // generous; the actual height depends on meta length
 
-const onMove = (e: MouseEvent, p: Point) => {
-  hovered.value = p;
+const positionFromEvent = (e: { clientX: number; clientY: number; currentTarget: EventTarget | null }, w: number, h: number) => {
   const target = e.currentTarget as SVGElement;
   const svg = target.ownerSVGElement as SVGSVGElement;
   const rect = svg.getBoundingClientRect();
@@ -312,22 +340,41 @@ const onMove = (e: MouseEvent, p: Point) => {
   hoverPos.value = {
     x,
     y,
-    // If there isn't room to the right of the cursor, anchor to its left.
-    flipX: x + 24 + TOOLTIP_W > rect.width,
-    flipY: y + 24 + TOOLTIP_H > rect.height,
+    flipX: x + 24 + w > rect.width,
+    flipY: y + 24 + h > rect.height,
   };
 };
 
+const onMove = (e: MouseEvent, p: Point) => {
+  if (isCoarsePointer.value) return;
+  hovered.value = p;
+  positionFromEvent(e, TOOLTIP_W, TOOLTIP_H);
+};
+
 const onLeave = () => {
+  if (isCoarsePointer.value) return;
   hovered.value = null;
+};
+
+const onPointClick = (e: MouseEvent, p: Point) => {
+  if (!isCoarsePointer.value) return;
+  if (hovered.value === p) {
+    hovered.value = null;
+    return;
+  }
+  hovered.value = p;
+  // Smaller tooltip on mobile — only the model line is shown.
+  positionFromEvent(e, 200, 40);
 };
 
 const tooltipStyle = computed(() => {
   const x = hoverPos.value.x;
   const y = hoverPos.value.y;
+  const w = isCoarsePointer.value ? 200 : TOOLTIP_W;
+  const h = isCoarsePointer.value ? 40 : TOOLTIP_H;
   return {
-    left: hoverPos.value.flipX ? `${Math.max(0, x - TOOLTIP_W - 12)}px` : `${x + 12}px`,
-    top: hoverPos.value.flipY ? `${Math.max(0, y - TOOLTIP_H - 12)}px` : `${y + 12}px`,
+    left: hoverPos.value.flipX ? `${Math.max(0, x - w - 12)}px` : `${x + 12}px`,
+    top: hoverPos.value.flipY ? `${Math.max(0, y - h - 12)}px` : `${y + 12}px`,
   };
 });
 </script>
@@ -480,6 +527,7 @@ const tooltipStyle = computed(() => {
               class="point"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
+              @click.stop="onPointClick($event, p)"
             />
             <circle
               v-else
@@ -490,6 +538,7 @@ const tooltipStyle = computed(() => {
               class="point"
               @mousemove="onMove($event, p)"
               @mouseleave="onLeave"
+              @click.stop="onPointClick($event, p)"
             />
           </template>
         </g>
@@ -498,21 +547,24 @@ const tooltipStyle = computed(() => {
       <div
         v-if="hovered"
         class="tooltip"
+        :class="{ compact: isCoarsePointer }"
         :style="tooltipStyle"
       >
         <div class="tt-model">{{ hovered.icon }} {{ hovered.label }}</div>
-        <div class="tt-row">
-          <span class="tt-label">Mean rank</span>
-          <span class="tt-value">{{ hovered.y.toFixed(2) }}</span>
-        </div>
-        <div class="tt-row">
-          <span class="tt-label">Kind</span>
-          <span class="tt-value">{{ KIND_LABEL[hovered.kind] }}</span>
-        </div>
-        <div v-for="m in hovered.meta" :key="m.label" class="tt-row">
-          <span class="tt-label">{{ m.label }}</span>
-          <span class="tt-value">{{ m.value }}</span>
-        </div>
+        <template v-if="!isCoarsePointer">
+          <div class="tt-row">
+            <span class="tt-label">Mean rank</span>
+            <span class="tt-value">{{ hovered.y.toFixed(2) }}</span>
+          </div>
+          <div class="tt-row">
+            <span class="tt-label">Kind</span>
+            <span class="tt-value">{{ KIND_LABEL[hovered.kind] }}</span>
+          </div>
+          <div v-for="m in hovered.meta" :key="m.label" class="tt-row">
+            <span class="tt-label">{{ m.label }}</span>
+            <span class="tt-value">{{ m.value }}</span>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -657,6 +709,20 @@ const tooltipStyle = computed(() => {
   width: 280px;
   max-width: calc(100% - 24px);
   z-index: 5;
+}
+
+.tooltip.compact {
+  width: auto;
+  max-width: calc(100% - 24px);
+  padding: 0.35rem 0.55rem;
+}
+
+.tooltip.compact .tt-model {
+  margin-bottom: 0;
+  border-bottom: 0;
+  padding-bottom: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .tt-model {

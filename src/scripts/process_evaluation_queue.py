@@ -228,7 +228,30 @@ def acquire_single_instance_lock() -> None:
     _LOCK_FD = fd
 
 
+QUEUE_PASS_SLEEP_SECONDS = 60 * 60
+
+
 def main() -> None:
+    """Process the queue forever, sleeping one hour between passes.
+
+    Credentials and the single-instance lock are acquired once for the
+    lifetime of the process, then :func:`process_queue_once` runs in a loop.
+    """
+    ensure_credentials()
+
+    # Held for the lifetime of the process; released by the kernel on exit.
+    acquire_single_instance_lock()
+
+    while True:
+        process_queue_once()
+        logger.info(
+            f"Queue pass complete; sleeping {QUEUE_PASS_SLEEP_SECONDS}s "
+            "before next pass."
+        )
+        time.sleep(QUEUE_PASS_SLEEP_SECONDS)
+
+
+def process_queue_once() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
     Issues are sorted by (status priority asc, parameter count asc,
@@ -237,16 +260,11 @@ def main() -> None:
     errored evaluations, so that quicker work is picked up first and gated
     items are surfaced ahead of errored ones.
     """
-    ensure_credentials()
-
-    # Held for the lifetime of the process; released by the kernel on exit.
-    acquire_single_instance_lock()
-
     try:
         issues = list_open_unassigned_issues()
     except urllib.error.HTTPError as e:
         logger.error(f"Failed to list issues: {e}")
-        sys.exit(1)
+        return
 
     current_version = euroeval_version()
     current_v = version_tuple(v=current_version)
@@ -732,7 +750,13 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
             f"```bash\n{tail}\n```\n\n"
             f"EuroEval version: v{version}\n"
         )
-        comment_on_issue(number=number, comment=comment)
+        if issue_has_matching_error_comment(number=number, reason=reason):
+            logger.info(
+                f"#{number}: identical error already posted; "
+                "skipping duplicate comment."
+            )
+        else:
+            comment_on_issue(number=number, comment=comment)
         set_errored_marker(number=number, body=issue.get("body"), version=version)
         add_failed_label(number=number)
         unassign_issue(number=number)
@@ -939,6 +963,7 @@ def run_euroeval(model_id: str, languages: list[str]) -> tuple[int, str]:
     logger.info(f"Running: {' '.join(cmd)}")
 
     env = os.environ.copy()
+    env["FULL_LOG"] = "1"
     token = resolve_hf_token()
     if token:
         env.setdefault("HF_TOKEN", token)
@@ -982,6 +1007,38 @@ def num_errored_benchmarks(output: str) -> int:
     for m in ERRORED_BENCHMARKS_RE.finditer(output):
         last = int(m.group(1))
     return last
+
+
+def issue_has_matching_error_comment(number: int, reason: str) -> bool:
+    """Return True if an error comment with the same ``reason`` already exists.
+
+    The tail of subprocess output varies run-to-run (timestamps, ANSI),
+    so we match on the stable error-reason phrase rendered in the comment
+    header instead of doing an exact-body comparison.
+
+    Args:
+        number:
+            The issue number to inspect.
+        reason:
+            The reason string that would be used in a new error comment.
+
+    Returns:
+        True if any existing comment on the issue contains the same
+        ``Error encountered during evaluation (<reason>):`` header.
+    """
+    try:
+        comments = gh_request(
+            path=f"/repos/{REPO}/issues/{number}/comments", params={"per_page": "100"}
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not list comments: {e}")
+        return False
+    if not isinstance(comments, list):
+        return False
+    marker = f"Error encountered during evaluation ({reason}):"
+    return any(
+        isinstance(c, dict) and marker in (c.get("body") or "") for c in comments
+    )
 
 
 def comment_on_issue(number: int, comment: str) -> None:
