@@ -26,7 +26,9 @@ import importlib.metadata
 import json
 import logging
 import os
+import pty
 import re
+import select
 import subprocess
 import sys
 import time
@@ -929,27 +931,57 @@ def run_euroeval(model_id: str, languages: list[str]) -> tuple[int, str]:
         env.setdefault("HF_TOKEN", token)
         env.setdefault("HUGGINGFACE_API_KEY", token)
 
+    # Run euroeval under a pty so it sees a real terminal and renders
+    # carriage-return progress bars in place instead of as individual lines.
+    master_fd, slave_fd = pty.openpty()
     try:
         proc = subprocess.Popen(  # noqa: S603
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            close_fds=True,
             env=env,
         )
     except FileNotFoundError:
+        os.close(master_fd)
+        os.close(slave_fd)
         logger.error("`euroeval` CLI not found on PATH. Is it installed?")
         return 127, "`euroeval` CLI not found on PATH."
+    os.close(slave_fd)
 
-    assert proc.stdout is not None
-    captured: list[str] = []
-    for line in proc.stdout:
-        sys.stderr.write(line)
-        sys.stderr.flush()
-        captured.append(line)
+    captured: list[bytes] = []
+    try:
+        while True:
+            ready, _, _ = select.select([master_fd], [], [], 0.1)
+            if ready:
+                try:
+                    chunk = os.read(master_fd, 4096)
+                except OSError:
+                    break
+                if not chunk:
+                    break
+                sys.stderr.buffer.write(chunk)
+                sys.stderr.buffer.flush()
+                captured.append(chunk)
+            elif proc.poll() is not None:
+                # Drain any final output the child wrote just before exiting.
+                try:
+                    while True:
+                        chunk = os.read(master_fd, 4096)
+                        if not chunk:
+                            break
+                        sys.stderr.buffer.write(chunk)
+                        sys.stderr.buffer.flush()
+                        captured.append(chunk)
+                except OSError:
+                    pass
+                break
+    finally:
+        os.close(master_fd)
     proc.wait()
-    return proc.returncode, "".join(captured)
+    output = b"".join(captured).decode("utf-8", errors="replace")
+    return proc.returncode, output
 
 
 def num_errored_benchmarks(output: str) -> int:
