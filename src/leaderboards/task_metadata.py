@@ -109,6 +109,35 @@ def language_code_to_name(code: str) -> str:
     return get_all_languages()[code].name.lower()
 
 
+def languages_with_official_datasets() -> list[str]:
+    """List language names that have at least one official leaderboard dataset.
+
+    Only single-token language names are returned, so dialect entries like
+    ``norwegian bokmål``/``norwegian nynorsk``/``european portuguese`` don't
+    produce duplicate leaderboards on top of their parent (``norwegian``,
+    ``portuguese``). Names are lower-cased and sorted alphabetically.
+
+    Returns:
+        Sorted list of language names.
+    """
+    leaderboard_tasks = set(LEADERBOARD_TASKS)
+    names: set[str] = set()
+    languages = get_all_languages()
+    for cfg in _iter_all_dataset_configs():
+        if cfg.unofficial:
+            continue
+        if cfg.task.name not in leaderboard_tasks:
+            continue
+        for lang in cfg.languages:
+            if lang.code not in languages:
+                continue
+            name = languages[lang.code].name.lower()
+            if " " in name:
+                continue
+            names.add(name)
+    return sorted(names)
+
+
 def official_datasets_for_language(language_name: str) -> "OrderedDict[str, list[str]]":
     """Return ``{task: [dataset_name, ...]}`` for a single-language leaderboard.
 

@@ -8,11 +8,9 @@ import re
 import typing as t
 from collections import defaultdict
 from itertools import chain
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from yaml import safe_load
 
 from .link_generation import generate_task_link
 from .paths import OUTPUT_DIR
@@ -30,33 +28,36 @@ logger = logging.getLogger(__name__)
 
 
 def generate_leaderboard(
-    leaderboard_config_path: Path,
+    leaderboard_name: str,
+    language_names: list[str],
     categories: list[t.Literal["generative", "all_models"]],
     force: bool,
 ) -> None:
     """Generate leaderboard CSV files from the EuroEval results.
 
     Args:
-        leaderboard_config_path:
-            The path to the leaderboard configuration file.
+        leaderboard_name:
+            The slug used in output filenames (e.g. ``"danish"``,
+            ``"mainland_scandinavian"``).
+        language_names:
+            The languages the leaderboard covers. Each name must resolve via
+            ``euroeval.languages``; the official leaderboard datasets are
+            derived from the lib for each.
         categories:
             The categories of leaderboards to generate. Should be a list containing
             "generative" and/or "all_models".
         force:
             Force the generation of the leaderboard, even if no updates are found.
     """
-    leaderboard_title = leaderboard_config_path.stem.replace("_", " ").title()
+    leaderboard_title = leaderboard_name.replace("_", " ").title()
 
     logger.info(f"Generating {leaderboard_title} leaderboard...")
 
-    # Load the leaderboard yaml and derive per-language task→dataset configs
-    # from `euroeval`. The yaml only declares which languages this leaderboard
-    # covers; the canonical task/dataset/metric metadata lives in the library.
-    with leaderboard_config_path.open(mode="r") as f:
-        config: dict[str, list[str]] = safe_load(stream=f)
+    # Derive per-language task→dataset configs from `euroeval`. The canonical
+    # task/dataset/metric metadata lives in the library.
     configs: dict[str, dict[str, list[str]]] = {
         language: dict(official_datasets_for_language(language))
-        for language in config["languages"]
+        for language in language_names
     }
 
     datasets = [
@@ -93,9 +94,9 @@ def generate_leaderboard(
         df, df_simplified = df_pair
 
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        leaderboard_path = OUTPUT_DIR / f"{leaderboard_config_path.stem}_{category}.csv"
+        leaderboard_path = OUTPUT_DIR / f"{leaderboard_name}_{category}.csv"
         simplified_leaderboard_path = (
-            OUTPUT_DIR / f"{leaderboard_config_path.stem}_{category}_simplified.csv"
+            OUTPUT_DIR / f"{leaderboard_name}_{category}_simplified.csv"
         )
 
         # Check if anything got updated
