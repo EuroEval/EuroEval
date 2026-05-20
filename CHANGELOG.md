@@ -13,11 +13,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- The model submission endpoint no longer rejects gated Hugging Face
-  repositories. The evaluation queue processor already supports gated models
-  (labeling the issue until the maintainer is granted access), so the API now
-  only rejects private models.
-
 - Fixed a bug where `load_custom_datasets_module` would attempt to load a module
   spec from the current working directory when an empty path was passed as the
   custom datasets file, emitting a spurious "Could not load the spec for the
