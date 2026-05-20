@@ -152,8 +152,7 @@ const downloadCsv = async () => {
     </p>
     <p class="lb-help">
       Want a model evaluated? Submit it on the
-      <router-link to="/evaluation-queue">Evaluation Queue</router-link>
-      page.
+      <router-link to="/evaluation-queue">Evaluation Queue</router-link>.
     </p>
 
     <nav class="lb-tabs" role="tablist">
@@ -207,6 +206,7 @@ const downloadCsv = async () => {
           v-if="activeTable"
           :table="activeTable"
           :heatmap-score-cols="isMultilingual"
+          :leaderboard-name="title"
         >
           <template #actions>
             <button

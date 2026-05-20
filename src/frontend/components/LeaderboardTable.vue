@@ -8,8 +8,11 @@ const props = withDefaults(
     /** Apply a heatmap to score-kind columns (used for multilingual
      *  leaderboards, where the score columns are per-language). */
     heatmapScoreCols?: boolean;
+    /** Human-readable leaderboard name, included in bad-evaluation issue
+     *  reports. */
+    leaderboardName?: string;
   }>(),
-  { heatmapScoreCols: false },
+  { heatmapScoreCols: false, leaderboardName: "" },
 );
 
 type FilterValue = string;
@@ -326,10 +329,15 @@ const reportBadEval = (modelId: string) => {
       " You can add details about what looks wrong before submitting.",
   );
   if (!confirmed) return;
+  const lbName = props.leaderboardName
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
   const title = `[EVALUATION ERROR] ${modelId}`;
   const body =
-    `The model ${modelId} has an issue with its evaluation results.` +
-    ` The issue is that `;
+    `The model ${modelId} has an issue with its evaluation results` +
+    (lbName ? ` on the ${lbName} leaderboard` : "") +
+    `. The issue is that `;
   const url =
     "https://github.com/EuroEval/EuroEval/issues/new?template=BLANK_ISSUE" +
     `&title=${encodeURIComponent(title)}` +
