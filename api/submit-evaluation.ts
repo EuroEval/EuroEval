@@ -25,7 +25,7 @@ const MODEL_ID_RE = /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(5, "1 h"),
+  limiter: Ratelimit.slidingWindow(60, "1 h"),
   analytics: false,
   prefix: "euroeval:submit",
 });
