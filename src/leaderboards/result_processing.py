@@ -18,6 +18,7 @@ from .cache import Cache
 from .link_generation import generate_anchor_tag
 from .paths import RESULTS_PATH
 from .result_loading import load_raw_results
+from .task_metadata import task_metric_names
 from .utils import extract_model_ids_from_record, get_record_hash, log_once
 
 logger = logging.getLogger(__name__)
@@ -592,15 +593,13 @@ def record_is_valid(
 
 
 def group_results_by_model(
-    results: list[dict], task_config: dict[str, dict[str, str]]
+    results: list[dict],
 ) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
     """Group results by model ID.
 
     Args:
         results:
             The processed results.
-        task_config:
-            The task configuration.
 
     Returns:
         The results grouped by model ID. The dict structure is
@@ -613,14 +612,9 @@ def group_results_by_model(
         model_ids = extract_model_ids_from_record(record=record)
         dataset: str = record["dataset"]
 
-        metric_config = task_config[record["task"]]
-        for metric_type in ["primary", "secondary"]:
-            metric_name = f"{metric_type}_metric"
-            if metric_name not in metric_config:
-                continue
-
-            metric = metric_config[metric_name]
-
+        primary, secondary = task_metric_names(record["task"])
+        metrics = [primary] + ([secondary] if secondary is not None else [])
+        for metric_type, metric in zip(("primary", "secondary"), metrics):
             # Get the metrics for the dataset
             if "test" in record["results"]["raw"]:
                 raw_scores = [

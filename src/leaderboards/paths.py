@@ -12,11 +12,9 @@ from pathlib import Path
 # This package's directory (`src/leaderboards/`).
 PACKAGE_DIR: Path = Path(__file__).resolve().parent
 
-# Per-language task → dataset configuration.
+# Per-leaderboard language list. The datasets and task metadata are derived
+# from `euroeval` at runtime (see `task_metadata.py`).
 CONFIGS_DIR: Path = PACKAGE_DIR / "configs"
-
-# Task → primary/secondary metric mapping.
-TASK_CONFIG_PATH: Path = PACKAGE_DIR / "task_config.yaml"
 
 # Repository root (assumes the package lives at <repo>/src/leaderboards/).
 REPO_ROOT: Path = PACKAGE_DIR.parent.parent

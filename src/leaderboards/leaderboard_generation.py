@@ -15,10 +15,15 @@ import pandas as pd
 from yaml import safe_load
 
 from .link_generation import generate_task_link
-from .paths import CONFIGS_DIR, OUTPUT_DIR, TASK_CONFIG_PATH
+from .paths import OUTPUT_DIR
 from .result_loading import load_processed_results
 from .result_processing import extract_model_metadata, group_results_by_model
 from .score_computation import compute_ranks
+from .task_metadata import (
+    ORTHOGONAL_TASKS,
+    official_datasets_for_language,
+    task_category,
+)
 from .utils import convert_to_float, drop_val_duplicates
 
 logger = logging.getLogger(__name__)
@@ -44,23 +49,15 @@ def generate_leaderboard(
 
     logger.info(f"Generating {leaderboard_title} leaderboard...")
 
-    # Load configs
-    with TASK_CONFIG_PATH.open(mode="r") as f:
-        task_config: dict[str, dict[str, str]] = safe_load(stream=f)
+    # Load the leaderboard yaml and derive per-language task→dataset configs
+    # from `euroeval`. The yaml only declares which languages this leaderboard
+    # covers; the canonical task/dataset/metric metadata lives in the library.
     with leaderboard_config_path.open(mode="r") as f:
         config: dict[str, list[str]] = safe_load(stream=f)
-
-    # If the config consists of multiple languages, we extract a dictionary with config
-    # for each constituent language
-    configs: dict[str, dict[str, list[str]]] = dict()
-    if "languages" in config:
-        for language in config["languages"]:
-            with (CONFIGS_DIR / f"{language}.yaml").open(mode="r") as f:
-                configs[language] = safe_load(stream=f)
-    else:
-        configs = {leaderboard_config_path.stem: config}
-
-    del config
+    configs: dict[str, dict[str, list[str]]] = {
+        language: dict(official_datasets_for_language(language))
+        for language in config["languages"]
+    }
 
     datasets = [
         dataset
@@ -73,12 +70,10 @@ def generate_leaderboard(
     results = load_processed_results()
     results = [record for record in results if record["dataset"] in datasets]
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
-        group_results_by_model(results=results, task_config=task_config)
+        group_results_by_model(results=results)
     )
     model_results = drop_val_duplicates(model_results=model_results)
-    ranks = compute_ranks(
-        model_results=model_results, task_config=task_config, configs=configs
-    )
+    ranks = compute_ranks(model_results=model_results, configs=configs)
     metadata_dict = extract_model_metadata(results=results)
 
     # Only include dataset columns in monolingual leaderboards
@@ -90,7 +85,6 @@ def generate_leaderboard(
         ranks=ranks,
         metadata_dict=metadata_dict,
         categories=categories,
-        task_config=task_config,
         leaderboard_configs=configs,
         include_dataset_columns=include_dataset_columns,
     )
@@ -166,7 +160,7 @@ def generate_leaderboard(
 
         if new_records or force:
             top_header, second_header = create_leaderboard_headers(
-                df=df, leaderboard_configs=configs, task_config=task_config
+                df=df, leaderboard_configs=configs
             )
 
             df.columns = top_header
@@ -208,9 +202,7 @@ def generate_leaderboard(
 
 
 def create_leaderboard_headers(
-    df: pd.DataFrame | pd.Series,
-    leaderboard_configs: dict[str, dict[str, list[str]]],
-    task_config: dict[str, dict[str, str]],
+    df: pd.DataFrame | pd.Series, leaderboard_configs: dict[str, dict[str, list[str]]]
 ) -> tuple[list[str], list[str]]:
     """Create the leaderboard headers.
 
@@ -222,8 +214,6 @@ def create_leaderboard_headers(
             The dataframe.
         leaderboard_configs:
             The leaderboard configurations.
-        task_config:
-            The task configuration.
 
     Returns:
         The first and second header.
@@ -249,12 +239,7 @@ def create_leaderboard_headers(
             for dataset in datasets:
                 dataset_to_task_info[dataset] = (task, len(datasets))
 
-    # Get the set of orthogonal tasks
-    orthogonal_tasks = {
-        task
-        for task, task_config in task_config.items()
-        if task_config.get("orthogonal", False)
-    }
+    orthogonal_tasks = ORTHOGONAL_TASKS
 
     # Generate column headers
     top_header = []
@@ -322,7 +307,6 @@ def generate_dataframe(
     ranks: dict[str, dict[str, dict[str, float]]],
     metadata_dict: dict[str, dict],
     categories: list[t.Literal["generative", "all_models"]],
-    task_config: dict[str, dict[str, str]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
     include_dataset_columns: bool,
 ) -> list[tuple[pd.DataFrame, pd.DataFrame]]:
@@ -337,8 +321,6 @@ def generate_dataframe(
             The metadata.
         categories:
             The categories of leaderboards to generate.
-        task_config:
-            The task configuration.
         leaderboard_configs:
             The leaderboard configurations.
         include_dataset_columns:
@@ -355,13 +337,16 @@ def generate_dataframe(
     # Mapping from category to dataset names. The "generative" leaderboard
     # includes all tasks; the "all_models" leaderboard is restricted to NLU
     # tasks so non-generative models can be compared.
+    def _include(category: str, task: str) -> bool:
+        return category == "generative" or task_category(task) == "nlu"
+
     category_to_datasets = {
         category: [
             dataset
             for config in leaderboard_configs.values()
             for task, task_datasets in config.items()
             for dataset in task_datasets
-            if category == "generative" or task_config[task]["category"] == "nlu"
+            if _include(category, task)
         ]
         for category in categories
     }
@@ -373,8 +358,7 @@ def generate_dataframe(
             for config in leaderboard_configs.values()
             for task, task_datasets in config.items()
             for dataset in task_datasets
-            if task_config[task].get("orthogonal", False)
-            and (category == "generative" or task_config[task]["category"] == "nlu")
+            if task in ORTHOGONAL_TASKS and _include(category, task)
         }
         for category in categories
     }

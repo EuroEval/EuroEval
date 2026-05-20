@@ -5,12 +5,12 @@ from collections import defaultdict
 
 import numpy as np
 
+from .task_metadata import ORTHOGONAL_TASKS, task_category
 from .utils import significantly_better
 
 
 def compute_ranks(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    task_config: dict[str, dict[str, str]],
     configs: dict[str, dict[str, list[str]]],
 ) -> dict[str, dict[str, dict[str, float]]]:
     """Compute the ranks of the models.
@@ -18,8 +18,6 @@ def compute_ranks(
     Args:
         model_results:
             The model results.
-        task_config:
-            The task configuration.
         configs:
             The leaderboard configurations for each language.
 
@@ -27,13 +25,7 @@ def compute_ranks(
         The ranks of the models, per task category and per language. The dict structure
         is model_id -> category -> language/overall -> language_rank.
     """
-    # These tasks are not involved in the ranking calculation, and should just be
-    # presented with their raw scores instead.
-    orthogonal_tasks = [
-        task
-        for task, task_dct in task_config.items()
-        if task_dct.get("orthogonal", False)
-    ]
+    orthogonal_tasks = ORTHOGONAL_TASKS
 
     all_datasets = {
         language: [
@@ -106,7 +98,7 @@ def compute_ranks(
     categories = {"generative", "all_models"}
 
     def category_includes_task(category: str, task: str) -> bool:
-        return category == "generative" or task_config[task]["category"] == "nlu"
+        return category == "generative" or task_category(task) == "nlu"
 
     # Aggregate task ranks into language ranks.
     # model_id -> category -> language/overall -> language_rank
