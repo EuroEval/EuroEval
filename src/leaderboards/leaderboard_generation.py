@@ -498,9 +498,9 @@ def generate_dataframe(
             ["generative_type", "model", "rank"]
             + orthogonal_cols
             + [
-                "open",
                 "commercial",
                 "merge",
+                "open",
                 "trained_from_scratch",
                 "parameters",
                 "vocabulary_size",
@@ -572,9 +572,9 @@ def generate_dataframe(
                 "generative_type",
                 "model",
                 "rank",
-                "open",
                 "commercial",
                 "merge",
+                "open",
                 "trained_from_scratch",
                 "parameters",
                 "vocabulary_size",
