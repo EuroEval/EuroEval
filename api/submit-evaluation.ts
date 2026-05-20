@@ -71,9 +71,8 @@ async function huggingFaceModelExists(modelId: string): Promise<boolean> {
     { method: "GET" },
   );
   if (r.status === 200) {
-    const data = (await r.json()) as { private?: boolean; gated?: boolean | string };
+    const data = (await r.json()) as { private?: boolean };
     if (data.private) return false;
-    if (data.gated) return false;
     return true;
   }
   return false;
@@ -186,7 +185,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!(await huggingFaceModelExists(modelId))) {
     return json(422, {
       error:
-        "Model not found on the Hugging Face Hub, or is private/gated. Public models only.",
+        "Model not found on the Hugging Face Hub, or is private. Public or gated models only.",
     });
   }
 
