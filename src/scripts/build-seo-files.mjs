@@ -269,6 +269,11 @@ async function modelsInSimplifiedCsv(filePath) {
       : line.slice(0, line.indexOf(","));
     const anchorText =
       firstCol.match(/<a [^>]*>([^<]+)<\/a>/i)?.[1] ?? firstCol;
+    // Entries whose suffix mentions "val" or "zero-shot" are partial
+    // evaluations (validation split only, or zero-shot only) and don't
+    // count as a full evaluation for submission-gating purposes.
+    const suffix = anchorText.match(/\s*\(([^)]*)\)\s*$/)?.[1] ?? "";
+    if (/val|zero-shot/i.test(suffix)) continue;
     const modelId = anchorText.replace(/\s*\([^)]*\)\s*$/, "").trim();
     if (modelId) out.add(modelId);
   }

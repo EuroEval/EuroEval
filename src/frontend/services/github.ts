@@ -127,11 +127,7 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
 }
 
 export async function listOpenEvalIssues(): Promise<QueueEntry[]> {
-  const url =
-    `https://api.github.com/repos/${REPO}/issues?state=open&per_page=100` +
-    `&labels=${encodeURIComponent(LABEL)}&_=${Date.now()}`;
-  const r = await fetch(url, {
-    headers: { accept: "application/vnd.github+json" },
+  const r = await fetch(`/api/issues?state=open&_=${Date.now()}`, {
     cache: "no-store",
   });
   if (!r.ok) {
@@ -172,16 +168,10 @@ interface RawIssueWithAssignees extends RawIssue {
 const HALL_OF_FAME_EXCLUDE = new Set(["saattrupdan"]);
 
 export async function listEvaluators(): Promise<EvaluatorCount[]> {
-  const perPage = 100;
   const maxPages = 10;
-  const base =
-    `https://api.github.com/repos/${REPO}/issues` +
-    `?state=closed&per_page=${perPage}&labels=${encodeURIComponent(LABEL)}`;
   const pages = await Promise.all(
     Array.from({ length: maxPages }, (_, i) =>
-      fetch(`${base}&page=${i + 1}`, {
-        headers: { accept: "application/vnd.github+json" },
-      }).then((r) => {
+      fetch(`/api/issues?state=closed&page=${i + 1}`).then((r) => {
         if (!r.ok) {
           throw new Error(`Failed to load hall of fame (${r.status}).`);
         }
