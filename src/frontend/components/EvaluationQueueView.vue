@@ -12,11 +12,11 @@ const error = ref<string | null>(null);
 const subscribeUrl = ref<string | null>(null);
 const pending = ref<Map<number, QueueEntry>>(new Map());
 
-async function refresh() {
+async function refresh(opts: { fresh?: boolean } = {}) {
   loading.value = true;
   error.value = null;
   try {
-    const fresh = await listOpenEvalIssues();
+    const fresh = await listOpenEvalIssues({ fresh: opts.fresh });
     const seen = new Set(fresh.map((e) => e.number));
     for (const n of [...pending.value.keys()]) {
       if (seen.has(n)) pending.value.delete(n);
@@ -48,7 +48,7 @@ function onSubmitted(payload: {
   if (!entries.value.some((e) => e.number === payload.number)) {
     entries.value = [...entries.value, entry];
   }
-  void refresh();
+  void refresh({ fresh: true });
 }
 
 function onSubscribe(entry: QueueEntry) {
@@ -81,7 +81,7 @@ onMounted(refresh);
         :entries="entries"
         :loading="loading"
         :error="error"
-        @refresh="refresh"
+        @refresh="refresh({ fresh: true })"
         @subscribe="onSubscribe"
       />
     </div>

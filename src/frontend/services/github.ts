@@ -111,8 +111,18 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
   };
 }
 
-export async function listOpenEvalIssues(): Promise<QueueEntry[]> {
-  const r = await fetch(`/api/issues?state=open`);
+export async function listOpenEvalIssues(
+  { fresh = false }: { fresh?: boolean } = {},
+): Promise<QueueEntry[]> {
+  // The default request shares a stable URL so Vercel's edge cache (s-maxage +
+  // stale-while-revalidate in api/issues.ts) can serve it without re-hitting
+  // GitHub. `fresh: true` bypasses both the browser and edge caches via a
+  // cache-buster + no-store — needed right after submitting a new issue, where
+  // a 30s-stale list would miss the just-created entry.
+  const url = fresh
+    ? `/api/issues?state=open&_=${Date.now()}`
+    : `/api/issues?state=open`;
+  const r = await fetch(url, fresh ? { cache: "no-store" } : undefined);
   if (!r.ok) {
     throw new Error(`Failed to load queue (${r.status}).`);
   }
