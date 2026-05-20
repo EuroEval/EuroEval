@@ -4,7 +4,7 @@ This script is meant to run on the compute server. For each open
 ``model evaluation request`` issue that is **not yet assigned** to anyone, it:
 
 1. Verifies that the requested model exists on the Hugging Face Hub.
-2. Assigns the issue to ``EUROEVAL_ASSIGNEE`` so the UI flips to "Evaluating".
+2. Assigns the issue to the GITHUB_TOKEN owner so the UI flips to "Evaluating".
 3. Runs ``euroeval`` for each requested language group.
 4. Posts the new ``euroeval_benchmark_results.jsonl`` lines as a comment on
    the issue, wrapped in a ``jsonl`` code fence so the local merge script
@@ -12,11 +12,10 @@ This script is meant to run on the compute server. For each open
 
 Required env vars
 -----------------
-GITHUB_TOKEN          A PAT with ``issues: write`` for the EuroEval repo,
-                      owned by the user named in ``EUROEVAL_ASSIGNEE``.
-EUROEVAL_ASSIGNEE     GitHub login that issues are assigned to while being
-                      evaluated. The PAT in ``GITHUB_TOKEN`` must belong to
-                      this user.
+GITHUB_TOKEN          A PAT with ``issues: write`` for the EuroEval repo.
+                      Issues are assigned to the PAT owner while being
+                      evaluated; the owner's login is resolved at startup
+                      via the ``/user`` endpoint.
 EUROEVAL_VM_ID        Optional identifier for this VM/host, written into a
                       hidden ``<!-- vm-id: ... -->`` marker on each issue
                       while it is being evaluated. Used to reclaim
@@ -32,6 +31,7 @@ EUROEVAL_RESULTS_PATH Optional override for the path to
 from __future__ import annotations
 
 import fcntl
+import getpass
 import importlib.metadata
 import json
 import logging
@@ -74,7 +74,7 @@ REPO = "EuroEval/EuroEval"
 LABEL = "model evaluation request"
 FAILED_LABEL = "evaluation-failed"
 TITLE_PREFIX = "[MODEL EVALUATION REQUEST]"
-ASSIGNEE = os.environ.get("EUROEVAL_ASSIGNEE", "")
+ASSIGNEE = ""
 VM_ID = os.environ.get("EUROEVAL_VM_ID", "")
 VM_ID_ENV_PATH = Path(os.environ.get("EUROEVAL_DOTENV_PATH", ".env"))
 RESULTS_PATH = Path(
@@ -190,19 +190,43 @@ def official_dataset_language_pairs() -> set[tuple[str, str]]:
     }
 
 
+def load_dotenv_into_environ() -> None:
+    """Populate ``os.environ`` from ``VM_ID_ENV_PATH`` for keys not already set.
+
+    Existing env vars win, so an explicit ``GITHUB_TOKEN=... python ...`` override
+    is honored. Malformed lines are ignored.
+    """
+    if not VM_ID_ENV_PATH.is_file():
+        return
+    try:
+        for raw_line in VM_ID_ENV_PATH.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip()
+            value = value.strip().strip("'\"")
+            if key and value and key not in os.environ:
+                os.environ[key] = value
+    except OSError as e:
+        logger.warning(f"Could not read {VM_ID_ENV_PATH}: {e}")
+
+
 def ensure_credentials() -> None:
     """Verify required env vars are set and the user is logged into HF, or exit."""
+    load_dotenv_into_environ()
     if not os.environ.get("GITHUB_TOKEN"):
-        logger.error(
-            f"GITHUB_TOKEN env var is required (a PAT with `issues: write` for {REPO})."
+        token = prompt_and_persist_env_var(
+            name="GITHUB_TOKEN",
+            prompt_text=(
+                f"GITHUB_TOKEN is required (a PAT with `issues: write` for {REPO}). "
+                "Enter token"
+            ),
+            secret=True,
         )
-        sys.exit(1)
-    if not ASSIGNEE:
-        logger.error(
-            "EUROEVAL_ASSIGNEE env var is required (GitHub login of the user "
-            "issues are assigned to while being evaluated)."
-        )
-        sys.exit(1)
+        os.environ["GITHUB_TOKEN"] = token
+    global ASSIGNEE
+    ASSIGNEE = resolve_assignee_from_token()
     global VM_ID
     if not VM_ID:
         VM_ID = resolve_vm_id()
@@ -215,6 +239,90 @@ def ensure_credentials() -> None:
             f"(or set HF_TOKEN) and re-run. Underlying error: {e}"
         )
         sys.exit(1)
+
+
+def resolve_assignee_from_token() -> str:
+    """Return the GitHub login of the ``GITHUB_TOKEN`` owner, or exit on failure."""
+    try:
+        user = gh_request(path="/user")
+    except urllib.error.HTTPError as e:
+        logger.error(f"Could not resolve GITHUB_TOKEN owner via /user: {e}")
+        sys.exit(1)
+    if not isinstance(user, dict) or not user.get("login"):
+        logger.error("GITHUB_TOKEN /user response did not include a login.")
+        sys.exit(1)
+    return str(user["login"])
+
+
+def prompt_and_persist_env_var(
+    name: str, prompt_text: str, secret: bool = False
+) -> str:
+    """Interactively prompt for an env var value and persist it to ``VM_ID_ENV_PATH``.
+
+    Args:
+        name:
+            The env var name to set and persist.
+        prompt_text:
+            Text shown to the user before the input prompt.
+        secret:
+            When True, read the value via ``getpass`` so the input is not echoed.
+
+    Returns:
+        The non-empty value entered by the user.
+    """
+    if not sys.stdin.isatty():
+        logger.error(
+            f"{name} env var is required but stdin is not a TTY; cannot prompt. "
+            "Set it in the environment or in the .env file and re-run."
+        )
+        sys.exit(1)
+    if secret:
+        reader = lambda: getpass.getpass(f"{prompt_text}: ")  # noqa: E731
+    else:
+        reader = lambda: input(f"{prompt_text}: ").strip()  # noqa: E731
+    value = ""
+    while not value:
+        try:
+            value = reader().strip()
+        except (EOFError, KeyboardInterrupt):
+            logger.error(f"Aborted while reading {name}.")
+            sys.exit(1)
+        if not value:
+            print("Value cannot be empty; please try again.", file=sys.stderr)
+    persist_env_var(name=name, value=value)
+    return value
+
+
+def persist_env_var(name: str, value: str) -> None:
+    """Write ``NAME=VALUE`` to ``VM_ID_ENV_PATH``, replacing any prior entry.
+
+    Args:
+        name:
+            The env var name to persist.
+        value:
+            The value to associate with ``name``.
+    """
+    try:
+        existing = ""
+        if VM_ID_ENV_PATH.is_file():
+            existing = VM_ID_ENV_PATH.read_text(encoding="utf-8")
+        lines = existing.splitlines()
+        replaced = False
+        for i, raw_line in enumerate(lines):
+            stripped = raw_line.strip()
+            if not stripped or stripped.startswith("#") or "=" not in stripped:
+                continue
+            key, _, _ = stripped.partition("=")
+            if key.strip() == name:
+                lines[i] = f"{name}={value}"
+                replaced = True
+                break
+        if not replaced:
+            lines.append(f"{name}={value}")
+        VM_ID_ENV_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        logger.info(f"Saved {name} to {VM_ID_ENV_PATH}.")
+    except OSError as e:
+        logger.warning(f"Could not persist {name} to {VM_ID_ENV_PATH}: {e}")
 
 
 def resolve_vm_id() -> str:
