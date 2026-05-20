@@ -168,38 +168,6 @@ const downloadCsv = async () => {
       >
         {{ t.label }}
       </button>
-      <div class="lb-actions">
-      <button
-        v-if="tab === 'generative' || tab === 'all_models'"
-        class="lb-download"
-        type="button"
-        :disabled="downloading"
-        :title="`Download ${activeStem}.csv`"
-        @click="downloadCsv"
-      >
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M8 1.5a.75.75 0 0 1 .75.75v6.69l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V2.25A.75.75 0 0 1 8 1.5zM2.75 12a.75.75 0 0 1 .75.75v1.25c0 .14.11.25.25.25h8.5c.14 0 .25-.11.25-.25v-1.25a.75.75 0 1 1 1.5 0v1.25c0 .97-.78 1.75-1.75 1.75h-8.5A1.75 1.75 0 0 1 2 14V12.75A.75.75 0 0 1 2.75 12z"
-          />
-        </svg>
-        {{ downloading ? "Downloading…" : "Download CSV" }}
-      </button>
-      <button
-        class="lb-embed"
-        type="button"
-        title="Embed this leaderboard on another site"
-        @click="embedOpen = true"
-      >
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-          <path
-            fill="currentColor"
-            d="M4.78 5.22a.75.75 0 0 1 0 1.06L3.06 8l1.72 1.72a.75.75 0 1 1-1.06 1.06L1.47 8.53a.75.75 0 0 1 0-1.06L3.72 5.22a.75.75 0 0 1 1.06 0zm6.44 0a.75.75 0 0 1 1.06 0l2.25 2.25a.75.75 0 0 1 0 1.06l-2.25 2.25a.75.75 0 1 1-1.06-1.06L12.94 8l-1.72-1.72a.75.75 0 0 1 0-1.06zM9.55 2.04a.75.75 0 0 1 .41.98l-3 8a.75.75 0 1 1-1.4-.53l3-8a.75.75 0 0 1 .99-.45z"
-          />
-        </svg>
-        Embed
-      </button>
-      </div>
     </nav>
 
     <div v-if="embedOpen" class="embed-modal" @click.self="embedOpen = false">
@@ -235,6 +203,37 @@ const downloadCsv = async () => {
     <div v-else-if="error" class="lb-status error">{{ error }}</div>
     <template v-else>
       <template v-if="tab === 'generative' || tab === 'all_models'">
+        <div class="lb-actions">
+          <button
+            class="lb-download"
+            type="button"
+            :disabled="downloading"
+            :title="`Download ${activeStem}.csv`"
+            @click="downloadCsv"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M8 1.5a.75.75 0 0 1 .75.75v6.69l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V2.25A.75.75 0 0 1 8 1.5zM2.75 12a.75.75 0 0 1 .75.75v1.25c0 .14.11.25.25.25h8.5c.14 0 .25-.11.25-.25v-1.25a.75.75 0 1 1 1.5 0v1.25c0 .97-.78 1.75-1.75 1.75h-8.5A1.75 1.75 0 0 1 2 14V12.75A.75.75 0 0 1 2.75 12z"
+              />
+            </svg>
+            {{ downloading ? "Downloading…" : "Download CSV" }}
+          </button>
+          <button
+            class="lb-embed"
+            type="button"
+            title="Embed this leaderboard on another site"
+            @click="embedOpen = true"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M4.78 5.22a.75.75 0 0 1 0 1.06L3.06 8l1.72 1.72a.75.75 0 1 1-1.06 1.06L1.47 8.53a.75.75 0 0 1 0-1.06L3.72 5.22a.75.75 0 0 1 1.06 0zm6.44 0a.75.75 0 0 1 1.06 0l2.25 2.25a.75.75 0 0 1 0 1.06l-2.25 2.25a.75.75 0 1 1-1.06-1.06L12.94 8l-1.72-1.72a.75.75 0 0 1 0-1.06zM9.55 2.04a.75.75 0 0 1 .41.98l-3 8a.75.75 0 1 1-1.4-.53l3-8a.75.75 0 0 1 .99-.45z"
+              />
+            </svg>
+            Embed
+          </button>
+        </div>
         <LeaderboardTable
           v-if="activeTable"
           :table="activeTable"
@@ -358,11 +357,11 @@ const downloadCsv = async () => {
 }
 
 .lb-actions {
-  margin-left: auto;
-  display: inline-flex;
+  display: flex;
+  justify-content: flex-end;
   align-items: center;
   gap: 0.4rem;
-  align-self: center;
+  margin-top: 0.5rem;
 }
 
 .lb-embed svg {
