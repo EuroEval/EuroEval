@@ -306,22 +306,17 @@ def diff_issue(old_body: str, new_models: list[CoreModel]) -> IssueDiff:
     return IssueDiff(added=added, removed=removed, flag_changes=flag_changes)
 
 
-def render_diff_comment(diff: IssueDiff, run_date: dt.date) -> str:
+def render_diff_comment(diff: IssueDiff) -> str:
     """Render the diff as a GitHub issue comment.
 
     Args:
         diff:
             The change set.
-        run_date:
-            Date the updater ran.
 
     Returns:
         Markdown text for the comment body.
     """
-    parts = [
-        f"_Core model list refreshed on {run_date.isoformat()} by "
-        "`scripts/update_core_models.py`._\n"
-    ]
+    parts = ["Here are some updates to the core model list:\n"]
     if diff.is_empty:
         parts.append("No changes since the previous run.")
         return "\n".join(parts)
@@ -493,7 +488,7 @@ def main(dry_run: bool) -> None:
         sys.exit(1)
 
     diff = diff_issue(old_body=old_body, new_models=models)
-    comment = render_diff_comment(diff=diff, run_date=today)
+    comment = render_diff_comment(diff=diff)
 
     if dry_run:
         click.echo("=== NEW ISSUE BODY ===")
