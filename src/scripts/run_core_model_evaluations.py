@@ -45,17 +45,18 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import click
-from yaml import safe_load
+from update_core_models import refresh_core_models
 
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
+from leaderboards.core_models import CoreModel
 from leaderboards.evaluation_common import (
     gpu_total_memory_bytes,
     model_fits_locally,
     official_dataset_language_pairs,
     run_euroeval,
 )
-from leaderboards.paths import CORE_MODELS_CONFIG, NEW_RESULTS_PATH, RESULTS_PATH
+from leaderboards.paths import NEW_RESULTS_PATH, RESULTS_PATH
 from leaderboards.result_loading import convert_to_old_format
 
 logging.basicConfig(
@@ -139,8 +140,8 @@ def main(
     if target_datasets:
         logger.info(f"Target dataset(s): {', '.join(target_datasets)}.")
 
-    models = load_core_models()
-    logger.info(f"Loaded {len(models)} core model entries.")
+    models = refresh_core_models()
+    logger.info(f"Refreshed core-model list: {len(models)} entries.")
 
     selected_providers = select_api_providers(
         candidate_models=models,
@@ -181,15 +182,6 @@ def main(
 
 
 @dataclass(frozen=True)
-class CoreModelEntry:
-    """A parsed entry from the ``models:`` list in ``core_models.yaml``."""
-
-    model_id: str
-    is_api: bool
-    pareto_languages: tuple[str, ...]
-
-
-@dataclass(frozen=True)
 class Job:
     """A single (model, dataset, languages) evaluation job."""
 
@@ -208,28 +200,8 @@ class _Provider:
     matches: c.Callable[[str], bool]
 
 
-def load_core_models() -> list[CoreModelEntry]:
-    """Parse ``core_models.yaml`` and return the model list.
-
-    Returns:
-        Every entry from the ``models:`` list, preserving file order.
-    """
-    with CORE_MODELS_CONFIG.open("r", encoding="utf-8") as f:
-        config = safe_load(f)
-    entries: list[CoreModelEntry] = []
-    for raw in config.get("models", []):
-        entries.append(
-            CoreModelEntry(
-                model_id=str(raw["id"]),
-                is_api=bool(raw.get("api", False)),
-                pareto_languages=tuple(raw.get("pareto_languages") or []),
-            )
-        )
-    return entries
-
-
 def select_api_providers(
-    candidate_models: c.Iterable[CoreModelEntry],
+    candidate_models: c.Iterable[CoreModel],
     include_api: bool,
     api_providers_arg: str | None,
 ) -> set[str]:
@@ -256,7 +228,7 @@ def select_api_providers(
     if not include_api:
         return set()
 
-    has_any_api = any(m.is_api for m in candidate_models)
+    has_any_api = any(m.api for m in candidate_models)
     if not has_any_api:
         logger.info("No API models in the candidate set; ignoring --include-api.")
         return set()
@@ -364,7 +336,7 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
 
 
 def build_jobs(
-    models: list[CoreModelEntry],
+    models: list[CoreModel],
     target_datasets: list[str] | None,
     selected_providers: set[str],
     observations: set[tuple[str, str, str]],
@@ -403,7 +375,7 @@ def build_jobs(
         }
 
     for model in models:
-        if model.is_api:
+        if model.api:
             provider = provider_for_model_id(model_id=model.model_id)
             if provider is None or provider.name not in selected_providers:
                 continue
@@ -432,7 +404,7 @@ def build_jobs(
                         model_id=model.model_id,
                         dataset=dataset,
                         languages=tuple(langs),
-                        is_api=model.is_api,
+                        is_api=model.api,
                     )
                 )
             continue
@@ -454,7 +426,7 @@ def build_jobs(
                     model_id=model.model_id,
                     dataset=dataset,
                     languages=tuple(langs),
-                    is_api=model.is_api,
+                    is_api=model.api,
                 )
             )
     return jobs
@@ -532,7 +504,7 @@ def execute_jobs(jobs: list[Job]) -> None:
             )
 
 
-def codes_for_model(model: CoreModelEntry) -> set[str]:
+def codes_for_model(model: CoreModel) -> set[str]:
     """Return the ISO codes a model should be evaluated on.
 
     API models cover every known language. Open-weight models cover the
@@ -549,7 +521,7 @@ def codes_for_model(model: CoreModelEntry) -> set[str]:
     Returns:
         The ISO codes the model should be evaluated on.
     """
-    if model.is_api or not model.pareto_languages:
+    if model.api or not model.pareto_languages:
         return all_known_language_codes()
     codes: set[str] = set()
     for name in model.pareto_languages:
