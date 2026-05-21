@@ -112,26 +112,30 @@ class CoreModel:
 
 
 _ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
+# Strips trailing ``(zero-shot)``, ``(val)``, ``(zero-shot, val)`` etc.
+# annotations that `extract_model_ids_from_record` appends to variants.
+_VARIANT_SUFFIX_RE = re.compile(r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$")
 
 
 def _plain_model_id(model_id: str) -> str:
-    """Strip the HTML anchor wrapping that result records use.
+    """Strip the HTML anchor and variant-suffix from a result-record model id.
 
-    Model identifiers in processed records look like
-    ``<a href='https://hf.co/org/repo'>org/repo</a>`` (occasionally with
-    a trailing ``(zero-shot, val)`` etc. annotation). For regex matching,
-    YAML output, and the GitHub issue we want the plain ``org/repo``
-    slug.
+    Records label few-shot vs zero-shot and test vs validation by appending
+    ``(zero-shot)`` / ``(val)`` / ``(zero-shot, val)`` to the model id.
+    For the core-model list we collapse all those variants down to the
+    canonical ``org/repo`` slug — we don't want to list the same model
+    several times.
 
     Args:
         model_id:
-            The (possibly anchored) model identifier.
+            The (possibly anchored, possibly variant-suffixed) identifier.
 
     Returns:
-        The inner plain-text identifier.
+        The canonical ``org/repo`` slug.
     """
     m = _ANCHOR_RE.search(model_id)
-    return m.group("inner").strip() if m else model_id
+    inner = m.group("inner").strip() if m else model_id
+    return _VARIANT_SUFFIX_RE.sub("", inner)
 
 
 def _classify_model(model_id: str, metadata: dict) -> ModelType:
