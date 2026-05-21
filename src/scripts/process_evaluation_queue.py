@@ -44,10 +44,12 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from functools import cache
 from pathlib import Path
 
 from huggingface_hub import HfApi
 from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
+from yaml import safe_load
 
 from euroeval.data_models import BenchmarkResult
 from leaderboards.evaluation_common import (
@@ -58,6 +60,7 @@ from leaderboards.evaluation_common import (
     official_dataset_language_pairs,
     run_euroeval,
 )
+from leaderboards.paths import CORE_MODELS_CONFIG
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -731,7 +734,10 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     assign_issue(number=number)
 
     before = set(read_jsonl_lines(path=RESULTS_PATH))
-    returncode, output = run_euroeval(model_id=model_id, languages=languages)
+    is_core = model_id in load_core_model_ids()
+    returncode, output = run_euroeval(
+        model_id=model_id, languages=languages, evaluate_test_split=is_core
+    )
     after = read_jsonl_lines(path=RESULTS_PATH)
     new_lines = [line for line in after if line not in before]
 
@@ -1174,6 +1180,31 @@ def _fetch_issue_body(number: int) -> str:
     if isinstance(current, dict):
         return current.get("body") or ""
     return ""
+
+
+@cache
+def load_core_model_ids() -> frozenset[str]:
+    """Return the set of model ids listed as core models in ``core_models.yaml``.
+
+    Core models are evaluated on the test split; every other model is run on
+    the validation split.
+    """
+    try:
+        with CORE_MODELS_CONFIG.open("r", encoding="utf-8") as f:
+            config = safe_load(f)
+    except OSError as e:
+        logger.warning(f"Could not read {CORE_MODELS_CONFIG}: {e}")
+        return frozenset()
+    if not isinstance(config, dict):
+        return frozenset()
+    models = config.get("models") or []
+    ids: set[str] = set()
+    for entry in models:
+        if isinstance(entry, dict):
+            model_id = entry.get("id")
+            if isinstance(model_id, str) and model_id:
+                ids.add(model_id)
+    return frozenset(ids)
 
 
 def euroeval_version() -> str:
