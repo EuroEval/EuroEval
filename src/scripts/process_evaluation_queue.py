@@ -36,34 +36,28 @@ import importlib.metadata
 import json
 import logging
 import os
-import pty
 import re
-import select
 import socket
-import subprocess
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
-from functools import lru_cache
 from pathlib import Path
 
-import psutil
-import torch
-from huggingface_hub import HfApi, get_safetensors_metadata, get_token
-from huggingface_hub.errors import (
-    GatedRepoError,
-    HfHubHTTPError,
-    NotASafetensorsRepoError,
-    RepositoryNotFoundError,
-    SafetensorsParsingError,
-)
+from huggingface_hub import HfApi
+from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 
 from euroeval.data_models import BenchmarkResult
-from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.string_utils import split_model_id
+from leaderboards.evaluation_common import (
+    GPU_FIT_OVERHEAD,
+    LANGUAGE_GROUP_CODES,
+    estimated_model_bytes,
+    gpu_total_memory_bytes,
+    official_dataset_language_pairs,
+    run_euroeval,
+)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -96,16 +90,6 @@ HF_CACHE_PATH = Path(
 )
 HF_CACHE_TTL_SECONDS = 6 * 60 * 60
 
-_BALTIC = "Baltic languages (Latvian, Lithuanian)"
-_FINNIC = "Finnic languages (Estonian, Finnish)"
-_ROMANCE = "Romance languages (Catalan, French, Italian, Portuguese, Romanian, Spanish)"
-_SCANDI = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)"
-_SLAVIC = (
-    "Slavic languages (Belarusian, Bulgarian, Bosnian, Croatian, Czech, Polish,"
-    " Serbian, Slovak, Slovenian, Ukrainian)"
-)
-_WGERMANIC = "West Germanic languages (Dutch, English, German)"
-
 # Matches the "Model ID" section in an issue body (the form template renders
 # the model id as the line immediately following a "### Model ID" heading).
 MODEL_ID_BODY_RE = re.compile(r"(?:^|\n)#{1,6}\s*Model ID\s*\n+([^\n]+)")
@@ -133,62 +117,6 @@ ERRORED_BENCHMARKS_RE = re.compile(r"errored\s+(\d+)\s+benchmarks?", re.IGNORECA
 # and the subprocess lacks the necessary HF token / accepted access terms.
 # We treat this as "gated, please grant access" rather than as a code error.
 GATED_OUTPUT_RE = re.compile(r"is a gated repository", re.IGNORECASE)
-# Bytes-per-parameter for each safetensors dtype string. Used to compute the
-# weight footprint of a model from its safetensors header before deciding
-# whether it can fit on the local GPU.
-DTYPE_BYTES: dict[str, int] = {
-    "F64": 8,
-    "I64": 8,
-    "U64": 8,
-    "F32": 4,
-    "I32": 4,
-    "U32": 4,
-    "F16": 2,
-    "BF16": 2,
-    "I16": 2,
-    "U16": 2,
-    "F8_E4M3": 1,
-    "F8_E5M2": 1,
-    "I8": 1,
-    "U8": 1,
-    "BOOL": 1,
-}
-
-# Multiplier applied to weight bytes to leave room for activations, KV cache,
-# and framework overhead when judging whether a model fits in GPU memory.
-GPU_FIT_OVERHEAD = 1.2
-
-
-LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
-    _BALTIC: ["lv", "lt"],
-    _FINNIC: ["et", "fi"],
-    _ROMANCE: ["ca", "fr", "it", "pt", "ro", "es"],
-    _SCANDI: ["da", "fo", "is", "no", "sv"],
-    _SLAVIC: ["be", "bg", "bs", "hr", "cs", "pl", "sr", "sk", "sl", "uk"],
-    _WGERMANIC: ["nl", "en", "de"],
-    "Albanian": ["sq"],
-    "Greek": ["el"],
-    "Hungarian": ["hu"],
-}
-
-
-@lru_cache(maxsize=1)
-def official_dataset_language_pairs() -> set[tuple[str, str]]:
-    """Return all official dataset/language pairs used by EuroEval."""
-    all_dataset_configs = get_all_dataset_configs(
-        custom_datasets_file=Path(""),
-        dataset_ids=[],
-        api_key=None,
-        cache_dir=Path(".cache"),
-        trust_remote_code=False,
-        run_with_cli=False,
-    )
-    return {
-        (dataset_config.name, language.code)
-        for dataset_config in all_dataset_configs.values()
-        if not dataset_config.unofficial
-        for language in dataset_config.languages
-    }
 
 
 def load_dotenv_into_environ() -> None:
@@ -756,102 +684,6 @@ def cached_model_summary(model_id: str) -> dict | None:
     return {"param_count": param_count, "gated": False, "gated_repo": gated_repo}
 
 
-def gpu_total_memory_bytes() -> int | None:
-    """Return the total memory available for model weights on this host, in bytes.
-
-    Honors the ``EUROEVAL_GPU_MEMORY_BYTES`` env var for overrides (useful in
-    tests). Otherwise mirrors ``alexandra_llm_inference.memory_utils``: when
-    CUDA is available and the host is not flagged as ``UNIFIED_MEMORY=1``,
-    report the largest CUDA device's total memory; otherwise (CPU-only host,
-    or unified-memory boxes like DGX Spark whose Grace-Blackwell pool is not
-    exposed via ``nvidia-smi --query-gpu=memory.total``) report total system
-    RAM via ``psutil``.
-
-    Returns:
-        The total memory in bytes, or None if the override is unparseable.
-    """
-    override = os.environ.get("EUROEVAL_GPU_MEMORY_BYTES")
-    if override:
-        try:
-            return int(override)
-        except ValueError:
-            logger.warning(f"Ignoring invalid EUROEVAL_GPU_MEMORY_BYTES={override!r}.")
-
-    unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
-    if torch.cuda.is_available() and not unified:
-        sizes = [
-            torch.cuda.get_device_properties(i).total_memory
-            for i in range(torch.cuda.device_count())
-        ]
-        if sizes:
-            return max(sizes)
-    return int(psutil.virtual_memory().total)
-
-
-def estimated_model_bytes(model_id: str) -> int | None:
-    """Estimate the weight footprint of a model in bytes.
-
-    Reads the safetensors header(s) so that quantised checkpoints (int8, fp8,
-    int4) are sized correctly rather than assumed to be fp16/bf16.
-
-    Args:
-        model_id:
-            The Hugging Face repo id, optionally suffixed with ``@<revision>``.
-
-    Returns:
-        The total weight bytes across all tensors, or None when the repo is
-        not a safetensors repo or the metadata cannot be parsed.
-    """
-    components = split_model_id(model_id=model_id)
-    repo = components.model_id
-    revision = components.revision
-    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
-    try:
-        meta = get_safetensors_metadata(repo_id=repo, revision=revision, token=token)
-    except (
-        NotASafetensorsRepoError,
-        SafetensorsParsingError,
-        RepositoryNotFoundError,
-        GatedRepoError,
-        HfHubHTTPError,
-    ) as e:
-        logger.debug(f"safetensors metadata unavailable for {model_id}: {e}")
-        return None
-
-    total = 0
-    for dtype, count in meta.parameter_count.items():
-        dtype_bits = _dtype_bits(dtype=dtype)
-        if dtype_bits is None:
-            logger.debug(
-                f"Unknown safetensors dtype {dtype!r} for {model_id}; "
-                "assuming 2 bytes/param."
-            )
-            dtype_bits = 16
-        total += (count * dtype_bits + 7) // 8
-    return total
-
-
-def _dtype_bits(dtype: str) -> int | None:
-    """Infer the number of bits used by a safetensors dtype string.
-
-    Args:
-        dtype:
-            The safetensors dtype string.
-
-    Returns:
-        The bit-width, or None when it cannot be inferred.
-    """
-    normalized_dtype = dtype.upper()
-    if normalized_dtype in DTYPE_BYTES:
-        return DTYPE_BYTES[normalized_dtype] * 8
-
-    for match in re.findall(pattern=r"\d+", string=normalized_dtype):
-        bits = int(match)
-        if bits > 0:
-            return bits
-    return None
-
-
 def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     """Claim, evaluate, and report back on a single queue issue.
 
@@ -1131,114 +963,6 @@ def read_jsonl_lines(path: Path) -> list[str]:
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
-
-
-def resolve_hf_token() -> str | None:
-    """Return the HF token from env or the ``hf auth login`` cache.
-
-    The queue script's parent process is authenticated via ``HfApi().whoami()``
-    in :func:`ensure_credentials`, so a token is reachable somewhere -- but
-    the euroeval subprocess only picks it up if ``HF_TOKEN`` /
-    ``HUGGINGFACE_API_KEY`` are set in its env, not from the cached login
-    file. Resolve it here so the caller can inject it into the subprocess.
-
-    Returns:
-        The token string, or None if neither env nor cache yields one.
-    """
-    return (
-        os.environ.get("HF_TOKEN")
-        or os.environ.get("HUGGINGFACE_API_KEY")
-        or get_token()
-    )
-
-
-def run_euroeval(model_id: str, languages: list[str]) -> tuple[int, str]:
-    """Run the euroeval CLI for the given model and language list.
-
-    Output is streamed live to stderr (so the operator can follow progress on
-    long evaluations) while also being captured for post-run inspection.
-
-    Args:
-        model_id:
-            The Hugging Face model id to evaluate.
-        languages:
-            ISO codes of the languages to pass via ``--language``.
-
-    Returns:
-        A ``(returncode, combined_output)`` pair. The output combines stdout
-        and stderr in interleaved order. A returncode of 127 signals that the
-        CLI was not found on PATH.
-    """
-    cmd = [
-        "euroeval",
-        "--model",
-        model_id,
-        "--clear-model-cache",
-        "--trust-remote-code",
-        "--evaluate-test-split",
-    ]
-    for lang in languages:
-        cmd += ["--language", lang]
-    logger.info(f"Running: {' '.join(cmd)}")
-
-    env = os.environ.copy()
-    env["FULL_LOG"] = "1"
-    token = resolve_hf_token()
-    if token:
-        env.setdefault("HF_TOKEN", token)
-        env.setdefault("HUGGINGFACE_API_KEY", token)
-
-    # Run euroeval under a pty so it sees a real terminal and renders
-    # carriage-return progress bars in place instead of as individual lines.
-    master_fd, slave_fd = pty.openpty()
-    try:
-        proc = subprocess.Popen(  # noqa: S603
-            cmd,
-            stdin=slave_fd,
-            stdout=slave_fd,
-            stderr=slave_fd,
-            close_fds=True,
-            env=env,
-        )
-    except FileNotFoundError:
-        os.close(master_fd)
-        os.close(slave_fd)
-        logger.error("`euroeval` CLI not found on PATH. Is it installed?")
-        return 127, "`euroeval` CLI not found on PATH."
-    os.close(slave_fd)
-
-    captured: list[bytes] = []
-    try:
-        while True:
-            ready, _, _ = select.select([master_fd], [], [], 0.1)
-            if ready:
-                try:
-                    chunk = os.read(master_fd, 4096)
-                except OSError:
-                    break
-                if not chunk:
-                    break
-                sys.stderr.buffer.write(chunk)
-                sys.stderr.buffer.flush()
-                captured.append(chunk)
-            elif proc.poll() is not None:
-                # Drain any final output the child wrote just before exiting.
-                try:
-                    while True:
-                        chunk = os.read(master_fd, 4096)
-                        if not chunk:
-                            break
-                        sys.stderr.buffer.write(chunk)
-                        sys.stderr.buffer.flush()
-                        captured.append(chunk)
-                except OSError:
-                    pass
-                break
-    finally:
-        os.close(master_fd)
-    proc.wait()
-    output = b"".join(captured).decode("utf-8", errors="replace")
-    return proc.returncode, output
 
 
 def num_errored_benchmarks(output: str) -> int:

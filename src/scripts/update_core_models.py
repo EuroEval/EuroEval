@@ -524,6 +524,25 @@ def main(dry_run: bool) -> None:
         dry_run:
             Print outputs instead of writing them.
     """
+    refresh_core_models(dry_run=dry_run)
+
+
+def refresh_core_models(dry_run: bool = False) -> list[CoreModel]:
+    """Rebuild the core-model list, update the YAML, and sync issue #1186.
+
+    Equivalent to invoking this script as a CLI, but callable in-process
+    so other tools (e.g. ``run_core_model_evaluations.py``) can ensure
+    the YAML and the GitHub issue are fresh before running downstream
+    work.
+
+    Args:
+        dry_run (optional):
+            When True, print the would-be issue body / diff comment and
+            skip the YAML and GitHub writes. Defaults to False.
+
+    Returns:
+        The freshly-built core-model list, regardless of ``dry_run``.
+    """
     with CORE_MODELS_CONFIG.open("r") as f:
         config = safe_load(f)
     issue_number = int(config["issue_number"])
@@ -546,13 +565,13 @@ def main(dry_run: bool) -> None:
 
     token = os.environ.get("GITHUB_TOKEN")
     if not token:
-        logger.warning("GITHUB_TOKEN not set — skipping GitHub update.")
+        logger.warning("GITHUB_TOKEN not set -- skipping GitHub update.")
         if dry_run:
             click.echo(new_body)
-        if not dry_run:
+        else:
             _write_yaml(CORE_MODELS_CONFIG, today, models)
             logger.info(f"Wrote {CORE_MODELS_CONFIG}.")
-        return
+        return models
 
     try:
         old_body = _get_issue_body(issue_number=issue_number, token=token)
@@ -568,7 +587,7 @@ def main(dry_run: bool) -> None:
         click.echo(new_body)
         click.echo("=== DIFF COMMENT ===")
         click.echo(comment)
-        return
+        return models
 
     if new_body.strip() != old_body.strip():
         _update_issue_body(issue_number=issue_number, body=new_body, token=token)
@@ -586,6 +605,7 @@ def main(dry_run: bool) -> None:
 
     _write_yaml(CORE_MODELS_CONFIG, today, models)
     logger.info(f"Wrote {CORE_MODELS_CONFIG}.")
+    return models
 
 
 if __name__ == "__main__":
