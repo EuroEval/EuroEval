@@ -12,7 +12,7 @@ module derives a maintained 'core' set: the union of three sources.
      language is included; the languages it qualifies in are recorded.
   2. EU-built models. Hardcoded regex list in `core_models.yaml`, seeded
      from issue #1186 (orgs like utter-project/, PleIAs/, EuroBERT/,
-     LiquidAI/, occiglot/, swiss-ai/, mistralai/, …).
+     LiquidAI/, occiglot/, swiss-ai/, mistralai/, ...).
   3. Top-10 'truly open' models from osai-index.eu (filters: text,
      basemodel weights / training code / data sources all open). The
      site is a Nuxt SPA and exposes the database via a JS bundle; we
@@ -28,12 +28,12 @@ issue and writes the same list back into `core_models.yaml` (alongside
 
 from __future__ import annotations
 
+import collections.abc as c
 import dataclasses
 import enum
 import logging
 import math
 import re
-import typing as t
 import urllib.error
 import urllib.request
 from collections import defaultdict
@@ -252,7 +252,7 @@ def _params_from_model_id(model_id: str) -> float:
     HF metadata) reach the core-model list with NaN parameters, which
     would otherwise default them to the ``xlarge`` bucket. When the id
     itself encodes the size (``EuroLLM-22B``, ``Ministral-3-14B``,
-    ``SmolLM2-135M``, …), use that as a fallback.
+    ``SmolLM2-135M``, ...), use that as a fallback.
 
     Args:
         model_id:
@@ -387,7 +387,7 @@ def _pareto_languages_per_model(
 # ---------------------------------------------------------------------------
 
 
-def eu_models(model_ids: t.Iterable[str], eu_patterns: list[str]) -> set[str]:
+def eu_models(model_ids: c.Iterable[str], eu_patterns: list[str]) -> set[str]:
     """Return the subset of `model_ids` matched by an EU-org regex.
 
     Args:
@@ -446,8 +446,8 @@ def _fetch(url: str, timeout: float = 20.0) -> str:
     Args:
         url:
             The URL to fetch.
-        timeout:
-            Socket timeout in seconds.
+        timeout (optional):
+            Socket timeout in seconds. Defaults to 20.0.
 
     Returns:
         The response body as text.
@@ -510,8 +510,8 @@ def _osai_bundle() -> str | None:
 
 
 # Matches the start of each model entry in the bundle. Each model is a JS
-# object literal opening with `system:{name:"…",link:"…",type:"…",…,
-# endmodelname:"…",…}`. The openness-criteria fields follow that block.
+# object literal opening with `system:{name:"...",link:"...",type:"...",...,
+# endmodelname:"...",...}`. The openness-criteria fields follow that block.
 _OSAI_SYSTEM_RE = re.compile(
     r"system:\{"
     r"name:\"(?P<name>[^\"]+)\","
@@ -521,7 +521,7 @@ _OSAI_SYSTEM_RE = re.compile(
     r"basemodelname:\"[^\"]+\","
     r"endmodelname:\"(?P<endmodelname>[^\"]+)\""
 )
-# Matches one openness criterion declaration: <field>:{class:"<cls>"…
+# Matches one openness criterion declaration: <field>:{class:"<cls>"...
 _OSAI_FIELD_RE = re.compile(r"(\w+):\{class:\"(open|closed|partial)\"")
 # Within an openness block, the link can be a single string or a JSON array
 # of strings. We extract the first HF URL we find (string-form).
@@ -538,7 +538,7 @@ _OSAI_WEIGHTS_BLOCK_RE = re.compile(
 def _parse_osai_models(bundle: str) -> list[dict]:
     """Parse model entries out of an OSAI JS bundle.
 
-    Each model entry begins with a `system:{…}` block and is followed by
+    Each model entry begins with a `system:{...}` block and is followed by
     openness-criteria fields. We slice the bundle on `system:{name:` to
     delimit entries, parse each slice, and stop at the next `system:{`
     (or end of bundle).
@@ -630,11 +630,11 @@ def osai_top_models(
     deterministic.
 
     Args:
-        limit:
-            Number of top models to return.
-        overrides:
+        limit (optional):
+            Number of top models to return. Defaults to 10.
+        overrides (optional):
             Fallback list of `org/repo` model IDs in rank order, used
-            verbatim when the scrape fails.
+            verbatim when the scrape fails. Defaults to None.
 
     Returns:
         List of `(model_id, rank)` pairs in 1-based rank order. Empty
@@ -701,7 +701,7 @@ def _overrides_to_ranked(
             Max length of the returned list.
 
     Returns:
-        `[(model_id, rank), …]` up to `limit` entries.
+        `[(model_id, rank), ...]` up to `limit` entries.
     """
     if not overrides:
         return []
@@ -724,14 +724,14 @@ def build_core_model_list(
     Args:
         eu_patterns:
             Regex patterns for EU-built models (from `core_models.yaml`).
-        api_model_ids:
+        api_model_ids (optional):
             Hardcoded list of litellm-style API model identifiers from
             `core_models.yaml::api_models`. Always emitted with the 👾
-            flag and "All languages".
-        osai_overrides:
-            Override list used when the OSAI scrape fails.
-        osai_limit:
-            How many OSAI top models to keep.
+            flag and "All languages". Defaults to None.
+        osai_overrides (optional):
+            Override list used when the OSAI scrape fails. Defaults to None.
+        osai_limit (optional):
+            How many OSAI top models to keep. Defaults to 10.
 
     Returns:
         Sorted list of `CoreModel` records.
@@ -773,7 +773,7 @@ def build_core_model_list(
         ranks=ranks, metadata=metadata, model_types=model_types, languages=language_list
     )
 
-    # Collapse anchored variants ("X (zero-shot)", "X (zero-shot, val)", …)
+    # Collapse anchored variants ("X (zero-shot)", "X (zero-shot, val)", ...)
     # down to the plain `org/repo` slug. The Pareto languages and metadata
     # for the plain id are the union/best of its variants.
     by_plain: dict[str, list[str]] = defaultdict(list)

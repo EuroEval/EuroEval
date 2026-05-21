@@ -398,7 +398,7 @@ def render_diff_comment(diff: IssueDiff) -> str:
     if diff.flag_changes:
         parts.append("\n**Flag changes** (" + str(len(diff.flag_changes)) + "):\n")
         for mid, old, new in diff.flag_changes:
-            parts.append(f"- {mid}: `{old or '∅'}` → `{new or '∅'}`")
+            parts.append(f"- {mid}: `{old or '(none)'}` -> `{new or '(none)'}`")
     return "\n".join(parts)
 
 
@@ -532,7 +532,7 @@ def main(dry_run: bool) -> None:
     api_model_ids = list(config.get("api_models") or [])
     logger.info(f"Issue: https://github.com/{REPO}/issues/{issue_number}")
 
-    logger.info("Building core model list…")
+    logger.info("Building core model list...")
     models = build_core_model_list(
         eu_patterns=eu_patterns,
         api_model_ids=api_model_ids,
