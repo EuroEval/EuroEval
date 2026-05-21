@@ -1,0 +1,330 @@
+"""Shared helpers for the queue processor and the core-model runner.
+
+Both ``process_evaluation_queue.py`` and ``run_core_model_evaluations.py``
+need to:
+
+* invoke the ``euroeval`` CLI with the same pty-streamed/captured stdout,
+* size-check open-weight models against the local GPU/RAM budget,
+* enumerate the official ``(dataset, language)`` pairs, and
+* resolve a HuggingFace token for the subprocess env.
+
+This module is the single home for that code so the two scripts stay in
+sync.
+"""
+
+from __future__ import annotations
+
+import collections.abc as c
+import logging
+import os
+import pty
+import re
+import select
+import subprocess
+import sys
+from functools import lru_cache
+from pathlib import Path
+
+import psutil
+import torch
+from huggingface_hub import get_safetensors_metadata, get_token
+from huggingface_hub.errors import (
+    GatedRepoError,
+    HfHubHTTPError,
+    NotASafetensorsRepoError,
+    RepositoryNotFoundError,
+    SafetensorsParsingError,
+)
+
+from euroeval.dataset_configs import get_all_dataset_configs
+from euroeval.string_utils import split_model_id
+
+logger = logging.getLogger(__name__)
+
+_BALTIC = "Baltic languages (Latvian, Lithuanian)"
+_FINNIC = "Finnic languages (Estonian, Finnish)"
+_ROMANCE = "Romance languages (Catalan, French, Italian, Portuguese, Romanian, Spanish)"
+_SCANDI = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)"
+_SLAVIC = (
+    "Slavic languages (Belarusian, Bulgarian, Bosnian, Croatian, Czech, Polish,"
+    " Serbian, Slovak, Slovenian, Ukrainian)"
+)
+_WGERMANIC = "West Germanic languages (Dutch, English, German)"
+
+LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
+    _BALTIC: ["lv", "lt"],
+    _FINNIC: ["et", "fi"],
+    _ROMANCE: ["ca", "fr", "it", "pt", "ro", "es"],
+    _SCANDI: ["da", "fo", "is", "no", "sv"],
+    _SLAVIC: ["be", "bg", "bs", "hr", "cs", "pl", "sr", "sk", "sl", "uk"],
+    _WGERMANIC: ["nl", "en", "de"],
+    "Albanian": ["sq"],
+    "Greek": ["el"],
+    "Hungarian": ["hu"],
+}
+
+DTYPE_BYTES: dict[str, int] = {
+    "F64": 8,
+    "I64": 8,
+    "U64": 8,
+    "F32": 4,
+    "I32": 4,
+    "U32": 4,
+    "F16": 2,
+    "BF16": 2,
+    "I16": 2,
+    "U16": 2,
+    "F8_E4M3": 1,
+    "F8_E5M2": 1,
+    "I8": 1,
+    "U8": 1,
+    "BOOL": 1,
+}
+
+# Multiplier applied to weight bytes to leave room for activations, KV cache,
+# and framework overhead when judging whether a model fits in GPU memory.
+GPU_FIT_OVERHEAD = 1.2
+
+
+@lru_cache(maxsize=1)
+def official_dataset_language_pairs() -> set[tuple[str, str]]:
+    """Return all official dataset/language pairs used by EuroEval."""
+    all_dataset_configs = get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    return {
+        (dataset_config.name, language.code)
+        for dataset_config in all_dataset_configs.values()
+        if not dataset_config.unofficial
+        for language in dataset_config.languages
+    }
+
+
+def resolve_hf_token() -> str | None:
+    """Return the HF token from env or the ``hf auth login`` cache."""
+    return (
+        os.environ.get("HF_TOKEN")
+        or os.environ.get("HUGGINGFACE_API_KEY")
+        or get_token()
+    )
+
+
+def gpu_total_memory_bytes() -> int | None:
+    """Return the total memory available for model weights on this host, in bytes.
+
+    Honors ``EUROEVAL_GPU_MEMORY_BYTES`` for overrides. Otherwise: when CUDA
+    is available and the host is not flagged as ``UNIFIED_MEMORY=1``, report
+    the largest CUDA device's total memory; otherwise report total system
+    RAM via ``psutil``.
+    """
+    override = os.environ.get("EUROEVAL_GPU_MEMORY_BYTES")
+    if override:
+        try:
+            return int(override)
+        except ValueError:
+            logger.warning(f"Ignoring invalid EUROEVAL_GPU_MEMORY_BYTES={override!r}.")
+
+    unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
+    if torch.cuda.is_available() and not unified:
+        sizes = [
+            torch.cuda.get_device_properties(i).total_memory
+            for i in range(torch.cuda.device_count())
+        ]
+        if sizes:
+            return max(sizes)
+    return int(psutil.virtual_memory().total)
+
+
+def estimated_model_bytes(model_id: str) -> int | None:
+    """Estimate the weight footprint of a model in bytes.
+
+    Reads the safetensors header(s) so quantised checkpoints are sized
+    correctly.
+
+    Args:
+        model_id:
+            The Hugging Face repo id, optionally suffixed with ``@<revision>``.
+
+    Returns:
+        The total weight bytes across all tensors, or None when the repo
+        is not a safetensors repo or metadata cannot be parsed.
+    """
+    components = split_model_id(model_id=model_id)
+    repo = components.model_id
+    revision = components.revision
+    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
+    try:
+        meta = get_safetensors_metadata(repo_id=repo, revision=revision, token=token)
+    except (
+        NotASafetensorsRepoError,
+        SafetensorsParsingError,
+        RepositoryNotFoundError,
+        GatedRepoError,
+        HfHubHTTPError,
+    ) as e:
+        logger.debug(f"safetensors metadata unavailable for {model_id}: {e}")
+        return None
+
+    total = 0
+    for dtype, count in meta.parameter_count.items():
+        dtype_bits = _dtype_bits(dtype=dtype)
+        if dtype_bits is None:
+            logger.debug(
+                f"Unknown safetensors dtype {dtype!r} for {model_id}; "
+                "assuming 2 bytes/param."
+            )
+            dtype_bits = 16
+        total += (count * dtype_bits + 7) // 8
+    return total
+
+
+def _dtype_bits(dtype: str) -> int | None:
+    """Infer the number of bits used by a safetensors dtype string.
+
+    Args:
+        dtype:
+            The safetensors dtype string.
+
+    Returns:
+        The bit-width, or None when it cannot be inferred.
+    """
+    normalized_dtype = dtype.upper()
+    if normalized_dtype in DTYPE_BYTES:
+        return DTYPE_BYTES[normalized_dtype] * 8
+
+    for match in re.findall(pattern=r"\d+", string=normalized_dtype):
+        bits = int(match)
+        if bits > 0:
+            return bits
+    return None
+
+
+def model_fits_locally(model_id: str, gpu_bytes: int | None) -> tuple[bool, int | None]:
+    """Return ``(fits, needed_bytes)`` for an open-weight model.
+
+    ``fits`` is True when either the GPU budget is unknown (caller should
+    skip the check), the model's safetensors footprint can't be measured,
+    or ``needed * GPU_FIT_OVERHEAD <= gpu_bytes``.
+    """
+    if gpu_bytes is None:
+        return True, None
+    needed = estimated_model_bytes(model_id=model_id)
+    if needed is None:
+        return True, None
+    return int(needed * GPU_FIT_OVERHEAD) <= gpu_bytes, needed
+
+
+def run_euroeval(
+    model_id: str,
+    languages: c.Sequence[str],
+    datasets: c.Sequence[str] | None = None,
+    evaluate_test_split: bool = True,
+    zero_shot: bool = False,
+    trust_remote_code: bool = True,
+    clear_model_cache: bool = True,
+) -> tuple[int, str]:
+    """Run the euroeval CLI for the given model, languages, and datasets.
+
+    Output is streamed live to stderr (so the operator can follow progress
+    on long evaluations) while also being captured for post-run inspection.
+
+    Args:
+        model_id:
+            The model identifier to evaluate.
+        languages:
+            ISO codes to pass via repeated ``--language`` flags.
+        datasets (optional):
+            Dataset ids to pass via repeated ``--dataset`` flags. When
+            None or empty, no ``--dataset`` flag is passed and the CLI
+            uses its language-driven default.
+        evaluate_test_split (optional):
+            When True pass ``--evaluate-test-split``; when False pass
+            ``--evaluate-val-split``. Defaults to True.
+        zero_shot (optional):
+            When True pass ``--zero-shot``; otherwise omit (CLI default
+            is few-shot). Defaults to False.
+        trust_remote_code (optional):
+            Pass ``--trust-remote-code``. Defaults to True.
+        clear_model_cache (optional):
+            Pass ``--clear-model-cache``. Defaults to True.
+
+    Returns:
+        A ``(returncode, combined_output)`` pair. A returncode of 127
+        signals that the CLI was not found on PATH.
+    """
+    cmd: list[str] = ["euroeval", "--model", model_id]
+    if clear_model_cache:
+        cmd.append("--clear-model-cache")
+    if trust_remote_code:
+        cmd.append("--trust-remote-code")
+    cmd.append(
+        "--evaluate-test-split" if evaluate_test_split else "--evaluate-val-split"
+    )
+    if zero_shot:
+        cmd.append("--zero-shot")
+    for lang in languages:
+        cmd += ["--language", lang]
+    for dataset in datasets or []:
+        cmd += ["--dataset", dataset]
+    logger.info(f"Running: {' '.join(cmd)}")
+
+    env = os.environ.copy()
+    env["FULL_LOG"] = "1"
+    token = resolve_hf_token()
+    if token:
+        env.setdefault("HF_TOKEN", token)
+        env.setdefault("HUGGINGFACE_API_KEY", token)
+
+    master_fd, slave_fd = pty.openpty()
+    try:
+        proc = subprocess.Popen(  # noqa: S603
+            cmd,
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            close_fds=True,
+            env=env,
+        )
+    except FileNotFoundError:
+        os.close(master_fd)
+        os.close(slave_fd)
+        logger.error("`euroeval` CLI not found on PATH. Is it installed?")
+        return 127, "`euroeval` CLI not found on PATH."
+    os.close(slave_fd)
+
+    captured: list[bytes] = []
+    try:
+        while True:
+            ready, _, _ = select.select([master_fd], [], [], 0.1)
+            if ready:
+                try:
+                    chunk = os.read(master_fd, 4096)
+                except OSError:
+                    break
+                if not chunk:
+                    break
+                sys.stderr.buffer.write(chunk)
+                sys.stderr.buffer.flush()
+                captured.append(chunk)
+            elif proc.poll() is not None:
+                try:
+                    while True:
+                        chunk = os.read(master_fd, 4096)
+                        if not chunk:
+                            break
+                        sys.stderr.buffer.write(chunk)
+                        sys.stderr.buffer.flush()
+                        captured.append(chunk)
+                except OSError:
+                    pass
+                break
+    finally:
+        os.close(master_fd)
+    proc.wait()
+    output = b"".join(captured).decode("utf-8", errors="replace")
+    return proc.returncode, output
