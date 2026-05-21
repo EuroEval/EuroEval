@@ -254,7 +254,11 @@ def _parse_issue_models(body: str) -> dict[str, str]:
     """
     result: dict[str, str] = {}
     for line in body.splitlines():
-        m = re.match(r"^- ([A-Za-z0-9._/\-#]+)(.*)$", line.strip())
+        # The first token after "- " is the model id, which may contain
+        # `@revision`, `:tag`, or `#parameter` segments. The flag emojis
+        # (and the legacy `_(Pareto: …)_` annotation) are separated from
+        # the id by whitespace, so we split on the first space.
+        m = re.match(r"^- (\S+)(.*)$", line.strip())
         if not m:
             continue
         flags = re.sub(r"_\(Pareto:.*?\)_", "", m.group(2)).strip()
