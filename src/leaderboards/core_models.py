@@ -29,6 +29,7 @@ issue and writes the same list back into `core_models.yaml` (alongside
 from __future__ import annotations
 
 import dataclasses
+import enum
 import logging
 import math
 import re
@@ -54,18 +55,34 @@ from .utils import drop_val_duplicates
 logger = logging.getLogger(__name__)
 
 
-ModelType = t.Literal[
-    "encoder", "base_decoder", "instruction_tuned_decoder", "reasoning_decoder", "api"
-]
+class ModelType(enum.StrEnum):
+    """The architectural / training-stage category of a core model."""
 
-SizeBucket = t.Literal["encoder", "tiny", "small", "medium", "large", "xlarge", "api"]
+    ENCODER = "encoder"
+    BASE_DECODER = "base_decoder"
+    INSTRUCTION_TUNED_DECODER = "instruction_tuned_decoder"
+    REASONING_DECODER = "reasoning_decoder"
+    API = "api"
+
+
+class SizeBucket(enum.StrEnum):
+    """Bucket label used to group models in the GitHub issue."""
+
+    ENCODER = "encoder"
+    TINY = "tiny"
+    SMALL = "small"
+    MEDIUM = "medium"
+    LARGE = "large"
+    XLARGE = "xlarge"
+    API = "api"
+
 
 # Matches the labels used by `GenerativeType` in the euroeval lib (snake_case
 # auto-enum). The lib enum has BASE / INSTRUCTION_TUNED / REASONING.
 _GENERATIVE_TYPE_TO_MODEL_TYPE: dict[str, ModelType] = {
-    "base": "base_decoder",
-    "instruction_tuned": "instruction_tuned_decoder",
-    "reasoning": "reasoning_decoder",
+    "base": ModelType.BASE_DECODER,
+    "instruction_tuned": ModelType.INSTRUCTION_TUNED_DECODER,
+    "reasoning": ModelType.REASONING_DECODER,
 }
 
 # Single source of truth for API model identification — also imported by
@@ -171,11 +188,11 @@ def _classify_model(model_id: str, metadata: dict) -> ModelType:
     """
     plain = _plain_model_id(model_id).split("#")[0]
     if any(p.fullmatch(plain) for p in API_MODEL_PATTERNS):
-        return "api"
+        return ModelType.API
     generative_type = metadata.get("generative_type")
     if generative_type is None:
-        return "encoder"
-    return _GENERATIVE_TYPE_TO_MODEL_TYPE.get(generative_type, "base_decoder")
+        return ModelType.ENCODER
+    return _GENERATIVE_TYPE_TO_MODEL_TYPE.get(generative_type, ModelType.BASE_DECODER)
 
 
 # Match the first ``<N>B`` / ``<N>M`` token in a model id (e.g. ``22B`` in
@@ -201,18 +218,25 @@ def _params_from_hf_safetensors(model_id: str) -> float:
 
     Args:
         model_id:
-            HuggingFace ``org/repo`` slug. Anything that doesn't look
-            like ``a/b`` is skipped without a network call.
+            HuggingFace ``org/repo`` slug, optionally with an
+            ``@revision`` suffix. Anything that doesn't look like
+            ``a/b`` is skipped without a network call.
 
     Returns:
         Total parameter count, or NaN.
     """
-    if "/" not in model_id or model_id.count("/") > 1:
+    repo_id, _, revision = model_id.partition("@")
+    if "/" not in repo_id or repo_id.count("/") > 1:
         return float("nan")
     try:
-        info = HfApi().model_info(repo_id=model_id, files_metadata=False)
+        info = HfApi().model_info(
+            repo_id=repo_id, revision=revision or None, files_metadata=False
+        )
     except (RepositoryNotFoundError, HfHubHTTPError, OSError, ValueError) as exc:
-        logger.info(f"HF safetensors lookup failed for {model_id!r}: {exc}")
+        # 404s for IDs we synthesised locally (renamed repos, transient
+        # variants, etc.) aren't actionable — log at debug level so the
+        # standard run output stays clean.
+        logger.debug(f"HF safetensors lookup failed for {model_id!r}: {exc}")
         return float("nan")
     safetensors = getattr(info, "safetensors", None)
     if safetensors is None:
@@ -257,21 +281,21 @@ def _size_bucket(model_type: ModelType, parameters: float) -> SizeBucket:
     Returns:
         The bucket label used to group models in the issue body.
     """
-    if model_type == "encoder":
-        return "encoder"
-    if model_type == "api":
-        return "api"
+    if model_type == ModelType.ENCODER:
+        return SizeBucket.ENCODER
+    if model_type == ModelType.API:
+        return SizeBucket.API
     if not math.isfinite(parameters):
-        return "xlarge"
+        return SizeBucket.XLARGE
     if parameters < 2_000_000_000:
-        return "tiny"
+        return SizeBucket.TINY
     if parameters < 10_000_000_000:
-        return "small"
+        return SizeBucket.SMALL
     if parameters < 40_000_000_000:
-        return "medium"
+        return SizeBucket.MEDIUM
     if parameters < 80_000_000_000:
-        return "large"
-    return "xlarge"
+        return SizeBucket.LARGE
+    return SizeBucket.XLARGE
 
 
 # ---------------------------------------------------------------------------
@@ -313,16 +337,16 @@ def _pareto_languages_per_model(
     # model that's Pareto-optimal in either category counts, so we
     # consider both and union the languages.
     categories_for_type: dict[ModelType, tuple[str, ...]] = {
-        "encoder": ("all_models",),
-        "base_decoder": ("generative", "all_models"),
-        "instruction_tuned_decoder": ("generative", "all_models"),
-        "reasoning_decoder": ("generative", "all_models"),
+        ModelType.ENCODER: ("all_models",),
+        ModelType.BASE_DECODER: ("generative", "all_models"),
+        ModelType.INSTRUCTION_TUNED_DECODER: ("generative", "all_models"),
+        ModelType.REASONING_DECODER: ("generative", "all_models"),
     }
 
     # Group candidate models by type, dropping anything we can't size.
     by_type: dict[ModelType, list[tuple[str, float]]] = defaultdict(list)
     for model_id, model_type in model_types.items():
-        if model_type == "api":
+        if model_type == ModelType.API:
             continue
         params = metadata.get(model_id, {}).get("parameters", float("nan"))
         if not math.isfinite(params):
@@ -791,7 +815,7 @@ def build_core_model_list(
             parameters = _params_from_model_id(plain_id)
         # API models don't live on HuggingFace, so hitting the HF
         # safetensors endpoint for them just guarantees a 404.
-        if not math.isfinite(parameters) and model_type != "api":
+        if not math.isfinite(parameters) and model_type != ModelType.API:
             parameters = _params_from_hf_safetensors(plain_id.split("#")[0])
         bucket = _size_bucket(model_type, parameters)
         core.append(
@@ -812,13 +836,13 @@ def build_core_model_list(
 
 
 _BUCKET_ORDER: dict[SizeBucket, int] = {
-    "encoder": 0,
-    "tiny": 1,
-    "small": 2,
-    "medium": 3,
-    "large": 4,
-    "xlarge": 5,
-    "api": 6,
+    SizeBucket.ENCODER: 0,
+    SizeBucket.TINY: 1,
+    SizeBucket.SMALL: 2,
+    SizeBucket.MEDIUM: 3,
+    SizeBucket.LARGE: 4,
+    SizeBucket.XLARGE: 5,
+    SizeBucket.API: 6,
 }
 
 
