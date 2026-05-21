@@ -73,6 +73,12 @@ API_MODEL_PATTERNS: list[re.Pattern] = [
     re.compile(r"(xai/)?grok.*"),
 ]
 
+# Models matching these patterns are excluded from the core-model list
+# entirely. We currently drop `ollama_chat/*` — those are hard to
+# re-evaluate in CI (Ollama-based local serving), so including them in
+# the "must re-run when datasets change" list just creates churn.
+EXCLUDED_MODEL_PATTERNS: list[re.Pattern] = [re.compile(r"^ollama_chat/.*")]
+
 
 @dataclasses.dataclass(frozen=True)
 class CoreModel:
@@ -669,6 +675,13 @@ def build_core_model_list(
     # OSAI / EU may name models we haven't evaluated yet. Include them
     # as placeholders so the issue surfaces them as TODO targets.
     all_plain_ids = set(by_plain) | set(osai_rank_by_id) | eu_set
+
+    # Drop entire serving-backend families we don't want in the core list.
+    all_plain_ids = {
+        pid
+        for pid in all_plain_ids
+        if not any(p.match(pid.split("#")[0]) for p in EXCLUDED_MODEL_PATTERNS)
+    }
 
     core: list[CoreModel] = []
     for plain_id in all_plain_ids:
