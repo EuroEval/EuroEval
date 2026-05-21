@@ -75,12 +75,13 @@ The list is generated automatically by \
 - ⭐ Pareto frontier within the model's type (encoder, base decoder, \
 instruction-tuned decoder, reasoning decoder) — strictly better than every \
 smaller-or-equal-sized model of the same type, in at least one language. \
-Check out [this list](src/leaderboards/core_models.yaml) \
-for the exact languages each model is evaluated on.
+Check out [this list][config] for the exact languages each model is \
+evaluated on.
 - 🇪🇺 Trained in the EU.
 - 💜 Top-10 'truly open' models from [osai-index.eu][osai] (filtered to \
 text models with open base weights, training code, and data sources).
 
+[config]: https://github.com/EuroEval/EuroEval/blob/main/src/leaderboards/core_models.yaml
 [osai]: https://osai-index.eu/database/?type=text&weights_basemodel=1&trainingcode=1&datasources_basemodel=1
 """
 
