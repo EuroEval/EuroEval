@@ -39,6 +39,7 @@ from yaml import safe_load
 
 from leaderboards.core_models import CoreModel, build_core_model_list
 from leaderboards.paths import CORE_MODELS_CONFIG
+from leaderboards.task_metadata import languages_with_official_datasets
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s ⋅ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
@@ -50,18 +51,42 @@ load_dotenv()
 
 REPO = "EuroEval/EuroEval"
 
-# Section ordering and headers used in the GitHub issue body. The size
-# buckets here mirror those in `core_models.py::_size_bucket`.
-_BUCKET_HEADER = {
-    "encoder": "## Encoder models",
-    "tiny": "## Tiny scale (<2B parameters)",
-    "small": "## Small scale (2B-10B parameters)",
-    "medium": "## Medium scale (10B-40B parameters)",
-    "large": "## Large scale (40B-80B parameters)",
-    "xlarge": "## Extra-large scale (>80B parameters)",
-    "api": "## SOTA API models",
+# Catalonia has no national-flag emoji; the regional-indicator-tag form
+# below is the canonical "subdivision flag" sequence (ES-CT). Renderers
+# that don't support it degrade to the black-flag fallback, which is
+# still recognisable next to the country flags around it.
+_LANGUAGE_FLAG: dict[str, str] = {
+    "albanian": "🇦🇱",
+    "bosnian": "🇧🇦",
+    "bulgarian": "🇧🇬",
+    "catalan": "🏴󠁥󠁳󠁣󠁴󠁿",
+    "croatian": "🇭🇷",
+    "czech": "🇨🇿",
+    "danish": "🇩🇰",
+    "dutch": "🇳🇱",
+    "english": "🇬🇧",
+    "estonian": "🇪🇪",
+    "faroese": "🇫🇴",
+    "finnish": "🇫🇮",
+    "french": "🇫🇷",
+    "german": "🇩🇪",
+    "greek": "🇬🇷",
+    "hungarian": "🇭🇺",
+    "icelandic": "🇮🇸",
+    "italian": "🇮🇹",
+    "latvian": "🇱🇻",
+    "lithuanian": "🇱🇹",
+    "norwegian": "🇳🇴",
+    "polish": "🇵🇱",
+    "portuguese": "🇵🇹",
+    "romanian": "🇷🇴",
+    "serbian": "🇷🇸",
+    "slovak": "🇸🇰",
+    "slovene": "🇸🇮",
+    "spanish": "🇪🇸",
+    "swedish": "🇸🇪",
+    "ukrainian": "🇺🇦",
 }
-_BUCKET_ORDER = ["encoder", "tiny", "small", "medium", "large", "xlarge", "api"]
 
 _ISSUE_INTRO = """## What is a "core model"?
 
@@ -92,15 +117,15 @@ text models with open base weights, training code, and data sources).
 # ---------------------------------------------------------------------------
 
 
-def _render_line(model: CoreModel) -> str:
-    """Render a single model line for the issue body.
+def _reasoning_flags(model: CoreModel) -> str:
+    """Return the trio of emoji flags explaining why this model was picked.
 
     Args:
         model:
             The core model.
 
     Returns:
-        A markdown list line (without trailing newline).
+        Concatenated emoji string (⭐💜🇪🇺), possibly empty.
     """
     flags = []
     if model.pareto_languages:
@@ -109,35 +134,78 @@ def _render_line(model: CoreModel) -> str:
         flags.append("💜")
     if model.eu:
         flags.append("🇪🇺")
-    suffix = "".join(flags)
-    line = f"- {model.model_id}"
-    if suffix:
-        line += f" {suffix}"
-    return line
+    return "".join(flags)
 
 
-def render_issue_body(models: list[CoreModel]) -> str:
+def _format_parameters(parameters: float) -> str:
+    """Render a parameter count in compact ``Xm`` / ``X.YB`` notation.
+
+    Args:
+        parameters:
+            Number of parameters; NaN renders as a dash.
+
+    Returns:
+        Short display string for the issue table.
+    """
+    if parameters != parameters:  # NaN
+        return "—"
+    if parameters >= 1_000_000_000:
+        value = parameters / 1_000_000_000
+        return (f"{value:.1f}" if value < 10 else f"{value:.0f}") + "B"
+    if parameters >= 1_000_000:
+        return f"{parameters / 1_000_000:.0f}M"
+    return f"{parameters:.0f}"
+
+
+def _format_languages(
+    pareto_languages: tuple[str, ...], all_languages: tuple[str, ...]
+) -> str:
+    """Render the Languages column for the issue table.
+
+    A model with no Pareto languages is one we want to (re-)evaluate
+    across the board (EU- or OSAI-only inclusions); same goes for a
+    model that's already on the frontier in every supported language —
+    rather than splatting 30 flags we say "All languages".
+
+    Args:
+        pareto_languages:
+            Languages where the model is on its type's Pareto frontier.
+        all_languages:
+            All languages with an official leaderboard.
+
+    Returns:
+        Space-separated flag emojis, or the string ``All languages``.
+    """
+    if not pareto_languages or set(pareto_languages) >= set(all_languages):
+        return "All languages"
+    return " ".join(_LANGUAGE_FLAG.get(lang, lang) for lang in pareto_languages)
+
+
+def render_issue_body(models: list[CoreModel], all_languages: tuple[str, ...]) -> str:
     """Render the full issue body for #1186.
 
     Args:
         models:
             The core model list, already sorted.
+        all_languages:
+            Every language that has an official leaderboard, used to
+            collapse "all flags" down to "All languages".
 
     Returns:
         Markdown text suitable for `PATCH /repos/.../issues/1186`.
     """
-    sections = []
-    by_bucket: dict[str, list[CoreModel]] = {b: [] for b in _BUCKET_ORDER}
+    header = "| Model | Parameters | Reasoning | Languages |"
+    separator = "| --- | --- | --- | --- |"
+    rows = [header, separator]
     for model in models:
-        by_bucket[model.size_bucket].append(model)
-    for bucket in _BUCKET_ORDER:
-        bucket_models = by_bucket[bucket]
-        if not bucket_models:
-            continue
-        body = _BUCKET_HEADER[bucket] + "\n\n"
-        body += "\n".join(_render_line(m) for m in bucket_models)
-        sections.append(body)
-    return _ISSUE_INTRO + "\n\n" + "\n\n".join(sections) + "\n"
+        rows.append(
+            f"| {model.model_id} "
+            f"| {_format_parameters(model.parameters)} "
+            f"| {_reasoning_flags(model)} "
+            f"| {_format_languages(model.pareto_languages, all_languages)} |"
+        )
+    table = "\n".join(rows)
+    return _ISSUE_INTRO + "\n\n" + table + "\n"
 
 
 # ---------------------------------------------------------------------------
@@ -249,27 +317,24 @@ def _parse_issue_models(body: str) -> dict[str, str]:
         Map of model_id to the trailing flag/emoji string for that line.
     """
     result: dict[str, str] = {}
-    in_model_section = False
-    bucket_headers = set(_BUCKET_HEADER.values())
     for line in body.splitlines():
         stripped = line.strip()
-        # Bullets under the intro legend (⭐/🇪🇺/💜 explainers) look like
-        # list items too — skip everything until we hit a known bucket
-        # header. Any other `## …` heading (e.g. the intro) doesn't count.
-        if stripped in bucket_headers:
-            in_model_section = True
+        # The issue body lays models out in a Markdown table. Skip the
+        # header row, separator row, and any non-table content (intro,
+        # blank lines).
+        if not stripped.startswith("|") or stripped.startswith("| ---"):
             continue
-        if not in_model_section:
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cells) < 3:
             continue
-        # The first token after "- " is the model id, which may contain
-        # `@revision`, `:tag`, or `#parameter` segments. The flag emojis
-        # (and the legacy `_(Pareto: …)_` annotation) are separated from
-        # the id by whitespace, so we split on the first space.
-        m = re.match(r"^- (\S+)(.*)$", stripped)
-        if not m:
+        if cells[0].lower() == "model":
             continue
-        flags = re.sub(r"_\(Pareto:.*?\)_", "", m.group(2)).strip()
-        result[m.group(1)] = flags
+        # Newer table: Model | Parameters | Reasoning | Languages.
+        # Older table (no Parameters col) and legacy bullet form are
+        # tolerated for backward-compatible diffs across one regeneration.
+        model_id = cells[0]
+        reasoning = cells[2] if len(cells) >= 4 else cells[1]
+        result[model_id] = reasoning
     return result
 
 
@@ -287,11 +352,7 @@ def diff_issue(old_body: str, new_models: list[CoreModel]) -> IssueDiff:
     """
     old = _parse_issue_models(old_body)
 
-    def flags_for(m: CoreModel) -> str:
-        rendered = _render_line(m).removeprefix(f"- {m.model_id}")
-        return re.sub(r"_\(Pareto:.*?\)_", "", rendered).strip()
-
-    new_flags = {m.model_id: flags_for(m) for m in new_models}
+    new_flags = {m.model_id: _reasoning_flags(m) for m in new_models}
     added = sorted(set(new_flags) - set(old))
     removed = sorted(set(old) - set(new_flags))
     flag_changes = sorted(
@@ -464,7 +525,8 @@ def main(dry_run: bool) -> None:
     )
     logger.info(f"Generated {len(models)} core models.")
 
-    new_body = render_issue_body(models)
+    all_languages = tuple(languages_with_official_datasets())
+    new_body = render_issue_body(models, all_languages=all_languages)
     today = dt.date.today()
 
     token = os.environ.get("GITHUB_TOKEN")
