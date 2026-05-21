@@ -82,6 +82,10 @@ LOCK_PATH = Path(os.environ.get("EUROEVAL_QUEUE_LOCK", "/tmp/euroeval_queue.lock
 # Keep the lock file descriptor alive for the whole process lifetime.
 _LOCK_FD: int | None = None
 
+# Number of the issue currently being processed, used to release the
+# assignment and VM marker if the script is interrupted (e.g. Ctrl-C) mid-run.
+_current_issue_number: int | None = None
+
 # On-disk cache for Hugging Face Hub lookups so that repeated runs of the
 # queue processor (e.g. on a cron) do not re-hit the API for the same models
 # and trip rate limits.
@@ -363,13 +367,41 @@ def main() -> None:
     # so any issue still carrying this VM's marker is a crash-leftover.
     reclaim_orphaned_issues()
 
-    while True:
-        process_queue_once()
-        logger.info(
-            f"Queue pass complete; sleeping {QUEUE_PASS_SLEEP_SECONDS}s "
-            "before next pass."
-        )
-        time.sleep(QUEUE_PASS_SLEEP_SECONDS)
+    try:
+        while True:
+            process_queue_once()
+            logger.info(
+                f"Queue pass complete; sleeping {QUEUE_PASS_SLEEP_SECONDS}s "
+                "before next pass."
+            )
+            time.sleep(QUEUE_PASS_SLEEP_SECONDS)
+    except KeyboardInterrupt:
+        logger.info("Interrupted; releasing current issue and exiting.")
+        release_current_issue()
+        sys.exit(130)
+
+
+def release_current_issue() -> None:
+    """Clear the VM marker and unassign on the issue currently being processed.
+
+    Used by the interrupt handler so Ctrl-C returns the in-flight issue to the
+    queue instead of leaving it assigned to this VM until the next reclaim
+    pass.
+    """
+    global _current_issue_number
+    number = _current_issue_number
+    if number is None:
+        return
+    _current_issue_number = None
+    try:
+        clear_vm_marker(number=number)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"#{number}: could not clear vm marker on interrupt: {e}")
+    try:
+        unassign_issue(number=number)
+        logger.info(f"#{number}: released on interrupt.")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"#{number}: could not unassign on interrupt: {e}")
 
 
 def process_queue_once() -> None:
@@ -387,7 +419,8 @@ def process_queue_once() -> None:
         logger.error(f"Failed to list issues: {e}")
         return
 
-    candidates: list[tuple[int, int, int, dict, str, list[str]]] = []
+    existing_lines = read_jsonl_lines(path=RESULTS_PATH)
+    candidates: list[tuple[int, int, int, int, dict, str, list[str]]] = []
     for issue in issues:
         number = issue["number"]
         title = issue.get("title", "")
@@ -414,11 +447,30 @@ def process_queue_once() -> None:
             status_priority = 2
         else:
             status_priority = 0
+        # Among 'waiting' candidates, push models with partial results ahead so
+        # we finish what we already started before claiming a new evaluation.
+        languages: list[str] = sorted(
+            {code for g in groups for code in LANGUAGE_GROUP_CODES[g]}
+        )
+        if status_priority == 0 and model_has_partial_results(
+            lines=existing_lines, model_id=model_id, requested_languages=languages
+        ):
+            partial_rank = 0
+        else:
+            partial_rank = 1
         candidates.append(
-            (status_priority, param_count, len(groups), issue, model_id, groups)
+            (
+                status_priority,
+                partial_rank,
+                param_count,
+                len(groups),
+                issue,
+                model_id,
+                groups,
+            )
         )
 
-    candidates.sort(key=lambda c: (c[0], c[1], c[2]))
+    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3]))
     logger.info(f"Found {len(candidates)} processable issue(s).")
 
     gpu_bytes = gpu_total_memory_bytes()
@@ -429,8 +481,18 @@ def process_queue_once() -> None:
     else:
         logger.info(f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB.")
 
-    for status_priority, param_count, num_groups, issue, model_id, groups in candidates:
+    for (
+        status_priority,
+        partial_rank,
+        param_count,
+        num_groups,
+        issue,
+        model_id,
+        groups,
+    ) in candidates:
         status = {0: "fresh", 1: "gated", 2: "retry of errored eval"}[status_priority]
+        if status_priority == 0 and partial_rank == 0:
+            status = "resuming partial"
         logger.info(
             f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
             f"{num_groups} group(s), {status})."
@@ -732,6 +794,26 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     # the issue unassigned (harmless) rather than assigned-but-unowned.
     set_vm_marker(number=number)
     assign_issue(number=number)
+    global _current_issue_number
+    _current_issue_number = number
+    try:
+        _run_claimed_issue(issue=issue, model_id=model_id, languages=languages)
+    finally:
+        _current_issue_number = None
+
+
+def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None:
+    """Run euroeval and report results for an issue already claimed by this VM.
+
+    Args:
+        issue:
+            The GitHub issue object returned by the API.
+        model_id:
+            The Hugging Face model id to evaluate.
+        languages:
+            The flattened list of language codes for this evaluation.
+    """
+    number = issue["number"]
 
     before = set(read_jsonl_lines(path=RESULTS_PATH))
     is_core = model_id in load_core_model_ids()
@@ -821,6 +903,42 @@ def missing_official_dataset_language_pairs(
     }
     observed_pairs = result_dataset_language_pairs(lines=lines)
     return expected_pairs - observed_pairs
+
+
+def model_has_partial_results(
+    lines: list[str], model_id: str, requested_languages: list[str]
+) -> bool:
+    """Return True if ``model_id`` has some but not all expected result lines.
+
+    "Expected" here is the official dataset/language pairs for the requested
+    languages, matching the completeness check used after an evaluation run.
+
+    Args:
+        lines:
+            The current contents of ``euroeval_benchmark_results.jsonl``.
+        model_id:
+            The Hugging Face model id whose existing results we inspect.
+        requested_languages:
+            The flattened language codes selected on the issue.
+
+    Returns:
+        True when at least one matching result line exists and at least one
+        official pair is still missing; False otherwise.
+    """
+    matching: list[str] = []
+    for line in lines:
+        try:
+            parsed = BenchmarkResult.from_dict(config=json.loads(line))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+        if parsed.model == model_id:
+            matching.append(line)
+    if not matching:
+        return False
+    missing = missing_official_dataset_language_pairs(
+        lines=matching, requested_languages=requested_languages
+    )
+    return bool(missing)
 
 
 def result_dataset_language_pairs(lines: list[str]) -> set[tuple[str, str]]:
