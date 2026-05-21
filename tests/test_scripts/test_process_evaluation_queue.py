@@ -67,6 +67,29 @@ def test_process_issue_fails_when_official_results_are_missing(
         name="set_errored_marker",
         value=lambda number, body, version: marker_versions.append(version),
     )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="cached_model_summary",
+        value=lambda model_id: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue, name="set_vm_marker", value=lambda number: None
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="clear_vm_marker",
+        value=lambda number: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="add_failed_label",
+        value=lambda number: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="issue_has_matching_error_comment",
+        value=lambda number, reason: False,
+    )
 
     process_evaluation_queue.process_issue(
         issue={"number": 17, "body": "body"},
@@ -140,6 +163,29 @@ def test_process_issue_does_not_special_case_oom_anymore(
         target=process_evaluation_queue,
         name="set_errored_marker",
         value=lambda number, body, version: marker_versions.append(version),
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="cached_model_summary",
+        value=lambda model_id: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue, name="set_vm_marker", value=lambda number: None
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="clear_vm_marker",
+        value=lambda number: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="add_failed_label",
+        value=lambda number: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="issue_has_matching_error_comment",
+        value=lambda number, reason: False,
     )
 
     process_evaluation_queue.process_issue(

@@ -7,11 +7,25 @@ import warnings
 
 import click
 from dotenv import load_dotenv
+from yaml import safe_load
 
 from leaderboards.backup import backup_results, restore_from_backup_if_missing
 from leaderboards.leaderboard_generation import generate_leaderboard
 from leaderboards.paths import CONFIGS_DIR
 from leaderboards.result_processing import process_results
+from leaderboards.task_metadata import languages_with_official_datasets
+
+try:
+    # Normal invocation: `python -m scripts.generate_leaderboards`, with
+    # `src/` on `sys.path` so `scripts` resolves as a package.
+    from scripts.generate_task_metrics import main as generate_task_metrics
+except ImportError:
+    # File-path invocation (e.g. `uv run src/scripts/generate_leaderboards.py`)
+    # — `scripts` isn't a package on the path, so import the sibling module
+    # directly.
+    from generate_task_metrics import (
+        main as generate_task_metrics,  # type: ignore[no-redef]
+    )
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s ⋅ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
@@ -112,13 +126,29 @@ def main(categories: tuple[t.Literal["generative", "all_models"]], force: bool) 
         api_model_patterns=API_MODEL_PATTERNS,
         trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
     )
-    all_leaderboard_configs = CONFIGS_DIR.glob("*.yaml")
-    for config_path in all_leaderboard_configs:
+    # Monolingual leaderboards are derived directly from the lib: one per
+    # language that has at least one official leaderboard dataset.
+    for language in languages_with_official_datasets():
         generate_leaderboard(
-            leaderboard_config_path=config_path,
+            leaderboard_name=language,
+            language_names=[language],
             categories=list(categories),
             force=force,
         )
+    # Multilingual leaderboards stay yaml-configured since they encode a
+    # curated grouping (e.g. Mainland Scandinavian, Slavic).
+    for config_path in sorted(CONFIGS_DIR.glob("*.yaml")):
+        with config_path.open(mode="r") as f:
+            config = safe_load(stream=f)
+        generate_leaderboard(
+            leaderboard_name=config_path.stem,
+            language_names=list(config["languages"]),
+            categories=list(categories),
+            force=force,
+        )
+
+    # Keep the frontend's task -> metric-names map in sync with euroeval.
+    generate_task_metrics()
 
     # Snapshot the (possibly updated) results to the backup directory,
     # rotating out oldest backups to keep total size under the cap.
