@@ -14,7 +14,11 @@ PACKAGE_DIR: Path = Path(__file__).resolve().parent
 
 # Per-leaderboard language list. The datasets and task metadata are derived
 # from `euroeval` at runtime (see `task_metadata.py`).
-CONFIGS_DIR: Path = PACKAGE_DIR / "configs"
+LEADERBOARD_CONFIGS_DIR: Path = PACKAGE_DIR / "leaderboard_configs"
+
+# Config for the core-model list that drives which models we re-evaluate
+# when datasets change (see `core_models.py`).
+CORE_MODELS_CONFIG: Path = PACKAGE_DIR / "core_models.yaml"
 
 # Repository root (assumes the package lives at <repo>/src/leaderboards/).
 REPO_ROOT: Path = PACKAGE_DIR.parent.parent
