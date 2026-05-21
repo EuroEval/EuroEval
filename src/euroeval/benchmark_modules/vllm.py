@@ -820,6 +820,18 @@ class VLLMModel(HuggingFaceEncoderModel):
                     raise InvalidBenchmark(
                         f"An error occurred during vLLM generation: {str(e)}"
                     ) from e
+            except Exception as e:
+                # The vLLM v1 engine raises `EngineDeadError` when a worker RPC
+                # times out. The engine cannot be reused once dead, so surface a
+                # clean benchmark error instead of an opaque crash.
+                if type(e).__name__ == "EngineDeadError" or "RPC call" in str(e):
+                    raise InvalidBenchmark(
+                        "The vLLM engine died during generation, likely due to a "
+                        "worker RPC timeout. Consider raising "
+                        "`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` or reducing the "
+                        f"batch size. Underlying error: {str(e)}"
+                    ) from e
+                raise
         else:
             raise InvalidBenchmark(
                 f"Could not generate sequences after {num_attempts} attempts."
