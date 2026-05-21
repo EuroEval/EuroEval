@@ -446,7 +446,7 @@ models:
   - id: yulan-team/YuLan-Mini
     type: encoder
     bucket: encoder
-    parameters: null
+    parameters: 2424375168
     pareto_languages: []
     eu: false
     osai_rank: 3

@@ -307,14 +307,16 @@ def _pareto_languages_per_model(
     Returns:
         model_id -> sorted list of languages where the model qualifies.
     """
-    # For encoder models, the relevant ranking category is `all_models`
-    # (since encoders only score on NLU). For generative models, use the
-    # `generative` category which spans every leaderboard task.
-    category_for_type: dict[ModelType, str] = {
-        "encoder": "all_models",
-        "base_decoder": "generative",
-        "instruction_tuned_decoder": "generative",
-        "reasoning_decoder": "generative",
+    # Encoders only get scored on the NLU-restricted `all_models`
+    # category. Generative models live on both leaderboards: `generative`
+    # spans every task and `all_models` restricts to NLU — a generative
+    # model that's Pareto-optimal in either category counts, so we
+    # consider both and union the languages.
+    categories_for_type: dict[ModelType, tuple[str, ...]] = {
+        "encoder": ("all_models",),
+        "base_decoder": ("generative", "all_models"),
+        "instruction_tuned_decoder": ("generative", "all_models"),
+        "reasoning_decoder": ("generative", "all_models"),
     }
 
     # Group candidate models by type, dropping anything we can't size.
@@ -327,31 +329,31 @@ def _pareto_languages_per_model(
             continue
         by_type[model_type].append((model_id, params))
 
-    pareto: dict[str, list[str]] = defaultdict(list)
+    pareto: dict[str, set[str]] = defaultdict(set)
     for model_type, members in by_type.items():
-        category = category_for_type[model_type]
-        for language in languages:
-            # Cache (model_id, params, rank) for this (type, language) so
-            # the inner loop is O(n^2) within a type rather than O(n^2)
-            # globally.
-            sized_ranked: list[tuple[str, float, float]] = []
-            for model_id, params in members:
-                try:
-                    rank = ranks[model_id][category][language]
-                except KeyError:
-                    continue
-                if not math.isfinite(rank):
-                    continue
-                sized_ranked.append((model_id, params, rank))
+        for category in categories_for_type[model_type]:
+            for language in languages:
+                # Cache (model_id, params, rank) for this (type, category,
+                # language) so the inner check is O(n^2) within the type
+                # rather than O(n^2) globally.
+                sized_ranked: list[tuple[str, float, float]] = []
+                for model_id, params in members:
+                    try:
+                        rank = ranks[model_id][category][language]
+                    except KeyError:
+                        continue
+                    if not math.isfinite(rank):
+                        continue
+                    sized_ranked.append((model_id, params, rank))
 
-            for model_id, params, rank in sized_ranked:
-                dominated = any(
-                    other_params <= params and other_rank < rank
-                    for other_id, other_params, other_rank in sized_ranked
-                    if other_id != model_id
-                )
-                if not dominated:
-                    pareto[model_id].append(language)
+                for model_id, params, rank in sized_ranked:
+                    dominated = any(
+                        other_params <= params and other_rank < rank
+                        for other_id, other_params, other_rank in sized_ranked
+                        if other_id != model_id
+                    )
+                    if not dominated:
+                        pareto[model_id].add(language)
 
     return {model_id: sorted(langs) for model_id, langs in pareto.items()}
 
