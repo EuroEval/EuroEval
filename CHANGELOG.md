@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 - Bumped the minimum vLLM version on Linux from v0.14.1 to v0.21.0.
+- Now ignores the language detection logging for Norwegian ('no'), since it's covered by
+  Norwegian Bokmål ('nb') and Norwegian Nynorsk ('nn').
 
 ### Fixed
 

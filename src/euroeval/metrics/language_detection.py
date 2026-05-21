@@ -89,11 +89,13 @@ class LanguageDetector:
                             iso_code=iso_code
                         )
                     except ValueError:
-                        log_once(
-                            f"The ISO 639-1 code {lang!r} is not supported by Lingua, "
-                            "skipping",
-                            level=logging.WARNING,
-                        )
+                        # We ignore 'no', since that's covered by 'nb' and 'nn'
+                        if lang != "no":
+                            log_once(
+                                f"The ISO 639-1 code {lang!r} is not supported by "
+                                "Lingua, skipping",
+                                level=logging.WARNING,
+                            )
                         continue
                 case 3:
                     try:
