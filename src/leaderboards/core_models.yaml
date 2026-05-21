@@ -92,20 +92,6 @@ models:
     pareto_languages: []
     eu: true
     osai_rank: null
-  - id: bigscience/bloom
-    type: encoder
-    bucket: encoder
-    parameters: null
-    pareto_languages: []
-    eu: false
-    osai_rank: 1
-  - id: bigscience/bloomz-p3
-    type: encoder
-    bucket: encoder
-    parameters: null
-    pareto_languages: []
-    eu: false
-    osai_rank: 2
   - id: danish-foundation-models/encoder-large-v1
     type: encoder
     bucket: encoder

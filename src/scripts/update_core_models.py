@@ -26,6 +26,7 @@ import dataclasses
 import datetime as dt
 import json
 import logging
+import math
 import os
 import re
 import sys
@@ -197,7 +198,16 @@ def render_issue_body(models: list[CoreModel], all_languages: tuple[str, ...]) -
     header = "| Model | Parameters | Reasoning | Languages |"
     separator = "| --- | --- | --- | --- |"
     rows = [header, separator]
-    for model in models:
+    # Smallest first; models with unknown parameter counts sink to the
+    # bottom so they don't pollute the top of the table.
+    sorted_models = sorted(
+        models,
+        key=lambda m: (
+            m.parameters if m.parameters == m.parameters else math.inf,
+            m.model_id.lower(),
+        ),
+    )
+    for model in sorted_models:
         rows.append(
             f"| {model.model_id} "
             f"| {_format_parameters(model.parameters)} "
