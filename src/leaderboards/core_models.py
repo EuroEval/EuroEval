@@ -165,6 +165,37 @@ def _classify_model(model_id: str, metadata: dict) -> ModelType:
     return _GENERATIVE_TYPE_TO_MODEL_TYPE.get(generative_type, "base_decoder")
 
 
+# Match the first ``<N>B`` / ``<N>M`` token in a model id (e.g. ``22B`` in
+# ``EuroLLM-22B-Instruct-2512``, ``270m`` in ``gemma-3-270m``). The lookbehind
+# stops us from picking up tokens like ``A3B`` in ``80B-A3B``; the lookahead
+# excludes things like ``multilingual``.
+_PARAMS_FROM_ID_RE = re.compile(r"(?<![A-Za-z\d])(\d+(?:\.\d+)?)([BbMm])(?![A-Za-z])")
+
+
+def _params_from_model_id(model_id: str) -> float:
+    """Best-effort parameter count parsed from a model identifier.
+
+    Some entries (typically ones we haven't evaluated yet, or with broken
+    HF metadata) reach the core-model list with NaN parameters, which
+    would otherwise default them to the ``xlarge`` bucket. When the id
+    itself encodes the size (``EuroLLM-22B``, ``Ministral-3-14B``,
+    ``SmolLM2-135M``, …), use that as a fallback.
+
+    Args:
+        model_id:
+            HuggingFace-style id, optionally with `org/` prefix.
+
+    Returns:
+        Parameter count, or NaN if no size token is present.
+    """
+    m = _PARAMS_FROM_ID_RE.search(model_id)
+    if not m:
+        return float("nan")
+    value = float(m.group(1))
+    unit = m.group(2).lower()
+    return value * (1_000_000_000 if unit == "b" else 1_000_000)
+
+
 def _size_bucket(model_type: ModelType, parameters: float) -> SizeBucket:
     """Map a model's type and parameter count to a bucket for the issue.
 
@@ -697,6 +728,8 @@ def build_core_model_list(
         meta = metadata.get(rep, {})
         model_type = model_types.get(rep) or _classify_model(plain_id, meta)
         parameters = meta.get("parameters", float("nan"))
+        if not math.isfinite(parameters):
+            parameters = _params_from_model_id(plain_id)
         bucket = _size_bucket(model_type, parameters)
         core.append(
             CoreModel(
