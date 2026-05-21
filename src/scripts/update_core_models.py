@@ -69,8 +69,8 @@ To prevent an ever-growing list of models to evaluate every time we change a \
 dataset or add a new language, we maintain this list of _core models_: the \
 minimum set of models to re-run when such a change is made.
 
-The list is generated automatically by \
-`uv run python src/scripts/update_core_models.py` from three sources:
+The list is generated automatically by running [this script][script] from \
+three sources:
 
 - ⭐ Pareto frontier within the model's type (encoder, base decoder, \
 instruction-tuned decoder, reasoning decoder) — strictly better than every \
@@ -81,6 +81,7 @@ evaluated on.
 - 💜 Top-10 'truly open' models from [osai-index.eu][osai] (filtered to \
 text models with open base weights, training code, and data sources).
 
+[script]: https://github.com/EuroEval/EuroEval/blob/main/src/scripts/update_core_models.py
 [config]: https://github.com/EuroEval/EuroEval/blob/main/src/leaderboards/core_models.yaml
 [osai]: https://osai-index.eu/database/?type=text&weights_basemodel=1&trainingcode=1&datasources_basemodel=1
 """
