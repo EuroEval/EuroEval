@@ -158,28 +158,29 @@ def _format_parameters(parameters: float) -> str:
     return f"{parameters:.0f}"
 
 
-def _format_languages(
-    pareto_languages: tuple[str, ...], all_languages: tuple[str, ...]
-) -> str:
+def _format_languages(model: CoreModel, all_languages: tuple[str, ...]) -> str:
     """Render the Languages column for the issue table.
 
-    A model with no Pareto languages is one we want to (re-)evaluate
-    across the board (EU- or OSAI-only inclusions); same goes for a
-    model that's already on the frontier in every supported language —
-    rather than splatting 30 flags we say "All languages".
+    EU- or OSAI-listed models always get evaluated everywhere — those
+    inclusions aren't language-scoped. Pareto-only inclusions get the
+    flags of the languages they're on the frontier in, unless that
+    happens to be every supported language, in which case we collapse
+    to "All languages" so we don't splat 30 flags.
 
     Args:
-        pareto_languages:
-            Languages where the model is on its type's Pareto frontier.
+        model:
+            The core model record.
         all_languages:
             All languages with an official leaderboard.
 
     Returns:
         Space-separated flag emojis, or the string ``All languages``.
     """
-    if not pareto_languages or set(pareto_languages) >= set(all_languages):
+    if model.eu or model.osai_rank is not None:
         return "All languages"
-    return " ".join(_LANGUAGE_FLAG.get(lang, lang) for lang in pareto_languages)
+    if not model.pareto_languages or set(model.pareto_languages) >= set(all_languages):
+        return "All languages"
+    return " ".join(_LANGUAGE_FLAG.get(lang, lang) for lang in model.pareto_languages)
 
 
 def render_issue_body(models: list[CoreModel], all_languages: tuple[str, ...]) -> str:
@@ -212,7 +213,7 @@ def render_issue_body(models: list[CoreModel], all_languages: tuple[str, ...]) -
             f"| {model.model_id} "
             f"| {_format_parameters(model.parameters)} "
             f"| {_reasoning_flags(model)} "
-            f"| {_format_languages(model.pareto_languages, all_languages)} |"
+            f"| {_format_languages(model, all_languages)} |"
         )
     table = "\n".join(rows)
     return _ISSUE_INTRO + "\n\n" + table + "\n"
