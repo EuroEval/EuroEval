@@ -1,9 +1,13 @@
 """Generate all leaderboards."""
 
+import datetime as dt
 import logging
 import re
+import subprocess
+import sys
 import typing as t
 import warnings
+from pathlib import Path
 
 import click
 from dotenv import load_dotenv
@@ -11,7 +15,7 @@ from yaml import safe_load
 
 from leaderboards.backup import backup_results, restore_from_backup_if_missing
 from leaderboards.leaderboard_generation import generate_leaderboard
-from leaderboards.paths import CONFIGS_DIR
+from leaderboards.paths import CORE_MODELS_CONFIG, LEADERBOARD_CONFIGS_DIR
 from leaderboards.result_processing import process_results
 from leaderboards.task_metadata import languages_with_official_datasets
 
@@ -104,7 +108,20 @@ TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern] = [
     show_default=True,
     help="Force the generation of the leaderboard, even if no updates are found.",
 )
-def main(categories: tuple[t.Literal["generative", "all_models"]], force: bool) -> None:
+@click.option(
+    "--skip-core-models-check",
+    is_flag=True,
+    default=False,
+    help=(
+        "Skip the staleness prompt for the core-model list. Useful in non-"
+        "interactive runs (CI, batch jobs)."
+    ),
+)
+def main(
+    categories: tuple[t.Literal["generative", "all_models"]],
+    force: bool,
+    skip_core_models_check: bool,
+) -> None:
     """Generate all leaderboards.
 
     Args:
@@ -114,6 +131,8 @@ def main(categories: tuple[t.Literal["generative", "all_models"]], force: bool) 
         force (optional):
             Whether to force the generation of the leaderboard, even if no updates
             are found. Defaults to False.
+        skip_core_models_check (optional):
+            If True, skip prompting to refresh the core-model list when stale.
     """
     # If results.tar.gz isn't here, pull the newest backup into place.
     restore_from_backup_if_missing()
@@ -126,6 +145,12 @@ def main(categories: tuple[t.Literal["generative", "all_models"]], force: bool) 
         api_model_patterns=API_MODEL_PATTERNS,
         trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
     )
+
+    # Offer to refresh the core-model list if it hasn't been touched in
+    # over a month. Doing this inside `generate_leaderboards` keeps it on
+    # the maintainer's radar without forcing a slow re-process each time.
+    if not skip_core_models_check:
+        _maybe_refresh_core_models()
     # Monolingual leaderboards are derived directly from the lib: one per
     # language that has at least one official leaderboard dataset.
     for language in languages_with_official_datasets():
@@ -137,7 +162,7 @@ def main(categories: tuple[t.Literal["generative", "all_models"]], force: bool) 
         )
     # Multilingual leaderboards stay yaml-configured since they encode a
     # curated grouping (e.g. Mainland Scandinavian, Slavic).
-    for config_path in sorted(CONFIGS_DIR.glob("*.yaml")):
+    for config_path in sorted(LEADERBOARD_CONFIGS_DIR.glob("*.yaml")):
         with config_path.open(mode="r") as f:
             config = safe_load(stream=f)
         generate_leaderboard(
@@ -156,6 +181,61 @@ def main(categories: tuple[t.Literal["generative", "all_models"]], force: bool) 
         backup_results()
     except OSError as exc:  # pCloud unavailable / disk full / etc.
         logging.warning(f"Results backup failed: {exc}")
+
+
+CORE_MODELS_STALE_DAYS = 30
+
+
+def _maybe_refresh_core_models() -> None:
+    """Prompt the user to refresh the core-model list if it's stale.
+
+    Reads `last_updated` from `core_models.yaml`. If it's missing or older
+    than `CORE_MODELS_STALE_DAYS`, asks the user whether to invoke the
+    updater now. Skipped silently when stdin isn't a TTY (CI, piped
+    invocations).
+    """
+    if not sys.stdin.isatty():
+        return
+    try:
+        with CORE_MODELS_CONFIG.open("r") as f:
+            config = safe_load(f) or {}
+    except OSError as exc:
+        logging.warning(f"Core models config unreadable: {exc}")
+        return
+
+    last_updated_raw = config.get("last_updated")
+    if last_updated_raw is None:
+        prompt = "Core model list has never been generated. Refresh now?"
+    else:
+        if isinstance(last_updated_raw, dt.date):
+            last = last_updated_raw
+        else:
+            try:
+                last = dt.date.fromisoformat(str(last_updated_raw))
+            except ValueError:
+                logging.warning(
+                    f"Cannot parse last_updated={last_updated_raw!r}; "
+                    "treating as stale."
+                )
+                last = None  # type: ignore[assignment]
+        if last is not None:
+            age_days = (dt.date.today() - last).days
+            if age_days < CORE_MODELS_STALE_DAYS:
+                return
+            prompt = f"Core model list is {age_days} days old. Refresh now?"
+        else:
+            prompt = "Core model list timestamp is unparseable. Refresh now?"
+
+    if not click.confirm(prompt, default=False):
+        return
+
+    # Spawn as a script (matches the makefile-style invocation), passing
+    # `--skip-process` because `process_results` already ran above.
+    script_path = Path(__file__).resolve().parent / "update_core_models.py"
+    try:
+        subprocess.run([sys.executable, str(script_path), "--skip-process"], check=True)
+    except subprocess.CalledProcessError as exc:
+        logging.warning(f"update_core_models failed (exit {exc.returncode}).")
 
 
 if __name__ == "__main__":
