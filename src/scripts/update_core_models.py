@@ -74,18 +74,19 @@ The list is generated automatically by \
 
 - ⭐ Pareto frontier within the model's type (encoder, base decoder, \
 instruction-tuned decoder, reasoning decoder) — strictly better than every \
-smaller-or-equal-sized model of the same type, in at least one language.
+smaller-or-equal-sized model of the same type, in at least one language. \
+See [`core_models.yaml`][config] for the exact list of languages per model.
 - 🇪🇺 Trained in the EU (matched against the regex list in \
-`src/leaderboards/core_models.yaml`).
+[`core_models.yaml`][config]).
 - 💜 Top-10 'truly open' models from [osai-index.eu][osai] (filtered to \
 text models with open base weights, training code, and data sources).
 
+[config]: https://github.com/EuroEval/EuroEval/blob/main/src/leaderboards/core_models.yaml
 [osai]: https://osai-index.eu/database/?type=text&weights_basemodel=1&trainingcode=1&datasources_basemodel=1
 
-To add or remove a model, edit `src/leaderboards/core_models.yaml` (the EU \
-regex list and OSAI overrides), or open a PR to adjust the source-selection \
-logic. Manual comments below are welcome but won't survive the next \
-regeneration."""
+To add or remove a model, edit [`core_models.yaml`][config] (the EU regex \
+list and OSAI overrides), or open a PR to adjust the source-selection logic. \
+Manual comments below are welcome but won't survive the next regeneration."""
 
 
 # ---------------------------------------------------------------------------
@@ -114,8 +115,6 @@ def _render_line(model: CoreModel) -> str:
     line = f"- {model.model_id}"
     if suffix:
         line += f" {suffix}"
-    if model.pareto_languages:
-        line += f" _(Pareto: {', '.join(model.pareto_languages)})_"
     return line
 
 
