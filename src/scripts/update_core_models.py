@@ -444,6 +444,7 @@ def main(dry_run: bool) -> None:
     issue_number = int(config["issue_number"])
     eu_patterns = list(config.get("eu_model_patterns") or [])
     osai_overrides = list(config.get("osai_overrides") or [])
+    logger.info(f"Issue: https://github.com/{REPO}/issues/{issue_number}")
 
     logger.info("Building core model list…")
     models = build_core_model_list(
