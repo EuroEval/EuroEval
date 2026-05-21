@@ -106,6 +106,9 @@ evaluated on.
 - 🇪🇺 Trained in the EU.
 - 💜 Top-10 'truly open' models from [osai-index.eu][osai] (filtered to \
 text models with open base weights, training code, and data sources).
+- 👾 SOTA API model. One small + one large from each major lab; the list \
+is hardcoded in [`api_models`][config] and refreshed manually as labs \
+ship new flagship models.
 
 [script]: https://github.com/EuroEval/EuroEval/blob/main/src/scripts/update_core_models.py
 [config]: https://github.com/EuroEval/EuroEval/blob/main/src/leaderboards/core_models.yaml
@@ -135,6 +138,8 @@ def _reasoning_flags(model: CoreModel) -> str:
         flags.append("💜")
     if model.eu:
         flags.append("🇪🇺")
+    if model.api:
+        flags.append("👾")
     return "".join(flags)
 
 
@@ -176,7 +181,7 @@ def _format_languages(model: CoreModel, all_languages: tuple[str, ...]) -> str:
     Returns:
         Space-separated flag emojis, or the string ``All languages``.
     """
-    if model.eu or model.osai_rank is not None:
+    if model.eu or model.osai_rank is not None or model.api:
         return "All languages"
     if not model.pareto_languages or set(model.pareto_languages) >= set(all_languages):
         return "All languages"
@@ -196,7 +201,7 @@ def render_issue_body(models: list[CoreModel], all_languages: tuple[str, ...]) -
     Returns:
         Markdown text suitable for `PATCH /repos/.../issues/1186`.
     """
-    header = "| Model | Parameters | Reasoning | Languages |"
+    header = "| Model | Parameters | Labels | Languages |"
     separator = "| --- | --- | --- | --- |"
     rows = [header, separator]
     # Smallest first; models with unknown parameter counts sink to the
@@ -260,6 +265,7 @@ def _format_models_yaml(models: list[CoreModel]) -> str:
             lines.append("    osai_rank: null")
         else:
             lines.append(f"    osai_rank: {m.osai_rank}")
+        lines.append(f"    api: {str(m.api).lower()}")
     return "\n".join(lines) + "\n"
 
 
@@ -528,11 +534,14 @@ def main(dry_run: bool) -> None:
     issue_number = int(config["issue_number"])
     eu_patterns = list(config.get("eu_model_patterns") or [])
     osai_overrides = list(config.get("osai_overrides") or [])
+    api_model_ids = list(config.get("api_models") or [])
     logger.info(f"Issue: https://github.com/{REPO}/issues/{issue_number}")
 
     logger.info("Building core model list…")
     models = build_core_model_list(
-        eu_patterns=eu_patterns, osai_overrides=osai_overrides
+        eu_patterns=eu_patterns,
+        api_model_ids=api_model_ids,
+        osai_overrides=osai_overrides,
     )
     logger.info(f"Generated {len(models)} core models.")
 

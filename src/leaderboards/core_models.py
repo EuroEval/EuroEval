@@ -104,6 +104,10 @@ class CoreModel:
             Whether the model matches the EU-trained regex list.
         osai_rank:
             1-based rank in the OSAI top-10 list, or None if not in the list.
+        api:
+            Whether the model is in the hardcoded litellm API list from
+            `core_models.yaml::api_models`. Always evaluated on every
+            language.
     """
 
     model_id: str
@@ -113,6 +117,7 @@ class CoreModel:
     pareto_languages: tuple[str, ...]
     eu: bool
     osai_rank: int | None
+    api: bool
 
 
 # ---------------------------------------------------------------------------
@@ -643,6 +648,7 @@ def _overrides_to_ranked(
 
 def build_core_model_list(
     eu_patterns: list[str],
+    api_model_ids: list[str] | None = None,
     osai_overrides: list[str] | None = None,
     osai_limit: int = 10,
 ) -> list[CoreModel]:
@@ -651,6 +657,10 @@ def build_core_model_list(
     Args:
         eu_patterns:
             Regex patterns for EU-built models (from `core_models.yaml`).
+        api_model_ids:
+            Hardcoded list of litellm-style API model identifiers from
+            `core_models.yaml::api_models`. Always emitted with the 👾
+            flag and "All languages".
         osai_overrides:
             Override list used when the OSAI scrape fails.
         osai_limit:
@@ -659,6 +669,7 @@ def build_core_model_list(
     Returns:
         Sorted list of `CoreModel` records.
     """
+    api_set = set(api_model_ids or [])
     languages = languages_with_official_datasets()
     configs: dict[str, dict[str, list[str]]] = {
         language: dict(official_datasets_for_language(language))
@@ -706,9 +717,10 @@ def build_core_model_list(
     osai_ranked = osai_top_models(limit=osai_limit, overrides=osai_overrides)
     osai_rank_by_id = {model_id: rank for model_id, rank in osai_ranked}
 
-    # OSAI / EU may name models we haven't evaluated yet. Include them
-    # as placeholders so the issue surfaces them as TODO targets.
-    all_plain_ids = set(by_plain) | set(osai_rank_by_id) | eu_set
+    # OSAI / EU / API-list may name models we haven't evaluated yet.
+    # Include them as placeholders so the issue surfaces them as TODO
+    # targets.
+    all_plain_ids = set(by_plain) | set(osai_rank_by_id) | eu_set | api_set
 
     # Drop entire serving-backend families we don't want in the core list.
     all_plain_ids = {
@@ -723,7 +735,8 @@ def build_core_model_list(
         pareto_langs = sorted({lang for v in variants for lang in pareto.get(v, [])})
         is_eu = plain_id in eu_set
         osai_rank = osai_rank_by_id.get(plain_id)
-        if not (pareto_langs or is_eu or osai_rank):
+        is_api = plain_id in api_set
+        if not (pareto_langs or is_eu or osai_rank or is_api):
             continue
         # Pick the variant with the most params info / a known type. The
         # base anchored_id (without zero-shot suffix) typically sorts first.
@@ -743,6 +756,7 @@ def build_core_model_list(
                 pareto_languages=tuple(pareto_langs),
                 eu=is_eu,
                 osai_rank=osai_rank,
+                api=is_api,
             )
         )
 

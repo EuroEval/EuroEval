@@ -36,6 +36,24 @@ eu_model_patterns:
   - "^vesteinn/(Dansk|Fo|Scandi)BERT"
   - "^answerdotai/ModernBERT"
 
+# Hardcoded list of API (litellm) model identifiers that should always be
+# in the core list. One small and one large from each major lab we want
+# coverage of; evaluated on every language. Refresh manually as labs ship
+# new flagship models or retire old ones.
+api_models:
+  # OpenAI
+  - openai/gpt-5.4-2026-03-05#none
+  - openai/gpt-5.4-mini-2026-03-17#medium
+  # Anthropic
+  - claude-sonnet-4-6
+  - claude-haiku-4-5-20251001
+  # Google
+  - gemini/gemini-3-pro-preview
+  - gemini/gemini-3.1-flash-lite
+  # xAI
+  - xai/grok-4
+  - xai/grok-4-fast-reasoning
+
 # Manually-curated top-10 list from osai-index.eu (filtered to text models
 # with open base-model weights, training code, and data sources). The
 # updater scrapes the live site; this list is used as a fallback when the
