@@ -147,3 +147,11 @@ node_modules/
 src/frontend/md/api.md
 .vercel
 .env*.local
+
+# Agent plans
+PLAN.md
+
+# Smallcode
+.code-graph/
+.memory/
+.smallcode/
