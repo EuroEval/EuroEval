@@ -56,6 +56,7 @@ from leaderboards.evaluation_common import (
     run_euroeval,
 )
 from leaderboards.paths import CORE_MODELS_CONFIG, NEW_RESULTS_PATH, RESULTS_PATH
+from leaderboards.result_loading import convert_to_old_format
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -293,13 +294,18 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
     Reads the merged result corpus the same way the leaderboard pipeline
     does -- ``results.tar.gz`` plus the optional ``new_results.jsonl`` --
     but without the destructive unlink that
-    ``leaderboards.result_loading.load_raw_results`` performs.
+    :func:`leaderboards.result_loading.load_raw_results` performs. Each
+    record is normalised via
+    :func:`leaderboards.result_loading.convert_to_old_format` so Every
+    Eval Ever (EEE) records (with ``model`` / ``dataset`` / ``languages``
+    nested under ``model_info`` and ``eval_library.additional_details``)
+    are flattened to top-level keys.
 
     Returns:
-        Every ``(model_id, dataset, language)`` triple in the merged result
-        corpus, with model ids stripped of leaderboard HTML anchors and
-        ``(zero-shot)`` / ``(val)`` variant suffixes so the keys line up
-        with the canonical ids in ``core_models.yaml``.
+        Every ``(model_id, dataset, language)`` triple in the merged
+        result corpus, with model ids unwrapped from any leaderboard
+        HTML anchor so the keys line up with the canonical ids in
+        ``core_models.yaml``.
     """
     lines: list[str] = []
     if RESULTS_PATH.exists():
@@ -311,7 +317,8 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
         lines.extend(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
 
     observations: set[tuple[str, str, str]] = set()
-    for line in lines:
+    parse_failures = 0
+    for line_idx, line in enumerate(lines):
         line = line.strip()
         if not line:
             continue
@@ -321,12 +328,26 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
             if not record_text.strip():
                 continue
             try:
-                record = json.loads(record_text)
-            except json.JSONDecodeError:
+                raw_record = json.loads(record_text)
+            except json.JSONDecodeError as e:
+                parse_failures += 1
+                logger.warning(
+                    f"Skipping malformed JSON on result line {line_idx:,}: {e}; "
+                    f"snippet={record_text[:120]!r}."
+                )
                 continue
-            model = _strip_model_variant(model_id=str(record.get("model", "")))
+            try:
+                record = convert_to_old_format(record=raw_record)
+            except (KeyError, TypeError, ValueError) as e:
+                parse_failures += 1
+                logger.warning(
+                    f"Skipping unnormalisable EEE record on line {line_idx:,}: "
+                    f"{e}; snippet={record_text[:120]!r}."
+                )
+                continue
+            model = _strip_anchor(model_id=str(record.get("model", "")))
             dataset = record.get("dataset")
-            languages = record.get("languages") or []
+            languages = record.get("languages") or record.get("dataset_languages") or []
             if not model or not dataset:
                 continue
             for language in languages:
@@ -334,6 +355,11 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
     logger.info(
         f"Loaded {len(observations):,} (model, dataset, language) observations."
     )
+    if parse_failures:
+        logger.warning(
+            f"Skipped {parse_failures:,} unparseable result record(s); see "
+            "earlier warnings for details."
+        )
     return observations
 
 
@@ -610,19 +636,23 @@ def all_known_language_codes() -> set[str]:
     return set(get_all_languages().keys())
 
 
-def _strip_model_variant(model_id: str) -> str:
-    """Strip leaderboard HTML anchors and ``(zero-shot)`` / ``(val)`` suffixes.
+def _strip_anchor(model_id: str) -> str:
+    """Strip a leaderboard HTML anchor wrapper from a model id.
+
+    ``BenchmarkResult.from_dict`` already removes the ``(val)`` /
+    ``(few-shot)`` variant suffixes, so we only need to defend against
+    anchor wrappers that older leaderboard exports may have left in
+    the record's ``model`` field.
 
     Args:
         model_id:
-            The result-record model id, possibly anchored or variant-suffixed.
+            The model id from a parsed :class:`BenchmarkResult`.
 
     Returns:
         The canonical model id, ready to compare against ``core_models.yaml``.
     """
     m = _ANCHOR_RE.search(model_id)
-    inner = m.group("inner").strip() if m else model_id
-    return _VARIANT_SUFFIX_RE.sub("", inner).strip()
+    return (m.group("inner").strip() if m else model_id).strip()
 
 
 def _prompt_api_providers() -> set[str]:
@@ -649,9 +679,6 @@ def _prompt_api_providers() -> set[str]:
     return selected
 
 
-# Strips trailing variant annotations on result-record model ids, e.g.
-# ``model (zero-shot)`` / ``model (val)`` / ``model (zero-shot, val)``.
-_VARIANT_SUFFIX_RE = re.compile(r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$")
 _ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
 
 
