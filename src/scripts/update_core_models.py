@@ -2,10 +2,11 @@
 
 The 'core model' list defines which models we re-run when datasets
 change. See `leaderboards/core_models.py` for the methodology. This
-script is the user-facing entry point: it processes the results
-archive, computes the list, updates `core_models.yaml` (including
+script is the user-facing entry point: it reads the already-processed
+results, computes the list, updates `core_models.yaml` (including
 `last_updated`), and pushes both the new issue body and a diff comment
-to GitHub.
+to GitHub. It does NOT re-process the results archive — run
+`make leaderboards` first if new evaluations have landed.
 
 Run manually with `make update-core-models`, or via the staleness prompt
 that `generate_leaderboards.py` shows when the list is older than 30
@@ -36,29 +37,8 @@ import click
 from dotenv import load_dotenv
 from yaml import safe_load
 
-from leaderboards.backup import restore_from_backup_if_missing
 from leaderboards.core_models import CoreModel, build_core_model_list
 from leaderboards.paths import CORE_MODELS_CONFIG
-from leaderboards.result_processing import process_results
-
-try:
-    from scripts.generate_leaderboards import (
-        API_MODEL_PATTERNS,
-        BANNED_MODEL_PATTERNS,
-        BANNED_VERSIONS,
-        MINIMUM_NUMBER_OF_MODEL_RECORDS,
-        MINIMUM_VERSION,
-        TRAINED_FROM_SCRATCH_PATTERNS,
-    )
-except ImportError:
-    from generate_leaderboards import (  # type: ignore[no-redef]
-        API_MODEL_PATTERNS,
-        BANNED_MODEL_PATTERNS,
-        BANNED_VERSIONS,
-        MINIMUM_NUMBER_OF_MODEL_RECORDS,
-        MINIMUM_VERSION,
-        TRAINED_FROM_SCRATCH_PATTERNS,
-    )
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s ⋅ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
@@ -443,40 +423,22 @@ def _post_issue_comment(issue_number: int, body: str, token: str) -> None:
 
 @click.command()
 @click.option(
-    "--skip-process",
-    is_flag=True,
-    default=False,
-    help=(
-        "Skip the `process_results` step. Use when invoked right after "
-        "`generate_leaderboards` has already processed the archive."
-    ),
-)
-@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
     help="Print the new issue body and diff but don't touch GitHub or the YAML.",
 )
-def main(skip_process: bool, dry_run: bool) -> None:
+def main(dry_run: bool) -> None:
     """Refresh the core-model list and update issue #1186.
 
+    The result archive is expected to be already processed (i.e. the
+    `processed.jsonl` cache is up-to-date). Run `make leaderboards` first
+    if you've ingested new results.
+
     Args:
-        skip_process:
-            Skip the result-processing step (use after generate_leaderboards).
         dry_run:
             Print outputs instead of writing them.
     """
-    if not skip_process:
-        restore_from_backup_if_missing()
-        process_results(
-            min_version=MINIMUM_VERSION,
-            min_number_of_model_records=MINIMUM_NUMBER_OF_MODEL_RECORDS,
-            banned_versions=BANNED_VERSIONS,
-            banned_model_patterns=BANNED_MODEL_PATTERNS,
-            api_model_patterns=API_MODEL_PATTERNS,
-            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
-        )
-
     with CORE_MODELS_CONFIG.open("r") as f:
         config = safe_load(f)
     issue_number = int(config["issue_number"])

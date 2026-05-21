@@ -229,11 +229,11 @@ def _maybe_refresh_core_models() -> None:
     if not click.confirm(prompt, default=False):
         return
 
-    # Spawn as a script (matches the makefile-style invocation), passing
-    # `--skip-process` because `process_results` already ran above.
+    # Spawn as a script. `process_results` already ran above, and the
+    # updater reuses the same processed cache.
     script_path = Path(__file__).resolve().parent / "update_core_models.py"
     try:
-        subprocess.run([sys.executable, str(script_path), "--skip-process"], check=True)
+        subprocess.run([sys.executable, str(script_path)], check=True)
     except subprocess.CalledProcessError as exc:
         logging.warning(f"update_core_models failed (exit {exc.returncode}).")
 
