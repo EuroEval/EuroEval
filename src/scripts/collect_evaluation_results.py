@@ -51,6 +51,9 @@ NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
 
 JSONL_FENCE_RE = re.compile(r"```jsonl\s*\n(.*?)\n```", re.DOTALL)
 
+# Matches Markdown links to GitHub Gists (e.g. [Benchmark results gist](https://gist.github.com/abc123)).
+GIST_LINK_RE = re.compile(r"https://gist\.github\.com/([a-zA-Z0-9]+)")
+
 
 def main() -> None:
     """Harvest finished and partial evaluations, regenerate leaderboards.
@@ -155,21 +158,65 @@ def _requested_languages(body: str) -> list[str]:
 
 
 def find_results_for_issue(number: int) -> list[str] | None:
-    """Return the list of jsonl lines from the first jsonl block in comments.
+    """Return jsonl lines from the first jsonl block or gist link in comments.
 
     Args:
         number:
             The issue number to inspect.
 
     Returns:
-        The non-empty lines of the first jsonl fenced block, or None if no
-        such block exists in the issue's comments.
+        The non-empty lines of the first jsonl fenced block or gist content,
+        or None if no such content exists in the issue's comments.
     """
     for comment in list_comments(number=number):
+        # First, try inline jsonl block.
         block = extract_first_jsonl_block(text=comment.get("body") or "")
         if block:
             return [line for line in block.splitlines() if line.strip()]
+
+        # Then, try gist link.
+        gist_id = extract_gist_id(comment.get("body") or "")
+        if gist_id:
+            gist_content = fetch_gist_content(gist_id=gist_id)
+            if gist_content:
+                return [line for line in gist_content.splitlines() if line.strip()]
     return None
+
+
+def extract_gist_id(text: str) -> str | None:
+    """Return the gist ID from the first gist link in ``text``.
+
+    Args:
+        text:
+            The text to scan for a gist link.
+
+    Returns:
+        The gist ID if found, or None.
+    """
+    m = GIST_LINK_RE.search(text)
+    return m.group(1) if m else None
+
+
+def fetch_gist_content(gist_id: str) -> str | None:
+    """Fetch the content of the first file in a GitHub Gist.
+
+    Args:
+        gist_id:
+            The GitHub Gist ID.
+
+    Returns:
+        The content of the first file in the gist, or None on failure.
+    """
+    try:
+        resp = gh_request(path=f"/gists/{gist_id}")
+        if isinstance(resp, dict) and "files" in resp:
+            first_file = next(iter(resp["files"].values()))
+            if isinstance(first_file, dict):
+                return first_file.get("content")
+        return None
+    except urllib.error.HTTPError as e:
+        logger.warning(f"Could not fetch gist {gist_id}: {e}")
+        return None
 
 
 def list_comments(number: int) -> list[dict]:

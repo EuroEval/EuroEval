@@ -785,14 +785,21 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
 
 PROGRESS_COMMENT_MARKER = "<!-- queue-progress -->"
 
+# Gist marker used to store and retrieve the gist ID across issue body updates.
+GIST_MARKER_RE = re.compile(r"<!--\s*euroeval-results-gist:\s*([^\s>]+)\s*-->")
+
+# Gist ID for uploading results as an attachment. Stored in the issue body
+# so it persists across runs and can be cleaned up when the issue is done.
+_gist_id: str | None = None
+
 
 def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None:
     """Run euroeval one language at a time and maintain a progress comment.
 
     A single comment carrying the ``queue-progress`` marker is created (or
     reused) and rewritten after every language so the issue always shows the
-    completed/in-progress/remaining/failed split along with one JSONL block
-    that accumulates every result line produced so far.
+    completed/in-progress/remaining/failed split along with a link to a
+    gist that holds the accumulated JSONL results.
 
     Args:
         issue:
@@ -804,6 +811,7 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
     """
     number = issue["number"]
     is_core = model_id in load_core_model_ids()
+    issue_body = issue.get("body")
 
     existing_lines = _result_lines_for_model(
         lines=read_jsonl_lines(path=RESULTS_PATH), model_id=model_id
@@ -823,132 +831,138 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
         remaining=pending,
         failed=failed,
         lines=accumulated,
+        issue_body=issue_body,
     )
 
     gated_detected = False
     failure_reason: str | None = None
     failure_output_tail = ""
 
-    for i, lang in enumerate(pending):
-        remaining_after = pending[i + 1 :]
-        comment_id = _post_or_update_progress_comment(
-            number=number,
-            comment_id=comment_id,
-            model_id=model_id,
-            done=done,
-            current=lang,
-            remaining=remaining_after,
-            failed=failed,
-            lines=accumulated,
-        )
-
-        before = set(read_jsonl_lines(path=RESULTS_PATH))
-        # Only ask euroeval to clear its model cache after the final language so
-        # the model is downloaded once per issue, not once per language.
-        is_last = i == len(pending) - 1
-        returncode, output = run_euroeval(
-            model_id=model_id,
-            languages=[lang],
-            evaluate_test_split=is_core,
-            clear_model_cache=is_last,
-        )
-        after = read_jsonl_lines(path=RESULTS_PATH)
-        new_lines = [line for line in after if line not in before]
-        accumulated.extend(new_lines)
-
-        if GATED_OUTPUT_RE.search(output):
-            gated_detected = True
-            failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            break
-
-        num_errored = num_errored_benchmarks(output=output)
-        missing = missing_official_dataset_language_pairs(
-            lines=accumulated, requested_languages=[lang]
-        )
-        if returncode != 0:
-            reason = f"euroeval exited with code {returncode} for language {lang!r}"
-            failure_reason = failure_reason or reason
-            failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed.append(lang)
-        elif num_errored > 0:
-            reason = (
-                f"euroeval reported {num_errored} errored benchmark(s) "
-                f"for language {lang!r}"
+    try:
+        for i, lang in enumerate(pending):
+            remaining_after = pending[i + 1 :]
+            comment_id = _post_or_update_progress_comment(
+                number=number,
+                comment_id=comment_id,
+                model_id=model_id,
+                done=done,
+                current=lang,
+                remaining=remaining_after,
+                failed=failed,
+                lines=accumulated,
+                issue_body=issue_body,
             )
-            failure_reason = failure_reason or reason
-            failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed.append(lang)
-        elif missing:
-            reason = (
-                f"missing official dataset-language pair(s) for {lang!r}: "
-                f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
+
+            before = set(read_jsonl_lines(path=RESULTS_PATH))
+            # Only ask euroeval to clear its model cache after the final language so
+            # the model is downloaded once per issue, not once per language.
+            is_last = i == len(pending) - 1
+            returncode, output = run_euroeval(
+                model_id=model_id,
+                languages=[lang],
+                evaluate_test_split=is_core,
+                clear_model_cache=is_last,
             )
-            failure_reason = failure_reason or reason
-            failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed.append(lang)
-        else:
-            done.append(lang)
+            after = read_jsonl_lines(path=RESULTS_PATH)
+            new_lines = [line for line in after if line not in before]
+            accumulated.extend(new_lines)
 
-        comment_id = _post_or_update_progress_comment(
-            number=number,
-            comment_id=comment_id,
-            model_id=model_id,
-            done=done,
-            current=None,
-            remaining=remaining_after,
-            failed=failed,
-            lines=accumulated,
-        )
+            if GATED_OUTPUT_RE.search(output):
+                gated_detected = True
+                failure_output_tail = output[-6000:].strip() or "(no output captured)"
+                break
 
-    if gated_detected:
-        version = euroeval_version()
-        set_gated_with_errored_block(
-            number=number, body=issue.get("body"), version=version
-        )
-        add_failed_label(number=number)
-        clear_vm_marker(number=number)
-        unassign_issue(number=number)
-        logger.info(
-            f"#{number}: euroeval reported a gated repo for {model_id!r}; "
-            f"marked gated and errored-on v{version} to avoid retry loops."
-        )
-        return
+            num_errored = num_errored_benchmarks(output=output)
+            missing = missing_official_dataset_language_pairs(
+                lines=accumulated, requested_languages=[lang]
+            )
+            if returncode != 0:
+                reason = f"euroeval exited with code {returncode} for language {lang!r}"
+                failure_reason = failure_reason or reason
+                failure_output_tail = output[-6000:].strip() or "(no output captured)"
+                failed.append(lang)
+            elif num_errored > 0:
+                reason = (
+                    f"euroeval reported {num_errored} errored benchmark(s) "
+                    f"for language {lang!r}"
+                )
+                failure_reason = failure_reason or reason
+                failure_output_tail = output[-6000:].strip() or "(no output captured)"
+                failed.append(lang)
+            elif missing:
+                reason = (
+                    f"missing official dataset-language pair(s) for {lang!r}: "
+                    f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
+                )
+                failure_reason = failure_reason or reason
+                failure_output_tail = output[-6000:].strip() or "(no output captured)"
+                failed.append(lang)
+            else:
+                done.append(lang)
 
-    if failed:
-        version = euroeval_version()
-        reason = failure_reason or f"failed languages: {', '.join(failed)}"
-        tail = failure_output_tail or "(no output captured)"
-        if issue_has_matching_error_comment(number=number, reason=reason):
+            comment_id = _post_or_update_progress_comment(
+                number=number,
+                comment_id=comment_id,
+                model_id=model_id,
+                done=done,
+                current=None,
+                remaining=remaining_after,
+                failed=failed,
+                lines=accumulated,
+                issue_body=issue_body,
+            )
+
+        if gated_detected:
+            version = euroeval_version()
+            set_gated_with_errored_block(
+                number=number, body=issue.get("body"), version=version
+            )
+            add_failed_label(number=number)
             clear_vm_marker(number=number)
             unassign_issue(number=number)
             logger.info(
-                f"#{number}: identical error already posted; "
-                "skipping comment and marker updates, returned to queue."
+                f"#{number}: euroeval reported a gated repo for {model_id!r}; "
+                f"marked gated and errored-on v{version} to avoid retry loops."
             )
             return
-        error_comment = (
-            f"Error encountered during evaluation ({reason}):\n\n"
-            f"```bash\n{tail}\n```\n\n"
-            f"EuroEval version: v{version}\n"
-        )
-        comment_on_issue(number=number, comment=error_comment)
-        set_errored_marker(number=number, body=issue.get("body"), version=version)
-        add_failed_label(number=number)
-        clear_vm_marker(number=number)
-        unassign_issue(number=number)
-        logger.info(
-            f"#{number}: marked errored on v{version} after {len(failed)} failed "
-            f"language(s) ({', '.join(failed)}); returned to queue."
-        )
-        return
 
-    remove_failed_label(number=number)
-    add_results_ready_label(number=number)
-    clear_vm_marker(number=number)
-    logger.info(
-        f"#{number}: completed all {len(done)} language(s) for {model_id!r}; "
-        "progress comment updated."
-    )
+        if failed:
+            version = euroeval_version()
+            reason = failure_reason or f"failed languages: {', '.join(failed)}"
+            tail = failure_output_tail or "(no output captured)"
+            if issue_has_matching_error_comment(number=number, reason=reason):
+                clear_vm_marker(number=number)
+                unassign_issue(number=number)
+                logger.info(
+                    f"#{number}: identical error already posted; "
+                    "skipping comment and marker updates, returned to queue."
+                )
+                return
+            error_comment = (
+                f"Error encountered during evaluation ({reason}):\n\n"
+                f"```bash\n{tail}\n```\n\n"
+                f"EuroEval version: v{version}\n"
+            )
+            comment_on_issue(number=number, comment=error_comment)
+            set_errored_marker(number=number, body=issue.get("body"), version=version)
+            add_failed_label(number=number)
+            clear_vm_marker(number=number)
+            unassign_issue(number=number)
+            logger.info(
+                f"#{number}: marked errored on v{version} after {len(failed)} failed "
+                f"language(s) ({', '.join(failed)}); returned to queue."
+            )
+            return
+
+        remove_failed_label(number=number)
+        add_results_ready_label(number=number)
+        clear_vm_marker(number=number)
+        logger.info(
+            f"#{number}: completed all {len(done)} language(s) for {model_id!r}; "
+            "progress comment updated."
+        )
+    finally:
+        _delete_gist()
 
 
 def _result_lines_for_model(lines: list[str], model_id: str) -> list[str]:
@@ -971,6 +985,106 @@ def _completed_languages(lines: list[str], requested_languages: list[str]) -> li
     )
     incomplete = {lang for _, lang in missing}
     return [lang for lang in requested_languages if lang not in incomplete]
+
+
+def _ensure_gist_created() -> str | None:
+    """Create or return the existing gist ID for uploading results.
+
+    Returns:
+        The gist ID if a gist was created or found, or None on failure.
+    """
+    global _gist_id
+    if _gist_id:
+        return _gist_id
+
+    # Check issue body for an existing gist marker.
+    # This is done lazily on first call so we don't need to fetch the body
+    # upfront for every issue.
+    return None
+
+
+def _upload_results_gist(
+    model_id: str, lines: list[str], issue_body: str | None = None
+) -> str | None:
+    """Upload the JSONL results as a GitHub Gist and return its ID.
+
+    The gist ID is stored in the issue body via a marker so it persists
+    across script restarts and can be cleaned up on issue completion.
+
+    Args:
+        model_id:
+            The Hugging Face model id used to name the gist file.
+        lines:
+            The JSONL result lines to upload.
+        issue_body:
+            The current issue body (used to store the gist marker).
+
+    Returns:
+        The gist ID if the upload succeeded, or None on failure.
+    """
+    global _gist_id
+
+    if _gist_id:
+        return _gist_id
+
+    filename = f"{model_id.replace('/', '_').replace('.', '_')}_results.jsonl"
+    content = "\n".join(lines) + "\n" if lines else ""
+
+    try:
+        resp = gh_request(
+            path="/gists",
+            method="POST",
+            body={
+                "description": f"EuroEval results for {model_id}",
+                "files": {filename: {"content": content}},
+                "public": False,
+            },
+        )
+        if isinstance(resp, dict):
+            gist_id = resp.get("id")
+            if isinstance(gist_id, str) and gist_id:
+                _gist_id = gist_id
+                # Store the gist ID in the issue body so it persists across runs.
+                if issue_body:
+                    cleaned = GIST_MARKER_RE.sub("", issue_body).rstrip()
+                    new_body = (
+                        f"{cleaned}\n\n<!-- euroeval-results-gist: {gist_id} -->\n"
+                    )
+                    try:
+                        gh_request(
+                            path=f"/repos/{REPO}/issues/{_current_issue_number}",
+                            method="PATCH",
+                            body={"body": new_body},
+                        )
+                        logger.info(f"Stored gist marker {gist_id} in issue body.")
+                    except urllib.error.HTTPError as e:
+                        logger.warning(
+                            f"Could not store gist marker in issue body: {e}"
+                        )
+                logger.info(f"Created results gist {gist_id} for {model_id!r}.")
+                return gist_id
+            return None
+        return None
+    except urllib.error.HTTPError as e:
+        logger.warning(f"Could not create results gist for {model_id!r}: {e}")
+        return None
+
+
+def _delete_gist() -> None:
+    """Delete the results gist if one was created.
+
+    Called when the issue is done (success or failure) so the gist doesn't
+    linger after the evaluation is finished.
+    """
+    global _gist_id
+    if not _gist_id:
+        return
+    try:
+        gh_request(path=f"/gists/{_gist_id}", method="DELETE")
+        logger.info(f"Deleted results gist {_gist_id}.")
+    except urllib.error.HTTPError as e:
+        logger.warning(f"Could not delete results gist {_gist_id}: {e}")
+    _gist_id = None
 
 
 def _find_progress_comment(number: int) -> int | None:
@@ -1001,18 +1115,35 @@ def _render_progress_comment(
     remaining: list[str],
     failed: list[str],
     lines: list[str],
+    gist_url: str | None = None,
 ) -> str:
     """Render the progress comment body for the given evaluation state.
 
+    Args:
+        model_id:
+            The Hugging Face model id.
+        done:
+            List of completed language codes.
+        current:
+            The currently processing language code, or None.
+        remaining:
+            List of remaining language codes.
+        failed:
+            List of failed language codes.
+        lines:
+            The accumulated JSONL result lines (used to create the gist).
+        gist_url:
+            URL to the results gist, or None if no gist has been created yet.
+
     Returns:
         The markdown body of the progress comment, including the hidden
-        ``queue-progress`` marker and the cumulative ``jsonl`` block.
+        ``queue-progress`` marker and a link to the results gist.
     """
 
     def fmt(langs: list[str]) -> str:
         return ", ".join(langs) if langs else "(none)"
 
-    header = (
+    body = (
         f"{PROGRESS_COMMENT_MARKER}\n"
         f"**Evaluation progress for `{model_id}`**\n\n"
         f"- Completed: {fmt(done)}\n"
@@ -1020,8 +1151,10 @@ def _render_progress_comment(
         f"- Remaining: {fmt(remaining)}\n"
         f"- Failed: {fmt(failed)}\n"
     )
-    payload = "\n".join(lines)
-    return f"{header}\n```jsonl\n{payload}\n```\n"
+    if gist_url:
+        body += f"\n\n[Benchmark results gist]({gist_url})\n"
+
+    return body
 
 
 def _post_or_update_progress_comment(
@@ -1033,6 +1166,7 @@ def _post_or_update_progress_comment(
     remaining: list[str],
     failed: list[str],
     lines: list[str],
+    issue_body: str | None = None,
 ) -> int | None:
     """Create or PATCH the progress comment for the given issue.
 
@@ -1041,6 +1175,14 @@ def _post_or_update_progress_comment(
         otherwise None (e.g. when the API call failed and the existing
         ``comment_id`` was not known).
     """
+    gist_url = None
+    if lines:
+        gist_id = _upload_results_gist(
+            model_id=model_id, lines=lines, issue_body=issue_body
+        )
+        if gist_id:
+            gist_url = f"https://gist.github.com/{gist_id}"
+
     body = _render_progress_comment(
         model_id=model_id,
         done=done,
@@ -1048,6 +1190,7 @@ def _post_or_update_progress_comment(
         remaining=remaining,
         failed=failed,
         lines=lines,
+        gist_url=gist_url,
     )
     try:
         if comment_id is None:
