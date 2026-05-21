@@ -56,8 +56,9 @@ from leaderboards.evaluation_common import (
     GPU_FIT_OVERHEAD,
     LANGUAGE_GROUP_CODES,
     estimated_model_bytes,
+    extract_language_groups,
     gpu_total_memory_bytes,
-    official_dataset_language_pairs,
+    missing_official_dataset_language_pairs,
     run_euroeval,
 )
 from leaderboards.paths import CORE_MODELS_CONFIG
@@ -609,26 +610,6 @@ def extract_model_id(title: str, body: str | None = None) -> str | None:
     return rest if rest and rest != "<model-name>" else None
 
 
-def extract_language_groups(body: str | None) -> list[str]:
-    """Return the language-group labels that are ticked in an issue body.
-
-    Args:
-        body:
-            The markdown body of the issue, or None.
-
-    Returns:
-        The labels (keys of ``LANGUAGE_GROUP_CODES``) whose checkbox is ticked.
-    """
-    if not body:
-        return []
-    selected: list[str] = []
-    for group in LANGUAGE_GROUP_CODES:
-        pattern = re.compile(rf"-\s*\[[xX]\]\s*{re.escape(group)}")
-        if pattern.search(body):
-            selected.append(group)
-    return selected
-
-
 def errored_marker_present(body: str | None) -> bool:
     """Return True if the body carries an ``errored-on`` marker.
 
@@ -802,8 +783,16 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
         _current_issue_number = None
 
 
+PROGRESS_COMMENT_MARKER = "<!-- queue-progress -->"
+
+
 def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None:
-    """Run euroeval and report results for an issue already claimed by this VM.
+    """Run euroeval one language at a time and maintain a progress comment.
+
+    A single comment carrying the ``queue-progress`` marker is created (or
+    reused) and rewritten after every language so the issue always shows the
+    completed/in-progress/remaining/failed split along with one JSONL block
+    that accumulates every result line produced so far.
 
     Args:
         issue:
@@ -814,26 +803,104 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
             The flattened list of language codes for this evaluation.
     """
     number = issue["number"]
-
-    before = set(read_jsonl_lines(path=RESULTS_PATH))
     is_core = model_id in load_core_model_ids()
-    returncode, output = run_euroeval(
-        model_id=model_id, languages=languages, evaluate_test_split=is_core
-    )
-    after = read_jsonl_lines(path=RESULTS_PATH)
-    new_lines = [line for line in after if line not in before]
 
-    num_errored = num_errored_benchmarks(output=output)
-    missing_official = missing_official_dataset_language_pairs(
-        lines=new_lines, requested_languages=languages
+    existing_lines = _result_lines_for_model(
+        lines=read_jsonl_lines(path=RESULTS_PATH), model_id=model_id
     )
-    crashed = returncode != 0
-    produced_nothing = not new_lines
-    partial = num_errored > 0
-    incomplete_official = bool(missing_official)
-    failed = crashed or produced_nothing or partial or incomplete_official
+    accumulated = list(existing_lines)
+    done = _completed_languages(lines=accumulated, requested_languages=languages)
+    pending = [lang for lang in languages if lang not in done]
+    failed: list[str] = []
 
-    if failed and GATED_OUTPUT_RE.search(output):
+    comment_id = _find_progress_comment(number=number)
+    comment_id = _post_or_update_progress_comment(
+        number=number,
+        comment_id=comment_id,
+        model_id=model_id,
+        done=done,
+        current=None,
+        remaining=pending,
+        failed=failed,
+        lines=accumulated,
+    )
+
+    gated_detected = False
+    failure_reason: str | None = None
+    failure_output_tail = ""
+
+    for i, lang in enumerate(pending):
+        remaining_after = pending[i + 1 :]
+        comment_id = _post_or_update_progress_comment(
+            number=number,
+            comment_id=comment_id,
+            model_id=model_id,
+            done=done,
+            current=lang,
+            remaining=remaining_after,
+            failed=failed,
+            lines=accumulated,
+        )
+
+        before = set(read_jsonl_lines(path=RESULTS_PATH))
+        # Only ask euroeval to clear its model cache after the final language so
+        # the model is downloaded once per issue, not once per language.
+        is_last = i == len(pending) - 1
+        returncode, output = run_euroeval(
+            model_id=model_id,
+            languages=[lang],
+            evaluate_test_split=is_core,
+            clear_model_cache=is_last,
+        )
+        after = read_jsonl_lines(path=RESULTS_PATH)
+        new_lines = [line for line in after if line not in before]
+        accumulated.extend(new_lines)
+
+        if GATED_OUTPUT_RE.search(output):
+            gated_detected = True
+            failure_output_tail = output[-6000:].strip() or "(no output captured)"
+            break
+
+        num_errored = num_errored_benchmarks(output=output)
+        missing = missing_official_dataset_language_pairs(
+            lines=accumulated, requested_languages=[lang]
+        )
+        if returncode != 0:
+            reason = f"euroeval exited with code {returncode} for language {lang!r}"
+            failure_reason = failure_reason or reason
+            failure_output_tail = output[-6000:].strip() or "(no output captured)"
+            failed.append(lang)
+        elif num_errored > 0:
+            reason = (
+                f"euroeval reported {num_errored} errored benchmark(s) "
+                f"for language {lang!r}"
+            )
+            failure_reason = failure_reason or reason
+            failure_output_tail = output[-6000:].strip() or "(no output captured)"
+            failed.append(lang)
+        elif missing:
+            reason = (
+                f"missing official dataset-language pair(s) for {lang!r}: "
+                f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
+            )
+            failure_reason = failure_reason or reason
+            failure_output_tail = output[-6000:].strip() or "(no output captured)"
+            failed.append(lang)
+        else:
+            done.append(lang)
+
+        comment_id = _post_or_update_progress_comment(
+            number=number,
+            comment_id=comment_id,
+            model_id=model_id,
+            done=done,
+            current=None,
+            remaining=remaining_after,
+            failed=failed,
+            lines=accumulated,
+        )
+
+    if gated_detected:
         version = euroeval_version()
         set_gated_with_errored_block(
             number=number, body=issue.get("body"), version=version
@@ -849,24 +916,8 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
 
     if failed:
         version = euroeval_version()
-        if crashed:
-            reason = f"euroeval exited with code {returncode}"
-        elif produced_nothing:
-            reason = "euroeval produced no new result lines"
-        elif incomplete_official:
-            reason = (
-                "missing results for "
-                f"{len(missing_official)} official dataset-language pair(s): "
-                f"{format_dataset_language_pairs(dataset_language_pairs=missing_official)}"
-            )
-        else:
-            reason = f"euroeval reported {num_errored} errored benchmark(s)"
-        tail = output[-6000:].strip() or "(no output captured)"
-        comment = (
-            f"Error encountered during evaluation ({reason}):\n\n"
-            f"```bash\n{tail}\n```\n\n"
-            f"EuroEval version: v{version}\n"
-        )
+        reason = failure_reason or f"failed languages: {', '.join(failed)}"
+        tail = failure_output_tail or "(no output captured)"
         if issue_has_matching_error_comment(number=number, reason=reason):
             clear_vm_marker(number=number)
             unassign_issue(number=number)
@@ -875,34 +926,150 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
                 "skipping comment and marker updates, returned to queue."
             )
             return
-        comment_on_issue(number=number, comment=comment)
+        error_comment = (
+            f"Error encountered during evaluation ({reason}):\n\n"
+            f"```bash\n{tail}\n```\n\n"
+            f"EuroEval version: v{version}\n"
+        )
+        comment_on_issue(number=number, comment=error_comment)
         set_errored_marker(number=number, body=issue.get("body"), version=version)
         add_failed_label(number=number)
         clear_vm_marker(number=number)
         unassign_issue(number=number)
-        logger.info(f"#{number}: marked errored on v{version}, returned to queue.")
+        logger.info(
+            f"#{number}: marked errored on v{version} after {len(failed)} failed "
+            f"language(s) ({', '.join(failed)}); returned to queue."
+        )
         return
 
-    payload = "\n".join(new_lines)
-    comment = f"Results for `{model_id}`:\n\n```jsonl\n{payload}\n```\n"
-    comment_on_issue(number=number, comment=comment)
     remove_failed_label(number=number)
     add_results_ready_label(number=number)
     clear_vm_marker(number=number)
-    logger.info(f"#{number}: posted {len(new_lines)} result line(s) as comment.")
+    logger.info(
+        f"#{number}: completed all {len(done)} language(s) for {model_id!r}; "
+        "progress comment updated."
+    )
 
 
-def missing_official_dataset_language_pairs(
-    lines: list[str], requested_languages: list[str]
-) -> set[tuple[str, str]]:
-    """Return missing official dataset/language pairs for the requested languages."""
-    expected_pairs = {
-        pair
-        for pair in official_dataset_language_pairs()
-        if pair[1] in set(requested_languages)
-    }
-    observed_pairs = result_dataset_language_pairs(lines=lines)
-    return expected_pairs - observed_pairs
+def _result_lines_for_model(lines: list[str], model_id: str) -> list[str]:
+    """Return the subset of ``lines`` whose parsed ``model`` matches ``model_id``."""
+    out: list[str] = []
+    for line in lines:
+        try:
+            parsed = BenchmarkResult.from_dict(config=json.loads(line))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+        if parsed.model == model_id:
+            out.append(line)
+    return out
+
+
+def _completed_languages(lines: list[str], requested_languages: list[str]) -> list[str]:
+    """Return requested languages whose official pair coverage is complete."""
+    missing = missing_official_dataset_language_pairs(
+        lines=lines, requested_languages=requested_languages
+    )
+    incomplete = {lang for _, lang in missing}
+    return [lang for lang in requested_languages if lang not in incomplete]
+
+
+def _find_progress_comment(number: int) -> int | None:
+    """Return the id of the existing progress comment on ``number``, or None."""
+    try:
+        comments = gh_request(
+            path=f"/repos/{REPO}/issues/{number}/comments", params={"per_page": "100"}
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not list comments: {e}")
+        return None
+    if not isinstance(comments, list):
+        return None
+    for c in comments:
+        if not isinstance(c, dict):
+            continue
+        if PROGRESS_COMMENT_MARKER in (c.get("body") or ""):
+            cid = c.get("id")
+            if isinstance(cid, int):
+                return cid
+    return None
+
+
+def _render_progress_comment(
+    model_id: str,
+    done: list[str],
+    current: str | None,
+    remaining: list[str],
+    failed: list[str],
+    lines: list[str],
+) -> str:
+    """Render the progress comment body for the given evaluation state.
+
+    Returns:
+        The markdown body of the progress comment, including the hidden
+        ``queue-progress`` marker and the cumulative ``jsonl`` block.
+    """
+
+    def fmt(langs: list[str]) -> str:
+        return ", ".join(langs) if langs else "(none)"
+
+    header = (
+        f"{PROGRESS_COMMENT_MARKER}\n"
+        f"**Evaluation progress for `{model_id}`**\n\n"
+        f"- Completed: {fmt(done)}\n"
+        f"- In progress: {current if current else '(none)'}\n"
+        f"- Remaining: {fmt(remaining)}\n"
+        f"- Failed: {fmt(failed)}\n"
+    )
+    payload = "\n".join(lines)
+    return f"{header}\n```jsonl\n{payload}\n```\n"
+
+
+def _post_or_update_progress_comment(
+    number: int,
+    comment_id: int | None,
+    model_id: str,
+    done: list[str],
+    current: str | None,
+    remaining: list[str],
+    failed: list[str],
+    lines: list[str],
+) -> int | None:
+    """Create or PATCH the progress comment for the given issue.
+
+    Returns:
+        The id of the progress comment if it could be created or updated,
+        otherwise None (e.g. when the API call failed and the existing
+        ``comment_id`` was not known).
+    """
+    body = _render_progress_comment(
+        model_id=model_id,
+        done=done,
+        current=current,
+        remaining=remaining,
+        failed=failed,
+        lines=lines,
+    )
+    try:
+        if comment_id is None:
+            resp = gh_request(
+                path=f"/repos/{REPO}/issues/{number}/comments",
+                method="POST",
+                body={"body": body},
+            )
+            if isinstance(resp, dict):
+                cid = resp.get("id")
+                if isinstance(cid, int):
+                    return cid
+            return None
+        gh_request(
+            path=f"/repos/{REPO}/issues/comments/{comment_id}",
+            method="PATCH",
+            body={"body": body},
+        )
+        return comment_id
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not update progress comment: {e}")
+        return comment_id
 
 
 def model_has_partial_results(
@@ -939,18 +1106,6 @@ def model_has_partial_results(
         lines=matching, requested_languages=requested_languages
     )
     return bool(missing)
-
-
-def result_dataset_language_pairs(lines: list[str]) -> set[tuple[str, str]]:
-    """Return dataset/language pairs parsed from benchmark-result JSONL lines."""
-    pairs: set[tuple[str, str]] = set()
-    for line in lines:
-        try:
-            parsed = BenchmarkResult.from_dict(config=json.loads(line))
-        except (TypeError, ValueError, json.JSONDecodeError):
-            continue
-        pairs.update((parsed.dataset, language) for language in parsed.languages)
-    return pairs
 
 
 def format_dataset_language_pairs(dataset_language_pairs: set[tuple[str, str]]) -> str:

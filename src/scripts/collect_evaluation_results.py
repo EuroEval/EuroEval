@@ -33,6 +33,12 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from leaderboards.evaluation_common import (
+    LANGUAGE_GROUP_CODES,
+    extract_language_groups,
+    missing_official_dataset_language_pairs,
+)
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
@@ -47,29 +53,49 @@ JSONL_FENCE_RE = re.compile(r"```jsonl\s*\n(.*?)\n```", re.DOTALL)
 
 
 def main() -> None:
-    """Harvest finished evaluations, regenerate leaderboards, close issues."""
+    """Harvest finished and partial evaluations, regenerate leaderboards.
+
+    All available result lines are merged into the leaderboards (partial runs
+    included), but only issues whose results cover every official
+    ``(dataset, language)`` pair for the requested language groups are closed.
+    Partial issues are left open so the queue processor can keep filling them
+    in across subsequent runs.
+    """
     try:
-        issues = list_assigned_open_issues()
+        issues = list_open_request_issues()
     except urllib.error.HTTPError as e:
         logger.error(f"Failed to list issues: {e}")
         sys.exit(1)
 
-    completed: list[tuple[int, list[str]]] = []
+    harvested: list[tuple[int, list[str], bool]] = []
     for issue in issues:
         number = issue["number"]
         lines = find_results_for_issue(number=number)
         if not lines:
             logger.info(f"#{number}: no jsonl block in comments yet -- skipping.")
             continue
-        logger.info(f"#{number}: found {len(lines)} result line(s).")
-        completed.append((number, lines))
+        requested_languages = _requested_languages(body=issue.get("body") or "")
+        if not requested_languages:
+            logger.info(
+                f"#{number}: skipping -- could not parse requested language groups."
+            )
+            continue
+        missing = missing_official_dataset_language_pairs(
+            lines=lines, requested_languages=requested_languages
+        )
+        complete = not missing
+        logger.info(
+            f"#{number}: found {len(lines)} result line(s) "
+            f"({'complete' if complete else f'{len(missing)} pair(s) missing'})."
+        )
+        harvested.append((number, lines, complete))
 
-    if not completed:
+    if not harvested:
         logger.info("Nothing to merge.")
         return
 
     all_lines: list[str] = []
-    for _, lines in completed:
+    for _, lines, _ in harvested:
         all_lines.extend(lines)
 
     NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
@@ -85,7 +111,9 @@ def main() -> None:
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
         sys.exit(1)
 
-    for number, _ in completed:
+    completed_numbers = [number for number, _, complete in harvested if complete]
+    partial_numbers = [number for number, _, complete in harvested if not complete]
+    for number in completed_numbers:
         try:
             comment_on_issue(
                 number=number,
@@ -97,20 +125,33 @@ def main() -> None:
             logger.info(f"#{number}: closed.")
         except urllib.error.HTTPError as e:
             logger.error(f"#{number}: failed to close: {e}")
+    if partial_numbers:
+        logger.info(
+            f"Merged partial results for {len(partial_numbers)} open issue(s); "
+            f"kept open: {', '.join(f'#{n}' for n in partial_numbers)}."
+        )
 
 
-def list_assigned_open_issues() -> list[dict]:
-    """Return open model-evaluation-request issues that have an assignee.
+def list_open_request_issues() -> list[dict]:
+    """Return open model-evaluation-request issues, assigned or not.
 
     Returns:
-        The list of open assigned issues, with pull requests filtered out.
+        The list of open issues carrying the queue label, with pull requests
+        filtered out. Both unassigned (partial / pending) and assigned issues
+        are included so partial results can still be harvested.
     """
     issues = gh_request(
         path=f"/repos/{REPO}/issues",
-        params={"state": "open", "labels": LABEL, "per_page": "100", "assignee": "*"},
+        params={"state": "open", "labels": LABEL, "per_page": "100"},
     )
     assert isinstance(issues, list)
     return [i for i in issues if "pull_request" not in i]
+
+
+def _requested_languages(body: str) -> list[str]:
+    """Return the flattened language codes selected on a queue issue."""
+    groups = extract_language_groups(body=body)
+    return sorted({code for group in groups for code in LANGUAGE_GROUP_CODES[group]})
 
 
 def find_results_for_issue(number: int) -> list[str] | None:

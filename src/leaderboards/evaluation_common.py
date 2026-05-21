@@ -15,6 +15,7 @@ sync.
 from __future__ import annotations
 
 import collections.abc as c
+import json
 import logging
 import os
 import pty
@@ -36,6 +37,7 @@ from huggingface_hub.errors import (
     SafetensorsParsingError,
 )
 
+from euroeval.data_models import BenchmarkResult
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.string_utils import split_model_id
 
@@ -337,6 +339,50 @@ def official_dataset_language_pairs() -> set[tuple[str, str]]:
         if not dataset_config.unofficial
         for language in dataset_config.languages
     }
+
+
+def extract_language_groups(body: str | None) -> list[str]:
+    """Return the language-group labels that are ticked in an issue body.
+
+    Args:
+        body:
+            The markdown body of a model-evaluation-request issue, or None.
+
+    Returns:
+        The labels (keys of ``LANGUAGE_GROUP_CODES``) whose checkbox is ticked.
+    """
+    if not body:
+        return []
+    selected: list[str] = []
+    for group in LANGUAGE_GROUP_CODES:
+        pattern = re.compile(rf"-\s*\[[xX]\]\s*{re.escape(group)}")
+        if pattern.search(body):
+            selected.append(group)
+    return selected
+
+
+def result_dataset_language_pairs(lines: c.Iterable[str]) -> set[tuple[str, str]]:
+    """Return dataset/language pairs parsed from benchmark-result JSONL lines."""
+    pairs: set[tuple[str, str]] = set()
+    for line in lines:
+        try:
+            parsed = BenchmarkResult.from_dict(config=json.loads(line))
+        except (TypeError, ValueError, json.JSONDecodeError):
+            continue
+        pairs.update((parsed.dataset, language) for language in parsed.languages)
+    return pairs
+
+
+def missing_official_dataset_language_pairs(
+    lines: c.Iterable[str], requested_languages: c.Iterable[str]
+) -> set[tuple[str, str]]:
+    """Return missing official dataset/language pairs for the requested languages."""
+    requested = set(requested_languages)
+    expected_pairs = {
+        pair for pair in official_dataset_language_pairs() if pair[1] in requested
+    }
+    observed_pairs = result_dataset_language_pairs(lines=lines)
+    return expected_pairs - observed_pairs
 
 
 def resolve_hf_token() -> str | None:
