@@ -789,7 +789,9 @@ def build_core_model_list(
         parameters = meta.get("parameters", float("nan"))
         if not math.isfinite(parameters):
             parameters = _params_from_model_id(plain_id)
-        if not math.isfinite(parameters):
+        # API models don't live on HuggingFace, so hitting the HF
+        # safetensors endpoint for them just guarantees a 404.
+        if not math.isfinite(parameters) and model_type != "api":
             parameters = _params_from_hf_safetensors(plain_id.split("#")[0])
         bucket = _size_bucket(model_type, parameters)
         core.append(
