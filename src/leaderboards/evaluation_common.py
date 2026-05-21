@@ -86,139 +86,6 @@ DTYPE_BYTES: dict[str, int] = {
 GPU_FIT_OVERHEAD = 1.2
 
 
-@lru_cache(maxsize=1)
-def official_dataset_language_pairs() -> set[tuple[str, str]]:
-    """Return all official dataset/language pairs used by EuroEval."""
-    all_dataset_configs = get_all_dataset_configs(
-        custom_datasets_file=Path(""),
-        dataset_ids=[],
-        api_key=None,
-        cache_dir=Path(".cache"),
-        trust_remote_code=False,
-        run_with_cli=False,
-    )
-    return {
-        (dataset_config.name, language.code)
-        for dataset_config in all_dataset_configs.values()
-        if not dataset_config.unofficial
-        for language in dataset_config.languages
-    }
-
-
-def resolve_hf_token() -> str | None:
-    """Return the HF token from env or the ``hf auth login`` cache."""
-    return (
-        os.environ.get("HF_TOKEN")
-        or os.environ.get("HUGGINGFACE_API_KEY")
-        or get_token()
-    )
-
-
-def gpu_total_memory_bytes() -> int | None:
-    """Return the total memory available for model weights on this host, in bytes.
-
-    Honors ``EUROEVAL_GPU_MEMORY_BYTES`` for overrides. Otherwise: when CUDA
-    is available and the host is not flagged as ``UNIFIED_MEMORY=1``, report
-    the largest CUDA device's total memory; otherwise report total system
-    RAM via ``psutil``.
-    """
-    override = os.environ.get("EUROEVAL_GPU_MEMORY_BYTES")
-    if override:
-        try:
-            return int(override)
-        except ValueError:
-            logger.warning(f"Ignoring invalid EUROEVAL_GPU_MEMORY_BYTES={override!r}.")
-
-    unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
-    if torch.cuda.is_available() and not unified:
-        sizes = [
-            torch.cuda.get_device_properties(i).total_memory
-            for i in range(torch.cuda.device_count())
-        ]
-        if sizes:
-            return max(sizes)
-    return int(psutil.virtual_memory().total)
-
-
-def estimated_model_bytes(model_id: str) -> int | None:
-    """Estimate the weight footprint of a model in bytes.
-
-    Reads the safetensors header(s) so quantised checkpoints are sized
-    correctly.
-
-    Args:
-        model_id:
-            The Hugging Face repo id, optionally suffixed with ``@<revision>``.
-
-    Returns:
-        The total weight bytes across all tensors, or None when the repo
-        is not a safetensors repo or metadata cannot be parsed.
-    """
-    components = split_model_id(model_id=model_id)
-    repo = components.model_id
-    revision = components.revision
-    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
-    try:
-        meta = get_safetensors_metadata(repo_id=repo, revision=revision, token=token)
-    except (
-        NotASafetensorsRepoError,
-        SafetensorsParsingError,
-        RepositoryNotFoundError,
-        GatedRepoError,
-        HfHubHTTPError,
-    ) as e:
-        logger.debug(f"safetensors metadata unavailable for {model_id}: {e}")
-        return None
-
-    total = 0
-    for dtype, count in meta.parameter_count.items():
-        dtype_bits = _dtype_bits(dtype=dtype)
-        if dtype_bits is None:
-            logger.debug(
-                f"Unknown safetensors dtype {dtype!r} for {model_id}; "
-                "assuming 2 bytes/param."
-            )
-            dtype_bits = 16
-        total += (count * dtype_bits + 7) // 8
-    return total
-
-
-def _dtype_bits(dtype: str) -> int | None:
-    """Infer the number of bits used by a safetensors dtype string.
-
-    Args:
-        dtype:
-            The safetensors dtype string.
-
-    Returns:
-        The bit-width, or None when it cannot be inferred.
-    """
-    normalized_dtype = dtype.upper()
-    if normalized_dtype in DTYPE_BYTES:
-        return DTYPE_BYTES[normalized_dtype] * 8
-
-    for match in re.findall(pattern=r"\d+", string=normalized_dtype):
-        bits = int(match)
-        if bits > 0:
-            return bits
-    return None
-
-
-def model_fits_locally(model_id: str, gpu_bytes: int | None) -> tuple[bool, int | None]:
-    """Return ``(fits, needed_bytes)`` for an open-weight model.
-
-    ``fits`` is True when either the GPU budget is unknown (caller should
-    skip the check), the model's safetensors footprint can't be measured,
-    or ``needed * GPU_FIT_OVERHEAD <= gpu_bytes``.
-    """
-    if gpu_bytes is None:
-        return True, None
-    needed = estimated_model_bytes(model_id=model_id)
-    if needed is None:
-        return True, None
-    return int(needed * GPU_FIT_OVERHEAD) <= gpu_bytes, needed
-
-
 def run_euroeval(
     model_id: str,
     languages: c.Sequence[str],
@@ -241,7 +108,7 @@ def run_euroeval(
         datasets (optional):
             Dataset ids to pass via repeated ``--dataset`` flags. When
             None or empty, no ``--dataset`` flag is passed and the CLI
-            uses its language-driven default.
+            uses its language-driven default. Defaults to None.
         evaluate_test_split (optional):
             When True pass ``--evaluate-test-split``; when False pass
             ``--evaluate-val-split``. Defaults to True.
@@ -328,3 +195,158 @@ def run_euroeval(
     proc.wait()
     output = b"".join(captured).decode("utf-8", errors="replace")
     return proc.returncode, output
+
+
+def model_fits_locally(model_id: str, gpu_bytes: int | None) -> tuple[bool, int | None]:
+    """Return whether an open-weight model fits the local memory budget.
+
+    Args:
+        model_id:
+            The HuggingFace repo id to size-check.
+        gpu_bytes:
+            The local memory budget in bytes, or None when unknown
+            (in which case the caller should skip the check).
+
+    Returns:
+        A ``(fits, needed_bytes)`` pair. ``fits`` is True when either
+        ``gpu_bytes`` is None, the model's safetensors footprint can't
+        be measured, or ``needed * GPU_FIT_OVERHEAD <= gpu_bytes``.
+        ``needed_bytes`` is the measured footprint, or None when it
+        couldn't be measured.
+    """
+    if gpu_bytes is None:
+        return True, None
+    needed = estimated_model_bytes(model_id=model_id)
+    if needed is None:
+        return True, None
+    return int(needed * GPU_FIT_OVERHEAD) <= gpu_bytes, needed
+
+
+def estimated_model_bytes(model_id: str) -> int | None:
+    """Estimate the weight footprint of a model in bytes.
+
+    Reads the safetensors header(s) so quantised checkpoints are sized
+    correctly.
+
+    Args:
+        model_id:
+            The HuggingFace repo id, optionally suffixed with ``@<revision>``.
+
+    Returns:
+        The total weight bytes across all tensors, or None when the repo
+        is not a safetensors repo or metadata cannot be parsed.
+    """
+    components = split_model_id(model_id=model_id)
+    repo = components.model_id
+    revision = components.revision
+    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
+    try:
+        meta = get_safetensors_metadata(repo_id=repo, revision=revision, token=token)
+    except (
+        NotASafetensorsRepoError,
+        SafetensorsParsingError,
+        RepositoryNotFoundError,
+        GatedRepoError,
+        HfHubHTTPError,
+    ) as e:
+        logger.debug(f"safetensors metadata unavailable for {model_id}: {e}")
+        return None
+
+    total = 0
+    for dtype, count in meta.parameter_count.items():
+        dtype_bits = _dtype_bits(dtype=dtype)
+        if dtype_bits is None:
+            logger.debug(
+                f"Unknown safetensors dtype {dtype!r} for {model_id}; "
+                "assuming 2 bytes/param."
+            )
+            dtype_bits = 16
+        total += (count * dtype_bits + 7) // 8
+    return total
+
+
+def _dtype_bits(dtype: str) -> int | None:
+    """Infer the number of bits used by a safetensors dtype string.
+
+    Args:
+        dtype:
+            The safetensors dtype string.
+
+    Returns:
+        The bit-width, or None when it cannot be inferred.
+    """
+    normalised_dtype = dtype.upper()
+    if normalised_dtype in DTYPE_BYTES:
+        return DTYPE_BYTES[normalised_dtype] * 8
+
+    for match in re.findall(pattern=r"\d+", string=normalised_dtype):
+        bits = int(match)
+        if bits > 0:
+            return bits
+    return None
+
+
+def gpu_total_memory_bytes() -> int | None:
+    """Return the total memory available for model weights on this host.
+
+    Honours ``EUROEVAL_GPU_MEMORY_BYTES`` for overrides. Otherwise: when CUDA
+    is available and the host is not flagged as ``UNIFIED_MEMORY=1``, report
+    the largest CUDA device's total memory; otherwise report total system
+    RAM via ``psutil``.
+
+    Returns:
+        The total memory in bytes, or None if the override is unparseable.
+    """
+    override = os.environ.get("EUROEVAL_GPU_MEMORY_BYTES")
+    if override:
+        try:
+            return int(override)
+        except ValueError:
+            logger.warning(f"Ignoring invalid EUROEVAL_GPU_MEMORY_BYTES={override!r}.")
+
+    unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
+    if torch.cuda.is_available() and not unified:
+        sizes = [
+            torch.cuda.get_device_properties(i).total_memory
+            for i in range(torch.cuda.device_count())
+        ]
+        if sizes:
+            return max(sizes)
+    return int(psutil.virtual_memory().total)
+
+
+@lru_cache(maxsize=1)
+def official_dataset_language_pairs() -> set[tuple[str, str]]:
+    """Return all official dataset/language pairs used by EuroEval.
+
+    Returns:
+        The ``(dataset_name, language_code)`` pairs for every official
+        (i.e. non-unofficial) dataset in :mod:`euroeval.dataset_configs`.
+    """
+    all_dataset_configs = get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    return {
+        (dataset_config.name, language.code)
+        for dataset_config in all_dataset_configs.values()
+        if not dataset_config.unofficial
+        for language in dataset_config.languages
+    }
+
+
+def resolve_hf_token() -> str | None:
+    """Return the HF token from env or the ``hf auth login`` cache.
+
+    Returns:
+        The token string, or None if neither env nor cache yields one.
+    """
+    return (
+        os.environ.get("HF_TOKEN")
+        or os.environ.get("HUGGINGFACE_API_KEY")
+        or get_token()
+    )

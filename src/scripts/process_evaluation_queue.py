@@ -46,7 +46,11 @@ import urllib.request
 import uuid
 from pathlib import Path
 
-from evaluation_common import (
+from huggingface_hub import HfApi
+from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
+
+from euroeval.data_models import BenchmarkResult
+from leaderboards.evaluation_common import (
     GPU_FIT_OVERHEAD,
     LANGUAGE_GROUP_CODES,
     estimated_model_bytes,
@@ -54,10 +58,6 @@ from evaluation_common import (
     official_dataset_language_pairs,
     run_euroeval,
 )
-from huggingface_hub import HfApi
-from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
-
-from euroeval.data_models import BenchmarkResult
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"

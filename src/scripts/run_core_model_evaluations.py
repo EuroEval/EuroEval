@@ -45,16 +45,16 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import click
-from evaluation_common import (
+from yaml import safe_load
+
+from euroeval.dataset_configs import get_all_dataset_configs
+from euroeval.languages import get_all_languages
+from leaderboards.evaluation_common import (
     gpu_total_memory_bytes,
     model_fits_locally,
     official_dataset_language_pairs,
     run_euroeval,
 )
-from yaml import safe_load
-
-from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.languages import get_all_languages
 from leaderboards.paths import CORE_MODELS_CONFIG, NEW_RESULTS_PATH, RESULTS_PATH
 
 logging.basicConfig(
@@ -63,43 +63,120 @@ logging.basicConfig(
 logger = logging.getLogger("run_core_model_evaluations")
 
 
-# Mapping from short provider name (CLI/UI value) to the env var that
-# must be set and the predicate identifying API model ids belonging to
-# that provider.
-@dataclass(frozen=True)
-class _Provider:
-    name: str
-    env_var: str
-    matches: c.Callable[[str], bool]
+@click.command()
+@click.option(
+    "--dataset",
+    "datasets",
+    multiple=True,
+    help="Dataset id to run in dataset-replacement mode. Repeatable. When omitted, "
+    "the script runs in backfill mode against every official (dataset, language) "
+    "pair.",
+)
+@click.option(
+    "--include-api",
+    is_flag=True,
+    default=False,
+    help="Opt in to running API models. Without this flag every api: true entry "
+    "in core_models.yaml is silently skipped.",
+)
+@click.option(
+    "--api-providers",
+    default=None,
+    help="Comma-separated provider names to run (openai, anthropic, google, xai). "
+    "Skips the interactive prompt. Requires --include-api.",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Print the planned jobs and exit without invoking euroeval.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Re-run even (model, dataset, language) triples that already have a "
+    "result line.",
+)
+def main(
+    datasets: tuple[str, ...],
+    include_api: bool,
+    api_providers: str | None,
+    dry_run: bool,
+    force: bool,
+) -> None:
+    """Run EuroEval for the core model list.
 
+    Args:
+        datasets:
+            Dataset ids passed via ``--dataset``. When non-empty, the
+            script runs in dataset-replacement mode against exactly those
+            datasets; otherwise it runs in backfill mode.
+        include_api:
+            Whether to consider ``api: true`` entries at all.
+        api_providers:
+            Optional comma-separated provider filter; bypasses the prompt.
+        dry_run:
+            When True, print the planned jobs and return without running.
+        force:
+            When True, ignore previously recorded results.
 
-PROVIDERS: list[_Provider] = [
-    _Provider(
-        name="openai",
-        env_var="OPENAI_API_KEY",
-        matches=lambda m: m.startswith("openai/"),
-    ),
-    _Provider(
-        name="anthropic",
-        env_var="ANTHROPIC_API_KEY",
-        matches=lambda m: m.startswith("claude-") or m.startswith("anthropic/"),
-    ),
-    _Provider(
-        name="google",
-        env_var="GEMINI_API_KEY",
-        matches=lambda m: m.startswith("gemini/"),
-    ),
-    _Provider(
-        name="xai", env_var="XAI_API_KEY", matches=lambda m: m.startswith("xai/")
-    ),
-]
-PROVIDERS_BY_NAME: dict[str, _Provider] = {p.name: p for p in PROVIDERS}
+    Raises:
+        click.ClickException:
+            When ``--api-providers`` is passed without ``--include-api``,
+            when an unknown provider name is supplied, or when a selected
+            provider's env var is missing.
+    """
+    if api_providers and not include_api:
+        raise click.ClickException(
+            "--api-providers requires --include-api; pass both or neither."
+        )
 
+    target_datasets = list(datasets) or None
+    mode = "dataset-replacement" if target_datasets else "backfill"
+    logger.info(f"Mode: {mode}.")
+    if target_datasets:
+        logger.info(f"Target dataset(s): {', '.join(target_datasets)}.")
 
-# Strips trailing variant annotations on result-record model ids, e.g.
-# ``model (zero-shot)`` / ``model (val)`` / ``model (zero-shot, val)``.
-_VARIANT_SUFFIX_RE = re.compile(r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$")
-_ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
+    models = load_core_models()
+    logger.info(f"Loaded {len(models)} core model entries.")
+
+    selected_providers = select_api_providers(
+        candidate_models=models,
+        include_api=include_api,
+        api_providers_arg=api_providers,
+    )
+
+    observations: set[tuple[str, str, str]] = set()
+    if not force:
+        try:
+            observations = load_existing_observations()
+        except FileNotFoundError as e:
+            logger.warning(
+                f"Could not load existing results ({e}); proceeding as if none exist."
+            )
+
+    jobs = build_jobs(
+        models=models,
+        target_datasets=target_datasets,
+        selected_providers=selected_providers,
+        observations=observations,
+        force=force,
+    )
+    logger.info(f"Planned {len(jobs)} job(s) before size check.")
+
+    jobs = apply_size_filter(jobs=jobs)
+    logger.info(f"{len(jobs)} job(s) survive the size check.")
+
+    if dry_run:
+        for job in jobs:
+            tag = "api" if job.is_api else "open"
+            click.echo(
+                f"[{tag}] {job.model_id} :: {job.dataset} :: {', '.join(job.languages)}"
+            )
+        return
+
+    execute_jobs(jobs=jobs)
 
 
 @dataclass(frozen=True)
@@ -121,6 +198,15 @@ class Job:
     is_api: bool
 
 
+@dataclass(frozen=True)
+class _Provider:
+    """An API provider: its short name, required env var, and id predicate."""
+
+    name: str
+    env_var: str
+    matches: c.Callable[[str], bool]
+
+
 def load_core_models() -> list[CoreModelEntry]:
     """Parse ``core_models.yaml`` and return the model list.
 
@@ -139,132 +225,6 @@ def load_core_models() -> list[CoreModelEntry]:
             )
         )
     return entries
-
-
-def _strip_model_variant(model_id: str) -> str:
-    """Return ``model_id`` with leaderboard HTML anchors and variant suffix removed."""
-    m = _ANCHOR_RE.search(model_id)
-    inner = m.group("inner").strip() if m else model_id
-    return _VARIANT_SUFFIX_RE.sub("", inner).strip()
-
-
-def load_existing_observations() -> set[tuple[str, str, str]]:
-    """Return the set of ``(model_id, dataset, language)`` triples already benchmarked.
-
-    Reads the merged result corpus the same way the leaderboard pipeline
-    does -- ``results.tar.gz`` plus the optional ``new_results.jsonl`` --
-    but without the destructive unlink that
-    ``leaderboards.result_loading.load_raw_results`` performs.
-
-    Model ids are stripped of leaderboard HTML anchors and ``(zero-shot)``
-    / ``(val)`` variant suffixes so the keys line up with the canonical
-    ids in ``core_models.yaml``.
-    """
-    lines: list[str] = []
-    if RESULTS_PATH.exists():
-        with tarfile.open(RESULTS_PATH, "r:gz") as tar:
-            member_file = tar.extractfile(member="results/results.jsonl")
-            if member_file is not None:
-                lines.extend(member_file.read().decode(encoding="utf-8").splitlines())
-    if NEW_RESULTS_PATH.exists():
-        lines.extend(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
-
-    observations: set[tuple[str, str, str]] = set()
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-        # Some lines pack multiple JSON objects back-to-back; split on '}{'
-        # the same way result_loading does.
-        for record_text in re.split(pattern=r"(?<=})(?={)", string=line):
-            if not record_text.strip():
-                continue
-            try:
-                record = json.loads(record_text)
-            except json.JSONDecodeError:
-                continue
-            model = _strip_model_variant(str(record.get("model", "")))
-            dataset = record.get("dataset")
-            languages = record.get("languages") or []
-            if not model or not dataset:
-                continue
-            for language in languages:
-                observations.add((model, str(dataset), str(language)))
-    logger.info(
-        f"Loaded {len(observations):,} (model, dataset, language) observations."
-    )
-    return observations
-
-
-def language_name_to_code(name: str) -> str | None:
-    """Map an English language name (lowercased) to its ISO code, or None.
-
-    The names come from ``core_models.yaml::pareto_languages``; values are
-    matched case-insensitively against
-    :func:`euroeval.languages.get_all_languages`.
-
-    Args:
-        name:
-            The English language name (case-insensitive).
-
-    Returns:
-        The ISO code for the language, or None when no match is found.
-    """
-    needle = name.strip().lower()
-    if not needle:
-        return None
-    for code, language in get_all_languages().items():
-        if language.name.lower() == needle:
-            return code
-    return None
-
-
-def all_known_language_codes() -> set[str]:
-    """Return every ISO code known to EuroEval.
-
-    Returns:
-        Every key from :func:`euroeval.languages.get_all_languages`.
-    """
-    return set(get_all_languages().keys())
-
-
-def codes_for_model(model: CoreModelEntry) -> set[str]:
-    """Return the ISO codes a model should be evaluated on.
-
-    API models cover every known language. Open-weight models cover the
-    ISO codes derived from their ``pareto_languages`` -- with one
-    exception: when the Pareto list is empty (typical for EU/OSAI
-    entries that haven't been benchmarked widely enough yet), fall back
-    to "all known languages" so the backfill run is what generates the
-    data the Pareto computation needs.
-    """
-    if model.is_api or not model.pareto_languages:
-        return all_known_language_codes()
-    codes: set[str] = set()
-    for name in model.pareto_languages:
-        code = language_name_to_code(name)
-        if code is None:
-            logger.debug(f"Could not map language name {name!r} to an ISO code.")
-            continue
-        codes.add(code)
-    return codes
-
-
-def dataset_language_codes(dataset_id: str) -> set[str]:
-    """Return ISO codes for a dataset, or an empty set if the dataset is unknown."""
-    configs = get_all_dataset_configs(
-        custom_datasets_file=Path(""),
-        dataset_ids=[dataset_id],
-        api_key=None,
-        cache_dir=Path(".cache"),
-        trust_remote_code=False,
-        run_with_cli=False,
-    )
-    config = configs.get(dataset_id)
-    if config is None:
-        logger.error(f"Unknown dataset id {dataset_id!r}; skipping.")
-        return set()
-    return {language.code for language in config.languages}
 
 
 def select_api_providers(
@@ -327,36 +287,54 @@ def select_api_providers(
     return selected
 
 
-def _prompt_api_providers() -> set[str]:
-    """Prompt the user interactively for which API providers to run.
+def load_existing_observations() -> set[tuple[str, str, str]]:
+    """Return the ``(model_id, dataset, language)`` triples already benchmarked.
+
+    Reads the merged result corpus the same way the leaderboard pipeline
+    does -- ``results.tar.gz`` plus the optional ``new_results.jsonl`` --
+    but without the destructive unlink that
+    ``leaderboards.result_loading.load_raw_results`` performs.
 
     Returns:
-        The set of selected provider names. May be empty if the user
-        deselects everything.
-
-    Raises:
-        click.ClickException:
-            When stdin is not a TTY (so we cannot prompt safely).
+        Every ``(model_id, dataset, language)`` triple in the merged result
+        corpus, with model ids stripped of leaderboard HTML anchors and
+        ``(zero-shot)`` / ``(val)`` variant suffixes so the keys line up
+        with the canonical ids in ``core_models.yaml``.
     """
-    if not sys.stdin.isatty():
-        raise click.ClickException(
-            "stdin is not a TTY; pass --api-providers to select providers "
-            "non-interactively (or omit --include-api)."
-        )
-    click.echo("Select API providers to evaluate (default: all):")
-    selected: set[str] = set()
-    for provider in PROVIDERS:
-        if click.confirm(f"  Include {provider.name}?", default=True):
-            selected.add(provider.name)
-    return selected
+    lines: list[str] = []
+    if RESULTS_PATH.exists():
+        with tarfile.open(RESULTS_PATH, "r:gz") as tar:
+            member_file = tar.extractfile(member="results/results.jsonl")
+            if member_file is not None:
+                lines.extend(member_file.read().decode(encoding="utf-8").splitlines())
+    if NEW_RESULTS_PATH.exists():
+        lines.extend(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
 
-
-def provider_for_model_id(model_id: str) -> _Provider | None:
-    """Return the provider that owns an API model id, or None."""
-    for provider in PROVIDERS:
-        if provider.matches(model_id):
-            return provider
-    return None
+    observations: set[tuple[str, str, str]] = set()
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        # Some lines pack multiple JSON objects back-to-back; split on '}{'
+        # the same way result_loading does.
+        for record_text in re.split(pattern=r"(?<=})(?={)", string=line):
+            if not record_text.strip():
+                continue
+            try:
+                record = json.loads(record_text)
+            except json.JSONDecodeError:
+                continue
+            model = _strip_model_variant(model_id=str(record.get("model", "")))
+            dataset = record.get("dataset")
+            languages = record.get("languages") or []
+            if not model or not dataset:
+                continue
+            for language in languages:
+                observations.add((model, str(dataset), str(language)))
+    logger.info(
+        f"Loaded {len(observations):,} (model, dataset, language) observations."
+    )
+    return observations
 
 
 def build_jobs(
@@ -383,8 +361,8 @@ def build_jobs(
             When True, ignore ``observations`` and re-run even seen pairs.
 
     Returns:
-        One Job per (model, dataset) pair to evaluate, with languages
-        deduplicated and sorted.
+        One :class:`Job` per (model, dataset) pair to evaluate, with
+        languages deduplicated and sorted.
     """
     jobs: list[Job] = []
     official_pairs = official_dataset_language_pairs()
@@ -394,11 +372,13 @@ def build_jobs(
 
     target_dataset_codes: dict[str, set[str]] | None = None
     if target_datasets:
-        target_dataset_codes = {d: dataset_language_codes(d) for d in target_datasets}
+        target_dataset_codes = {
+            d: dataset_language_codes(dataset_id=d) for d in target_datasets
+        }
 
     for model in models:
         if model.is_api:
-            provider = provider_for_model_id(model.model_id)
+            provider = provider_for_model_id(model_id=model.model_id)
             if provider is None or provider.name not in selected_providers:
                 continue
         model_languages = codes_for_model(model=model)
@@ -431,7 +411,6 @@ def build_jobs(
                 )
             continue
 
-        # Backfill mode: every official pair the model is in scope for.
         for dataset, dataset_langs in official_by_dataset.items():
             langs = sorted(model_languages & dataset_langs)
             if not langs:
@@ -527,120 +506,176 @@ def execute_jobs(jobs: list[Job]) -> None:
             )
 
 
-@click.command()
-@click.option(
-    "--dataset",
-    "datasets",
-    multiple=True,
-    help="Dataset id to run in dataset-replacement mode. Repeatable. When omitted, "
-    "the script runs in backfill mode against every official (dataset, language) "
-    "pair.",
-)
-@click.option(
-    "--include-api",
-    is_flag=True,
-    default=False,
-    help="Opt in to running API models. Without this flag every api: true entry "
-    "in core_models.yaml is silently skipped.",
-)
-@click.option(
-    "--api-providers",
-    default=None,
-    help="Comma-separated provider names to run (openai, anthropic, google, xai). "
-    "Skips the interactive prompt. Requires --include-api.",
-)
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    default=False,
-    help="Print the planned jobs and exit without invoking euroeval.",
-)
-@click.option(
-    "--force",
-    is_flag=True,
-    default=False,
-    help="Re-run even (model, dataset, language) triples that already have a "
-    "result line.",
-)
-def main(
-    datasets: tuple[str, ...],
-    include_api: bool,
-    api_providers: str | None,
-    dry_run: bool,
-    force: bool,
-) -> None:
-    """Run EuroEval for the core model list (backfill or dataset-replacement).
+def codes_for_model(model: CoreModelEntry) -> set[str]:
+    """Return the ISO codes a model should be evaluated on.
+
+    API models cover every known language. Open-weight models cover the
+    ISO codes derived from their ``pareto_languages`` -- with one
+    exception: when the Pareto list is empty (typical for EU/OSAI
+    entries that haven't been benchmarked widely enough yet), fall back
+    to "all known languages" so the backfill run is what generates the
+    data the Pareto computation needs.
 
     Args:
-        datasets:
-            Dataset ids passed via ``--dataset``. When non-empty, the
-            script runs in dataset-replacement mode against exactly those
-            datasets; otherwise it runs in backfill mode.
-        include_api:
-            Whether to consider ``api: true`` entries at all.
-        api_providers:
-            Optional comma-separated provider filter; bypasses the prompt.
-        dry_run:
-            When True, print the planned jobs and return without running.
-        force:
-            When True, ignore previously recorded results.
+        model:
+            The core-model entry whose language coverage to resolve.
+
+    Returns:
+        The ISO codes the model should be evaluated on.
+    """
+    if model.is_api or not model.pareto_languages:
+        return all_known_language_codes()
+    codes: set[str] = set()
+    for name in model.pareto_languages:
+        code = language_name_to_code(name=name)
+        if code is None:
+            logger.debug(f"Could not map language name {name!r} to an ISO code.")
+            continue
+        codes.add(code)
+    return codes
+
+
+def dataset_language_codes(dataset_id: str) -> set[str]:
+    """Return ISO codes for a dataset, or an empty set if the dataset is unknown.
+
+    Args:
+        dataset_id:
+            The dataset id to look up.
+
+    Returns:
+        The ISO codes the dataset covers, or an empty set when the id is
+        not a known dataset (logged at ERROR level).
+    """
+    configs = get_all_dataset_configs(
+        custom_datasets_file=Path(""),
+        dataset_ids=[dataset_id],
+        api_key=None,
+        cache_dir=Path(".cache"),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
+    config = configs.get(dataset_id)
+    if config is None:
+        logger.error(f"Unknown dataset id {dataset_id!r}; skipping.")
+        return set()
+    return {language.code for language in config.languages}
+
+
+def provider_for_model_id(model_id: str) -> _Provider | None:
+    """Return the API provider that owns a model id, or None.
+
+    Args:
+        model_id:
+            The model id to classify.
+
+    Returns:
+        The matching :class:`_Provider`, or None when no provider claims
+        the id (i.e. the model is not an API model).
+    """
+    for provider in PROVIDERS:
+        if provider.matches(model_id):
+            return provider
+    return None
+
+
+def language_name_to_code(name: str) -> str | None:
+    """Map an English language name to its ISO code, or None.
+
+    The names come from ``core_models.yaml::pareto_languages``; values are
+    matched case-insensitively against
+    :func:`euroeval.languages.get_all_languages`.
+
+    Args:
+        name:
+            The English language name (case-insensitive).
+
+    Returns:
+        The ISO code for the language, or None when no match is found.
+    """
+    needle = name.strip().lower()
+    if not needle:
+        return None
+    for code, language in get_all_languages().items():
+        if language.name.lower() == needle:
+            return code
+    return None
+
+
+def all_known_language_codes() -> set[str]:
+    """Return every ISO code known to EuroEval.
+
+    Returns:
+        Every key from :func:`euroeval.languages.get_all_languages`.
+    """
+    return set(get_all_languages().keys())
+
+
+def _strip_model_variant(model_id: str) -> str:
+    """Strip leaderboard HTML anchors and ``(zero-shot)`` / ``(val)`` suffixes.
+
+    Args:
+        model_id:
+            The result-record model id, possibly anchored or variant-suffixed.
+
+    Returns:
+        The canonical model id, ready to compare against ``core_models.yaml``.
+    """
+    m = _ANCHOR_RE.search(model_id)
+    inner = m.group("inner").strip() if m else model_id
+    return _VARIANT_SUFFIX_RE.sub("", inner).strip()
+
+
+def _prompt_api_providers() -> set[str]:
+    """Prompt the user interactively for which API providers to run.
+
+    Returns:
+        The selected provider names. May be empty if the user
+        deselects everything.
 
     Raises:
         click.ClickException:
-            When ``--api-providers`` is passed without ``--include-api``,
-            when an unknown provider name is supplied, or when a selected
-            provider's env var is missing.
+            When stdin is not a TTY (so we cannot prompt safely).
     """
-    if api_providers and not include_api:
+    if not sys.stdin.isatty():
         raise click.ClickException(
-            "--api-providers requires --include-api; pass both or neither."
+            "stdin is not a TTY; pass --api-providers to select providers "
+            "non-interactively (or omit --include-api)."
         )
+    click.echo("Select API providers to evaluate (default: all):")
+    selected: set[str] = set()
+    for provider in PROVIDERS:
+        if click.confirm(f"  Include {provider.name}?", default=True):
+            selected.add(provider.name)
+    return selected
 
-    target_datasets = list(datasets) or None
-    mode = "dataset-replacement" if target_datasets else "backfill"
-    logger.info(f"Mode: {mode}.")
-    if target_datasets:
-        logger.info(f"Target dataset(s): {', '.join(target_datasets)}.")
 
-    models = load_core_models()
-    logger.info(f"Loaded {len(models)} core model entries.")
+# Strips trailing variant annotations on result-record model ids, e.g.
+# ``model (zero-shot)`` / ``model (val)`` / ``model (zero-shot, val)``.
+_VARIANT_SUFFIX_RE = re.compile(r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$")
+_ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
 
-    selected_providers = select_api_providers(
-        candidate_models=models,
-        include_api=include_api,
-        api_providers_arg=api_providers,
-    )
 
-    observations: set[tuple[str, str, str]] = set()
-    if not force:
-        try:
-            observations = load_existing_observations()
-        except FileNotFoundError as e:
-            logger.warning(
-                f"Could not load existing results ({e}); proceeding as if none exist."
-            )
-
-    jobs = build_jobs(
-        models=models,
-        target_datasets=target_datasets,
-        selected_providers=selected_providers,
-        observations=observations,
-        force=force,
-    )
-    logger.info(f"Planned {len(jobs)} job(s) before size check.")
-
-    jobs = apply_size_filter(jobs=jobs)
-    logger.info(f"{len(jobs)} job(s) survive the size check.")
-
-    if dry_run:
-        for job in jobs:
-            tag = "api" if job.is_api else "open"
-            click.echo(
-                f"[{tag}] {job.model_id} :: {job.dataset} :: {', '.join(job.languages)}"
-            )
-        return
-
-    execute_jobs(jobs=jobs)
+PROVIDERS: list[_Provider] = [
+    _Provider(
+        name="openai",
+        env_var="OPENAI_API_KEY",
+        matches=lambda m: m.startswith("openai/"),
+    ),
+    _Provider(
+        name="anthropic",
+        env_var="ANTHROPIC_API_KEY",
+        matches=lambda m: m.startswith("claude-") or m.startswith("anthropic/"),
+    ),
+    _Provider(
+        name="google",
+        env_var="GEMINI_API_KEY",
+        matches=lambda m: m.startswith("gemini/"),
+    ),
+    _Provider(
+        name="xai", env_var="XAI_API_KEY", matches=lambda m: m.startswith("xai/")
+    ),
+]
+PROVIDERS_BY_NAME: dict[str, _Provider] = {p.name: p for p in PROVIDERS}
 
 
 if __name__ == "__main__":
