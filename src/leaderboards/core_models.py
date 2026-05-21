@@ -36,6 +36,11 @@ import typing as t
 import urllib.error
 import urllib.request
 from collections import defaultdict
+from functools import cache
+
+from huggingface_hub import HfApi
+from huggingface_hub.errors import HfHubHTTPError
+from huggingface_hub.hf_api import RepositoryNotFoundError
 
 from .result_loading import load_processed_results
 from .result_processing import extract_model_metadata, group_results_by_model
@@ -178,6 +183,42 @@ def _classify_model(model_id: str, metadata: dict) -> ModelType:
 # stops us from picking up tokens like ``A3B`` in ``80B-A3B``; the lookahead
 # excludes things like ``multilingual``.
 _PARAMS_FROM_ID_RE = re.compile(r"(?<![A-Za-z\d])(\d+(?:\.\d+)?)([BbMm])(?![A-Za-z])")
+
+
+@cache
+def _params_from_hf_safetensors(model_id: str) -> float:
+    """Best-effort parameter count from a model's safetensors manifest.
+
+    HF's model-info endpoint exposes a ``safetensors.total`` field for
+    repos that ship safetensors weights; that's a sum across every
+    parameter tensor in the manifest. We use it as a last-resort
+    fallback for models where neither the EuroEval metadata nor the id
+    itself encodes the size (`yulan-team/YuLan-Mini` and friends).
+
+    Network failures, missing repos, and missing safetensors data all
+    degrade to NaN — the caller will then bucket the model as ``xlarge``
+    which is the existing behaviour.
+
+    Args:
+        model_id:
+            HuggingFace ``org/repo`` slug. Anything that doesn't look
+            like ``a/b`` is skipped without a network call.
+
+    Returns:
+        Total parameter count, or NaN.
+    """
+    if "/" not in model_id or model_id.count("/") > 1:
+        return float("nan")
+    try:
+        info = HfApi().model_info(repo_id=model_id, files_metadata=False)
+    except (RepositoryNotFoundError, HfHubHTTPError, OSError, ValueError) as exc:
+        logger.info(f"HF safetensors lookup failed for {model_id!r}: {exc}")
+        return float("nan")
+    safetensors = getattr(info, "safetensors", None)
+    if safetensors is None:
+        return float("nan")
+    total = getattr(safetensors, "total", None)
+    return float(total) if isinstance(total, int) and total > 0 else float("nan")
 
 
 def _params_from_model_id(model_id: str) -> float:
@@ -746,6 +787,8 @@ def build_core_model_list(
         parameters = meta.get("parameters", float("nan"))
         if not math.isfinite(parameters):
             parameters = _params_from_model_id(plain_id)
+        if not math.isfinite(parameters):
+            parameters = _params_from_hf_safetensors(plain_id.split("#")[0])
         bucket = _size_bucket(model_type, parameters)
         core.append(
             CoreModel(
