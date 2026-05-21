@@ -63,9 +63,9 @@ _GENERATIVE_TYPE_TO_MODEL_TYPE: dict[str, ModelType] = {
     "reasoning": "reasoning_decoder",
 }
 
-# Same patterns as `generate_leaderboards.py::API_MODEL_PATTERNS`. Kept in
-# sync manually since the script-level constant is intentionally separate
-# (the updater is invoked independently of leaderboard generation).
+# Single source of truth for API model identification — also imported by
+# `scripts/generate_leaderboards.py` so the leaderboard pipeline and the
+# core-model updater agree on which ids are API models.
 API_MODEL_PATTERNS: list[re.Pattern] = [
     re.compile(r"gemini/.*"),
     re.compile(r"(openai/)?gpt-[456789].*"),

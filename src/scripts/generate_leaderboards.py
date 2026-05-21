@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from yaml import safe_load
 
 from leaderboards.backup import backup_results, restore_from_backup_if_missing
+from leaderboards.core_models import API_MODEL_PATTERNS
 from leaderboards.leaderboard_generation import generate_leaderboard
 from leaderboards.paths import CORE_MODELS_CONFIG, LEADERBOARD_CONFIGS_DIR
 from leaderboards.result_processing import process_results
@@ -47,12 +48,6 @@ BANNED_VERSIONS: list[str] = ["9.3.0", "10.0.0"]
 BANNED_MODEL_PATTERNS: list[re.Pattern] = [
     re.compile("^meta-llama/Llama-3.1-405B-Instruct$"),  # Temporary ban
     re.compile("^utter-project/EuroVLM-9B-Preview$"),  # Temporary ban
-]
-API_MODEL_PATTERNS: list[re.Pattern] = [
-    re.compile(r"gemini/.*"),
-    re.compile(r"(openai/)?gpt-[456789].*"),
-    re.compile(r"(anthropic/)?claude.*"),
-    re.compile(r"(xai/)?grok.*"),
 ]
 OPEN_SOURCE_MODEL_PATTERNS: list[re.Pattern] = []
 TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern] = [

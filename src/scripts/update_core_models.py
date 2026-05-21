@@ -336,22 +336,17 @@ def _parse_issue_models(body: str) -> dict[str, str]:
     result: dict[str, str] = {}
     for line in body.splitlines():
         stripped = line.strip()
-        # The issue body lays models out in a Markdown table. Skip the
-        # header row, separator row, and any non-table content (intro,
-        # blank lines).
+        # The issue body lays models out in a Markdown table with columns
+        # Model | Parameters | Labels | Languages. Skip the header row,
+        # separator row, and any non-table content (intro, blank lines).
         if not stripped.startswith("|") or stripped.startswith("| ---"):
             continue
         cells = [c.strip() for c in stripped.strip("|").split("|")]
-        if len(cells) < 3:
+        if len(cells) < 4:
             continue
         if cells[0].lower() == "model":
             continue
-        # Newer table: Model | Parameters | Reasoning | Languages.
-        # Older table (no Parameters col) and legacy bullet form are
-        # tolerated for backward-compatible diffs across one regeneration.
-        model_id = cells[0]
-        reasoning = cells[2] if len(cells) >= 4 else cells[1]
-        result[model_id] = reasoning
+        result[cells[0]] = cells[2]
     return result
 
 
