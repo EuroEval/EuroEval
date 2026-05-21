@@ -398,7 +398,7 @@ def _update_issue_body(issue_number: int, body: str, token: str) -> None:
     )
 
 
-def _post_issue_comment(issue_number: int, body: str, token: str) -> None:
+def _post_issue_comment(issue_number: int, body: str, token: str) -> str:
     """POST a comment to an issue.
 
     Args:
@@ -408,13 +408,18 @@ def _post_issue_comment(issue_number: int, body: str, token: str) -> None:
             The comment markdown.
         token:
             GitHub PAT.
+
+    Returns:
+        The `html_url` of the newly-created comment.
     """
-    _gh_request(
+    response = _gh_request(
         path=f"/repos/{REPO}/issues/{issue_number}/comments",
         method="POST",
         payload=dict(body=body),
         token=token,
     )
+    assert isinstance(response, dict)
+    return response["html_url"]
 
 
 # ---------------------------------------------------------------------------
@@ -489,8 +494,10 @@ def main(dry_run: bool) -> None:
         logger.info(f"Issue #{issue_number} body unchanged; skipping PATCH.")
 
     if not diff.is_empty:
-        _post_issue_comment(issue_number=issue_number, body=comment, token=token)
-        logger.info(f"Posted diff comment to #{issue_number}.")
+        comment_url = _post_issue_comment(
+            issue_number=issue_number, body=comment, token=token
+        )
+        logger.info(f"Posted diff comment: {comment_url}")
     else:
         logger.info("No diff to comment.")
 
