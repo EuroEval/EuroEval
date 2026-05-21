@@ -554,13 +554,6 @@ models:
     pareto_languages: []
     eu: true
     osai_rank: null
-  - id: ollama_chat/gemma3:1b
-    type: instruction_tuned_decoder
-    bucket: tiny
-    parameters: 1000000000
-    pareto_languages: [faroese]
-    eu: false
-    osai_rank: null
   - id: PleIAs/Baguettotron@refs/pr/6
     type: reasoning_decoder
     bucket: tiny
@@ -889,20 +882,6 @@ models:
     parameters: 7241748480
     pareto_languages: []
     eu: true
-    osai_rank: null
-  - id: ollama_chat/gemma3:4b-it-q4_K_M
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 4299915632
-    pareto_languages: [faroese]
-    eu: false
-    osai_rank: null
-  - id: ollama_chat/hf.co/google/gemma-3-4b-it-qat-q4_0-gguf
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 3880099328
-    pareto_languages: [faroese]
-    eu: false
     osai_rank: null
   - id: openGPT-X/Teuken-7B-instruct-commercial-v0.4
     type: instruction_tuned_decoder

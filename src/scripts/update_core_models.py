@@ -253,12 +253,23 @@ def _parse_issue_models(body: str) -> dict[str, str]:
         Map of model_id to the trailing flag/emoji string for that line.
     """
     result: dict[str, str] = {}
+    in_model_section = False
+    bucket_headers = set(_BUCKET_HEADER.values())
     for line in body.splitlines():
+        stripped = line.strip()
+        # Bullets under the intro legend (⭐/🇪🇺/💜 explainers) look like
+        # list items too — skip everything until we hit a known bucket
+        # header. Any other `## …` heading (e.g. the intro) doesn't count.
+        if stripped in bucket_headers:
+            in_model_section = True
+            continue
+        if not in_model_section:
+            continue
         # The first token after "- " is the model id, which may contain
         # `@revision`, `:tag`, or `#parameter` segments. The flag emojis
         # (and the legacy `_(Pareto: …)_` annotation) are separated from
         # the id by whitespace, so we split on the first space.
-        m = re.match(r"^- (\S+)(.*)$", line.strip())
+        m = re.match(r"^- (\S+)(.*)$", stripped)
         if not m:
             continue
         flags = re.sub(r"_\(Pareto:.*?\)_", "", m.group(2)).strip()
