@@ -77,7 +77,10 @@ API_MODEL_PATTERNS: list[re.Pattern] = [
 # entirely. We currently drop `ollama_chat/*` — those are hard to
 # re-evaluate in CI (Ollama-based local serving), so including them in
 # the "must re-run when datasets change" list just creates churn.
-EXCLUDED_MODEL_PATTERNS: list[re.Pattern] = [re.compile(r"^ollama_chat/.*")]
+EXCLUDED_MODEL_PATTERNS: list[re.Pattern] = [
+    re.compile(r"^ollama_chat/.*"),
+    re.compile(r"^bigscience/bloom.*"),
+]
 
 
 @dataclasses.dataclass(frozen=True)

@@ -67,14 +67,14 @@ models:
   - id: amd/Instella-3B
     type: encoder
     bucket: encoder
-    parameters: null
+    parameters: 3000000000
     pareto_languages: []
     eu: false
     osai_rank: 7
   - id: amd/Instella-3B-Long-Instruct
     type: encoder
     bucket: encoder
-    parameters: null
+    parameters: 3000000000
     pareto_languages: []
     eu: false
     osai_rank: 8
@@ -666,6 +666,13 @@ models:
     pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, danish, dutch, english, estonian, faroese, finnish, french, german, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, swedish, ukrainian]
     eu: false
     osai_rank: null
+  - id: utter-project/EuroLLM-1.7B
+    type: base_decoder
+    bucket: tiny
+    parameters: 1700000000
+    pareto_languages: []
+    eu: true
+    osai_rank: null
   - id: utter-project/EuroLLM-1.7B-Instruct
     type: instruction_tuned_decoder
     bucket: tiny
@@ -804,6 +811,20 @@ models:
     bucket: small
     parameters: 4251743232
     pareto_languages: [croatian, faroese, slovak, slovene]
+    eu: true
+    osai_rank: null
+  - id: mistralai/Ministral-3-3B-Instruct-2512
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 3000000000
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+  - id: mistralai/Ministral-3-3B-Reasoning-2512
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 3000000000
+    pareto_languages: []
     eu: true
     osai_rank: null
   - id: mistralai/Ministral-3-8B-Base-2512
@@ -1268,6 +1289,13 @@ models:
     pareto_languages: []
     eu: true
     osai_rank: null
+  - id: utter-project/EuroLLM-22B-Preview
+    type: base_decoder
+    bucket: medium
+    parameters: 22000000000
+    pareto_languages: []
+    eu: true
+    osai_rank: null
   - id: zai-org/GLM-4.7-Flash
     type: reasoning_decoder
     bucket: medium
@@ -1338,20 +1366,6 @@ models:
     pareto_languages: [faroese]
     eu: false
     osai_rank: null
-  - id: mistralai/Ministral-3-3B-Instruct-2512
-    type: instruction_tuned_decoder
-    bucket: xlarge
-    parameters: null
-    pareto_languages: []
-    eu: true
-    osai_rank: null
-  - id: mistralai/Ministral-3-3B-Reasoning-2512
-    type: instruction_tuned_decoder
-    bucket: xlarge
-    parameters: null
-    pareto_languages: []
-    eu: true
-    osai_rank: null
   - id: Qwen/Qwen3-235B-A22B-Instruct-2507-FP8
     type: instruction_tuned_decoder
     bucket: xlarge
@@ -1365,18 +1379,4 @@ models:
     parameters: 235107904512
     pareto_languages: [slovak]
     eu: false
-    osai_rank: null
-  - id: utter-project/EuroLLM-1.7B
-    type: base_decoder
-    bucket: xlarge
-    parameters: null
-    pareto_languages: []
-    eu: true
-    osai_rank: null
-  - id: utter-project/EuroLLM-22B-Preview
-    type: base_decoder
-    bucket: xlarge
-    parameters: null
-    pareto_languages: []
-    eu: true
     osai_rank: null
