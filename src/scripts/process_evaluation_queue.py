@@ -543,6 +543,10 @@ def reclaim_orphaned_issues() -> None:
     for issue in issues:
         if not isinstance(issue, dict) or "pull_request" in issue:
             continue
+        labels = issue.get("labels") or []
+        label_names = {label.get("name") for label in labels if isinstance(label, dict)}
+        if RESULTS_READY_LABEL in label_names:
+            continue
         body = issue.get("body") or ""
         m = VM_MARKER_RE.search(body)
         if not m or m.group(1) != VM_ID:
