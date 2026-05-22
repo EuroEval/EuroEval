@@ -121,6 +121,12 @@ GATED_MARKER_RE = re.compile(r"<!--\s*gated-model\s*-->")
 # this to detect partial failures even when the subprocess exited 0.
 ERRORED_BENCHMARKS_RE = re.compile(r"errored\s+(\d+)\s+benchmarks?", re.IGNORECASE)
 
+# euroeval emits a summary line like "skipped 2 benchmarks" when individual
+# (dataset, language) combinations are deliberately skipped (e.g. the model's
+# generative type does not match what the dataset allows). These are not
+# failures and should not cause us to fail the language.
+SKIPPED_BENCHMARKS_RE = re.compile(r"skipped\s+(\d+)\s+benchmarks?", re.IGNORECASE)
+
 # Phrase euroeval prints when it cannot load a model because the repo is gated
 # and the subprocess lacks the necessary HF token / accepted access terms.
 # We treat this as "gated, please grant access" rather than as a code error.
@@ -877,6 +883,7 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
                 break
 
             num_errored = num_errored_benchmarks(output=output)
+            num_skipped = num_skipped_benchmarks(output=output)
             missing = missing_official_dataset_language_pairs(
                 lines=accumulated, requested_languages=[lang]
             )
@@ -893,7 +900,7 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
                 failure_reason = failure_reason or reason
                 failure_output_tail = output[-6000:].strip() or "(no output captured)"
                 failed.append(lang)
-            elif missing:
+            elif missing and num_skipped == 0:
                 reason = (
                     f"missing official dataset-language pair(s) for {lang!r}: "
                     f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
@@ -901,6 +908,13 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
                 failure_reason = failure_reason or reason
                 failure_output_tail = output[-6000:].strip() or "(no output captured)"
                 failed.append(lang)
+            elif missing:
+                logger.info(
+                    f"#{number}: euroeval skipped {num_skipped} benchmark(s) for "
+                    f"{lang!r}; treating missing pair(s) as intentional skips: "
+                    f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
+                )
+                done.append(lang)
             else:
                 done.append(lang)
 
@@ -1404,6 +1418,27 @@ def num_errored_benchmarks(output: str) -> int:
     """
     last = 0
     for m in ERRORED_BENCHMARKS_RE.finditer(output):
+        last = int(m.group(1))
+    return last
+
+
+def num_skipped_benchmarks(output: str) -> int:
+    """Return the number of skipped benchmarks parsed from euroeval output.
+
+    EuroEval deliberately skips a benchmark when, for instance, the model's
+    generative type does not match what the dataset allows. These are not
+    failures.
+
+    Args:
+        output:
+            The full captured combined-output of the euroeval subprocess.
+
+    Returns:
+        The integer reported by the last ``skipped N benchmarks`` line, or 0
+        if no such line is present.
+    """
+    last = 0
+    for m in SKIPPED_BENCHMARKS_RE.finditer(output):
         last = int(m.group(1))
     return last
 
