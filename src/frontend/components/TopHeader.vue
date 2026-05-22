@@ -7,9 +7,14 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-const theme = ref<"dark" | "light">(
-  (localStorage.getItem("theme") as "dark" | "light") || "dark",
-);
+// `?theme=light` or `?theme=dark` overrides the persisted preference. Used by
+// embedders (e.g. iframes on third-party sites) that can't reach localStorage.
+const urlTheme = new URLSearchParams(window.location.search).get("theme");
+const initialTheme: "dark" | "light" =
+  urlTheme === "light" || urlTheme === "dark"
+    ? urlTheme
+    : (localStorage.getItem("theme") as "dark" | "light") || "dark";
+const theme = ref<"dark" | "light">(initialTheme);
 
 const applyTheme = (t: "dark" | "light") => {
   document.documentElement.setAttribute("data-theme", t);
