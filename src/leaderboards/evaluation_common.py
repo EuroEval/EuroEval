@@ -26,8 +26,6 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 
-import psutil
-import torch
 from huggingface_hub import get_safetensors_metadata, get_token
 from huggingface_hub.errors import (
     GatedRepoError,
@@ -37,9 +35,10 @@ from huggingface_hub.errors import (
     SafetensorsParsingError,
 )
 
-from euroeval.data_models import BenchmarkResult
-from euroeval.dataset_configs import get_all_dataset_configs
-from euroeval.string_utils import split_model_id
+# Heavy imports (``torch``, ``psutil``, and anything under ``euroeval`` -- which
+# transitively loads ``nltk`` and ``sklearn``) are deferred to the functions
+# that actually need them, so lightweight callers like the results collector
+# don't pay a multi-second import cost they never use.
 
 logger = logging.getLogger(__name__)
 
@@ -238,6 +237,8 @@ def estimated_model_bytes(model_id: str) -> int | None:
         The total weight bytes across all tensors, or None when the repo
         is not a safetensors repo or metadata cannot be parsed.
     """
+    from euroeval.string_utils import split_model_id  # noqa: PLC0415
+
     components = split_model_id(model_id=model_id)
     repo = components.model_id
     revision = components.revision
@@ -306,6 +307,9 @@ def gpu_total_memory_bytes() -> int | None:
         except ValueError:
             logger.warning(f"Ignoring invalid EUROEVAL_GPU_MEMORY_BYTES={override!r}.")
 
+    import psutil  # noqa: PLC0415
+    import torch  # noqa: PLC0415
+
     unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
     if torch.cuda.is_available() and not unified:
         sizes = [
@@ -325,6 +329,8 @@ def official_dataset_language_pairs() -> set[tuple[str, str]]:
         The ``(dataset_name, language_code)`` pairs for every official
         (i.e. non-unofficial) dataset in :mod:`euroeval.dataset_configs`.
     """
+    from euroeval.dataset_configs import get_all_dataset_configs  # noqa: PLC0415
+
     all_dataset_configs = get_all_dataset_configs(
         custom_datasets_file=Path(""),
         dataset_ids=[],
@@ -363,6 +369,8 @@ def extract_language_groups(body: str | None) -> list[str]:
 
 def result_dataset_language_pairs(lines: c.Iterable[str]) -> set[tuple[str, str]]:
     """Return dataset/language pairs parsed from benchmark-result JSONL lines."""
+    from euroeval.data_models import BenchmarkResult  # noqa: PLC0415
+
     pairs: set[tuple[str, str]] = set()
     for line in lines:
         try:
