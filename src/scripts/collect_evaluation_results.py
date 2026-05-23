@@ -73,7 +73,7 @@ def main() -> None:
     harvested: list[tuple[int, list[str], bool, str | None]] = []
     for issue in issues:
         number = issue["number"]
-        lines, gist_id = find_results_for_issue(number=number)
+        lines, gist_id = find_results_for_issue(issue=issue)
         if not lines:
             logger.info(f"#{number}: no jsonl block in comments yet -- skipping.")
             continue
@@ -164,12 +164,12 @@ def _requested_languages(body: str) -> list[str]:
     return sorted({code for group in groups for code in LANGUAGE_GROUP_CODES[group]})
 
 
-def find_results_for_issue(number: int) -> tuple[list[str] | None, str | None]:
+def find_results_for_issue(issue: dict) -> tuple[list[str] | None, str | None]:
     """Return jsonl lines and gist id from the first jsonl block or gist link.
 
     Args:
-        number:
-            The issue number to inspect.
+        issue:
+            The issue object whose comments should be inspected.
 
     Returns:
         A tuple of ``(lines, gist_id)``. ``lines`` holds the non-empty lines
@@ -177,7 +177,13 @@ def find_results_for_issue(number: int) -> tuple[list[str] | None, str | None]:
         content exists. ``gist_id`` is the gist id when results were fetched
         from a gist (so the caller can delete it after closing), otherwise
         None.
+
+    Raises:
+        urllib.error.HTTPError:
+            If the GitHub API returns a non-404 error while fetching a gist
+            referenced in a comment.
     """
+    number = issue["number"]
     for comment in list_comments(number=number):
         # First, try inline jsonl block.
         block = extract_first_jsonl_block(text=comment.get("body") or "")
@@ -187,12 +193,75 @@ def find_results_for_issue(number: int) -> tuple[list[str] | None, str | None]:
         # Then, try gist link.
         gist_id = extract_gist_id(comment.get("body") or "")
         if gist_id:
-            gist_content = fetch_gist_content(gist_id=gist_id)
+            try:
+                gist_content = fetch_gist_content(gist_id=gist_id)
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    logger.warning(
+                        f"#{number}: gist {gist_id} is missing (404); "
+                        "cleaning up stale comment."
+                    )
+                    handle_stale_gist_comment(issue=issue, comment=comment)
+                    continue
+                raise
             if gist_content:
                 return [
                     line for line in gist_content.splitlines() if line.strip()
                 ], gist_id
     return None, None
+
+
+def handle_stale_gist_comment(issue: dict, comment: dict) -> None:
+    """Clean up an issue whose gist link no longer resolves.
+
+    Deletes the offending comment, unassigns any current assignees, and
+    removes the ``results-ready`` label if present. Failures on any
+    individual step are logged but do not abort the others.
+
+    Args:
+        issue:
+            The issue object the stale comment belongs to.
+        comment:
+            The comment object whose gist link 404'd.
+    """
+    number = issue["number"]
+    comment_id = comment.get("id")
+    if comment_id is not None:
+        try:
+            gh_request(
+                path=f"/repos/{REPO}/issues/comments/{comment_id}", method="DELETE"
+            )
+            logger.info(f"#{number}: deleted stale gist comment {comment_id}.")
+        except urllib.error.HTTPError as e:
+            logger.warning(f"#{number}: could not delete comment {comment_id}: {e}")
+
+    assignees = [a["login"] for a in issue.get("assignees") or [] if a.get("login")]
+    if assignees:
+        try:
+            gh_request(
+                path=f"/repos/{REPO}/issues/{number}/assignees",
+                method="DELETE",
+                body={"assignees": assignees},
+            )
+            logger.info(
+                f"#{number}: unassigned {', '.join(assignees)} after stale gist."
+            )
+        except urllib.error.HTTPError as e:
+            logger.warning(f"#{number}: could not unassign {assignees}: {e}")
+
+    has_results_ready = any(
+        (lbl.get("name") if isinstance(lbl, dict) else lbl) == "results-ready"
+        for lbl in issue.get("labels") or []
+    )
+    if has_results_ready:
+        label = urllib.parse.quote("results-ready", safe="")
+        try:
+            gh_request(
+                path=f"/repos/{REPO}/issues/{number}/labels/{label}", method="DELETE"
+            )
+            logger.info(f"#{number}: removed `results-ready` label after stale gist.")
+        except urllib.error.HTTPError as e:
+            logger.warning(f"#{number}: could not remove `results-ready` label: {e}")
 
 
 def extract_gist_id(text: str) -> str | None:
@@ -218,17 +287,24 @@ def fetch_gist_content(gist_id: str) -> str | None:
 
     Returns:
         The content of the first file in the gist, or None on failure.
+
+    Raises:
+        urllib.error.HTTPError:
+            If the GitHub API returns a 404 for the gist (so the caller can
+            treat the reference as stale and clean it up).
     """
     try:
         resp = gh_request(path=f"/gists/{gist_id}")
-        if isinstance(resp, dict) and "files" in resp:
-            first_file = next(iter(resp["files"].values()))
-            if isinstance(first_file, dict):
-                return first_file.get("content")
-        return None
     except urllib.error.HTTPError as e:
+        if e.code == 404:
+            raise
         logger.warning(f"Could not fetch gist {gist_id}: {e}")
         return None
+    if isinstance(resp, dict) and "files" in resp:
+        first_file = next(iter(resp["files"].values()))
+        if isinstance(first_file, dict):
+            return first_file.get("content")
+    return None
 
 
 def list_comments(number: int) -> list[dict]:
