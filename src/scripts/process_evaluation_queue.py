@@ -16,6 +16,10 @@ GITHUB_TOKEN          A PAT with ``issues: write`` for the EuroEval repo.
                       Issues are assigned to the PAT owner while being
                       evaluated; the owner's login is resolved at startup
                       via the ``/user`` endpoint.
+HUGGINGFACE_API_KEY   A Hugging Face token with read access to any gated
+                      repos that are expected to be evaluated. Used both
+                      for Hub metadata lookups and for downloads inside
+                      the ``euroeval`` subprocess.
 EUROEVAL_VM_ID        Optional identifier for this VM/host, written into a
                       hidden ``<!-- vm-id: ... -->`` marker on each issue
                       while it is being evaluated. Used to reclaim
@@ -168,6 +172,16 @@ def ensure_credentials() -> None:
             secret=True,
         )
         os.environ["GITHUB_TOKEN"] = token
+    if not os.environ.get("HUGGINGFACE_API_KEY"):
+        token = prompt_and_persist_env_var(
+            name="HUGGINGFACE_API_KEY",
+            prompt_text=(
+                "HUGGINGFACE_API_KEY is required (a Hugging Face token with read "
+                "access to gated repos you intend to evaluate). Enter token"
+            ),
+            secret=True,
+        )
+        os.environ["HUGGINGFACE_API_KEY"] = token
     global ASSIGNEE
     ASSIGNEE = resolve_assignee_from_token()
     global VM_ID
