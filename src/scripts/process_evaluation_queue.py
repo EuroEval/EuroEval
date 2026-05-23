@@ -994,7 +994,11 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
             "progress comment updated."
         )
     finally:
-        _delete_gist()
+        # Don't delete the gist here -- the collector script (which runs on the
+        # maintainer's laptop) needs to read it to harvest the results. The
+        # collector deletes the gist after the issue is closed.
+        global _gist_id
+        _gist_id = None
 
 
 def _result_lines_for_model(lines: list[str], model_id: str) -> list[str]:
@@ -1100,23 +1104,6 @@ def _upload_results_gist(
     except urllib.error.HTTPError as e:
         logger.warning(f"Could not create results gist for {model_id!r}: {e}")
         return None
-
-
-def _delete_gist() -> None:
-    """Delete the results gist if one was created.
-
-    Called when the issue is done (success or failure) so the gist doesn't
-    linger after the evaluation is finished.
-    """
-    global _gist_id
-    if not _gist_id:
-        return
-    try:
-        gh_request(path=f"/gists/{_gist_id}", method="DELETE")
-        logger.info(f"Deleted results gist {_gist_id}.")
-    except urllib.error.HTTPError as e:
-        logger.warning(f"Could not delete results gist {_gist_id}: {e}")
-    _gist_id = None
 
 
 def _find_progress_comment(number: int) -> int | None:

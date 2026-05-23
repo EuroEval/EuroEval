@@ -70,10 +70,10 @@ def main() -> None:
         logger.error(f"Failed to list issues: {e}")
         sys.exit(1)
 
-    harvested: list[tuple[int, list[str], bool]] = []
+    harvested: list[tuple[int, list[str], bool, str | None]] = []
     for issue in issues:
         number = issue["number"]
-        lines = find_results_for_issue(number=number)
+        lines, gist_id = find_results_for_issue(number=number)
         if not lines:
             logger.info(f"#{number}: no jsonl block in comments yet -- skipping.")
             continue
@@ -91,14 +91,14 @@ def main() -> None:
             f"#{number}: found {len(lines)} result line(s) "
             f"({'complete' if complete else f'{len(missing)} pair(s) missing'})."
         )
-        harvested.append((number, lines, complete))
+        harvested.append((number, lines, complete, gist_id))
 
     if not harvested:
         logger.info("Nothing to merge.")
         return
 
     all_lines: list[str] = []
-    for _, lines, _ in harvested:
+    for _, lines, _, _ in harvested:
         all_lines.extend(lines)
 
     NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
@@ -114,9 +114,9 @@ def main() -> None:
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
         sys.exit(1)
 
-    completed_numbers = [number for number, _, complete in harvested if complete]
-    partial_numbers = [number for number, _, complete in harvested if not complete]
-    for number in completed_numbers:
+    completed = [(n, gid) for n, _, c, gid in harvested if c]
+    partial_numbers = [n for n, _, c, _ in harvested if not c]
+    for number, gist_id in completed:
         try:
             comment_on_issue(
                 number=number,
@@ -128,6 +128,13 @@ def main() -> None:
             logger.info(f"#{number}: closed.")
         except urllib.error.HTTPError as e:
             logger.error(f"#{number}: failed to close: {e}")
+            continue
+        if gist_id:
+            try:
+                gh_request(path=f"/gists/{gist_id}", method="DELETE")
+                logger.info(f"#{number}: deleted results gist {gist_id}.")
+            except urllib.error.HTTPError as e:
+                logger.warning(f"#{number}: could not delete gist {gist_id}: {e}")
     if partial_numbers:
         logger.info(
             f"Merged partial results for {len(partial_numbers)} open issue(s); "
@@ -157,30 +164,35 @@ def _requested_languages(body: str) -> list[str]:
     return sorted({code for group in groups for code in LANGUAGE_GROUP_CODES[group]})
 
 
-def find_results_for_issue(number: int) -> list[str] | None:
-    """Return jsonl lines from the first jsonl block or gist link in comments.
+def find_results_for_issue(number: int) -> tuple[list[str] | None, str | None]:
+    """Return jsonl lines and gist id from the first jsonl block or gist link.
 
     Args:
         number:
             The issue number to inspect.
 
     Returns:
-        The non-empty lines of the first jsonl fenced block or gist content,
-        or None if no such content exists in the issue's comments.
+        A tuple of ``(lines, gist_id)``. ``lines`` holds the non-empty lines
+        of the first jsonl fenced block or gist content, or None if no such
+        content exists. ``gist_id`` is the gist id when results were fetched
+        from a gist (so the caller can delete it after closing), otherwise
+        None.
     """
     for comment in list_comments(number=number):
         # First, try inline jsonl block.
         block = extract_first_jsonl_block(text=comment.get("body") or "")
         if block:
-            return [line for line in block.splitlines() if line.strip()]
+            return [line for line in block.splitlines() if line.strip()], None
 
         # Then, try gist link.
         gist_id = extract_gist_id(comment.get("body") or "")
         if gist_id:
             gist_content = fetch_gist_content(gist_id=gist_id)
             if gist_content:
-                return [line for line in gist_content.splitlines() if line.strip()]
-    return None
+                return [
+                    line for line in gist_content.splitlines() if line.strip()
+                ], gist_id
+    return None, None
 
 
 def extract_gist_id(text: str) -> str | None:
