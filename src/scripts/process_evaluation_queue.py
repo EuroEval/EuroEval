@@ -534,8 +534,10 @@ def process_issue(
             languages=languages,
             partial_state=partial_state,
         )
-    finally:
-        _current_issue_number = None
+    except BaseException:
+        release_current_issue()
+        raise
+    _current_issue_number = None
 
 
 def _run_claimed_issue(
