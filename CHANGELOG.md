@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Force vLLM to load benchmark models with `runner="generate"`. Some checkpoints
+  whose config also advertises a pooling/embedding head (e.g.
+  `norallm/norbloom-7b-scratch`) were otherwise auto-detected as pooling models,
+  causing `LLM.generate()` to raise
+  `LLM.generate() is only supported for generative models`. Every model that
+  reaches this code path is already classified as generative by EuroEval.
 - Raised the default vLLM worker RPC timeouts
   (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and `VLLM_ENGINE_ITERATION_TIMEOUT_S`)
   from 300s to 1800s so that large models on slow hardware no longer crash
