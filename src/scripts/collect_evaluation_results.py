@@ -304,8 +304,35 @@ def fetch_gist_content(gist_id: str) -> str | None:
     if isinstance(resp, dict) and "files" in resp:
         first_file = next(iter(resp["files"].values()))
         if isinstance(first_file, dict):
+            # GitHub's gist API truncates `content` for files larger than ~1 MB
+            # and sets `truncated: true`. In that case the full file has to be
+            # fetched from `raw_url`, otherwise downstream JSONL parsing fails
+            # on the half-written final line.
+            if first_file.get("truncated") and first_file.get("raw_url"):
+                return _fetch_url_text(url=first_file["raw_url"])
             return first_file.get("content")
     return None
+
+
+def _fetch_url_text(url: str) -> str | None:
+    """Fetch a URL and return its body as text.
+
+    Args:
+        url:
+            The URL to fetch.
+
+    Returns:
+        The decoded response body, or None if the request failed.
+    """
+    req = urllib.request.Request(
+        url, headers={"User-Agent": "euroeval-results-collector"}
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            return resp.read().decode("utf-8")
+    except urllib.error.HTTPError as e:
+        logger.warning(f"Could not fetch gist raw url {url}: {e}")
+        return None
 
 
 def list_comments(number: int) -> list[dict]:
