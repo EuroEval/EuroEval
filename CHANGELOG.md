@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fixed a `'QuestionAnsweringTrainer' object has no attribute 'tokenizer'` crash
+  when evaluating encoder models on extractive QA datasets. The `Trainer.tokenizer`
+  attribute was removed in transformers v5; we now use the replacement
+  `processing_class` attribute.
 - Raised the default vLLM worker RPC timeouts
   (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and `VLLM_ENGINE_ITERATION_TIMEOUT_S`)
   from 300s to 1800s so that large models on slow hardware no longer crash
