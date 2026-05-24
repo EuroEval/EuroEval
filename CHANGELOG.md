@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Running with `HF_HUB_OFFLINE=1` no longer crashes when loading a local custom
+  dataset whose id happens to look like a Hub repo. The Hub existence check
+  now treats an offline-mode error as "not reachable, so not present" and
+  lets the caller fall back to the local config. Thanks to
+  [@Touzen](https://github.com/Touzen) for the contribution!
 - Added an architecture alias remapping `Gemma4TextForCausalLM` to
   `Gemma4ForCausalLM` so that text-only Gemma 4 fine-tunes can be loaded with
   vLLM versions that only register the multimodal class. Thanks to

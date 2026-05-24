@@ -12,7 +12,6 @@ from pathlib import Path
 from types import ModuleType
 
 from huggingface_hub import HfApi
-from huggingface_hub.errors import OfflineModeIsEnabled as HfOfflineModeIsEnabled
 
 from .data_models import DatasetConfig
 from .hf_hub_utils import _list_repo_files, _repo_exists
@@ -93,12 +92,7 @@ def try_get_dataset_config_from_repo(
     """
     token = get_hf_token(api_key=api_key)
     hf_api = HfApi(token=token)
-
-    try:
-        if not _repo_exists(hf_api=hf_api, dataset_id=dataset_id):
-            return None
-    except HfOfflineModeIsEnabled as e:
-        log_once(message=str(e), level=logging.WARNING)
+    if not _repo_exists(hf_api=hf_api, dataset_id=dataset_id):
         return None
 
     repo_files = _list_repo_files(hf_api=hf_api, dataset_id=dataset_id, revision="main")
