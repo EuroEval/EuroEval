@@ -35,12 +35,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from leaderboards.evaluation_common import (
-    LANGUAGE_GROUP_CODES,
-    extract_language_groups,
-    missing_official_dataset_language_pairs,
-)
-
 load_dotenv()
 
 logging.basicConfig(
@@ -61,13 +55,11 @@ GIST_LINK_RE = re.compile(r"https://gist\.github\.com/([a-zA-Z0-9]+)")
 
 
 def main() -> None:
-    """Harvest finished and partial evaluations, regenerate leaderboards.
+    """Harvest finished evaluations and regenerate leaderboards.
 
-    All available result lines are merged into the leaderboards (partial runs
-    included), but only issues whose results cover every official
-    ``(dataset, language)`` pair for the requested language groups are closed.
-    Partial issues are left open so the queue processor can keep filling them
-    in across subsequent runs.
+    Every issue returned by the listing is treated as complete: the queue
+    processor only stamps ``results-ready`` once euroeval has finished every
+    language (intentional skips included), so the label is authoritative.
     """
     logger.info("Fetching open model evaluation request issues...")
     try:
@@ -77,35 +69,22 @@ def main() -> None:
         sys.exit(1)
     logger.info(f"Found {len(issues)} open issue(s); scanning for results.")
 
-    harvested: list[tuple[int, list[str], bool, str | None]] = []
+    harvested: list[tuple[int, list[str], str | None]] = []
     for issue in issues:
         number = issue["number"]
         lines, gist_id = find_results_for_issue(issue=issue)
         if not lines:
             logger.info(f"#{number}: no jsonl block in comments yet -- skipping.")
             continue
-        requested_languages = _requested_languages(body=issue.get("body") or "")
-        if not requested_languages:
-            logger.info(
-                f"#{number}: skipping -- could not parse requested language groups."
-            )
-            continue
-        missing = missing_official_dataset_language_pairs(
-            lines=lines, requested_languages=requested_languages
-        )
-        complete = not missing
-        logger.info(
-            f"#{number}: found {len(lines)} result line(s) "
-            f"({'complete' if complete else f'{len(missing)} pair(s) missing'})."
-        )
-        harvested.append((number, lines, complete, gist_id))
+        logger.info(f"#{number}: found {len(lines)} result line(s).")
+        harvested.append((number, lines, gist_id))
 
     if not harvested:
         logger.info("Nothing to merge.")
         return
 
     all_lines: list[str] = []
-    for _, lines, _, _ in harvested:
+    for _, lines, _ in harvested:
         all_lines.extend(lines)
 
     NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
@@ -121,9 +100,7 @@ def main() -> None:
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
         sys.exit(1)
 
-    completed = [(n, gid) for n, _, c, gid in harvested if c]
-    partial_numbers = [n for n, _, c, _ in harvested if not c]
-    for number, gist_id in completed:
+    for number, _, gist_id in harvested:
         try:
             comment_on_issue(
                 number=number, body="Results now live on the leaderboards 🎉"
@@ -139,11 +116,6 @@ def main() -> None:
                 logger.info(f"#{number}: deleted results gist {gist_id}.")
             except urllib.error.HTTPError as e:
                 logger.warning(f"#{number}: could not delete gist {gist_id}: {e}")
-    if partial_numbers:
-        logger.info(
-            f"Merged partial results for {len(partial_numbers)} open issue(s); "
-            f"kept open: {', '.join(f'#{n}' for n in partial_numbers)}."
-        )
 
 
 def list_open_request_issues() -> list[dict]:
@@ -163,12 +135,6 @@ def list_open_request_issues() -> list[dict]:
     )
     assert isinstance(issues, list)
     return [i for i in issues if "pull_request" not in i]
-
-
-def _requested_languages(body: str) -> list[str]:
-    """Return the flattened language codes selected on a queue issue."""
-    groups = extract_language_groups(body=body)
-    return sorted({code for group in groups for code in LANGUAGE_GROUP_CODES[group]})
 
 
 def find_results_for_issue(issue: dict) -> tuple[list[str] | None, str | None]:
