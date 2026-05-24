@@ -33,11 +33,15 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from leaderboards.evaluation_common import (
     LANGUAGE_GROUP_CODES,
     extract_language_groups,
     missing_official_dataset_language_pairs,
 )
+
+load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
