@@ -50,6 +50,7 @@ logger = logging.getLogger("collect_evaluation_results")
 
 REPO = "EuroEval/EuroEval"
 LABEL = "model evaluation request"
+RESULTS_READY_LABEL = "results-ready"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
 
@@ -68,11 +69,13 @@ def main() -> None:
     Partial issues are left open so the queue processor can keep filling them
     in across subsequent runs.
     """
+    logger.info("Fetching open model evaluation request issues...")
     try:
         issues = list_open_request_issues()
     except urllib.error.HTTPError as e:
         logger.error(f"Failed to list issues: {e}")
         sys.exit(1)
+    logger.info(f"Found {len(issues)} open issue(s); scanning for results.")
 
     harvested: list[tuple[int, list[str], bool, str | None]] = []
     for issue in issues:
@@ -144,16 +147,19 @@ def main() -> None:
 
 
 def list_open_request_issues() -> list[dict]:
-    """Return open model-evaluation-request issues, assigned or not.
+    """Return open model-evaluation-request issues that have results ready.
 
     Returns:
-        The list of open issues carrying the queue label, with pull requests
-        filtered out. Both unassigned (partial / pending) and assigned issues
-        are included so partial results can still be harvested.
+        The list of open issues carrying both the queue label and the
+        ``results-ready`` label, with pull requests filtered out.
     """
     issues = gh_request(
         path=f"/repos/{REPO}/issues",
-        params={"state": "open", "labels": LABEL, "per_page": "100"},
+        params={
+            "state": "open",
+            "labels": f"{LABEL},{RESULTS_READY_LABEL}",
+            "per_page": "100",
+        },
     )
     assert isinstance(issues, list)
     return [i for i in issues if "pull_request" not in i]
