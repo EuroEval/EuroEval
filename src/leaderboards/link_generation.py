@@ -15,7 +15,9 @@ from huggingface_hub.errors import (
     RepositoryNotFoundError,
 )
 from requests.exceptions import RequestException
+from yaml import safe_dump, safe_load
 
+from .paths import MODELS_WITHOUT_URLS_CACHE
 from .utils import log_once
 
 logger = logging.getLogger(__name__)
@@ -92,6 +94,8 @@ def generate_anchor_tag(model_id: str) -> str | None:
     # Skip URL generation for models without hosted pages
     if model_id_without_extras in KNOWN_MODELS_WITHOUT_URLS:
         return model_id
+    if model_id_without_extras in _load_models_without_urls_cache():
+        return model_id
 
     url = generate_ollama_url(model_id=model_id_without_extras)
     if url is None:
@@ -137,7 +141,36 @@ def ask_user_to_remove_model(model_id: str) -> bool:
         if user_input not in ["y", "n"]:
             print("Invalid input. Please enter 'y' or 'n'.")
             continue
+        keep = user_input == "n"
+        if keep:
+            _remember_model_without_url(model_id=model_id)
         return user_input == "y"
+
+
+@cache
+def _load_models_without_urls_cache() -> frozenset[str]:
+    """Load model IDs the user has previously opted to keep without a URL.
+
+    Returns:
+        The set of cached model IDs, or an empty frozenset if the cache file
+        does not exist.
+    """
+    if not MODELS_WITHOUT_URLS_CACHE.exists():
+        return frozenset()
+    with MODELS_WITHOUT_URLS_CACHE.open("r") as f:
+        data = safe_load(f) or []
+    return frozenset(data)
+
+
+def _remember_model_without_url(model_id: str) -> None:
+    """Persist a model ID to the no-URL cache so we don't prompt again."""
+    cached = set(_load_models_without_urls_cache())
+    if model_id in cached:
+        return
+    cached.add(model_id)
+    with MODELS_WITHOUT_URLS_CACHE.open("w") as f:
+        safe_dump(sorted(cached), f)
+    _load_models_without_urls_cache.cache_clear()
 
 
 @cache

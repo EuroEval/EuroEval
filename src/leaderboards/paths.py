@@ -20,6 +20,10 @@ LEADERBOARD_CONFIGS_DIR: Path = PACKAGE_DIR / "leaderboard_configs"
 # when datasets change (see `core_models.py`).
 CORE_MODELS_CONFIG: Path = PACKAGE_DIR / "core_models.yaml"
 
+# Persistent cache of model IDs the user has explicitly opted to keep in the
+# results despite no URL being found, so we don't re-prompt every run.
+MODELS_WITHOUT_URLS_CACHE: Path = PACKAGE_DIR / "models_without_urls_cache.yaml"
+
 # Repository root (assumes the package lives at <repo>/src/leaderboards/).
 REPO_ROOT: Path = PACKAGE_DIR.parent.parent
 
