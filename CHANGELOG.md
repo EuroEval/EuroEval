@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Narrowed the Mistral-common tokeniser fallback in the vLLM benchmark module so
+  it only fires for actual `mistralai/*` repositories. Previously, any
+  `ValueError` whose message happened to mention `MistralCommonBackend` (e.g.
+  the unsupported-kwargs error raised when `AutoTokenizer` auto-routes a
+  non-Mistral repo through it) would send tokeniser loading down a
+  Mistral-only path against the wrong repository, producing a misleading "No
+  tokenizer file found" error.
 - Raised the default vLLM worker RPC timeouts
   (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and `VLLM_ENGINE_ITERATION_TIMEOUT_S`)
   from 300s to 1800s so that large models on slow hardware no longer crash

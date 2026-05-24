@@ -1403,7 +1403,13 @@ def load_tokeniser(
             sleep(5)
             continue
         except (KeyError, ValueError) as e:
-            if "mistral" in str(e).lower():
+            # Only fall back to the Mistral-common tokeniser for actual
+            # mistralai/* repositories. Otherwise an unrelated error that merely
+            # mentions `MistralCommonBackend` (e.g. an unsupported-kwargs
+            # `ValueError` raised when `AutoTokenizer` auto-routes through it)
+            # would send us down a Mistral-only code path against a non-Mistral
+            # repo, producing a misleading "No tokenizer file found" error.
+            if "mistral" in str(e).lower() and model_id.startswith("mistralai/"):
                 tokeniser = MistralCommonTokenizer.from_pretrained(
                     model_id,
                     padding_side="left",
