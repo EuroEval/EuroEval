@@ -109,6 +109,7 @@ from leaderboards.queue_runtime import (
     ThermalConfig,
     cool_down_between_issues,
     lower_process_priority,
+    wait_for_gpu_to_cool,
 )
 
 logging.basicConfig(
@@ -686,6 +687,9 @@ def _run_claimed_issue(
             lines=accumulated,
             issue_body=issue_body,
         )
+
+        if not is_last:
+            wait_for_gpu_to_cool(config=THERMAL_CONFIG)
 
     if gated_detected:
         version = euroeval_version()

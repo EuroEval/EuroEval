@@ -72,6 +72,20 @@ def cool_down_between_issues(config: ThermalConfig) -> None:
             The thermal configuration controlling the pause behaviour.
     """
     time.sleep(config.inter_issue_sleep_seconds)
+    wait_for_gpu_to_cool(config=config)
+
+
+def wait_for_gpu_to_cool(config: ThermalConfig) -> None:
+    """Block until the GPU is below ``resume_temp_c``; return immediately if cool.
+
+    Unlike :func:`cool_down_between_issues`, this does not impose a
+    minimum sleep -- if the GPU is already cool (or ``nvidia-smi`` is
+    unavailable), it returns without sleeping at all.
+
+    Args:
+        config:
+            The thermal configuration controlling the pause behaviour.
+    """
     temp = read_gpu_temperature_c()
     if temp is None or temp < config.pause_temp_c:
         return
