@@ -1217,6 +1217,12 @@ def load_model(
         model = LLM(
             model=model_location,
             tokenizer=model_location,
+            # Force vLLM to load the model as generative. Some checkpoints (e.g.
+            # ones whose config also advertises a pooling/embedding head) are
+            # otherwise auto-detected as pooling models, which makes
+            # `LLM.generate` raise. Every model that reaches this path has
+            # already been classified as generative by EuroEval.
+            runner="generate",
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
             max_model_len=max_model_len,
             max_num_batched_tokens=max_model_len,
