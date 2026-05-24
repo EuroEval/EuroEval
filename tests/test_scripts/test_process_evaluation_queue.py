@@ -1,9 +1,10 @@
-"""Tests for process_evaluation_queue utilities."""
+"""Tests for the process_evaluation_queue script orchestration."""
 
 from types import SimpleNamespace
 
 import pytest
 
+from leaderboards import evaluation_common
 from src.scripts import process_evaluation_queue
 
 
@@ -27,12 +28,12 @@ def test_process_issue_fails_when_official_results_are_missing(
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="assign_issue",
-        value=lambda number: assigned.append(number),
+        value=lambda number, assignee: assigned.append(number),
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="unassign_issue",
-        value=lambda number: unassigned.append(number),
+        value=lambda number, assignee: unassigned.append(number),
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -42,7 +43,7 @@ def test_process_issue_fails_when_official_results_are_missing(
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="run_euroeval",
-        value=lambda model_id, languages: (0, "all good"),
+        value=lambda **kwargs: (0, "all good"),
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -55,12 +56,17 @@ def test_process_issue_fails_when_official_results_are_missing(
         value=lambda output: 0,
     )
     monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="num_skipped_benchmarks",
+        value=lambda output: 0,
+    )
+    monkeypatch.setattr(
         target=process_evaluation_queue, name="euroeval_version", value=lambda: "99.0.0"
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="comment_on_issue",
-        value=lambda number, comment: comments.append(comment),
+        value=lambda number, body: comments.append(body),
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -73,12 +79,14 @@ def test_process_issue_fails_when_official_results_are_missing(
         value=lambda model_id: None,
     )
     monkeypatch.setattr(
-        target=process_evaluation_queue, name="set_vm_marker", value=lambda number: None
+        target=process_evaluation_queue,
+        name="set_vm_marker",
+        value=lambda number, vm_id: None,
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="clear_vm_marker",
-        value=lambda number: None,
+        value=lambda number, vm_id: None,
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -89,6 +97,16 @@ def test_process_issue_fails_when_official_results_are_missing(
         target=process_evaluation_queue,
         name="issue_has_matching_error_comment",
         value=lambda number, reason: False,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="find_progress_comment",
+        value=lambda number: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="post_or_update_progress_comment",
+        value=lambda **kwargs: None,
     )
 
     process_evaluation_queue.process_issue(
@@ -103,7 +121,7 @@ def test_process_issue_fails_when_official_results_are_missing(
     assert unassigned == [17]
     assert marker_versions == ["99.0.0"]
     assert len(comments) == 1
-    assert "missing results for 1 official dataset-language pair(s)" in comments[0]
+    assert "missing official dataset-language pair(s)" in comments[0]
     assert "danish_ner/da" in comments[0]
 
 
@@ -124,12 +142,14 @@ def test_process_issue_does_not_special_case_oom_anymore(
     lines_per_read = iter([["before"], ["before"]])
 
     monkeypatch.setattr(
-        target=process_evaluation_queue, name="assign_issue", value=lambda number: None
+        target=process_evaluation_queue,
+        name="assign_issue",
+        value=lambda number, assignee: None,
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="unassign_issue",
-        value=lambda number: unassigned.append(number),
+        value=lambda number, assignee: unassigned.append(number),
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -139,7 +159,7 @@ def test_process_issue_does_not_special_case_oom_anymore(
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="run_euroeval",
-        value=lambda model_id, languages: (1, "RuntimeError: CUDA out of memory"),
+        value=lambda **kwargs: (1, "RuntimeError: CUDA out of memory"),
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -152,12 +172,17 @@ def test_process_issue_does_not_special_case_oom_anymore(
         value=lambda output: 0,
     )
     monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="num_skipped_benchmarks",
+        value=lambda output: 0,
+    )
+    monkeypatch.setattr(
         target=process_evaluation_queue, name="euroeval_version", value=lambda: "99.0.0"
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="comment_on_issue",
-        value=lambda number, comment: comments.append(comment),
+        value=lambda number, body: comments.append(body),
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -170,12 +195,14 @@ def test_process_issue_does_not_special_case_oom_anymore(
         value=lambda model_id: None,
     )
     monkeypatch.setattr(
-        target=process_evaluation_queue, name="set_vm_marker", value=lambda number: None
+        target=process_evaluation_queue,
+        name="set_vm_marker",
+        value=lambda number, vm_id: None,
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="clear_vm_marker",
-        value=lambda number: None,
+        value=lambda number, vm_id: None,
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -186,6 +213,16 @@ def test_process_issue_does_not_special_case_oom_anymore(
         target=process_evaluation_queue,
         name="issue_has_matching_error_comment",
         value=lambda number, reason: False,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="find_progress_comment",
+        value=lambda number: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="post_or_update_progress_comment",
+        value=lambda **kwargs: None,
     )
 
     process_evaluation_queue.process_issue(
@@ -219,13 +256,9 @@ def test_estimated_model_bytes_dtype_fallback(
         return SimpleNamespace(parameter_count={dtype: count})
 
     monkeypatch.setattr(
-        process_evaluation_queue,
-        "get_safetensors_metadata",
-        fake_get_safetensors_metadata,
+        evaluation_common, "get_safetensors_metadata", fake_get_safetensors_metadata
     )
-    bytes_needed = process_evaluation_queue.estimated_model_bytes(
-        model_id="org/model-name"
-    )
+    bytes_needed = evaluation_common.estimated_model_bytes(model_id="org/model-name")
     assert bytes_needed == expected_bytes
 
 
@@ -245,10 +278,8 @@ def test_estimated_model_bytes_handles_model_id_extras(
         return SimpleNamespace(parameter_count={"BF16": 1})
 
     monkeypatch.setattr(
-        process_evaluation_queue,
-        "get_safetensors_metadata",
-        fake_get_safetensors_metadata,
+        evaluation_common, "get_safetensors_metadata", fake_get_safetensors_metadata
     )
-    assert process_evaluation_queue.estimated_model_bytes(model_id=model_id) == 2
+    assert evaluation_common.estimated_model_bytes(model_id=model_id) == 2
     assert calls[0]["repo_id"] == "org/model"
     assert calls[0]["revision"] == "rev"

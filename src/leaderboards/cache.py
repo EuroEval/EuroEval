@@ -4,7 +4,6 @@ import json
 import logging
 import re
 import tarfile
-import typing as t
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -75,7 +74,7 @@ class Cache:
             result_lines = results_file.read().decode(encoding="utf-8").splitlines()
 
         # Load the processed records
-        old_records: list[dict[str, t.Any]] = list()
+        old_records: list[dict[str, object]] = list()
         for line_idx, line in enumerate(result_lines):
             if not line.strip():
                 continue
