@@ -219,6 +219,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for harderj"
     />
 </a>
+<a href="https://github.com/lardinator">
+    <img
+        src="https://avatars.githubusercontent.com/u/45738512"
+        width=50
+        alt="Contributor avatar for lardinator"
+    />
+</a>
 
 ### Contribute to EuroEval
 

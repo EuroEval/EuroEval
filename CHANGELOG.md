@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Added an architecture alias remapping `Gemma4TextForCausalLM` to
+  `Gemma4ForCausalLM` so that text-only Gemma 4 fine-tunes can be loaded with
+  vLLM versions that only register the multimodal class. Thanks to
+  [@lardinator](https://github.com/lardinator) for the contribution!
 - Raised the default vLLM worker RPC timeouts
   (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and `VLLM_ENGINE_ITERATION_TIMEOUT_S`)
   from 300s to 1800s so that large models on slow hardware no longer crash

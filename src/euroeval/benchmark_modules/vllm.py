@@ -1203,18 +1203,13 @@ def load_model(
 
     clear_vllm()
 
-    # Remap architecture names that the installed vLLM version does not recognise
-    # to their compatible equivalents (e.g. Gemma4TextForCausalLM ->
-    # Gemma4ForCausalLM).  We pass the remapped names via `hf_overrides` so that
-    # vLLM's model-loader picks up the supported class name, and also update the
-    # in-memory config for EuroEval's own use.
-    hf_overrides: dict[str, t.Any] = {}
-    if hasattr(hf_model_config, "architectures") and hf_model_config.architectures:
+    hf_overrides: dict[str, list[str]] = {}
+    if hf_model_config.architectures:
         remapped = [
             _ARCHITECTURE_ALIASES.get(arch, arch)
             for arch in hf_model_config.architectures
         ]
-        if remapped != list(hf_model_config.architectures):
+        if remapped != hf_model_config.architectures:
             log(
                 f"Remapping model architectures {hf_model_config.architectures} -> "
                 f"{remapped} for vLLM compatibility.",
