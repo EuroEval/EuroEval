@@ -95,6 +95,7 @@ def run_euroeval(
     zero_shot: bool = False,
     trust_remote_code: bool = True,
     clear_model_cache: bool = True,
+    gpu_memory_utilization: float | None = None,
 ) -> tuple[int, str]:
     """Run the euroeval CLI for the given model, languages, and datasets.
 
@@ -120,6 +121,10 @@ def run_euroeval(
             Pass ``--trust-remote-code``. Defaults to True.
         clear_model_cache (optional):
             Pass ``--clear-model-cache``. Defaults to True.
+        gpu_memory_utilization (optional):
+            When set, pass ``--gpu-memory-utilization VALUE``. When None,
+            omit the flag so the euroeval CLI's default applies. Defaults
+            to None.
 
     Returns:
         A ``(returncode, combined_output)`` pair. A returncode of 127
@@ -139,6 +144,8 @@ def run_euroeval(
         cmd += ["--language", lang]
     for dataset in datasets or []:
         cmd += ["--dataset", dataset]
+    if gpu_memory_utilization is not None:
+        cmd += ["--gpu-memory-utilization", str(gpu_memory_utilization)]
     logger.info(f"Running: {' '.join(cmd)}")
 
     env = os.environ.copy()

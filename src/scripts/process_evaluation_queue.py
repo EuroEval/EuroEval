@@ -34,6 +34,7 @@ EUROEVAL_RESULTS_PATH Optional override for the path to
 
 from __future__ import annotations
 
+import argparse
 import fcntl
 import getpass
 import importlib.metadata
@@ -42,6 +43,7 @@ import logging
 import os
 import re
 import socket
+import subprocess
 import sys
 import time
 import urllib.error
@@ -372,6 +374,18 @@ def acquire_single_instance_lock() -> None:
 
 QUEUE_PASS_SLEEP_SECONDS = 60 * 60
 
+# Runtime overrides set from CLI args in main(). None means "use the
+# euroeval CLI default" for the memory utilization knob.
+GPU_MEMORY_UTILIZATION: float | None = None
+INTER_ISSUE_SLEEP_SECONDS: float = 30.0
+THERMAL_PAUSE_TEMP_C: float = 80.0
+THERMAL_RESUME_TEMP_C: float = 70.0
+THERMAL_POLL_INTERVAL_SECONDS: float = 15.0
+
+# Set to False once we've logged that nvidia-smi isn't available, so we
+# don't spam the log every cooldown.
+_nvidia_smi_available: bool = True
+
 
 def main() -> None:
     """Process the queue forever, sleeping one hour between passes.
@@ -379,6 +393,8 @@ def main() -> None:
     Credentials and the single-instance lock are acquired once for the
     lifetime of the process, then :func:`process_queue_once` runs in a loop.
     """
+    parse_args()
+    lower_process_priority()
     ensure_credentials()
 
     # Held for the lifetime of the process; released by the kernel on exit.
@@ -400,6 +416,127 @@ def main() -> None:
         logger.info("Interrupted; releasing current issue and exiting.")
         release_current_issue()
         sys.exit(130)
+
+
+def parse_args() -> None:
+    """Parse CLI arguments and populate the module-level runtime overrides."""
+    global GPU_MEMORY_UTILIZATION
+    global INTER_ISSUE_SLEEP_SECONDS
+    global THERMAL_PAUSE_TEMP_C
+    global THERMAL_RESUME_TEMP_C
+    parser = argparse.ArgumentParser(
+        description="Pick up and evaluate open model-evaluation-request issues."
+    )
+    parser.add_argument(
+        "--gpu-memory-utilization",
+        type=float,
+        default=None,
+        help=(
+            "vLLM GPU memory utilization fraction (0.0-1.0). When omitted, "
+            "the euroeval CLI's own default is used."
+        ),
+    )
+    parser.add_argument(
+        "--inter-issue-sleep",
+        type=float,
+        default=INTER_ISSUE_SLEEP_SECONDS,
+        help="Seconds to wait between issues regardless of thermal state.",
+    )
+    parser.add_argument(
+        "--thermal-pause-temp",
+        type=float,
+        default=THERMAL_PAUSE_TEMP_C,
+        help="GPU temperature (°C) at or above which to pause before the next issue.",
+    )
+    parser.add_argument(
+        "--thermal-resume-temp",
+        type=float,
+        default=THERMAL_RESUME_TEMP_C,
+        help="GPU temperature (°C) the GPU must cool to before resuming.",
+    )
+    args = parser.parse_args()
+    GPU_MEMORY_UTILIZATION = args.gpu_memory_utilization
+    INTER_ISSUE_SLEEP_SECONDS = args.inter_issue_sleep
+    THERMAL_PAUSE_TEMP_C = args.thermal_pause_temp
+    THERMAL_RESUME_TEMP_C = args.thermal_resume_temp
+
+
+def lower_process_priority() -> None:
+    """Nice the process so SSH and other interactive work stay responsive.
+
+    A niceness bump of 10 keeps the heavy euroeval subprocess out of the way
+    of sshd, the shell, and similar low-CPU interactive workloads without
+    starving the evaluation itself when the box is otherwise idle.
+    """
+    try:
+        os.nice(10)
+    except OSError as e:
+        logger.warning(f"Could not lower process priority: {e}")
+
+
+def read_gpu_temperature_c() -> float | None:
+    """Return the hottest GPU temperature reported by ``nvidia-smi``, in °C.
+
+    Returns None if ``nvidia-smi`` is missing or fails -- callers treat that
+    as "thermal check unavailable" and skip the cooldown.
+    """
+    global _nvidia_smi_available
+    if not _nvidia_smi_available:
+        return None
+    try:
+        result = subprocess.run(  # noqa: S603, S607
+            [
+                "nvidia-smi",
+                "--query-gpu=temperature.gpu",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        logger.info(f"nvidia-smi unavailable for thermal check ({e}); disabling.")
+        _nvidia_smi_available = False
+        return None
+    if result.returncode != 0:
+        return None
+    temps: list[float] = []
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            temps.append(float(line))
+        except ValueError:
+            continue
+    return max(temps) if temps else None
+
+
+def cool_down_between_issues() -> None:
+    """Pause between issues, extending the pause until the GPU has cooled.
+
+    Always waits at least ``INTER_ISSUE_SLEEP_SECONDS``. If ``nvidia-smi``
+    reports a GPU at or above ``THERMAL_PAUSE_TEMP_C``, keeps sleeping in
+    ``THERMAL_POLL_INTERVAL_SECONDS`` chunks until the hottest GPU has
+    dropped below ``THERMAL_RESUME_TEMP_C``.
+    """
+    time.sleep(INTER_ISSUE_SLEEP_SECONDS)
+    temp = read_gpu_temperature_c()
+    if temp is None or temp < THERMAL_PAUSE_TEMP_C:
+        return
+    logger.info(
+        f"GPU at {temp:.0f}°C (>= {THERMAL_PAUSE_TEMP_C:.0f}°C); pausing until "
+        f"it cools below {THERMAL_RESUME_TEMP_C:.0f}°C."
+    )
+    while True:
+        time.sleep(THERMAL_POLL_INTERVAL_SECONDS)
+        temp = read_gpu_temperature_c()
+        if temp is None:
+            return
+        if temp < THERMAL_RESUME_TEMP_C:
+            logger.info(f"GPU cooled to {temp:.0f}°C; resuming.")
+            return
 
 
 def release_current_issue() -> None:
@@ -533,7 +670,7 @@ def process_queue_once() -> None:
             process_issue(issue=issue, model_id=model_id, groups=groups)
         except Exception as e:  # noqa: BLE001
             logger.exception(f"Error while processing issue #{issue['number']}: {e}")
-        time.sleep(1)
+        cool_down_between_issues()
 
 
 def reclaim_orphaned_issues() -> None:
@@ -886,6 +1023,7 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
                 languages=[lang],
                 evaluate_test_split=is_core,
                 clear_model_cache=is_last,
+                gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
             )
             after = read_jsonl_lines(path=RESULTS_PATH)
             new_lines = [line for line in after if line not in before]
