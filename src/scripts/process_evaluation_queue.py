@@ -660,7 +660,7 @@ def _run_claimed_issue(
             failure_reason = failure_reason or reason
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
             failed.append(lang)
-        elif missing and len(missing) > num_skipped:
+        elif missing and (not new_lines or len(missing) > num_skipped):
             reason = (
                 f"missing official dataset-language pair(s) for {lang!r}: "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
