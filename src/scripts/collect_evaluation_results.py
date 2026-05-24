@@ -119,10 +119,7 @@ def main() -> None:
     for number, gist_id in completed:
         try:
             comment_on_issue(
-                number=number,
-                body=(
-                    "Results merged into the leaderboards. Thanks for the submission!"
-                ),
+                number=number, body="Results now live on the leaderboards 🎉"
             )
             close_issue(number=number)
             logger.info(f"#{number}: closed.")
