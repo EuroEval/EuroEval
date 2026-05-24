@@ -578,7 +578,7 @@ def process_queue_once() -> None:
         return
 
     existing_lines = read_jsonl_lines(path=RESULTS_PATH)
-    candidates: list[tuple[int, int, int, int, dict, str, list[str]]] = []
+    candidates: list[tuple[int, int, int, int, dict, str, list[str], dict | None]] = []
     for issue in issues:
         number = issue["number"]
         title = issue.get("title", "")
@@ -610,8 +610,16 @@ def process_queue_once() -> None:
         languages: list[str] = sorted(
             {code for g in groups for code in LANGUAGE_GROUP_CODES[g]}
         )
+        # A previous VM may have crashed mid-run on this now-unassigned issue;
+        # if its progress comment links to a still-reachable gist, that gist
+        # holds the canonical partial results even when our local results file
+        # is empty.
+        partial_state = find_partial_results_for_issue(number=number)
+        combined_lines = existing_lines + (
+            partial_state["lines"] if partial_state else []
+        )
         if status_priority == 0 and model_has_partial_results(
-            lines=existing_lines, model_id=model_id, requested_languages=languages
+            lines=combined_lines, model_id=model_id, requested_languages=languages
         ):
             partial_rank = 0
         else:
@@ -625,6 +633,7 @@ def process_queue_once() -> None:
                 issue,
                 model_id,
                 groups,
+                partial_state,
             )
         )
 
@@ -647,6 +656,7 @@ def process_queue_once() -> None:
         issue,
         model_id,
         groups,
+        partial_state,
     ) in candidates:
         status = {0: "fresh", 1: "gated", 2: "retry of errored eval"}[status_priority]
         if status_priority == 0 and partial_rank == 0:
@@ -667,7 +677,12 @@ def process_queue_once() -> None:
                 )
                 continue
         try:
-            process_issue(issue=issue, model_id=model_id, groups=groups)
+            process_issue(
+                issue=issue,
+                model_id=model_id,
+                groups=groups,
+                partial_state=partial_state,
+            )
         except Exception as e:  # noqa: BLE001
             logger.exception(f"Error while processing issue #{issue['number']}: {e}")
         cool_down_between_issues()
@@ -891,7 +906,9 @@ def cached_model_summary(model_id: str) -> dict | None:
     return {"param_count": param_count, "gated": False, "gated_repo": gated_repo}
 
 
-def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
+def process_issue(
+    issue: dict, model_id: str, groups: list[str], partial_state: dict | None = None
+) -> None:
     """Claim, evaluate, and report back on a single queue issue.
 
     Args:
@@ -901,6 +918,11 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
             The Hugging Face model id to evaluate.
         groups:
             The selected language-group labels for this issue.
+        partial_state:
+            Optional pre-fetched partial-results state from a prior run on
+            this issue (``comment_id``, ``gist_id``, ``lines``). When set, the
+            existing gist is reused and its lines seed the accumulated results
+            so an evaluation orphaned by another VM can be continued.
     """
     number = issue["number"]
     languages: list[str] = []
@@ -939,7 +961,12 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     global _current_issue_number
     _current_issue_number = number
     try:
-        _run_claimed_issue(issue=issue, model_id=model_id, languages=languages)
+        _run_claimed_issue(
+            issue=issue,
+            model_id=model_id,
+            languages=languages,
+            partial_state=partial_state,
+        )
     finally:
         _current_issue_number = None
 
@@ -949,12 +976,19 @@ PROGRESS_COMMENT_MARKER = "<!-- queue-progress -->"
 # Gist marker used to store and retrieve the gist ID across issue body updates.
 GIST_MARKER_RE = re.compile(r"<!--\s*euroeval-results-gist:\s*([^\s>]+)\s*-->")
 
+# Matches the gist link rendered in the progress comment body so a fresh VM
+# can pick the gist id back up from GitHub when its local results file is
+# empty (e.g. continuing an evaluation orphaned by another VM).
+GIST_URL_IN_COMMENT_RE = re.compile(r"gist\.github\.com/(?:[\w-]+/)?([0-9a-f]+)")
+
 # Gist ID for uploading results as an attachment. Stored in the issue body
 # so it persists across runs and can be cleaned up when the issue is done.
 _gist_id: str | None = None
 
 
-def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None:
+def _run_claimed_issue(
+    issue: dict, model_id: str, languages: list[str], partial_state: dict | None = None
+) -> None:
     """Run euroeval one language at a time and maintain a progress comment.
 
     A single comment carrying the ``queue-progress`` marker is created (or
@@ -969,7 +1003,13 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
             The Hugging Face model id to evaluate.
         languages:
             The flattened list of language codes for this evaluation.
+        partial_state:
+            Optional pre-fetched partial-results state from a prior run on
+            this issue. When set, the existing gist is reused (so the
+            progress comment keeps pointing at a single, growing gist) and
+            its lines seed the accumulated results.
     """
+    global _gist_id
     number = issue["number"]
     is_core = model_id in load_core_model_ids()
     issue_body = issue.get("body")
@@ -977,12 +1017,26 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
     existing_lines = _result_lines_for_model(
         lines=read_jsonl_lines(path=RESULTS_PATH), model_id=model_id
     )
+    if partial_state:
+        _gist_id = partial_state["gist_id"]
+        gist_lines = _result_lines_for_model(
+            lines=partial_state["lines"], model_id=model_id
+        )
+        seen = set(existing_lines)
+        for line in gist_lines:
+            if line not in seen:
+                existing_lines.append(line)
+                seen.add(line)
     accumulated = list(existing_lines)
     done = _completed_languages(lines=accumulated, requested_languages=languages)
     pending = [lang for lang in languages if lang not in done]
     failed: list[str] = []
 
-    comment_id = _find_progress_comment(number=number)
+    comment_id = (
+        partial_state["comment_id"]
+        if partial_state
+        else _find_progress_comment(number=number)
+    )
     comment_id = _post_or_update_progress_comment(
         number=number,
         comment_id=comment_id,
@@ -1135,7 +1189,6 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
         # Don't delete the gist here -- the collector script (which runs on the
         # maintainer's laptop) needs to read it to harvest the results. The
         # collector deletes the gist after the issue is closed.
-        global _gist_id
         _gist_id = None
 
 
@@ -1242,6 +1295,111 @@ def _upload_results_gist(
     except urllib.error.HTTPError as e:
         logger.warning(f"Could not create results gist for {model_id!r}: {e}")
         return None
+
+
+def fetch_gist_lines(gist_id: str) -> list[str] | None:
+    """Return the non-empty JSONL lines from a gist, or None if it 404s.
+
+    Reads every file in the gist (typically there is just one ``*.jsonl``
+    file) and concatenates their non-empty lines. Other failures are logged
+    and also return None so callers can fall back to "no partial results".
+
+    Args:
+        gist_id:
+            The GitHub gist id to fetch.
+
+    Returns:
+        The collected non-empty lines, or None if the gist could not be
+        retrieved (including when it has been deleted).
+    """
+    try:
+        resp = gh_request(path=f"/gists/{gist_id}")
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        logger.warning(f"Could not fetch gist {gist_id}: {e}")
+        return None
+    if not isinstance(resp, dict):
+        return None
+    files = resp.get("files") or {}
+    if not isinstance(files, dict):
+        return None
+    lines: list[str] = []
+    for file_data in files.values():
+        if not isinstance(file_data, dict):
+            continue
+        content = file_data.get("content")
+        if not isinstance(content, str):
+            continue
+        for raw_line in content.splitlines():
+            if raw_line.strip():
+                lines.append(raw_line)
+    return lines
+
+
+def delete_issue_comment(number: int, comment_id: int) -> None:
+    """Delete the comment with the given id from an issue.
+
+    Args:
+        number:
+            The issue number (used for logging only).
+        comment_id:
+            The id of the comment to delete.
+    """
+    try:
+        gh_request(path=f"/repos/{REPO}/issues/comments/{comment_id}", method="DELETE")
+        logger.info(f"#{number}: deleted stale progress comment {comment_id}.")
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not delete comment {comment_id}: {e}")
+
+
+def find_partial_results_for_issue(number: int) -> dict | None:
+    """Locate a usable progress comment + gist for ``number``.
+
+    Returns a dict with keys ``comment_id``, ``gist_id`` and ``lines`` when an
+    existing progress comment links to a gist that is still reachable. If the
+    linked gist 404s, the stale progress comment is deleted so the issue
+    starts from scratch.
+
+    Args:
+        number:
+            The issue number to inspect.
+
+    Returns:
+        A dict with keys ``comment_id``, ``gist_id`` and ``lines`` when an
+        existing progress comment links to a reachable gist, or None when no
+        progress comment is present, when one exists but has not yet linked
+        a gist, or when the linked gist could not be fetched.
+    """
+    try:
+        comments = gh_request(
+            path=f"/repos/{REPO}/issues/{number}/comments", params={"per_page": "100"}
+        )
+    except urllib.error.HTTPError as e:
+        logger.warning(f"#{number}: could not list comments: {e}")
+        return None
+    if not isinstance(comments, list):
+        return None
+    progress: dict | None = None
+    for c in comments:
+        if isinstance(c, dict) and PROGRESS_COMMENT_MARKER in (c.get("body") or ""):
+            progress = c
+            break
+    if progress is None:
+        return None
+    comment_id = progress.get("id")
+    if not isinstance(comment_id, int):
+        return None
+    body = progress.get("body") or ""
+    m = GIST_URL_IN_COMMENT_RE.search(body)
+    if not m:
+        return None
+    gist_id = m.group(1)
+    lines = fetch_gist_lines(gist_id=gist_id)
+    if lines is None:
+        delete_issue_comment(number=number, comment_id=comment_id)
+        return None
+    return {"comment_id": comment_id, "gist_id": gist_id, "lines": lines}
 
 
 def _find_progress_comment(number: int) -> int | None:
