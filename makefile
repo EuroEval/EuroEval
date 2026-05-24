@@ -1,6 +1,6 @@
 # This ensures that we can call `make <target>` even if `<target>` exists as a file or
 # directory.
-.PHONY: help docs
+.PHONY: help docs install install-frontend
 
 # Exports all variables defined in the makefile available to scripts
 .EXPORT_ALL_VARIABLES:
@@ -32,6 +32,7 @@ install: ## Install dependencies
 	@$(MAKE) --quiet install-uv
 	@$(MAKE) --quiet install-dependencies
 	@$(MAKE) --quiet setup-environment-variables
+	@$(MAKE) --quiet install-frontend
 	@echo "Installed the 'EuroEval' project."
 
 install-rust:
@@ -59,20 +60,26 @@ setup-environment-variables:
 setup-environment-variables-non-interactive:
 	@uv run python src/scripts/fix_dot_env_file.py --non-interactive
 
+install-frontend: ## Install frontend dependencies
+	@echo "Installing frontend dependencies..."
+	@npm install
+	@echo "Installed frontend dependencies."
+
 install-pre-commit:
 	@uv run pre-commit install
 	@uv run pre-commit autoupdate
 
-docs:  ## View documentation locally
-	@echo "Viewing documentation - run 'make publish-docs' to publish the documentation website."
-	@uv run mkdocs serve
-
-publish-docs:  ## Publish documentation to GitHub Pages
-	@uv run mkdocs gh-deploy
-	@echo "Updated documentation website: https://euroeval.com/"
-
 test:  ## Run tests
 	@uv run pytest && uv run readme-cov && rm .coverage*
+
+frontend:  ## Build and deploy the frontend
+	@vercel build --prod 2>&1 | grep -v "^WARNING!" && vercel deploy --prebuilt --prod
+
+leaderboards:  ## Collect finished evaluation results and regenerate leaderboards
+	@uv run python src/scripts/collect_evaluation_results.py
+
+update-core-models:  ## Refresh the core-model list and update GitHub issue #1186
+	@uv run python src/scripts/update_core_models.py
 
 tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .
@@ -111,7 +118,6 @@ publish:
 		echo "Publishing to PyPI..."; \
 		$(MAKE) --quiet publish-euroeval \
 			&& $(MAKE) --quiet publish-scandeval \
-			&& $(MAKE) --quiet publish-docs \
 			&& $(MAKE) --quiet add-dev-version \
 			&& echo "Published!"; \
 	fi
