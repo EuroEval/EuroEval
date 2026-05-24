@@ -159,54 +159,12 @@ export interface EvaluatorCount {
   avatarUrl: string;
 }
 
-interface RawIssueWithAssignees extends RawIssue {
-  assignees: Array<{ login: string; avatar_url: string }>;
-  assignee: { login: string; avatar_url: string } | null;
-}
-
-const HALL_OF_FAME_EXCLUDE = new Set(["saattrupdan"]);
-
 export async function listEvaluators(): Promise<EvaluatorCount[]> {
-  const maxPages = 10;
-  const pages = await Promise.all(
-    Array.from({ length: maxPages }, (_, i) =>
-      fetch(`/api/issues?state=closed&page=${i + 1}`).then((r) => {
-        if (!r.ok) {
-          throw new Error(`Failed to load hall of fame (${r.status}).`);
-        }
-        return r.json() as Promise<RawIssueWithAssignees[]>;
-      }),
-    ),
-  );
-  const counts = new Map<string, EvaluatorCount>();
-  for (const page of pages) {
-    for (const issue of page) {
-      if (!extractModelId(issue.title, issue.body)) continue;
-      const assignees =
-        issue.assignees && issue.assignees.length > 0
-          ? issue.assignees
-          : issue.assignee
-            ? [issue.assignee]
-            : [];
-      const seen = new Set<string>();
-      for (const a of assignees) {
-        if (HALL_OF_FAME_EXCLUDE.has(a.login)) continue;
-        if (seen.has(a.login)) continue;
-        seen.add(a.login);
-        const cur = counts.get(a.login);
-        if (cur) {
-          cur.count += 1;
-        } else {
-          counts.set(a.login, {
-            login: a.login,
-            count: 1,
-            avatarUrl: a.avatar_url,
-          });
-        }
-      }
-    }
+  const r = await fetch("/api/hall-of-fame");
+  if (!r.ok) {
+    throw new Error(`Failed to load hall of fame (${r.status}).`);
   }
-  return Array.from(counts.values()).sort((a, b) => b.count - a.count);
+  return (await r.json()) as EvaluatorCount[];
 }
 
 export interface SubmitResult {
