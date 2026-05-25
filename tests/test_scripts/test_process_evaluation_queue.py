@@ -90,6 +90,21 @@ def test_process_issue_fails_when_official_results_are_missing(
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
+        name="vm_marker_matches",
+        value=lambda number, vm_id: True,
+    )
+
+    def fake_release(number: int, vm_id: str, assignee: str) -> bool:
+        unassigned.append(number)
+        return True
+
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="release_issue_if_owned",
+        value=fake_release,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
         name="add_failed_label",
         value=lambda number: None,
     )
@@ -203,6 +218,21 @@ def test_process_issue_does_not_special_case_oom_anymore(
         target=process_evaluation_queue,
         name="clear_vm_marker",
         value=lambda number, vm_id: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="vm_marker_matches",
+        value=lambda number, vm_id: True,
+    )
+
+    def fake_release(number: int, vm_id: str, assignee: str) -> bool:
+        unassigned.append(number)
+        return True
+
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="release_issue_if_owned",
+        value=fake_release,
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,

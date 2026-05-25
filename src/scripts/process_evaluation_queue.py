@@ -79,10 +79,12 @@ from leaderboards.queue_markers import (
     clear_vm_marker,
     errored_marker_present,
     gated_marker_present,
+    release_issue_if_owned,
     set_errored_marker,
     set_gated_marker,
     set_gated_with_errored_block,
     set_vm_marker,
+    vm_marker_matches,
 )
 from leaderboards.queue_parsing import (
     GATED_OUTPUT_RE,
@@ -265,14 +267,10 @@ def release_current_issue() -> None:
         return
     _current_issue_number = None
     try:
-        clear_vm_marker(number=number, vm_id=VM_ID)
+        if release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE):
+            logger.info(f"#{number}: released on interrupt.")
     except Exception as e:  # noqa: BLE001
-        logger.warning(f"#{number}: could not clear vm marker on interrupt: {e}")
-    try:
-        unassign_issue(number=number, assignee=ASSIGNEE)
-        logger.info(f"#{number}: released on interrupt.")
-    except Exception as e:  # noqa: BLE001
-        logger.warning(f"#{number}: could not unassign on interrupt: {e}")
+        logger.warning(f"#{number}: could not release on interrupt: {e}")
 
 
 def process_queue_once() -> None:
@@ -519,6 +517,17 @@ def process_issue(
     # the issue unassigned (harmless) rather than assigned-but-unowned.
     set_vm_marker(number=number, vm_id=VM_ID)
     assign_issue(number=number, assignee=ASSIGNEE)
+    # Two VMs sharing a PAT cannot be told apart by the assignee, so another
+    # VM that raced through the same set_vm_marker + assign_issue window will
+    # have overwritten our marker. Verify ownership before proceeding so the
+    # losing VM doesn't both duplicate work and later strip the assignment
+    # out from under the winning VM's still-running evaluation.
+    if not vm_marker_matches(number=number, vm_id=VM_ID):
+        logger.info(
+            f"#{number}: another VM won the claim race; aborting without "
+            "touching the assignee."
+        )
+        return
     global _current_issue_number
     _current_issue_number = number
     try:
@@ -706,8 +715,7 @@ def _run_claimed_issue(
             number=number, body=issue.get("body"), version=version
         )
         add_failed_label(number=number)
-        clear_vm_marker(number=number, vm_id=VM_ID)
-        unassign_issue(number=number, assignee=ASSIGNEE)
+        release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
         logger.info(
             f"#{number}: euroeval reported a gated repo for {model_id!r}; "
             f"marked gated and errored-on v{version} to avoid retry loops."
@@ -719,8 +727,7 @@ def _run_claimed_issue(
         reason = failure_reason or f"failed languages: {', '.join(failed)}"
         tail = failure_output_tail or "(no output captured)"
         if issue_has_matching_error_comment(number=number, reason=reason):
-            clear_vm_marker(number=number, vm_id=VM_ID)
-            unassign_issue(number=number, assignee=ASSIGNEE)
+            release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
             logger.info(
                 f"#{number}: identical error already posted; "
                 "skipping comment and marker updates, returned to queue."
@@ -734,8 +741,7 @@ def _run_claimed_issue(
         comment_on_issue(number=number, body=error_comment)
         set_errored_marker(number=number, body=issue.get("body"), version=version)
         add_failed_label(number=number)
-        clear_vm_marker(number=number, vm_id=VM_ID)
-        unassign_issue(number=number, assignee=ASSIGNEE)
+        release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
         logger.info(
             f"#{number}: marked errored on v{version} after {len(failed)} failed "
             f"language(s) ({', '.join(failed)}); returned to queue."
