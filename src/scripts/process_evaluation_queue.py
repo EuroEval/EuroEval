@@ -104,6 +104,7 @@ from leaderboards.queue_progress import (
     find_partial_results_for_issue,
     find_progress_comment,
     post_or_update_progress_comment,
+    upload_results_gist,
 )
 from leaderboards.queue_runtime import (
     ThermalConfig,
@@ -692,6 +693,19 @@ def _run_claimed_issue(
 
         if not is_last:
             wait_for_gpu_to_cool(config=THERMAL_CONFIG)
+
+    # Upload the fully accumulated results to the gist one final time.
+    # This ensures the gist contains all language results after evaluation
+    # completes (the per-language calls above may have been interrupted or
+    # the gist may only contain partial results).
+    try:
+        upload_results_gist(
+            state=progress, model_id=model_id, lines=accumulated, issue_body=issue_body
+        )
+    except Exception:
+        logger.warning(
+            f"#{number}: failed to upload final results gist for {model_id!r}"
+        )
 
     if gated_detected:
         version = euroeval_version()

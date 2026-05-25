@@ -226,12 +226,26 @@ def upload_results_gist(
         The gist id if a gist was created or already known, or None on
         failure.
     """
-    if state.gist_id:
-        return state.gist_id
-
     filename = f"{model_id.replace('/', '_').replace('.', '_')}_results.jsonl"
     content = "\n".join(lines) + "\n" if lines else ""
 
+    if state.gist_id:
+        # Update the existing gist with the latest accumulated results.
+        try:
+            gh_request(
+                path=f"/gists/{state.gist_id}",
+                method="PATCH",
+                body={"files": {filename: {"content": content}}},
+            )
+            logger.info(f"Updated results gist {state.gist_id} for {model_id!r}.")
+            return state.gist_id
+        except urllib.error.HTTPError as e:
+            logger.warning(
+                f"Could not update results gist {state.gist_id} for {model_id!r}: {e}"
+            )
+            return state.gist_id
+
+    # Create a new gist (first language or no existing gist).
     try:
         resp = gh_request(
             path="/gists",
