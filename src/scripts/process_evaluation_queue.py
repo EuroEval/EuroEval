@@ -450,8 +450,6 @@ def reclaim_orphaned_issues() -> None:
             continue
         reclaimed += 1
         logger.info(f"#{number}: reclaimed orphaned issue (vm-id {VM_ID}).")
-    if reclaimed:
-        logger.info(f"Reclaimed {reclaimed} orphaned issue(s) for vm-id {VM_ID}.")
 
 
 def list_open_unassigned_issues() -> list[dict]:
