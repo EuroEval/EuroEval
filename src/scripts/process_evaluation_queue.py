@@ -27,9 +27,6 @@ EUROEVAL_VM_ID        Optional identifier for this VM/host, written into a
                       work in progress on other VMs sharing the same
                       assignee. If unset, a stable id is read from (or
                       written to) a ``.env`` file in the working directory.
-EUROEVAL_RESULTS_PATH Optional override for the path to
-                      ``euroeval_benchmark_results.jsonl``. Defaults to
-                      ``./euroeval_benchmark_results.jsonl``.
 """
 
 from __future__ import annotations
@@ -121,9 +118,7 @@ logger = logging.getLogger("process_evaluation_queue")
 ASSIGNEE = ""
 VM_ID = os.environ.get("EUROEVAL_VM_ID", "")
 VM_ID_ENV_PATH = Path(os.environ.get("EUROEVAL_DOTENV_PATH", ".env"))
-RESULTS_PATH = Path(
-    os.environ.get("EUROEVAL_RESULTS_PATH", "euroeval_benchmark_results.jsonl")
-)
+RESULTS_PATH = Path("euroeval_benchmark_results.jsonl")
 LOCK_PATH = Path(os.environ.get("EUROEVAL_QUEUE_LOCK", "/tmp/euroeval_queue.lock"))
 
 # Held for the lifetime of the process so the kernel keeps the queue lock

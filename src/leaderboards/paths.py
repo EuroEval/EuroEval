@@ -38,7 +38,7 @@ def _env_path(name: str, default: Path) -> Path:
 
 # Historical archive of all benchmark records. Operators provide this file;
 # it is not tracked in git (43+ MB compressed).
-RESULTS_PATH: Path = _env_path("EUROEVAL_RESULTS_PATH", REPO_ROOT / "results.tar.gz")
+RESULTS_PATH: Path = REPO_ROOT / "results.tar.gz"
 
 # Incremental jsonl of new benchmark records to fold into RESULTS_PATH.
 NEW_RESULTS_PATH: Path = _env_path(
