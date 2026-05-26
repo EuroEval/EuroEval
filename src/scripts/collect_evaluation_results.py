@@ -331,11 +331,11 @@ def deploy_to_vercel() -> bool:
     caches.
 
     Returns:
-        True if both ``vercel build`` and ``vercel deploy`` exit cleanly.
+        True if both ``vercel build`` and ``vercel deploy --yes`` exit cleanly.
     """
     for cmd in (
         ["vercel", "build", "--prod"],
-        ["vercel", "deploy", "--prebuilt", "--prod"],
+        ["vercel", "deploy", "--prebuilt", "--prod", "--yes"],
     ):
         logger.info(f"Running: {' '.join(cmd)}")
         try:
