@@ -410,28 +410,12 @@ models:
     eu: false
     osai_rank: null
     api: false
-  - id: vesteinn/DanskBERT
-    type: encoder
-    bucket: encoder
-    parameters: 124548012
-    pareto_languages: []
-    eu: true
-    osai_rank: null
-    api: false
   - id: vesteinn/FoBERT
     type: encoder
     bucket: encoder
     parameters: 124498007
     pareto_languages: [faroese]
-    eu: true
-    osai_rank: null
-    api: false
-  - id: vesteinn/ScandiBERT
-    type: encoder
-    bucket: encoder
-    parameters: 124548012
-    pareto_languages: []
-    eu: true
+    eu: false
     osai_rank: null
     api: false
   - id: vesteinn/ScandiBERT-no-faroese
@@ -439,7 +423,7 @@ models:
     bucket: encoder
     parameters: 124498007
     pareto_languages: [icelandic, swedish]
-    eu: true
+    eu: false
     osai_rank: null
     api: false
   - id: yulan-team/YuLan-Mini

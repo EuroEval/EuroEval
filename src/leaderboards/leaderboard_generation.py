@@ -16,7 +16,7 @@ from .link_generation import generate_task_link
 from .paths import OUTPUT_DIR
 from .result_loading import load_processed_results
 from .result_processing import extract_model_metadata, group_results_by_model
-from .score_computation import compute_ranks
+from .score_computation import compute_ranks, compute_standard_ranks
 from .task_metadata import (
     ORTHOGONAL_TASKS,
     official_datasets_for_language,
@@ -75,6 +75,7 @@ def generate_leaderboard(
     )
     model_results = drop_val_duplicates(model_results=model_results)
     ranks = compute_ranks(model_results=model_results, configs=configs)
+    standard_ranks = compute_standard_ranks(model_results=model_results, ranks=ranks)
     metadata_dict = extract_model_metadata(results=results)
 
     # Only include dataset columns in monolingual leaderboards
@@ -84,6 +85,7 @@ def generate_leaderboard(
     df_pairs = generate_dataframe(
         model_results=model_results,
         ranks=ranks,
+        standard_ranks=standard_ranks,
         metadata_dict=metadata_dict,
         categories=categories,
         leaderboard_configs=configs,
@@ -305,7 +307,8 @@ def create_leaderboard_headers(
 
 def generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    ranks: dict[str, dict[str, dict[str, float]]],
+    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
+    standard_ranks: dict[str, int],
     metadata_dict: dict[str, dict],
     categories: list[t.Literal["generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
@@ -317,7 +320,9 @@ def generate_dataframe(
         model_results:
             The model results.
         ranks:
-            The ranks of the models.
+            The ranks of the models (from compute_ranks).
+        standard_ranks:
+            The ordinal ranks of the models (from compute_standard_ranks).
         metadata_dict:
             The metadata.
         categories:
@@ -368,10 +373,22 @@ def generate_dataframe(
     for category in categories:
         data_dict: dict[str, list] = defaultdict(list)
         for model_id, results in model_results.items():
-            # Get the overall rank for the model
-            rank = ranks[model_id][category]["overall"]
-            if math.isfinite(rank):
-                rank = round(rank, 2)
+            # Get the overall rank for the model (standard ordinal rank)
+            rank = standard_ranks.get(model_id, math.nan)
+            # Get the mean rank score with CI
+            rank_data = ranks[model_id][category].get("overall", {})
+            rank_score = rank_data.get("score", float("nan"))
+            rank_data.get("ci_lower", float("nan"))
+            rank_ci_upper = rank_data.get("ci_upper", float("nan"))
+            if math.isfinite(rank_score):
+                margin = (
+                    (rank_ci_upper - rank_score)
+                    if math.isfinite(rank_ci_upper)
+                    else 0.0
+                )
+                mean_rank_score_str = f"{rank_score:.2f} \u00b1 {margin:.2f}"
+            else:
+                mean_rank_score_str = "-"
             language_ranks = ranks[model_id][category]
             language_ranks.pop("overall")
 
@@ -426,7 +443,7 @@ def generate_dataframe(
 
             # Add all the model values to the data dictionary
             model_values = (
-                dict(model=model_id, rank=rank)
+                dict(model=model_id, rank=rank, mean_rank_score=mean_rank_score_str)
                 | default_orthogonal_values
                 | default_dataset_values
                 | orthogonal_task_scores
@@ -452,16 +469,24 @@ def generate_dataframe(
             .reset_index(drop=True)
         )
 
-        rank_cols = ["rank"]
+        rank_cols = ["rank", "mean_rank_score"]
         if len(leaderboard_configs) > 1:
             rank_cols += list(leaderboard_configs.keys())
 
-        # Format rank as a display string with a "-" sentinel for NaN. The
-        # frontend derives sort order from the numeric value itself.
+        # Format rank as a display string with a "-" sentinel for NaN.
+        # The "rank" column is an integer (ordinal rank); "mean_rank_score"
+        # is already formatted as "score \u00b1 margin".
         for col in rank_cols:
-            df[col] = [
-                f"{value:.2f}" if math.isfinite(value) else "-" for value in df[col]
-            ]
+            if col == "mean_rank_score":
+                # Already formatted, just replace NaN with "-"
+                df[col] = [
+                    v if isinstance(v, str) and v != "-" else "-" for v in df[col]
+                ]
+            else:
+                df[col] = [
+                    str(int(value)) if math.isfinite(value) else "-"
+                    for value in df[col]
+                ]
 
         # Replace dashes with underlines in all column names
         df.columns = df.columns.str.replace("-", "_")
@@ -481,7 +506,7 @@ def generate_dataframe(
             if dataset not in category_to_orthogonal_datasets[category]
         ]
         cols = (
-            ["model", "rank"]
+            ["model", "rank", "mean_rank_score"]
             + orthogonal_cols
             + [
                 "generative_type",
@@ -493,7 +518,7 @@ def generate_dataframe(
                 "vocabulary_size",
                 "context",
             ]
-            + rank_cols[1:]
+            + rank_cols[2:]
         )
         if include_dataset_columns:
             cols += dataset_cols
@@ -558,6 +583,7 @@ def generate_dataframe(
             [
                 "model",
                 "rank",
+                "mean_rank_score",
                 "generative_type",
                 "open",
                 "commercial",
