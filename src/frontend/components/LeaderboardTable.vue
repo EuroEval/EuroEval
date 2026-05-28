@@ -22,17 +22,17 @@ const sortBy = ref<{ index: number; dir: "asc" | "desc" } | null>(null);
 const page = ref(1);
 const pageSize = 10;
 
-// Default sort: mean rank score ascending if present, otherwise rank.
+// Default sort: rank score ascending if present, otherwise rank.
 watch(
   () => props.table,
   () => {
     colFilters.value = {};
     page.value = 1;
-    const meanRankIdx = props.table.columns.findIndex(
-      (c) => c.key.toLowerCase() === "mean rank score",
+    const rankScoreIdx = props.table.columns.findIndex(
+      (c) => c.key.toLowerCase() === "rank score",
     );
-    if (meanRankIdx >= 0) {
-      sortBy.value = { index: meanRankIdx, dir: "asc" };
+    if (rankScoreIdx >= 0) {
+      sortBy.value = { index: rankScoreIdx, dir: "asc" };
     } else {
       const rankIdx = props.table.columns.findIndex(
         (c) => c.key.toLowerCase() === "rank",
@@ -141,8 +141,11 @@ const formatCompact = (n: number): string => {
 const isCompactCol = (col: Column) =>
   col.kind === "number" && COMPACT_COLS.has(col.key.toLowerCase());
 
+// Percent rendering is keyed off the column name, not its inferred kind:
+// some models render an "N/A" placeholder in this column, which forces the
+// kind to "text" and would otherwise prevent the percent formatting.
 const isPercentCol = (col: Column) =>
-  col.kind === "number" && PERCENT_COLS.has(col.key.toLowerCase());
+  PERCENT_COLS.has(col.key.toLowerCase());
 
 const isTickCrossCol = (col: Column) =>
   col.kind === "icon" && TICK_CROSS_COLS.has(col.key.toLowerCase());
@@ -151,12 +154,12 @@ const isRankCol = (col: Column) => col.key.toLowerCase() === "rank";
 
 // Columns that should never receive a heatmap. The ordinal rank column is
 // displayed as plain text — its colour would just duplicate the row order.
-// The mean rank score uses the same rank-style heatmap as the per-language
-// rank columns (handled below).
+// The rank score uses the same rank-style heatmap as the per-language rank
+// columns (handled below).
 const NO_HEATMAP_COLS = new Set(["rank"]);
 
-const isMeanRankScoreCol = (col: Column) =>
-  col.key.toLowerCase() === "mean rank score";
+const isRankScoreCol = (col: Column) =>
+  col.key.toLowerCase() === "rank score";
 
 const cellDisplayHtml = (cell: { html: string; text: string; sortKey: number | string }, col: Column): string => {
   if (isRankCol(col)) {
@@ -172,9 +175,14 @@ const cellDisplayHtml = (cell: { html: string; text: string; sortKey: number | s
     return cell.text || "?";
   }
   if (isPercentCol(col)) {
-    if (typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
-      return `${Math.round(cell.sortKey)}%`;
-    }
+    // sortKey is a number for kind="number", but a lowercased text string
+    // when an "N/A" placeholder forced the column to kind="text". Parse the
+    // displayed text directly so both cases render as "<n>%".
+    const num =
+      typeof cell.sortKey === "number"
+        ? cell.sortKey
+        : Number.parseFloat(cell.text);
+    if (Number.isFinite(num)) return `${Math.round(num)}%`;
     return cell.text || "?";
   }
   return cell.html;
@@ -274,10 +282,10 @@ const isLanguageRankCol = (col: Column): boolean =>
   props.heatmapScoreCols &&
   (col.kind === "number" || col.kind === "score") &&
   !NON_LANGUAGE_NUMBER_COLS.has(col.key.toLowerCase()) &&
-  col.key.toLowerCase() !== "mean rank score";
+  col.key.toLowerCase() !== "rank score";
 
 const toggleSort = (idx: number) => {
-  // The Rank column is derived from the Mean rank score and is not sortable.
+  // The Rank column is derived from the Rank score and is not sortable.
   if (props.table.columns[idx]?.key.toLowerCase() === "rank") return;
   if (sortBy.value?.index === idx) {
     sortBy.value =
@@ -510,7 +518,7 @@ const reportBadEval = (modelId: string) => {
               :style="
                 NO_HEATMAP_COLS.has(table.columns[ci].key.toLowerCase())
                   ? undefined
-                  : isRankCol(table.columns[ci]) || isLanguageRankCol(table.columns[ci]) || isMeanRankScoreCol(table.columns[ci])
+                  : isRankCol(table.columns[ci]) || isLanguageRankCol(table.columns[ci]) || isRankScoreCol(table.columns[ci])
                     ? rankHeatmapStyle(cell)
                     : isHeatmapScoreCol(table.columns[ci])
                       ? scoreHeatmapStyle(cell, table.columns[ci])
