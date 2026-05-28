@@ -57,12 +57,16 @@ def compute_ranks(
                 if not model_scores:
                     continue
 
-                mean_all = np.mean([m for m, _, _ in model_scores.values()])
+                # Sort by mean score descending — best model is first
+                sorted_models = sorted(
+                    model_scores.items(), key=lambda x: x[1][0], reverse=True
+                )
+                mean_best = sorted_models[0][1][0]
                 all_raw = [r for _, _, r in model_scores.values() for r in r]
                 pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
 
                 for mid, (mean_sc, se, _) in model_scores.items():
-                    diff = (mean_all - mean_sc) / pooled_sd
+                    diff = (mean_best - mean_sc) / pooled_sd
                     var_diff = (se**2) / (pooled_sd**2) if pooled_sd > 0 else 0.0
                     score = 1.0 + diff
                     margin = 1.96 * math.sqrt(var_diff)
