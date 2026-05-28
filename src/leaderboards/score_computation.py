@@ -1,12 +1,15 @@
 """Functions related to computation of scores based on the model results."""
 
 import math
-import warnings
 from collections import defaultdict
 
 import numpy as np
-from scipy import stats
 
+from .bootstrap_cis import (
+    bootstrap_confidence_intervals,
+    bootstrap_rank_scores,
+    bootstrap_test,
+)
 from .task_metadata import ORTHOGONAL_TASKS, task_category
 
 
@@ -200,51 +203,21 @@ def compute_ranks(
 
 
 def _anchor_significantly_better(
-    anchor_ds_ranks: dict[str, dict[str, float]],
-    candidate_ds_ranks: dict[str, dict[str, float]],
-    anchor_overall: dict[str, float],
-    candidate_overall: dict[str, float],
+    anchor_overall: dict[str, float], candidate_overall: dict[str, float]
 ) -> bool | None:
     """Test whether the anchor's mean rank score is significantly lower.
 
-    Uses a one-sided paired t-test on per-dataset rank scores across the
-    datasets both models share — the same quantity the leaderboard's
-    "mean rank score" column aggregates, so the test is dimensionally
-    consistent with the displayed scores.
-
-    Falls back to a non-overlapping-CI check on the overall mean rank score
-    when fewer than two paired datasets are available.
+    Uses the propagated 95% confidence intervals that are shown in the
+    leaderboard's Rank score column: the anchor is significantly better iff
+    its upper CI lies strictly below the candidate's lower CI (i.e. the two
+    intervals do not overlap). This keeps the tie-detection consistent with
+    what the reader sees — two models share a rank iff their displayed
+    "score ± margin" intervals overlap.
 
     Returns:
         True if the anchor is significantly better, False if not, or None
-        when there is no basis for comparison at all.
+        when either side is missing the CI.
     """
-    common = sorted(set(anchor_ds_ranks) & set(candidate_ds_ranks))
-    diffs = [
-        candidate_ds_ranks[ds]["score"] - anchor_ds_ranks[ds]["score"] for ds in common
-    ]
-    diffs = [d for d in diffs if math.isfinite(d)]
-
-    if len(diffs) >= 2:
-        # Lower rank score = better. Anchor is significantly better iff the
-        # candidate's per-dataset scores are significantly greater (paired).
-        if all(d == diffs[0] for d in diffs):
-            return diffs[0] > 0
-        with warnings.catch_warnings():
-            warnings.filterwarnings(action="ignore", category=RuntimeWarning)
-            result = stats.ttest_rel(
-                [candidate_ds_ranks[ds]["score"] for ds in common],
-                [anchor_ds_ranks[ds]["score"] for ds in common],
-                alternative="greater",
-            )
-        pvalue = float(result.pvalue)  # type: ignore[attr-defined]
-        if math.isnan(pvalue):
-            return None
-        return pvalue < 0.05
-
-    # Fallback: declare significance when the anchor's overall rank-score CI
-    # lies strictly below the candidate's. Uses the propagated CIs already
-    # computed for the displayed "mean rank score ± margin".
     a_upper = anchor_overall.get("ci_upper", float("nan"))
     c_lower = candidate_overall.get("ci_lower", float("nan"))
     if math.isfinite(a_upper) and math.isfinite(c_lower):
@@ -255,34 +228,29 @@ def _anchor_significantly_better(
 def compute_standard_ranks(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
-    dataset_ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
     category: str,
 ) -> dict[str, int]:
-    """Compute ordinal ranks (1, 2, 3…) with ties using a paired t-test.
+    """Compute ordinal ranks (1, 2, 3…) with ties via non-overlapping CIs.
 
-    Sorts by overall mean rank score ascending (lower = better). Walks from
-    the top; if the current model is not significantly worse than the anchor
-    (paired one-sided t-test on per-dataset rank scores, p < 0.05), it
-    shares the anchor's rank. Otherwise it gets a new rank.
+    Sorts by overall mean rank score ascending (lower = better). Walks down
+    the list; if the candidate's lower CI overlaps the anchor's upper CI it
+    shares the anchor's rank, otherwise it starts a new tie group with rank
+    one higher.
 
-    The previous implementation pooled raw per-iteration scores across
-    heterogeneously-scaled datasets and ran an unpaired Welch's test on the
-    flat list — between-dataset variance swamped the signal and produced
-    obvious ties (e.g. 1.79 ± 0.02 vs 1.85 ± 0.01 sharing a rank). Comparing
-    the same per-dataset rank scores that feed the "mean rank score" column
-    fixes that.
+    Using the propagated 95% confidence intervals that are already shown in
+    the Rank score column keeps the ordinal Rank consistent with what the
+    reader sees: two models share a rank iff their displayed "score ±
+    margin" intervals overlap.
 
     Args:
         model_results:
             The model results (used only to gate models on having any data).
         ranks:
-            The output of `compute_ranks` (used for sort order and CI
-            fallback for models with <2 shared datasets).
-        dataset_ranks:
-            The output of `compute_dataset_ranks` — per-dataset rank scores.
+            The output of `compute_ranks` — overall mean rank score and
+            propagated CIs per model and category.
         category:
             Which leaderboard category ("generative" or "all_models") to
-            rank within. Datasets are intersected on this category.
+            rank within.
 
     Returns:
         model_id -> int rank.
@@ -315,16 +283,9 @@ def compute_standard_ranks(
         mid_i = scored[i][0]
         anchor_id = scored[anchor_idx][0]
 
-        anchor_ds = dataset_ranks.get(anchor_id, {}).get(category, {})
-        candidate_ds = dataset_ranks.get(mid_i, {}).get(category, {})
-        anchor_overall = ranks[anchor_id][category]["overall"]
-        candidate_overall = ranks[mid_i][category]["overall"]
-
         verdict = _anchor_significantly_better(
-            anchor_ds_ranks=anchor_ds,
-            candidate_ds_ranks=candidate_ds,
-            anchor_overall=anchor_overall,
-            candidate_overall=candidate_overall,
+            anchor_overall=ranks[anchor_id][category]["overall"],
+            candidate_overall=ranks[mid_i][category]["overall"],
         )
         # Treat "no basis for comparison" as a new group, matching the prior
         # behaviour for non-overlapping evaluation sets.
@@ -337,3 +298,137 @@ def compute_standard_ranks(
             ranks_out[mid_i] = ranks_out[anchor_id]
 
     return ranks_out
+
+
+# ---------------------------------------------------------------------------
+# Bootstrap-based rank computation
+# ---------------------------------------------------------------------------
+
+
+def compute_ranks_bootstrap(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    configs: dict[str, dict[str, list[str]]],
+    n_bootstraps: int = 1000,
+    seed: int | None = None,
+) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
+    """Compute bootstrap confidence intervals for overall mean rank scores.
+
+    Resamples datasets with replacement (stratified by task), recomputes the
+    full hierarchy for each replicate, and returns the empirical distribution
+    of overall scores as percentile confidence intervals.
+
+    This replaces the analytical CI propagation with a proper non-parametric
+    approach that respects the nested structure and model correlations.
+
+    Args:
+        model_results: The model results (same format as compute_ranks).
+        configs: Per-language task -> dataset mappings.
+        n_bootstraps: Number of bootstrap replicates (default 1000).
+        seed: Random seed for reproducibility.
+
+    Returns:
+        model_id -> category -> language -> {"score", "ci_lower", "ci_upper"}
+    """
+    bootstrap_scores = bootstrap_rank_scores(
+        model_results=model_results,
+        configs=configs,
+        n_bootstraps=n_bootstraps,
+        seed=seed,
+    )
+
+    return bootstrap_confidence_intervals(bootstrap_scores)
+
+
+def compute_standard_ranks_bootstrap(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    configs: dict[str, dict[str, list[str]]],
+    n_bootstraps: int = 1000,
+    seed: int | None = None,
+    alpha: float = 0.05,
+) -> dict[str, dict[str, int]]:
+    """Compute ordinal ranks (1, 2, 3…) with ties via bootstrap tests.
+
+    Sorts by overall mean rank score ascending (lower = better). Walks down
+    the list; for each model, tests whether it is significantly better than
+    the current anchor using a bootstrap one-sided test (α=0.05). If not
+    significantly better, it shares the anchor's rank. Otherwise it starts a
+    new tie group.
+
+    This replaces the CI-overlap heuristic with a proper statistical test that
+    respects the hierarchical structure of the rank score computation.
+
+    Args:
+        model_results: The model results.
+        configs: Per-language task -> dataset mappings.
+        n_bootstraps: Number of bootstrap replicates.
+        seed: Random seed for reproducibility.
+        alpha: Significance level for the bootstrap test.
+
+    Returns:
+        model_id -> category -> int rank.
+    """
+    # Step 1: Compute bootstrap distributions
+    bootstrap_scores = bootstrap_rank_scores(
+        model_results=model_results,
+        configs=configs,
+        n_bootstraps=n_bootstraps,
+        seed=seed,
+    )
+
+    # Step 2: Sort models by overall score for each category
+    ranks: dict[str, dict[str, int]] = {}
+    categories = ["generative", "all_models"]
+
+    for category in categories:
+        scored: list[tuple[float, str]] = []
+        for model_id in model_results:
+            if (
+                model_id in bootstrap_scores
+                and category in bootstrap_scores[model_id]
+                and "overall" in bootstrap_scores[model_id][category]
+            ):
+                samples = bootstrap_scores[model_id][category]["overall"]
+                mean_score = float(np.median(samples))
+                scored.append((mean_score, model_id))
+
+        scored.sort(key=lambda x: x[0])
+
+        if not scored:
+            continue
+
+        # Step 3: Walk down and assign ranks with bootstrap-based tie detection
+        current_rank = 1
+        anchor_id = scored[0][1]
+
+        for i in range(len(scored)):
+            mid_i = scored[i][1]
+
+            if i == 0:
+                ranks.setdefault(mid_i, {})[category] = 1
+                continue
+
+            # Test: is anchor significantly better than candidate?
+            p_value = bootstrap_test(
+                bootstrap_scores,
+                model_a=anchor_id,
+                model_b=mid_i,
+                category=category,
+                language="overall",
+                alternative="less",
+            )
+
+            if p_value >= alpha:
+                # Not significantly better → share anchor's rank
+                ranks[mid_i] = ranks.setdefault(mid_i, {})
+                ranks[mid_i][category] = ranks[anchor_id][category]
+            else:
+                # Significantly better → new rank group
+                current_rank = i + 1
+                ranks[mid_i] = ranks.setdefault(mid_i, {})
+                ranks[mid_i][category] = current_rank
+                anchor_id = mid_i
+
+    return ranks
+
+
+# ---------------------------------------------------------------------------

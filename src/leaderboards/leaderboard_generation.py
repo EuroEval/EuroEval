@@ -16,11 +16,7 @@ from .link_generation import generate_task_link
 from .paths import OUTPUT_DIR
 from .result_loading import load_processed_results
 from .result_processing import extract_model_metadata, group_results_by_model
-from .score_computation import (
-    compute_dataset_ranks,
-    compute_ranks,
-    compute_standard_ranks,
-)
+from .score_computation import compute_ranks_bootstrap, compute_standard_ranks_bootstrap
 from .task_metadata import (
     ORTHOGONAL_TASKS,
     official_datasets_for_language,
@@ -102,8 +98,12 @@ def generate_leaderboard(
         group_results_by_model(results=results)
     )
     model_results = drop_val_duplicates(model_results=model_results)
-    ranks = compute_ranks(model_results=model_results, configs=configs)
-    dataset_ranks = compute_dataset_ranks(model_results=model_results, configs=configs)
+    # Use bootstrap-based CIs for the displayed "Rank score ± margin" column.
+    # Bootstrap resamples datasets with replacement (stratified by task),
+    # recomputes the full hierarchy, and returns percentile CIs.
+    ranks = compute_ranks_bootstrap(
+        model_results=model_results, configs=configs, n_bootstraps=1000, seed=42
+    )
     metadata_dict = extract_model_metadata(results=results)
 
     # Only include dataset columns in monolingual leaderboards
@@ -113,7 +113,6 @@ def generate_leaderboard(
     df_pairs = generate_dataframe(
         model_results=model_results,
         ranks=ranks,
-        dataset_ranks=dataset_ranks,
         metadata_dict=metadata_dict,
         categories=categories,
         leaderboard_configs=configs,
@@ -336,7 +335,6 @@ def create_leaderboard_headers(
 def generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
-    dataset_ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
     metadata_dict: dict[str, dict],
     categories: list[t.Literal["generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
@@ -349,8 +347,6 @@ def generate_dataframe(
             The model results.
         ranks:
             The ranks of the models (from compute_ranks).
-        dataset_ranks:
-            The per-dataset rank scores (from compute_dataset_ranks).
         metadata_dict:
             The metadata.
         categories:
@@ -413,11 +409,15 @@ def generate_dataframe(
             for mid, r in model_results.items()
             if all(ds in r for ds in required_datasets)
         }
-        standard_ranks = compute_standard_ranks(
+        # Bootstrap-based tie detection: walks the sorted list and tests
+        # each model against the current anchor using a one-sided bootstrap
+        # test (α=0.05). Models that are not significantly better share the
+        # anchor's rank; otherwise a new rank group begins.
+        all_standard_ranks = compute_standard_ranks_bootstrap(
             model_results=eligible_model_results,
-            ranks=ranks,
-            dataset_ranks=dataset_ranks,
-            category=category,
+            configs=configs,
+            n_bootstraps=1000,
+            seed=42,
         )
 
         data_dict: dict[str, list] = defaultdict(list)
@@ -425,7 +425,7 @@ def generate_dataframe(
             has_all_datasets = model_id in eligible_model_results
 
             # Get the overall rank for the model (standard ordinal rank)
-            rank = standard_ranks.get(model_id, math.nan)
+            rank = all_standard_ranks.get(model_id, {}).get(category, math.nan)
             # Get the mean rank score with CI
             cat_ranks = ranks.get(model_id, {}).get(category, {})
             rank_data = cat_ranks.get("overall", {})

@@ -160,51 +160,66 @@ the standard rule:
 Var(mean(x_1, ..., x_n)) = (Var(x_1) + ... + Var(x_n)) / n^2
 ```
 
-The leaderboard reports the overall mean rank score as **score ± margin**, where
-the margin is `1.96 · sqrt(propagated_variance)` — a 95% interval matching the
-dataset-level convention.
+The leaderboard reports the overall mean rank score (shown in the **Rank
+score** column) as **score ± margin**, where
+the margin is a 95% confidence interval computed via bootstrap resampling.
+
+#### Bootstrap confidence intervals
+
+Rather than propagating analytical error bounds through the nested mean
+structure, we compute the CIs empirically:
+
+1. **Resample datasets with replacement**, stratified by task (each task's
+datasets are resampled independently, preserving the task structure).
+2. **Recompute the full hierarchy** on the resampled datasets — dataset scores,
+task means, language means, overall mean — for every model.
+3. **Repeat** 1,000 times and collect the distribution of overall scores.
+4. **Take the 2.5th and 97.5th percentiles** as the 95% CI bounds, with the
+median as the point estimate.
+
+This approach respects the hierarchical structure (dataset → task → language →
+overall) and the correlation between models that share datasets. Because both
+models are evaluated on the same resampled datasets, their bootstrap scores are
+correlated, and the difference distribution correctly accounts for this.
 
 #### Why this works
 
 This metric satisfies **Task Fairness** because we normalise every score by the
-dataset's pooled standard deviation and aggregate with equal weights at every
-level. **Magnitude Preservation** holds because the magnitude of the difference
-between two models' dataset scores survives the linear normalisation and the mean
-aggregation. **Comparison** holds because all models are placed on a common scale
-(same argument as the mean rank method). **Robustness** is satisfied by the 95%
-confidence interval on the overall mean rank score: overlapping intervals make
-near-ties immediately visible, and the dense Rank column described below shares a
-rank between models whose per-dataset rank scores cannot be separated by a paired
-t-test. **Minimal Change** is partially satisfied — adding a new model can shift
-`pooled_std(d)` and, if it becomes the new leader on some dataset, shift
-`best_mean_score(d)`. Both effects are local to the affected dataset(s) and tend
-to zero as the number of models grows.
+dataset's pooled standard deviation and aggregate with equal weights at every level.
+**Magnitude Preservation** holds because the magnitude of the difference between two
+models' dataset scores survives the linear normalisation and the mean aggregation.
+**Comparison** holds because all models are placed on a common scale (same argument as
+the mean rank method). **Robustness** is satisfied by the bootstrap confidence
+intervals on the overall mean rank score: overlapping intervals make near-ties
+immediately visible, and the dense Rank column described below shares a rank between
+any two models whose intervals overlap. **Minimal Change** is partially satisfied —
+adding a new model can shift `pooled_std(d)` and, if it becomes the new leader on
+some dataset, shift `best_mean_score(d)`. Both effects are local to the affected
+dataset(s) and tend to zero as the number of models grows.
 
 ### Rank
 
 Alongside the mean rank score the leaderboard shows an integer **Rank** column,
-which is a _dense_ ordinal ranking with paired-t-test-based tie detection. After
-sorting the models by overall mean rank score (lower is better), we walk down the
-list and compare each model to the current tie-group anchor using a one-tailed
-paired t-test on the _per-dataset rank scores_ they share — the same quantity
-that feeds the Mean rank score column. If the anchor is _not_ significantly
-better (p ≥ 0.05), the model joins the anchor's tie group and shares its rank.
-Otherwise it starts a new tie group with rank one larger than the previous
-group's. The result is a contiguous **1, 2, 3, …** sequence in which multiple
-models can share 1st place, 2nd place, and so on — there are never gaps after a
-tie.
+which is a _dense_ ordinal ranking computed via bootstrap hypothesis testing.
+After sorting the models by overall mean rank score (lower is better), we walk
+down the list and compare each model to the current tie-group anchor using a
+one-sided bootstrap test (α = 0.05):
 
-Testing the per-dataset rank scores (rather than the raw bootstrap scores) keeps
-the test dimensionally consistent with the displayed column: the rank scores are
-already normalised by each dataset's pooled standard deviation, so the test does
-not have to absorb the variance of mixing heterogeneous metrics (NER F1,
-translation BLEU, MCC, etc.) into a single pooled sample. The paired form
-exploits the fact that the same datasets are evaluated for both models.
+- We compute the bootstrap distribution of the **difference** between the anchor's
+and candidate's overall scores (lower = better).
+- If the p-value ≥ 0.05 (the anchor is not significantly better), the candidate
+joins the anchor's tie group and shares its rank.
+- Otherwise, it starts a new tie group with rank one larger than the previous
+group's.
 
-When two models share fewer than two datasets — too few for a paired test — we
-fall back to the propagated overall confidence intervals: the anchor is
-considered significantly better iff its upper rank-score CI lies strictly below
-the candidate's lower CI.
+The result is a contiguous **1, 2, 3, …** sequence in which multiple models can
+share 1st place, 2nd place, and so on — there are never gaps after a tie.
+
+The bootstrap test is statistically proper: it uses the same resampled datasets
+for both models, so the difference distribution correctly accounts for the
+correlation induced by shared datasets. This addresses the limitations of the
+previous approaches — the analytical paired t-test (which ignored the hierarchical
+structure) and the CI-overlap heuristic (which was not a formal test).
 
 ## Papers
 

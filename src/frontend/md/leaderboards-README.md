@@ -20,8 +20,11 @@ Each language has two leaderboards:
 
 ## 📊 How to Read the Leaderboards
 
-The main score column is the `Rank`, showing the [mean rank score](/methodology) of the
-model across all the tasks in the leaderboard. The lower the rank, the better the model.
+The main score column is the `Rank score`, showing the
+[mean rank score](/methodology) of the model across all the tasks in the leaderboard.
+The lower the score, the better the model. The `Rank` column to the left is a dense
+ordinal ranking derived from the rank score (see the methodology page for how ties
+are decided).
 
 The columns that follow the rank columns are metadata about the model:
 
