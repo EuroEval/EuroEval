@@ -54,6 +54,30 @@ const PARAM_BUCKETS: [string, number | null, number | null][] = [
   ["≥ 80B", 80_000_000_000, null],
 ];
 
+// Vocabulary size buckets (vocab size in tokens).
+const VOCAB_BUCKETS: [string, number | null, number | null][] = [
+  ["< 50k", null, 50_000],
+  ["50k – 100k", 50_000, 100_000],
+  ["100k – 150k", 100_000, 150_000],
+  ["≥ 150k", 150_000, null],
+];
+
+// Context length buckets (context window in tokens).
+const CONTEXT_BUCKETS: [string, number | null, number | null][] = [
+  ["< 8k", null, 8_000],
+  ["8k – 32k", 8_000, 32_000],
+  ["32k – 128k", 32_000, 128_000],
+  ["128k – 200k", 128_000, 200_000],
+  ["≥ 200k", 200_000, null],
+];
+
+const COLUMN_BUCKETS: Record<string, [string, number | null, number | null][]> =
+  {
+    parameters: PARAM_BUCKETS,
+    vocabulary: VOCAB_BUCKETS,
+    context: CONTEXT_BUCKETS,
+  };
+
 const passesColumnFilter = (cellText: string, filter: string, col: Column) => {
   if (!filter) return true;
   if (col.kind === "icon") {
@@ -67,6 +91,7 @@ const SIZE_COLS = new Set(["parameters", "vocabulary", "context"]);
 
 const passesSizeFilter = (
   cell: { text: string; sortKey: number | string },
+  colKey: string,
 ): boolean => {
   const bucket = sizeFilter.value;
   if (!bucket) return true;
@@ -75,7 +100,8 @@ const passesSizeFilter = (
     // Non-finite values don't match any bucket.
     return false;
   }
-  for (const [label, lo, hi] of PARAM_BUCKETS) {
+  const buckets = COLUMN_BUCKETS[colKey] ?? PARAM_BUCKETS;
+  for (const [label, lo, hi] of buckets) {
     if (label !== bucket) continue;
     return (lo === null || k >= lo) && (hi === null || k < hi);
   }
@@ -88,7 +114,7 @@ const filteredRows = computed<Row[]>(() => {
     // Check the size-indicator bucket filter.
     for (const colKey of SIZE_COLS) {
       const idx = cols.findIndex((c) => c.key.toLowerCase() === colKey);
-      if (idx >= 0 && !passesSizeFilter(row.cells[idx])) {
+      if (idx >= 0 && !passesSizeFilter(row.cells[idx], colKey)) {
         return false;
       }
     }

@@ -168,8 +168,8 @@ const parseNumberSafe = (s: string): number | null => {
 // emits a plain boolean tick/cross, but normalize on read for forward compat.
 const normalizeIconText = (s: string): string => (s === "(✓)" ? "✓" : s);
 
-// Parameter size buckets for the Parameters column dropdown filter.
-// Boundaries match the Python code in `core_models.py`.
+// Parameter size buckets — boundaries match the Python code in
+// `core_models.py`.
 const PARAM_BUCKETS: [string, number | null, number | null][] = [
   ["< 2B", null, 2_000_000_000],
   ["2B – 10B", 2_000_000_000, 10_000_000_000],
@@ -178,14 +178,42 @@ const PARAM_BUCKETS: [string, number | null, number | null][] = [
   ["≥ 80B", 80_000_000_000, null],
 ];
 
+// Vocabulary size buckets (vocab size in tokens).
+const VOCAB_BUCKETS: [string, number | null, number | null][] = [
+  ["< 50k", null, 50_000],
+  ["50k – 100k", 50_000, 100_000],
+  ["100k – 150k", 100_000, 150_000],
+  ["≥ 150k", 150_000, null],
+];
+
+// Context length buckets (context window in tokens).
+const CONTEXT_BUCKETS: [string, number | null, number | null][] = [
+  ["< 8k", null, 8_000],
+  ["8k – 32k", 8_000, 32_000],
+  ["32k – 128k", 32_000, 128_000],
+  ["128k – 200k", 128_000, 200_000],
+  ["≥ 200k", 200_000, null],
+];
+
+const COLUMN_BUCKETS: Record<string, [string, number | null, number | null][]> =
+  {
+    parameters: PARAM_BUCKETS,
+    vocabulary: VOCAB_BUCKETS,
+    context: CONTEXT_BUCKETS,
+  };
+
 /** Compute the set of size buckets represented in the data. */
-const computeParamBuckets = (rows: Row[], colIndex: number): string[] => {
+const computeSizeBuckets = (
+  rows: Row[],
+  colIndex: number,
+  buckets: [string, number | null, number | null][],
+): string[] => {
   const seen = new Set<string>();
   for (const row of rows) {
     const cell = row.cells[colIndex];
     const k = cell.sortKey;
     if (typeof k === "number" && Number.isFinite(k)) {
-      for (const [label, lo, hi] of PARAM_BUCKETS) {
+      for (const [label, lo, hi] of buckets) {
         const inRange = (lo === null || k >= lo) && (hi === null || k < hi);
         if (inRange && !seen.has(label)) {
           seen.add(label);
@@ -194,7 +222,7 @@ const computeParamBuckets = (rows: Row[], colIndex: number): string[] => {
     }
   }
   // Return in defined order (smallest → largest).
-  return PARAM_BUCKETS
+  return buckets
     .map(([label]) => label)
     .filter((l) => seen.has(l));
 };
@@ -393,12 +421,17 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
       col.distinctValues = Array.from(distinct);
     }
     // For size-indicator columns, compute size buckets for dropdown filtering.
-    if (
-      col.kind === "number" &&
-      ["parameters", "vocabulary", "context"].includes(col.key.toLowerCase())
-    ) {
-      const buckets = computeParamBuckets(parsedRows, c);
-      if (buckets.length > 0) col.distinctValues = buckets;
+    if (col.kind === "number") {
+      const colKey = col.key.toLowerCase();
+      const buckets = COLUMN_BUCKETS[colKey];
+      if (buckets) {
+        const bucketLabels = computeSizeBuckets(
+          parsedRows,
+          c,
+          buckets,
+        );
+        if (bucketLabels.length > 0) col.distinctValues = bucketLabels;
+      }
     }
   }
 
