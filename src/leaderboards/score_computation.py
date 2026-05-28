@@ -71,10 +71,10 @@ def compute_dataset_ranks_bootstrap(
                     for score in raw_scores
                 ]
                 pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
+                if pooled_sd <= 0:
+                    pooled_sd = 1.0
 
                 for mid, (mean_sc, se, raw) in model_scores.items():
-                    if pooled_sd <= 0:
-                        continue
                     # Compute rank scores across bootstrap replicates
                     bootstrap_scores: list[float] = []
                     for _ in range(n_bootstraps):

@@ -430,7 +430,6 @@ def generate_dataframe(
             cat_ranks = ranks.get(model_id, {}).get(category, {})
             rank_data = cat_ranks.get("overall", {})
             rank_score = rank_data.get("score", float("nan"))
-            rank_data.get("ci_lower", float("nan"))
             rank_ci_upper = rank_data.get("ci_upper", float("nan"))
             if math.isfinite(rank_score) and has_all_datasets:
                 margin = (
