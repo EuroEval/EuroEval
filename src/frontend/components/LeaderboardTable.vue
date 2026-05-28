@@ -18,7 +18,9 @@ const props = withDefaults(
 
 type FilterValue = string;
 const colFilters = ref<Record<string, FilterValue>>({});
-const sizeFilter = ref<string>("");
+const paramFilter = ref<string>("");
+const vocabFilter = ref<string>("");
+const contextFilter = ref<string>("");
 const sortBy = ref<{ index: number; dir: "asc" | "desc" } | null>(null);
 const page = ref(1);
 const pageSize = 10;
@@ -28,7 +30,9 @@ watch(
   () => props.table,
   () => {
     colFilters.value = {};
-    sizeFilter.value = "";
+    paramFilter.value = "";
+    vocabFilter.value = "";
+    contextFilter.value = "";
     page.value = 1;
     const rankScoreIdx = props.table.columns.findIndex(
       (c) => c.key.toLowerCase() === "rank score",
@@ -92,8 +96,8 @@ const SIZE_COLS = new Set(["parameters", "vocabulary", "context"]);
 const passesSizeFilter = (
   cell: { text: string; sortKey: number | string },
   colKey: string,
+  bucket: string,
 ): boolean => {
-  const bucket = sizeFilter.value;
   if (!bucket) return true;
   const k = cell.sortKey;
   if (typeof k !== "number" || !Number.isFinite(k)) {
@@ -112,11 +116,17 @@ const filteredRows = computed<Row[]>(() => {
   const cols = props.table.columns;
   return props.table.rows.filter((row) => {
     // Check the size-indicator bucket filter.
-    for (const colKey of SIZE_COLS) {
-      const idx = cols.findIndex((c) => c.key.toLowerCase() === colKey);
-      if (idx >= 0 && !passesSizeFilter(row.cells[idx], colKey)) {
-        return false;
-      }
+    const paramIdx = cols.findIndex((c) => c.key.toLowerCase() === "parameters");
+    if (paramIdx >= 0 && !passesSizeFilter(row.cells[paramIdx], "parameters", paramFilter.value)) {
+      return false;
+    }
+    const vocabIdx = cols.findIndex((c) => c.key.toLowerCase() === "vocabulary");
+    if (vocabIdx >= 0 && !passesSizeFilter(row.cells[vocabIdx], "vocabulary", vocabFilter.value)) {
+      return false;
+    }
+    const contextIdx = cols.findIndex((c) => c.key.toLowerCase() === "context");
+    if (contextIdx >= 0 && !passesSizeFilter(row.cells[contextIdx], "context", contextFilter.value)) {
+      return false;
     }
     for (let i = 0; i < cols.length; i++) {
       const filter = colFilters.value[cols[i].key];
@@ -362,7 +372,9 @@ const toggleSort = (idx: number) => {
 
 const resetFilters = () => {
   colFilters.value = {};
-  sizeFilter.value = "";
+  paramFilter.value = "";
+  vocabFilter.value = "";
+  contextFilter.value = "";
   page.value = 1;
 };
 
@@ -567,7 +579,14 @@ const reportBadEval = (modelId: string) => {
               </select>
               <select
                 v-else-if="col.kind === 'number' && col.distinctValues"
-                v-model="sizeFilter"
+                :value="col.key.toLowerCase() === 'parameters' ? paramFilter : col.key.toLowerCase() === 'vocabulary' ? vocabFilter : contextFilter"
+                @input="
+                  col.key.toLowerCase() === 'parameters'
+                    ? (paramFilter = ($event.target as HTMLSelectElement).value)
+                    : col.key.toLowerCase() === 'vocabulary'
+                      ? (vocabFilter = ($event.target as HTMLSelectElement).value)
+                      : (contextFilter = ($event.target as HTMLSelectElement).value)
+                "
                 class="lb-filter"
                 :aria-label="`Filter ${col.title}`"
                 @click.stop
