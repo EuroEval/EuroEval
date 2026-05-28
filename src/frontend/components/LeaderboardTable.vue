@@ -127,6 +127,10 @@ const isTickCrossCol = (col: Column) =>
 
 const isRankCol = (col: Column) => col.key.toLowerCase() === "rank";
 
+// Columns that should never receive a heatmap (ordinal rank and mean rank
+// score are displayed as plain text, not as heat-mapped values).
+const NO_HEATMAP_COLS = new Set(["rank", "mean_rank_score"]);
+
 const cellDisplayHtml = (cell: { html: string; text: string; sortKey: number | string }, col: Column): string => {
   if (isCompactCol(col)) {
     if (typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
@@ -462,11 +466,13 @@ const reportBadEval = (modelId: string) => {
                 isTickCrossCol(table.columns[ci]) ? `cell-tc ${tickCrossClass(cell.text)}` : '',
               ]"
               :style="
-                isRankCol(table.columns[ci]) || isLanguageRankCol(table.columns[ci])
-                  ? rankHeatmapStyle(cell)
-                  : isHeatmapScoreCol(table.columns[ci])
-                    ? scoreHeatmapStyle(cell, table.columns[ci])
-                    : undefined
+                NO_HEATMAP_COLS.has(table.columns[ci].key.toLowerCase())
+                  ? undefined
+                  : isRankCol(table.columns[ci]) || isLanguageRankCol(table.columns[ci])
+                    ? rankHeatmapStyle(cell)
+                    : isHeatmapScoreCol(table.columns[ci])
+                      ? scoreHeatmapStyle(cell, table.columns[ci])
+                      : undefined
               "
               :title="cellTitle(cell, table.columns[ci], ci)"
             >
