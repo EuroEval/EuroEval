@@ -140,7 +140,7 @@ def bootstrap_rank_scores(
         # Precompute rank scores for ALL models on ALL sampled datasets ONCE
         # This is the key optimization: O(n_datasets * n_models) instead of
         # O(n_models * n_datasets * n_models)
-        all_rank_scores: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
+        all_rank_scores: dict[str, dict[str, dict[str, float]]] = {}
         for ds, (best_mean, pooled_sd) in dataset_stats.items():
             if pooled_sd <= 0:
                 continue
@@ -213,7 +213,7 @@ def _category_includes_task(category: str, task: str) -> bool:
 
 
 def _aggregate_hierarchy(
-    dataset_scores: dict[str, dict[str, float]],
+    dataset_scores: dict[str, float],
     configs: dict[str, dict[str, list[str]]],
     category: str,
     model_ds_in_sample: dict[str, str],
@@ -223,7 +223,7 @@ def _aggregate_hierarchy(
     Hierarchy: dataset -> task -> language -> overall.
 
     Args:
-        dataset_scores: model_id -> category -> dataset -> score (precomputed).
+        dataset_scores: dataset -> score mapping for this model.
         configs: Per-language task -> dataset mappings.
         category: Category to aggregate.
         model_ds_in_sample: model_id -> dataset -> task mapping for this model.

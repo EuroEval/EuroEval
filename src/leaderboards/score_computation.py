@@ -16,15 +16,26 @@ def _category_includes_task(category: str, task: str) -> bool:
 _CATEGORIES = ("generative", "all_models")
 
 
-def compute_dataset_ranks(
+def compute_dataset_ranks_bootstrap(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
+    n_bootstraps: int = 1000,
+    seed: int | None = None,
 ) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
-    """Compute per-dataset rank scores (step 1 of compute_ranks).
+    """Compute per-dataset rank scores with bootstrap confidence intervals.
+
+    For each model-dataset pair, resamples the raw iteration scores with
+    replacement (n_bootstraps times), recomputes the rank score each time,
+    and returns the empirical distribution's median and percentile CIs.
+
+    The best model (highest mean score) is fixed from the observed data;
+    only the candidate model's mean is resampled, keeping the normalisation
+    stable across bootstrap replicates.
 
     Returns:
         model_id -> category -> dataset -> {"score", "ci_lower", "ci_upper"}.
     """
+    rng = np.random.default_rng(seed)
     out: dict[str, dict[str, dict[str, dict[str, float]]]] = defaultdict(
         lambda: defaultdict(dict)
     )
@@ -54,18 +65,34 @@ def compute_dataset_ranks(
                     model_scores.items(), key=lambda x: x[1][0], reverse=True
                 )
                 mean_best = sorted_models[0][1][0]
-                all_raw = [r for _, _, r in model_scores.values() for r in r]
+                all_raw = [
+                    score
+                    for _, _, raw_scores in model_scores.values()
+                    for score in raw_scores
+                ]
                 pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
 
-                for mid, (mean_sc, se, _) in model_scores.items():
-                    diff = (mean_best - mean_sc) / pooled_sd
-                    var_diff = (se**2) / (pooled_sd**2) if pooled_sd > 0 else 0.0
-                    score = 1.0 + diff
-                    margin = 1.96 * math.sqrt(var_diff)
+                for mid, (mean_sc, se, raw) in model_scores.items():
+                    if pooled_sd <= 0:
+                        continue
+                    # Compute rank scores across bootstrap replicates
+                    bootstrap_scores: list[float] = []
+                    for _ in range(n_bootstraps):
+                        resampled_raw = rng.choice(raw, size=len(raw), replace=True)
+                        resampled_mean = float(np.mean(resampled_raw))
+                        diff = (mean_best - resampled_mean) / pooled_sd
+                        bootstrap_scores.append(1.0 + diff)
+
+                    if not bootstrap_scores:
+                        continue
+
+                    score = float(np.median(bootstrap_scores))
+                    ci_lower = float(np.percentile(bootstrap_scores, 2.5))
+                    ci_upper = float(np.percentile(bootstrap_scores, 97.5))
                     out[mid][category][dataset] = {
                         "score": round(score, 6),
-                        "ci_lower": round(score - margin, 6),
-                        "ci_upper": round(score + margin, 6),
+                        "ci_lower": round(ci_lower, 6),
+                        "ci_upper": round(ci_upper, 6),
                     }
 
     return out
@@ -74,14 +101,35 @@ def compute_dataset_ranks(
 def compute_ranks(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
+    n_bootstraps: int = 1000,
+    seed: int | None = None,
 ) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
-    """Compute ranks via mean-of-normalised-differences with propagated CIs.
+    """Compute ranks via bootstrap confidence intervals.
+
+    Dataset-level CIs are computed by resampling the raw iteration scores
+    with replacement (n_bootstraps times), recomputing the rank score each
+    time, and taking percentile CIs from the empirical distribution.
+
+    Overall (language and aggregate) CIs are computed via the full
+    non-parametric bootstrap in :func:`bootstrap_rank_scores`, which
+    resamples datasets with replacement (stratified by task), recomputes the
+    full hierarchy for each replicate, and returns the empirical distribution
+    of overall scores as percentile confidence intervals.
+
+    This replaces the older analytical CI propagation (which assumed normality
+    of the mean and propagated variance through linear approximations) with a
+    fully non-parametric approach that respects the nested structure and model
+    correlations.
 
     Args:
         model_results:
             The model results.
         configs:
             The leaderboard configurations for each language.
+        n_bootstraps:
+            Number of bootstrap replicates for dataset-level CIs (default 1000).
+        seed:
+            Random seed for reproducibility.
 
     Returns:
         The ranks of the models, per task category and per language.
@@ -94,9 +142,12 @@ def compute_ranks(
     def category_includes_task(category: str, task: str) -> bool:
         return _category_includes_task(category, task)
 
-    # ── Step 1: Dataset-level ranks ──────────────────────────────────────
-    model_dataset_ranks = compute_dataset_ranks(
-        model_results=model_results, configs=configs
+    # ── Step 1: Dataset-level ranks (bootstrap CIs) ─────────────────────
+    model_dataset_ranks = compute_dataset_ranks_bootstrap(
+        model_results=model_results,
+        configs=configs,
+        n_bootstraps=n_bootstraps,
+        seed=seed,
     )
 
     # ── Step 2: Aggregate dataset → task → language → overall ────────────

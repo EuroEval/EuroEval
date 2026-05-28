@@ -381,10 +381,10 @@ const resetFilters = () => {
 const isModelCol = (col: Column) => col.key.toLowerCase() === "model";
 
 const TYPE_EMOJI_TOOLTIPS: Record<string, string> = {
-  "🧠": "Base model",
-  "📝": "Instruction-tuned model",
-  "🤔": "Reasoning model",
-  "🔍": "Unknown type",
+  "🧠": "Base decoder",
+  "📝": "Instruction-tuned decoder",
+  "🤔": "Reasoning decoder",
+  "🔍": "Encoder",
 };
 
 /** Format an icon value with its label for display in dropdowns. */
