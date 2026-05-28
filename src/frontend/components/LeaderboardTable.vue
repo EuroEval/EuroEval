@@ -387,6 +387,15 @@ const TYPE_EMOJI_TOOLTIPS: Record<string, string> = {
   "🔍": "Unknown type",
 };
 
+/** Format an icon value with its label for display in dropdowns. */
+const formatIconLabel = (val: string, col: Column): string => {
+  if (isTypeCol(col)) {
+    const label = TYPE_EMOJI_TOOLTIPS[val];
+    if (label) return `${val} ${label}`;
+  }
+  return val;
+};
+
 const isTypeCol = (col: Column) => col.key.toLowerCase() === "type";
 
 // Primary/secondary metric pretty names per task, generated from
@@ -574,7 +583,7 @@ const reportBadEval = (modelId: string) => {
               >
                 <option value=""></option>
                 <option v-for="v in col.distinctValues" :key="v" :value="v">
-                  {{ v }}
+                  {{ formatIconLabel(v, col) }}
                 </option>
               </select>
               <select
