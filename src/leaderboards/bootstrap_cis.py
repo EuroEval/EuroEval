@@ -56,10 +56,17 @@ def bootstrap_rank_scores(
         categories = _CATEGORIES
 
     rng = np.random.default_rng(seed)
-    # Output: model -> category -> language -> [bootstrap_score_1, ...]
-    bootstrap_scores: dict[str, dict[str, dict[str, list[float]]]] = defaultdict(
-        lambda: defaultdict(lambda: defaultdict(list))
-    )
+
+    # Precompute: model -> set of datasets
+    model_datasets: dict[str, set[str]] = {
+        mid: set(data.keys()) for mid, data in model_results.items()
+    }
+
+    # Precompute: dataset -> set of models that have data
+    dataset_models: dict[str, set[str]] = defaultdict(set)
+    for mid, ds in model_datasets.items():
+        for d in ds:
+            dataset_models[d].add(mid)
 
     # Build dataset -> task mapping for stratified resampling
     dataset_to_task: dict[str, str] = {}
@@ -75,7 +82,22 @@ def bootstrap_rank_scores(
     for ds, task in dataset_to_task.items():
         task_datasets[task].append(ds)
 
-    # For each bootstrap replicate, iterate over models
+    # Precompute category membership for each dataset
+    dataset_to_category: dict[str, set[str]] = {}
+    for ds, task in dataset_to_task.items():
+        cats: set[str] = set()
+        if task in ORTHOGONAL_TASKS:
+            continue
+        for category in categories:
+            if _category_includes_task(category, task):
+                cats.add(category)
+        if cats:
+            dataset_to_category[ds] = cats
+
+    # Output: model -> category -> language -> [bootstrap_score_1, ...]
+    bootstrap_scores: dict[str, dict[str, dict[str, list[float]]]] = {}
+
+    # For each bootstrap replicate
     for b in range(n_bootstraps):
         if b % 100 == 0:
             logger.info("Bootstrap replicate %d/%d ...", b, n_bootstraps)
@@ -87,30 +109,54 @@ def bootstrap_rank_scores(
             indices = rng.integers(0, n, size=n)
             sampled_datasets[task] = [ds_list[i] for i in indices]
 
-        # Flatten to a dict: dataset -> task
-        sampled_flat: dict[str, str] = {}
-        for task, ds_list in sampled_datasets.items():
-            for ds in ds_list:
-                sampled_flat[ds] = task
+        # Flatten to a set of sampled datasets
+        sampled_set: set[str] = set()
+        for ds_list in sampled_datasets.values():
+            sampled_set.update(ds_list)
 
-        # For each model, compute the full hierarchy on sampled datasets
+        # Precompute pooled SD and best model for each sampled dataset ONCE
+        # Only iterate over models that have data for each dataset
+        dataset_stats: dict[str, tuple[float, float]] = {}
+        for ds in sampled_set:
+            models_on_ds = dataset_models.get(ds, set())
+            if not models_on_ds:
+                continue
+            # Collect scores for models that have data
+            scores: list[tuple[str, float, float, list[float]]] = []
+            for mid in models_on_ds:
+                if ds in model_datasets[mid] and ds in model_results:
+                    raw, mean_sc, se = model_results[mid][ds][0]
+                    if np.isfinite(mean_sc):
+                        scores.append((mid, mean_sc, se, raw))
+            if not scores:
+                continue
+            # Find best model and compute pooled SD
+            scores.sort(key=lambda x: x[1], reverse=True)
+            best_mean = scores[0][1]
+            all_raw = [r for _, _, _, r in scores]
+            pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
+            dataset_stats[ds] = (best_mean, pooled_sd)
+
+        # Now compute rank scores for each model using precomputed stats
         for model_id, model_data in model_results.items():
             for category in categories:
                 # Filter to datasets this model has data for
-                model_ds_in_sample = {
-                    ds: task
-                    for ds, task in sampled_flat.items()
-                    if ds in model_data
-                    and _category_includes_task(category, task)
-                }
+                model_ds_in_sample: dict[str, str] = {}
+                for task, ds_list in sampled_datasets.items():
+                    for ds in ds_list:
+                        if (
+                            ds in model_datasets[model_id]
+                            and ds in dataset_stats
+                            and category in dataset_to_category.get(ds, set())
+                        ):
+                            model_ds_in_sample[ds] = task
 
                 if not model_ds_in_sample:
                     continue
 
-                # Compute per-dataset rank scores for this model's sampled datasets
-                # (needs all models' data on each dataset for pooled_sd, best model)
-                ds_scores = _compute_sampled_dataset_scores(
-                    model_results, model_ds_in_sample, category, configs
+                # Compute per-dataset rank scores using precomputed stats
+                ds_scores = _compute_sampled_dataset_scores_fast(
+                    model_results, model_ds_in_sample, category, configs, dataset_stats
                 )
 
                 if not ds_scores:
@@ -119,13 +165,15 @@ def bootstrap_rank_scores(
                 # Aggregate: dataset -> task -> language -> overall
                 overall = _aggregate_hierarchy(ds_scores, configs, category)
                 if overall is not None:
-                    bootstrap_scores[model_id][category]["overall"].append(overall)
+                    bootstrap_scores.setdefault(model_id, {}).setdefault(
+                        category, {}
+                    ).setdefault("overall", []).append(overall)
 
     # Convert lists to arrays
     result: dict[str, dict[str, dict[str, np.ndarray]]] = {}
-    for mid, cats in bootstrap_scores.items():
+    for mid, cats_data in bootstrap_scores.items():
         result[mid] = {}
-        for cat, langs in cats.items():
+        for cat, langs in cats_data.items():
             result[mid][cat] = {
                 lang: np.array(scores) for lang, scores in langs.items()
             }
@@ -142,15 +190,14 @@ def _category_includes_task(category: str, task: str) -> bool:
     return category == "generative" or task_category(task) == "nlu"
 
 
-def _compute_sampled_dataset_scores(
+def _compute_sampled_dataset_scores_fast(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     model_ds_in_sample: dict[str, str],
     category: str,
     configs: dict[str, dict[str, list[str]]],
+    dataset_stats: dict[str, tuple[float, float]],
 ) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
-    """Compute per-dataset rank scores for sampled datasets, for all models.
-
-    This mirrors compute_dataset_ranks but only processes sampled datasets.
+    """Compute per-dataset rank scores for sampled datasets, using precomputed stats.
 
     Returns:
         model_id -> category -> language -> dataset -> score.
@@ -166,39 +213,26 @@ def _compute_sampled_dataset_scores(
                 break
 
     # For each (language, task, dataset), compute rank scores
-    dataset_scores: dict[str, dict[str, dict[str, dict[str, float]]]] = defaultdict(
-        lambda: defaultdict(lambda: defaultdict(dict))
-    )
+    dataset_scores: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
 
     for lang, task_map in ds_by_lang_task.items():
         for task, ds_list in task_map.items():
             if not _category_includes_task(category, task):
                 continue
             for ds in ds_list:
+                if ds not in dataset_stats:
+                    continue
+                best_mean, pooled_sd = dataset_stats[ds]
+                if pooled_sd <= 0:
+                    continue
                 # Collect all models' scores on this dataset
-                model_scores_on_ds: dict[str, tuple[float, float, list[float]]] = {}
                 for mid, data in model_results.items():
                     if ds in data:
                         raw, mean_sc, se = data[ds][0]
                         if np.isfinite(mean_sc):
-                            model_scores_on_ds[mid] = (mean_sc, se, raw)
-
-                if not model_scores_on_ds:
-                    continue
-
-                # Find best model and compute pooled SD
-                sorted_models = sorted(
-                    model_scores_on_ds.items(), key=lambda x: x[1][0], reverse=True
-                )
-                best_mean = sorted_models[0][1][0]
-                all_raw = [r for _, _, r in model_scores_on_ds.values() for r in r]
-                pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
-
-                # Compute rank scores
-                for mid, (mean_sc, se, _) in model_scores_on_ds.items():
-                    diff = (best_mean - mean_sc) / pooled_sd if pooled_sd > 0 else 0.0
-                    score = 1.0 + diff
-                    dataset_scores[mid][category][lang][ds] = score
+                            diff = (best_mean - mean_sc) / pooled_sd
+                            score = 1.0 + diff
+                            dataset_scores[mid][category][lang][ds] = score
 
     return dataset_scores
 
@@ -251,8 +285,7 @@ def _aggregate_hierarchy(
 
 
 def bootstrap_confidence_intervals(
-    bootstrap_scores: dict[str, dict[str, dict[str, np.ndarray]]],
-    alpha: float = 0.05,
+    bootstrap_scores: dict[str, dict[str, dict[str, np.ndarray]]], alpha: float = 0.05
 ) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
     """Compute percentile CIs from bootstrap distributions.
 
@@ -263,9 +296,9 @@ def bootstrap_confidence_intervals(
     """
     result: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
 
-    for model_id, cats in bootstrap_scores.items():
+    for model_id, cats_data in bootstrap_scores.items():
         result[model_id] = {}
-        for cat, langs in cats.items():
+        for cat, langs in cats_data.items():
             result[model_id][cat] = {}
             for lang, samples in langs.items():
                 if len(samples) == 0:
