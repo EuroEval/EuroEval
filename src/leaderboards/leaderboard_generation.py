@@ -390,6 +390,7 @@ def generate_dataframe(
                 mean_rank_score_str = f"{rank_score:.2f} \u00b1 {margin:.2f}"
             else:
                 mean_rank_score_str = "-"
+                rank = math.nan
             language_ranks = cat_ranks.copy()
             language_ranks.pop("overall", None)
             # Ensure all languages are present (even if missing for this model)
