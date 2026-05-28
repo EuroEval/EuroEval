@@ -136,9 +136,7 @@ Here `mean_score(m, d)` is model _m_'s mean bootstrap score on dataset _d_,
 `pooled_std(d)` is the standard deviation of all bootstrap scores from all models on
 _d_. The best model on each dataset therefore gets a rank score of exactly **1**,
 and every other model gets **1 plus the number of pooled standard deviations it
-sits behind the leader**. There is no Welch's t-test gating in this step — every
-dataset score is normalised the same way, so a small bootstrap-noise difference
-contributes a small rank-score difference rather than being collapsed to zero.
+sits behind the leader**.
 
 We then aggregate by taking **unweighted means at each level of the hierarchy**:
 
@@ -173,11 +171,11 @@ dataset's pooled standard deviation and aggregate with equal weights at every
 level. **Magnitude Preservation** holds because the magnitude of the difference
 between two models' dataset scores survives the linear normalisation and the mean
 aggregation. **Comparison** holds because all models are placed on a common scale
-(same argument as the mean rank method). **Robustness** is now satisfied at
-display time rather than per-dataset: instead of gating each pairwise comparison
-with a t-test, we expose the propagated 95% confidence interval on the overall
-mean rank score, so overlapping intervals make near-ties immediately visible.
-**Minimal Change** is partially satisfied — adding a new model can shift
+(same argument as the mean rank method). **Robustness** is satisfied by the 95%
+confidence interval on the overall mean rank score: overlapping intervals make
+near-ties immediately visible, and the dense Rank column described below shares a
+rank between models whose raw bootstrap scores cannot be separated by a Welch's
+t-test. **Minimal Change** is partially satisfied — adding a new model can shift
 `pooled_std(d)` and, if it becomes the new leader on some dataset, shift
 `best_mean_score(d)`. Both effects are local to the affected dataset(s) and tend
 to zero as the number of models grows.
