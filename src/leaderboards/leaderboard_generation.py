@@ -630,7 +630,8 @@ def generate_dataframe(
                 "open": "Open",
                 "trained_from_scratch": "Trained from scratch",
             }
-            | {rank_col: rank_col.title() for rank_col in rank_cols[1:]}
+            | {"mean_rank_score": "Mean rank score"}
+            | {rank_col: rank_col.title() for rank_col in rank_cols[2:]}
             | {
                 orthogonal_task.replace("-", "_"): orthogonal_task.replace(
                     "-", " "

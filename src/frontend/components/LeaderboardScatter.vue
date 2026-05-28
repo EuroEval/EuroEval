@@ -89,7 +89,7 @@ const colIndex = (key: string) =>
 const xKey = "Parameters";
 
 const xIdx = computed(() => colIndex(xKey));
-const yIdx = computed(() => colIndex("rank"));
+const yIdx = computed(() => colIndex("mean rank score"));
 const modelIdx = computed(() => colIndex("model"));
 const typeIdx = computed(() => colIndex("type"));
 const commercialIdx = computed(() => colIndex("commercial"));

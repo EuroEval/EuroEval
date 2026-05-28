@@ -129,7 +129,7 @@ const isRankCol = (col: Column) => col.key.toLowerCase() === "rank";
 
 // Columns that should never receive a heatmap (ordinal rank and mean rank
 // score are displayed as plain text, not as heat-mapped values).
-const NO_HEATMAP_COLS = new Set(["rank", "mean_rank_score"]);
+const NO_HEATMAP_COLS = new Set(["rank", "mean rank score"]);
 
 const cellDisplayHtml = (cell: { html: string; text: string; sortKey: number | string }, col: Column): string => {
   if (isCompactCol(col)) {
