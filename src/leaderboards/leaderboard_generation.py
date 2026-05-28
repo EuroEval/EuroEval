@@ -102,7 +102,7 @@ def generate_leaderboard(
     # Bootstrap resamples datasets with replacement (stratified by task),
     # recomputes the full hierarchy, and returns percentile CIs.
     ranks = compute_ranks_bootstrap(
-        model_results=model_results, configs=configs, n_bootstraps=200, seed=42
+        model_results=model_results, configs=configs, n_bootstraps=50, seed=42
     )
     metadata_dict = extract_model_metadata(results=results)
 
@@ -416,7 +416,7 @@ def generate_dataframe(
         all_standard_ranks = compute_standard_ranks_bootstrap(
             model_results=eligible_model_results,
             configs=leaderboard_configs,
-            n_bootstraps=200,
+            n_bootstraps=50,
             seed=42,
         )
 

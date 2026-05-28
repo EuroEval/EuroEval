@@ -5,11 +5,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from .bootstrap_cis import (
-    bootstrap_confidence_intervals,
-    bootstrap_rank_scores,
-    bootstrap_test,
-)
+from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
 from .task_metadata import ORTHOGONAL_TASKS, task_category
 
 
@@ -346,23 +342,25 @@ def compute_standard_ranks_bootstrap(
     seed: int | None = None,
     alpha: float = 0.05,
 ) -> dict[str, dict[str, int]]:
-    """Compute ordinal ranks (1, 2, 3…) with ties via bootstrap tests.
+    """Compute ordinal ranks (1, 2, 3…) with ties via bootstrap CIs.
 
     Sorts by overall mean rank score ascending (lower = better). Walks down
-    the list; for each model, tests whether it is significantly better than
-    the current anchor using a bootstrap one-sided test (α=0.05). If not
-    significantly better, it shares the anchor's rank. Otherwise it starts a
-    new tie group.
+    the list; for each model, compares its CI against the current anchor's CI.
+    If the candidate's lower CI bound is strictly above the anchor's upper CI
+    bound (no overlap), it starts a new rank group. Otherwise it shares the
+    anchor's rank.
 
-    This replaces the CI-overlap heuristic with a proper statistical test that
-    respects the hierarchical structure of the rank score computation.
+    CIs are computed from the bootstrap distributions themselves (percentile
+    method), so the Rank column is consistent with the statistical uncertainty
+    captured by the bootstrap — rather than using a bootstrap hypothesis test
+    which operates on raw distributions and can disagree with the displayed CIs.
 
     Args:
         model_results: The model results.
         configs: Per-language task -> dataset mappings.
         n_bootstraps: Number of bootstrap replicates.
         seed: Random seed for reproducibility.
-        alpha: Significance level for the bootstrap test.
+        alpha: Significance level for the bootstrap CI.
 
     Returns:
         model_id -> category -> int rank.
@@ -375,12 +373,12 @@ def compute_standard_ranks_bootstrap(
         seed=seed,
     )
 
-    # Step 2: Sort models by overall score for each category
+    # Step 2: Compute CIs from bootstrap distributions and sort models
     ranks: dict[str, dict[str, int]] = {}
     categories = ["generative", "all_models"]
 
     for category in categories:
-        scored: list[tuple[float, str]] = []
+        scored: list[tuple[float, str, float, float]] = []
         for model_id in model_results:
             if (
                 model_id in bootstrap_scores
@@ -389,16 +387,18 @@ def compute_standard_ranks_bootstrap(
             ):
                 samples = bootstrap_scores[model_id][category]["overall"]
                 mean_score = float(np.median(samples))
-                scored.append((mean_score, model_id))
+                ci_lower = float(np.percentile(samples, alpha * 50))
+                ci_upper = float(np.percentile(samples, (1 - alpha) * 100))
+                scored.append((mean_score, model_id, ci_lower, ci_upper))
 
         scored.sort(key=lambda x: x[0])
 
         if not scored:
             continue
 
-        # Step 3: Walk down and assign ranks with bootstrap-based tie detection
+        # Step 3: Walk down and assign ranks via CI overlap
         current_rank = 1
-        anchor_id = scored[0][1]
+        anchor_idx = 0
 
         for i in range(len(scored)):
             mid_i = scored[i][1]
@@ -407,26 +407,18 @@ def compute_standard_ranks_bootstrap(
                 ranks.setdefault(mid_i, {})[category] = 1
                 continue
 
-            # Test: is anchor significantly better than candidate?
-            p_value = bootstrap_test(
-                bootstrap_scores,
-                model_a=anchor_id,
-                model_b=mid_i,
-                category=category,
-                language="overall",
-                alternative="less",
-            )
+            scored[anchor_idx][1]
+            anchor_ci_upper = scored[anchor_idx][3]
+            candidate_ci_lower = scored[i][2]
 
-            if p_value < alpha:
-                # Anchor is significantly better → share anchor's rank
-                ranks[mid_i] = ranks.setdefault(mid_i, {})
-                ranks[mid_i][category] = ranks[anchor_id][category]
-            else:
-                # Anchor is not significantly better → new rank group
-                current_rank = i + 1
-                ranks[mid_i] = ranks.setdefault(mid_i, {})
-                ranks[mid_i][category] = current_rank
-                anchor_id = mid_i
+            # CI overlap: if candidate's lower CI > anchor's upper CI, no overlap
+            if candidate_ci_lower > anchor_ci_upper:
+                # No overlap → new rank group
+                current_rank += 1
+                anchor_idx = i
+
+            ranks[mid_i] = ranks.setdefault(mid_i, {})
+            ranks[mid_i][category] = current_rank
 
     return ranks
 
