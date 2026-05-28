@@ -415,7 +415,7 @@ def generate_dataframe(
         # anchor's rank; otherwise a new rank group begins.
         all_standard_ranks = compute_standard_ranks_bootstrap(
             model_results=eligible_model_results,
-            configs=configs,
+            configs=leaderboard_configs,
             n_bootstraps=1000,
             seed=42,
         )

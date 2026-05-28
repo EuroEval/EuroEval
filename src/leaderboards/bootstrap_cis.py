@@ -134,7 +134,11 @@ def bootstrap_rank_scores(
 
 
 def _category_includes_task(category: str, task: str) -> bool:
-    """Check whether a task belongs to a category."""
+    """Check whether a task belongs to a category.
+
+    Returns:
+        True if the task belongs to the category.
+    """
     return category == "generative" or task_category(task) == "nlu"
 
 
@@ -143,7 +147,7 @@ def _compute_sampled_dataset_scores(
     model_ds_in_sample: dict[str, str],
     category: str,
     configs: dict[str, dict[str, list[str]]],
-) -> dict[str, dict[str, dict[str, float]]]:
+) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
     """Compute per-dataset rank scores for sampled datasets, for all models.
 
     This mirrors compute_dataset_ranks but only processes sampled datasets.
