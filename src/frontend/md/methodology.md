@@ -125,74 +125,75 @@ introduce the **mean rank score** method, defined as follows.
 
 ### Mean rank score
 
-For each dataset, we assign every model a _dataset rank score_:
+For each dataset _d_ and model _m_, we assign a _dataset rank score_:
 
-$$
-r_{m,d} \;=\; 1 \;+\; \frac{\bar{s}^{\,*}_d - \bar{s}_{m,d}}{\sigma_d}
-$$
+```text
+rank_score(m, d) = 1 + (best_mean_score(d) - mean_score(m, d)) / pooled_std(d)
+```
 
-where $\bar{s}_{m,d}$ is model $m$'s mean score on dataset $d$, $\bar{s}^{\,*}_d$ is
-the highest mean score on dataset $d$ across all models, and $\sigma_d$ is the pooled
-standard deviation of the bootstrap scores across all models on the dataset. The best
-model on each dataset therefore gets a rank score of exactly 1, and every other model
-gets 1 plus the (positive) number of pooled standard deviations it sits behind the
-leader. There is no Welch's t-test gating in this step — every dataset score is
-normalised the same way, so a small bootstrap-noise difference contributes a small
-rank-score difference rather than being collapsed to zero.
+Here `mean_score(m, d)` is model _m_'s mean bootstrap score on dataset _d_,
+`best_mean_score(d)` is the highest such mean across all models on _d_, and
+`pooled_std(d)` is the standard deviation of all bootstrap scores from all models on
+_d_. The best model on each dataset therefore gets a rank score of exactly **1**,
+and every other model gets **1 plus the number of pooled standard deviations it
+sits behind the leader**. There is no Welch's t-test gating in this step — every
+dataset score is normalised the same way, so a small bootstrap-noise difference
+contributes a small rank-score difference rather than being collapsed to zero.
 
-We then aggregate by taking unweighted means at each level of the hierarchy. The
-_task rank score_ is the mean of the dataset rank scores for that task, the
-_language rank score_ is the mean of the task rank scores for that language, and the
-_overall mean rank score_ is the mean of the language rank scores:
+We then aggregate by taking **unweighted means at each level of the hierarchy**:
 
-$$
-r_{m,\text{task}} \;=\; \frac{1}{|D_{\text{task}}|} \sum_{d \in D_{\text{task}}} r_{m,d},
-\quad
-r_{m,\text{lang}} \;=\; \frac{1}{|T_{\text{lang}}|} \sum_{t \in T_{\text{lang}}} r_{m,t},
-\quad
-r_{m} \;=\; \frac{1}{|L|} \sum_{\ell \in L} r_{m,\ell}.
-$$
+- **Task rank score:** mean of the dataset rank scores for that task.
+- **Language rank score:** mean of the task rank scores for that language.
+- **Overall mean rank score:** mean of the language rank scores.
 
-Each level is weighted equally (per dataset within a task, per task within a
-language, per language overall), which preserves Task Fairness regardless of how many
-datasets a task happens to have or how many tasks a language happens to have.
+Each level weights its children equally — every dataset within a task, every task
+within a language, every language overall. This preserves Task Fairness regardless
+of how many datasets a task happens to have or how many tasks a language happens to
+have.
 
 #### Confidence intervals
 
-The dataset rank score has a 95% confidence interval derived directly from the
-bootstrap standard error of $\bar{s}_{m,d}$, scaled by $1/\sigma_d$. Because every
-aggregation step above is an unweighted mean, variances propagate by the standard
-rule $\mathrm{Var}(\bar{x}) = \sum_i \mathrm{Var}(x_i)/n^2$, and the leaderboard
-reports the overall mean rank score as $\text{score} \pm \text{margin}$ at the 95%
-level using the propagated variance.
+The dataset rank score inherits a 95% confidence interval directly from the
+bootstrap standard error of the underlying mean score, divided by `pooled_std(d)`.
+Because every aggregation step above is an unweighted mean, variances propagate by
+the standard rule:
+
+```text
+Var(mean(x_1, ..., x_n)) = (Var(x_1) + ... + Var(x_n)) / n^2
+```
+
+The leaderboard reports the overall mean rank score as **score ± margin**, where
+the margin is `1.96 · sqrt(propagated_variance)` — a 95% interval matching the
+dataset-level convention.
 
 #### Why this works
 
-This metric satisfies Task Fairness since we normalise all the scores by dividing by
-the standard deviation of the dataset scores, and aggregate with equal weights at
-every level. The Magnitude Preservation criterion is satisfied because the magnitude
-of the difference between two models' dataset scores is preserved in the rank score
-(and survives the mean aggregation). Comparison is satisfied because models are
-compared on a common scale (same argument as the mean rank method). Robustness is
-satisfied at display time rather than per-dataset: instead of gating each pairwise
-comparison with a t-test, we expose the propagated 95% confidence interval on the
-overall mean rank score, so overlapping intervals make near-ties immediately
-visible. Minimal Change is partially satisfied — adding new models can shift
-$\sigma_d$ and, if a new model becomes the leader on some dataset, shift the anchor
-$\bar{s}^{\,*}_d$. Both effects are local to the dataset(s) involved and tend to
-zero as the number of models grows.
+This metric satisfies **Task Fairness** because we normalise every score by the
+dataset's pooled standard deviation and aggregate with equal weights at every
+level. **Magnitude Preservation** holds because the magnitude of the difference
+between two models' dataset scores survives the linear normalisation and the mean
+aggregation. **Comparison** holds because all models are placed on a common scale
+(same argument as the mean rank method). **Robustness** is now satisfied at
+display time rather than per-dataset: instead of gating each pairwise comparison
+with a t-test, we expose the propagated 95% confidence interval on the overall
+mean rank score, so overlapping intervals make near-ties immediately visible.
+**Minimal Change** is partially satisfied — adding a new model can shift
+`pooled_std(d)` and, if it becomes the new leader on some dataset, shift
+`best_mean_score(d)`. Both effects are local to the affected dataset(s) and tend
+to zero as the number of models grows.
 
 ### Rank
 
 Alongside the mean rank score the leaderboard shows an integer **Rank** column,
 which is a _dense_ ordinal ranking with Welch's-t-test-based tie detection. After
-sorting the models by overall mean rank score, we walk down the list and compare
-each model's raw bootstrap scores to those of the current tie-group anchor using a
-one-tailed Welch's t-test. If the anchor is _not_ significantly better (p ≥ 0.05),
-the model joins the anchor's tie group and shares its rank. Otherwise it starts a
-new tie group with rank one larger than the previous group's. The result is a
-contiguous 1, 2, 3, … sequence in which multiple models can share 1st place, 2nd
-place, and so on — there are never gaps after a tie.
+sorting the models by overall mean rank score (lower is better), we walk down the
+list and compare each model's raw bootstrap scores to those of the current
+tie-group anchor using a one-tailed Welch's t-test. If the anchor is _not_
+significantly better (p ≥ 0.05), the model joins the anchor's tie group and shares
+its rank. Otherwise it starts a new tie group with rank one larger than the
+previous group's. The result is a contiguous **1, 2, 3, …** sequence in which
+multiple models can share 1st place, 2nd place, and so on — there are never gaps
+after a tie.
 
 ## Papers
 
