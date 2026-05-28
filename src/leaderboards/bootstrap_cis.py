@@ -124,7 +124,7 @@ def bootstrap_rank_scores(
             # Collect scores for models that have data
             scores: list[tuple[str, float, float, list[float]]] = []
             for mid in models_on_ds:
-                if ds in model_datasets[mid] and ds in model_results:
+                if mid in model_results and ds in model_datasets[mid]:
                     raw, mean_sc, se = model_results[mid][ds][0]
                     if np.isfinite(mean_sc):
                         scores.append((mid, mean_sc, se, raw))
