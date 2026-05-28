@@ -373,9 +373,13 @@ def generate_dataframe(
     for category in categories:
         data_dict: dict[str, list] = defaultdict(list)
         for model_id, results in model_results.items():
-            # Check if model has all required datasets
+            # Check if model has all required datasets. Orthogonal datasets
+            # (e.g. European Values) don't feed into the rank computation, so
+            # we don't require them here either.
             has_all_datasets = all(
-                ds in results for ds in category_to_datasets[category]
+                ds in results
+                for ds in category_to_datasets[category]
+                if ds not in category_to_orthogonal_datasets[category]
             )
 
             # Get the overall rank for the model (standard ordinal rank)
