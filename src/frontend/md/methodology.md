@@ -174,7 +174,7 @@ aggregation. **Comparison** holds because all models are placed on a common scal
 (same argument as the mean rank method). **Robustness** is satisfied by the 95%
 confidence interval on the overall mean rank score: overlapping intervals make
 near-ties immediately visible, and the dense Rank column described below shares a
-rank between models whose raw bootstrap scores cannot be separated by a Welch's
+rank between models whose per-dataset rank scores cannot be separated by a paired
 t-test. **Minimal Change** is partially satisfied — adding a new model can shift
 `pooled_std(d)` and, if it becomes the new leader on some dataset, shift
 `best_mean_score(d)`. Both effects are local to the affected dataset(s) and tend
@@ -183,15 +183,28 @@ to zero as the number of models grows.
 ### Rank
 
 Alongside the mean rank score the leaderboard shows an integer **Rank** column,
-which is a _dense_ ordinal ranking with Welch's-t-test-based tie detection. After
+which is a _dense_ ordinal ranking with paired-t-test-based tie detection. After
 sorting the models by overall mean rank score (lower is better), we walk down the
-list and compare each model's raw bootstrap scores to those of the current
-tie-group anchor using a one-tailed Welch's t-test. If the anchor is _not_
-significantly better (p ≥ 0.05), the model joins the anchor's tie group and shares
-its rank. Otherwise it starts a new tie group with rank one larger than the
-previous group's. The result is a contiguous **1, 2, 3, …** sequence in which
-multiple models can share 1st place, 2nd place, and so on — there are never gaps
-after a tie.
+list and compare each model to the current tie-group anchor using a one-tailed
+paired t-test on the _per-dataset rank scores_ they share — the same quantity
+that feeds the Mean rank score column. If the anchor is _not_ significantly
+better (p ≥ 0.05), the model joins the anchor's tie group and shares its rank.
+Otherwise it starts a new tie group with rank one larger than the previous
+group's. The result is a contiguous **1, 2, 3, …** sequence in which multiple
+models can share 1st place, 2nd place, and so on — there are never gaps after a
+tie.
+
+Testing the per-dataset rank scores (rather than the raw bootstrap scores) keeps
+the test dimensionally consistent with the displayed column: the rank scores are
+already normalised by each dataset's pooled standard deviation, so the test does
+not have to absorb the variance of mixing heterogeneous metrics (NER F1,
+translation BLEU, MCC, etc.) into a single pooled sample. The paired form
+exploits the fact that the same datasets are evaluated for both models.
+
+When two models share fewer than two datasets — too few for a paired test — we
+fall back to the propagated overall confidence intervals: the anchor is
+considered significantly better iff its upper rank-score CI lies strictly below
+the candidate's lower CI.
 
 ## Papers
 

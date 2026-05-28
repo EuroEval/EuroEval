@@ -16,7 +16,11 @@ from .link_generation import generate_task_link
 from .paths import OUTPUT_DIR
 from .result_loading import load_processed_results
 from .result_processing import extract_model_metadata, group_results_by_model
-from .score_computation import compute_ranks, compute_standard_ranks
+from .score_computation import (
+    compute_dataset_ranks,
+    compute_ranks,
+    compute_standard_ranks,
+)
 from .task_metadata import (
     ORTHOGONAL_TASKS,
     official_datasets_for_language,
@@ -25,6 +29,30 @@ from .task_metadata import (
 from .utils import convert_to_float, drop_val_duplicates
 
 logger = logging.getLogger(__name__)
+
+
+def _format_rank_score(entry: object) -> str:
+    """Render a {"score", "ci_upper", ...} dict as "score ± margin", or "-".
+
+    Args:
+        entry:
+            The dict to format.
+
+    Returns:
+        The formatted string.
+    """
+    if not isinstance(entry, dict):
+        return "-"
+    score = entry.get("score", float("nan"))
+    ci_upper = entry.get("ci_upper", float("nan"))
+    if not (isinstance(score, (int, float)) and math.isfinite(score)):
+        return "-"
+    margin = (
+        (ci_upper - score)
+        if isinstance(ci_upper, (int, float)) and math.isfinite(ci_upper)
+        else 0.0
+    )
+    return f"{score:.2f} ± {margin:.2f}"
 
 
 def generate_leaderboard(
@@ -75,6 +103,7 @@ def generate_leaderboard(
     )
     model_results = drop_val_duplicates(model_results=model_results)
     ranks = compute_ranks(model_results=model_results, configs=configs)
+    dataset_ranks = compute_dataset_ranks(model_results=model_results, configs=configs)
     metadata_dict = extract_model_metadata(results=results)
 
     # Only include dataset columns in monolingual leaderboards
@@ -84,6 +113,7 @@ def generate_leaderboard(
     df_pairs = generate_dataframe(
         model_results=model_results,
         ranks=ranks,
+        dataset_ranks=dataset_ranks,
         metadata_dict=metadata_dict,
         categories=categories,
         leaderboard_configs=configs,
@@ -306,6 +336,7 @@ def create_leaderboard_headers(
 def generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
+    dataset_ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
     metadata_dict: dict[str, dict],
     categories: list[t.Literal["generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
@@ -318,6 +349,8 @@ def generate_dataframe(
             The model results.
         ranks:
             The ranks of the models (from compute_ranks).
+        dataset_ranks:
+            The per-dataset rank scores (from compute_dataset_ranks).
         metadata_dict:
             The metadata.
         categories:
@@ -381,7 +414,10 @@ def generate_dataframe(
             if all(ds in r for ds in required_datasets)
         }
         standard_ranks = compute_standard_ranks(
-            model_results=eligible_model_results, ranks=ranks
+            model_results=eligible_model_results,
+            ranks=ranks,
+            dataset_ranks=dataset_ranks,
+            category=category,
         )
 
         data_dict: dict[str, list] = defaultdict(list)
@@ -413,9 +449,10 @@ def generate_dataframe(
                 if lang not in language_ranks:
                     language_ranks[lang] = float("nan")
 
-            # Extract score values from language_ranks dicts for CSV output
+            # Format per-language entries as "score ± margin" strings, matching
+            # the overall mean rank score column. Missing entries render as "-".
             language_ranks_scores = {
-                lang: (entry["score"] if isinstance(entry, dict) else entry)
+                lang: _format_rank_score(entry)
                 for lang, entry in language_ranks.items()
             }
 
@@ -500,20 +537,18 @@ def generate_dataframe(
         if len(leaderboard_configs) > 1:
             rank_cols += list(leaderboard_configs.keys())
 
-        # Format rank as a display string with a "-" sentinel for NaN.
-        # The "rank" column is an integer (ordinal rank); "mean_rank_score"
-        # is already formatted as "score \u00b1 margin".
-        for col in rank_cols:
-            if col == "mean_rank_score":
-                # Already formatted, just replace NaN with "-"
-                df[col] = [
-                    v if isinstance(v, str) and v != "-" else "-" for v in df[col]
-                ]
-            else:
-                df[col] = [
-                    str(int(value)) if math.isfinite(value) else "-"
-                    for value in df[col]
-                ]
+        # Format the ordinal rank column with a "-" sentinel for NaN. The
+        # "mean_rank_score" column and any per-language columns are already
+        # formatted as "score \u00b1 margin" strings (or "-") upstream \u2014 keep
+        # those values as-is, replacing anything else with "-".
+        df["rank"] = [
+            str(int(value))
+            if isinstance(value, (int, float)) and math.isfinite(value)
+            else "-"
+            for value in df["rank"]
+        ]
+        for col in rank_cols[1:]:
+            df[col] = [v if isinstance(v, str) and v != "-" else "-" for v in df[col]]
 
         # Replace dashes with underlines in all column names
         df.columns = df.columns.str.replace("-", "_")

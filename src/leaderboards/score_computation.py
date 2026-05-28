@@ -1,50 +1,43 @@
 """Functions related to computation of scores based on the model results."""
 
 import math
+import warnings
 from collections import defaultdict
 
 import numpy as np
+from scipy import stats
 
 from .task_metadata import ORTHOGONAL_TASKS, task_category
-from .utils import significantly_better
 
 
-def compute_ranks(
+def _category_includes_task(category: str, task: str) -> bool:
+    return category == "generative" or task_category(task) == "nlu"
+
+
+_CATEGORIES = ("generative", "all_models")
+
+
+def compute_dataset_ranks(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
 ) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
-    """Compute ranks via mean-of-normalised-differences with propagated CIs.
-
-    Args:
-        model_results:
-            The model results.
-        configs:
-            The leaderboard configurations for each language.
+    """Compute per-dataset rank scores (step 1 of compute_ranks).
 
     Returns:
-        The ranks of the models, per task category and per language.
-        The dict structure is model_id -> category -> language/overall ->
-        {"score", "ci_lower", "ci_upper"}.
+        model_id -> category -> dataset -> {"score", "ci_lower", "ci_upper"}.
     """
-    orthogonal_tasks = ORTHOGONAL_TASKS
-    categories = {"generative", "all_models"}
-
-    def category_includes_task(category: str, task: str) -> bool:
-        return category == "generative" or task_category(task) == "nlu"
-
-    # ── Step 1: Dataset-level ranks ──────────────────────────────────────
-    model_dataset_ranks: dict[str, dict[str, dict[str, dict[str, float]]]] = (
-        defaultdict(lambda: defaultdict(dict))
+    out: dict[str, dict[str, dict[str, dict[str, float]]]] = defaultdict(
+        lambda: defaultdict(dict)
     )
 
-    for language, config in configs.items():
-        for category in categories:
+    for _language, config in configs.items():
+        for category in _CATEGORIES:
             datasets = [
                 ds
                 for task, task_ds in config.items()
                 for ds in task_ds
-                if task not in orthogonal_tasks
-                and category_includes_task(category, task)
+                if task not in ORTHOGONAL_TASKS
+                and _category_includes_task(category, task)
             ]
             for dataset in datasets:
                 model_scores: dict[str, tuple[float, float, list[float]]] = {}
@@ -70,11 +63,42 @@ def compute_ranks(
                     var_diff = (se**2) / (pooled_sd**2) if pooled_sd > 0 else 0.0
                     score = 1.0 + diff
                     margin = 1.96 * math.sqrt(var_diff)
-                    model_dataset_ranks[mid][category][dataset] = {
+                    out[mid][category][dataset] = {
                         "score": round(score, 6),
                         "ci_lower": round(score - margin, 6),
                         "ci_upper": round(score + margin, 6),
                     }
+
+    return out
+
+
+def compute_ranks(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    configs: dict[str, dict[str, list[str]]],
+) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
+    """Compute ranks via mean-of-normalised-differences with propagated CIs.
+
+    Args:
+        model_results:
+            The model results.
+        configs:
+            The leaderboard configurations for each language.
+
+    Returns:
+        The ranks of the models, per task category and per language.
+        The dict structure is model_id -> category -> language/overall ->
+        {"score", "ci_lower", "ci_upper"}.
+    """
+    orthogonal_tasks = ORTHOGONAL_TASKS
+    categories = _CATEGORIES
+
+    def category_includes_task(category: str, task: str) -> bool:
+        return _category_includes_task(category, task)
+
+    # ── Step 1: Dataset-level ranks ──────────────────────────────────────
+    model_dataset_ranks = compute_dataset_ranks(
+        model_results=model_results, configs=configs
+    )
 
     # ── Step 2: Aggregate dataset → task → language → overall ────────────
     model_task_ranks: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
@@ -175,23 +199,90 @@ def compute_ranks(
     return final
 
 
+def _anchor_significantly_better(
+    anchor_ds_ranks: dict[str, dict[str, float]],
+    candidate_ds_ranks: dict[str, dict[str, float]],
+    anchor_overall: dict[str, float],
+    candidate_overall: dict[str, float],
+) -> bool | None:
+    """Test whether the anchor's mean rank score is significantly lower.
+
+    Uses a one-sided paired t-test on per-dataset rank scores across the
+    datasets both models share — the same quantity the leaderboard's
+    "mean rank score" column aggregates, so the test is dimensionally
+    consistent with the displayed scores.
+
+    Falls back to a non-overlapping-CI check on the overall mean rank score
+    when fewer than two paired datasets are available.
+
+    Returns:
+        True if the anchor is significantly better, False if not, or None
+        when there is no basis for comparison at all.
+    """
+    common = sorted(set(anchor_ds_ranks) & set(candidate_ds_ranks))
+    diffs = [
+        candidate_ds_ranks[ds]["score"] - anchor_ds_ranks[ds]["score"] for ds in common
+    ]
+    diffs = [d for d in diffs if math.isfinite(d)]
+
+    if len(diffs) >= 2:
+        # Lower rank score = better. Anchor is significantly better iff the
+        # candidate's per-dataset scores are significantly greater (paired).
+        if all(d == diffs[0] for d in diffs):
+            return diffs[0] > 0
+        with warnings.catch_warnings():
+            warnings.filterwarnings(action="ignore", category=RuntimeWarning)
+            result = stats.ttest_rel(
+                [candidate_ds_ranks[ds]["score"] for ds in common],
+                [anchor_ds_ranks[ds]["score"] for ds in common],
+                alternative="greater",
+            )
+        pvalue = float(result.pvalue)  # type: ignore[attr-defined]
+        if math.isnan(pvalue):
+            return None
+        return pvalue < 0.05
+
+    # Fallback: declare significance when the anchor's overall rank-score CI
+    # lies strictly below the candidate's. Uses the propagated CIs already
+    # computed for the displayed "mean rank score ± margin".
+    a_upper = anchor_overall.get("ci_upper", float("nan"))
+    c_lower = candidate_overall.get("ci_lower", float("nan"))
+    if math.isfinite(a_upper) and math.isfinite(c_lower):
+        return a_upper < c_lower
+    return None
+
+
 def compute_standard_ranks(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
+    dataset_ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
+    category: str,
 ) -> dict[str, int]:
-    """Compute ordinal ranks (1, 2, 3…) with ties using Welch's t-test.
+    """Compute ordinal ranks (1, 2, 3…) with ties using a paired t-test.
 
-    Sorts by overall score ascending (better = lower). Walks from the top;
-    if the current model is not significantly better than the anchor, it shares
-    the anchor's rank. Otherwise it gets a new rank = position + 1.
+    Sorts by overall mean rank score ascending (lower = better). Walks from
+    the top; if the current model is not significantly worse than the anchor
+    (paired one-sided t-test on per-dataset rank scores, p < 0.05), it
+    shares the anchor's rank. Otherwise it gets a new rank.
 
-    Uses significantly_better() to compare raw scores across common datasets.
+    The previous implementation pooled raw per-iteration scores across
+    heterogeneously-scaled datasets and ran an unpaired Welch's test on the
+    flat list — between-dataset variance swamped the signal and produced
+    obvious ties (e.g. 1.79 ± 0.02 vs 1.85 ± 0.01 sharing a rank). Comparing
+    the same per-dataset rank scores that feed the "mean rank score" column
+    fixes that.
 
     Args:
         model_results:
-            The model results (for raw score comparison).
+            The model results (used only to gate models on having any data).
         ranks:
-            The computed ranks from compute_ranks (for sorting).
+            The output of `compute_ranks` (used for sort order and CI
+            fallback for models with <2 shared datasets).
+        dataset_ranks:
+            The output of `compute_dataset_ranks` — per-dataset rank scores.
+        category:
+            Which leaderboard category ("generative" or "all_models") to
+            rank within. Datasets are intersected on this category.
 
     Returns:
         model_id -> int rank.
@@ -203,12 +294,10 @@ def compute_standard_ranks(
     for model_id, cats in ranks.items():
         if model_id not in model_results:
             continue
-        for cat in ("generative", "all_models"):
-            if cat in cats and "overall" in cats[cat]:
-                s = cats[cat]["overall"]["score"]
-                if math.isfinite(s):
-                    scored.append((model_id, s))
-                    break
+        if category in cats and "overall" in cats[category]:
+            s = cats[category]["overall"]["score"]
+            if math.isfinite(s):
+                scored.append((model_id, s))
 
     scored.sort(key=lambda x: x[1])
 
@@ -226,27 +315,20 @@ def compute_standard_ranks(
         mid_i = scored[i][0]
         anchor_id = scored[anchor_idx][0]
 
-        # Gather comparable raw scores across common datasets
-        scores_i, scores_anchor = [], []
-        for ds in model_results[anchor_id]:
-            if ds in model_results[mid_i]:
-                for (raw_i, _, _), (raw_a, _, _) in zip(
-                    model_results[mid_i][ds], model_results[anchor_id][ds]
-                ):
-                    if raw_i and raw_a:
-                        scores_i.extend(raw_i)
-                        scores_anchor.extend(raw_a)
+        anchor_ds = dataset_ranks.get(anchor_id, {}).get(category, {})
+        candidate_ds = dataset_ranks.get(mid_i, {}).get(category, {})
+        anchor_overall = ranks[anchor_id][category]["overall"]
+        candidate_overall = ranks[mid_i][category]["overall"]
 
-        have_comparable = (
-            bool(scores_i)
-            and bool(scores_anchor)
-            and len(scores_i) == len(scores_anchor)
+        verdict = _anchor_significantly_better(
+            anchor_ds_ranks=anchor_ds,
+            candidate_ds_ranks=candidate_ds,
+            anchor_overall=anchor_overall,
+            candidate_overall=candidate_overall,
         )
-        # Promote to a new rank when the anchor is significantly better, or
-        # when we have no comparable data (treat as a distinct group).
-        is_new_group = not have_comparable or significantly_better(
-            scores_anchor, scores_i
-        )
+        # Treat "no basis for comparison" as a new group, matching the prior
+        # behaviour for non-overlapping evaluation sets.
+        is_new_group = verdict is None or verdict
         if is_new_group:
             current_rank += 1
             ranks_out[mid_i] = current_rank

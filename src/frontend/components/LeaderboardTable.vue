@@ -22,16 +22,23 @@ const sortBy = ref<{ index: number; dir: "asc" | "desc" } | null>(null);
 const page = ref(1);
 const pageSize = 10;
 
-// Default sort: rank ascending if present.
+// Default sort: mean rank score ascending if present, otherwise rank.
 watch(
   () => props.table,
   () => {
     colFilters.value = {};
     page.value = 1;
-    const rankIdx = props.table.columns.findIndex(
-      (c) => c.key.toLowerCase() === "rank",
+    const meanRankIdx = props.table.columns.findIndex(
+      (c) => c.key.toLowerCase() === "mean rank score",
     );
-    sortBy.value = rankIdx >= 0 ? { index: rankIdx, dir: "asc" } : null;
+    if (meanRankIdx >= 0) {
+      sortBy.value = { index: meanRankIdx, dir: "asc" };
+    } else {
+      const rankIdx = props.table.columns.findIndex(
+        (c) => c.key.toLowerCase() === "rank",
+      );
+      sortBy.value = rankIdx >= 0 ? { index: rankIdx, dir: "asc" } : null;
+    }
   },
   { immediate: true },
 );
@@ -107,6 +114,21 @@ const TICK_CROSS_COLS = new Set([
   "trained from scratch",
 ]);
 
+const formatOrdinal = (n: number): string => {
+  if (!Number.isFinite(n)) return String(n);
+  const v = Math.trunc(n);
+  const abs = Math.abs(v);
+  const mod100 = abs % 100;
+  const mod10 = abs % 10;
+  let suffix = "th";
+  if (mod100 < 11 || mod100 > 13) {
+    if (mod10 === 1) suffix = "st";
+    else if (mod10 === 2) suffix = "nd";
+    else if (mod10 === 3) suffix = "rd";
+  }
+  return `${v}${suffix}`;
+};
+
 const formatCompact = (n: number): string => {
   const abs = Math.abs(n);
   if (abs >= 1e12) return Math.round(n / 1e12) + "T";
@@ -127,11 +149,22 @@ const isTickCrossCol = (col: Column) =>
 
 const isRankCol = (col: Column) => col.key.toLowerCase() === "rank";
 
-// Columns that should never receive a heatmap (ordinal rank and mean rank
-// score are displayed as plain text, not as heat-mapped values).
-const NO_HEATMAP_COLS = new Set(["rank", "mean rank score"]);
+// Columns that should never receive a heatmap. The ordinal rank column is
+// displayed as plain text — its colour would just duplicate the row order.
+// The mean rank score uses the same rank-style heatmap as the per-language
+// rank columns (handled below).
+const NO_HEATMAP_COLS = new Set(["rank"]);
+
+const isMeanRankScoreCol = (col: Column) =>
+  col.key.toLowerCase() === "mean rank score";
 
 const cellDisplayHtml = (cell: { html: string; text: string; sortKey: number | string }, col: Column): string => {
+  if (isRankCol(col)) {
+    if (typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
+      return formatOrdinal(cell.sortKey);
+    }
+    return cell.text || "?";
+  }
   if (isCompactCol(col)) {
     if (typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
       return formatCompact(cell.sortKey);
@@ -239,10 +272,13 @@ const NON_LANGUAGE_NUMBER_COLS = new Set([
 ]);
 const isLanguageRankCol = (col: Column): boolean =>
   props.heatmapScoreCols &&
-  col.kind === "number" &&
-  !NON_LANGUAGE_NUMBER_COLS.has(col.key.toLowerCase());
+  (col.kind === "number" || col.kind === "score") &&
+  !NON_LANGUAGE_NUMBER_COLS.has(col.key.toLowerCase()) &&
+  col.key.toLowerCase() !== "mean rank score";
 
 const toggleSort = (idx: number) => {
+  // The Rank column is derived from the Mean rank score and is not sortable.
+  if (props.table.columns[idx]?.key.toLowerCase() === "rank") return;
   if (sortBy.value?.index === idx) {
     sortBy.value =
       sortBy.value.dir === "asc"
@@ -395,21 +431,27 @@ const reportBadEval = (modelId: string) => {
               </th>
               <th
                 v-else
-                :class="['col', `kind-${table.columns[group.indexes[0]].kind}`]"
+                :class="[
+                  'col',
+                  `kind-${table.columns[group.indexes[0]].kind}`,
+                  isRankCol(table.columns[group.indexes[0]]) ? 'col-norank' : '',
+                ]"
                 @click="toggleSort(group.indexes[0])"
               >
-                <span
-                  class="th-label"
-                  v-html="
-                    table.columns[group.indexes[0]].titleHtml ||
-                    table.columns[group.indexes[0]].title
-                  "
-                />
-                <span class="th-sort">
-                  <template v-if="sortBy?.index === group.indexes[0]">
-                    {{ sortBy.dir === "asc" ? "▲" : "▼" }}
-                  </template>
-                </span>
+                <template v-if="!isRankCol(table.columns[group.indexes[0]])">
+                  <span
+                    class="th-label"
+                    v-html="
+                      table.columns[group.indexes[0]].titleHtml ||
+                      table.columns[group.indexes[0]].title
+                    "
+                  />
+                  <span class="th-sort">
+                    <template v-if="sortBy?.index === group.indexes[0]">
+                      {{ sortBy.dir === "asc" ? "▲" : "▼" }}
+                    </template>
+                  </span>
+                </template>
               </th>
             </template>
           </tr>
@@ -468,7 +510,7 @@ const reportBadEval = (modelId: string) => {
               :style="
                 NO_HEATMAP_COLS.has(table.columns[ci].key.toLowerCase())
                   ? undefined
-                  : isRankCol(table.columns[ci]) || isLanguageRankCol(table.columns[ci])
+                  : isRankCol(table.columns[ci]) || isLanguageRankCol(table.columns[ci]) || isMeanRankScoreCol(table.columns[ci])
                     ? rankHeatmapStyle(cell)
                     : isHeatmapScoreCol(table.columns[ci])
                       ? scoreHeatmapStyle(cell, table.columns[ci])
@@ -630,6 +672,10 @@ const reportBadEval = (modelId: string) => {
   cursor: default;
   font-weight: normal;
   padding: 0.3rem 0.4rem;
+}
+
+.lb-table thead th.col-norank {
+  cursor: default;
 }
 
 .lb-table thead th.task-group {
