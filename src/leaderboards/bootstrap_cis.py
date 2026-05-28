@@ -151,7 +151,10 @@ def bootstrap_rank_scores(
                 raw, mean_sc, se = model_results[mid][ds][0]
                 if not np.isfinite(mean_sc):
                     continue
-                diff = (best_mean - mean_sc) / pooled_sd
+                # Resample raw scores with replacement to create variation
+                resampled_raw = rng.choice(raw, size=len(raw), replace=True)
+                resampled_mean = float(np.mean(resampled_raw))
+                diff = (best_mean - resampled_mean) / pooled_sd
                 score = 1.0 + diff
                 # Determine which categories this dataset belongs to
                 for cat in dataset_to_category.get(ds, set()):
@@ -244,7 +247,9 @@ def _aggregate_hierarchy(
             if task:
                 break
         if task and task not in ORTHOGONAL_TASKS and found_lang:
-            lang_task_scores.setdefault(found_lang, {}).setdefault(task, []).append(score)
+            lang_task_scores.setdefault(found_lang, {}).setdefault(task, []).append(
+                score
+            )
 
     if not lang_task_scores:
         return None

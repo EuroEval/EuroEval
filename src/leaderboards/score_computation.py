@@ -417,12 +417,12 @@ def compute_standard_ranks_bootstrap(
                 alternative="less",
             )
 
-            if p_value >= alpha:
-                # Not significantly better → share anchor's rank
+            if p_value < alpha:
+                # Anchor is significantly better → share anchor's rank
                 ranks[mid_i] = ranks.setdefault(mid_i, {})
                 ranks[mid_i][category] = ranks[anchor_id][category]
             else:
-                # Significantly better → new rank group
+                # Anchor is not significantly better → new rank group
                 current_rank = i + 1
                 ranks[mid_i] = ranks.setdefault(mid_i, {})
                 ranks[mid_i][category] = current_rank
