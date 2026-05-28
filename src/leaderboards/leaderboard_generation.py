@@ -397,6 +397,12 @@ def generate_dataframe(
                 if lang not in language_ranks:
                     language_ranks[lang] = float("nan")
 
+            # Extract score values from language_ranks dicts for CSV output
+            language_ranks_scores = {
+                lang: (entry["score"] if isinstance(entry, dict) else entry)
+                for lang, entry in language_ranks.items()
+            }
+
             # Get the default values for the dataset columns
             default_dataset_values = {
                 ds: float("nan") for ds in category_to_datasets[category]
@@ -453,7 +459,7 @@ def generate_dataframe(
                 | default_dataset_values
                 | orthogonal_task_scores
                 | metadata
-                | language_ranks
+                | language_ranks_scores
                 | total_results
             )
             for key, value in model_values.items():
