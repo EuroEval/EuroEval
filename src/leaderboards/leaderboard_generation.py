@@ -376,7 +376,8 @@ def generate_dataframe(
             # Get the overall rank for the model (standard ordinal rank)
             rank = standard_ranks.get(model_id, math.nan)
             # Get the mean rank score with CI
-            rank_data = ranks[model_id][category].get("overall", {})
+            cat_ranks = ranks.get(model_id, {}).get(category, {})
+            rank_data = cat_ranks.get("overall", {})
             rank_score = rank_data.get("score", float("nan"))
             rank_data.get("ci_lower", float("nan"))
             rank_ci_upper = rank_data.get("ci_upper", float("nan"))
@@ -389,8 +390,12 @@ def generate_dataframe(
                 mean_rank_score_str = f"{rank_score:.2f} \u00b1 {margin:.2f}"
             else:
                 mean_rank_score_str = "-"
-            language_ranks = ranks[model_id][category]
-            language_ranks.pop("overall")
+            language_ranks = cat_ranks.copy()
+            language_ranks.pop("overall", None)
+            # Ensure all languages are present (even if missing for this model)
+            for lang in leaderboard_configs:
+                if lang not in language_ranks:
+                    language_ranks[lang] = float("nan")
 
             # Get the default values for the dataset columns
             default_dataset_values = {

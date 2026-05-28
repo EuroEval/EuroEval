@@ -128,11 +128,12 @@ def compute_ranks(
 
             for language, config in configs.items():
                 task_entries = [
-                    model_task_ranks[model_id][category][language][task]
+                    model_task_ranks[model_id][category][language].get(task)
                     for task in config
                     if task not in orthogonal_tasks
                     and category_includes_task(category, task)
                 ]
+                task_entries = [e for e in task_entries if e is not None]
                 if not task_entries:
                     continue
 
@@ -165,7 +166,7 @@ def compute_ranks(
                     "ci_lower": round(mean_score - margin, 6),
                     "ci_upper": round(mean_score + margin, 6),
                 }
-                final[model_id][category] = lang_scores
+                final.setdefault(model_id, {})[category] = lang_scores
 
     return final
 
