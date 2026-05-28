@@ -196,9 +196,13 @@ def compute_standard_ranks(
     Returns:
         model_id -> int rank.
     """
-    # Collect (model_id, overall_score) for finite-scored models
+    # Collect (model_id, overall_score) for finite-scored models that also
+    # appear in model_results — callers may pre-filter model_results to the
+    # subset eligible for ranking (e.g. those holding every required dataset).
     scored: list[tuple[str, float]] = []
     for model_id, cats in ranks.items():
+        if model_id not in model_results:
+            continue
         for cat in ("generative", "all_models"):
             if cat in cats and "overall" in cats[cat]:
                 s = cats[cat]["overall"]["score"]
@@ -211,9 +215,12 @@ def compute_standard_ranks(
     if not scored:
         return {}
 
+    # Dense ranking: ties share a rank, and the next distinct group's rank
+    # is just the previous group's rank + 1 (no gaps).
     ranks_out: dict[str, int] = {}
     ranks_out[scored[0][0]] = 1
     anchor_idx = 0
+    current_rank = 1
 
     for i in range(1, len(scored)):
         mid_i = scored[i][0]
@@ -230,16 +237,21 @@ def compute_standard_ranks(
                         scores_i.extend(raw_i)
                         scores_anchor.extend(raw_a)
 
-        if scores_i and scores_anchor and len(scores_i) == len(scores_anchor):
-            better = significantly_better(scores_anchor, scores_i)
-            if better:
-                ranks_out[mid_i] = i + 1
-                anchor_idx = i
-            else:
-                ranks_out[mid_i] = ranks_out[anchor_id]
-        else:
-            # No comparable data → assign next rank
-            ranks_out[mid_i] = i + 1
+        have_comparable = (
+            bool(scores_i)
+            and bool(scores_anchor)
+            and len(scores_i) == len(scores_anchor)
+        )
+        # Promote to a new rank when the anchor is significantly better, or
+        # when we have no comparable data (treat as a distinct group).
+        is_new_group = not have_comparable or significantly_better(
+            scores_anchor, scores_i
+        )
+        if is_new_group:
+            current_rank += 1
+            ranks_out[mid_i] = current_rank
             anchor_idx = i
+        else:
+            ranks_out[mid_i] = ranks_out[anchor_id]
 
     return ranks_out

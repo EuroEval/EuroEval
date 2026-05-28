@@ -75,7 +75,6 @@ def generate_leaderboard(
     )
     model_results = drop_val_duplicates(model_results=model_results)
     ranks = compute_ranks(model_results=model_results, configs=configs)
-    standard_ranks = compute_standard_ranks(model_results=model_results, ranks=ranks)
     metadata_dict = extract_model_metadata(results=results)
 
     # Only include dataset columns in monolingual leaderboards
@@ -85,7 +84,6 @@ def generate_leaderboard(
     df_pairs = generate_dataframe(
         model_results=model_results,
         ranks=ranks,
-        standard_ranks=standard_ranks,
         metadata_dict=metadata_dict,
         categories=categories,
         leaderboard_configs=configs,
@@ -308,7 +306,6 @@ def create_leaderboard_headers(
 def generate_dataframe(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
-    standard_ranks: dict[str, int],
     metadata_dict: dict[str, dict],
     categories: list[t.Literal["generative", "all_models"]],
     leaderboard_configs: dict[str, dict[str, list[str]]],
@@ -321,8 +318,6 @@ def generate_dataframe(
             The model results.
         ranks:
             The ranks of the models (from compute_ranks).
-        standard_ranks:
-            The ordinal ranks of the models (from compute_standard_ranks).
         metadata_dict:
             The metadata.
         categories:
@@ -371,16 +366,27 @@ def generate_dataframe(
 
     dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = list()
     for category in categories:
+        # Standard (dense) ranks are computed per category over the models
+        # eligible for display — i.e. those holding every non-orthogonal
+        # dataset for this category. Ranking the full set and then hiding
+        # ineligible rows would leave gaps in the 1, 2, 3, … sequence.
+        required_datasets = [
+            ds
+            for ds in category_to_datasets[category]
+            if ds not in category_to_orthogonal_datasets[category]
+        ]
+        eligible_model_results = {
+            mid: r
+            for mid, r in model_results.items()
+            if all(ds in r for ds in required_datasets)
+        }
+        standard_ranks = compute_standard_ranks(
+            model_results=eligible_model_results, ranks=ranks
+        )
+
         data_dict: dict[str, list] = defaultdict(list)
         for model_id, results in model_results.items():
-            # Check if model has all required datasets. Orthogonal datasets
-            # (e.g. European Values) don't feed into the rank computation, so
-            # we don't require them here either.
-            has_all_datasets = all(
-                ds in results
-                for ds in category_to_datasets[category]
-                if ds not in category_to_orthogonal_datasets[category]
-            )
+            has_all_datasets = model_id in eligible_model_results
 
             # Get the overall rank for the model (standard ordinal rank)
             rank = standard_ranks.get(model_id, math.nan)
