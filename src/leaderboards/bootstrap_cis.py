@@ -137,7 +137,27 @@ def bootstrap_rank_scores(
             pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
             dataset_stats[ds] = (best_mean, pooled_sd)
 
-        # Now compute rank scores for each model using precomputed stats
+        # Precompute rank scores for ALL models on ALL sampled datasets ONCE
+        # This is the key optimization: O(n_datasets * n_models) instead of
+        # O(n_models * n_datasets * n_models)
+        all_rank_scores: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
+        for ds, (best_mean, pooled_sd) in dataset_stats.items():
+            if pooled_sd <= 0:
+                continue
+            models_on_ds = dataset_models.get(ds, set())
+            for mid in models_on_ds:
+                if mid not in model_results or ds not in model_datasets[mid]:
+                    continue
+                raw, mean_sc, se = model_results[mid][ds][0]
+                if not np.isfinite(mean_sc):
+                    continue
+                diff = (best_mean - mean_sc) / pooled_sd
+                score = 1.0 + diff
+                # Determine which categories this dataset belongs to
+                for cat in dataset_to_category.get(ds, set()):
+                    all_rank_scores.setdefault(mid, {}).setdefault(cat, {})[ds] = score
+
+        # Now compute overall scores for each model by aggregating up the hierarchy
         for model_id, model_data in model_results.items():
             for category in categories:
                 # Filter to datasets this model has data for
@@ -154,16 +174,15 @@ def bootstrap_rank_scores(
                 if not model_ds_in_sample:
                     continue
 
-                # Compute per-dataset rank scores using precomputed stats
-                ds_scores = _compute_sampled_dataset_scores_fast(
-                    model_results, model_ds_in_sample, category, configs, dataset_stats
-                )
-
-                if not ds_scores:
+                # Get precomputed rank scores for this model
+                model_rank_scores = all_rank_scores.get(model_id, {}).get(category, {})
+                if not model_rank_scores:
                     continue
 
                 # Aggregate: dataset -> task -> language -> overall
-                overall = _aggregate_hierarchy(ds_scores, configs, category)
+                overall = _aggregate_hierarchy(
+                    model_rank_scores, configs, category, model_ds_in_sample
+                )
                 if overall is not None:
                     bootstrap_scores.setdefault(model_id, {}).setdefault(
                         category, {}
@@ -190,86 +209,42 @@ def _category_includes_task(category: str, task: str) -> bool:
     return category == "generative" or task_category(task) == "nlu"
 
 
-def _compute_sampled_dataset_scores_fast(
-    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    model_ds_in_sample: dict[str, str],
-    category: str,
-    configs: dict[str, dict[str, list[str]]],
-    dataset_stats: dict[str, tuple[float, float]],
-) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
-    """Compute per-dataset rank scores for sampled datasets, using precomputed stats.
-
-    Returns:
-        model_id -> category -> language -> dataset -> score.
-    """
-    # Group sampled datasets by (language, task)
-    ds_by_lang_task: dict[str, dict[str, list[str]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
-    for ds, task in model_ds_in_sample.items():
-        for lang, config in configs.items():
-            if task in config:
-                ds_by_lang_task[lang][task].append(ds)
-                break
-
-    # For each (language, task, dataset), compute rank scores
-    dataset_scores: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
-
-    for lang, task_map in ds_by_lang_task.items():
-        for task, ds_list in task_map.items():
-            if not _category_includes_task(category, task):
-                continue
-            for ds in ds_list:
-                if ds not in dataset_stats:
-                    continue
-                best_mean, pooled_sd = dataset_stats[ds]
-                if pooled_sd <= 0:
-                    continue
-                # Collect all models' scores on this dataset
-                for mid, data in model_results.items():
-                    if ds in data:
-                        raw, mean_sc, se = data[ds][0]
-                        if np.isfinite(mean_sc):
-                            diff = (best_mean - mean_sc) / pooled_sd
-                            score = 1.0 + diff
-                            dataset_scores[mid][category][lang][ds] = score
-
-    return dataset_scores
-
-
 def _aggregate_hierarchy(
-    dataset_scores: dict[str, dict[str, dict[str, dict[str, float]]]],
+    dataset_scores: dict[str, dict[str, float]],
     configs: dict[str, dict[str, list[str]]],
     category: str,
+    model_ds_in_sample: dict[str, str],
 ) -> float | None:
     """Aggregate per-dataset scores up to overall mean rank score.
 
     Hierarchy: dataset -> task -> language -> overall.
 
+    Args:
+        dataset_scores: model_id -> category -> dataset -> score (precomputed).
+        configs: Per-language task -> dataset mappings.
+        category: Category to aggregate.
+        model_ds_in_sample: model_id -> dataset -> task mapping for this model.
+
     Returns:
         The overall mean rank score, or None if no data.
     """
     # Group datasets by task, then by language
-    lang_task_scores: dict[str, dict[str, list[float]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
+    lang_task_scores: dict[str, dict[str, list[float]]] = {}
 
-    for mid, cat_data in dataset_scores.items():
-        if category not in cat_data:
-            continue
-        for lang, ds_scores in cat_data[category].items():
-            for ds, score in ds_scores.items():
-                # Find which task this dataset belongs to
-                task = None
-                for lang_config, config in configs.items():
-                    for task_name, task_ds in config.items():
-                        if ds in task_ds:
-                            task = task_name
-                            break
-                    if task:
-                        break
-                if task and task not in ORTHOGONAL_TASKS:
-                    lang_task_scores[lang][task].append(score)
+    for ds, score in dataset_scores.items():
+        # Find which task this dataset belongs to
+        task = None
+        found_lang = None
+        for lang_name, config in configs.items():
+            for task_name, task_ds in config.items():
+                if ds in task_ds:
+                    task = task_name
+                    found_lang = lang_name
+                    break
+            if task:
+                break
+        if task and task not in ORTHOGONAL_TASKS and found_lang:
+            lang_task_scores.setdefault(found_lang, {}).setdefault(task, []).append(score)
 
     if not lang_task_scores:
         return None
