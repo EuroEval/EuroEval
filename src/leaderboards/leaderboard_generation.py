@@ -373,6 +373,11 @@ def generate_dataframe(
     for category in categories:
         data_dict: dict[str, list] = defaultdict(list)
         for model_id, results in model_results.items():
+            # Check if model has all required datasets
+            has_all_datasets = all(
+                ds in results for ds in category_to_datasets[category]
+            )
+
             # Get the overall rank for the model (standard ordinal rank)
             rank = standard_ranks.get(model_id, math.nan)
             # Get the mean rank score with CI
@@ -381,7 +386,7 @@ def generate_dataframe(
             rank_score = rank_data.get("score", float("nan"))
             rank_data.get("ci_lower", float("nan"))
             rank_ci_upper = rank_data.get("ci_upper", float("nan"))
-            if math.isfinite(rank_score):
+            if math.isfinite(rank_score) and has_all_datasets:
                 margin = (
                     (rank_ci_upper - rank_score)
                     if math.isfinite(rank_ci_upper)
