@@ -115,7 +115,10 @@ export function parseCsv(text: string): string[][] {
 // --- Cell helpers ----------------------------------------------------------
 
 const stripTags = (s: string): string =>
-  s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  s
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 const splitDisplaySort = (
   raw: string,
@@ -125,14 +128,20 @@ const splitDisplaySort = (
   return { display: raw.slice(0, idx), sort: raw.slice(idx + 2) };
 };
 
-const ICONS = new Set(["🔍", "🧠", "📝", "🤔", "✓", "✗", "(✓)", "(✗)", "?", ""]);
-
-const NUMERIC_COLS = new Set([
-  "rank",
-  "parameters",
-  "vocabulary",
-  "context",
+const ICONS = new Set([
+  "🔍",
+  "🧠",
+  "📝",
+  "🤔",
+  "✓",
+  "✗",
+  "(✓)",
+  "(✗)",
+  "?",
+  "",
 ]);
+
+const NUMERIC_COLS = new Set(["rank", "parameters", "vocabulary", "context"]);
 
 const ICON_COLS = new Set([
   "type",
@@ -158,6 +167,37 @@ const parseNumberSafe = (s: string): number | null => {
 // Older CSVs may still carry the partial-open-source tick. The backend now
 // emits a plain boolean tick/cross, but normalize on read for forward compat.
 const normalizeIconText = (s: string): string => (s === "(✓)" ? "✓" : s);
+
+// Parameter size buckets for the Parameters column dropdown filter.
+// Boundaries match the Python code in `core_models.py`.
+const PARAM_BUCKETS: [string, number | null, number | null][] = [
+  ["< 2B", null, 2_000_000_000],
+  ["2B – 10B", 2_000_000_000, 10_000_000_000],
+  ["10B – 40B", 10_000_000_000, 40_000_000_000],
+  ["40B – 80B", 40_000_000_000, 80_000_000_000],
+  ["≥ 80B", 80_000_000_000, null],
+];
+
+/** Compute the set of size buckets represented in the data. */
+const computeParamBuckets = (rows: Row[], colIndex: number): string[] => {
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const cell = row.cells[colIndex];
+    const k = cell.sortKey;
+    if (typeof k === "number" && Number.isFinite(k)) {
+      for (const [label, lo, hi] of PARAM_BUCKETS) {
+        const inRange = (lo === null || k >= lo) && (hi === null || k < hi);
+        if (inRange && !seen.has(label)) {
+          seen.add(label);
+        }
+      }
+    }
+  }
+  // Return in defined order (smallest → largest).
+  return PARAM_BUCKETS
+    .map(([label]) => label)
+    .filter((l) => seen.has(l));
+};
 
 export function parseCell(raw: string, kind: CellKind): ParsedCell {
   const { display, sort } = splitDisplaySort(raw);
@@ -351,6 +391,14 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
         if (t) distinct.add(t);
       }
       col.distinctValues = Array.from(distinct);
+    }
+    // For size-indicator columns, compute size buckets for dropdown filtering.
+    if (
+      col.kind === "number" &&
+      ["parameters", "vocabulary", "context"].includes(col.key.toLowerCase())
+    ) {
+      const buckets = computeParamBuckets(parsedRows, c);
+      if (buckets.length > 0) col.distinctValues = buckets;
     }
   }
 
