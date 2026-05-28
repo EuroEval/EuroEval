@@ -121,31 +121,78 @@ than the new model.
 
 We thus see that the mean score and mean rank methods satisfy a disjoint set of the
 criteria, but that they together satisfy all the criteria. Based on this observation, we
-introduce the **mean rank score** method, defined as follows. For each dataset, we start
-by sorting the models by their mean score on the dataset. As with a rank, we assign the
-best model with rank score 1. For the next best model, we conduct a one-tailed Welch's
-t-test to see if the next best model is significantly worse than the first model (p <
-0.05). If so, we compute the absolute difference between the mean score of the two
-models, and divide that by the standard deviation of all the mean scores of the models
-on the dataset.
+introduce the **mean rank score** method, defined as follows.
 
-We then add this to the rank score of the first model. We continue this process for all
-the models to get the rank scores for the dataset, and to compute the overall score for
-the model, we take the mean of the rank scores for the datasets. We note that the mean
-rank score has an intuitive interpretation: it is the average number of standard
-deviations from the best scoring model (+1).
+### Mean rank score
 
-This metric satisfies Task Fairness since we normalise all the scores by dividing by the
-standard deviation of the dataset scores. The Robustness criterion is satisfied due to
-our use of a one-tailed Welch's t-test. The Magnitude Preservation criterion is also
-satisfied, as the magnitude of the difference between the dataset score of two models is
-reflected in the rank score. It also satisfies Comparison, as we compare the models on a
-common scale (same argument as the mean rank method). Finally, the Minimal Change
-criterion is partially satisfied, as adding new models only minimally changes the score
-of existing models. Concretely, adding new scores will affect the standard deviation
-normalising factor (this effect tends to zero as the number of models grows, however),
-and if the model beats all the other models then all the scores will be affected, due to
-the relative nature of the metric.
+For each dataset, we assign every model a _dataset rank score_:
+
+$$
+r_{m,d} \;=\; 1 \;+\; \frac{\bar{s}^{\,*}_d - \bar{s}_{m,d}}{\sigma_d}
+$$
+
+where $\bar{s}_{m,d}$ is model $m$'s mean score on dataset $d$, $\bar{s}^{\,*}_d$ is
+the highest mean score on dataset $d$ across all models, and $\sigma_d$ is the pooled
+standard deviation of the bootstrap scores across all models on the dataset. The best
+model on each dataset therefore gets a rank score of exactly 1, and every other model
+gets 1 plus the (positive) number of pooled standard deviations it sits behind the
+leader. There is no Welch's t-test gating in this step — every dataset score is
+normalised the same way, so a small bootstrap-noise difference contributes a small
+rank-score difference rather than being collapsed to zero.
+
+We then aggregate by taking unweighted means at each level of the hierarchy. The
+_task rank score_ is the mean of the dataset rank scores for that task, the
+_language rank score_ is the mean of the task rank scores for that language, and the
+_overall mean rank score_ is the mean of the language rank scores:
+
+$$
+r_{m,\text{task}} \;=\; \frac{1}{|D_{\text{task}}|} \sum_{d \in D_{\text{task}}} r_{m,d},
+\quad
+r_{m,\text{lang}} \;=\; \frac{1}{|T_{\text{lang}}|} \sum_{t \in T_{\text{lang}}} r_{m,t},
+\quad
+r_{m} \;=\; \frac{1}{|L|} \sum_{\ell \in L} r_{m,\ell}.
+$$
+
+Each level is weighted equally (per dataset within a task, per task within a
+language, per language overall), which preserves Task Fairness regardless of how many
+datasets a task happens to have or how many tasks a language happens to have.
+
+#### Confidence intervals
+
+The dataset rank score has a 95% confidence interval derived directly from the
+bootstrap standard error of $\bar{s}_{m,d}$, scaled by $1/\sigma_d$. Because every
+aggregation step above is an unweighted mean, variances propagate by the standard
+rule $\mathrm{Var}(\bar{x}) = \sum_i \mathrm{Var}(x_i)/n^2$, and the leaderboard
+reports the overall mean rank score as $\text{score} \pm \text{margin}$ at the 95%
+level using the propagated variance.
+
+#### Why this works
+
+This metric satisfies Task Fairness since we normalise all the scores by dividing by
+the standard deviation of the dataset scores, and aggregate with equal weights at
+every level. The Magnitude Preservation criterion is satisfied because the magnitude
+of the difference between two models' dataset scores is preserved in the rank score
+(and survives the mean aggregation). Comparison is satisfied because models are
+compared on a common scale (same argument as the mean rank method). Robustness is
+satisfied at display time rather than per-dataset: instead of gating each pairwise
+comparison with a t-test, we expose the propagated 95% confidence interval on the
+overall mean rank score, so overlapping intervals make near-ties immediately
+visible. Minimal Change is partially satisfied — adding new models can shift
+$\sigma_d$ and, if a new model becomes the leader on some dataset, shift the anchor
+$\bar{s}^{\,*}_d$. Both effects are local to the dataset(s) involved and tend to
+zero as the number of models grows.
+
+### Rank
+
+Alongside the mean rank score the leaderboard shows an integer **Rank** column,
+which is a _dense_ ordinal ranking with Welch's-t-test-based tie detection. After
+sorting the models by overall mean rank score, we walk down the list and compare
+each model's raw bootstrap scores to those of the current tie-group anchor using a
+one-tailed Welch's t-test. If the anchor is _not_ significantly better (p ≥ 0.05),
+the model joins the anchor's tie group and shares its rank. Otherwise it starts a
+new tie group with rank one larger than the previous group's. The result is a
+contiguous 1, 2, 3, … sequence in which multiple models can share 1st place, 2nd
+place, and so on — there are never gaps after a tie.
 
 ## Papers
 

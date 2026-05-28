@@ -533,7 +533,7 @@ def generate_dataframe(
             if dataset not in category_to_orthogonal_datasets[category]
         ]
         cols = (
-            ["model", "rank", "mean_rank_score"]
+            ["rank", "model", "mean_rank_score"]
             + orthogonal_cols
             + [
                 "generative_type",
@@ -608,8 +608,8 @@ def generate_dataframe(
         df_simplified = df.copy()
         df_simplified = df[
             [
-                "model",
                 "rank",
+                "model",
                 "mean_rank_score",
                 "generative_type",
                 "open",
