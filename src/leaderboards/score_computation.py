@@ -166,14 +166,13 @@ def compute_ranks(
     )
 
     # ── Step 2: Aggregate dataset → task → language → overall ────────────
-    model_task_ranks: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
+    model_task_ranks: defaultdict = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(dict))
+    )
 
     for model_id in model_dataset_ranks:
         for category in categories:
-            if (
-                model_id not in model_dataset_ranks
-                or category not in model_dataset_ranks[model_id]
-            ):
+            if category not in model_dataset_ranks[model_id]:
                 continue
 
             for language, config in configs.items():
@@ -210,10 +209,7 @@ def compute_ranks(
 
     for model_id in model_dataset_ranks:
         for category in categories:
-            if (
-                model_id not in model_dataset_ranks
-                or category not in model_dataset_ranks[model_id]
-            ):
+            if category not in model_dataset_ranks[model_id]:
                 continue
 
             lang_scores: dict[str, dict[str, float]] = {}
@@ -230,7 +226,7 @@ def compute_ranks(
                 if not task_entries:
                     continue
 
-                mean_score = np.mean([e["score"] for e in task_entries]).item()
+                mean_score = float(np.mean([e["score"] for e in task_entries]))
                 vars_ = [
                     ((e["ci_upper"] - e["ci_lower"]) / (2 * 1.96)) ** 2
                     for e in task_entries
@@ -246,7 +242,7 @@ def compute_ranks(
                 overall_entries.append(lang_scores[language])
 
             if overall_entries:
-                mean_score = np.mean([e["score"] for e in overall_entries]).item()
+                mean_score = float(np.mean([e["score"] for e in overall_entries]))
                 vars_ = [
                     ((e["ci_upper"] - e["ci_lower"]) / (2 * 1.96)) ** 2
                     for e in overall_entries
@@ -469,6 +465,7 @@ def compute_standard_ranks_bootstrap(
         # Step 3: Walk down and assign ranks via CI overlap
         current_rank = 1
         anchor_idx = 0
+        anchor_id = scored[0][1]
 
         for i in range(len(scored)):
             mid_i = scored[i][1]
@@ -477,7 +474,6 @@ def compute_standard_ranks_bootstrap(
                 ranks.setdefault(mid_i, {})[category] = 1
                 continue
 
-            scored[anchor_idx][1]
             anchor_ci_upper = scored[anchor_idx][3]
             candidate_ci_lower = scored[i][2]
 
@@ -486,9 +482,13 @@ def compute_standard_ranks_bootstrap(
                 # No overlap → new rank group
                 current_rank += 1
                 anchor_idx = i
-
-            ranks[mid_i] = ranks.setdefault(mid_i, {})
-            ranks[mid_i][category] = current_rank
+                anchor_id = mid_i
+                ranks[mid_i] = ranks.setdefault(mid_i, {})
+                ranks[mid_i][category] = current_rank
+            else:
+                # Overlap → share anchor's rank
+                ranks[mid_i] = ranks.setdefault(mid_i, {})
+                ranks[mid_i][category] = ranks[anchor_id][category]
 
     return ranks
 
