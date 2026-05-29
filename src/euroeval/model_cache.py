@@ -110,10 +110,12 @@ class ModelCache:
             sequence = value_dict.pop("sequence", None)
             predicted_label = value_dict.pop("predicted_label", None)
             scores = value_dict.pop("scores", None)
+            cf_scores = value_dict.pop("cf_scores", None)
             cache[key] = SingleGenerativeModelOutput(
                 sequence=sequence,
                 predicted_label=predicted_label,
                 scores=scores,
+                cf_scores=cf_scores,
                 metadata=HashableDict(value_dict),
             )
 
@@ -284,6 +286,10 @@ class ModelCache:
                 else:
                     single_metadata = None
 
+                cf_scores_for_sample: c.Sequence[float] | None = None
+                if model_output.cf_scores is not None:
+                    cf_scores_for_sample = list(model_output.cf_scores[sample_idx])
+
                 self[model_input] = SingleGenerativeModelOutput(
                     sequence=model_output.sequences[sample_idx],
                     predicted_label=(
@@ -292,6 +298,7 @@ class ModelCache:
                         else None
                     ),
                     scores=scores,
+                    cf_scores=cf_scores_for_sample,
                     metadata=single_metadata,
                 )
 
@@ -359,11 +366,21 @@ def load_cached_model_outputs(
 
     cached_sequences = [model_output.sequence for model_output in cached_model_outputs]
 
+    cached_cf_scores: c.Sequence[c.Sequence[float]] | None = None
+    if cached_model_outputs[0].cf_scores is not None:
+        cached_cf_scores = [
+            list(model_output.cf_scores or []) for model_output in cached_model_outputs
+        ]
+
     if cached_model_outputs[0].scores is None:
-        return GenerativeModelOutput(sequences=cached_sequences)
+        return GenerativeModelOutput(
+            sequences=cached_sequences, cf_scores=cached_cf_scores
+        )
 
     cached_scores = [model_output.scores or [] for model_output in cached_model_outputs]
-    return GenerativeModelOutput(sequences=cached_sequences, scores=cached_scores)
+    return GenerativeModelOutput(
+        sequences=cached_sequences, scores=cached_scores, cf_scores=cached_cf_scores
+    )
 
 
 def create_model_cache_dir(cache_dir: str, model_id: str) -> str:

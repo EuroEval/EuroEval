@@ -7,6 +7,7 @@ from typing import Generator
 import pytest
 import torch
 
+from euroeval import Benchmarker
 from euroeval.benchmark_config_factory import (
     prepare_dataset_configs,
     prepare_device,
@@ -15,7 +16,8 @@ from euroeval.benchmark_config_factory import (
 from euroeval.data_models import DatasetConfig, Language
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.dataset_configs.danish import MULTI_WIKI_QA_DA_CONFIG, SCALA_DA_CONFIG
-from euroeval.enums import Device
+from euroeval.enums import CFNormalization, Device, ScoringMethod
+from euroeval.exceptions import InvalidBenchmark
 from euroeval.languages import (
     DANISH,
     ENGLISH,
@@ -239,6 +241,32 @@ def test_prepare_dataset_configs_invalid_dataset() -> None:
             run_with_cli=True,
         )
     assert exc_info.value.code == 1
+
+
+class TestScoringMethodGating:
+    """Tests for the CF scoring-method gating inside `build_benchmark_config`."""
+
+    def test_cf_on_mcq_dataset_passes(self) -> None:
+        """CF on a multiple-choice dataset builds a config without raising."""
+        benchmarker = Benchmarker(
+            dataset="belebele-nl",
+            scoring_method=ScoringMethod.CF,
+            cf_normalization=CFNormalization.CHARACTER,
+        )
+        assert benchmarker.benchmark_config.scoring_method == ScoringMethod.CF
+        assert (
+            benchmarker.benchmark_config.cf_normalization == CFNormalization.CHARACTER
+        )
+
+    def test_cf_on_non_mcq_dataset_raises(self) -> None:
+        """CF on a non-MCQ dataset raises InvalidBenchmark during config build."""
+        with pytest.raises(InvalidBenchmark):
+            Benchmarker(dataset="scala-da", scoring_method=ScoringMethod.CF)
+
+    def test_mcf_default(self) -> None:
+        """MCF is the default scoring method when nothing is passed."""
+        benchmarker = Benchmarker(dataset="belebele-nl")
+        assert benchmarker.benchmark_config.scoring_method == ScoringMethod.MCF
 
 
 @pytest.mark.parametrize(

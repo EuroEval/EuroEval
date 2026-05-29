@@ -54,6 +54,7 @@ from ..enums import (
     GenerativeType,
     InferenceBackend,
     ModelType,
+    ScoringMethod,
     TaskGroup,
 )
 from ..exceptions import (
@@ -346,8 +347,18 @@ class LiteLLMModel(BenchmarkModule):
 
         Raises:
             InvalidBenchmark:
-                If the inputs do not contain either 'messages' or 'text' keys.
+                If the inputs do not contain either 'messages' or 'text' keys, or if
+                Cloze Formulation (CF) evaluation is requested (not supported by the
+                LiteLLM backend).
         """
+        if self.benchmark_config.scoring_method == ScoringMethod.CF:
+            raise InvalidBenchmark(
+                "Cloze Formulation (CF) evaluation is not supported by the LiteLLM "
+                "backend, as per-token logprobs for forced completions are not "
+                "reliably exposed across API providers. CF is currently only "
+                "supported by the vLLM backend."
+            )
+
         model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str]
         if "messages" in inputs:
             model_inputs = inputs["messages"]

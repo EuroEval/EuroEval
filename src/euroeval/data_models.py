@@ -21,7 +21,14 @@ from .constants import (
     MAX_NUMBER_OF_LOGGING_LANGUAGES,
 )
 from .eee_utils import benchmark_result_from_eee_dict, benchmark_result_to_eee_dict
-from .enums import Device, GenerativeType, ModelType, TaskGroup
+from .enums import (
+    CFNormalization,
+    Device,
+    GenerativeType,
+    ModelType,
+    ScoringMethod,
+    TaskGroup,
+)
 from .exceptions import InvalidBenchmark
 from .languages import (
     ENGLISH,
@@ -736,6 +743,13 @@ class BenchmarkConfig:
         vocabulary_size:
             Override for the vocabulary size of the model. If None, the value will be
             inferred automatically from the model.
+        scoring_method:
+            Which formulation to use for multiple-choice evaluation. ``MCF`` (default)
+            compares first-token logprobs of the label letters; ``CF`` scores each
+            answer text as a continuation (cloze formulation).
+        cf_normalization:
+            The length-normalization method used when ``scoring_method`` is ``CF``.
+            Ignored for ``MCF``.
     """
 
     datasets: c.Sequence[DatasetConfig]
@@ -770,6 +784,8 @@ class BenchmarkConfig:
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
+    scoring_method: ScoringMethod = ScoringMethod.MCF
+    cf_normalization: CFNormalization = CFNormalization.CHARACTER
 
     @property
     def tasks(self) -> c.Sequence[Task]:
@@ -825,6 +841,8 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
+    scoring_method: ScoringMethod = ScoringMethod.MCF
+    cf_normalization: CFNormalization = CFNormalization.CHARACTER
 
 
 class BenchmarkResult(pydantic.BaseModel):
@@ -843,6 +861,8 @@ class BenchmarkResult(pydantic.BaseModel):
     generative_type: str | None
     few_shot: bool | None
     validation_split: bool | None
+    scoring_method: str | None = None
+    cf_normalization: str | None = None
     euroeval_version: str | None = get_package_version("euroeval")
     transformers_version: str | None = get_package_version("transformers")
     torch_version: str | None = get_package_version("torch")
@@ -886,6 +906,10 @@ class BenchmarkResult(pydantic.BaseModel):
             config["few_shot"] = zero_shot_matches is None
         if "validation_split" not in config:
             config["validation_split"] = val_matches is not None
+        if "scoring_method" not in config:
+            config["scoring_method"] = "mcf"
+        if "cf_normalization" not in config:
+            config["cf_normalization"] = None
 
         # Backwards compatibility
         if "dataset_languages" in config:
@@ -1030,6 +1054,9 @@ class GenerativeModelOutput:
             A list of dictionaries, one per failed instance, each containing
             ``"sample_index"`` (the index of the sample in the batch) and ``"error"``
             (a short description of why it failed). Defaults to an empty list.
+        cf_scores (optional):
+            Per-choice normalized scores used when evaluating with the Cloze
+            Formulation (CF). Shape ``(batch_size, num_choices)``. Defaults to None.
     """
 
     sequences: c.Sequence[str]
@@ -1037,6 +1064,7 @@ class GenerativeModelOutput:
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
     metadatas: list["HashableDict | None"] = field(default_factory=list)
     failed_instances: list["FailedInstance"] = field(default_factory=list)
+    cf_scores: c.Sequence[c.Sequence[float]] | None = None
 
     def __post_init__(self) -> None:
         """Post-initialisation."""
@@ -1061,12 +1089,16 @@ class SingleGenerativeModelOutput:
         metadata (optional):
             The metadata fields for the sample, including ground truth labels (if
             applicable). Can be None if the metadata is not available. Defaults to None.
+        cf_scores (optional):
+            Per-choice normalized scores when the sample was evaluated with the
+            Cloze Formulation (CF). Defaults to None.
     """
 
     sequence: str
     predicted_label: str | None = None
     scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
     metadata: "HashableDict | None" = None
+    cf_scores: c.Sequence[float] | None = None
 
 
 @dataclass

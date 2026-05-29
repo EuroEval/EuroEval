@@ -51,6 +51,7 @@ from ..enums import (
     GenerativeType,
     InferenceBackend,
     ModelType,
+    ScoringMethod,
     TaskGroup,
 )
 from ..exceptions import (
@@ -122,10 +123,22 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 The benchmark configuration.
             log_metadata:
                 Whether to log the model metadata.
+
+        Raises:
+            InvalidBenchmark:
+                If Cloze Formulation (CF) evaluation is requested. CF is only
+                supported by the vLLM backend.
         """
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
         )
+
+        if benchmark_config.scoring_method == ScoringMethod.CF:
+            raise InvalidBenchmark(
+                "Cloze Formulation (CF) evaluation is not supported by the "
+                "Hugging Face encoder backend. CF is currently only supported by "
+                "the vLLM backend."
+            )
 
         # This is already set when calling `super().__init__`, but we need it to get
         # the correct value from `self.model_max_length`, so we set it here as well.
