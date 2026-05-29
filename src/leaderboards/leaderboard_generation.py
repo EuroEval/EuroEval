@@ -24,6 +24,13 @@ from .task_metadata import (
 )
 from .utils import convert_to_float, drop_val_duplicates
 
+# Number of bootstrap replicates for tie-breaking in leaderboard generation.
+# 50 is sufficient because tie-breaking only needs to distinguish models that
+# are statistically tied — the bootstrap test is a one-sided test at α=0.05,
+# and 50 replicates give a reasonable resolution for the rank-difference
+# distribution without unnecessary computation.
+BOOTSTRAP_TIE_BREAK_REPLICATES = 50
+
 logger = logging.getLogger(__name__)
 
 
@@ -102,7 +109,10 @@ def generate_leaderboard(
     # Bootstrap resamples datasets with replacement (stratified by task),
     # recomputes the full hierarchy, and returns percentile CIs.
     ranks = compute_ranks_bootstrap(
-        model_results=model_results, configs=configs, n_bootstraps=50, seed=42
+        model_results=model_results,
+        configs=configs,
+        n_bootstraps=BOOTSTRAP_TIE_BREAK_REPLICATES,
+        seed=42,
     )
     metadata_dict = extract_model_metadata(results=results)
 
@@ -416,7 +426,7 @@ def generate_dataframe(
         all_standard_ranks = compute_standard_ranks_bootstrap(
             model_results=eligible_model_results,
             configs=leaderboard_configs,
-            n_bootstraps=50,
+            n_bootstraps=BOOTSTRAP_TIE_BREAK_REPLICATES,
             seed=42,
         )
 

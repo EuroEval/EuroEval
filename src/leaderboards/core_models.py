@@ -363,13 +363,15 @@ def _pareto_languages_per_model(
                 # rather than O(n^2) globally.
                 sized_ranked: list[tuple[str, float, float]] = []
                 for model_id, params in members:
-                    try:
-                        rank = ranks[model_id][category][language]["score"]
-                    except (KeyError, TypeError):
+                    rank_entry = (
+                        ranks.get(model_id, {})
+                        .get(category, {})
+                        .get(language, {})
+                        .get("score")
+                    )
+                    if rank_entry is None or not math.isfinite(rank_entry):
                         continue
-                    if not math.isfinite(rank):
-                        continue
-                    sized_ranked.append((model_id, params, rank))
+                    sized_ranked.append((model_id, params, rank_entry))
 
                 for model_id, params, rank in sized_ranked:
                     dominated = any(

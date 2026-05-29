@@ -183,7 +183,7 @@ def bootstrap_rank_scores(
                     continue
 
                 # Aggregate: dataset -> task -> language -> overall
-                overall = _aggregate_hierarchy(
+                overall = _aggregate_scores_to_categories(
                     model_rank_scores, configs, category, model_ds_in_sample
                 )
                 if overall is not None:
@@ -216,7 +216,7 @@ def _category_includes_task(category: str, task: str) -> bool:
     return category == "generative" or task_category(task) == "nlu"
 
 
-def _aggregate_hierarchy(
+def _aggregate_scores_to_categories(
     dataset_scores: dict[str, float],
     configs: dict[str, dict[str, list[str]]],
     category: str,
