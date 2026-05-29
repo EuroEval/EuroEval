@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import {
+  COLUMN_BUCKETS,
+  CONTEXT_BUCKETS,
+  PARAM_BUCKETS,
+  VOCAB_BUCKETS,
+} from "@/leaderboard";
 import type { Column, LeaderboardTable, Row } from "@/leaderboard";
 import taskMetricsRaw from "@/generated/task-metrics.json";
 
@@ -48,39 +54,6 @@ watch(
   },
   { immediate: true },
 );
-
-// Parameter size bucket boundaries (matching the Python code).
-const PARAM_BUCKETS: [string, number | null, number | null][] = [
-  ["< 2B", null, 2_000_000_000],
-  ["2B – 10B", 2_000_000_000, 10_000_000_000],
-  ["10B – 40B", 10_000_000_000, 40_000_000_000],
-  ["40B – 80B", 40_000_000_000, 80_000_000_000],
-  ["≥ 80B", 80_000_000_000, null],
-];
-
-// Vocabulary size buckets (vocab size in tokens).
-const VOCAB_BUCKETS: [string, number | null, number | null][] = [
-  ["< 50k", null, 50_000],
-  ["50k – 100k", 50_000, 100_000],
-  ["100k – 150k", 100_000, 150_000],
-  ["≥ 150k", 150_000, null],
-];
-
-// Context length buckets (context window in tokens).
-const CONTEXT_BUCKETS: [string, number | null, number | null][] = [
-  ["< 8k", null, 8_000],
-  ["8k – 32k", 8_000, 32_000],
-  ["32k – 128k", 32_000, 128_000],
-  ["128k – 200k", 128_000, 200_000],
-  ["≥ 200k", 200_000, null],
-];
-
-const COLUMN_BUCKETS: Record<string, [string, number | null, number | null][]> =
-  {
-    parameters: PARAM_BUCKETS,
-    vocabulary: VOCAB_BUCKETS,
-    context: CONTEXT_BUCKETS,
-  };
 
 const passesColumnFilter = (cellText: string, filter: string, col: Column) => {
   if (!filter) return true;

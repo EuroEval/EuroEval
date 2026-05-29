@@ -168,9 +168,11 @@ const parseNumberSafe = (s: string): number | null => {
 // emits a plain boolean tick/cross, but normalize on read for forward compat.
 const normalizeIconText = (s: string): string => (s === "(✓)" ? "✓" : s);
 
+export type SizeBucket = [string, number | null, number | null];
+
 // Parameter size buckets — boundaries match the Python code in
 // `core_models.py`.
-const PARAM_BUCKETS: [string, number | null, number | null][] = [
+export const PARAM_BUCKETS: SizeBucket[] = [
   ["< 2B", null, 2_000_000_000],
   ["2B – 10B", 2_000_000_000, 10_000_000_000],
   ["10B – 40B", 10_000_000_000, 40_000_000_000],
@@ -179,7 +181,7 @@ const PARAM_BUCKETS: [string, number | null, number | null][] = [
 ];
 
 // Vocabulary size buckets (vocab size in tokens).
-const VOCAB_BUCKETS: [string, number | null, number | null][] = [
+export const VOCAB_BUCKETS: SizeBucket[] = [
   ["< 50k", null, 50_000],
   ["50k – 100k", 50_000, 100_000],
   ["100k – 150k", 100_000, 150_000],
@@ -187,7 +189,7 @@ const VOCAB_BUCKETS: [string, number | null, number | null][] = [
 ];
 
 // Context length buckets (context window in tokens).
-const CONTEXT_BUCKETS: [string, number | null, number | null][] = [
+export const CONTEXT_BUCKETS: SizeBucket[] = [
   ["< 8k", null, 8_000],
   ["8k – 32k", 8_000, 32_000],
   ["32k – 128k", 32_000, 128_000],
@@ -195,18 +197,17 @@ const CONTEXT_BUCKETS: [string, number | null, number | null][] = [
   ["≥ 200k", 200_000, null],
 ];
 
-const COLUMN_BUCKETS: Record<string, [string, number | null, number | null][]> =
-  {
-    parameters: PARAM_BUCKETS,
-    vocabulary: VOCAB_BUCKETS,
-    context: CONTEXT_BUCKETS,
-  };
+export const COLUMN_BUCKETS: Record<string, SizeBucket[]> = {
+  parameters: PARAM_BUCKETS,
+  vocabulary: VOCAB_BUCKETS,
+  context: CONTEXT_BUCKETS,
+};
 
 /** Compute the set of size buckets represented in the data. */
 const computeSizeBuckets = (
   rows: Row[],
   colIndex: number,
-  buckets: [string, number | null, number | null][],
+  buckets: SizeBucket[],
 ): string[] => {
   const seen = new Set<string>();
   for (const row of rows) {
