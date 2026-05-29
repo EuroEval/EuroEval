@@ -304,7 +304,7 @@ def _size_bucket(model_type: ModelType, parameters: float) -> SizeBucket:
 
 
 def _pareto_languages_per_model(
-    ranks: dict[str, dict[str, dict[str, float]]],
+    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
     metadata: dict[str, dict],
     model_types: dict[str, ModelType],
     languages: list[str],
@@ -319,7 +319,8 @@ def _pareto_languages_per_model(
 
     Args:
         ranks:
-            Output of `compute_ranks`: model -> category -> language -> rank.
+            Output of `compute_ranks`: model -> category -> language ->
+            {"score", "ci_lower", "ci_upper"}.
         metadata:
             Output of `extract_model_metadata`.
         model_types:
@@ -362,13 +363,15 @@ def _pareto_languages_per_model(
                 # rather than O(n^2) globally.
                 sized_ranked: list[tuple[str, float, float]] = []
                 for model_id, params in members:
-                    try:
-                        rank = ranks[model_id][category][language]
-                    except KeyError:
+                    rank_entry = (
+                        ranks.get(model_id, {})
+                        .get(category, {})
+                        .get(language, {})
+                        .get("score")
+                    )
+                    if rank_entry is None or not math.isfinite(rank_entry):
                         continue
-                    if not math.isfinite(rank):
-                        continue
-                    sized_ranked.append((model_id, params, rank))
+                    sized_ranked.append((model_id, params, rank_entry))
 
                 for model_id, params, rank in sized_ranked:
                     dominated = any(

@@ -112,10 +112,21 @@ TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern] = [
         "interactive runs (CI, batch jobs)."
     ),
 )
+@click.option(
+    "--skip-results-processing",
+    is_flag=True,
+    default=False,
+    help=(
+        "Skip processing evaluation results from JSONL. Assumes results.tar.gz "
+        "already contains processed results. Useful for repeated leaderboard "
+        "generation when results haven't changed."
+    ),
+)
 def main(
     categories: tuple[t.Literal["generative", "all_models"]],
     force: bool,
     skip_core_models_check: bool,
+    skip_results_processing: bool,
 ) -> None:
     """Generate all leaderboards.
 
@@ -128,18 +139,22 @@ def main(
             are found. Defaults to False.
         skip_core_models_check (optional):
             If True, skip prompting to refresh the core-model list when stale.
+        skip_results_processing (optional):
+            If True, skip processing evaluation results from JSONL. Assumes
+            results.tar.gz already contains processed results.
     """
     # If results.tar.gz isn't here, pull the newest backup into place.
     restore_from_backup_if_missing()
 
-    process_results(
-        min_version=MINIMUM_VERSION,
-        min_number_of_model_records=MINIMUM_NUMBER_OF_MODEL_RECORDS,
-        banned_versions=BANNED_VERSIONS,
-        banned_model_patterns=BANNED_MODEL_PATTERNS,
-        api_model_patterns=API_MODEL_PATTERNS,
-        trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
-    )
+    if not skip_results_processing:
+        process_results(
+            min_version=MINIMUM_VERSION,
+            min_number_of_model_records=MINIMUM_NUMBER_OF_MODEL_RECORDS,
+            banned_versions=BANNED_VERSIONS,
+            banned_model_patterns=BANNED_MODEL_PATTERNS,
+            api_model_patterns=API_MODEL_PATTERNS,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+        )
 
     # Offer to refresh the core-model list if it hasn't been touched in
     # over a month. Doing this inside `generate_leaderboards` keeps it on

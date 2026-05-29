@@ -121,31 +121,105 @@ than the new model.
 
 We thus see that the mean score and mean rank methods satisfy a disjoint set of the
 criteria, but that they together satisfy all the criteria. Based on this observation, we
-introduce the **mean rank score** method, defined as follows. For each dataset, we start
-by sorting the models by their mean score on the dataset. As with a rank, we assign the
-best model with rank score 1. For the next best model, we conduct a one-tailed Welch's
-t-test to see if the next best model is significantly worse than the first model (p <
-0.05). If so, we compute the absolute difference between the mean score of the two
-models, and divide that by the standard deviation of all the mean scores of the models
-on the dataset.
+introduce the **mean rank score** method, defined as follows.
 
-We then add this to the rank score of the first model. We continue this process for all
-the models to get the rank scores for the dataset, and to compute the overall score for
-the model, we take the mean of the rank scores for the datasets. We note that the mean
-rank score has an intuitive interpretation: it is the average number of standard
-deviations from the best scoring model (+1).
+### Mean rank score
 
-This metric satisfies Task Fairness since we normalise all the scores by dividing by the
-standard deviation of the dataset scores. The Robustness criterion is satisfied due to
-our use of a one-tailed Welch's t-test. The Magnitude Preservation criterion is also
-satisfied, as the magnitude of the difference between the dataset score of two models is
-reflected in the rank score. It also satisfies Comparison, as we compare the models on a
-common scale (same argument as the mean rank method). Finally, the Minimal Change
-criterion is partially satisfied, as adding new models only minimally changes the score
-of existing models. Concretely, adding new scores will affect the standard deviation
-normalising factor (this effect tends to zero as the number of models grows, however),
-and if the model beats all the other models then all the scores will be affected, due to
-the relative nature of the metric.
+For each dataset _d_ and model _m_, we assign a _dataset rank score_:
+
+```text
+rank_score(m, d) = 1 + (best_mean_score(d) - mean_score(m, d)) / pooled_std(d)
+```
+
+Here `mean_score(m, d)` is model _m_'s mean bootstrap score on dataset _d_,
+`best_mean_score(d)` is the highest such mean across all models on _d_, and
+`pooled_std(d)` is the standard deviation of all bootstrap scores from all models on
+_d_. The best model on each dataset therefore gets a rank score of exactly **1**,
+and every other model gets **1 plus the number of pooled standard deviations it
+sits behind the leader**.
+
+We then aggregate by taking **unweighted means at each level of the hierarchy**:
+
+- **Task rank score:** mean of the dataset rank scores for that task.
+- **Language rank score:** mean of the task rank scores for that language.
+- **Overall mean rank score:** mean of the language rank scores.
+
+Each level weights its children equally — every dataset within a task, every task
+within a language, every language overall. This preserves Task Fairness regardless
+of how many datasets a task happens to have or how many tasks a language happens to
+have.
+
+#### Confidence intervals
+
+The dataset rank score inherits a 95% confidence interval directly from the
+bootstrap standard error of the underlying mean score, divided by `pooled_std(d)`.
+Because every aggregation step above is an unweighted mean, variances propagate by
+the standard rule:
+
+```text
+Var(mean(x_1, ..., x_n)) = (Var(x_1) + ... + Var(x_n)) / n^2
+```
+
+The leaderboard reports the overall mean rank score (shown in the **Rank
+score** column) as **score ± margin**, where
+the margin is a 95% confidence interval computed via bootstrap resampling.
+
+#### Bootstrap confidence intervals
+
+Rather than propagating analytical error bounds through the nested mean
+structure, we compute the CIs empirically:
+
+1. **Resample datasets with replacement**, stratified by task (each task's
+datasets are resampled independently, preserving the task structure).
+2. **Recompute the full hierarchy** on the resampled datasets — dataset scores,
+task means, language means, overall mean — for every model.
+3. **Repeat** 1,000 times and collect the distribution of overall scores.
+4. **Take the 2.5th and 97.5th percentiles** as the 95% CI bounds, with the
+median as the point estimate.
+
+This approach respects the hierarchical structure (dataset → task → language →
+overall) and the correlation between models that share datasets. Because both
+models are evaluated on the same resampled datasets, their bootstrap scores are
+correlated, and the difference distribution correctly accounts for this.
+
+#### Why this works
+
+This metric satisfies **Task Fairness** because we normalise every score by the
+dataset's pooled standard deviation and aggregate with equal weights at every level.
+**Magnitude Preservation** holds because the magnitude of the difference between two
+models' dataset scores survives the linear normalisation and the mean aggregation.
+**Comparison** holds because all models are placed on a common scale (same argument as
+the mean rank method). **Robustness** is satisfied by the bootstrap confidence
+intervals on the overall mean rank score: overlapping intervals make near-ties
+immediately visible, and the dense Rank column described below shares a rank between
+any two models whose intervals overlap. **Minimal Change** is partially satisfied —
+adding a new model can shift `pooled_std(d)` and, if it becomes the new leader on
+some dataset, shift `best_mean_score(d)`. Both effects are local to the affected
+dataset(s) and tend to zero as the number of models grows.
+
+### Rank
+
+Alongside the mean rank score the leaderboard shows an integer **Rank** column,
+which is a _dense_ ordinal ranking computed via bootstrap hypothesis testing.
+After sorting the models by overall mean rank score (lower is better), we walk
+down the list and compare each model to the current tie-group anchor using a
+one-sided bootstrap test (α = 0.05):
+
+- We compute the bootstrap distribution of the **difference** between the anchor's
+and candidate's overall scores (lower = better).
+- If the p-value ≥ 0.05 (the anchor is not significantly better), the candidate
+joins the anchor's tie group and shares its rank.
+- Otherwise, it starts a new tie group with rank one larger than the previous
+group's.
+
+The result is a contiguous **1, 2, 3, …** sequence in which multiple models can
+share 1st place, 2nd place, and so on — there are never gaps after a tie.
+
+The bootstrap test is statistically proper: it uses the same resampled datasets
+for both models, so the difference distribution correctly accounts for the
+correlation induced by shared datasets. This addresses the limitations of the
+previous approaches — the analytical paired t-test (which ignored the hierarchical
+structure) and the CI-overlap heuristic (which was not a formal test).
 
 ## Papers
 

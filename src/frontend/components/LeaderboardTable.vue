@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import {
+  COLUMN_BUCKETS,
+  CONTEXT_BUCKETS,
+  PARAM_BUCKETS,
+  VOCAB_BUCKETS,
+} from "@/leaderboard";
 import type { Column, LeaderboardTable, Row } from "@/leaderboard";
 import taskMetricsRaw from "@/generated/task-metrics.json";
 
@@ -18,20 +24,33 @@ const props = withDefaults(
 
 type FilterValue = string;
 const colFilters = ref<Record<string, FilterValue>>({});
+const paramFilter = ref<string>("");
+const vocabFilter = ref<string>("");
+const contextFilter = ref<string>("");
 const sortBy = ref<{ index: number; dir: "asc" | "desc" } | null>(null);
 const page = ref(1);
 const pageSize = 10;
 
-// Default sort: rank ascending if present.
+// Default sort: rank score ascending if present, otherwise rank.
 watch(
   () => props.table,
   () => {
     colFilters.value = {};
+    paramFilter.value = "";
+    vocabFilter.value = "";
+    contextFilter.value = "";
     page.value = 1;
-    const rankIdx = props.table.columns.findIndex(
-      (c) => c.key.toLowerCase() === "rank",
+    const rankScoreIdx = props.table.columns.findIndex(
+      (c) => c.key.toLowerCase() === "rank score",
     );
-    sortBy.value = rankIdx >= 0 ? { index: rankIdx, dir: "asc" } : null;
+    if (rankScoreIdx >= 0) {
+      sortBy.value = { index: rankScoreIdx, dir: "asc" };
+    } else {
+      const rankIdx = props.table.columns.findIndex(
+        (c) => c.key.toLowerCase() === "rank",
+      );
+      sortBy.value = rankIdx >= 0 ? { index: rankIdx, dir: "asc" } : null;
+    }
   },
   { immediate: true },
 );
@@ -45,9 +64,43 @@ const passesColumnFilter = (cellText: string, filter: string, col: Column) => {
   return cellText.toLowerCase().includes(filter.toLowerCase());
 };
 
+const SIZE_COLS = new Set(["parameters", "vocabulary", "context"]);
+
+const passesSizeFilter = (
+  cell: { text: string; sortKey: number | string },
+  colKey: string,
+  bucket: string,
+): boolean => {
+  if (!bucket) return true;
+  const k = cell.sortKey;
+  if (typeof k !== "number" || !Number.isFinite(k)) {
+    // Non-finite values don't match any bucket.
+    return false;
+  }
+  const buckets = COLUMN_BUCKETS[colKey] ?? PARAM_BUCKETS;
+  for (const [label, lo, hi] of buckets) {
+    if (label !== bucket) continue;
+    return (lo === null || k >= lo) && (hi === null || k < hi);
+  }
+  return true;
+};
+
 const filteredRows = computed<Row[]>(() => {
   const cols = props.table.columns;
   return props.table.rows.filter((row) => {
+    // Check the size-indicator bucket filter.
+    const paramIdx = cols.findIndex((c) => c.key.toLowerCase() === "parameters");
+    if (paramIdx >= 0 && !passesSizeFilter(row.cells[paramIdx], "parameters", paramFilter.value)) {
+      return false;
+    }
+    const vocabIdx = cols.findIndex((c) => c.key.toLowerCase() === "vocabulary");
+    if (vocabIdx >= 0 && !passesSizeFilter(row.cells[vocabIdx], "vocabulary", vocabFilter.value)) {
+      return false;
+    }
+    const contextIdx = cols.findIndex((c) => c.key.toLowerCase() === "context");
+    if (contextIdx >= 0 && !passesSizeFilter(row.cells[contextIdx], "context", contextFilter.value)) {
+      return false;
+    }
     for (let i = 0; i < cols.length; i++) {
       const filter = colFilters.value[cols[i].key];
       if (filter && !passesColumnFilter(row.cells[i].text, filter, cols[i])) {
@@ -107,6 +160,21 @@ const TICK_CROSS_COLS = new Set([
   "trained from scratch",
 ]);
 
+const formatOrdinal = (n: number): string => {
+  if (!Number.isFinite(n)) return String(n);
+  const v = Math.trunc(n);
+  const abs = Math.abs(v);
+  const mod100 = abs % 100;
+  const mod10 = abs % 10;
+  let suffix = "th";
+  if (mod100 < 11 || mod100 > 13) {
+    if (mod10 === 1) suffix = "st";
+    else if (mod10 === 2) suffix = "nd";
+    else if (mod10 === 3) suffix = "rd";
+  }
+  return `${v}${suffix}`;
+};
+
 const formatCompact = (n: number): string => {
   const abs = Math.abs(n);
   if (abs >= 1e12) return Math.round(n / 1e12) + "T";
@@ -119,15 +187,33 @@ const formatCompact = (n: number): string => {
 const isCompactCol = (col: Column) =>
   col.kind === "number" && COMPACT_COLS.has(col.key.toLowerCase());
 
+// Percent rendering is keyed off the column name, not its inferred kind:
+// some models render an "N/A" placeholder in this column, which forces the
+// kind to "text" and would otherwise prevent the percent formatting.
 const isPercentCol = (col: Column) =>
-  col.kind === "number" && PERCENT_COLS.has(col.key.toLowerCase());
+  PERCENT_COLS.has(col.key.toLowerCase());
 
 const isTickCrossCol = (col: Column) =>
   col.kind === "icon" && TICK_CROSS_COLS.has(col.key.toLowerCase());
 
 const isRankCol = (col: Column) => col.key.toLowerCase() === "rank";
 
+// Columns that should never receive a heatmap. The ordinal rank column is
+// displayed as plain text — its colour would just duplicate the row order.
+// The rank score uses the same rank-style heatmap as the per-language rank
+// columns (handled below).
+const NO_HEATMAP_COLS = new Set(["rank"]);
+
+const isRankScoreCol = (col: Column) =>
+  col.key.toLowerCase() === "rank score";
+
 const cellDisplayHtml = (cell: { html: string; text: string; sortKey: number | string }, col: Column): string => {
+  if (isRankCol(col)) {
+    if (typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
+      return formatOrdinal(cell.sortKey);
+    }
+    return cell.text || "?";
+  }
   if (isCompactCol(col)) {
     if (typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
       return formatCompact(cell.sortKey);
@@ -135,9 +221,14 @@ const cellDisplayHtml = (cell: { html: string; text: string; sortKey: number | s
     return cell.text || "?";
   }
   if (isPercentCol(col)) {
-    if (typeof cell.sortKey === "number" && Number.isFinite(cell.sortKey)) {
-      return `${Math.round(cell.sortKey)}%`;
-    }
+    // sortKey is a number for kind="number", but a lowercased text string
+    // when an "N/A" placeholder forced the column to kind="text". Parse the
+    // displayed text directly so both cases render as "<n>%".
+    const num =
+      typeof cell.sortKey === "number"
+        ? cell.sortKey
+        : Number.parseFloat(cell.text);
+    if (Number.isFinite(num)) return `${Math.round(num)}%`;
     return cell.text || "?";
   }
   return cell.html;
@@ -235,10 +326,13 @@ const NON_LANGUAGE_NUMBER_COLS = new Set([
 ]);
 const isLanguageRankCol = (col: Column): boolean =>
   props.heatmapScoreCols &&
-  col.kind === "number" &&
-  !NON_LANGUAGE_NUMBER_COLS.has(col.key.toLowerCase());
+  (col.kind === "number" || col.kind === "score") &&
+  !NON_LANGUAGE_NUMBER_COLS.has(col.key.toLowerCase()) &&
+  col.key.toLowerCase() !== "rank score";
 
 const toggleSort = (idx: number) => {
+  // The Rank column is derived from the Rank score and is not sortable.
+  if (props.table.columns[idx]?.key.toLowerCase() === "rank") return;
   if (sortBy.value?.index === idx) {
     sortBy.value =
       sortBy.value.dir === "asc"
@@ -251,16 +345,28 @@ const toggleSort = (idx: number) => {
 
 const resetFilters = () => {
   colFilters.value = {};
+  paramFilter.value = "";
+  vocabFilter.value = "";
+  contextFilter.value = "";
   page.value = 1;
 };
 
 const isModelCol = (col: Column) => col.key.toLowerCase() === "model";
 
 const TYPE_EMOJI_TOOLTIPS: Record<string, string> = {
-  "🧠": "Base model",
-  "📝": "Instruction-tuned model",
-  "🤔": "Reasoning model",
-  "🔍": "Unknown type",
+  "🧠": "Base decoder",
+  "📝": "Instruction-tuned decoder",
+  "🤔": "Reasoning decoder",
+  "🔍": "Encoder",
+};
+
+/** Format an icon value with its label for display in dropdowns. */
+const formatIconLabel = (val: string, col: Column): string => {
+  if (isTypeCol(col)) {
+    const label = TYPE_EMOJI_TOOLTIPS[val];
+    if (label) return `${val} ${label}`;
+  }
+  return val;
 };
 
 const isTypeCol = (col: Column) => col.key.toLowerCase() === "type";
@@ -391,21 +497,27 @@ const reportBadEval = (modelId: string) => {
               </th>
               <th
                 v-else
-                :class="['col', `kind-${table.columns[group.indexes[0]].kind}`]"
+                :class="[
+                  'col',
+                  `kind-${table.columns[group.indexes[0]].kind}`,
+                  isRankCol(table.columns[group.indexes[0]]) ? 'col-norank' : '',
+                ]"
                 @click="toggleSort(group.indexes[0])"
               >
-                <span
-                  class="th-label"
-                  v-html="
-                    table.columns[group.indexes[0]].titleHtml ||
-                    table.columns[group.indexes[0]].title
-                  "
-                />
-                <span class="th-sort">
-                  <template v-if="sortBy?.index === group.indexes[0]">
-                    {{ sortBy.dir === "asc" ? "▲" : "▼" }}
-                  </template>
-                </span>
+                <template v-if="!isRankCol(table.columns[group.indexes[0]])">
+                  <span
+                    class="th-label"
+                    v-html="
+                      table.columns[group.indexes[0]].titleHtml ||
+                      table.columns[group.indexes[0]].title
+                    "
+                  />
+                  <span class="th-sort">
+                    <template v-if="sortBy?.index === group.indexes[0]">
+                      {{ sortBy.dir === "asc" ? "▲" : "▼" }}
+                    </template>
+                  </span>
+                </template>
               </th>
             </template>
           </tr>
@@ -444,6 +556,26 @@ const reportBadEval = (modelId: string) => {
               >
                 <option value=""></option>
                 <option v-for="v in col.distinctValues" :key="v" :value="v">
+                  {{ formatIconLabel(v, col) }}
+                </option>
+              </select>
+              <select
+                v-else-if="col.kind === 'number' && col.distinctValues"
+                :value="col.key.toLowerCase() === 'parameters' ? paramFilter : col.key.toLowerCase() === 'vocabulary' ? vocabFilter : contextFilter"
+                @input="
+                  col.key.toLowerCase() === 'parameters'
+                    ? (paramFilter = ($event.target as HTMLSelectElement).value)
+                    : col.key.toLowerCase() === 'vocabulary'
+                      ? (vocabFilter = ($event.target as HTMLSelectElement).value)
+                      : (contextFilter = ($event.target as HTMLSelectElement).value)
+                "
+                class="lb-filter"
+                :aria-label="`Filter ${col.title}`"
+                @click.stop
+                @change="page = 1"
+              >
+                <option value=""></option>
+                <option v-for="v in col.distinctValues" :key="v" :value="v">
                   {{ v }}
                 </option>
               </select>
@@ -462,11 +594,13 @@ const reportBadEval = (modelId: string) => {
                 isTickCrossCol(table.columns[ci]) ? `cell-tc ${tickCrossClass(cell.text)}` : '',
               ]"
               :style="
-                isRankCol(table.columns[ci]) || isLanguageRankCol(table.columns[ci])
-                  ? rankHeatmapStyle(cell)
-                  : isHeatmapScoreCol(table.columns[ci])
-                    ? scoreHeatmapStyle(cell, table.columns[ci])
-                    : undefined
+                NO_HEATMAP_COLS.has(table.columns[ci].key.toLowerCase())
+                  ? undefined
+                  : isRankCol(table.columns[ci]) || isLanguageRankCol(table.columns[ci]) || isRankScoreCol(table.columns[ci])
+                    ? rankHeatmapStyle(cell)
+                    : isHeatmapScoreCol(table.columns[ci])
+                      ? scoreHeatmapStyle(cell, table.columns[ci])
+                      : undefined
               "
               :title="cellTitle(cell, table.columns[ci], ci)"
             >
@@ -624,6 +758,10 @@ const reportBadEval = (modelId: string) => {
   cursor: default;
   font-weight: normal;
   padding: 0.3rem 0.4rem;
+}
+
+.lb-table thead th.col-norank {
+  cursor: default;
 }
 
 .lb-table thead th.task-group {
