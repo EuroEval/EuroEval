@@ -4,6 +4,8 @@ from pathlib import Path
 
 from huggingface_hub import HfApi
 
+from .caching_utils import cache_arguments
+
 
 def find_split(splits: list[str], keyword: str) -> str | None:
     """Return the shortest split name containing `keyword`, or None.
@@ -22,6 +24,7 @@ def find_split(splits: list[str], keyword: str) -> str | None:
     return candidates[0] if candidates else None
 
 
+@cache_arguments("dataset_id")
 def get_repo_split_names(hf_api: HfApi, dataset_id: str) -> list[str] | None:
     """Extract split names from a Hugging Face dataset repo.
 

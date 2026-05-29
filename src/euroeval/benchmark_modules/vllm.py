@@ -122,6 +122,12 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
+# Mapping from HuggingFace architecture names that vLLM does not recognise to their
+# vLLM-compatible equivalents.  Transformers 4.57 split Gemma 4 into a multimodal
+# class (Gemma4ForConditionalGeneration) and a text-only class
+# (Gemma4TextForCausalLM).  vLLM only registers the former, so we remap here.
+_ARCHITECTURE_ALIASES: dict[str, str] = {"Gemma4TextForCausalLM": "Gemma4ForCausalLM"}
+
 
 class VLLMModel(HuggingFaceEncoderModel):
     """A generative model using the vLLM inference framework."""
@@ -896,6 +902,18 @@ class VLLMModel(HuggingFaceEncoderModel):
                     raise InvalidBenchmark(
                         f"An error occurred during vLLM generation: {str(e)}"
                     ) from e
+            except Exception as e:
+                # The vLLM v1 engine raises `EngineDeadError` when a worker RPC
+                # times out. The engine cannot be reused once dead, so surface a
+                # clean benchmark error instead of an opaque crash.
+                if type(e).__name__ == "EngineDeadError" or "RPC call" in str(e):
+                    raise InvalidBenchmark(
+                        "The vLLM engine died during generation, likely due to a "
+                        "worker RPC timeout. Consider raising "
+                        "`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` or reducing the "
+                        f"batch size. Underlying error: {str(e)}"
+                    ) from e
+                raise
         else:
             raise InvalidBenchmark(
                 f"Could not generate sequences after {num_attempts} attempts."
@@ -1397,6 +1415,21 @@ def load_model(
 
     clear_vllm()
 
+    hf_overrides: dict[str, list[str]] = {}
+    if hf_model_config.architectures:
+        remapped = [
+            _ARCHITECTURE_ALIASES.get(arch, arch)
+            for arch in hf_model_config.architectures
+        ]
+        if remapped != hf_model_config.architectures:
+            log(
+                f"Remapping model architectures {hf_model_config.architectures} -> "
+                f"{remapped} for vLLM compatibility.",
+                level=logging.INFO,
+            )
+            hf_model_config.architectures = remapped
+            hf_overrides["architectures"] = remapped
+
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism()
     )
@@ -1436,6 +1469,7 @@ def load_model(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
+            **({"hf_overrides": hf_overrides} if hf_overrides else {}),
             **vllm_params,
         )
     except (RuntimeError, ValueError, OSError) as e:
