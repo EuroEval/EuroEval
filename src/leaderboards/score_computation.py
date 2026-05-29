@@ -10,6 +10,15 @@ from .task_metadata import ORTHOGONAL_TASKS, task_category
 
 
 def _category_includes_task(category: str, task: str) -> bool:
+    """Check whether a task belongs to a leaderboard category.
+
+    Args:
+        category: Leaderboard category name.
+        task: Task slug.
+
+    Returns:
+        True if the task belongs to the category.
+    """
     return category == "generative" or task_category(task) == "nlu"
 
 
@@ -31,6 +40,12 @@ def compute_dataset_ranks_bootstrap(
     The best model (highest mean score) is fixed from the observed data;
     only the candidate model's mean is resampled, keeping the normalisation
     stable across bootstrap replicates.
+
+    Args:
+        model_results: Model results grouped by model and dataset.
+        configs: Per-language task -> dataset mappings.
+        n_bootstraps: Number of bootstrap replicates.
+        seed: Random seed for reproducibility.
 
     Returns:
         model_id -> category -> dataset -> {"score", "ci_lower", "ci_upper"}.
@@ -260,6 +275,10 @@ def _anchor_significantly_better(
     intervals do not overlap). This keeps the tie-detection consistent with
     what the reader sees — two models share a rank iff their displayed
     "score ± margin" intervals overlap.
+
+    Args:
+        anchor_overall: Anchor model overall rank summary.
+        candidate_overall: Candidate model overall rank summary.
 
     Returns:
         True if the anchor is significantly better, False if not, or None

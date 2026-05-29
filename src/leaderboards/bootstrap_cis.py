@@ -206,6 +206,10 @@ def bootstrap_rank_scores(
 def _category_includes_task(category: str, task: str) -> bool:
     """Check whether a task belongs to a category.
 
+    Args:
+        category: Leaderboard category name.
+        task: Task slug.
+
     Returns:
         True if the task belongs to the category.
     """
@@ -268,6 +272,10 @@ def bootstrap_confidence_intervals(
     bootstrap_scores: dict[str, dict[str, dict[str, np.ndarray]]], alpha: float = 0.05
 ) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
     """Compute percentile CIs from bootstrap distributions.
+
+    Args:
+        bootstrap_scores: Output of ``bootstrap_rank_scores``.
+        alpha: Significance level used for the two-sided percentile interval.
 
     Returns:
         model_id -> category -> language -> {"score", "ci_lower", "ci_upper"}.
