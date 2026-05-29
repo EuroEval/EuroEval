@@ -100,7 +100,7 @@ def bootstrap_rank_scores(
     # For each bootstrap replicate
     for b in range(n_bootstraps):
         if b % 100 == 0:
-            logger.info("Bootstrap replicate %d/%d ...", b, n_bootstraps)
+            logger.info("Bootstrap replicate %d/%d: complete", b, n_bootstraps)
 
         # Stratified resample: for each task, resample its datasets with replacement
         sampled_datasets: dict[str, list[str]] = {}
