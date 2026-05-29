@@ -51,10 +51,10 @@ from ..data_models import (
 )
 from ..enums import (
     BatchingPreference,
-    EvaluationType,
     GenerativeType,
     InferenceBackend,
     ModelType,
+    ScoringMethod,
     TaskGroup,
 )
 from ..exceptions import (
@@ -351,7 +351,7 @@ class LiteLLMModel(BenchmarkModule):
                 Cloze Formulation (CF) evaluation is requested (not supported by the
                 LiteLLM backend).
         """
-        if self.benchmark_config.evaluation_type == EvaluationType.CF:
+        if self.benchmark_config.scoring_method == ScoringMethod.CF:
             raise InvalidBenchmark(
                 "Cloze Formulation (CF) evaluation is not supported by the LiteLLM "
                 "backend, as per-token logprobs for forced completions are not "

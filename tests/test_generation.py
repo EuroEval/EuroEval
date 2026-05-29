@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from euroeval.enums import EvaluationType
+from euroeval.enums import ScoringMethod
 from euroeval.generation import generate
 
 
@@ -38,17 +38,17 @@ def model_config_mock(tmp_path: Path) -> MagicMock:
     return cfg
 
 
-def _make_benchmark_config(evaluation_type: EvaluationType) -> MagicMock:
+def _make_benchmark_config(scoring_method: ScoringMethod) -> MagicMock:
     """Build a minimal BenchmarkConfig stand-in.
 
     Args:
-        evaluation_type: Which evaluation formulation to flag on the config.
+        scoring_method: Which scoring formulation to flag on the config.
 
     Returns:
-        A MagicMock with `evaluation_type`, `debug`, and `progress_bar` set.
+        A MagicMock with `scoring_method`, `debug`, and `progress_bar` set.
     """
     bc = MagicMock()
-    bc.evaluation_type = evaluation_type
+    bc.scoring_method = scoring_method
     bc.debug = False
     bc.progress_bar = False
     return bc
@@ -67,7 +67,7 @@ class TestCFCacheNamespace:
         self, dataset_config_mock: MagicMock, model_config_mock: MagicMock
     ) -> None:
         """In CF mode the cache filename includes a `-cf` segment."""
-        bc = _make_benchmark_config(evaluation_type=EvaluationType.CF)
+        bc = _make_benchmark_config(scoring_method=ScoringMethod.CF)
         with patch("euroeval.generation.ModelCache") as MockCache:
             generate(
                 model=MagicMock(),
@@ -87,7 +87,7 @@ class TestCFCacheNamespace:
         This is the bit-identity acceptance criterion for MCF runs: their cache
         path must not change when CF support is added.
         """
-        bc = _make_benchmark_config(evaluation_type=EvaluationType.MCF)
+        bc = _make_benchmark_config(scoring_method=ScoringMethod.MCF)
         with patch("euroeval.generation.ModelCache") as MockCache:
             generate(
                 model=MagicMock(),
@@ -110,7 +110,7 @@ class TestCFCacheNamespace:
                 datasets=[],
                 model_config=model_config_mock,
                 dataset_config=dataset_config_mock,
-                benchmark_config=_make_benchmark_config(EvaluationType.MCF),
+                benchmark_config=_make_benchmark_config(ScoringMethod.MCF),
             )
             mcf_name = MockCache.call_args.kwargs["cache_name"]
             generate(
@@ -118,7 +118,7 @@ class TestCFCacheNamespace:
                 datasets=[],
                 model_config=model_config_mock,
                 dataset_config=dataset_config_mock,
-                benchmark_config=_make_benchmark_config(EvaluationType.CF),
+                benchmark_config=_make_benchmark_config(ScoringMethod.CF),
             )
             cf_name = MockCache.call_args.kwargs["cache_name"]
         assert mcf_name != cf_name

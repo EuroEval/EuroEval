@@ -14,7 +14,7 @@ from euroeval.benchmark_modules.hf import (
     get_model_repo_info,
 )
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
-from euroeval.enums import EvaluationType
+from euroeval.enums import ScoringMethod
 from euroeval.exceptions import InvalidBenchmark
 
 
@@ -109,9 +109,9 @@ class TestCFGating:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Constructing the HF encoder with `evaluation_type=CF` raises early."""
+        """Constructing the HF encoder with `scoring_method=CF` raises early."""
         cf_config = dataclasses.replace(
-            benchmark_config, evaluation_type=EvaluationType.CF
+            benchmark_config, scoring_method=ScoringMethod.CF
         )
         # Patch out the param-allow-list check so the CF guard is what fires.
         with patch("euroeval.benchmark_modules.hf.raise_if_wrong_params"):
@@ -131,7 +131,7 @@ class TestCFGating:
     ) -> None:
         """The CF rejection message names vLLM as the supported alternative."""
         cf_config = dataclasses.replace(
-            benchmark_config, evaluation_type=EvaluationType.CF
+            benchmark_config, scoring_method=ScoringMethod.CF
         )
         with patch("euroeval.benchmark_modules.hf.raise_if_wrong_params"):
             with pytest.raises(InvalidBenchmark, match="vLLM backend"):

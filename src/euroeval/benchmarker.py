@@ -21,10 +21,10 @@ from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_ver
 from .enums import (
     CFNormalization,
     Device,
-    EvaluationType,
     GenerativeType,
     InferenceBackend,
     ModelType,
+    ScoringMethod,
 )
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
@@ -87,7 +87,7 @@ class Benchmarker:
         ]
         | None = None,
         generative_type: GenerativeType | None = None,
-        evaluation_type: EvaluationType = EvaluationType.MCF,
+        scoring_method: ScoringMethod = ScoringMethod.MCF,
         cf_normalization: CFNormalization = CFNormalization.CHARACTER,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
@@ -165,13 +165,13 @@ class Benchmarker:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to None.
-            evaluation_type:
+            scoring_method:
                 Which formulation to use for multiple-choice evaluation. ``MCF``
                 (default) compares first-token logprobs of the label letters; ``CF``
                 scores each answer text as a continuation (cloze formulation).
-                Defaults to ``EvaluationType.MCF``.
+                Defaults to ``ScoringMethod.MCF``.
             cf_normalization:
-                The length-normalization method used when ``evaluation_type`` is
+                The length-normalization method used when ``scoring_method`` is
                 ``CF``. Ignored for ``MCF``. Defaults to ``CFNormalization.CHARACTER``.
             custom_datasets_file:
                 Path to a Python file defining custom datasets. Defaults to
@@ -239,7 +239,7 @@ class Benchmarker:
             gpu_memory_utilization=gpu_memory_utilization,
             attention_backend=attention_backend,
             generative_type=generative_type,
-            evaluation_type=evaluation_type,
+            scoring_method=scoring_method,
             cf_normalization=cf_normalization,
             custom_datasets_file=Path(custom_datasets_file),
             verbose=verbose,
@@ -365,7 +365,7 @@ class Benchmarker:
         download_only: bool | None = None,
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
-        evaluation_type: EvaluationType | None = None,
+        scoring_method: ScoringMethod | None = None,
         cf_normalization: CFNormalization | None = None,
         attention_backend: t.Literal[
             *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
@@ -462,13 +462,13 @@ class Benchmarker:
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to the value specified when initialising
                 the benchmarker.
-            evaluation_type:
+            scoring_method:
                 Which formulation to use for multiple-choice evaluation. ``MCF``
                 compares first-token logprobs of the label letters; ``CF`` scores each
                 answer text as a continuation (cloze formulation). Defaults to the value
                 specified when initialising the benchmarker.
             cf_normalization:
-                The length-normalization method used when ``evaluation_type`` is
+                The length-normalization method used when ``scoring_method`` is
                 ``CF``. Ignored for ``MCF``. Defaults to the value specified when
                 initialising the benchmarker.
             attention_backend:
@@ -621,10 +621,10 @@ class Benchmarker:
                 if generative_type is not None
                 else self.benchmark_config_default_params.generative_type
             ),
-            evaluation_type=(
-                evaluation_type
-                if evaluation_type is not None
-                else self.benchmark_config_default_params.evaluation_type
+            scoring_method=(
+                scoring_method
+                if scoring_method is not None
+                else self.benchmark_config_default_params.scoring_method
             ),
             cf_normalization=(
                 cf_normalization
@@ -673,6 +673,14 @@ class Benchmarker:
         )
 
         adjust_logging_level(verbose=benchmark_config.verbose)
+
+        if benchmark_config.scoring_method == ScoringMethod.CF:
+            norm = benchmark_config.cf_normalization.value
+            log(
+                f"CF scoring is active (normalization: {norm}). Results will differ "
+                "from default MCF runs and are stored separately on disk.",
+                level=logging.INFO,
+            )
 
         if benchmark_config.clear_model_cache:
             clear_model_cache_fn(cache_dir=benchmark_config.cache_dir)
@@ -1091,6 +1099,12 @@ class Benchmarker:
                         None
                         if dataset_config.val_split is None
                         else not benchmark_config.evaluate_test_split
+                    ),
+                    scoring_method=benchmark_config.scoring_method.value,
+                    cf_normalization=(
+                        benchmark_config.cf_normalization.value
+                        if benchmark_config.scoring_method == ScoringMethod.CF
+                        else None
                     ),
                     vllm_version=(
                         get_package_version("vllm")

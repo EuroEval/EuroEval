@@ -508,35 +508,21 @@ class TestScoreCompletions:
 
         assert scores == [[[-1.0], [-2.0]], [[-3.0, -4.0]]]
 
-    def test_empty_candidate_documented_boundary(self) -> None:
-        """Pinpoint the empty-candidate boundary in the prefix-trim loop.
+    def test_empty_candidate_raises_invalid_benchmark(self) -> None:
+        """An empty candidate string raises `InvalidBenchmark`.
 
-        With `prompt_ids == full_ids` (i.e. an empty candidate), the loop
-        shrinks `prefix_len` to `len(full_ids) - 1` and the guard does NOT
-        fire. The function then returns the last prompt-token's logprob as a
-        spurious "continuation". This is a latent bug: an empty candidate
-        ought to raise `InvalidBenchmark` per the docstring's "at least one
-        continuation token is required". Production datasets never have empty
-        choice strings, so this is not currently observed in practice — but
-        if the empty-candidate guard is later tightened, this test should be
-        flipped to expect `InvalidBenchmark`.
+        An empty candidate string produces no continuation tokens. The guard
+        at the top of the candidate loop fires before any tokenisation occurs.
         """
         prompt = "Q"
         candidate = ""
-        tokenize_map = {
-            prompt: [1, 2, 3],
-            prompt + candidate: [1, 2, 3],  # full_ids == prompt_ids → no continuation.
-        }
-        prompt_logprobs = [None, {2: self._lp(-0.1)}, {3: self._lp(-0.2)}]
+        tokenize_map = {prompt: [1, 2, 3], prompt + candidate: [1, 2, 3]}
         model = self._build_model(
-            tokenize_map=tokenize_map, prompt_logprobs_per_call=[prompt_logprobs]
+            tokenize_map=tokenize_map, prompt_logprobs_per_call=[]
         )
         with patch("euroeval.benchmark_modules.vllm.SamplingParams", create=True):
-            scores = model.score_completions(
-                prompts=[prompt], completions=[[candidate]]
-            )
-        # Continuation reads the *last* prompt token's logprob — see note above.
-        assert scores == [[[-0.2]]]
+            with pytest.raises(InvalidBenchmark, match="empty after tokenisation"):
+                model.score_completions(prompts=[prompt], completions=[[candidate]])
 
     def test_empty_full_sequence_raises(self) -> None:
         """When the full token sequence is empty, raise `InvalidBenchmark`.

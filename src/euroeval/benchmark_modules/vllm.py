@@ -35,10 +35,10 @@ from ..constants import (
 from ..data_models import GenerativeModelOutput, HashableDict, ModelConfig
 from ..enums import (
     BatchingPreference,
-    EvaluationType,
     GenerativeType,
     InferenceBackend,
     ModelType,
+    ScoringMethod,
     TaskGroup,
 )
 from ..exceptions import (
@@ -339,7 +339,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             The function used to extract the labels from the generated output.
         """
         if (
-            self.benchmark_config.evaluation_type == EvaluationType.CF
+            self.benchmark_config.scoring_method == ScoringMethod.CF
             and self.dataset_config.task.task_group
             == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         ):
@@ -431,7 +431,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         # with the answer marker (e.g. ``"Antwoord: "``) and few-shot examples
         # whose ``{label}`` slot is the full answer text, not the gold letter.
         cf_active = (
-            self.benchmark_config.evaluation_type == EvaluationType.CF
+            self.benchmark_config.scoring_method == ScoringMethod.CF
             and task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         )
         if cf_active:
@@ -551,7 +551,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 classification task and does not define an output structure.
         """
         if (
-            self.benchmark_config.evaluation_type == EvaluationType.CF
+            self.benchmark_config.scoring_method == ScoringMethod.CF
             and self.dataset_config.task.task_group
             == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         ):
@@ -1081,6 +1081,12 @@ class VLLMModel(HuggingFaceEncoderModel):
             prompt_ids = list(tok(prompt, add_special_tokens=False).input_ids)
             group: list[tuple[int, int]] = []
             for candidate in candidates:
+                if not candidate:
+                    raise InvalidBenchmark(
+                        "Candidate is empty after tokenisation: cannot score an "
+                        f"empty continuation. Prompt: {prompt!r}, candidate: "
+                        f"{candidate!r}."
+                    )
                 full = prompt + candidate
                 full_ids = list(tok(full, add_special_tokens=False).input_ids)
                 # The prompt's final token often merges with the first candidate

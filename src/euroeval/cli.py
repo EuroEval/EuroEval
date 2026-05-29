@@ -7,7 +7,7 @@ import click
 from .benchmarker import Benchmarker
 from .constants import ATTENTION_BACKENDS
 from .data_models import DatasetConfig
-from .enums import CFNormalization, Device, EvaluationType, GenerativeType
+from .enums import CFNormalization, Device, GenerativeType, ScoringMethod
 from .languages import get_all_languages
 
 
@@ -307,7 +307,7 @@ def benchmark(
         generative_type=GenerativeType[generative_type.upper()]
         if generative_type
         else None,
-        evaluation_type=EvaluationType[scoring_method.upper()],
+        scoring_method=ScoringMethod[scoring_method.upper()],
         cf_normalization=CFNormalization[cf_normalization.upper()],
         custom_datasets_file=custom_datasets_file,
         debug=debug,

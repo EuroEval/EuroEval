@@ -150,7 +150,7 @@ class TaskGroup(AutoStrEnum):
     SPEED = auto()
 
 
-class EvaluationType(AutoStrEnum):
+class ScoringMethod(AutoStrEnum):
     """The formulation used to evaluate multiple-choice questions.
 
     Attributes:

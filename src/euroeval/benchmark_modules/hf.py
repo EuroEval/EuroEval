@@ -48,10 +48,10 @@ from ..constants import (
 from ..data_models import HashableDict, HFModelInfo, ModelConfig
 from ..enums import (
     BatchingPreference,
-    EvaluationType,
     GenerativeType,
     InferenceBackend,
     ModelType,
+    ScoringMethod,
     TaskGroup,
 )
 from ..exceptions import (
@@ -133,7 +133,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        if benchmark_config.evaluation_type == EvaluationType.CF:
+        if benchmark_config.scoring_method == ScoringMethod.CF:
             raise InvalidBenchmark(
                 "Cloze Formulation (CF) evaluation is not supported by the "
                 "Hugging Face encoder backend. CF is currently only supported by "

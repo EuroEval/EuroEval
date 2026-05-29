@@ -46,6 +46,8 @@ def build_cf_prompt(
     Returns:
         The full prompt string.
     """
+    # label="" renders the template's trailing marker (e.g. "Answer: ") without
+    # any choice text, so candidates can be appended directly for scoring.
     tail = prompt_template.format(text=bare_input.replace("\n", " ").strip(), label="")
     rendered_prefix = prompt_prefix.format(labels_str="") if prompt_prefix else ""
     if rendered_prefix:
@@ -111,8 +113,11 @@ def parse_mcq_text(text: str) -> tuple[str, list[str]]:
         if _CHOICE_LINE_RE.match(section) is not None
     ]
 
-    # Take the final contiguous block of at least two choice lines, to skip
-    # question lines that coincidentally start with "a. " etc.
+    # Walk backwards so we anchor to the *last* block of choices in the text,
+    # skipping any lines that coincidentally start with "a. " etc. earlier in
+    # the passage. The first two candidates are always taken (to bootstrap a
+    # block); after that we stop as soon as we hit a gap, keeping only the
+    # final contiguous run.
     choice_idxs: list[int] = list()
     for idx in reversed(candidate_choice_idxs):
         if len(choice_idxs) < 2 or (
@@ -166,9 +171,9 @@ def normalize_cf_score(
         case CFNormalization.NONE:
             return total
         case CFNormalization.TOKEN:
-            return total / max(1, len(token_logprobs))
+            return total / max(1, len(token_logprobs))  # max(1,...) guards div-by-zero
         case CFNormalization.CHARACTER:
-            return total / max(1, len(answer_text))
+            return total / max(1, len(answer_text))  # max(1,...) guards div-by-zero
         case _:
             raise InvalidBenchmark(f"Unsupported CF normalization: {method!r}.")
 

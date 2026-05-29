@@ -12,7 +12,7 @@ import torch
 from .closest_match import get_closest_match
 from .data_models import BenchmarkConfig, BenchmarkConfigParams, DatasetConfig, Task
 from .dataset_configs import get_all_dataset_configs
-from .enums import Device, EvaluationType, TaskGroup
+from .enums import Device, ScoringMethod, TaskGroup
 from .exceptions import InvalidBenchmark
 from .languages import get_all_languages, get_correct_language_codes
 from .logging_utils import log
@@ -60,7 +60,7 @@ def build_benchmark_config(
         run_with_cli=benchmark_config_params.run_with_cli,
     )
 
-    if benchmark_config_params.evaluation_type == EvaluationType.CF:
+    if benchmark_config_params.scoring_method == ScoringMethod.CF:
         for ds in dataset_configs:
             if ds.task.task_group != TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 raise InvalidBenchmark(
@@ -102,7 +102,7 @@ def build_benchmark_config(
         gpu_memory_utilization=benchmark_config_params.gpu_memory_utilization,
         attention_backend=benchmark_config_params.attention_backend,
         generative_type=benchmark_config_params.generative_type,
-        evaluation_type=benchmark_config_params.evaluation_type,
+        scoring_method=benchmark_config_params.scoring_method,
         cf_normalization=benchmark_config_params.cf_normalization,
         debug=benchmark_config_params.debug,
         run_with_cli=benchmark_config_params.run_with_cli,
