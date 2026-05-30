@@ -134,7 +134,7 @@ def main() -> None:
             assert isinstance(test_df, pd.DataFrame)
 
             # Collect datasets in a dataset dictionary
-            dataset = DatasetDict(  # ty: ignore
+            dataset = DatasetDict(
                 {
                     "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
                     "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),

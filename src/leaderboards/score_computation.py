@@ -96,7 +96,7 @@ def compute_dataset_ranks_bootstrap(
                         resampled_raw = rng.choice(raw, size=len(raw), replace=True)
                         resampled_mean = float(np.mean(resampled_raw))
                         diff = (mean_best - resampled_mean) / pooled_sd
-                        bootstrap_scores.append(1.0 + diff)
+                        bootstrap_scores.append(1.0 + diff)  # ty: ignore[invalid-argument-type]
 
                     if not bootstrap_scores:
                         continue

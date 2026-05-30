@@ -601,9 +601,9 @@ def extract_questions(
             "Questions", **{f"question_{i}": (McQuestion, ...) for i in ids}
         )
 
-    completion = client.beta.chat.completions.parse(  # ty: ignore
+    completion = client.beta.chat.completions.parse(  # ty: ignore[invalid-argument-type]
         model=GPT_MODEL,
-        messages=[{"role": "user", "content": content}],
+        messages=[{"role": "user", "content": content}],  # ty: ignore[invalid-argument-type]
         response_format=response_format,
         max_completion_tokens=128_000,
         temperature=1.0,  # Required for gpt-5-mini
@@ -667,9 +667,9 @@ def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, AnswerKeyT
         *_images_to_content(images),
     ]
 
-    completion = client.beta.chat.completions.parse(  # ty: ignore
+    completion = client.beta.chat.completions.parse(  # ty: ignore[invalid-argument-type]
         model=GPT_MODEL,
-        messages=[{"role": "user", "content": content}],
+        messages=[{"role": "user", "content": content}],  # ty: ignore[invalid-argument-type]
         response_format=AnswerKey,
         max_completion_tokens=128_000,
         temperature=1.0,  # Required for gpt-5-mini

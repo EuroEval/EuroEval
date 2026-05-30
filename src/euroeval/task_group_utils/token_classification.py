@@ -90,7 +90,7 @@ def compute_metrics(
         ]
 
     else:
-        predictions = list(model_outputs)  # ty: ignore[assignment]
+        predictions = list(model_outputs)  # ty: ignore[invalid-assignment]
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
 
@@ -125,7 +125,7 @@ def compute_metrics(
                 if ner_tag[-4:] == "misc":
                     predictions_no_misc[i][j] = "o"
 
-        labels_no_misc = deepcopy(labels)  # ty: ignore[assignment]
+        labels_no_misc = deepcopy(labels)  # ty: ignore[invalid-assignment]
         for i, label_list in enumerate(labels_no_misc):
             for j, ner_tag in enumerate(label_list):
                 if (

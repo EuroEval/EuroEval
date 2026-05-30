@@ -17,7 +17,7 @@ from euroeval.types import is_list_of_int, is_list_of_list_of_int, is_list_of_st
 )
 def test_is_list_of_int(obj: list, expected: bool) -> None:
     """Test the `is_list_of_int` function."""
-    assert is_list_of_int(x=obj) == expected
+    assert is_list_of_int(obj) == expected  # type: ignore[invalid-type-guard-call]
 
 
 @pytest.mark.parametrize(
@@ -33,7 +33,7 @@ def test_is_list_of_int(obj: list, expected: bool) -> None:
 )
 def test_is_list_of_list_of_int(obj: list, expected: bool) -> None:
     """Test the `is_list_of_int` function."""
-    assert is_list_of_list_of_int(x=obj) == expected
+    assert is_list_of_list_of_int(obj) == expected  # type: ignore[invalid-type-guard-call]
 
 
 @pytest.mark.parametrize(
@@ -47,4 +47,4 @@ def test_is_list_of_list_of_int(obj: list, expected: bool) -> None:
 )
 def test_is_list_of_str(obj: list, expected: bool) -> None:
     """Test the `is_list_of_str` function."""
-    assert is_list_of_str(x=obj) == expected
+    assert is_list_of_str(obj) == expected  # type: ignore[invalid-type-guard-call]
