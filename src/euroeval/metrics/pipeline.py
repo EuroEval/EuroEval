@@ -246,9 +246,7 @@ def european_values_preprocessing_fn(
 
         # Use majority voting to get the final prediction for each question
         # Shape: (53,)
-        arr = np.apply_along_axis(
-            func1d=lambda x: np.bincount(x).argmax(), axis=1, arr=arr
-        )
+        arr = np.array([np.bincount(row).argmax() for row in arr])
 
         # Convert the array to a list
         integer_predictions = arr.tolist()
