@@ -166,11 +166,12 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         if num_params_or_none is not None:
             return num_params_or_none
 
+        num_params = -1
         if (
             hasattr(self._model.config, "num_params")
             and self._model.config.num_params is not None
         ):
-            num_params = self._model.config.num_params
+            num_params = int(self._model.config.num_params)
         elif hasattr(self._model, "parameters"):
             num_params = sum(p.numel() for p in self._model.parameters())
         else:
@@ -180,7 +181,6 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 "nor from the model configuration.",
                 level=logging.WARNING,
             )
-            num_params = -1
         return num_params
 
     @cached_property
@@ -192,18 +192,19 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         """
         if self.benchmark_config.vocabulary_size is not None:
             return self.benchmark_config.vocabulary_size
+        vocab_size = -1
         if (
             hasattr(self._model.config, "vocab_size")
             and self._model.config.vocab_size is not None
         ):
-            vocab_size = self._model.config.vocab_size
+            vocab_size = int(self._model.config.vocab_size)
         elif (
             hasattr(self._tokeniser, "vocab_size")
             and self._tokeniser.vocab_size is not None
         ):
             vocab_size = self._tokeniser.vocab_size
         else:
-            vocab_size = -1
+            pass
         return vocab_size
 
     @cached_property
@@ -1214,7 +1215,7 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
                 ),
                 dim=0,
             )
-            token_type_embeddings.num_embeddings = 2
+            token_type_embeddings.num_embeddings = 2  # ty: ignore[assignment]
 
         # Set the model config to use the new type vocab size
         model.config.type_vocab_size = 2
@@ -1287,7 +1288,7 @@ def align_model_and_tokeniser(
     # Move the model to the CPU, since otherwise we can't catch the IndexErrors when
     # finding the maximum sequence length of the model
     model_device = model.device
-    model.to(torch.device("cpu"))
+    model.to(torch.device("cpu"))  # ty: ignore[operator]
 
     # Manually check that this model max length is valid for the model, and adjust
     # otherwise
@@ -1318,7 +1319,7 @@ def align_model_and_tokeniser(
                     raise e
 
     # Move the model back to the original device
-    model.to(model_device)
+    model.to(model_device)  # ty: ignore[operator]
 
     # If there is a mismatch between the vocab size according to the tokeniser and
     # the vocab size according to the model, we raise an error

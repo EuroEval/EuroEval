@@ -1710,9 +1710,7 @@ class LiteLLMModel(BenchmarkModule):
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             # Use str as the type for structured output (dynamic Literal union
             # is not supported by type checkers)
-            keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (str, ...)
-            }
+            keys_and_their_types = {LITELLM_CLASSIFICATION_OUTPUT_KEY: (str, ...)}
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
 

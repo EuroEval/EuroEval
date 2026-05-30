@@ -511,8 +511,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                 self._tokeniser.pad_token_id = self._tokeniser.eos_token_id
                 self._tokeniser.pad_token = self._tokeniser.eos_token
         if self.end_of_chat_token_ids is not None:
-            end_of_chat_token = self._tokeniser.decode(  # ty: ignore
-                list(self.end_of_chat_token_ids)
+            end_of_chat_token = self._tokeniser.decode(
+                list(self.end_of_chat_token_ids)  # ty: ignore
             ).strip()
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
@@ -723,8 +723,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                         "The end-of-chat token IDs should be set for instruction-tuned "
                         "and reasoning models."
                     )
-                    end_of_chat_token = self._tokeniser.decode(  # ty: ignore
-                        list(self.end_of_chat_token_ids)
+                    end_of_chat_token = self._tokeniser.decode(
+                        list(self.end_of_chat_token_ids)  # ty: ignore
                     )
                     prompt_segments: list[list[str]] = [
                         (
@@ -1200,8 +1200,8 @@ def load_model(
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
     if hasattr(vllm.config, "attention") and attention_backend is not None:
-        vllm_params["attention_config"] = AttentionConfig(  # ty: ignore
-            backend=attention_backend
+        vllm_params["attention_config"] = AttentionConfig(
+            backend=attention_backend  # ty: ignore
         )
 
     clear_vllm()
