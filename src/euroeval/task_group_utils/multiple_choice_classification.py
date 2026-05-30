@@ -21,8 +21,8 @@ if t.TYPE_CHECKING:
 class MultipleChoiceClassificationTrainer(Trainer):
     """Trainer subclass for multiple-choice classification tasks."""
 
-    def evaluate(
-        self,  # ty: ignore[invalid-method-override]
+    def evaluate(  # ty: ignore[invalid-method-override]
+        self,
         eval_dataset: "Dataset | dict[str, Dataset] | None" = None,
         ignore_keys: list[str] | None = None,
         metric_key_prefix: str = "eval",
