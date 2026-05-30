@@ -37,7 +37,7 @@ repos:
     hooks:
     -   id: ty-check
         name: ty (type checking)
-        entry: ty check
+        entry: uv run ty check
         language: system
         pass_filenames: false
         types: [python]
