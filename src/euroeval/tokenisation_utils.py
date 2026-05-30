@@ -19,10 +19,10 @@ try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
     from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MCB,  # ty: ignore[unresolved-attribute]
+        MistralCommonBackend as MCB,
     )
 
-    MistralCommonTokenizer = MCB  # ty: ignore[invalid-assignment]
+    MistralCommonTokenizer = MCB
 
 if t.TYPE_CHECKING:
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
@@ -483,7 +483,7 @@ def get_first_label_token_mapping(
             )
             all_token_ids.append(token_ids)
         all_tokens = [
-            tokeniser.convert_ids_to_tokens(  # ty: ignore[no-matching-overload]
+            tokeniser.convert_ids_to_tokens(
                 ids=token_ids
             )
             for token_ids in all_token_ids
@@ -629,4 +629,4 @@ def apply_chat_template(
             tokenize=tokenise,
             **extra_kwargs,
         )
-    return templated_prompt  # ty: ignore[invalid-return-type]
+    return templated_prompt

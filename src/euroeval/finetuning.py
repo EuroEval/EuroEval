@@ -245,15 +245,15 @@ def finetune_single_iteration(
     with torch.inference_mode():
         try:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],  # ty: ignore[invalid-argument-type]
-                orig_eval_dataset=dataset[  # ty: ignore[unknown-argument]
+                eval_dataset=dataset["test"],
+                orig_eval_dataset=dataset[
                     "original_test"
                 ],
                 metric_key_prefix="test",
             )
         except TypeError:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],  # ty: ignore[invalid-argument-type]
+                eval_dataset=dataset["test"],
                 metric_key_prefix="test",
             )
         except NaNValueInModelOutput as e:

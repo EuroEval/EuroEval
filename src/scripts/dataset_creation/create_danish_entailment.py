@@ -65,7 +65,7 @@ def main() -> None:
         + df["premise"].astype(str)
         + "\nUdsagn 2: "
         + df["hypothesis"].astype(str)
-    )  # ty: ignore[unsupported-operator]
+    )
 
     # Keep only the columns needed for evaluation
     df = df[["text", "label"]].drop_duplicates().reset_index(drop=True)

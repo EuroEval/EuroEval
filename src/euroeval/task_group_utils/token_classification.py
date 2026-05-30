@@ -62,15 +62,15 @@ def compute_metrics(
         model_outputs = model_outputs[0]
 
     predictions: list[list[str]]
-    # ty: ignore[not-subscriptable]
+
     if not isinstance(model_outputs[0][0], str):
-        # ty: ignore[no-matching-overload]
+
         raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()
 
         # Remove ignored index (special tokens)
         predictions = [
             [
-                dataset_config.id2label[pred_id]  # ty: ignore[bad-index]
+                dataset_config.id2label[pred_id]
                 for pred_id, lbl_id in zip(pred, label)
                 if lbl_id != -100
             ]
@@ -79,7 +79,7 @@ def compute_metrics(
         labels = [
             [
                 (
-                    dataset_config.id2label[int(lbl_id)]  # ty: ignore[bad-index]
+                    dataset_config.id2label[int(lbl_id)]
                     if isinstance(lbl_id, int) or isinstance(lbl_id, np.int_)
                     else lbl_id
                 )
@@ -90,7 +90,7 @@ def compute_metrics(
         ]
 
     else:
-        # ty: ignore[invalid-assignment]  # ty: ignore[invalid-assignment]
+
         predictions = model_outputs
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
@@ -126,8 +126,8 @@ def compute_metrics(
                 if ner_tag[-4:] == "misc":
                     predictions_no_misc[i][j] = "o"
 
-        labels_no_misc = deepcopy(  # ty: ignore[invalid-argument-type]
-            labels  # ty: ignore[invalid-argument-type]
+        labels_no_misc = deepcopy(
+            labels
         )
         for i, label_list in enumerate(labels_no_misc):
             for j, ner_tag in enumerate(label_list):
@@ -147,7 +147,7 @@ def compute_metrics(
             refs = labels_no_misc
         else:
             preds = predictions
-            refs = list(labels)  # ty: ignore[invalid-argument-type]
+            refs = list(labels)
 
         # We manually set the F1 metric to be 100% if both the labels and the
         # predictions have no NER tags in them, since this causes an error with

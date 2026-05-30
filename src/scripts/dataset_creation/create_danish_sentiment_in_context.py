@@ -48,7 +48,7 @@ def main() -> None:
     # Build the 'text' column by combining the target word and context
     df["text"] = (
         "Ord: " + df["target"].astype(str) + "\nKontekst: " + df["context"].astype(str)
-    )  # ty: ignore[unsupported-operator]
+    )
 
     # Map the sentiment scale (-3 to +3) to positive/neutral/negative labels
     def map_label(score: int) -> str:

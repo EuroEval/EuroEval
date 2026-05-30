@@ -78,14 +78,14 @@ from .base import BenchmarkModule
 
 try:
     from transformers.tokenization_mistral_common import (
-        MistralCommonTokenizer,  # ty: ignore[unresolved-attribute]
+        MistralCommonTokenizer,
     )
 except ImportError:
     from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MCB,  # ty: ignore[unresolved-attribute]
+        MistralCommonBackend as MCB,
     )
 
-    MistralCommonTokenizer = MCB  # ty: ignore[invalid-assignment]
+    MistralCommonTokenizer = MCB
 
 if t.TYPE_CHECKING:
     from transformers.configuration_utils import PretrainedConfig
@@ -385,7 +385,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 ).map(tokenise, batched=True, load_from_cache_file=False)
 
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                dataset = DatasetDict(  # ty: ignore[no-matching-overload]
+                dataset = DatasetDict(
                     {
                         split_name: split.map(
                             partial(
@@ -460,7 +460,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                         load_from_cache_file=False,
                         keep_in_memory=True,
                     )
-                dataset: DatasetDict = DatasetDict(  # ty: ignore[no-matching-overload]
+                dataset: DatasetDict = DatasetDict(
                     data_dict
                 )
 
@@ -704,7 +704,7 @@ def load_model_and_tokeniser(
     assert model is not None, "The model should not be None."
 
     model.eval()
-    model.to(benchmark_config.device)  # ty: ignore[invalid-argument-type]
+    model.to(benchmark_config.device)
 
     if (
         isinstance(model, PreTrainedModel)
@@ -887,7 +887,7 @@ def get_model_repo_info(
         generative_class_names = [
             class_name
             for tag in GENERATIVE_PIPELINE_TAGS
-            # ty: ignore[unresolved-attribute]
+
             for class_name in TASK_MAPPING.get(tag, dict()).values()
         ]
         if class_names is not None and (
@@ -1214,7 +1214,7 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
                 ),
                 dim=0,
             )
-            token_type_embeddings.num_embeddings = 2  # ty: ignore[invalid-argument-type]
+            token_type_embeddings.num_embeddings = 2
 
         # Set the model config to use the new type vocab size
         model.config.type_vocab_size = 2
@@ -1287,7 +1287,7 @@ def align_model_and_tokeniser(
     # Move the model to the CPU, since otherwise we can't catch the IndexErrors when
     # finding the maximum sequence length of the model
     model_device = model.device
-    model.to(torch.device("cpu"))  # ty: ignore[invalid-argument-type]
+    model.to(torch.device("cpu"))
 
     # Manually check that this model max length is valid for the model, and adjust
     # otherwise
@@ -1318,7 +1318,7 @@ def align_model_and_tokeniser(
                     raise e
 
     # Move the model back to the original device
-    model.to(model_device)  # ty: ignore[invalid-argument-type]
+    model.to(model_device)
 
     # If there is a mismatch between the vocab size according to the tokeniser and
     # the vocab size according to the model, we raise an error

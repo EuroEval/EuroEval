@@ -417,7 +417,7 @@ class DatasetConfig:
         else:
             self.preprocessing_func = preprocessing_func  # None or user-provided
 
-    def __repr__(self) -> str:  # ty: ignore[missing-override-decorator]
+    def __repr__(self) -> str:
         """The representation of the dataset configuration.
 
         Returns:
@@ -605,12 +605,12 @@ class DatasetConfig:
     @property
     def id2label(self) -> "HashableDict":
         """The mapping from ID to label."""
-        return HashableDict({idx: label for idx, label in enumerate(self.labels)})  # ty: ignore[no-matching-overload]
+        return HashableDict({idx: label for idx, label in enumerate(self.labels)})
 
     @property
     def label2id(self) -> "HashableDict":
         """The mapping from label to ID."""
-        return HashableDict({label: i for i, label in enumerate(self.labels)})  # ty: ignore[no-matching-overload]
+        return HashableDict({label: i for i, label in enumerate(self.labels)})
 
     @property
     def num_labels(self) -> int:
@@ -636,9 +636,9 @@ class DatasetConfig:
             The natural string representation of the labels in specified language.
         """
         if self.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
-            sep_word = self.main_language.and_separator  # ty: ignore[unresolved-attribute]
+            sep_word = self.main_language.and_separator
         else:
-            sep_word = self.main_language.or_separator  # ty: ignore[unresolved-attribute]
+            sep_word = self.main_language.or_separator
 
         if labels is None:
             labels = list()
@@ -853,10 +853,10 @@ class BenchmarkResult(pydantic.BaseModel):
 
         # To be backwards compatible, we accept old results which changed the model
         # name with parameters rather than adding them as explicit parameters
-        val_matches = re.search(r"\(.*val.*\)$", config["model"])  # ty: ignore[no-matching-overload]
-        few_shot_matches = re.search(r"\(.*few-shot.*\)$", config["model"])  # ty: ignore[no-matching-overload]
-        zero_shot_matches = re.search(r"\(.*zero-shot.*\)$", config["model"])  # ty: ignore[no-matching-overload]
-        config["model"] = re.sub(  # ty: ignore[no-matching-overload]
+        val_matches = re.search(r"\(.*val.*\)$", config["model"])
+        few_shot_matches = re.search(r"\(.*few-shot.*\)$", config["model"])
+        zero_shot_matches = re.search(r"\(.*zero-shot.*\)$", config["model"])
+        config["model"] = re.sub(
             r"\(.*(few-shot|val).*\)$", "", config["model"]
         ).strip()
 
@@ -877,7 +877,7 @@ class BenchmarkResult(pydantic.BaseModel):
         if "dataset_languages" in config:
             config["languages"] = config.pop("dataset_languages")
 
-        return cls(**config)  # ty: ignore[invalid-argument-type]
+        return cls(**config)
 
     @classmethod
     def from_eee_dict(cls, config: dict[str, object]) -> "BenchmarkResult":

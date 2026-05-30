@@ -638,7 +638,7 @@ class LiteLLMModel(BenchmarkModule):
             keys_and_their_types = {
                 tag_name: (c.Sequence[str], ...) for tag_name in tag_names
             }
-            # ty: ignore[no-matching-overload]
+
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
             return generation_kwargs, 0
@@ -1395,7 +1395,7 @@ class LiteLLMModel(BenchmarkModule):
         num_attempts = 10
         for _ in range(num_attempts):
             try:
-                litellm.completion(  # ty: ignore[call-non-callable]
+                litellm.completion(
                     messages=[dict(role="user", content="X")],
                     model=clean_model_id(
                         model_id=model_id, benchmark_config=benchmark_config

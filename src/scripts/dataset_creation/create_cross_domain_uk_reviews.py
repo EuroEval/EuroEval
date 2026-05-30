@@ -110,7 +110,7 @@ def create_uniform_label_distribution(
     ]
 
     # Combine the resampled dataframes
-    balanced_df = pd.concat(  # ty: ignore[no-matching-overload]
+    balanced_df = pd.concat(
         resampled_dfs, ignore_index=True
     )
 

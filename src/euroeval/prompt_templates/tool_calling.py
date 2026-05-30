@@ -15,14 +15,14 @@ from ..languages import ENGLISH
 if t.TYPE_CHECKING:
     from ..languages import Language
 
-ToolCall = pydantic.create_model(  # ty: ignore[no-matching-overload]
+ToolCall = pydantic.create_model(
     "ToolCall",
     __base__=pydantic.BaseModel,
     **{TOOL_CALLING_FUNCTION_KEY: str, TOOL_CALLING_ARGUMENTS_KEY: dict[str, str]},
 )
 
 
-ToolCallingResponse = pydantic.create_model(  # ty: ignore[no-matching-overload]
+ToolCallingResponse = pydantic.create_model(
     "ToolCallingResponse",
     __base__=pydantic.BaseModel,
     **{TOOL_CALLING_CALLS_KEY: list[ToolCall]},
