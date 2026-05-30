@@ -193,7 +193,7 @@ class BenchmarkModule(ABC):
                         dataset_config=self.dataset_config,
                         benchmark_config=self.benchmark_config,
                     ),
-                )  # ty: ignore[invalid-return-type]
+                )
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 return cast(
                     "ComputeMetricsFunction",
@@ -202,7 +202,7 @@ class BenchmarkModule(ABC):
                         dataset_config=self.dataset_config,
                         benchmark_config=self.benchmark_config,
                     ),
-                )  # ty: ignore[invalid-return-type]
+                )
             case TaskGroup.TEXT_TO_TEXT:
                 return cast(
                     "ComputeMetricsFunction",
@@ -211,7 +211,7 @@ class BenchmarkModule(ABC):
                         dataset_config=self.dataset_config,
                         benchmark_config=self.benchmark_config,
                     ),
-                )  # ty: ignore[invalid-return-type]
+                )
             case TaskGroup.TOKEN_CLASSIFICATION:
                 return cast(
                     "ComputeMetricsFunction",
@@ -221,7 +221,7 @@ class BenchmarkModule(ABC):
                         dataset_config=self.dataset_config,
                         benchmark_config=self.benchmark_config,
                     ),
-                )  # ty: ignore[invalid-return-type]
+                )
             case TaskGroup.QUESTION_ANSWERING:
                 return cast(
                     "ComputeMetricsFunction",
@@ -230,7 +230,7 @@ class BenchmarkModule(ABC):
                         dataset_config=self.dataset_config,
                         benchmark_config=self.benchmark_config,
                     ),
-                )  # ty: ignore[invalid-return-type]
+                )
             case _:
                 raise NotImplementedError(
                     f"Unsupported task group: {self.dataset_config.task.task_group}."
@@ -319,7 +319,7 @@ class BenchmarkModule(ABC):
             for split_name, split in dataset.items():
                 datasets_dict[f"original_{split_name}"] = split
 
-            datasets[idx] = DatasetDict(datasets_dict)  # ty: ignore[invalid-argument-type]
+            datasets[idx] = DatasetDict(datasets_dict)
         return datasets
 
     @abstractmethod
