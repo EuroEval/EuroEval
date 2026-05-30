@@ -311,7 +311,7 @@ def get_pad_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
 
 def get_end_of_chat_token_ids(
     tokeniser: Tokeniser, generative_type: GenerativeType | None
-) -> c.Sequence[int] | None:
+) -> c.Sequence[int] | c.Sequence[str] | c.Sequence[c.Sequence[int]] | None:
     """Get the end token ID for chat models.
 
     This is only relevant for tokenisers with a chat template.
@@ -443,7 +443,7 @@ def get_first_label_token_mapping(
 
     # Tokenise some text containing each label, which we will use to extract the
     # first token of each label
-    all_tokens: c.Sequence[c.Sequence[str]]
+    all_tokens: c.Sequence[c.Sequence[str | list[str]]]
     if not has_chat_template(tokeniser=tokeniser):
         add_prefix_space = should_prefix_space_be_added_to_labels(
             labels_to_be_generated=local_labels, tokeniser=tokeniser
@@ -459,7 +459,7 @@ def get_first_label_token_mapping(
             for label in local_labels
         ]
     else:
-        all_token_ids: list[list[int]] = []
+        all_token_ids: list[list[int] | list[str] | list[list[int]]] = []
         for label in local_labels:
             token_ids = apply_chat_template(
                 conversation=[

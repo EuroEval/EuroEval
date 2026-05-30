@@ -33,6 +33,20 @@ class InvalidModel(Exception):
         super().__init__(self.message)
 
 
+class InvalidBenchmarkValue(ValueError):
+    """A model/dataset parameter value is invalid for benchmarking."""
+
+    def __init__(self, message: str = "The parameter value is invalid.") -> None:
+        """Initialise the exception.
+
+        Args:
+            message:
+                The message to display.
+        """
+        self.message = message
+        super().__init__(self.message)
+
+
 class InvalidTask(Exception):
     """The task cannot be used for benchmarking using any model and dataset."""
 

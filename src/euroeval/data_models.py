@@ -1108,7 +1108,7 @@ class ModelIdComponents:
     param: str | None
 
 
-class HashableDict(dict):
+class HashableDict(dict[t.Any, t.Any]):
     """A hashable dictionary."""
 
     def __hash__(self) -> int:

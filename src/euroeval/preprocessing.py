@@ -201,11 +201,7 @@ def build_preprocessing_func(
                     split = split.map(_fix_mc_label_column)
 
                 # Handle input column (optionally merging with choices)
-                if choices_column is None:
-                    raise InvalidBenchmark(
-                        "The dataset config has a multiple-choice task but no "
-                        "choices column is specified."
-                    )
+                assert choices_column is not None
                 merge_fn = functools.partial(
                     merge_input_and_choices,
                     input_column=input_column,
