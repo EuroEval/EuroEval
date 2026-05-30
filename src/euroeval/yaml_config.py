@@ -38,7 +38,7 @@ def load_yaml_config(
     """
     external_config_path = cache_dir / "external_dataset_configs" / dataset_id
     external_config_path.mkdir(parents=True, exist_ok=True)
-    hf_api.hf_hub_download(
+    hf_api.hf_hub_download(  # pyrefly: ignore[no-matching-overload]
         repo_id=dataset_id,
         repo_type="dataset",
         filename="eval.yaml",

@@ -89,7 +89,7 @@ const colIndex = (key: string) =>
 const xKey = "Parameters";
 
 const xIdx = computed(() => colIndex(xKey));
-const yIdx = computed(() => colIndex("rank"));
+const yIdx = computed(() => colIndex("rank score"));
 const modelIdx = computed(() => colIndex("model"));
 const typeIdx = computed(() => colIndex("type"));
 const commercialIdx = computed(() => colIndex("commercial"));
@@ -383,7 +383,7 @@ const tooltipStyle = computed(() => {
   <div class="scatter">
     <div class="scatter-toolbar">
       <span class="scatter-help">
-        X-axis: Parameters (log). Y-axis: Mean rank score (lower is better).
+        X-axis: Parameters (log). Y-axis: Rank score (lower is better).
         Showing {{ visiblePoints.length }} of {{ allPoints.length }} models.
       </span>
     </div>
@@ -514,7 +514,7 @@ const tooltipStyle = computed(() => {
           :transform="`translate(14, ${height / 2}) rotate(-90)`"
           text-anchor="middle"
         >
-          Mean rank score
+          Rank score
         </text>
 
         <!-- Points: commercial → star, otherwise → circle. Colored by kind. -->
