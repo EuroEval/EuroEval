@@ -5,7 +5,7 @@ import importlib
 import logging
 import re
 import typing as t
-from functools import cached_property, partial, cast
+from functools import cached_property, cast, partial
 from json import JSONDecodeError
 from pathlib import Path
 from time import sleep
@@ -629,9 +629,12 @@ def load_model_and_tokeniser(
     model: "PreTrainedModel | None" = None
     for _ in range(num_attempts := 5):
         # Get the model class associated with the task group
-        model_cls_or_none: t.Type[PreTrainedModel] | None = get_class_by_name(
-            class_name=task_group_to_class_name(task_group=task_group),
-            module_name="transformers",
+        model_cls_or_none: t.Type[PreTrainedModel] | None = cast(
+            "t.Type[PreTrainedModel] | None",
+            get_class_by_name(
+                class_name=task_group_to_class_name(task_group=task_group),
+                module_name="transformers",
+            ),
         )
 
         # If the model class could not be found then raise an error
@@ -694,9 +697,9 @@ def load_model_and_tokeniser(
         )
 
     if isinstance(model_or_tuple, tuple):
-        model = model_or_tuple[0]
+        model = cast(PreTrainedModel, model_or_tuple[0])
     else:
-        model = model_or_tuple
+        model = cast(PreTrainedModel, model_or_tuple)
 
     assert model is not None, "The model should not be None."
     model = cast("PreTrainedModel", model)

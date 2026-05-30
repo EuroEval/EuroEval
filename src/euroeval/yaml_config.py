@@ -282,16 +282,17 @@ def promote_field_spec_fields(raw: dict[str, object]) -> None:
 
     field_spec = first_task.get("field_spec")
     if isinstance(field_spec, dict):
-        if "input" in field_spec and "input_column" not in raw:
-            raw["input_column"] = field_spec["input"]
+        _fs: dict[str, object] = cast(dict[str, object], field_spec)
+        if "input" in _fs and "input_column" not in raw:
+            raw["input_column"] = _fs["input"]
 
-        if "target" in field_spec and "target_column" not in raw:
-            target = field_spec["target"]
+        if "target" in _fs and "target_column" not in raw:
+            target = _fs["target"]
             if isinstance(target, str) and not target.startswith("literal:"):
                 raw["target_column"] = target
 
-        if "choices" in field_spec and "choices_column" not in raw:
-            raw["choices_column"] = field_spec["choices"]
+        if "choices" in _fs and "choices_column" not in raw:
+            raw["choices_column"] = _fs["choices"]
 
     split_val = first_task.get("split")
     if isinstance(split_val, str) and split_val and "test_split" not in raw:
@@ -376,15 +377,19 @@ def infer_task_from_inspect_ai(
     solvers = first_task.get("solvers")
     if isinstance(solvers, list):
         for solver in solvers:
-            if isinstance(solver, dict) and solver.get("name") == "multiple_choice":
+            if isinstance(solver, dict):
+                _s: dict[str, object] = cast(dict[str, object], solver)
+                if _s.get("name") == "multiple_choice":
                 return task_map.get("multiple-choice")
 
     scorers = first_task.get("scorers")
     if isinstance(scorers, list):
         for scorer in scorers:
-            if isinstance(scorer, dict) and scorer.get("name") == "model_graded_fact":
-                judge_id: str | None = None
-                args = scorer.get("args")
+            if isinstance(scorer, dict):
+                _sc: dict[str, object] = cast(dict[str, object], scorer)
+                if _sc.get("name") == "model_graded_fact":
+                    judge_id: str | None = None
+                    args = _sc.get("args")
                 if isinstance(args, dict):
                     model_val = args.get("model")
                     if isinstance(model_val, str) and model_val:
