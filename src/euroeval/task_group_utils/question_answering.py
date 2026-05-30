@@ -92,7 +92,7 @@ class QuestionAnsweringTrainer(Trainer):
             The metrics computed on the evaluation dataset.
         """
         eval_dataloader = self.get_eval_dataloader(
-            eval_dataset if eval_dataset is not None else None  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+            eval_dataset if eval_dataset is not None else None  # ty: ignore[invalid-argument-type]
         )
 
         # Temporarily disable metric computation, we will do it in the loop here.
@@ -129,7 +129,7 @@ class QuestionAnsweringTrainer(Trainer):
             )
             assert self.compute_metrics is not None
 
-            new_metrics = self.compute_metrics(EvalPrediction(*preds_and_labels))  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+            new_metrics = self.compute_metrics(EvalPrediction(*preds_and_labels))  # ty: ignore[invalid-argument-type]
             metrics.update(new_metrics)
 
             # Prefix all keys with metric_key_prefix + '_'
@@ -189,8 +189,8 @@ def compute_metrics(
     results: dict[str, float] = dict()
     for metric in dataset_config.task.metrics:
         score: float | None = metric(
-            predictions=predictions,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
-            references=labels,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+            predictions=predictions,  # ty: ignore[invalid-argument-type]
+            references=labels,  # ty: ignore[invalid-argument-type]
             dataset=dataset,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,

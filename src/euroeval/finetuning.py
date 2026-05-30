@@ -102,7 +102,7 @@ def finetune(
                 )
 
                 itr_scores = finetune_single_iteration(
-                    model=model if model_already_initialized else None,  # type: ignore[possibly-unresolved-reference]
+                    model=model if model_already_initialized else None,
                     dataset=datasets[idx],
                     training_args=training_args,
                     model_config=model_config,
@@ -213,10 +213,10 @@ def finetune_single_iteration(
         args=training_args,
         train_dataset=dataset["train"],
         eval_dataset=dataset["val"],
-        compute_metrics=partial(model.compute_metrics, dataset=None),  # type: ignore[arg-type]  # ty: ignore
+        compute_metrics=partial(model.compute_metrics, dataset=None),  # ty: ignore[invalid-argument-type],
         callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
         data_collator=model.data_collator,
-        preprocess_logits_for_metrics=remove_extra_tensors_from_logits,  # type: ignore[arg-type]  # ty: ignore
+        preprocess_logits_for_metrics=remove_extra_tensors_from_logits,  # ty: ignore[invalid-argument-type]
     )
 
     if not benchmark_config.verbose:
@@ -224,7 +224,7 @@ def finetune_single_iteration(
         def no_logging(logs: dict[str, float], start_time: float | None = None) -> None:
             return
 
-        trainer.log = no_logging  # type: ignore[assignment]  # ty: ignore
+        trainer.log = no_logging  # ty: ignore[invalid-assignment]
 
     # Re-block terminal output, as it gets unblocked by the `transformers` package
     # before training
@@ -245,12 +245,12 @@ def finetune_single_iteration(
     with torch.inference_mode():
         try:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],  # type: ignore[arg-type]  # ty: ignore
+                eval_dataset=dataset["test"],  # ty: ignore[invalid-argument-type]
                 metric_key_prefix="test",
             )
         except TypeError:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],  # type: ignore
+                eval_dataset=dataset["test"],  # ty: ignore[invalid-argument-type]
                 metric_key_prefix="test",
             )
         except NaNValueInModelOutput as e:

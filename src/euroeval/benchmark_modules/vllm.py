@@ -92,7 +92,7 @@ except ImportError:
         MistralCommonBackend as MCB,
     )
 
-    MistralCommonTokenizer = MCB  # type: ignore[assignment]
+    MistralCommonTokenizer = MCB
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     import vllm.config
@@ -183,8 +183,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
 
         raise_if_wrong_params(
-            model_config=model_config,
-            allowed_params=self.allowed_params,  # type: ignore[invalid-argument-type]
+            model_config=model_config, allowed_params=self.allowed_params
         )
 
         # This is already set when calling `super().__init__`, but we need it to get
@@ -1125,7 +1124,7 @@ def load_model(
     )
 
     # Start with dtype being the "auto" vLLM dtype
-    dtype: str | torch.dtype = "auto"  # type: ignore[assignment]
+    dtype: str | torch.dtype = "auto"
 
     # Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it
     if hf_model_config.dtype == torch.float32:
@@ -1446,11 +1445,11 @@ def load_tokeniser(
 
     # Ensure that BOS, EOS and PAD tokens are set
     if not isinstance(tokeniser, MistralCommonTokenizer):
-        tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)  # type: ignore[invalid-argument-type]
-        tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)  # type: ignore[invalid-argument-type]
-        tokeniser.pad_token, tokeniser.pad_token_id = get_pad_token(tokeniser=tokeniser)  # type: ignore[invalid-argument-type]
+        tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)
+        tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)
+        tokeniser.pad_token, tokeniser.pad_token_id = get_pad_token(tokeniser=tokeniser)
 
-    return tokeniser  # type: ignore[return-type]
+    return tokeniser
 
 
 def clear_vllm() -> None:
@@ -1501,7 +1500,7 @@ def get_end_of_reasoning_token(
     output = model.generate(
         prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[invalid-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
@@ -1534,7 +1533,7 @@ def get_end_of_reasoning_token(
         sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[invalid-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
@@ -1626,7 +1625,7 @@ def get_custom_stop_tokens(
         sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[invalid-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
 
     stop_tokens = [
         stop_token

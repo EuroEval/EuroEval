@@ -360,7 +360,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 try:
                     label2id = self._model.config.label2id
                     examples["label"] = [
-                        label2id[str(lbl).lower()]  # type: ignore
+                        label2id[str(lbl).lower()]  # ty: ignore
                         if label2id is not None
                         else lbl
                         for lbl in examples["label"]

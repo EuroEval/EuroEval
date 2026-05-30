@@ -176,7 +176,7 @@ class TestGetTrainingArgs:
     ) -> None:
         """Test that the use_cpu argument is correct."""
         old_device = benchmark_config.device
-        benchmark_config.device = torch.device(device_name)  # type: ignore[read-only]
+        benchmark_config.device = torch.device(device_name)
         args = get_training_args(
             benchmark_config=benchmark_config,
             model_config=model_config,
@@ -185,7 +185,7 @@ class TestGetTrainingArgs:
             batch_size=None,
         )
         assert args.use_cpu == expected_use_cpu
-        benchmark_config.device = old_device  # type: ignore[read-only]
+        benchmark_config.device = old_device
 
 
 class TestFinetune:

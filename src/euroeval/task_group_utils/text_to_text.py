@@ -77,8 +77,8 @@ def compute_metrics(
         for _ in range(num_attempts := 5):
             try:
                 score: float | None = metric(
-                    predictions=list(predictions),  # type: ignore[arg-type]
-                    references=list(labels),  # type: ignore[arg-type]
+                    predictions=list(predictions),
+                    references=list(labels),
                     dataset=dataset,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,

@@ -11,7 +11,7 @@ try:
 except ImportError:
     from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
 
-    MistralCommonTokenizer: type = MCB  # type: ignore[assignment]
+    MistralCommonTokenizer: type = MCB
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
