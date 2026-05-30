@@ -171,7 +171,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             hasattr(self._model.config, "num_params")
             and self._model.config.num_params is not None
         ):
-            num_params = int(self._model.config.num_params)
+            num_params = int(self._model.config.num_params)  # ty: ignore[invalid-argument-type]
         elif hasattr(self._model, "parameters"):
             num_params = sum(p.numel() for p in self._model.parameters())
         else:
@@ -197,7 +197,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             hasattr(self._model.config, "vocab_size")
             and self._model.config.vocab_size is not None
         ):
-            vocab_size = int(self._model.config.vocab_size)
+            vocab_size = int(self._model.config.vocab_size)  # ty: ignore[invalid-argument-type]
         elif (
             hasattr(self._tokeniser, "vocab_size")
             and self._tokeniser.vocab_size is not None
@@ -358,9 +358,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         def numericalise_labels(examples: dict) -> dict:
             if "label" in examples:
                 try:
+                    label2id = self._model.config.label2id
                     examples["label"] = [
-                        self._model.config.label2id[str(lbl).lower()]
-                        if self._model.config.label2id is not None
+                        label2id[str(lbl).lower()]  # type: ignore
+                        if label2id is not None
                         else lbl
                         for lbl in examples["label"]
                     ]
@@ -412,7 +413,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     partial(
                         token_classification.tokenize_and_align_labels,
                         tokeniser=self._tokeniser,
-                        label2id=self._model.config.label2id,  # ty: ignore[arg-type]
+                        label2id=self._model.config.label2id,  # ty: ignore[invalid-argument-type]
                     ),
                     batched=True,
                     load_from_cache_file=False,
@@ -655,7 +656,7 @@ def load_model_and_tokeniser(
             model_or_tuple: PreTrainedModel | tuple[PreTrainedModel, ...] = (
                 model_cls_or_none.from_pretrained(
                     model_config.model_id,
-                    **model_kwargs,  # ty: ignore[report-unknown-argument]
+                    **model_kwargs,  # ty: ignore[invalid-argument-type]
                 )
             )
             break
@@ -1215,7 +1216,7 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
                 ),
                 dim=0,
             )
-            token_type_embeddings.num_embeddings = 2  # ty: ignore[assignment]
+            token_type_embeddings.num_embeddings = 2  # ty: ignore[invalid-assignment]
 
         # Set the model config to use the new type vocab size
         model.config.type_vocab_size = 2
@@ -1288,7 +1289,7 @@ def align_model_and_tokeniser(
     # Move the model to the CPU, since otherwise we can't catch the IndexErrors when
     # finding the maximum sequence length of the model
     model_device = model.device
-    model.to(torch.device("cpu"))  # ty: ignore[operator]
+    model.to(torch.device("cpu"))  # ty: ignore[invalid-argument-type]
 
     # Manually check that this model max length is valid for the model, and adjust
     # otherwise
@@ -1319,7 +1320,7 @@ def align_model_and_tokeniser(
                     raise e
 
     # Move the model back to the original device
-    model.to(model_device)  # ty: ignore[operator]
+    model.to(model_device)  # ty: ignore[invalid-argument-type]
 
     # If there is a mismatch between the vocab size according to the tokeniser and
     # the vocab size according to the model, we raise an error

@@ -258,7 +258,8 @@ def prepare_train_examples(
     # If the tokeniser is not adding special tokens, then we add them manually
     if not has_cls_token and not has_sep_token:
         examples["question"] = [
-            f"{cls_token}{q}{sep_token}" for q in examples["question"]  # ty: ignore[not-iterable]
+            f"{cls_token}{q}{sep_token}"
+            for q in examples["question"]  # ty: ignore[not-iterable]
         ]
 
         examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]  # ty: ignore[not-iterable]
@@ -268,7 +269,8 @@ def prepare_train_examples(
     # need to make sure that the stride does not exceed the resulting maximum context
     # length.
     max_question_tokens = max(
-        len(tokeniser(q).input_ids) for q in examples["question"]  # ty: ignore[not-iterable]
+        len(tokeniser(q).input_ids)
+        for q in examples["question"]  # ty: ignore[not-iterable]
     )
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
     stride = tokeniser.model_max_length // 4
@@ -424,7 +426,8 @@ def prepare_test_examples(
     # If the tokeniser is not adding special tokens, then we add them manually
     if not has_cls_token and not has_sep_token:
         examples["question"] = [
-            f"{cls_token}{q}{sep_token}" for q in examples["question"]  # ty: ignore[not-iterable]
+            f"{cls_token}{q}{sep_token}"
+            for q in examples["question"]  # ty: ignore[not-iterable]
         ]
 
         examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]  # ty: ignore[not-iterable]
@@ -434,7 +437,8 @@ def prepare_test_examples(
     # need to make sure that the stride does not exceed the resulting maximum context
     # length.
     max_question_tokens = max(
-        len(tokeniser(q).input_ids) for q in examples["question"]  # ty: ignore[not-iterable]
+        len(tokeniser(q).input_ids)
+        for q in examples["question"]  # ty: ignore[not-iterable]
     )
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
     stride = tokeniser.model_max_length // 4
