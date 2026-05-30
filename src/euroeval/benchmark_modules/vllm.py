@@ -511,7 +511,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 self._tokeniser.pad_token_id = self._tokeniser.eos_token_id
                 self._tokeniser.pad_token = self._tokeniser.eos_token
         if self.end_of_chat_token_ids is not None:
-            end_of_chat_token = self._tokeniser.decode(
+            end_of_chat_token = self._tokeniser.decode(  # ty: ignore
                 list(self.end_of_chat_token_ids)
             ).strip()
             if end_of_chat_token:
@@ -723,7 +723,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                         "The end-of-chat token IDs should be set for instruction-tuned "
                         "and reasoning models."
                     )
-                    end_of_chat_token = self._tokeniser.decode(
+                    end_of_chat_token = self._tokeniser.decode(  # ty: ignore
                         list(self.end_of_chat_token_ids)
                     )
                     prompt_segments: list[list[str]] = [
@@ -779,7 +779,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 prompts = [
                     prompt if prompt.strip() else bos_token for prompt in prompts
                 ]
-                raw_outputs = self._model.generate(
+                raw_outputs = self._model.generate(  # ty: ignore
                     prompts=prompts,
                     sampling_params=sampling_params,
                     use_tqdm=False if input_is_a_test else get_pbar,
@@ -1200,7 +1200,9 @@ def load_model(
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
     if hasattr(vllm.config, "attention") and attention_backend is not None:
-        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)  # type: ignore[invalid-argument-type]
+        vllm_params["attention_config"] = AttentionConfig(  # ty: ignore
+            backend=attention_backend
+        )
 
     clear_vllm()
 
@@ -1251,14 +1253,14 @@ def load_model(
             pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
-            dtype=dtype,  # type: ignore[call-non-callable]
+            dtype=dtype,  # ty: ignore
             enforce_eager=True,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
-            **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # type: ignore[invalid-argument-type]
+            **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore
             **vllm_params,
         )
     except (RuntimeError, ValueError, OSError) as e:

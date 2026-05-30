@@ -52,7 +52,7 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
     ).isoformat()
     evaluation_id = f"{result.dataset}/{result.model}/{retrieved_timestamp}"
 
-    total_results: dict[str, float] = {}
+    total_results: dict = {}
     raw_results: list = []
     if isinstance(result.results, dict):
         if "total" in result.results and isinstance(result.results["total"], dict):

@@ -22,8 +22,8 @@ class MultipleChoiceClassificationTrainer(Trainer):
     """Trainer subclass for multiple-choice classification tasks."""
 
     def evaluate(
-        self,
-        eval_dataset: "Dataset | None" = None,
+        self,  # ty: ignore[invalid-method-override]
+        eval_dataset: "Dataset | dict[str, Dataset] | None" = None,
         ignore_keys: list[str] | None = None,
         metric_key_prefix: str = "eval",
     ) -> dict[str, float]:
@@ -41,7 +41,7 @@ class MultipleChoiceClassificationTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
-        eval_dataloader = self.get_eval_dataloader(eval_dataset)
+        eval_dataloader = self.get_eval_dataloader(eval_dataset)  # ty: ignore[invalid-argument-type]
 
         eval_loop = (
             self.prediction_loop
@@ -69,11 +69,12 @@ class MultipleChoiceClassificationTrainer(Trainer):
                 "eval_dataset must be provided when metric_key_prefix is 'test'."
             )
 
+            assert isinstance(eval_dataset, Dataset)
             preds_and_labels = postprocess_predictions_and_labels(
                 predictions=predictions, dataset=eval_dataset
             )
             assert self.compute_metrics is not None
-            new_metrics = self.compute_metrics(preds_and_labels)
+            new_metrics = self.compute_metrics(preds_and_labels)  # ty: ignore[invalid-argument-type]
             metrics.update(new_metrics)
 
             # Prefix all keys with metric_key_prefix + '_'
@@ -105,7 +106,7 @@ def prepare_examples(
     Returns:
         The prepared examples.
     """
-    doc: str = examples["text"][0]
+    doc: str = examples["text"][0]  # ty: ignore[not-subscriptable]
     sections = doc.split("\n")
 
     candidate_choice_idxs = [
@@ -143,7 +144,7 @@ def prepare_examples(
         truncation=True,
     )
     new_examples["label"] = [
-        int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])
+        int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])  # ty: ignore[not-subscriptable]
         for letter, choice in zip("abcdefghijklmnopqrstuvwxyz", choices)
     ]
     new_examples["id"] = [hashlib.md5(string=doc.encode()).hexdigest()] * len(choices)

@@ -379,7 +379,7 @@ def debug_log(
 
         case TaskGroup.QUESTION_ANSWERING:
             model_output.predicted_labels = [
-                prediction["prediction_text"]
+                prediction["prediction_text"]  # ty: ignore[not-subscriptable]
                 for prediction in model_output.predicted_labels
                 if isinstance(prediction, dict)
             ]

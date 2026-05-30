@@ -411,7 +411,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     partial(
                         token_classification.tokenize_and_align_labels,
                         tokeniser=self._tokeniser,
-                        label2id=self._model.config.label2id,
+                        label2id=self._model.config.label2id,  # ty: ignore[arg-type]
                     ),
                     batched=True,
                     load_from_cache_file=False,
@@ -654,7 +654,7 @@ def load_model_and_tokeniser(
             model_or_tuple: PreTrainedModel | tuple[PreTrainedModel, ...] = (
                 model_cls_or_none.from_pretrained(
                     model_config.model_id,
-                    **model_kwargs,  # pyright: ignore[reportArgumentType]
+                    **model_kwargs,  # ty: ignore[report-unknown-argument]
                 )
             )
             break
