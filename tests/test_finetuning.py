@@ -339,7 +339,8 @@ class TestRemoveExtraTensorsFromLogits:
         labels = torch.randint(0, 3, (2,))
 
         result = remove_extra_tensors_from_logits(
-            logits=logits, labels=labels  # ty: ignore[invalid-argument-type]
+            logits=logits,  # ty: ignore[invalid-argument-type]
+            labels=labels,
         )
 
         assert torch.equal(result, logits[0])  # ty: ignore[invalid-argument-type]
@@ -349,8 +350,6 @@ class TestRemoveExtraTensorsFromLogits:
         logits = torch.randn(2, 3)
         labels = torch.randint(0, 3, (2,))
 
-        result = remove_extra_tensors_from_logits(
-            logits=logits, labels=labels
-        )
+        result = remove_extra_tensors_from_logits(logits=logits, labels=labels)
 
         assert torch.equal(result, logits)  # ty: ignore[invalid-argument-type]

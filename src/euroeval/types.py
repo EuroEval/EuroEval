@@ -7,10 +7,7 @@ from transformers import PreTrainedTokenizer
 from transformers.trainer_utils import EvalPrediction
 
 try:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonBackend,
-        MistralCommonTokenizer,
-    )
+    from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
     from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
 
@@ -45,9 +42,9 @@ Labels: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Tokeniser: t.TypeAlias = (
     PreTrainedTokenizer
     | MistralCommonTokenizer
-    | "TokenizersBackend"  # ty: ignore[unresolved-reference]
-    | "SentencePieceBackend"  # ty: ignore[unresolved-reference]
-    | "PythonBackend"  # ty: ignore[unresolved-reference]
+    | "TokenizersBackend"  # ty: ignore[unresolved-reference]  # noqa: F821
+    | "SentencePieceBackend"  # ty: ignore[unresolved-reference]  # noqa: F821
+    | "PythonBackend"  # ty: ignore[unresolved-reference]  # noqa: F821
 )
 Relation: t.TypeAlias = t.Literal["less than", "at least"]
 
