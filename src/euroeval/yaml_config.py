@@ -390,14 +390,14 @@ def infer_task_from_inspect_ai(
                 if _sc.get("name") == "model_graded_fact":
                     judge_id: str | None = None
                     args = _sc.get("args") or {}
-                if isinstance(args, dict):
-                    model_val = args.get("model")  # ty: ignore[invalid-argument-type]
-                    if isinstance(model_val, str) and model_val:
-                        judge_id = model_val
-                if judge_id is not None:
-                    metric = create_model_graded_fact_metric(judge_id=judge_id)
-                    return dataclasses.replace(OPEN_ENDED_QA, metrics=[metric])
-                return OPEN_ENDED_QA
+                    if isinstance(args, dict):
+                        model_val = args.get("model")  # ty: ignore[invalid-argument-type]
+                        if isinstance(model_val, str) and model_val:
+                            judge_id = model_val
+                    if judge_id is not None:
+                        metric = create_model_graded_fact_metric(judge_id=judge_id)
+                        return dataclasses.replace(OPEN_ENDED_QA, metrics=[metric])
+                    return OPEN_ENDED_QA
 
     field_spec = first_task.get("field_spec")
     if isinstance(field_spec, dict) and "choices" in field_spec:

@@ -117,7 +117,10 @@ def test_benchmark_openai(
 
 
 @pytest.mark.skipif(
-    condition=subprocess.run("uv run ollama -v", capture_output=True).returncode != 0,
+    condition=subprocess.run(
+        ["uv", "run", "ollama", "-v"], capture_output=True
+    ).returncode
+    != 0,
     reason="Ollama is not available.",
 )
 def test_benchmark_ollama(

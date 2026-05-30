@@ -5,7 +5,7 @@ import importlib
 import logging
 import re
 import typing as t
-from functools import cached_property, cast, partial
+from functools import cached_property, partial
 from json import JSONDecodeError
 from pathlib import Path
 from time import sleep
@@ -631,7 +631,7 @@ def load_model_and_tokeniser(
     model: "PreTrainedModel | None" = None
     for _ in range(num_attempts := 5):
         # Get the model class associated with the task group
-        model_cls_or_none: t.Type[PreTrainedModel] | None = cast(
+        model_cls_or_none: t.Type[PreTrainedModel] | None = t.cast(
             "t.Type[PreTrainedModel] | None",
             get_class_by_name(
                 class_name=task_group_to_class_name(task_group=task_group),
@@ -699,15 +699,15 @@ def load_model_and_tokeniser(
         )
 
     if isinstance(model_or_tuple, tuple):
-        model = cast(PreTrainedModel, model_or_tuple[0])
+        model = t.cast(PreTrainedModel, model_or_tuple[0])
     else:
-        model = cast(PreTrainedModel, model_or_tuple)
+        model = t.cast(PreTrainedModel, model_or_tuple)
 
     assert model is not None, "The model should not be None."
-    model = cast("PreTrainedModel", model)
+    model = t.cast("PreTrainedModel", model)  # ty: ignore[redundant-cast]
 
     model.eval()
-    model.to(benchmark_config.device)
+    model.to(benchmark_config.device)  # ty: ignore[invalid-argument-type]
 
     if (
         isinstance(model, PreTrainedModel)
