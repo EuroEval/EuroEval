@@ -92,7 +92,7 @@ class QuestionAnsweringTrainer(Trainer):
             The metrics computed on the evaluation dataset.
         """
         eval_dataloader = self.get_eval_dataloader(
-            eval_dataset if eval_dataset is not None else None  # ty: ignore[invalid-argument-type]
+            eval_dataset if eval_dataset is not None else None  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
         )
 
         # Temporarily disable metric computation, we will do it in the loop here.
@@ -124,12 +124,12 @@ class QuestionAnsweringTrainer(Trainer):
             preds_and_labels = postprocess_predictions_and_labels(
                 predictions=t.cast("tuple[np.ndarray, ...]", predictions),
                 dataset=orig_eval_dataset,
-                prepared_dataset=eval_dataset,  # ty: ignore[invalid-argument-type]
+                prepared_dataset=t.cast("Dataset", eval_dataset),
                 cls_token_index=self.cls_token_id,
             )
             assert self.compute_metrics is not None
 
-            new_metrics = self.compute_metrics(EvalPrediction(*preds_and_labels))  # ty: ignore[invalid-argument-type]
+            new_metrics = self.compute_metrics(EvalPrediction(*preds_and_labels))  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
             metrics.update(new_metrics)
 
             # Prefix all keys with metric_key_prefix + '_'
@@ -189,8 +189,8 @@ def compute_metrics(
     results: dict[str, float] = dict()
     for metric in dataset_config.task.metrics:
         score: float | None = metric(
-            predictions=predictions,  # ty: ignore[invalid-argument-type]
-            references=labels,  # ty: ignore[invalid-argument-type]
+            predictions=predictions,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+            references=labels,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
             dataset=dataset,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
@@ -268,10 +268,7 @@ def prepare_train_examples(
     # split into several features. Since we are always keeping the question tokens, we
     # need to make sure that the stride does not exceed the resulting maximum context
     # length.
-    max_question_tokens = max(
-        len(tokeniser(q).input_ids)
-        for q in examples["question"]  # ty: ignore[not-iterable]
-    )
+    max_question_tokens = max(len(tokeniser(q).input_ids) for q in examples["question"])  # ty: ignore[not-iterable]
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
     stride = tokeniser.model_max_length // 4
     stride = min(
@@ -436,10 +433,7 @@ def prepare_test_examples(
     # split into several features. Since we are always keeping the question tokens, we
     # need to make sure that the stride does not exceed the resulting maximum context
     # length.
-    max_question_tokens = max(
-        len(tokeniser(q).input_ids)
-        for q in examples["question"]  # ty: ignore[not-iterable]
-    )
+    max_question_tokens = max(len(tokeniser(q).input_ids) for q in examples["question"])  # ty: ignore[not-iterable]
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
     stride = tokeniser.model_max_length // 4
     stride = min(

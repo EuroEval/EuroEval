@@ -8,7 +8,7 @@ import pyinfer
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from .benchmark_modules import HuggingFaceEncoderModel, LiteLLMModel, VLLMModel
-from .exceptions import InvalidBenchmark, InvalidBenchmarkValue
+from .exceptions import InvalidBenchmark
 from .logging_utils import get_pbar, log
 from .utils import clear_memory
 
@@ -59,16 +59,13 @@ def benchmark_speed_single_iteration(
         A dictionary containing the scores for the current iteration.
 
     Raises:
+        ValueError:
+            If the model is not a supported model type.
         InvalidBenchmark:
             If the speed benchmark failed.
-        InvalidBenchmarkValue:
-            If the model is not a supported model type.
-        RuntimeError:
-            If the gpt2 tokenizer failed to load.
     """
     gpt2_tokeniser = AutoTokenizer.from_pretrained("gpt2", trust_remote_code=True)
-    if gpt2_tokeniser is None:
-        raise RuntimeError("gpt2 tokenizer failed to load")
+    assert gpt2_tokeniser is not None, "gpt2 tokenizer should not be None"
 
     base_doc = "Document which contains roughly 10 tokens. "
     multiplier = 10 * (1 + itr_idx)
@@ -100,9 +97,7 @@ def benchmark_speed_single_iteration(
     elif isinstance(model, HuggingFaceEncoderModel):
         predict = encoder_predict
     else:
-        raise InvalidBenchmarkValue(
-            f"Model type {model} not supported for speed benchmark"
-        )
+        raise ValueError(f"Model type {model} not supported for speed benchmark")
 
     try:
         # Do a warmup run, as the first run is always slower

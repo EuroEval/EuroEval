@@ -124,7 +124,7 @@ class TestLLMAsAJudgeMetricInit:
 
         def batch_scoring_fn(
             outputs: list[simple_response_format],  # ty: ignore[invalid-type-form]
-            dataset: MagicMock | None = None
+            dataset: MagicMock | None = None,
         ) -> float:
             return sum(o.value for o in outputs) / len(outputs)
 
@@ -457,7 +457,7 @@ class TestLLMAsAJudgeBatchScoringFn:
 
         def batch_scoring_fn(
             outputs: list[simple_response_format],  # ty: ignore[invalid-type-form]
-            dataset: MagicMock | None = None
+            dataset: MagicMock | None = None,
         ) -> float:
             return 0.0
 
