@@ -1020,12 +1020,12 @@ class Benchmarker:
                 if model_config.param is not None:
                     model_id_to_be_stored += f"#{model_config.param}"
 
-                record = BenchmarkResult(
+                record = BenchmarkResult(  # ty: ignore[invalid-argument-type]
                     dataset=dataset_config.name,
                     task=dataset_config.task.name,
                     languages=[language.code for language in dataset_config.languages],
                     model=model_id_to_be_stored,
-                    results=results,
+                    results=results,  # ty: ignore[invalid-argument-type]
                     num_model_parameters=model.num_params,
                     max_sequence_length=model.model_max_length,
                     vocabulary_size=model.vocab_size,
@@ -1056,7 +1056,7 @@ class Benchmarker:
                         if model_config.inference_backend == InferenceBackend.LITELLM
                         else None
                     ),
-                )  # ty: ignore[invalid-argument-type]
+                )
                 log(f"Results:\n{results}", level=logging.DEBUG)
                 return record
 
