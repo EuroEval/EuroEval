@@ -879,7 +879,7 @@ class BenchmarkResult(pydantic.BaseModel):
         if "dataset_languages" in config:
             config["languages"] = config.pop("dataset_languages")
 
-        return cls(**config)
+        return cls(**config)  # ty: ignore[invalid-argument-type]
 
     @classmethod
     def from_eee_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
@@ -1094,7 +1094,7 @@ class ModelIdComponents:
     param: str | None
 
 
-class HashableDict(dict[Any, Any]):
+class HashableDict(dict[t.Any, t.Any]):
     """A hashable dictionary."""
 
     def __hash__(self) -> int:
