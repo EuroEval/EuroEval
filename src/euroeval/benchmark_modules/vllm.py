@@ -136,7 +136,7 @@ class VLLMModel(HuggingFaceEncoderModel):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = True
-    allowed_params = {
+    allowed_params: dict[re.Pattern[str], list[str]] = {
         re.compile(r".*"): ["thinking", "no-thinking", "slow-tokenizer"],
         re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): ["low", "medium", "high"],
     }
@@ -186,8 +186,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
 
         raise_if_wrong_params(
-            model_config=model_config, allowed_params=self.allowed_params
-        )  # type: ignore[invalid-argument-type]
+            model_config=model_config,
+            allowed_params=self.allowed_params,  # type: ignore[invalid-argument-type]
+        )
 
         # This is already set when calling `super().__init__`, but we need it to get
         # the correct value from `self.generative_type`, so we set it here as well.
@@ -1250,7 +1251,7 @@ def load_model(
             pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
-            dtype=dtype,  # type: ignore[invalid-argument-type]
+            dtype=dtype,  # type: ignore[call-non-callable]
             enforce_eager=True,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
@@ -1501,7 +1502,7 @@ def get_end_of_reasoning_token(
     output = model.generate(
         prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[call-arg]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[invalid-argument-type]
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
@@ -1534,7 +1535,7 @@ def get_end_of_reasoning_token(
         sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[call-arg]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[invalid-argument-type]
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
@@ -1626,7 +1627,7 @@ def get_custom_stop_tokens(
         sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[call-arg]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[invalid-argument-type]
 
     stop_tokens = [
         stop_token

@@ -102,7 +102,7 @@ def finetune(
                 )
 
                 itr_scores = finetune_single_iteration(
-                    model=model if model_already_initialized else None,
+                    model=model if model_already_initialized else None,  # type: ignore[possibly-unresolved-reference]
                     dataset=datasets[idx],
                     training_args=training_args,
                     model_config=model_config,
@@ -213,10 +213,10 @@ def finetune_single_iteration(
         args=training_args,
         train_dataset=dataset["train"],
         eval_dataset=dataset["val"],
-        compute_metrics=partial(model.compute_metrics, dataset=None),
+        compute_metrics=partial(model.compute_metrics, dataset=None),  # type: ignore[arg-type]
         callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
         data_collator=model.data_collator,
-        preprocess_logits_for_metrics=remove_extra_tensors_from_logits,
+        preprocess_logits_for_metrics=remove_extra_tensors_from_logits,  # type: ignore[arg-type]
     )
 
     if not benchmark_config.verbose:
@@ -224,7 +224,7 @@ def finetune_single_iteration(
         def no_logging(logs: dict[str, float], start_time: float | None = None) -> None:
             return
 
-        trainer.log = no_logging
+        trainer.log = no_logging  # type: ignore[assignment]
 
     # Re-block terminal output, as it gets unblocked by the `transformers` package
     # before training
@@ -245,13 +245,12 @@ def finetune_single_iteration(
     with torch.inference_mode():
         try:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],
-                orig_eval_dataset=dataset["original_test"],
+                eval_dataset=dataset["test"],  # type: ignore[arg-type]
                 metric_key_prefix="test",
             )
         except TypeError:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"], metric_key_prefix="test"
+                eval_dataset=dataset["test"], metric_key_prefix="test"  # type: ignore[arg-type]
             )
         except NaNValueInModelOutput as e:
             del trainer

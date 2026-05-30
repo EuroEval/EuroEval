@@ -1715,7 +1715,7 @@ class LiteLLMModel(BenchmarkModule):
             # Build a Union of Literal types dynamically (ty doesn't support
             # Literal[*tuple] unpacking)
             literal_type = t.make_union(
-                *(t.Literal[str_]) for str_ in localised_labels
+                *(t.Literal[str_] for str_ in localised_labels)
             )
             keys_and_their_types = {
                 LITELLM_CLASSIFICATION_OUTPUT_KEY: (literal_type, ...)

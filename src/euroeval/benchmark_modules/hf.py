@@ -5,7 +5,7 @@ import importlib
 import logging
 import re
 import typing as t
-from functools import cached_property, partial
+from functools import cached_property, partial, cast
 from json import JSONDecodeError
 from pathlib import Path
 from time import sleep
@@ -610,7 +610,7 @@ def load_model_and_tokeniser(
         run_with_cli=benchmark_config.run_with_cli,
     )
 
-    model_kwargs = dict(
+    model_kwargs: dict[str, object] = dict(
         config=config,
         ignore_mismatched_sizes=ignore_mismatched_sizes,
         revision=model_config.revision,
@@ -629,7 +629,7 @@ def load_model_and_tokeniser(
     model: "PreTrainedModel | None" = None
     for _ in range(num_attempts := 5):
         # Get the model class associated with the task group
-        model_cls_or_none: t.Type["PreTrainedModel"] | None = get_class_by_name(
+        model_cls_or_none: t.Type[PreTrainedModel] | None = get_class_by_name(
             class_name=task_group_to_class_name(task_group=task_group),
             module_name="transformers",
         )
@@ -648,8 +648,11 @@ def load_model_and_tokeniser(
             config.pooler_hidden_size = config.hidden_size
 
         try:
-            model_or_tuple = model_cls_or_none.from_pretrained(
-                model_config.model_id, **model_kwargs
+            model_or_tuple: PreTrainedModel | tuple[PreTrainedModel, ...] = (
+                model_cls_or_none.from_pretrained(
+                    model_config.model_id,
+                    **model_kwargs,  # pyright: ignore[reportArgumentType]
+                )
             )
             break
         except (KeyError, RuntimeError) as e:
@@ -696,6 +699,7 @@ def load_model_and_tokeniser(
         model = model_or_tuple
 
     assert model is not None, "The model should not be None."
+    model = cast("PreTrainedModel", model)
 
     model.eval()
     model.to(benchmark_config.device)

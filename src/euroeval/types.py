@@ -7,11 +7,14 @@ from transformers import PreTrainedTokenizer
 from transformers.trainer_utils import EvalPrediction
 
 try:
-    from transformers.tokenization_mistral_common import MistralCommonTokenizer
+    from transformers.tokenization_mistral_common import (
+        MistralCommonBackend,
+        MistralCommonTokenizer,
+    )
 except ImportError:
     from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
 
-    MistralCommonTokenizer = MCB
+    MistralCommonTokenizer: type = MCB  # type: ignore[assignment]
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -42,8 +45,9 @@ Labels: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Tokeniser: t.TypeAlias = (
     PreTrainedTokenizer
     | MistralCommonTokenizer
-    | "TokenizersBackend"
-    | "SentencePieceBackend"
+    | "TokenizersBackend"  # ty: ignore[unresolved-reference]
+    | "SentencePieceBackend"  # ty: ignore[unresolved-reference]
+    | "PythonBackend"  # ty: ignore[unresolved-reference]
 )
 Relation: t.TypeAlias = t.Literal["less than", "at least"]
 
@@ -161,7 +165,7 @@ def is_list_of_list_of_int(x: object) -> t.TypeGuard[c.Sequence[c.Sequence[int]]
     return (
         isinstance(x, list)
         and all(isinstance(i, list) for i in x)
-        and all(isinstance(j, int) for i in x for j in i)
+        and all(isinstance(j, int) for i in x for j in i)  # ty: ignore[not-iterable]
     )
 
 

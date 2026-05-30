@@ -41,7 +41,7 @@ class QuestionAnsweringTrainer(Trainer):
         train_dataset: "Dataset",
         eval_dataset: "Dataset",
         compute_metrics: "c.Callable[[EvalPrediction], dict[str, float]]",
-        callbacks: "c.Sequence[TrainerCallback]",
+        callbacks: "list[TrainerCallback]",
         data_collator: "c.Callable",
         **kwargs,
     ) -> None:
@@ -69,10 +69,10 @@ class QuestionAnsweringTrainer(Trainer):
 
     def evaluate(
         self,
-        eval_dataset: "Dataset | None" = None,
-        orig_eval_dataset: "Dataset | None" = None,
+        eval_dataset: "Dataset | dict[str, Dataset] | None" = None,
         ignore_keys: list[str] | None = None,
         metric_key_prefix: str = "eval",
+        orig_eval_dataset: "Dataset | None" = None,
     ) -> dict[str, float]:
         """Evaluate the model on the given dataset.
 
@@ -91,7 +91,9 @@ class QuestionAnsweringTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
-        eval_dataloader = self.get_eval_dataloader(eval_dataset)
+        eval_dataloader = self.get_eval_dataloader(
+            eval_dataset if eval_dataset is not None else None
+        )
 
         # Temporarily disable metric computation, we will do it in the loop here.
         compute_metrics = self.compute_metrics
@@ -120,14 +122,14 @@ class QuestionAnsweringTrainer(Trainer):
 
         if orig_eval_dataset is not None and eval_dataset is not None:
             preds_and_labels = postprocess_predictions_and_labels(
-                predictions=predictions,
+                predictions=t.cast("tuple[np.ndarray, ...]", predictions),
                 dataset=orig_eval_dataset,
                 prepared_dataset=eval_dataset,
                 cls_token_index=self.cls_token_id,
             )
             assert self.compute_metrics is not None
 
-            new_metrics = self.compute_metrics(preds_and_labels)
+            new_metrics = self.compute_metrics(EvalPrediction(*preds_and_labels))
             metrics.update(new_metrics)
 
             # Prefix all keys with metric_key_prefix + '_'
