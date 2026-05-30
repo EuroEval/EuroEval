@@ -21,7 +21,6 @@ from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
-    ATTENTION_BACKENDS,
     CUSTOM_STOP_TOKENS,
     GENERATION_KWARGS,
     GENERATIVE_PIPELINE_TAGS,
@@ -85,14 +84,14 @@ from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_conf
 
 try:
     from transformers.tokenization_mistral_common import (
-        MistralCommonTokenizer,  # pyrefly: ignore[missing-module-attribute]
+        MistralCommonTokenizer,  # ty: ignore[missing-module-attribute]
     )
 except ImportError:
     from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MCB,  # pyrefly: ignore[missing-module-attribute]
+        MistralCommonBackend as MCB,  # ty: ignore[missing-module-attribute]
     )
 
-    MistralCommonTokenizer = MCB  # pyrefly: ignore[assignment]
+    MistralCommonTokenizer = MCB  # ty: ignore[assignment]
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     import vllm.config
@@ -238,7 +237,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 tokeniser=tokeniser,
                 hf_model_config=hf_model_config,
             )
-        self._model: LLM = model  # pyrefly: ignore[bad-override]
+        self._model: LLM = model  # ty: ignore[bad-override]
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
         # to call the `__init__` method of the `BenchmarkModule` class.
@@ -417,7 +416,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         else:
             few_shot_examples = list()
 
-        dataset["test"] = dataset["test"].map(  # pyrefly: ignore[unsupported-operation]
+        dataset["test"] = dataset["test"].map(  # ty: ignore[unsupported-operation]
             partial(
                 apply_prompt,
                 few_shot_examples=few_shot_examples,
@@ -1082,10 +1081,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 def load_model(
     model_config: "ModelConfig",
     benchmark_config: "BenchmarkConfig",
-    attention_backend: t.Literal[
-        *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-    ]
-    | None,
+    attention_backend: str | None,
     generative_type: "GenerativeType",
     true_max_model_len: int,
     tokeniser: Tokeniser,
@@ -1250,7 +1246,7 @@ def load_model(
             pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
-            dtype=dtype,  # pyrefly: ignore[bad-argument-type]
+            dtype=dtype,  # ty: ignore[bad-argument-type]
             enforce_eager=True,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
@@ -1501,7 +1497,7 @@ def get_end_of_reasoning_token(
     output = model.generate(
         prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # pyrefly: ignore[bad-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # ty: ignore[bad-argument-type]
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
@@ -1534,7 +1530,7 @@ def get_end_of_reasoning_token(
         sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # pyrefly: ignore[bad-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # ty: ignore[bad-argument-type]
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
@@ -1626,7 +1622,7 @@ def get_custom_stop_tokens(
         sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # pyrefly: ignore[bad-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # ty: ignore[bad-argument-type]
 
     stop_tokens = [
         stop_token

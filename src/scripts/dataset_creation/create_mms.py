@@ -129,7 +129,7 @@ def create_uniform_distribution(
     ]
 
     # Combine the resampled dataframes (keep original indices!)
-    balanced_df = pd.concat(  # pyrefly: ignore[no-matching-overload]
+    balanced_df = pd.concat(  # ty: ignore[no-matching-overload]
         resampled_dfs, ignore_index=False
     )
 

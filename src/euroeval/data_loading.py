@@ -78,7 +78,7 @@ def load_data(
     # evaluation
     if hasattr(sys, "_called_from_test") and dataset_config.task != EUROPEAN_VALUES:
         # Truncate test set to one sample for testing
-        dataset["test"] = dataset["test"].select(  # pyrefly: ignore[unsupported-operation]
+        dataset["test"] = dataset["test"].select(  # ty: ignore[unsupported-operator]
             range(1)
         )
 
@@ -91,12 +91,12 @@ def load_data(
                 len(dataset[split]),
                 size=(benchmark_config.num_iterations, len(dataset[split])),
             )
-            bootstrapped_splits[split] = [  # pyrefly: ignore[unsupported-operation]
+            bootstrapped_splits[split] = [  # ty: ignore[unsupported-operator]
                 dataset[split].select(bootstrap_indices[idx])
                 for idx in range(benchmark_config.num_iterations)
             ]
         datasets = [
-            DatasetDict(  # pyrefly: ignore[no-matching-overload]
+            DatasetDict(  # ty: ignore[no-matching-overload]
                 {
                     split: bootstrapped_splits[split][idx]
                     for split in ["train", "val", "test"]
@@ -242,7 +242,7 @@ def load_raw_data(
     # Normalise the split keys to the standard names ("train", "val", "test")
     # that the rest of the codebase expects.  Community datasets may use
     # non-standard names such as "training", "validation", or "eval".
-    dataset = DatasetDict(  # pyrefly: ignore[no-matching-overload]
+    dataset = DatasetDict(  # ty: ignore[no-matching-overload]
         {
             standard_name: dataset[hf_name]
             for standard_name, hf_name in [

@@ -337,7 +337,9 @@ def debug_log(
         case TaskGroup.TOKEN_CLASSIFICATION:
             log_msgs = [""]
             for tokens, predictions, labels in zip(
-                batch["tokens"], model_output.predicted_labels, batch["labels"]
+                batch["tokens"],
+                t.cast(c.Sequence[str], model_output.predicted_labels),
+                batch["labels"],
             ):
                 predictions = [tag.upper() for tag in predictions]
                 sample = list(zip(tokens, predictions, labels))

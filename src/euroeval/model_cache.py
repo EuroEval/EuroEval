@@ -287,7 +287,7 @@ class ModelCache:
                 self[model_input] = SingleGenerativeModelOutput(
                     sequence=model_output.sequences[sample_idx],
                     predicted_label=(
-                        model_output.predicted_labels[sample_idx]
+                        typing.cast(str, model_output.predicted_labels[sample_idx])
                         if model_output.predicted_labels is not None
                         else None
                     ),

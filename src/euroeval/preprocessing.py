@@ -230,7 +230,7 @@ def build_preprocessing_func(
                     split = split.remove_columns([std_target])
                 split = split.rename_column(target_column, std_target)
 
-            dataset[split_name] = split  # pyrefly: ignore[unsupported-operation]
+            dataset[split_name] = split  # ty: ignore[unsupported-operator]
 
         return dataset
 

@@ -65,7 +65,7 @@ def compute_metrics(
     else:
         predictions = model_outputs
 
-    # pyrefly: ignore[bad-argument-type]
+    # ty: ignore[invalid-argument-type]
     raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     prompt_label_to_label_mapping = {
@@ -81,7 +81,7 @@ def compute_metrics(
         all_observed = sorted(
             {
                 v.lower() if isinstance(v, str) else str(v)
-                for v in list(predictions) + list(labels)  # pyrefly: ignore[operator]  # pyrefly: ignore[no-matching-overload]
+                for v in list(predictions) + list(labels)  # ty: ignore[unsupported-operator]  # ty: ignore[no-matching-overload]
             }
         )
         label2id = {lbl: idx for idx, lbl in enumerate(all_observed)}
@@ -93,7 +93,7 @@ def compute_metrics(
             if isinstance(pred, str)
             else pred
         )
-        for pred in predictions  # pyrefly: ignore[not-iterable]
+        for pred in predictions  # ty: ignore[not-iterable]
     ]
 
     label_ids = [
@@ -296,7 +296,7 @@ def get_closest_logprobs_labels(
     output_labels: list[str] = list()
     for idx, sample in enumerate(generation_logprobs):
         for logprob_list in sample:
-            # pyrefly: ignore[arg-type]
+            # ty: ignore[invalid-argument-type]
             generated_labels = [
                 re.sub(pattern=r"^[^a-zæøåüöä0-9]+$", repl="", string=label.lower())
                 for label, _ in logprob_list

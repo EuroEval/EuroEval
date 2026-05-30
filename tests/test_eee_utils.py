@@ -205,7 +205,10 @@ class TestEeeUtils:
         )
 
         eee = speed_result.to_eee_dict()
-        eval_results = {er["evaluation_name"]: er for er in eee["evaluation_results"]}
+        eval_results = {
+            er["evaluation_name"]: er
+            for er in eee["evaluation_results"]  # type: ignore[misc]
+        }
         assert "test_speed" in eval_results
         speed_config = eval_results["test_speed"]["metric_config"]
         # Speed metrics should only have lower_is_better, no score_type/min/max

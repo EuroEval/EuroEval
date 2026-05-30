@@ -173,7 +173,7 @@ def main() -> None:
                 "test": Dataset.from_pandas(test_df, split=Split.TEST),
                 "full_train": Dataset.from_pandas(
                     full_train_df,
-                    split="full_train",  # pyrefly: ignore[bad-argument-type]
+                    split="full_train",  # ty: ignore[invalid-argument-type]
                 ),
             }
         )

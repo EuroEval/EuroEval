@@ -301,7 +301,7 @@ class BenchmarkModule(ABC):
                 datasets_dict[str(split_name)] = split
             for split_name, split in dataset.items():
                 datasets_dict[f"original_{split_name}"] = split
-            # pyrefly: ignore[no-matching-overload]
+            # ty: ignore[no-matching-overload]
             datasets[idx] = DatasetDict(datasets_dict)
         return datasets
 

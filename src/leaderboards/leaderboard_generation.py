@@ -665,7 +665,7 @@ def generate_dataframe(
                 "context",
             ]
         ]
-        df_simplified = df_simplified.query(  # pyrefly: ignore[not-callable]
+        df_simplified = df_simplified.query(  # ty: ignore[call-non-callable]
             "rank != '-'"
         )
         df_simplified = df_simplified.convert_dtypes()

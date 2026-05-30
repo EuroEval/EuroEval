@@ -15,11 +15,7 @@ import torch
 from datasets import DatasetDict
 from transformers.generation.configuration_utils import GenerationConfig
 
-from .constants import (
-    ATTENTION_BACKENDS,
-    CHOICES_MAPPING,
-    MAX_NUMBER_OF_LOGGING_LANGUAGES,
-)
+from .constants import CHOICES_MAPPING, MAX_NUMBER_OF_LOGGING_LANGUAGES
 from .eee_utils import benchmark_result_from_eee_dict, benchmark_result_to_eee_dict
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
@@ -320,9 +316,7 @@ class DatasetConfig:
         self.task = task
         self.languages = languages
 
-        template = self.task.template_dict.get(
-            self.main_language  # pyrefly: ignore[bad-argument-type]
-        )
+        template = self.task.template_dict.get(self.languages[0])
         self.prompt_prefix = (
             prompt_prefix
             if prompt_prefix is not None
@@ -423,7 +417,7 @@ class DatasetConfig:
         else:
             self.preprocessing_func = preprocessing_func  # None or user-provided
 
-    def __repr__(self) -> str:  # pyrefly: ignore[missing-override-decorator]
+    def __repr__(self) -> str:  # ty: ignore[missing-override-decorator]
         """The representation of the dataset configuration.
 
         Returns:
@@ -611,12 +605,12 @@ class DatasetConfig:
     @property
     def id2label(self) -> "HashableDict":
         """The mapping from ID to label."""
-        return HashableDict({idx: label for idx, label in enumerate(self.labels)})  # pyrefly: ignore[no-matching-overload]
+        return HashableDict({idx: label for idx, label in enumerate(self.labels)})  # ty: ignore[no-matching-overload]
 
     @property
     def label2id(self) -> "HashableDict":
         """The mapping from label to ID."""
-        return HashableDict({label: i for i, label in enumerate(self.labels)})  # pyrefly: ignore[no-matching-overload]
+        return HashableDict({label: i for i, label in enumerate(self.labels)})  # ty: ignore[no-matching-overload]
 
     @property
     def num_labels(self) -> int:
@@ -642,9 +636,9 @@ class DatasetConfig:
             The natural string representation of the labels in specified language.
         """
         if self.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
-            sep_word = self.main_language.and_separator  # pyrefly: ignore[missing-attribute]
+            sep_word = self.main_language.and_separator  # ty: ignore[unresolved-attribute]
         else:
-            sep_word = self.main_language.or_separator  # pyrefly: ignore[missing-attribute]
+            sep_word = self.main_language.or_separator  # ty: ignore[unresolved-attribute]
 
         if labels is None:
             labels = list()
@@ -757,12 +751,7 @@ class BenchmarkConfig:
     few_shot: bool
     num_iterations: int
     gpu_memory_utilization: float
-    attention_backend: (
-        t.Literal[
-            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-        ]
-        | None
-    )
+    attention_backend: str | None
     requires_safetensors: bool
     generative_type: GenerativeType | None
     download_only: bool
@@ -813,12 +802,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     requires_safetensors: bool
     download_only: bool
     gpu_memory_utilization: float
-    attention_backend: (
-        t.Literal[
-            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-        ]
-        | None
-    )
+    attention_backend: str | None
     generative_type: GenerativeType | None
     custom_datasets_file: Path
     force: bool
@@ -869,10 +853,10 @@ class BenchmarkResult(pydantic.BaseModel):
 
         # To be backwards compatible, we accept old results which changed the model
         # name with parameters rather than adding them as explicit parameters
-        val_matches = re.search(r"\(.*val.*\)$", config["model"])  # pyrefly: ignore[no-matching-overload]
-        few_shot_matches = re.search(r"\(.*few-shot.*\)$", config["model"])  # pyrefly: ignore[no-matching-overload]
-        zero_shot_matches = re.search(r"\(.*zero-shot.*\)$", config["model"])  # pyrefly: ignore[no-matching-overload]
-        config["model"] = re.sub(  # pyrefly: ignore[no-matching-overload]
+        val_matches = re.search(r"\(.*val.*\)$", config["model"])  # ty: ignore[no-matching-overload]
+        few_shot_matches = re.search(r"\(.*few-shot.*\)$", config["model"])  # ty: ignore[no-matching-overload]
+        zero_shot_matches = re.search(r"\(.*zero-shot.*\)$", config["model"])  # ty: ignore[no-matching-overload]
+        config["model"] = re.sub(  # ty: ignore[no-matching-overload]
             r"\(.*(few-shot|val).*\)$", "", config["model"]
         ).strip()
 
@@ -893,7 +877,7 @@ class BenchmarkResult(pydantic.BaseModel):
         if "dataset_languages" in config:
             config["languages"] = config.pop("dataset_languages")
 
-        return cls(**config)  # pyrefly: ignore[bad-argument-type]
+        return cls(**config)  # ty: ignore[invalid-argument-type]
 
     @classmethod
     def from_eee_dict(cls, config: dict[str, object]) -> "BenchmarkResult":

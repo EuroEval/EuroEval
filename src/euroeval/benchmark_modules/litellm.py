@@ -638,7 +638,7 @@ class LiteLLMModel(BenchmarkModule):
             keys_and_their_types = {
                 tag_name: (c.Sequence[str], ...) for tag_name in tag_names
             }
-            # pyrefly: ignore[no-matching-overload]
+            # ty: ignore[no-matching-overload]
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
             return generation_kwargs, 0
@@ -1395,7 +1395,7 @@ class LiteLLMModel(BenchmarkModule):
         num_attempts = 10
         for _ in range(num_attempts):
             try:
-                litellm.completion(  # pyrefly: ignore[not-callable]
+                litellm.completion(  # ty: ignore[call-non-callable]
                     messages=[dict(role="user", content="X")],
                     model=clean_model_id(
                         model_id=model_id, benchmark_config=benchmark_config
@@ -1708,12 +1708,11 @@ class LiteLLMModel(BenchmarkModule):
                 )
 
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            localised_labels = [
+            localised_labels = tuple(
                 self.dataset_config.prompt_label_mapping[label]
                 for label in self.dataset_config.labels
-            ]
+            )
             keys_and_their_types = {
-                # pyrefly: ignore[invalid-literal]
                 LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)

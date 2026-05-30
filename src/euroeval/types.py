@@ -10,10 +10,10 @@ try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
     from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MCB,  # pyrefly: ignore[missing-module-attribute]
+        MistralCommonBackend as MCB,  # ty: ignore[unresolved-attribute]
     )
 
-    MistralCommonTokenizer = MCB  # pyrefly: ignore[assignment]
+    MistralCommonTokenizer = MCB  # ty: ignore[invalid-assignment]
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
