@@ -82,5 +82,8 @@ def test_get_end_of_chat_token_ids(
     )
     assert end_of_chat_token_ids == expected_token_ids
     if expected_string is not None:
-        end_of_chat_string = tokeniser.decode(end_of_chat_token_ids).strip()
+        assert end_of_chat_token_ids is not None
+        end_of_chat_string = tokeniser.decode(
+            list(end_of_chat_token_ids)
+        ).strip()
         assert end_of_chat_string == expected_string

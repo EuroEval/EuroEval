@@ -5,6 +5,7 @@ from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
+import torch
 from tqdm.auto import tqdm
 
 from euroeval.benchmark_modules.base import BenchmarkModule
@@ -91,7 +92,7 @@ class TestBenchmarkSpeedSingleIteration:
             progress_bar=False,
             api_key=None,
             trust_remote_code=False,
-            device=None,
+            device=torch.device("cpu"),
             verbose=False,
             clear_model_cache=False,
             evaluate_test_split=False,

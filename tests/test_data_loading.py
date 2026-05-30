@@ -162,7 +162,7 @@ class TestAllDatasets:
                 )
 
                 max_input_length = max(
-                    len(tokeniser(prompt)["input_ids"])
+                    len(tokeniser(prompt)["input_ids"])  # type: ignore[union-attr]
                     for prompt in prepared_test["text"]
                 )
                 max_output_length = dataset_config.max_generated_tokens

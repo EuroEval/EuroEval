@@ -148,8 +148,8 @@ def test_chrffully_matches_predictions(
         predictions=predictions,
         references=references,
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
     )
 
     assert score is not None
@@ -186,8 +186,8 @@ def test_all_chrff_variants(
         predictions=predictions,
         references=references,
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
     )
 
     assert score is not None
@@ -207,8 +207,8 @@ def test_chrff_empty_predictions(
         predictions=[],
         references=[],
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
     )
 
     # When there are no predictions, the metric returns 1.0 (perfect score)
@@ -232,8 +232,8 @@ def test_chrff_different_word_orders(
         predictions=predictions,
         references=references,
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
     )
 
     # Word order 2 (with bi-grams)
@@ -242,8 +242,8 @@ def test_chrff_different_word_orders(
         predictions=predictions,
         references=references,
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
     )
 
     # Scores should be different due to different word order handling
@@ -267,8 +267,8 @@ def test_chrff_partial_match(
         predictions=predictions,
         references=references,
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
     )
 
     assert score is not None
