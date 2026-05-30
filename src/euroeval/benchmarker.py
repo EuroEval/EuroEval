@@ -15,7 +15,7 @@ from time import sleep
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
-from .constants import GENERATIVE_PIPELINE_TAGS
+from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
 from .enums import Device, GenerativeType, InferenceBackend, ModelType
@@ -75,7 +75,10 @@ class Benchmarker:
         api_base: str | None = None,
         api_version: str | None = None,
         gpu_memory_utilization: float = 0.8,
-        attention_backend: str | None = None,
+        attention_backend: t.Literal[
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
+        ]
+        | None = None,
         generative_type: GenerativeType | None = None,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
@@ -343,7 +346,10 @@ class Benchmarker:
         download_only: bool | None = None,
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
-        attention_backend: str | None = None,
+        attention_backend: t.Literal[
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
+        ]
+        | None = None,
         custom_datasets_file: Path | str | None = None,
         force: bool | None = None,
         verbose: bool | None = None,

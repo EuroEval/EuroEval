@@ -1708,9 +1708,16 @@ class LiteLLMModel(BenchmarkModule):
                 )
 
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
-            # Use str as the type for structured output (dynamic Literal union
-            # is not supported by type checkers)
-            keys_and_their_types = {LITELLM_CLASSIFICATION_OUTPUT_KEY: (str, ...)}
+            localised_labels = [
+                self.dataset_config.prompt_label_mapping[label]
+                for label in self.dataset_config.labels
+            ]
+            keys_and_their_types = {
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (
+                    t.Literal[*localised_labels],  # ty: ignore[invalid-type-form]
+                    ...,
+                )
+            }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
 

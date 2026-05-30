@@ -203,8 +203,6 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             and self._tokeniser.vocab_size is not None
         ):
             vocab_size = self._tokeniser.vocab_size
-        else:
-            pass
         return vocab_size
 
     @cached_property

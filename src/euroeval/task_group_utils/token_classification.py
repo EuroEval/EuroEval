@@ -7,7 +7,7 @@ from copy import deepcopy
 
 import numpy as np
 
-from ..exceptions import InvalidBenchmark, InvalidBenchmarkValue
+from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
 from ..string_utils import extract_json_dict_from_string
 from ..utils import raise_if_model_output_contains_nan_values
@@ -266,9 +266,7 @@ def tokenize_and_align_labels(
     Raises:
         InvalidBenchmark:
             If the tokeniser is not of a "fast" variant and the word IDs cannot be
-            extracted.
-        InvalidBenchmarkValue:
-            If a label was not found in the model's config.
+            extracted, or if a label was not found in the model's config.
     """
     # Tokenise the texts. We use the `is_split_into_words` argument here because
     # the texts in our dataset are lists of words (with a label for each word)
@@ -373,7 +371,7 @@ def tokenize_and_align_labels(
                     label_id = label2id[label.lower()]
                 except KeyError as e:
                     msg = f"The label {label} was not found in the model's config."
-                    raise InvalidBenchmarkValue(msg) from e
+                    raise InvalidBenchmark(msg) from e
                 label_ids.append(label_id)
 
             # For the other tokens in a word, we set the label to -100

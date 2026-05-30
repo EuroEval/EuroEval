@@ -15,7 +15,11 @@ import torch
 from datasets import DatasetDict
 from transformers.generation.configuration_utils import GenerationConfig
 
-from .constants import CHOICES_MAPPING, MAX_NUMBER_OF_LOGGING_LANGUAGES
+from .constants import (
+    ATTENTION_BACKENDS,
+    CHOICES_MAPPING,
+    MAX_NUMBER_OF_LOGGING_LANGUAGES,
+)
 from .eee_utils import benchmark_result_from_eee_dict, benchmark_result_to_eee_dict
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
@@ -753,7 +757,12 @@ class BenchmarkConfig:
     few_shot: bool
     num_iterations: int
     gpu_memory_utilization: float
-    attention_backend: str | None
+    attention_backend: (
+        t.Literal[
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
+        ]
+        | None
+    )
     requires_safetensors: bool
     generative_type: GenerativeType | None
     download_only: bool
@@ -804,7 +813,12 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     requires_safetensors: bool
     download_only: bool
     gpu_memory_utilization: float
-    attention_backend: str | None
+    attention_backend: (
+        t.Literal[
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
+        ]
+        | None
+    )
     generative_type: GenerativeType | None
     custom_datasets_file: Path
     force: bool
@@ -1094,7 +1108,7 @@ class ModelIdComponents:
     param: str | None
 
 
-class HashableDict(dict[t.Any, t.Any]):
+class HashableDict(dict):
     """A hashable dictionary."""
 
     def __hash__(self) -> int:

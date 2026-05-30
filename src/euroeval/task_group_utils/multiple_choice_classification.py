@@ -23,7 +23,7 @@ class MultipleChoiceClassificationTrainer(Trainer):
 
     def evaluate(  # ty: ignore[invalid-method-override]
         self,
-        eval_dataset: "Dataset | dict[str, Dataset] | None" = None,
+        eval_dataset: "Dataset | None" = None,
         ignore_keys: list[str] | None = None,
         metric_key_prefix: str = "eval",
     ) -> dict[str, float]:

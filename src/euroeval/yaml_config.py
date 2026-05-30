@@ -233,28 +233,7 @@ def load_dataset_config_from_yaml(
     return DatasetConfig(
         task=task_obj,
         languages=language_objs,
-        name=kwargs.get("name"),
-        pretty_name=kwargs.get("pretty_name"),
-        source=kwargs.get("source"),
-        prompt_prefix=kwargs.get("prompt_prefix"),
-        prompt_template=kwargs.get("prompt_template"),
-        instruction_prompt=kwargs.get("instruction_prompt"),
-        num_few_shot_examples=kwargs.get("num_few_shot_examples"),
-        max_generated_tokens=kwargs.get("max_generated_tokens"),
-        labels=kwargs.get("labels"),
-        prompt_label_mapping=kwargs.get("prompt_label_mapping"),
-        allowed_model_types=kwargs.get("allowed_model_types"),
-        allowed_generative_types=kwargs.get("allowed_generative_types"),
-        allow_invalid_model_outputs=kwargs.get("allow_invalid_model_outputs"),
-        train_split=kwargs.get("train_split"),
-        val_split=kwargs.get("val_split"),
-        test_split=kwargs.get("test_split") or "test",
-        bootstrap_samples=kwargs.get("bootstrap_samples", True),
-        unofficial=kwargs.get("unofficial", False),
-        input_column=kwargs.get("input_column") or "text",
-        target_column=kwargs.get("target_column"),
-        choices_column=kwargs.get("choices_column"),
-        preprocessing_func=kwargs.get("preprocessing_func"),
+        **kwargs,  # ty: ignore[invalid-argument-type]
     )
 
 
