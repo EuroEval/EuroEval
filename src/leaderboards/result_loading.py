@@ -108,15 +108,11 @@ def convert_to_old_format(record: dict) -> dict:
     for column in bool_columns:
         new_record[column] = True if new_record[column] == "true" else False
     for column in int_columns:
-        new_record[column] = int(
-            new_record[column]
-        )
+        new_record[column] = int(new_record[column])
 
     # Extract raw results from eval_library.additional_details.raw_results
     if new_record.get("raw_results", None) is not None:
-        raw_results = json.loads(
-            new_record["raw_results"]
-        )
+        raw_results = json.loads(new_record["raw_results"])
         new_record["results"]["raw"]["test"] = raw_results
 
     # Extract evaluation results and convert to old format

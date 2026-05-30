@@ -316,7 +316,9 @@ class DatasetConfig:
         self.task = task
         self.languages = languages
 
-        template = self.task.template_dict.get(self.languages[0])
+        template = t.cast(dict[Language, PromptConfig], self.task.template_dict).get(
+            self.languages[0]
+        )
         self.prompt_prefix = (
             prompt_prefix
             if prompt_prefix is not None
@@ -1092,7 +1094,7 @@ class ModelIdComponents:
     param: str | None
 
 
-class HashableDict(dict[str, str]):
+class HashableDict(dict[Any, Any]):
     """A hashable dictionary."""
 
     def __hash__(self) -> int:

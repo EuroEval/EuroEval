@@ -77,13 +77,9 @@ from ..utils import get_hf_token, internet_connection_available
 from .base import BenchmarkModule
 
 try:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonTokenizer,
-    )
+    from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MCB,
-    )
+    from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
 
     MistralCommonTokenizer = MCB
 
@@ -460,9 +456,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                         load_from_cache_file=False,
                         keep_in_memory=True,
                     )
-                dataset: DatasetDict = DatasetDict(
-                    data_dict
-                )
+                dataset: DatasetDict = DatasetDict(data_dict)
 
                 # The Trainer hides the columns that are not used by the model (here
                 # `id` and `offset_mapping` which we will need for our post-processing),
@@ -887,7 +881,6 @@ def get_model_repo_info(
         generative_class_names = [
             class_name
             for tag in GENERATIVE_PIPELINE_TAGS
-
             for class_name in TASK_MAPPING.get(tag, dict()).values()
         ]
         if class_names is not None and (

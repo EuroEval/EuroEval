@@ -9,9 +9,7 @@ from transformers.trainer_utils import EvalPrediction
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MCB,
-    )
+    from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
 
     MistralCommonTokenizer = MCB
 
@@ -41,7 +39,12 @@ IterationScores: t.TypeAlias = c.Mapping[str, float | list[FailedInstance]]
 ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[IterationScores]]
 Predictions: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Labels: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
-Tokeniser: t.TypeAlias = PreTrainedTokenizer | MistralCommonTokenizer
+Tokeniser: t.TypeAlias = (
+    PreTrainedTokenizer
+    | MistralCommonTokenizer
+    | "TokenizersBackend"
+    | "SentencePieceBackend"
+)
 Relation: t.TypeAlias = t.Literal["less than", "at least"]
 
 

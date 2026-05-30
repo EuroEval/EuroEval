@@ -65,7 +65,6 @@ def compute_metrics(
     else:
         predictions = model_outputs
 
-
     raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     prompt_label_to_label_mapping = {
@@ -296,7 +295,6 @@ def get_closest_logprobs_labels(
     output_labels: list[str] = list()
     for idx, sample in enumerate(generation_logprobs):
         for logprob_list in sample:
-
             generated_labels = [
                 re.sub(pattern=r"^[^a-zæøåüöä0-9]+$", repl="", string=label.lower())
                 for label, _ in logprob_list

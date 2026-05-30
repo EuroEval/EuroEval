@@ -91,7 +91,6 @@ class QuestionAnsweringTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
-
         eval_dataloader = self.get_eval_dataloader(eval_dataset)
 
         # Temporarily disable metric computation, we will do it in the loop here.
@@ -121,7 +120,6 @@ class QuestionAnsweringTrainer(Trainer):
 
         if orig_eval_dataset is not None and eval_dataset is not None:
             preds_and_labels = postprocess_predictions_and_labels(
-
                 predictions=predictions,
                 dataset=orig_eval_dataset,
                 prepared_dataset=eval_dataset,
@@ -177,7 +175,6 @@ def compute_metrics(
     # predictions
     if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
         model_outputs = model_outputs[0]
-
 
     raise_if_model_output_contains_nan_values(model_output=model_outputs)
 

@@ -82,16 +82,20 @@ from ..utils import (
 )
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 
+# Import MistralCommonTokenizer with a fallback that ty can resolve.
+# transformers.tokenization_mistral_common is the runtime module;
+# transformers.models.mistral is the static-analysis-friendly location.
 try:
     from transformers.tokenization_mistral_common import (
+        MistralCommonBackend,
         MistralCommonTokenizer,
     )
 except ImportError:
-    from transformers.tokenization_mistral_common import (
+    from transformers.models.mistral.tokenization_mistral import (
         MistralCommonBackend as MCB,
     )
 
-    MistralCommonTokenizer = MCB
+    MistralCommonTokenizer = MCB  # type: ignore[assignment]
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     import vllm.config
@@ -183,7 +187,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
-        )
+        )  # type: ignore[invalid-argument-type]
 
         # This is already set when calling `super().__init__`, but we need it to get
         # the correct value from `self.generative_type`, so we set it here as well.
@@ -1123,7 +1127,7 @@ def load_model(
     )
 
     # Start with dtype being the "auto" vLLM dtype
-    dtype: str | torch.dtype = "auto"
+    dtype: str | torch.dtype = "auto"  # type: ignore[assignment]
 
     # Choose bf16 over fp16 if the model is a fp32 model and the GPU supports it
     if hf_model_config.dtype == torch.float32:
@@ -1195,7 +1199,7 @@ def load_model(
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
     if hasattr(vllm.config, "attention") and attention_backend is not None:
-        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)
+        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)  # type: ignore[invalid-argument-type]
 
     clear_vllm()
 
@@ -1246,14 +1250,14 @@ def load_model(
             pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
-            dtype=dtype,
+            dtype=dtype,  # type: ignore[invalid-argument-type]
             enforce_eager=True,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
-            **({"hf_overrides": hf_overrides} if hf_overrides else {}),
+            **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # type: ignore[invalid-argument-type]
             **vllm_params,
         )
     except (RuntimeError, ValueError, OSError) as e:
@@ -1442,11 +1446,11 @@ def load_tokeniser(
 
     # Ensure that BOS, EOS and PAD tokens are set
     if not isinstance(tokeniser, MistralCommonTokenizer):
-        tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)
-        tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)
-        tokeniser.pad_token, tokeniser.pad_token_id = get_pad_token(tokeniser=tokeniser)
+        tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)  # type: ignore[invalid-argument-type]
+        tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)  # type: ignore[invalid-argument-type]
+        tokeniser.pad_token, tokeniser.pad_token_id = get_pad_token(tokeniser=tokeniser)  # type: ignore[invalid-argument-type]
 
-    return tokeniser
+    return tokeniser  # type: ignore[return-type]
 
 
 def clear_vllm() -> None:
@@ -1497,7 +1501,7 @@ def get_end_of_reasoning_token(
     output = model.generate(
         prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[call-arg]
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
@@ -1530,7 +1534,7 @@ def get_end_of_reasoning_token(
         sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[call-arg]
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
@@ -1622,7 +1626,7 @@ def get_custom_stop_tokens(
         sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # type: ignore[call-arg]
 
     stop_tokens = [
         stop_token

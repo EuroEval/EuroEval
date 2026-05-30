@@ -55,7 +55,6 @@ def compute_metrics(
     if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
         model_outputs = model_outputs[0]
 
-
     raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     model_output_dtype = np.asarray(model_outputs).dtype

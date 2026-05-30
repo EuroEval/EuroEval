@@ -210,7 +210,7 @@ convention = "google"
 unresolved-import = "ignore"
 unresolved-attribute = "ignore"
 # Pandas type stub issues - these are false positives due to incomplete type stubs
-unsupported-operation = "ignore"
+unsupported-operator = "ignore"
 no-matching-overload = "ignore"
 
 [tool.pytest.ini_options]

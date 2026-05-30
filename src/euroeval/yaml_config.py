@@ -229,11 +229,7 @@ def load_dataset_config_from_yaml(
     if kwargs is None:
         return None
 
-    return DatasetConfig(
-        task=task_obj,
-        languages=language_objs,
-        **kwargs,
-    )
+    return DatasetConfig(task=task_obj, languages=language_objs, **kwargs)
 
 
 def promote_field_spec_fields(raw: dict[str, object]) -> None:

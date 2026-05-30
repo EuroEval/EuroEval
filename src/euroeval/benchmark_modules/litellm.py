@@ -201,7 +201,7 @@ class LiteLLMModel(BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = False
-    allowed_params = {
+    allowed_params: dict[re.Pattern[str], list[str]] = {
         # OpenAI models
         re.compile(r"(openai/)?gpt-5.*"): [
             "none",
@@ -1712,8 +1712,13 @@ class LiteLLMModel(BenchmarkModule):
                 self.dataset_config.prompt_label_mapping[label]
                 for label in self.dataset_config.labels
             )
+            # Build a Union of Literal types dynamically (ty doesn't support
+            # Literal[*tuple] unpacking)
+            literal_type = t.make_union(
+                *(t.Literal[str_]) for str_ in localised_labels
+            )
             keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (literal_type, ...)
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class

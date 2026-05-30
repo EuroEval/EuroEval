@@ -246,15 +246,12 @@ def finetune_single_iteration(
         try:
             test_scores = trainer.evaluate(
                 eval_dataset=dataset["test"],
-                orig_eval_dataset=dataset[
-                    "original_test"
-                ],
+                orig_eval_dataset=dataset["original_test"],
                 metric_key_prefix="test",
             )
         except TypeError:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],
-                metric_key_prefix="test",
+                eval_dataset=dataset["test"], metric_key_prefix="test"
             )
         except NaNValueInModelOutput as e:
             del trainer

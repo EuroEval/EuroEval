@@ -226,9 +226,7 @@ def _create_uniform_label_distribution(
     ]
 
     # Combine the resampled dataframes (keep original indices!)
-    balanced_df = pd.concat(
-        resampled_dfs, ignore_index=False
-    )
+    balanced_df = pd.concat(resampled_dfs, ignore_index=False)
 
     return balanced_df
 

@@ -18,9 +18,7 @@ from .types import Tokeniser
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MCB,
-    )
+    from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
 
     MistralCommonTokenizer = MCB
 
@@ -445,7 +443,7 @@ def get_first_label_token_mapping(
 
     # Tokenise some text containing each label, which we will use to extract the
     # first token of each label
-    all_tokens: c.Sequence[c.Sequence[str]]
+    all_tokens: c.Sequence[c.Sequence[str | list[str]]]
     if not has_chat_template(tokeniser=tokeniser):
         add_prefix_space = should_prefix_space_be_added_to_labels(
             labels_to_be_generated=local_labels, tokeniser=tokeniser
@@ -483,9 +481,7 @@ def get_first_label_token_mapping(
             )
             all_token_ids.append(token_ids)
         all_tokens = [
-            tokeniser.convert_ids_to_tokens(
-                ids=token_ids
-            )
+            tokeniser.convert_ids_to_tokens(ids=token_ids)
             for token_ids in all_token_ids
         ]
 
@@ -583,7 +579,7 @@ def apply_chat_template(
     tokenise: bool,
     add_generation_prompt: bool,
     **extra_kwargs,
-) -> str | list[int]:
+) -> str | list[int] | list[str]:
     """Apply the chat template to a prompt.
 
     Args:

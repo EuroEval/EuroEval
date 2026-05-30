@@ -64,7 +64,6 @@ def compute_metrics(
     predictions: list[list[str]]
 
     if not isinstance(model_outputs[0][0], str):
-
         raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()
 
         # Remove ignored index (special tokens)
@@ -90,7 +89,6 @@ def compute_metrics(
         ]
 
     else:
-
         predictions = model_outputs
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
@@ -126,9 +124,7 @@ def compute_metrics(
                 if ner_tag[-4:] == "misc":
                     predictions_no_misc[i][j] = "o"
 
-        labels_no_misc = deepcopy(
-            labels
-        )
+        labels_no_misc = deepcopy(labels)
         for i, label_list in enumerate(labels_no_misc):
             for j, ner_tag in enumerate(label_list):
                 if (
