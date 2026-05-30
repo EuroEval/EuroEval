@@ -116,7 +116,7 @@ def test_benchmark_openai(
 
 
 @pytest.mark.skipif(
-    condition=os.system("uv run ollama -v") != 0,  # type: ignore[deprecated]
+    condition=os.system("uv run ollama -v") != 0,  # ty: ignore[deprecated]
     reason="Ollama is not available."
 )
 def test_benchmark_ollama(
