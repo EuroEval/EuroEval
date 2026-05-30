@@ -1056,7 +1056,7 @@ class Benchmarker:
                         if model_config.inference_backend == InferenceBackend.LITELLM
                         else None
                     ),
-                )
+                )  # ty: ignore[invalid-argument-type]
                 log(f"Results:\n{results}", level=logging.DEBUG)
                 return record
 
