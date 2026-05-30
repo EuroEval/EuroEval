@@ -321,7 +321,7 @@ class DatasetConfig:
         self.languages = languages
 
         template = self.task.template_dict.get(
-            self.main_language  # ty: ignore[argument-type]
+            self.main_language  # ty: ignore[invalid-argument-type]
         )
         self.prompt_prefix = (
             prompt_prefix
