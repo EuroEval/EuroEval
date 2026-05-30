@@ -320,8 +320,8 @@ class DatasetConfig:
         self.task = task
         self.languages = languages
 
-        template = t.cast(dict[Language, PromptConfig], self.task.template_dict).get(
-            self.languages[0]
+        template = self.task.template_dict.get(
+            self.main_language  # ty: ignore[argument-type]
         )
         self.prompt_prefix = (
             prompt_prefix
