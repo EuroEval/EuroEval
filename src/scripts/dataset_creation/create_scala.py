@@ -462,7 +462,7 @@ def prepare_df(df: pd.DataFrame, split: str) -> Dataset:
     df = df.sample(frac=1.0, random_state=4242).reset_index(drop=True)
 
     # Convert the dataframe to a Hugging Face Dataset and return it
-    return Dataset.from_pandas(df, split=split)
+    return Dataset.from_pandas(df, split=split)  # ty: ignore
 
 
 def make_splits(

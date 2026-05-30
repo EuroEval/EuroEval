@@ -276,7 +276,7 @@ def promote_field_spec_fields(raw: dict[str, object]) -> None:
     if not isinstance(tasks_raw, list) or not tasks_raw:
         return
 
-    first_task: dict[str, object] = tasks_raw[0]
+    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[0])
     if not isinstance(first_task, dict):
         return
 
@@ -370,7 +370,7 @@ def infer_task_from_inspect_ai(
     tasks_raw = raw.get("tasks")
     if not isinstance(tasks_raw, list) or not tasks_raw:
         return None
-    first_task: dict[str, object] = tasks_raw[0]
+    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[0])
     if not isinstance(first_task, dict):
         return None
 
@@ -380,7 +380,7 @@ def infer_task_from_inspect_ai(
             if isinstance(solver, dict):
                 _s: dict[str, object] = cast(dict[str, object], solver)
                 if _s.get("name") == "multiple_choice":
-                return task_map.get("multiple-choice")
+                    return task_map.get("multiple-choice")
 
     scorers = first_task.get("scorers")
     if isinstance(scorers, list):
@@ -389,9 +389,9 @@ def infer_task_from_inspect_ai(
                 _sc: dict[str, object] = cast(dict[str, object], scorer)
                 if _sc.get("name") == "model_graded_fact":
                     judge_id: str | None = None
-                    args = _sc.get("args")
+                    args = _sc.get("args") or {}
                 if isinstance(args, dict):
-                    model_val = args.get("model")
+                    model_val = args.get("model")  # ty: ignore[invalid-argument-type]
                     if isinstance(model_val, str) and model_val:
                         judge_id = model_val
                 if judge_id is not None:

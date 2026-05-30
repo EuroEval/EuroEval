@@ -18,6 +18,8 @@ The dataset is based on the SuperGLUE WiC task:
   https://aclanthology.org/N19-1128/
 """
 
+from typing import cast
+
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
@@ -37,8 +39,8 @@ def main() -> None:
 
     # Train and val splits are drawn from the SuperGLUE training split.
     # The SuperGLUE validation split is used directly as the test split.
-    source_train_df = process_dataframe(df=raw_train.to_pandas())
-    test_split = process_dataframe(df=raw_val.to_pandas())
+    source_train_df = process_dataframe(df=cast(pd.DataFrame, raw_train.to_pandas()))
+    test_split = process_dataframe(df=cast(pd.DataFrame, raw_val.to_pandas()))
 
     train_split, val_split = make_splits(df=source_train_df)
 

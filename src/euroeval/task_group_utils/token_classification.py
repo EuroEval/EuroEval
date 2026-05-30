@@ -62,6 +62,7 @@ def compute_metrics(
         model_outputs = model_outputs[0]
 
     predictions: list[list[str]]
+    labels_t: list[list[str]]
 
     if not isinstance(model_outputs[0][0], str):
         raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()
@@ -89,7 +90,7 @@ def compute_metrics(
         ]
 
     else:
-        predictions = model_outputs
+        predictions = list(model_outputs)  # ty: ignore[assignment]
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
 
@@ -124,7 +125,7 @@ def compute_metrics(
                 if ner_tag[-4:] == "misc":
                     predictions_no_misc[i][j] = "o"
 
-        labels_no_misc = deepcopy(labels)
+        labels_no_misc = deepcopy(labels)  # ty: ignore[assignment]
         for i, label_list in enumerate(labels_no_misc):
             for j, ner_tag in enumerate(label_list):
                 if (
@@ -297,6 +298,7 @@ def tokenize_and_align_labels(
             # Decode the token IDs
             tokens = tokeniser.convert_ids_to_tokens(tok_ids)
             assert isinstance(tokens, list)
+            tokens = t.cast(list[str], tokens)
 
             # Remove prefixes from the tokens
             prefixes_to_remove = ["▁", "##"]

@@ -164,15 +164,15 @@ class TestEeeUtils:
 
         # Verify round-trip restores results
         restored = BenchmarkResult.from_dict(eee_dict)
-        assert restored.results["total"]["test_mcc"] == 42.5  # type: ignore[index]
+        assert restored.results["total"]["test_mcc"] == 42.5  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule, invalid-argument-type]
         assert (
             abs(
-                restored.results["total"]["test_mcc_se"] - 1.2  # type: ignore[index]
+                restored.results["total"]["test_mcc_se"] - 1.2  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule, invalid-argument-type]
             )
             < 1e-9
         )
-        assert restored.results["total"]["num_failed_instances"] == 3.0  # type: ignore[index]
-        assert len(restored.results["raw"]) == 2  # type: ignore[index]
+        assert restored.results["total"]["num_failed_instances"] == 3.0  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule, invalid-argument-type]
+        assert len(restored.results["raw"]) == 2  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule]
 
         results_path.unlink(missing_ok=True)
 
@@ -207,7 +207,7 @@ class TestEeeUtils:
         eee = speed_result.to_eee_dict()
         eval_results = {
             er["evaluation_name"]: er
-            for er in eee["evaluation_results"]  # type: ignore[misc]
+            for er in eee["evaluation_results"]  # ty: ignore[misc]  # ty:ignore[ignore-comment-unknown-rule, not-iterable]
         }
         assert "test_speed" in eval_results
         speed_config = eval_results["test_speed"]["metric_config"]

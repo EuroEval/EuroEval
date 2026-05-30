@@ -601,7 +601,7 @@ def extract_questions(
             "Questions", **{f"question_{i}": (McQuestion, ...) for i in ids}
         )
 
-    completion = client.beta.chat.completions.parse(
+    completion = client.beta.chat.completions.parse(  # ty: ignore
         model=GPT_MODEL,
         messages=[{"role": "user", "content": content}],
         response_format=response_format,
@@ -667,7 +667,7 @@ def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, AnswerKeyT
         *_images_to_content(images),
     ]
 
-    completion = client.beta.chat.completions.parse(
+    completion = client.beta.chat.completions.parse(  # ty: ignore
         model=GPT_MODEL,
         messages=[{"role": "user", "content": content}],
         response_format=AnswerKey,
