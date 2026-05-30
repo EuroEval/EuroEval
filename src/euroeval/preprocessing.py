@@ -204,7 +204,7 @@ def build_preprocessing_func(
                 merge_fn = functools.partial(
                     merge_input_and_choices,
                     input_column=input_column,
-                    choices_column=choices_column,
+                    choices_column=t.cast("str | list[str]", choices_column),
                     choices_label=choices_label,
                 )
                 split = split.map(merge_fn)
