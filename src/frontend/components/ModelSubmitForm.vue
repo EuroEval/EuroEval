@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { LANGUAGE_GROUPS, submitEvalRequest } from "@/services/github";
-import { searchHfModels, detectGgufQuants, type HfModelSuggestion } from "@/services/huggingface";
+import { searchHfModels, detectGguf, type HfModelSuggestion } from "@/services/huggingface";
 
 const emit = defineEmits<{
   submitted: [
@@ -22,24 +22,29 @@ const highlight = ref(-1);
 const submitting = ref(false);
 const errorMsg = ref<string | null>(null);
 const successMsg = ref<string | null>(null);
-const availableQuants = ref<string[]>([]);
-const selectedQuant = ref("");
-const isCheckingGguf = ref(false);
+const isGguf = ref(false);
+const ggufQuants = ref<string[]>([]);
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 let suppressNextSearch = false;
+let ggufCheckSeq = 0;
 
 const canSubmit = computed(
   () =>
     /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(modelId.value.trim()) &&
     selectedGroups.value.size > 0 &&
     !submitting.value &&
-    availableQuants.value.length === 0,
+    !isGguf.value,
 );
 
 watch(modelId, (v) => {
   if (searchTimer) clearTimeout(searchTimer);
   highlight.value = -1;
+  // Any edit invalidates a previous GGUF verdict until it is re-checked, so a
+  // stale "blocked" state can never linger over a different model id.
+  isGguf.value = false;
+  ggufQuants.value = [];
+  ggufCheckSeq++;
   if (suppressNextSearch) {
     suppressNextSearch = false;
     return;
@@ -88,19 +93,16 @@ function pickSuggestion(s: HfModelSuggestion) {
 
 async function checkIfGguf(modelIdStr: string) {
   if (!modelIdStr || !/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(modelIdStr)) {
-    availableQuants.value = [];
+    isGguf.value = false;
+    ggufQuants.value = [];
     return;
   }
-  try {
-    const quants = await detectGgufQuants(modelIdStr);
-    if (quants.length > 0) {
-      availableQuants.value = quants;
-    } else {
-      availableQuants.value = [];
-    }
-  } catch {
-    availableQuants.value = [];
-  }
+  const seq = ++ggufCheckSeq;
+  const result = await detectGguf(modelIdStr);
+  // Ignore a response that a newer check has superseded (out-of-order replies).
+  if (seq !== ggufCheckSeq) return;
+  isGguf.value = result.isGguf;
+  ggufQuants.value = result.quants;
 }
 
 function onInputBlur() {
@@ -135,6 +137,13 @@ async function onSubmit() {
   submitting.value = true;
   errorMsg.value = null;
   successMsg.value = null;
+  // Final guard: confirm the model is not GGUF right before submitting, in case
+  // the user clicked while the debounced background check was still in flight.
+  await checkIfGguf(modelId.value.trim());
+  if (isGguf.value) {
+    submitting.value = false;
+    return;
+  }
   const result = await submitEvalRequest(
     modelId.value.trim(),
     Array.from(selectedGroups.value),
@@ -151,7 +160,8 @@ async function onSubmit() {
     modelId.value = "";
     selectedGroups.value = new Set();
     suggestions.value = [];
-    availableQuants.value = [];
+    isGguf.value = false;
+    ggufQuants.value = [];
   } else if (result.status === 409 && result.url) {
     errorMsg.value = `This model is already in the queue — see ${result.url}.`;
   } else {
@@ -223,14 +233,16 @@ async function onSubmit() {
       </div>
     </label>
 
-    <div v-if="availableQuants.length > 0" class="field field-gguf">
+    <div v-if="isGguf" class="field field-gguf">
       <span class="label">⚠ GGUF model detected</span>
       <div class="gguf-warning">
         <p>
-          EuroEval's evaluation queue does not currently support GGUF models.
-          The quantisation of the model you selected was detected as
-          <strong>{{ availableQuants[0] }}</strong>, but this model cannot be
-          added to the automatic evaluation queue.
+          EuroEval's evaluation queue does not currently support GGUF models<span
+            v-if="ggufQuants.length > 0"
+          >
+            (detected quantisation{{ ggufQuants.length > 1 ? "s" : "" }}:
+            <strong>{{ ggufQuants.join(", ") }}</strong>)</span>, so this model
+          cannot be added to the automatic evaluation queue.
         </p>
         <p>
           If you would like this model evaluated, please
@@ -525,12 +537,6 @@ button[type="submit"]:disabled {
 
 .gguf-warning a:hover {
   color: #641319;
-}
-
-.quant-row {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
 }
 
 </style>
