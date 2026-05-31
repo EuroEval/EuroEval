@@ -24,6 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          # `pull_request_target` checks out the base branch by default; check out
+          # the PR head so CI validates the proposed changes, not `main`. Combined
+          # with `persist-credentials: false` so the PR code never sees the token.
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Install uv and set up Python
@@ -47,6 +51,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          # `pull_request_target` checks out the base branch by default; check out
+          # the PR head so CI validates the proposed changes, not `main`. Combined
+          # with `persist-credentials: false` so the PR code never sees the token.
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Install uv and set up Python
@@ -83,6 +91,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
+          # `pull_request_target` checks out the base branch by default; check out
+          # the PR head so CI validates the proposed changes, not `main`. Combined
+          # with `persist-credentials: false` so the PR code never sees the token.
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Install uv and set up Python
