@@ -663,6 +663,7 @@ def extract_model_metadata(results: list[dict]) -> dict[str, dict]:
     Returns:
         The metadata.
     """
+    logger.info("Extracting model metadata...")
     metadata_dict: dict[str, dict] = defaultdict(dict)
     for record in results:
         model_ids = extract_model_ids_from_record(record=record)
@@ -700,4 +701,5 @@ def extract_model_metadata(results: list[dict]) -> dict[str, dict]:
         version = record.get("euroeval_version", "<9.2.0")
         metadata_dict[model_id][f"{record['dataset']}_version"] = version
 
+    logger.info("Extracted model metadata.")
     return metadata_dict

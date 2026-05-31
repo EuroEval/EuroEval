@@ -1,5 +1,6 @@
 """Functions related to computation of scores based on the model results."""
 
+import logging
 import math
 from collections import defaultdict
 
@@ -7,6 +8,8 @@ import numpy as np
 
 from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
 from .task_metadata import ORTHOGONAL_TASKS, task_category
+
+logger = logging.getLogger(__name__)
 
 
 def _category_includes_task(category: str, task: str) -> bool:
@@ -151,6 +154,7 @@ def compute_ranks(
         The dict structure is model_id -> category -> language/overall ->
         {"score", "ci_lower", "ci_upper"}.
     """
+    logger.info("Computing ranks via bootstrap confidence intervals...")
     orthogonal_tasks = ORTHOGONAL_TASKS
     categories = _CATEGORIES
 
@@ -257,6 +261,7 @@ def compute_ranks(
                 }
                 final.setdefault(model_id, {})[category] = lang_scores
 
+    logger.info("Finished computing ranks.")
     return final
 
 

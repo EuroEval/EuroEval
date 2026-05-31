@@ -332,6 +332,8 @@ def _pareto_languages_per_model(
     Returns:
         model_id -> sorted list of languages where the model qualifies.
     """
+    logger.info("Fetching the Pareto frontier languages for each model...")
+
     # Encoders only get scored on the NLU-restricted `all_models`
     # category. Generative models live on both leaderboards: `generative`
     # spans every task and `all_models` restricts to NLU — a generative
@@ -382,6 +384,7 @@ def _pareto_languages_per_model(
                     if not dominated:
                         pareto[model_id].add(language)
 
+    logger.info("Fetched the Pareto frontier languages for each model.")
     return {model_id: sorted(langs) for model_id, langs in pareto.items()}
 
 
@@ -403,11 +406,13 @@ def eu_models(model_ids: c.Iterable[str], eu_patterns: list[str]) -> set[str]:
         Set of model_ids that match at least one pattern.
     """
     compiled = [re.compile(p) for p in eu_patterns]
-    return {
+    eu_model_ids = {
         model_id
         for model_id in model_ids
         if any(p.search(_plain_model_id(model_id).split("#")[0]) for p in compiled)
     }
+    logger.info(f"Fetched {len(eu_model_ids)} EU models.")
+    return eu_model_ids
 
 
 # ---------------------------------------------------------------------------
@@ -643,6 +648,8 @@ def osai_top_models(
         List of `(model_id, rank)` pairs in 1-based rank order. Empty
         list if both the scrape and overrides yield nothing.
     """
+    logger.info(f"Fetching top-{limit} the OSAI open models...")
+
     bundle = _osai_bundle()
     if bundle is None:
         logger.warning("OSAI: bundle not found; using overrides.")
@@ -689,6 +696,7 @@ def osai_top_models(
             logger.info(
                 f"OSAI: skipping {entry['endmodelname']!r}: no open weights link."
             )
+    logger.info(f"Fetched {len(ranked)} OSAI models.")
     return ranked
 
 
