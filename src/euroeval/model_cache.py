@@ -5,6 +5,7 @@ import hashlib
 import json
 import logging
 import sys
+import typing as t
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import asdict
@@ -287,7 +288,7 @@ class ModelCache:
                 self[model_input] = SingleGenerativeModelOutput(
                     sequence=model_output.sequences[sample_idx],
                     predicted_label=(
-                        model_output.predicted_labels[sample_idx]
+                        t.cast(str, model_output.predicted_labels[sample_idx])
                         if model_output.predicted_labels is not None
                         else None
                     ),

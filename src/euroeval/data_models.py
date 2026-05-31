@@ -321,7 +321,7 @@ class DatasetConfig:
         self.languages = languages
 
         template = self.task.template_dict.get(
-            self.main_language  # pyrefly: ignore[bad-argument-type]
+            self.main_language  # ty: ignore[invalid-argument-type]
         )
         self.prompt_prefix = (
             prompt_prefix
@@ -430,7 +430,9 @@ class DatasetConfig:
             The string representation.
         """
         language_repr = (
-            self.languages if len(self.languages) < 5 else self.languages[:5] + ["..."]
+            self.languages
+            if len(self.languages) < 5
+            else list(self.languages[:5]) + ["..."]
         )
         parts = [f"task={self.task.name}", f"languages={language_repr}"]
         try:
@@ -757,7 +759,7 @@ class BenchmarkConfig:
     gpu_memory_utilization: float
     attention_backend: (
         t.Literal[
-            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
         | None
     )
@@ -813,7 +815,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     gpu_memory_utilization: float
     attention_backend: (
         t.Literal[
-            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
         | None
     )
@@ -851,7 +853,7 @@ class BenchmarkResult(pydantic.BaseModel):
     litellm_version: str | None = None
 
     @classmethod
-    def from_dict(cls, config: dict) -> "BenchmarkResult":
+    def from_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
         """Create a benchmark result from a dictionary.
 
         Args:
@@ -891,10 +893,10 @@ class BenchmarkResult(pydantic.BaseModel):
         if "dataset_languages" in config:
             config["languages"] = config.pop("dataset_languages")
 
-        return cls(**config)
+        return cls(**config)  # ty: ignore[invalid-argument-type]
 
     @classmethod
-    def from_eee_dict(cls, config: dict) -> "BenchmarkResult":
+    def from_eee_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
         """Create a BenchmarkResult from an Every Eval Ever format dictionary.
 
         Reconstructs a full `BenchmarkResult` from a dictionary conforming to the
@@ -911,7 +913,7 @@ class BenchmarkResult(pydantic.BaseModel):
         """
         return benchmark_result_from_eee_dict(config=config)
 
-    def to_eee_dict(self) -> dict:
+    def to_eee_dict(self) -> dict[str, object]:
         """Convert this benchmark result to the Every Eval Ever (EEE) format.
 
         Produces a dictionary conforming to the Every Eval Ever JSON schema v0.2.1
@@ -1033,7 +1035,7 @@ class GenerativeModelOutput:
     """
 
     sequences: c.Sequence[str]
-    predicted_labels: c.Sequence | None = None
+    predicted_labels: c.Sequence[object] | None = None
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
     metadatas: list["HashableDict | None"] = field(default_factory=list)
     failed_instances: list["FailedInstance"] = field(default_factory=list)
@@ -1106,9 +1108,9 @@ class ModelIdComponents:
     param: str | None
 
 
-class HashableDict(dict):
+class HashableDict(dict[t.Any, t.Any]):
     """A hashable dictionary."""
 
-    def __hash__(self) -> int:  # pyrefly: ignore[override]
+    def __hash__(self) -> int:
         """Return the hash of the dictionary."""
         return hash(frozenset(self.items()))

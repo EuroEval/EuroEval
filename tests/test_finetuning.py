@@ -176,7 +176,7 @@ class TestGetTrainingArgs:
     ) -> None:
         """Test that the use_cpu argument is correct."""
         old_device = benchmark_config.device
-        benchmark_config.device = torch.device(device_name)  # type: ignore[read-only]
+        benchmark_config.device = torch.device(device_name)
         args = get_training_args(
             benchmark_config=benchmark_config,
             model_config=model_config,
@@ -185,7 +185,7 @@ class TestGetTrainingArgs:
             batch_size=None,
         )
         assert args.use_cpu == expected_use_cpu
-        benchmark_config.device = old_device  # type: ignore[read-only]
+        benchmark_config.device = old_device
 
 
 class TestFinetune:
@@ -227,7 +227,7 @@ class TestFinetune:
         ):
             finetune(
                 model=mock_model,
-                datasets=mock_datasets,
+                datasets=mock_datasets,  # ty: ignore[invalid-argument-type]
                 model_config=model_config,
                 dataset_config=dataset_config,
                 benchmark_config=benchmark_config,
@@ -273,7 +273,7 @@ class TestFinetune:
 
         scores = finetune(
             model=None,
-            datasets=mock_datasets,
+            datasets=mock_datasets,  # ty: ignore[invalid-argument-type]
             model_config=model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
@@ -323,7 +323,7 @@ class TestFinetune:
         ):
             finetune(
                 model=mock_model,
-                datasets=mock_datasets,
+                datasets=mock_datasets,  # ty: ignore[invalid-argument-type]
                 model_config=model_config,
                 dataset_config=dataset_config,
                 benchmark_config=benchmark_config,
@@ -338,9 +338,12 @@ class TestRemoveExtraTensorsFromLogits:
         logits = (torch.randn(2, 3), (torch.randn(2, 3), torch.randn(2, 3)))
         labels = torch.randint(0, 3, (2,))
 
-        result = remove_extra_tensors_from_logits(logits=logits, labels=labels)
+        result = remove_extra_tensors_from_logits(
+            logits=logits,  # ty: ignore[invalid-argument-type]
+            labels=labels,
+        )
 
-        assert torch.equal(result, logits[0])
+        assert torch.equal(result, logits[0])  # ty: ignore[invalid-argument-type]
 
     def test_remove_extra_tensors_from_logits_single_tensor(self) -> None:
         """Test that single tensor logits are returned unchanged."""
@@ -349,4 +352,4 @@ class TestRemoveExtraTensorsFromLogits:
 
         result = remove_extra_tensors_from_logits(logits=logits, labels=labels)
 
-        assert torch.equal(result, logits)
+        assert torch.equal(result, logits)  # ty: ignore[invalid-argument-type]

@@ -456,7 +456,7 @@ def generate_dataframe(
             # Ensure all languages are present (even if missing for this model)
             for lang in leaderboard_configs:
                 if lang not in language_ranks:
-                    language_ranks[lang] = float("nan")
+                    language_ranks[lang] = float("nan")  # ty: ignore[invalid-assignment]
 
             # Format per-language entries as "score ± margin" strings, matching
             # the overall mean rank score column. Missing entries render as "-".
@@ -665,9 +665,7 @@ def generate_dataframe(
                 "context",
             ]
         ]
-        df_simplified = df_simplified.query(  # pyrefly: ignore[not-callable]
-            "rank != '-'"
-        )
+        df_simplified = df_simplified.query("rank != '-'")
         df_simplified = df_simplified.convert_dtypes()
 
         # Format headers for display

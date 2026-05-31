@@ -603,7 +603,7 @@ def extract_questions(
 
     completion = client.beta.chat.completions.parse(
         model=GPT_MODEL,
-        messages=[{"role": "user", "content": content}],
+        messages=[{"role": "user", "content": content}],  # ty: ignore[invalid-argument-type]
         response_format=response_format,
         max_completion_tokens=128_000,
         temperature=1.0,  # Required for gpt-5-mini
@@ -669,7 +669,7 @@ def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, AnswerKeyT
 
     completion = client.beta.chat.completions.parse(
         model=GPT_MODEL,
-        messages=[{"role": "user", "content": content}],
+        messages=[{"role": "user", "content": content}],  # ty: ignore[invalid-argument-type]
         response_format=AnswerKey,
         max_completion_tokens=128_000,
         temperature=1.0,  # Required for gpt-5-mini

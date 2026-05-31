@@ -33,10 +33,19 @@ building SEO files, API reference, creating individual datasets, etc.
 All evaluation framework tests are in `tests` and can be run with `make test`. There are
 no tests for the frontend or leaderboard generation.
 
-## Formatting, linting, type checking
+## Formatting, linting, and type checking
 
-All checks be run with `make check`, which runs all the pre-commit hooks. This includes
-the Ruff formatter and linter, pyrefly type checker, and markdown and notebook linting.
+All checks are run with `make check`, which runs all the pre-commit hooks. The
+following tools are used:
+
+- **Ruff** — Python formatter and linter (includes Jupyter notebook support)
+- **ty** — Python type checker
+- **markdownlint-cli2** — Markdown linting
+- **vue-tsc** — TypeScript type checking for the frontend (`src/frontend/`)
+
+The pre-commit hooks also include basic quality checks (end-of-file fixer,
+trailing whitespace, debug statements, type annotation enforcement, and
+notebook stripping).
 
 ## Changelog
 

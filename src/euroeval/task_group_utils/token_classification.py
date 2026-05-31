@@ -62,9 +62,8 @@ def compute_metrics(
         model_outputs = model_outputs[0]
 
     predictions: list[list[str]]
-    # pyrefly: ignore[bad-index]
+
     if not isinstance(model_outputs[0][0], str):
-        # pyrefly: ignore[no-matching-overload]
         raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()
 
         # Remove ignored index (special tokens)
@@ -90,8 +89,7 @@ def compute_metrics(
         ]
 
     else:
-        # pyrefly: ignore[assignment]  # pyrefly: ignore[bad-assignment]
-        predictions = model_outputs
+        predictions = list(model_outputs)  # ty: ignore[invalid-assignment]
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
 
@@ -126,9 +124,7 @@ def compute_metrics(
                 if ner_tag[-4:] == "misc":
                     predictions_no_misc[i][j] = "o"
 
-        labels_no_misc = deepcopy(  # pyrefly: ignore[arg-type]
-            labels  # pyrefly: ignore[bad-argument-type]
-        )
+        labels_no_misc = deepcopy(labels)  # ty: ignore[invalid-assignment]
         for i, label_list in enumerate(labels_no_misc):
             for j, ner_tag in enumerate(label_list):
                 if (
@@ -147,7 +143,7 @@ def compute_metrics(
             refs = labels_no_misc
         else:
             preds = predictions
-            refs = list(labels)  # pyrefly: ignore[arg-type]
+            refs = list(labels)
 
         # We manually set the F1 metric to be 100% if both the labels and the
         # predictions have no NER tags in them, since this causes an error with
@@ -270,7 +266,7 @@ def tokenize_and_align_labels(
     Raises:
         InvalidBenchmark:
             If the tokeniser is not of a "fast" variant and the word IDs cannot be
-            extracted.
+            extracted, or if a label was not found in the model's config.
     """
     # Tokenise the texts. We use the `is_split_into_words` argument here because
     # the texts in our dataset are lists of words (with a label for each word)
@@ -301,6 +297,7 @@ def tokenize_and_align_labels(
             # Decode the token IDs
             tokens = tokeniser.convert_ids_to_tokens(tok_ids)
             assert isinstance(tokens, list)
+            tokens = t.cast(list[str], tokens)
 
             # Remove prefixes from the tokens
             prefixes_to_remove = ["▁", "##"]

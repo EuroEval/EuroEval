@@ -135,7 +135,7 @@ def bootstrap_rank_scores(
             best_mean = scores[0][1]
             all_raw = [r for _, _, _, r in scores]
             pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
-            dataset_stats[ds] = (best_mean, pooled_sd)
+            dataset_stats[ds] = (best_mean, pooled_sd)  # ty: ignore[invalid-assignment]
 
         # Precompute rank scores for ALL models on ALL sampled datasets ONCE
         # This is the key optimization: O(n_datasets * n_models) instead of

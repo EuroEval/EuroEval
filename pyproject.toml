@@ -104,7 +104,7 @@ dev = [
     "debugpy>=1.8.13",
     "pytest-socket>=0.7.0",
     "pytest-depends>=1.0.1",
-    "pyrefly>=0.43.1",
+    "ty>=0.0.40",
     "tqdm-stubs>=0.2.1",
     "pre-commit>=4.5.1",
 ]
@@ -206,12 +206,12 @@ split-on-trailing-comma = false
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.pyrefly.errors]
-missing-import = false
-missing-attribute = false
+[tool.ty.rules]
+unresolved-import = "ignore"
+unresolved-attribute = "ignore"
 # Pandas type stub issues - these are false positives due to incomplete type stubs
-unsupported-operation = false
-no-matching-overload = false
+unsupported-operator = "ignore"
+no-matching-overload = "ignore"
 
 [tool.pytest.ini_options]
 minversion = "7.0"

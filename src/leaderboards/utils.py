@@ -53,7 +53,7 @@ def significantly_better(
         test_result = stats.ttest_ind(
             a=score_values_1, b=score_values_2, alternative="greater", equal_var=False
         )
-    return test_result.pvalue < 0.05  # type: ignore[attr-defined]
+    return test_result.pvalue < 0.05
 
 
 def extract_model_ids_from_record(record: dict) -> list[str]:

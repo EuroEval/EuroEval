@@ -201,7 +201,7 @@ class LiteLLMModel(BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = False
-    allowed_params = {
+    allowed_params: dict[re.Pattern[str], list[str]] = {
         # OpenAI models
         re.compile(r"(openai/)?gpt-5.*"): [
             "none",
@@ -638,7 +638,7 @@ class LiteLLMModel(BenchmarkModule):
             keys_and_their_types = {
                 tag_name: (c.Sequence[str], ...) for tag_name in tag_names
             }
-            # pyrefly: ignore[no-matching-overload]
+
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
             return generation_kwargs, 0
@@ -1395,7 +1395,7 @@ class LiteLLMModel(BenchmarkModule):
         num_attempts = 10
         for _ in range(num_attempts):
             try:
-                litellm.completion(  # pyrefly: ignore[not-callable]
+                litellm.completion(
                     messages=[dict(role="user", content="X")],
                     model=clean_model_id(
                         model_id=model_id, benchmark_config=benchmark_config
@@ -1713,8 +1713,10 @@ class LiteLLMModel(BenchmarkModule):
                 for label in self.dataset_config.labels
             ]
             keys_and_their_types = {
-                # pyrefly: ignore[invalid-literal]
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (
+                    t.Literal[*localised_labels],  # ty: ignore[invalid-type-form]
+                    ...,
+                )
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class

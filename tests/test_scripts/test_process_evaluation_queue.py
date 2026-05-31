@@ -123,6 +123,11 @@ def test_process_issue_fails_when_official_results_are_missing(
         name="post_or_update_progress_comment",
         value=lambda **kwargs: None,
     )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="upload_results_gist",
+        value=lambda **kwargs: None,
+    )
 
     process_evaluation_queue.process_issue(
         issue={"number": 17, "body": "body"},
@@ -252,6 +257,11 @@ def test_process_issue_does_not_special_case_oom_anymore(
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="post_or_update_progress_comment",
+        value=lambda **kwargs: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="upload_results_gist",
         value=lambda **kwargs: None,
     )
 

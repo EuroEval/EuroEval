@@ -2,6 +2,7 @@
 
 import logging
 import os
+import subprocess
 import sys
 import time
 from collections.abc import Generator
@@ -116,7 +117,11 @@ def test_benchmark_openai(
 
 
 @pytest.mark.skipif(
-    condition=os.system("uv run ollama -v") != 0, reason="Ollama is not available."
+    condition=subprocess.run(
+        ["uv", "run", "ollama", "-v"], capture_output=True
+    ).returncode
+    != 0,
+    reason="Ollama is not available.",
 )
 def test_benchmark_ollama(
     benchmarker: Benchmarker, task: Task, language: Language, ollama_model_id: str

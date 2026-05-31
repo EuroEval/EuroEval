@@ -76,7 +76,7 @@ class Benchmarker:
         api_version: str | None = None,
         gpu_memory_utilization: float = 0.8,
         attention_backend: t.Literal[
-            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
         | None = None,
         generative_type: GenerativeType | None = None,
@@ -347,7 +347,7 @@ class Benchmarker:
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
         attention_backend: t.Literal[
-            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
         | None = None,
         custom_datasets_file: Path | str | None = None,
@@ -1026,12 +1026,12 @@ class Benchmarker:
                 if model_config.param is not None:
                     model_id_to_be_stored += f"#{model_config.param}"
 
-                record = BenchmarkResult(  # pyrefly: ignore[bad-argument-type]
+                record = BenchmarkResult(
                     dataset=dataset_config.name,
                     task=dataset_config.task.name,
                     languages=[language.code for language in dataset_config.languages],
                     model=model_id_to_be_stored,
-                    results=results,  # pyrefly: ignore[bad-argument-type]
+                    results=results,
                     num_model_parameters=model.num_params,
                     max_sequence_length=model.model_max_length,
                     vocabulary_size=model.vocab_size,

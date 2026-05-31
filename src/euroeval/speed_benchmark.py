@@ -65,6 +65,8 @@ def benchmark_speed_single_iteration(
             If the speed benchmark failed.
     """
     gpt2_tokeniser = AutoTokenizer.from_pretrained("gpt2", trust_remote_code=True)
+    if gpt2_tokeniser is None:
+        raise InvalidBenchmark("The gpt2 tokeniser could not be loaded.")
 
     base_doc = "Document which contains roughly 10 tokens. "
     multiplier = 10 * (1 + itr_idx)

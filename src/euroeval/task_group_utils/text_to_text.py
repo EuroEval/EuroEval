@@ -55,7 +55,6 @@ def compute_metrics(
     if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
         model_outputs = model_outputs[0]
 
-    # pyrefly: ignore[bad-argument-type]
     raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     model_output_dtype = np.asarray(model_outputs).dtype
@@ -78,8 +77,8 @@ def compute_metrics(
         for _ in range(num_attempts := 5):
             try:
                 score: float | None = metric(
-                    predictions=predictions,  # pyrefly: ignore[bad-argument-type]
-                    references=labels,  # pyrefly: ignore[bad-argument-type]
+                    predictions=list(predictions),
+                    references=list(labels),
                     dataset=dataset,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,

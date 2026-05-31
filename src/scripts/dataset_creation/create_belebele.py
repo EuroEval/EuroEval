@@ -103,7 +103,7 @@ def main() -> None:
         df["instruction"] = (
             text_mapping[language]
             + ": "
-            + df.flores_passage.astype(str).str.cat(  # pyrefly: ignore[no-matching-overload]
+            + df.flores_passage.astype(str).str.cat(
                 other="\n"
                 + question_mapping[language]
                 + ": "

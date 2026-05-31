@@ -28,9 +28,7 @@ except ImportError:
     # File-path invocation (e.g. `uv run src/scripts/generate_leaderboards.py`)
     # — `scripts` isn't a package on the path, so import the sibling module
     # directly.
-    from generate_task_metrics import (
-        main as generate_task_metrics,  # type: ignore[no-redef]
-    )
+    from generate_task_metrics import main as generate_task_metrics
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s ⋅ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
@@ -227,7 +225,7 @@ def _maybe_refresh_core_models() -> None:
                     f"Cannot parse last_updated={last_updated_raw!r}; "
                     "treating as stale."
                 )
-                last = None  # type: ignore[assignment]
+                last = None
         if last is not None:
             age_days = (dt.date.today() - last).days
             if age_days < CORE_MODELS_STALE_DAYS:

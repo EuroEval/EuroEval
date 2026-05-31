@@ -33,12 +33,14 @@ repos:
     rev: 0.9.1
     hooks:
     -   id: nbstripout
--   repo: https://github.com/facebook/pyrefly-pre-commit
-    rev: 1.0.0
+-   repo: local
     hooks:
-    -   id: pyrefly-check
-        name: Pyrefly (type checking)
+    -   id: ty-check
+        name: ty (type checking)
+        entry: uv run ty check
+        language: system
         pass_filenames: false
+        types: [python]
 -   repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.22.1
     hooks:
