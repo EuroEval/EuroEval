@@ -35,23 +35,28 @@ export async function searchHfModels(
 }
 
 /**
- * Detect whether a Hugging Face repo is a GGUF model, robustly.
+ * Detect whether a Hugging Face repo is a GGUF-only model, robustly.
  *
- * The evaluation queue cannot run GGUF models, so we must catch them before
- * submission. Two independent signals are used so the check survives the many
+ * The evaluation queue cannot load `.gguf` weights, so we must catch GGUF
+ * repos before submission. But many repos ship GGUF quants *alongside*
+ * safetensors (e.g. norallm/normistral-11b-warm) and are perfectly runnable
+ * from the safetensors — so a repo only counts as GGUF when it has `.gguf`
+ * weights and *no* safetensors.
+ *
+ * The GGUF signal uses three independent indicators so it survives the many
  * ways GGUF repos are laid out (per-quant subfolders, sharded files, names
  * without a quant suffix, etc.):
  *
  *   1. The repo carries the "gguf" tag — Hugging Face sets this automatically
- *      on any repo that contains at least one `.gguf` file. This is the
- *      primary signal and works regardless of file layout.
- *   2. Any file in `siblings` ends in `.gguf`. `siblings` lists every file in
+ *      on any repo that contains at least one `.gguf` file.
+ *   2. `library_name` is "gguf".
+ *   3. Any file in `siblings` ends in `.gguf`. `siblings` lists every file in
  *      the repo recursively (including those nested in subfolders), so this
  *      catches repos even if the tag is somehow missing.
  *
  * Returns `false` on any network/parse error so a transient failure never
- * silently classifies a GGUF model as submittable — the caller treats a
- * non-GGUF result as "submittable", so we err towards not blocking on errors.
+ * silently classifies a model as GGUF — the caller treats a non-GGUF result
+ * as "submittable"/"show in queue", so we err towards not blocking on errors.
  */
 export async function detectGguf(modelId: string): Promise<boolean> {
   // Encode each path segment separately: encodeURIComponent on the whole id
@@ -71,15 +76,16 @@ export async function detectGguf(modelId: string): Promise<boolean> {
     };
 
     const tags = (data.tags ?? []).map((t) => t.toLowerCase());
-    const hasGgufFile = (data.siblings ?? []).some((s) =>
-      (s.rfilename ?? "").toLowerCase().endsWith(".gguf"),
+    const files = (data.siblings ?? []).map((s) =>
+      (s.rfilename ?? "").toLowerCase(),
     );
-
-    return (
+    const hasGguf =
       tags.includes("gguf") ||
       data.library_name?.toLowerCase() === "gguf" ||
-      hasGgufFile
-    );
+      files.some((f) => f.endsWith(".gguf"));
+    const hasSafetensors = files.some((f) => f.endsWith(".safetensors"));
+
+    return hasGguf && !hasSafetensors;
   } catch {
     return false;
   }

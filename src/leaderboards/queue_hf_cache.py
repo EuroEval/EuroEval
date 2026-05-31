@@ -110,28 +110,38 @@ def cached_model_summary(model_id: str) -> dict | None:
 
 
 def is_gguf_model(info: ModelInfo) -> bool:
-    """Return whether a model_info result describes a GGUF repo.
+    """Return whether a model_info result describes a GGUF-only repo.
 
-    GGUF repos lay their files out in many ways (per-quant subfolders,
-    sharded files, names without a quant suffix), so two independent
-    signals are checked: the ``gguf`` tag that the Hub sets automatically
-    on any repo containing a ``.gguf`` file, and the presence of any
-    ``.gguf`` file in ``siblings`` (which enumerates the repo recursively).
+    The evaluation queue cannot load ``.gguf`` weights, but many repos ship
+    GGUF quants *alongside* safetensors (e.g. ``norallm/normistral-11b-warm``)
+    and are perfectly runnable from the safetensors. So a repo counts as GGUF
+    only when it has ``.gguf`` weights and *no* safetensors.
+
+    The GGUF signal uses three independent indicators so it survives the many
+    ways GGUF repos are laid out (per-quant subfolders, sharded files, names
+    without a quant suffix): the ``gguf`` tag the Hub sets automatically on any
+    repo containing a ``.gguf`` file, a ``library_name`` of ``gguf``, and the
+    presence of any ``.gguf`` file in ``siblings`` (which enumerates the repo
+    recursively).
 
     Args:
         info:
             The model info returned by ``HfApi.model_info``.
 
     Returns:
-        Whether the repo is a GGUF model.
+        Whether the repo is a GGUF-only model.
     """
+    filenames = [(s.rfilename or "").lower() for s in (info.siblings or [])]
     tags = info.tags or []
-    if any(tag.lower() == "gguf" for tag in tags):
-        return True
-    if (info.library_name or "").lower() == "gguf":
-        return True
-    siblings = info.siblings or []
-    return any((s.rfilename or "").lower().endswith(".gguf") for s in siblings)
+    has_gguf = (
+        any(tag.lower() == "gguf" for tag in tags)
+        or (info.library_name or "").lower() == "gguf"
+        or any(name.endswith(".gguf") for name in filenames)
+    )
+    has_safetensors = getattr(info, "safetensors", None) is not None or any(
+        name.endswith(".safetensors") for name in filenames
+    )
+    return has_gguf and not has_safetensors
 
 
 def _load_hf_cache() -> dict[str, dict]:
