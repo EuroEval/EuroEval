@@ -281,12 +281,16 @@ th.status-col {
   }
 
   .qtable {
+    width: 100%;
+    max-width: 100%;
     font-size: 0.85rem;
   }
 
   .qtable th,
   .qtable td {
     padding: 0.5rem 0.35rem;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
   }
 
   th.status-col {
