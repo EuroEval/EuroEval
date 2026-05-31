@@ -197,7 +197,7 @@ const margin = { top: 20, right: 20, bottom: 48, left: 60 };
 
 // Axis domains are computed from *all* points (not just the visible ones)
 // so toggling groups on/off doesn't rescale the plot.
-const xMinMax = computed(() => {
+const rawXMinMax = computed(() => {
   const xs = allPoints.value.map((p) => p.x);
   if (xs.length === 0) return { min: 0, max: 1 };
   const min = Math.min(...xs);
@@ -205,12 +205,30 @@ const xMinMax = computed(() => {
   return min === max ? { min: min - 1, max: max + 1 } : { min, max };
 });
 
+const useLogX = computed(() => rawXMinMax.value.min > 0);
+
+// The x-domain is the model-size range of this plot, padded on both ends so
+// the smallest and largest models sit inside the plot with breathing room
+// rather than clipped against the axis edges. Padding is applied in the same
+// space the axis uses (log10 when all sizes are positive), so it reads as a
+// constant visual margin on each side regardless of how wide the range is.
+const X_PAD = 0.06; // fraction of the (transformed) range, per side
+const xMinMax = computed(() => {
+  const { min, max } = rawXMinMax.value;
+  if (useLogX.value) {
+    const lo = Math.log10(Math.max(min, 1));
+    const hi = Math.log10(Math.max(max, 1));
+    const pad = (hi - lo || 1) * X_PAD;
+    return { min: Math.pow(10, lo - pad), max: Math.pow(10, hi + pad) };
+  }
+  const pad = (max - min || 1) * X_PAD;
+  return { min: min - pad, max: max + pad };
+});
+
 // Fixed mean-rank-score domain so plots are visually comparable across
 // languages and pages. Lower is better, so 1.0 is at the top, 5.5 at the
 // bottom.
 const yMinMax = computed(() => ({ min: 1.0, max: 5.5 }));
-
-const useLogX = computed(() => xMinMax.value.min > 0);
 
 const xScale = (v: number) => {
   const { min, max } = xMinMax.value;
