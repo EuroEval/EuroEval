@@ -117,6 +117,7 @@ publish:
 		$(MAKE) --quiet publish-euroeval \
 			&& $(MAKE) --quiet publish-scandeval \
 			&& $(MAKE) --quiet add-dev-version \
+			&& $(MAKE) --quiet frontend \
 			&& echo "Published!"; \
 	fi
 
