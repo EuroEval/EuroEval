@@ -98,10 +98,7 @@ def bootstrap_rank_scores(
     bootstrap_scores: dict[str, dict[str, dict[str, list[float]]]] = {}
 
     # For each bootstrap replicate
-    for b in range(n_bootstraps):
-        if b % 10 == 0:
-            logger.info("Bootstrap replicate %d/%d: complete", b, n_bootstraps)
-
+    for _ in range(n_bootstraps):
         # Stratified resample: for each task, resample its datasets with replacement
         sampled_datasets: dict[str, list[str]] = {}
         for task, ds_list in task_datasets.items():
