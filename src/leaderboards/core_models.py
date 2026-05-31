@@ -755,7 +755,9 @@ def build_core_model_list(
     results = [r for r in load_processed_results() if r["dataset"] in datasets]
     model_results = group_results_by_model(results=results)
     model_results = drop_val_duplicates(model_results=model_results)
-    ranks = compute_ranks(model_results=model_results, configs=configs)
+    ranks = compute_ranks(
+        model_results=model_results, configs=configs, n_bootstraps=1000
+    )
     metadata = extract_model_metadata(results=results)
 
     # Restrict per-language ranking to languages that actually appear as
