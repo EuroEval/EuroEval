@@ -16,7 +16,7 @@ import sys
 import time
 from pathlib import Path
 
-from huggingface_hub import HfApi
+from huggingface_hub import HfApi, ModelInfo
 from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -92,7 +92,7 @@ def cached_model_summary(model_id: str) -> dict | None:
     # ``info.gated`` is ``False`` for public repos and ``"auto"`` / ``"manual"``
     # for gated ones; coerce to a plain bool.
     gated_repo = bool(getattr(info, "gated", False))
-    gguf = _is_gguf_model(info=info)
+    gguf = is_gguf_model(info=info)
 
     cache[model_id] = {
         "timestamp": time.time(),
@@ -109,8 +109,8 @@ def cached_model_summary(model_id: str) -> dict | None:
     }
 
 
-def _is_gguf_model(info: object) -> bool:
-    """Return True if a model_info result describes a GGUF repo.
+def is_gguf_model(info: ModelInfo) -> bool:
+    """Return whether a model_info result describes a GGUF repo.
 
     GGUF repos lay their files out in many ways (per-quant subfolders,
     sharded files, names without a quant suffix), so two independent
@@ -120,21 +120,18 @@ def _is_gguf_model(info: object) -> bool:
 
     Args:
         info:
-            The ``ModelInfo`` returned by ``HfApi.model_info``.
+            The model info returned by ``HfApi.model_info``.
 
     Returns:
-        True if the repo is a GGUF model.
+        Whether the repo is a GGUF model.
     """
-    tags = getattr(info, "tags", None) or []
-    if any(isinstance(t, str) and t.lower() == "gguf" for t in tags):
+    tags = info.tags or []
+    if any(tag.lower() == "gguf" for tag in tags):
         return True
-    if str(getattr(info, "library_name", "") or "").lower() == "gguf":
+    if (info.library_name or "").lower() == "gguf":
         return True
-    siblings = getattr(info, "siblings", None) or []
-    return any(
-        str(getattr(s, "rfilename", "") or "").lower().endswith(".gguf")
-        for s in siblings
-    )
+    siblings = info.siblings or []
+    return any((s.rfilename or "").lower().endswith(".gguf") for s in siblings)
 
 
 def _load_hf_cache() -> dict[str, dict]:
