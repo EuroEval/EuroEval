@@ -129,7 +129,7 @@ class QuestionAnsweringTrainer(Trainer):
             )
             assert self.compute_metrics is not None
 
-            new_metrics = self.compute_metrics(EvalPrediction(*preds_and_labels))  # ty: ignore[invalid-argument-type]
+            new_metrics = self.compute_metrics(preds_and_labels)  # ty: ignore[invalid-argument-type]
             metrics.update(new_metrics)
 
             # Prefix all keys with metric_key_prefix + '_'
