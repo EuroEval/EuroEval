@@ -82,15 +82,10 @@ from ..utils import (
 )
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 
-# Import MistralCommonTokenizer with a fallback that ty can resolve.
-# transformers.tokenization_mistral_common is the runtime module;
-# transformers.models.mistral is the static-analysis-friendly location.
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
-    from transformers.models.mistral.tokenization_mistral import (
-        MistralCommonBackend as MCB,
-    )
+    from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
 
     MistralCommonTokenizer = MCB
 
