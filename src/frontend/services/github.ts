@@ -162,7 +162,7 @@ export async function listOpenEvalIssues(
     .filter((e): e is QueueEntry => e !== null)
     .sort((a, b) => {
       if (a.status !== b.status) return order[a.status] - order[b.status];
-      return a.createdAt.localeCompare(b.createdAt);
+      return b.createdAt.localeCompare(a.createdAt);
     });
 }
 

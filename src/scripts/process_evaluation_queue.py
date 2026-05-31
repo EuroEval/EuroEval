@@ -37,6 +37,7 @@ import os
 import sys
 import time
 import urllib.error
+from datetime import datetime
 from functools import cache
 from pathlib import Path
 
@@ -273,14 +274,44 @@ def release_current_issue() -> None:
         logger.warning(f"#{number}: could not release on interrupt: {e}")
 
 
+def recency_sort_value(issue: dict) -> float:
+    """Return a sort value that orders more recently opened issues first.
+
+    Used as the final queue tiebreaker. Negating the creation timestamp
+    makes the newest issue sort ahead of older ones under the ascending
+    ``candidates.sort`` ordering.
+
+    Args:
+        issue:
+            The GitHub issue object returned by the API.
+
+    Returns:
+        The negated ``created_at`` epoch (seconds), or ``0.0`` when the
+        timestamp is missing or unparseable. Since real negated
+        timestamps are large negative numbers, such issues sort after
+        those with a known, more recent creation time.
+    """
+    created_at = issue.get("created_at")
+    if not isinstance(created_at, str):
+        return 0.0
+    try:
+        parsed = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    except ValueError:
+        return 0.0
+    return -parsed.timestamp()
+
+
 def process_queue_once() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
-    Issues are sorted by (status priority asc, parameter count asc,
-    num-language-groups asc). Status priority is 0 for fresh issues, 1
-    for gated repos (cheap marker refresh), and 2 for retries of
-    previously errored evaluations, so that quicker work is picked up
-    first and gated items are surfaced ahead of errored ones.
+    Issues are sorted by (status priority asc, partial-results rank asc,
+    parameter count asc, num-language-groups asc, recency desc). Status
+    priority is 0 for fresh issues, 1 for gated repos (cheap marker
+    refresh), and 2 for retries of previously errored evaluations, so
+    that quicker work is picked up first and gated items are surfaced
+    ahead of errored ones. Recency is a final tiebreaker so that, when
+    everything else is equal, the most recently opened issue is picked
+    up first.
     """
     try:
         issues = list_open_unassigned_issues()
@@ -289,7 +320,9 @@ def process_queue_once() -> None:
         return
 
     existing_lines = read_jsonl_lines(path=RESULTS_PATH)
-    candidates: list[tuple[int, int, int, int, dict, str, list[str], dict | None]] = []
+    candidates: list[
+        tuple[int, int, int, int, float, dict, str, list[str], dict | None]
+    ] = []
     for issue in issues:
         number = issue["number"]
         title = issue.get("title", "")
@@ -348,6 +381,7 @@ def process_queue_once() -> None:
                 partial_rank,
                 param_count,
                 len(groups),
+                recency_sort_value(issue=issue),
                 issue,
                 model_id,
                 groups,
@@ -355,7 +389,7 @@ def process_queue_once() -> None:
             )
         )
 
-    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3]))
+    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4]))
     logger.info(f"Found {len(candidates)} processable issue(s).")
 
     gpu_bytes = gpu_total_memory_bytes()
@@ -371,6 +405,7 @@ def process_queue_once() -> None:
         partial_rank,
         param_count,
         num_groups,
+        _recency,
         issue,
         model_id,
         groups,
