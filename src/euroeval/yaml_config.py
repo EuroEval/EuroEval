@@ -234,7 +234,11 @@ def load_dataset_config_from_yaml(
     kwargs.setdefault("bootstrap_samples", True)
     kwargs.setdefault("unofficial", False)
     kwargs.setdefault("input_column", "text")
-    return DatasetConfig(task=task_obj, languages=language_objs, **kwargs)
+    return DatasetConfig(
+        task=task_obj,
+        languages=language_objs,
+        **kwargs,  # ty: ignore[invalid-argument-type]
+    )
 
 
 def promote_field_spec_fields(raw: dict[str, object]) -> None:

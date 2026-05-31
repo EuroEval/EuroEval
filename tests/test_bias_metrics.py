@@ -121,8 +121,8 @@ def test_accuracy_ambig_accepts_numpy_ints(
         predictions=preds,  # ty: ignore[invalid-argument-type]
         references=[],
         dataset=ds,
-        dataset_config=None,  # ty: ignore[invalid-argument-type]
-        benchmark_config=None,  # ty: ignore[invalid-argument-type]
+        dataset_config=None,
+        benchmark_config=None,
     ) == pytest.approx(1.0)
 
 
