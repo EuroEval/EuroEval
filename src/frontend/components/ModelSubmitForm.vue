@@ -89,25 +89,17 @@ function pickSuggestion(s: HfModelSuggestion) {
 async function checkIfGguf(modelIdStr: string) {
   if (!modelIdStr || !/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(modelIdStr)) {
     availableQuants.value = [];
-    selectedQuant.value = "";
-    isCheckingGguf.value = false;
     return;
   }
-  isCheckingGguf.value = true;
   try {
     const quants = await detectGgufQuants(modelIdStr);
     if (quants.length > 0) {
       availableQuants.value = quants;
-      selectedQuant.value = quants[0];
     } else {
       availableQuants.value = [];
-      selectedQuant.value = "";
     }
   } catch {
     availableQuants.value = [];
-    selectedQuant.value = "";
-  } finally {
-    isCheckingGguf.value = false;
   }
 }
 
@@ -160,8 +152,6 @@ async function onSubmit() {
     selectedGroups.value = new Set();
     suggestions.value = [];
     availableQuants.value = [];
-    selectedQuant.value = "";
-    isCheckingGguf.value = false;
   } else if (result.status === 409 && result.url) {
     errorMsg.value = `This model is already in the queue — see ${result.url}.`;
   } else {
@@ -543,24 +533,4 @@ button[type="submit"]:disabled {
   align-items: center;
 }
 
-.form-select {
-  flex: 1;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--color-border);
-  border-radius: 0.375rem;
-  background: var(--color-bg, white);
-  font: inherit;
-  font-size: 0.9rem;
-}
-
-.form-select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.quant-hint {
-  font-size: 0.8rem;
-  color: var(--color-muted);
-  white-space: nowrap;
-}
 </style>

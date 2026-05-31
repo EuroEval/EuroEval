@@ -44,8 +44,8 @@ export async function detectGgufQuants(modelId: string): Promise<string[]> {
     const quants = new Set<string>();
     for (const f of files) {
       if (f.type !== "file") continue;
-      const m = f.path.match(/[-_](Q|K)\d+(?:_[A-Za-z0-9]+)*\.gguf$/i);
-      if (m) quants.add(m[0].slice(1).toUpperCase());
+      const m = f.path.match(/[-_]((?:Q|K)\d+(?:_[A-Za-z0-9]+)*)\.gguf$/i);
+      if (m) quants.add(m[1].toUpperCase());
     }
     return Array.from(quants).slice(0, 30);
   } catch {
