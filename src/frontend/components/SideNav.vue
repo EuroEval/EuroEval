@@ -127,6 +127,7 @@ watch(
     left: 0;
     width: 260px;
     height: 100vh;
+    height: 100dvh;
     background: var(--color-bg);
     border-right: 1px solid var(--color-border);
     padding: 1.25rem 1rem;
