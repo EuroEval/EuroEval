@@ -170,9 +170,7 @@ def compute_ranks(
     )
 
     # ── Step 2: Aggregate dataset → task → language → overall ────────────
-    model_task_ranks: defaultdict = defaultdict(
-        lambda: defaultdict(lambda: defaultdict(dict))
-    )
+    model_task_ranks = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
 
     for model_id in model_dataset_ranks:
         for category in categories:

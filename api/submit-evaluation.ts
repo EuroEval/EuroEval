@@ -21,7 +21,7 @@ const LANGUAGE_GROUPS = [
   "Hungarian",
 ] as const;
 
-const MODEL_ID_RE = /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
+const MODEL_ID_RE = /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+(:[A-Z0-9_]+)?$/;
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
@@ -165,7 +165,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   if (typeof modelId !== "string" || !MODEL_ID_RE.test(modelId)) {
     return json(400, {
-      error: "model_id must look like 'org/name' and use only [A-Za-z0-9._-].",
+      error: "model_id must look like 'org/name' or 'org/name:QUANT' and use only [A-Za-z0-9._-].",
     });
   }
   if (
@@ -182,14 +182,16 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  if (!(await huggingFaceModelExists(modelId))) {
+  const baseModelId = modelId.includes(":") ? modelId.split(":")[0] : modelId;
+
+  if (!(await huggingFaceModelExists(baseModelId))) {
     return json(422, {
       error:
         "Model not found on the Hugging Face Hub, or is private. Public or gated models only.",
     });
   }
 
-  const existing = await findExistingOpenIssue(modelId, token);
+  const existing = await findExistingOpenIssue(baseModelId, token);
   if (existing) {
     return json(409, {
       error: "This model is already in the evaluation queue.",
@@ -197,7 +199,7 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  const alreadyEvaluated = await fetchEvaluatedGroups(req.url, modelId);
+  const alreadyEvaluated = await fetchEvaluatedGroups(req.url, baseModelId);
   const remaining = (groups as string[]).filter(
     (g) => !alreadyEvaluated.includes(g),
   );

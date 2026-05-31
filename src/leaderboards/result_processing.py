@@ -1,10 +1,13 @@
 """Process EuroEval records from a JSONL file."""
 
+from __future__ import annotations
+
 import io
 import json
 import logging
 import re
 import tarfile
+import typing as t
 import warnings
 from collections import Counter, defaultdict
 from copy import deepcopy
@@ -98,7 +101,7 @@ def process_results(
 
     # Add missing metadata to records. If the metadata cannot be fixed, the record
     # will be replaced with None, which will be removed later.
-    fixed_records: list[dict | None] = [
+    fixed_records: list[dict[str, t.Any] | None] = [
         fix_metadata(record=record, cache=cache)
         for record in tqdm(records, desc="Fixing metadata in records")
     ]
@@ -203,7 +206,7 @@ def add_missing_entries(
     return record
 
 
-def fix_metadata(record: dict, cache: Cache) -> dict | None:
+def fix_metadata(record: dict[str, t.Any], cache: Cache) -> dict[str, t.Any] | None:
     """Fixes metadata in a record.
 
     Args:
@@ -593,7 +596,7 @@ def record_is_valid(
 
 
 def group_results_by_model(
-    results: list[dict],
+    results: list[dict[str, t.Any]],
 ) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
     """Group results by model ID.
 
@@ -653,7 +656,9 @@ def group_results_by_model(
     return model_scores
 
 
-def extract_model_metadata(results: list[dict]) -> dict[str, dict]:
+def extract_model_metadata(
+    results: list[dict[str, t.Any]],
+) -> dict[str, dict[str, t.Any]]:
     """Extract metadata from the results.
 
     Args:
@@ -664,7 +669,7 @@ def extract_model_metadata(results: list[dict]) -> dict[str, dict]:
         The metadata.
     """
     logger.info("Extracting model metadata...")
-    metadata_dict: dict[str, dict] = defaultdict(dict)
+    metadata_dict: dict[str, dict[str, t.Any]] = defaultdict(dict)
     for record in results:
         model_ids = extract_model_ids_from_record(record=record)
         num_params = (

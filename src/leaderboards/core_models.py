@@ -34,6 +34,7 @@ import enum
 import logging
 import math
 import re
+import typing as t
 import urllib.error
 import urllib.request
 from collections import defaultdict
@@ -543,7 +544,7 @@ _OSAI_WEIGHTS_BLOCK_RE = re.compile(
 )
 
 
-def _parse_osai_models(bundle: str) -> list[dict]:
+def _parse_osai_models(bundle: str) -> list[dict[str, t.Any]]:
     """Parse model entries out of an OSAI JS bundle.
 
     Each model entry begins with a `system:{...}` block and is followed by
@@ -563,7 +564,7 @@ def _parse_osai_models(bundle: str) -> list[dict]:
         the open weights field name to its HF URL).
     """
     matches = list(_OSAI_SYSTEM_RE.finditer(bundle))
-    entries: list[dict] = []
+    entries: list[dict[str, t.Any]] = []
     for i, m in enumerate(matches):
         start = m.start()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(bundle)

@@ -1,5 +1,7 @@
 """Utility functions for the project."""
 
+from __future__ import annotations
+
 import logging
 import re
 import warnings

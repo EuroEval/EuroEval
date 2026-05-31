@@ -10,6 +10,8 @@ If `results.tar.gz` is missing at startup, `restore_from_backup_if_missing`
 copies the most recent backup into place so the pipeline can run.
 """
 
+from __future__ import annotations
+
 import datetime as dt
 import logging
 import shutil

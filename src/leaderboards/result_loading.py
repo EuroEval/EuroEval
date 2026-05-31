@@ -1,9 +1,12 @@
 """Loading of results, to be converted into leaderboards."""
 
+from __future__ import annotations
+
 import json
 import logging
 import re
 import tarfile
+import typing as t
 from functools import cache
 
 from .paths import NEW_RESULTS_PATH, RESULTS_PATH
@@ -11,7 +14,7 @@ from .paths import NEW_RESULTS_PATH, RESULTS_PATH
 logger = logging.getLogger(__name__)
 
 
-def load_raw_results() -> list[dict]:
+def load_raw_results() -> list[dict[str, t.Any]]:
     """Load raw results.
 
     Returns:
@@ -70,7 +73,7 @@ def load_raw_results() -> list[dict]:
     return records
 
 
-def convert_to_old_format(record: dict) -> dict:
+def convert_to_old_format(record: dict[str, t.Any]) -> dict[str, t.Any]:
     """Convert a record from the new Every Eval format to the old EuroEval format.
 
     The new EEE format has:
@@ -146,7 +149,7 @@ def convert_to_old_format(record: dict) -> dict:
 
 
 @cache
-def load_processed_results() -> list[dict]:
+def load_processed_results() -> list[dict[str, t.Any]]:
     """Load processed results.
 
     Returns:

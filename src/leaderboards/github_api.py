@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import sys
+import typing as t
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -27,7 +28,7 @@ TITLE_PREFIX = "[MODEL EVALUATION REQUEST]"
 USER_AGENT = "euroeval-leaderboards"
 
 
-def list_comments(number: int) -> list[dict]:
+def list_comments(number: int) -> list[dict[str, t.Any]]:
     """Return up to 100 comments for the issue with the given number.
 
     Args:
@@ -196,9 +197,9 @@ def gh_request(
     path: str,
     *,
     method: str = "GET",
-    body: dict | None = None,
-    params: dict | None = None,
-) -> dict | list | None:
+    body: dict[str, t.Any] | None = None,
+    params: dict[str, t.Any] | None = None,
+) -> dict[str, t.Any] | list[t.Any] | None:
     """Call the GitHub REST API and return the parsed JSON body.
 
     Args:

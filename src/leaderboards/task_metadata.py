@@ -13,6 +13,8 @@ A dataset is included in a leaderboard iff:
   - at least one of its languages matches the leaderboard's languages.
 """
 
+from __future__ import annotations
+
 import importlib
 import pkgutil
 from collections import OrderedDict
