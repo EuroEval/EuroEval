@@ -274,44 +274,44 @@ def release_current_issue() -> None:
         logger.warning(f"#{number}: could not release on interrupt: {e}")
 
 
-def recency_sort_value(issue: dict) -> float:
-    """Return a sort value that orders more recently opened issues first.
+def age_sort_value(issue: dict) -> float:
+    """Return a sort value that orders the oldest issues first.
 
-    Used as the final queue tiebreaker. Negating the creation timestamp
-    makes the newest issue sort ahead of older ones under the ascending
-    ``candidates.sort`` ordering.
+    Used as the final queue tiebreaker so that, all else being equal,
+    the longest-waiting request is picked up first and stale models are
+    drained from the queue rather than left to accumulate.
 
     Args:
         issue:
             The GitHub issue object returned by the API.
 
     Returns:
-        The negated ``created_at`` epoch (seconds), or ``0.0`` when the
-        timestamp is missing or unparseable. Since real negated
-        timestamps are large negative numbers, such issues sort after
-        those with a known, more recent creation time.
+        The ``created_at`` epoch (seconds), or ``float("inf")`` when the
+        timestamp is missing or unparseable, so such issues sort after
+        those with a known creation time under the ascending
+        ``candidates.sort`` ordering.
     """
     created_at = issue.get("created_at")
     if not isinstance(created_at, str):
-        return 0.0
+        return float("inf")
     try:
         parsed = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
     except ValueError:
-        return 0.0
-    return -parsed.timestamp()
+        return float("inf")
+    return parsed.timestamp()
 
 
 def process_queue_once() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
     Issues are sorted by (status priority asc, partial-results rank asc,
-    parameter count asc, num-language-groups asc, recency desc). Status
+    parameter count asc, num-language-groups asc, age asc). Status
     priority is 0 for fresh issues, 1 for gated repos (cheap marker
     refresh), and 2 for retries of previously errored evaluations, so
     that quicker work is picked up first and gated items are surfaced
-    ahead of errored ones. Recency is a final tiebreaker so that, when
-    everything else is equal, the most recently opened issue is picked
-    up first.
+    ahead of errored ones. Age is a final tiebreaker so that, when
+    everything else is equal, the oldest (longest-waiting) issue is
+    picked up first and stale requests don't linger in the queue.
     """
     try:
         issues = list_open_unassigned_issues()
@@ -381,7 +381,7 @@ def process_queue_once() -> None:
                 partial_rank,
                 param_count,
                 len(groups),
-                recency_sort_value(issue=issue),
+                age_sort_value(issue=issue),
                 issue,
                 model_id,
                 groups,
@@ -405,7 +405,7 @@ def process_queue_once() -> None:
         partial_rank,
         param_count,
         num_groups,
-        _recency,
+        _age,
         issue,
         model_id,
         groups,
