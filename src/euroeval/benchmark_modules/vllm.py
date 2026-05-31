@@ -16,6 +16,7 @@ import torch
 import torch.version
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
+from transformers import PythonBackend, SentencePieceBackend, TokenizersBackend
 from transformers.generation.configuration_utils import GenerationConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
@@ -110,7 +111,6 @@ if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
-    from transformers import PythonBackend, SentencePieceBackend, TokenizersBackend
     from transformers.configuration_utils import PretrainedConfig
     from transformers.trainer import Trainer
 
