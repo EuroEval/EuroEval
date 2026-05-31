@@ -116,17 +116,17 @@ watch(
   font-weight: 500;
 }
 
-.drawer-backdrop {
-  display: none;
-}
-
 @media (max-width: 768px) {
+  .drawer-backdrop {
+    display: none;
+  }
   .side-nav {
+    --drawer-width: 260px;
     position: fixed;
     top: 0;
     left: 0;
     bottom: 0;
-    width: 260px;
+    width: var(--drawer-width);
     background: var(--color-bg);
     border-right: 1px solid var(--color-border);
     padding: 1.25rem 1rem;
@@ -142,7 +142,10 @@ watch(
   .drawer-backdrop {
     display: block;
     position: fixed;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: var(--drawer-width, 260px);
     background: rgba(0, 0, 0, 0.5);
     opacity: 0;
     pointer-events: none;
