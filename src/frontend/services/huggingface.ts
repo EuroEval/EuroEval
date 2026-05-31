@@ -60,10 +60,15 @@ export interface GgufDetection {
  * less destructive default by simply not blocking on errors.
  */
 export async function detectGguf(modelId: string): Promise<GgufDetection> {
+  // Encode each path segment separately: encodeURIComponent on the whole id
+  // would turn the "/" between owner and repo into "%2F", which the model-info
+  // endpoint rejects with HTTP 400 — silently defeating detection.
+  const encodedId = modelId
+    .split("/")
+    .map((seg) => encodeURIComponent(seg))
+    .join("/");
   try {
-    const r = await fetch(
-      `https://huggingface.co/api/models/${encodeURIComponent(modelId)}`,
-    );
+    const r = await fetch(`https://huggingface.co/api/models/${encodedId}`);
     if (!r.ok) return { isGguf: false, quants: [] };
     const data = (await r.json()) as {
       tags?: string[];
