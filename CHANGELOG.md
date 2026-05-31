@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v17.3.0] - 2026-05-31
+
 ### Added
 
 - Added the "Dutch Proverbs" dataset. The dataset consists of brief scenarios and two
