@@ -28,7 +28,7 @@ _CATEGORIES = ("generative", "all_models")
 def compute_dataset_ranks_bootstrap(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
-    n_bootstraps: int = 1000,
+    n_bootstraps: int,
     seed: int | None = None,
 ) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
     """Compute per-dataset rank scores with bootstrap confidence intervals.
@@ -116,7 +116,7 @@ def compute_dataset_ranks_bootstrap(
 def compute_ranks(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
-    n_bootstraps: int = 1000,
+    n_bootstraps: int,
     seed: int | None = None,
 ) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
     """Compute ranks via bootstrap confidence intervals.
@@ -142,7 +142,7 @@ def compute_ranks(
         configs:
             The leaderboard configurations for each language.
         n_bootstraps:
-            Number of bootstrap replicates for dataset-level CIs (default 1000).
+            Number of bootstrap replicates for dataset-level CIs.
         seed:
             Random seed for reproducibility.
 
@@ -370,7 +370,7 @@ def compute_standard_ranks(
 def compute_ranks_bootstrap(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
-    n_bootstraps: int = 1000,
+    n_bootstraps: int,
     seed: int | None = None,
 ) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
     """Compute bootstrap confidence intervals for overall mean rank scores.
@@ -385,7 +385,7 @@ def compute_ranks_bootstrap(
     Args:
         model_results: The model results (same format as compute_ranks).
         configs: Per-language task -> dataset mappings.
-        n_bootstraps: Number of bootstrap replicates (default 1000).
+        n_bootstraps: Number of bootstrap replicates.
         seed: Random seed for reproducibility.
 
     Returns:
@@ -404,7 +404,7 @@ def compute_ranks_bootstrap(
 def compute_standard_ranks_bootstrap(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
-    n_bootstraps: int = 1000,
+    n_bootstraps: int,
     seed: int | None = None,
     alpha: float = 0.05,
 ) -> dict[str, dict[str, int]]:

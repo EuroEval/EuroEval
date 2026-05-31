@@ -27,7 +27,7 @@ _CATEGORIES = ("generative", "all_models")
 def bootstrap_rank_scores(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
-    n_bootstraps: int = 1000,
+    n_bootstraps: int,
     seed: int | None = None,
     categories: tuple[str, ...] | None = None,
 ) -> dict[str, dict[str, dict[str, np.ndarray]]]:
@@ -99,7 +99,7 @@ def bootstrap_rank_scores(
 
     # For each bootstrap replicate
     for b in range(n_bootstraps):
-        if b % 100 == 0:
+        if b % 10 == 0:
             logger.info("Bootstrap replicate %d/%d: complete", b, n_bootstraps)
 
         # Stratified resample: for each task, resample its datasets with replacement
