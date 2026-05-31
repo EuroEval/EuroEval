@@ -12,6 +12,5 @@ def test_all_objects_in_constants_are_constants() -> None:
         if name.startswith("__") or name in {"t", "TaskGroup", "re"}:
             continue
         assert name.isupper() and isinstance(
-            getattr(constants, name),
-            (Task, t.TypeVar, int, float, str, list, dict, tuple),
+            getattr(constants, name), (Task, t.TypeVar, int, float, str, list, dict)
         )

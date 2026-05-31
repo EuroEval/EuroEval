@@ -69,10 +69,10 @@ class QuestionAnsweringTrainer(Trainer):
 
     def evaluate(  # ty: ignore[invalid-method-override]
         self,
-        eval_dataset: "Dataset | dict[str, Dataset] | None" = None,
+        eval_dataset: "Dataset | None" = None,
+        orig_eval_dataset: "Dataset | None" = None,
         ignore_keys: list[str] | None = None,
         metric_key_prefix: str = "eval",
-        orig_eval_dataset: "Dataset | None" = None,
     ) -> dict[str, float]:
         """Evaluate the model on the given dataset.
 
@@ -124,7 +124,7 @@ class QuestionAnsweringTrainer(Trainer):
             preds_and_labels = postprocess_predictions_and_labels(
                 predictions=t.cast("tuple[np.ndarray, ...]", predictions),
                 dataset=orig_eval_dataset,
-                prepared_dataset=t.cast("Dataset", eval_dataset),
+                prepared_dataset=eval_dataset,
                 cls_token_index=self.cls_token_id,
             )
             assert self.compute_metrics is not None

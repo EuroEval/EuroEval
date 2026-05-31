@@ -3,7 +3,7 @@
 import collections.abc as c
 import typing as t
 
-from transformers import PreTrainedTokenizer
+from transformers import PythonBackend, SentencePieceBackend, TokenizersBackend
 from transformers.trainer_utils import EvalPrediction
 
 try:
@@ -39,13 +39,9 @@ IterationScores: t.TypeAlias = c.Mapping[str, float | list[FailedInstance]]
 ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[IterationScores]]
 Predictions: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Labels: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
-Tokeniser: t.TypeAlias = t.Union[
-    PreTrainedTokenizer,
-    MistralCommonTokenizer,
-    "TokenizersBackend",  # ty: ignore[unresolved-reference]  # noqa: F821
-    "SentencePieceBackend",  # ty: ignore[unresolved-reference]  # noqa: F821
-    "PythonBackend",  # ty: ignore[unresolved-reference]  # noqa: F821
-]
+Tokeniser: t.TypeAlias = (
+    TokenizersBackend | SentencePieceBackend | PythonBackend | MistralCommonTokenizer
+)
 Relation: t.TypeAlias = t.Literal["less than", "at least"]
 
 

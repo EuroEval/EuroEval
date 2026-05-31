@@ -110,6 +110,7 @@ if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
+    from transformers import PythonBackend, SentencePieceBackend, TokenizersBackend
     from transformers.configuration_utils import PretrainedConfig
     from transformers.trainer import Trainer
 
@@ -503,7 +504,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 self._tokeniser.pad_token = self._tokeniser.eos_token
         if self.end_of_chat_token_ids is not None:
             end_of_chat_token = self._tokeniser.decode(
-                list(self.end_of_chat_token_ids)  # ty: ignore[invalid-argument-type]
+                list(self.end_of_chat_token_ids)
             ).strip()
             if end_of_chat_token:
                 stop_tokens.append(end_of_chat_token)
@@ -715,7 +716,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                         "and reasoning models."
                     )
                     end_of_chat_token = self._tokeniser.decode(
-                        list(self.end_of_chat_token_ids)  # ty: ignore[invalid-argument-type]
+                        list(self.end_of_chat_token_ids)
                     )
                     prompt_segments: list[list[str]] = [
                         (
@@ -1440,6 +1441,13 @@ def load_tokeniser(
 
     # Ensure that BOS, EOS and PAD tokens are set
     if not isinstance(tokeniser, MistralCommonTokenizer):
+        if not isinstance(
+            tokeniser, TokenizersBackend | SentencePieceBackend | PythonBackend
+        ):
+            raise InvalidModel(
+                f"Unknown tokenizer type encountered: {tokeniser}. Please report this "
+                "bug at https://github.com/EuroEval/EuroEval/issues."
+            )
         tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)
         tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)
         tokeniser.pad_token, tokeniser.pad_token_id = get_pad_token(tokeniser=tokeniser)

@@ -311,7 +311,7 @@ def get_pad_token(tokeniser: Tokeniser) -> tuple[str, int] | tuple[None, None]:
 
 def get_end_of_chat_token_ids(
     tokeniser: Tokeniser, generative_type: GenerativeType | None
-) -> c.Sequence[int] | c.Sequence[str] | c.Sequence[c.Sequence[int]] | None:
+) -> c.Sequence[int] | None:
     """Get the end token ID for chat models.
 
     This is only relevant for tokenisers with a chat template.
@@ -459,7 +459,7 @@ def get_first_label_token_mapping(
             for label in local_labels
         ]
     else:
-        all_token_ids: list[list[int] | list[str] | list[list[int]]] = []
+        all_token_ids: list[list[int]] = []
         for label in local_labels:
             token_ids = apply_chat_template(
                 conversation=[
@@ -579,7 +579,7 @@ def apply_chat_template(
     tokenise: bool,
     add_generation_prompt: bool,
     **extra_kwargs,
-) -> str | list[int] | list[str] | list[list[int]] | BatchEncoding:
+) -> str | list[int]:
     """Apply the chat template to a prompt.
 
     Args:
@@ -625,4 +625,4 @@ def apply_chat_template(
             tokenize=tokenise,
             **extra_kwargs,
         )
-    return templated_prompt
+    return templated_prompt  # ty: ignore[invalid-return-type]

@@ -116,7 +116,7 @@ GENERATION_KWARGS = {
 # This is a mirror of `AttentionBackendEnum` in vLLM, but since we don't have access to
 # this when running on CPU/MacOS (as we can only run an old vLLM version), we have to
 # define it here
-ATTENTION_BACKENDS: tuple[str, ...] = (
+ATTENTION_BACKENDS: list[str] = [
     "FLASH_ATTN",
     "FLASH_ATTN_DIFFKV",
     "TRITON_ATTN",
@@ -140,7 +140,7 @@ ATTENTION_BACKENDS: tuple[str, ...] = (
     "ROCM_AITER_UNIFIED_ATTN",
     "CPU_ATTN",
     "CUSTOM",
-)
+]
 
 # If a dataset configuration has more than this number of languages, we won't log any of
 # the languages. This is for instance the case for the speed benchmark, which has all

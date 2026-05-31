@@ -987,7 +987,9 @@ def load_tokeniser(
     num_retries = 5
     for _ in range(num_retries):
         try:
-            tokeniser = AutoTokenizer.from_pretrained(model_id, **loading_kwargs)
+            tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
+                model_id, **loading_kwargs
+            )
             break
         except (JSONDecodeError, OSError, TypeError) as e:
             raise InvalidModel(
