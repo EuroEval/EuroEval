@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { LANGUAGE_GROUPS, submitEvalRequest } from "@/services/github";
-import { searchHfModels, type HfModelSuggestion } from "@/services/huggingface";
+import { searchHfModels, detectGgufQuants, type HfModelSuggestion } from "@/services/huggingface";
 
 const emit = defineEmits<{
   submitted: [
@@ -22,6 +22,9 @@ const highlight = ref(-1);
 const submitting = ref(false);
 const errorMsg = ref<string | null>(null);
 const successMsg = ref<string | null>(null);
+const availableQuants = ref<string[]>([]);
+const selectedQuant = ref("");
+const isCheckingGguf = ref(false);
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 let suppressNextSearch = false;
@@ -30,7 +33,8 @@ const canSubmit = computed(
   () =>
     /^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(modelId.value.trim()) &&
     selectedGroups.value.size > 0 &&
-    !submitting.value,
+    !submitting.value &&
+    availableQuants.value.length === 0,
 );
 
 watch(modelId, (v) => {
@@ -48,6 +52,7 @@ watch(modelId, (v) => {
   searchTimer = setTimeout(async () => {
     suggestions.value = await searchHfModels(v.trim(), 15);
     showSuggestions.value = suggestions.value.length > 0;
+    await checkIfGguf(v.trim());
   }, 180);
 });
 
@@ -78,6 +83,32 @@ function pickSuggestion(s: HfModelSuggestion) {
   if (searchTimer) clearTimeout(searchTimer);
   suggestions.value = [];
   showSuggestions.value = false;
+  checkIfGguf(s.id);
+}
+
+async function checkIfGguf(modelIdStr: string) {
+  if (!modelIdStr || !/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(modelIdStr)) {
+    availableQuants.value = [];
+    selectedQuant.value = "";
+    isCheckingGguf.value = false;
+    return;
+  }
+  isCheckingGguf.value = true;
+  try {
+    const quants = await detectGgufQuants(modelIdStr);
+    if (quants.length > 0) {
+      availableQuants.value = quants;
+      selectedQuant.value = quants[0];
+    } else {
+      availableQuants.value = [];
+      selectedQuant.value = "";
+    }
+  } catch {
+    availableQuants.value = [];
+    selectedQuant.value = "";
+  } finally {
+    isCheckingGguf.value = false;
+  }
 }
 
 function onInputBlur() {
@@ -128,6 +159,9 @@ async function onSubmit() {
     modelId.value = "";
     selectedGroups.value = new Set();
     suggestions.value = [];
+    availableQuants.value = [];
+    selectedQuant.value = "";
+    isCheckingGguf.value = false;
   } else if (result.status === 409 && result.url) {
     errorMsg.value = `This model is already in the queue — see ${result.url}.`;
   } else {
@@ -198,6 +232,26 @@ async function onSubmit() {
         </ul>
       </div>
     </label>
+
+    <div v-if="availableQuants.length > 0" class="field field-gguf">
+      <span class="label">⚠ GGUF model detected</span>
+      <div class="gguf-warning">
+        <p>
+          EuroEval's evaluation queue does not currently support GGUF models.
+          The quantisation of the model you selected was detected as
+          <strong>{{ availableQuants[0] }}</strong>, but this model cannot be
+          added to the automatic evaluation queue.
+        </p>
+        <p>
+          If you would like this model evaluated, please
+          <a
+            href="https://github.com/EuroEval/EuroEval/issues/new?template=model_evaluation_request.yaml"
+            target="_blank"
+            rel="noopener"
+          >open a manual evaluation request</a>.
+        </p>
+      </div>
+    </div>
 
     <fieldset class="field">
       <legend class="label">
@@ -457,5 +511,56 @@ button[type="submit"]:disabled {
 .msg.success {
   background: rgba(40, 167, 69, 0.12);
   color: #1a7f37;
+}
+
+.field-gguf {
+  background: rgba(220, 53, 69, 0.06);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.gguf-warning {
+  color: #842029;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.gguf-warning a {
+  color: #842029;
+  text-decoration: underline;
+}
+
+.gguf-warning a:hover {
+  color: #641319;
+}
+
+.quant-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.form-select {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  background: var(--color-bg, white);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.form-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.quant-hint {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  white-space: nowrap;
 }
 </style>
