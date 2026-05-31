@@ -34,11 +34,6 @@ export async function searchHfModels(
   }
 }
 
-export interface GgufDetection {
-  isGguf: boolean;
-  quants: string[];
-}
-
 /**
  * Detect whether a Hugging Face repo is a GGUF model, robustly.
  *
@@ -54,12 +49,11 @@ export interface GgufDetection {
  *      the repo recursively (including those nested in subfolders), so this
  *      catches repos even if the tag is somehow missing.
  *
- * Returns `{ isGguf: false, quants: [] }` on any network/parse error so a
- * transient failure never silently classifies a GGUF model as submittable —
- * the caller treats a non-GGUF result as "submittable", so we err towards the
- * less destructive default by simply not blocking on errors.
+ * Returns `false` on any network/parse error so a transient failure never
+ * silently classifies a GGUF model as submittable — the caller treats a
+ * non-GGUF result as "submittable", so we err towards not blocking on errors.
  */
-export async function detectGguf(modelId: string): Promise<GgufDetection> {
+export async function detectGguf(modelId: string): Promise<boolean> {
   // Encode each path segment separately: encodeURIComponent on the whole id
   // would turn the "/" between owner and repo into "%2F", which the model-info
   // endpoint rejects with HTTP 400 — silently defeating detection.
@@ -69,7 +63,7 @@ export async function detectGguf(modelId: string): Promise<GgufDetection> {
     .join("/");
   try {
     const r = await fetch(`https://huggingface.co/api/models/${encodedId}`);
-    if (!r.ok) return { isGguf: false, quants: [] };
+    if (!r.ok) return false;
     const data = (await r.json()) as {
       tags?: string[];
       library_name?: string;
@@ -77,41 +71,16 @@ export async function detectGguf(modelId: string): Promise<GgufDetection> {
     };
 
     const tags = (data.tags ?? []).map((t) => t.toLowerCase());
-    const files = (data.siblings ?? [])
-      .map((s) => s.rfilename ?? "")
-      .filter(Boolean);
-    const ggufFiles = files.filter((f) => f.toLowerCase().endsWith(".gguf"));
+    const hasGgufFile = (data.siblings ?? []).some((s) =>
+      (s.rfilename ?? "").toLowerCase().endsWith(".gguf"),
+    );
 
-    const isGguf =
+    return (
       tags.includes("gguf") ||
       data.library_name?.toLowerCase() === "gguf" ||
-      ggufFiles.length > 0;
-
-    return { isGguf, quants: extractQuants(ggufFiles) };
+      hasGgufFile
+    );
   } catch {
-    return { isGguf: false, quants: [] };
+    return false;
   }
-}
-
-/**
- * Best-effort extraction of quantisation labels from GGUF file paths, purely
- * for display. GGUF repos either name files `<model>-<QUANT>.gguf` or place
- * shards in a `<QUANT>/` subfolder, so we look at the subfolder first and fall
- * back to parsing the filename. Detection never depends on this succeeding.
- */
-function extractQuants(ggufFiles: string[]): string[] {
-  const quants = new Set<string>();
-  for (const path of ggufFiles) {
-    const parts = path.split("/");
-    if (parts.length > 1) {
-      // Per-quant subfolder, e.g. "UD-Q6_K_XL/model-00001-of-00003.gguf".
-      quants.add(parts[0].toUpperCase());
-      continue;
-    }
-    // Flat file, e.g. "Model-Q4_K_M.gguf" or "Model-IQ4_XS.gguf".
-    const name = parts[0].replace(/\.gguf$/i, "");
-    const m = name.match(/(?:^|[-_.])((?:UD-)?(?:IQ|Q|MXFP|BF|FP)\d[\w.]*)$/i);
-    if (m) quants.add(m[1].toUpperCase());
-  }
-  return Array.from(quants).sort().slice(0, 30);
 }

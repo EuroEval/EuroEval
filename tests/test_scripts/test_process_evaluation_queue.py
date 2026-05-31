@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from leaderboards import evaluation_common
+from leaderboards.queue_hf_cache import _is_gguf_model
 from src.scripts import process_evaluation_queue
 
 
@@ -323,3 +324,39 @@ def test_estimated_model_bytes_handles_model_id_extras(
     assert evaluation_common.estimated_model_bytes(model_id=model_id) == 2
     assert calls[0]["repo_id"] == "org/model"
     assert calls[0]["revision"] == "rev"
+
+
+@pytest.mark.parametrize(
+    argnames=["info", "expected"],
+    argvalues=[
+        # The "gguf" tag alone is enough, regardless of file layout.
+        (SimpleNamespace(tags=["gguf", "qwen"], library_name=None, siblings=[]), True),
+        # Tag matching is case-insensitive.
+        (SimpleNamespace(tags=["GGUF"], library_name=None, siblings=[]), True),
+        # library_name set to gguf.
+        (SimpleNamespace(tags=[], library_name="gguf", siblings=[]), True),
+        # A .gguf file nested in a per-quant subfolder, no tag.
+        (
+            SimpleNamespace(
+                tags=[],
+                library_name=None,
+                siblings=[SimpleNamespace(rfilename="Q4_K_M/model-00001-of-2.gguf")],
+            ),
+            True,
+        ),
+        # A plain safetensors model is not GGUF.
+        (
+            SimpleNamespace(
+                tags=["text-generation"],
+                library_name="transformers",
+                siblings=[SimpleNamespace(rfilename="model.safetensors")],
+            ),
+            False,
+        ),
+        # Missing/None attributes must not raise.
+        (SimpleNamespace(), False),
+    ],
+)
+def test_is_gguf_model(info: SimpleNamespace, expected: bool) -> None:
+    """GGUF repos are detected via tag, library_name, or any .gguf sibling."""
+    assert _is_gguf_model(info=info) is expected

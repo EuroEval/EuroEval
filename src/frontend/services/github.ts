@@ -97,9 +97,22 @@ export function issueStatus(
   return "Waiting";
 }
 
+// GGUF repos are conventionally named with a delimited "GGUF" token (e.g.
+// "unsloth/Qwen3-Coder-Next-GGUF"). The queue can't run GGUF models — and
+// submission of them is blocked outright — so any that slip in via a manually
+// filed issue are hidden from the queue here. The authoritative,
+// metadata-based GGUF gate lives at submission and in the queue processor; a
+// per-entry Hub lookup is too expensive for a list this size.
+const GGUF_ID_RE = /(?:^|[/\-_.])GGUF(?:[/\-_.]|$)/i;
+
+export function isGgufModelId(modelId: string): boolean {
+  return GGUF_ID_RE.test(modelId);
+}
+
 export function toQueueEntry(issue: RawIssue): QueueEntry | null {
   const modelId = extractModelId(issue.title, issue.body);
   if (!modelId) return null;
+  if (isGgufModelId(modelId)) return null;
   const failed = hasLabel(issue, FAILED_LABEL);
   const resultsReady = hasLabel(issue, RESULTS_READY_LABEL);
   const gated = isGatedModel(issue.body);

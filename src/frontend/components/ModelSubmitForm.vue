@@ -23,7 +23,6 @@ const submitting = ref(false);
 const errorMsg = ref<string | null>(null);
 const successMsg = ref<string | null>(null);
 const isGguf = ref(false);
-const ggufQuants = ref<string[]>([]);
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 let suppressNextSearch = false;
@@ -43,10 +42,12 @@ watch(modelId, (v) => {
   // Any edit invalidates a previous GGUF verdict until it is re-checked, so a
   // stale "blocked" state can never linger over a different model id.
   isGguf.value = false;
-  ggufQuants.value = [];
   ggufCheckSeq++;
   if (suppressNextSearch) {
+    // The id was set programmatically by picking a suggestion: skip the
+    // autocomplete search, but still run the GGUF check on the chosen model.
     suppressNextSearch = false;
+    checkIfGguf(v.trim());
     return;
   }
   if (!v.trim()) {
@@ -88,21 +89,20 @@ function pickSuggestion(s: HfModelSuggestion) {
   if (searchTimer) clearTimeout(searchTimer);
   suggestions.value = [];
   showSuggestions.value = false;
-  checkIfGguf(s.id);
+  // The GGUF check is triggered by the modelId watcher (suppressed-search
+  // branch); calling it here too would race the watcher's sequence bump.
 }
 
 async function checkIfGguf(modelIdStr: string) {
   if (!modelIdStr || !/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(modelIdStr)) {
     isGguf.value = false;
-    ggufQuants.value = [];
     return;
   }
   const seq = ++ggufCheckSeq;
   const result = await detectGguf(modelIdStr);
   // Ignore a response that a newer check has superseded (out-of-order replies).
   if (seq !== ggufCheckSeq) return;
-  isGguf.value = result.isGguf;
-  ggufQuants.value = result.quants;
+  isGguf.value = result;
 }
 
 function onInputBlur() {
@@ -161,7 +161,6 @@ async function onSubmit() {
     selectedGroups.value = new Set();
     suggestions.value = [];
     isGguf.value = false;
-    ggufQuants.value = [];
   } else if (result.status === 409 && result.url) {
     errorMsg.value = `This model is already in the queue — see ${result.url}.`;
   } else {
@@ -234,23 +233,17 @@ async function onSubmit() {
     </label>
 
     <div v-if="isGguf" class="field field-gguf">
-      <span class="label">⚠ GGUF model detected</span>
+      <span class="label">GGUF model detected</span>
       <div class="gguf-warning">
         <p>
-          EuroEval's evaluation queue does not currently support GGUF models<span
-            v-if="ggufQuants.length > 0"
-          >
-            (detected quantisation{{ ggufQuants.length > 1 ? "s" : "" }}:
-            <strong>{{ ggufQuants.join(", ") }}</strong>)</span>, so this model
-          cannot be added to the automatic evaluation queue.
-        </p>
-        <p>
-          If you would like this model evaluated, please
+          The evaluation queue can't run GGUF models just yet. If you'd like
+          this one evaluated, please
           <a
             href="https://github.com/EuroEval/EuroEval/issues/new?template=model_evaluation_request.yaml"
             target="_blank"
             rel="noopener"
-          >open a manual evaluation request</a>.
+          >open a model evaluation request</a>
+          and we'll take a look.
         </p>
       </div>
     </div>
@@ -516,27 +509,31 @@ button[type="submit"]:disabled {
 }
 
 .field-gguf {
-  background: rgba(220, 53, 69, 0.06);
-  border: 1px solid rgba(220, 53, 69, 0.2);
+  background: var(--color-hover-bg, rgba(31, 111, 235, 0.06));
+  border: 1px solid rgba(31, 111, 235, 0.2);
   border-radius: 0.375rem;
   padding: 0.75rem 1rem;
   margin-top: 0.5rem;
 }
 
+.field-gguf .label {
+  color: var(--color-link, #1f6feb);
+  margin-bottom: 0;
+}
+
 .gguf-warning {
-  color: #842029;
+  color: var(--color-text-muted, #555);
   font-size: 0.9rem;
   line-height: 1.5;
+  margin: 0.35rem 0 0;
+}
+
+.gguf-warning p {
   margin: 0;
 }
 
 .gguf-warning a {
-  color: #842029;
-  text-decoration: underline;
-}
-
-.gguf-warning a:hover {
-  color: #641319;
+  color: var(--color-link, #1f6feb);
 }
 
 </style>

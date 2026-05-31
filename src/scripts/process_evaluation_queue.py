@@ -309,6 +309,13 @@ def process_queue_once() -> None:
         if summary is None:
             continue
 
+        if summary.get("gguf"):
+            logger.info(
+                f"#{number}: skipping -- {model_id!r} is a GGUF model, which the "
+                "evaluation queue cannot run."
+            )
+            continue
+
         param_count = summary["param_count"]
         if summary.get("gated"):
             status_priority = 1
