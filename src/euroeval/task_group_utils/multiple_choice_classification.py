@@ -23,7 +23,7 @@ class MultipleChoiceClassificationTrainer(Trainer):
 
     def evaluate(  # ty: ignore[invalid-method-override]
         self,
-        eval_dataset: "Dataset | dict[str, Dataset] | None" = None,
+        eval_dataset: "Dataset | None" = None,
         ignore_keys: list[str] | None = None,
         metric_key_prefix: str = "eval",
     ) -> dict[str, float]:
@@ -68,11 +68,6 @@ class MultipleChoiceClassificationTrainer(Trainer):
             assert eval_dataset is not None, (
                 "eval_dataset must be provided when metric_key_prefix is 'test'."
             )
-
-            if isinstance(eval_dataset, dict):
-                raise InvalidBenchmark(
-                    "A single evaluation dataset must be provided, not a dictionary."
-                )
             preds_and_labels = postprocess_predictions_and_labels(
                 predictions=predictions, dataset=eval_dataset
             )
