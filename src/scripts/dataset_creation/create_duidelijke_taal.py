@@ -134,7 +134,7 @@ def filter_dataset(
     """
     # load default model (bert-base-multilingual-cased), which is sufficient as filter
     bert_score = load("bertscore")
-    df["bert"] = bert_score.compute(  # ty: ignore[missing-argument,not-subscriptable][missing-argument]
+    df["bert"] = bert_score.compute(  # ty: ignore[missing-argument,not-subscriptable]
         references=df["text"].to_list(),
         predictions=df["target_text"].to_list(),
         lang="nl",

@@ -8,7 +8,7 @@ Hugging Face Hub repositories.
 import dataclasses
 import logging
 from pathlib import Path
-from typing import TypedDict, cast
+from typing import cast
 
 import yaml
 from huggingface_hub import HfApi
@@ -230,32 +230,11 @@ def load_dataset_config_from_yaml(
     if kwargs is None:
         return None
 
-    return DatasetConfig(
-        task=task_obj,
-        languages=language_objs,
-        name=kwargs.get("name"),
-        pretty_name=kwargs.get("pretty_name"),
-        source=kwargs.get("source"),
-        prompt_prefix=kwargs.get("prompt_prefix"),
-        prompt_template=kwargs.get("prompt_template"),
-        instruction_prompt=kwargs.get("instruction_prompt"),
-        num_few_shot_examples=kwargs.get("num_few_shot_examples"),
-        max_generated_tokens=kwargs.get("max_generated_tokens"),
-        labels=kwargs.get("labels"),
-        prompt_label_mapping=kwargs.get("prompt_label_mapping"),
-        allowed_model_types=kwargs.get("allowed_model_types"),
-        allowed_generative_types=kwargs.get("allowed_generative_types"),
-        allow_invalid_model_outputs=kwargs.get("allow_invalid_model_outputs"),
-        train_split=kwargs.get("train_split"),
-        val_split=kwargs.get("val_split"),
-        test_split=kwargs.get("test_split") or "test",
-        bootstrap_samples=kwargs.get("bootstrap_samples", True),
-        unofficial=kwargs.get("unofficial", False),
-        input_column=kwargs.get("input_column") or "text",
-        target_column=kwargs.get("target_column"),
-        choices_column=kwargs.get("choices_column"),
-        preprocessing_func=kwargs.get("preprocessing_func"),
-    )
+    kwargs.setdefault("test_split", "test")
+    kwargs.setdefault("bootstrap_samples", True)
+    kwargs.setdefault("unofficial", False)
+    kwargs.setdefault("input_column", "text")
+    return DatasetConfig(task=task_obj, languages=language_objs, **kwargs)
 
 
 def promote_field_spec_fields(raw: dict[str, object]) -> None:
@@ -465,30 +444,10 @@ def parse_languages(
     return language_objs
 
 
-class _Kwargs(TypedDict, total=False):
-    """TypedDict of optional DatasetConfig keyword arguments."""
-
-    name: str
-    pretty_name: str
-    source: str | dict[str, str]
-    prompt_prefix: str
-    prompt_template: str
-    instruction_prompt: str
-    num_few_shot_examples: int
-    max_generated_tokens: int
-    labels: list[str]
-    prompt_label_mapping: dict[str, str]
-    choices_column: str | list[str]
-    input_column: str
-    target_column: str
-    test_split: str
-    train_split: str
-    val_split: str
-    bootstrap_samples: bool
-    unofficial: bool
+DatasetKwargs = dict[str, str | int | bool | list[str] | dict[str, str]]
 
 
-def build_kwargs(raw: dict[str, object], yaml_path: Path) -> _Kwargs | None:
+def build_kwargs(raw: dict[str, object], yaml_path: Path) -> DatasetKwargs | None:
     """Build keyword arguments for `DatasetConfig` from YAML fields.
 
     Reads the following optional fields from `raw` and maps them to the
@@ -511,7 +470,7 @@ def build_kwargs(raw: dict[str, object], yaml_path: Path) -> _Kwargs | None:
         A dictionary suitable for unpacking into `DatasetConfig(...)`, or None
             if any field fails validation.
     """
-    kwargs: dict[str, str | int | bool | list[str] | dict[str, str]] = {}
+    kwargs: DatasetKwargs = {}
 
     for field_name in (
         "prompt_prefix",
@@ -573,7 +532,7 @@ def build_kwargs(raw: dict[str, object], yaml_path: Path) -> _Kwargs | None:
             )
             return None
 
-    return cast(_Kwargs, kwargs)
+    return kwargs
 
 
 def parse_string_field(
