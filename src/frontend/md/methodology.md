@@ -173,7 +173,7 @@ structure, we compute the CIs empirically:
 datasets are resampled independently, preserving the task structure).
 2. **Recompute the full hierarchy** on the resampled datasets — dataset scores,
 task means, language means, overall mean — for every model.
-3. **Repeat** 1,000 times and collect the distribution of overall scores.
+3. **Repeat** 50 times and collect the distribution of overall scores.
 4. **Take the 2.5th and 97.5th percentiles** as the 95% CI bounds, with the
 median as the point estimate.
 
