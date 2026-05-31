@@ -72,6 +72,25 @@ function statusClass(status: string): string {
   return status.toLowerCase().replace(/\s+/g, "-");
 }
 
+const TIME_UNITS: Array<{ label: string; seconds: number }> = [
+  { label: "year", seconds: 365 * 24 * 60 * 60 },
+  { label: "week", seconds: 7 * 24 * 60 * 60 },
+  { label: "day", seconds: 24 * 60 * 60 },
+  { label: "hour", seconds: 60 * 60 },
+  { label: "minute", seconds: 60 },
+  { label: "second", seconds: 1 },
+];
+
+function timeInQueue(createdAt: string): string {
+  const elapsed = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
+  if (!Number.isFinite(elapsed) || elapsed < 1) return "just now";
+  for (const { label, seconds } of TIME_UNITS) {
+    const value = Math.floor(elapsed / seconds);
+    if (value >= 1) return `${value} ${label}${value === 1 ? "" : "s"}`;
+  }
+  return "just now";
+}
+
 defineProps<{ entries: QueueEntry[]; loading: boolean; error: string | null }>();
 const emit = defineEmits<{
   refresh: [];
@@ -101,6 +120,7 @@ const emit = defineEmits<{
           <th class="lang-col">Languages</th>
           <th class="status-col" style="text-align: center">Status</th>
           <th class="evaluator-col" style="text-align: center">Evaluator</th>
+          <th class="time-col" style="text-align: center">Time in Queue</th>
           <th class="sub-col"></th>
         </tr>
       </thead>
@@ -143,6 +163,9 @@ const emit = defineEmits<{
               @{{ e.evaluator }}
             </a>
             <span v-else class="muted">—</span>
+          </td>
+          <td class="time-col" style="text-align: center">
+            {{ timeInQueue(e.createdAt) }}
           </td>
           <td class="sub-col">
             <button
@@ -276,7 +299,9 @@ th.status-col {
   .qtable th.lang-col,
   .qtable td.lang-col,
   .qtable th.evaluator-col,
-  .qtable td.evaluator-col {
+  .qtable td.evaluator-col,
+  .qtable th.time-col,
+  .qtable td.time-col {
     display: none;
   }
 

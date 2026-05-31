@@ -111,6 +111,16 @@ const filteredRows = computed<Row[]>(() => {
   });
 });
 
+// Blank/missing values (rendered as "?", "-", "", "??") should always sink
+// to the bottom, regardless of sort direction. Numeric blanks carry a
+// non-finite sort key (POSITIVE_INFINITY); text blanks keep their placeholder
+// text. Icon "?" is a real ordered value (finite sort key) and is not blank.
+const BLANK_TEXTS = new Set(["", "-", "?", "??"]);
+const isBlankCell = (cell: { text: string; sortKey: number | string }): boolean =>
+  typeof cell.sortKey === "number"
+    ? !Number.isFinite(cell.sortKey)
+    : BLANK_TEXTS.has(cell.text);
+
 const sortedRows = computed<Row[]>(() => {
   const rows = filteredRows.value;
   const s = sortBy.value;
@@ -118,8 +128,16 @@ const sortedRows = computed<Row[]>(() => {
   const idx = s.index;
   const dir = s.dir === "asc" ? 1 : -1;
   return [...rows].sort((a, b) => {
-    const ak = a.cells[idx].sortKey;
-    const bk = b.cells[idx].sortKey;
+    const ac = a.cells[idx];
+    const bc = b.cells[idx];
+    const aBlank = isBlankCell(ac);
+    const bBlank = isBlankCell(bc);
+    if (aBlank || bBlank) {
+      if (aBlank && bBlank) return 0;
+      return aBlank ? 1 : -1;
+    }
+    const ak = ac.sortKey;
+    const bk = bc.sortKey;
     if (typeof ak === "number" && typeof bk === "number") {
       return (ak - bk) * dir;
     }
