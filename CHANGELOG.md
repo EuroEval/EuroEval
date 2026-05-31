@@ -7,41 +7,37 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Added the "Dutch Proverbs" dataset. The dataset consists of brief scenarios and two
+  possible proverbs for the LLM to select from. The dataset was created manually and
+  reviewed by native Dutch speakers. This was contributed by @lswiers ✨
+
 ### Changed
 
-- Bumped the minimum vLLM version on Linux from v0.14.1 to v0.21.0.
+- Bumped the minimum vLLM version on Linux from v0.14.1 to v0.22.0, for both Linux and
+  MacOS, and updated `vllm-metal` to `v0.2.0-20260531-071330`.
 - Now ignores the language detection logging for Norwegian ('no'), since it's covered by
   Norwegian Bokmål ('nb') and Norwegian Nynorsk ('nn').
 
 ### Fixed
 
-- Running with `HF_HUB_OFFLINE=1` no longer crashes when loading a local custom
-  dataset whose id happens to look like a Hub repo. The Hub existence check
-  now treats an offline-mode error as "not reachable, so not present" and
-  lets the caller fall back to the local config. Thanks to
-  [@Touzen](https://github.com/Touzen) for the contribution!
-- Added an architecture alias remapping `Gemma4TextForCausalLM` to
-  `Gemma4ForCausalLM` so that text-only Gemma 4 fine-tunes can be loaded with
-  vLLM versions that only register the multimodal class. Thanks to
-  [@lardinator](https://github.com/lardinator) for the contribution!
-- Raised the default vLLM worker RPC timeouts
-  (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and `VLLM_ENGINE_ITERATION_TIMEOUT_S`)
-  from 300s to 1800s so that large models on slow hardware no longer crash
-  mid-evaluation with `EngineDeadError: RPC call to sample_tokens timed out`.
-  The engine-dead case is also now caught and reported as an `InvalidBenchmark`
-  error instead of an opaque crash.
-- Fixed a bug where `load_custom_datasets_module` would attempt to load a module
-  spec from the current working directory when an empty path was passed as the
-  custom datasets file, emitting a spurious "Could not load the spec for the
-  custom datasets file" error. It now requires the path to point at an actual
-  file.
-
-### Added
-
-- Added a benchmark for the purpose of testing the knowledge of Dutch proverbs.
-  The dataset consists of brief scenarios and two possible proverbs for
-  the Large Language Model to select from.
-  The dataset was created manually and reviewed by native Dutch speakers.
+- Running with `HF_HUB_OFFLINE=1` no longer crashes when loading a local custom dataset
+  whose id happens to look like a Hub repo. The Hub existence check now treats an
+  offline-mode error as "not reachable, so not present" and lets the caller fall back to
+  the local config. This was contributed by @Touzen ✨
+- Added an architecture alias remapping `Gemma4TextForCausalLM` to `Gemma4ForCausalLM`
+  so that text-only Gemma 4 fine-tunes can be loaded with vLLM versions that only
+  register the multimodal class. This was contributed by @lardinator ✨
+- Raised the default vLLM worker RPC timeouts (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and
+  `VLLM_ENGINE_ITERATION_TIMEOUT_S`) from 300s to 1800s so that large models on slow
+  hardware no longer crash mid-evaluation with `EngineDeadError: RPC call to
+  sample_tokens timed out`. The engine-dead case is also now caught and reported as an
+  `InvalidBenchmark` error instead of an opaque crash.
+- Fixed a bug where `load_custom_datasets_module` would attempt to load a module spec
+  from the current working directory when an empty path was passed as the custom
+  datasets file, emitting a spurious "Could not load the spec for the custom datasets
+  file" error. It now requires the path to point at an actual file.
 
 ## [v17.2.0] - 2026-04-17
 
