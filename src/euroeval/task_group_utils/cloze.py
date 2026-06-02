@@ -49,6 +49,8 @@ def build_cf_prompt(
     # label="" renders the template's trailing marker (e.g. "Answer: ") without
     # any choice text, so candidates can be appended directly for scoring.
     tail = prompt_template.format(text=bare_input.replace("\n", " ").strip(), label="")
+    # Only {labels_str} is used in prompt_prefix templates today; a new slot
+    # added in future would silently KeyError here if not listed in the format call.
     rendered_prefix = prompt_prefix.format(labels_str="") if prompt_prefix else ""
     if rendered_prefix:
         rendered_prefix += "\n\n"
@@ -89,9 +91,10 @@ def parse_mcq_text(text: str) -> tuple[str, list[str]]:
         b. <option b>
         ...
 
-    Some datasets instead embed the raw choices in separate columns that the
-    preprocessing step merges into ``text``. This helper reverses that merge so
-    CF evaluation can score each raw choice on its own.
+    Called as a fallback when ``bare_input`` and ``raw_choices`` are not already
+    present in the dataset example (e.g. datasets cached before CF support was
+    added). Freshly loaded datasets have these columns pre-computed during
+    preprocessing, so this regex-based parsing is not the hot path.
 
     Args:
         text:
