@@ -465,7 +465,7 @@ class TestScoreCompletions:
         tokenize_map = {prompt: [1], prompt + candidate: [1, 2]}
         # The continuation position has no logprob entry (vLLM occasionally
         # returns None for special-token positions).
-        prompt_logprobs = [None, None]
+        prompt_logprobs: list[dict | None] = [None, None]
         model = self._build_model(
             tokenize_map=tokenize_map, prompt_logprobs_per_call=[prompt_logprobs]
         )
