@@ -1773,11 +1773,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset valeu-da
 ```
 
-
-
-
-
-
 ## Grammatical Error Detection
 
 ### Unofficial: GerLangMod-da
@@ -1933,17 +1928,16 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset gerlangmod-da
 ```
 
-
-
 ## Hallucination Detection
 
-### MultiWikiHalluQA-da
+### RAGTruth-da
 
-This dataset uses the same data as [MultiWikiQA-da](#multiwikiqa-da), published in
-[this paper](https://doi.org/10.48550/arXiv.2509.04111), containing Wikipedia articles
-with LLM-generated questions and answers in 300+ languages. Rather than evaluating the
-correctness of the generated answer, this task evaluates the degree to which the model
-hallucinates, i.e., generates tokens that are not grounded in the provided context.
+This dataset is a Danish translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates,
+i.e., generates tokens that are not grounded in the provided context.
 
 The hallucination detection is performed using the
 [LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
@@ -1982,5 +1976,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multi-wiki-hallucination-qa-da
+euroeval --model <model-id> --dataset ragtruth-da
 ```

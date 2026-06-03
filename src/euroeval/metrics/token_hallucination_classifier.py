@@ -119,7 +119,7 @@ class TokenHallucinationMetric(Metric):
             dataset=dataset,
             predictions=predictions,
             model=(
-                f"alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-"
+                f"alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
                 f"{dataset_config.main_language.code}"
             ),
             device="cpu",

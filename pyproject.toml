@@ -119,6 +119,19 @@ vllm = { git = "https://github.com/vllm-project/vllm.git", tag = "v0.22.0", mark
 [tool.uv]
 override-dependencies = [
   "transformers[mistral-common]>=5.5.0",
+  # When vLLM is built from source on a CUDA host it stamps a "+cuXXX" version and
+  # pulls in CUDA-only dependencies that have no macOS arm64 wheels. These are not
+  # needed on macOS (which uses vllm-metal for the runtime), so we drop them on
+  # Darwin to keep the darwin arm64 environment resolvable.
+  "tokenspeed-mla; platform_system != 'Darwin'",
+  "nvidia-cutlass-dsl; platform_system != 'Darwin'",
+  "nvidia-cudnn-frontend; platform_system != 'Darwin'",
+  "flashinfer-python; platform_system != 'Darwin'",
+  "flashinfer-cubin; platform_system != 'Darwin'",
+  "quack-kernels; platform_system != 'Darwin'",
+  "humming-kernels; platform_system != 'Darwin'",
+  "tilelang; platform_system != 'Darwin'",
+  "apache-tvm-ffi; platform_system != 'Darwin'",
 ]
 environments = [
   # Only support arm64 macos (dont try to resolve darwin + x86_64 or any other platforms)

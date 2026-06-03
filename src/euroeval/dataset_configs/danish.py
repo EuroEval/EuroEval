@@ -5,8 +5,8 @@ from ..languages import DANISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
-    HALLU,
     GED,
+    HALLU,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -106,10 +106,10 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
-MULTI_WIKI_QA_DA_HALLUCINATION_CONFIG = DatasetConfig(
-    name="multi-wiki-hallucination-qa-da",
-    pretty_name="MultiWikiHalluQA-da",
-    source="EuroEval/multi-wiki-qa-da-mini",
+RAGTRUTH_DA_CONFIG = DatasetConfig(
+    name="ragtruth-da",
+    pretty_name="RAGTruth-da",
+    source="EuroEval/ragtruth-translated-hallucinations-da-mini",
     task=HALLU,
     languages=[DANISH],
 )
