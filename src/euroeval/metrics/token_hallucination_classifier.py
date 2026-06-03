@@ -33,7 +33,7 @@ def detect_hallucinations(
         predictions: Iterable of prediction objects, each containing a
             ``"prediction_text"`` field with the model's answer text.
         model: 
-            Path to hallucination detection model. Defaults to english.
+            Path to hallucination detection model.
         device: 
             Device to run on ('cpu' or 'cuda').
 
@@ -57,26 +57,28 @@ def detect_hallucinations(
 
     hallucinated_tokens = 0
     total_tokens = 0
-    truncated_samples = 0
+    skipped_samples = 0
 
     for prompt, predicted_text in zip(dataset["context"], predicted_texts):
-        answer, was_truncated = _truncate_answer(
+        if _answer_too_long(
             answer=predicted_text, tokenizer=tokenizer, max_length=max_length
-        )
-        if was_truncated:
-            truncated_samples += 1
+        ):
+            skipped_samples += 1
+            continue
 
-        predict_answer = detector.predict_prompt(prompt=prompt, answer=answer)
+        predict_answer = detector.predict_prompt(
+            prompt=prompt, answer=predicted_text
+        )
 
         for token in predict_answer:
             hallucinated_tokens += token["pred"]
             total_tokens += 1
 
-    if truncated_samples > 0:
+    if skipped_samples > 0:
         logger.warning(
-            f"Truncated the predicted answer of {truncated_samples} sample(s) "
-            f"during hallucination detection because it exceeded the detector's "
-            f"maximum context length of {max_length} tokens."
+            f"Skipped {skipped_samples} sample(s) during hallucination detection "
+            f"because the predicted answer alone exceeded the detector's maximum "
+            f"context length of {max_length} tokens."
         )
 
     if total_tokens == 0:
@@ -90,34 +92,33 @@ def detect_hallucinations(
     return hallucination_rate
 
 
-def _truncate_answer(
+def _answer_too_long(
     answer: str, tokenizer: "PreTrainedTokenizerBase", max_length: int
-) -> tuple[str, bool]:
-    """Truncate an answer so the detector can fit it alongside the prompt.
+) -> bool:
+    """Check whether an answer alone exceeds the detector's token budget.
 
     The hallucination detector tokenises the prompt and answer together with
     ``truncation="only_first"``, which only truncates the prompt. If the answer
     alone leaves no room for the prompt (e.g. for reasoning models that emit long
-    answers), the tokeniser raises a truncation error. To avoid this we cap the
-    answer to at most half of ``max_length`` tokens, leaving room for the prompt.
+    answers), the tokeniser raises a truncation error. Such samples are skipped.
 
     Args:
         answer:
-            The predicted answer text to potentially truncate.
+            The predicted answer text to check.
         tokenizer:
-            The detector's tokeniser, used to count and truncate tokens.
+            The detector's tokeniser, used to count tokens.
         max_length:
             The detector's maximum input sequence length.
 
     Returns:
-        A tuple of the (possibly truncated) answer and whether it was truncated.
+        Whether the answer is too long to be evaluated alongside a prompt.
     """
-    max_answer_tokens = max(1, (max_length - 3) // 2)
-    token_ids = tokenizer(answer, add_special_tokens=False)["input_ids"]
-    if len(token_ids) <= max_answer_tokens:
-        return answer, False
-    truncated_ids = token_ids[:max_answer_tokens]
-    return tokenizer.decode(truncated_ids, skip_special_tokens=True), True
+    answer_token_count = len(
+        tokenizer(answer, add_special_tokens=False)["input_ids"]
+    )
+    # Reserve room for special tokens ([CLS], two [SEP]) and at least one prompt
+    # token, matching the detector's ``truncation="only_first"`` requirement.
+    return answer_token_count >= max_length - 4
 
 
 class TokenHallucinationMetric(Metric):
@@ -140,7 +141,7 @@ class TokenHallucinationMetric(Metric):
 
     def __call__(
         self,
-        predictions: c.Sequence,
+        predictions: c.Iterable[dict[str, str]],
         dataset: "Dataset",
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
