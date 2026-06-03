@@ -2,7 +2,20 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ENGLISH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+    TOOL_CALLING,
+    WIC,
+)
 
 # Official datasets ###
 
@@ -62,6 +75,24 @@ HELLASWAG_CONFIG = DatasetConfig(
     languages=[ENGLISH],
 )
 
+IFEVAL_CONFIG = DatasetConfig(
+    name="ifeval",
+    pretty_name="IFEval",
+    source="EuroEval/ifeval-en",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ENGLISH],
+    train_split=None,
+    val_split=None,
+)
+
+BFCL_V2_CONFIG = DatasetConfig(
+    name="bfcl-v2",
+    pretty_name="BFCL-v2",
+    source="EuroEval/bfcl-v2",
+    task=TOOL_CALLING,
+    languages=[ENGLISH],
+)
+
 VALEU_EN_CONFIG = DatasetConfig(
     name="valeu-en",
     pretty_name="VaLEU-en",
@@ -113,6 +144,16 @@ MMLU_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+MMLU_PRO_CONFIG = DatasetConfig(
+    name="mmlu-pro",
+    pretty_name="MMLU-Pro",
+    source="EuroEval/mmlu-pro-mini",
+    task=KNOW,
+    languages=[ENGLISH],
+    labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+    unofficial=True,
+)
+
 MULTI_WIKI_QA_EN_CONFIG = DatasetConfig(
     name="multi-wiki-qa-en",
     pretty_name="MultiWikiQA-en",
@@ -129,5 +170,23 @@ WINOGRANDE_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[ENGLISH],
     labels=["a", "b"],
+    unofficial=True,
+)
+
+MULTILOKO_EN_CONFIG = DatasetConfig(
+    name="multiloko-en",
+    pretty_name="MultiLoKo-en",
+    source="EuroEval/multiloko-en-mini",
+    task=KNOW,
+    languages=[ENGLISH],
+    unofficial=True,
+)
+
+WIC_CONFIG = DatasetConfig(
+    name="wic",
+    pretty_name="WiC",
+    source="EuroEval/wic",
+    task=WIC,
+    languages=[ENGLISH],
     unofficial=True,
 )

@@ -65,19 +65,34 @@ def compute_metrics(
     else:
         predictions = model_outputs
 
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)  # type: ignore[bad-argument-type]
+    raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     prompt_label_to_label_mapping = {
         prompt_label: label
         for label, prompt_label in dataset_config.prompt_label_mapping.items()
     }
+
+    # For datasets with dynamic labels (e.g. community multiple-choice with
+    # default_labels=None), both label2id and prompt_label_to_label_mapping are
+    # empty.  Build a temporary mapping from the observed predictions and ground
+    # truth so that the metrics can still be computed.
+    if not label2id:
+        all_observed = sorted(
+            {
+                v.lower() if isinstance(v, str) else str(v)
+                for v in list(predictions) + list(labels)
+            }
+        )
+        label2id = {lbl: idx for idx, lbl in enumerate(all_observed)}
+        prompt_label_to_label_mapping = {lbl: lbl for lbl in all_observed}
+
     predictions = [
         (
             label2id[prompt_label_to_label_mapping[pred.lower()]]
             if isinstance(pred, str)
             else pred
         )
-        for pred in predictions  # type: ignore[not-iterable]
+        for pred in predictions
     ]
 
     label_ids = [
@@ -211,6 +226,9 @@ def extract_labels_from_generation(
         # allowed), or we raise an error
         if closest_distance >= 1000:
             num_predictions_being_very_off += 1
+            model_output.failed_instances.append(
+                dict(sample_index=idx, error="No candidate label found in model output")
+            )
 
         new_predicted_labels.append(best_candidate_label)
 

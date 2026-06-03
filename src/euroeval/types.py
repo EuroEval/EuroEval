@@ -3,16 +3,15 @@
 import collections.abc as c
 import typing as t
 
-from transformers import PreTrainedTokenizer
+from transformers import PythonBackend, SentencePieceBackend, TokenizersBackend
 from transformers.trainer_utils import EvalPrediction
 
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MistralCommonTokenizer,
-    )
+    from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
 
+    MistralCommonTokenizer: type = MCB
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -21,10 +20,29 @@ if t.TYPE_CHECKING:
 
     from .data_models import BenchmarkConfig, GenerativeModelOutput
 
-ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[dict[str, float]]]
+
+class FailedInstance(t.TypedDict):
+    """A failed instance during generation.
+
+    Attributes:
+        sample_index:
+            The index of the sample in the batch that failed.
+        error:
+            A short description of why the instance failed.
+    """
+
+    sample_index: int
+    error: str
+
+
+IterationScores: t.TypeAlias = c.Mapping[str, float | list[FailedInstance]]
+ScoreDict: t.TypeAlias = dict[str, dict[str, float] | c.Sequence[IterationScores]]
 Predictions: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
 Labels: t.TypeAlias = "NDArray | c.Sequence[str] | c.Sequence[c.Sequence[str]]"
-Tokeniser: t.TypeAlias = PreTrainedTokenizer | MistralCommonTokenizer
+Tokeniser: t.TypeAlias = (
+    TokenizersBackend | SentencePieceBackend | PythonBackend | MistralCommonTokenizer
+)
+Relation: t.TypeAlias = t.Literal["less than", "at least"]
 
 
 class ComputeMetricsFunction(t.Protocol):
@@ -140,7 +158,7 @@ def is_list_of_list_of_int(x: object) -> t.TypeGuard[c.Sequence[c.Sequence[int]]
     return (
         isinstance(x, list)
         and all(isinstance(i, list) for i in x)
-        and all(isinstance(j, int) for i in x for j in i)
+        and all(isinstance(j, int) for i in x for j in i)  # ty: ignore[not-iterable]
     )
 
 

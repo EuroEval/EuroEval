@@ -2,6 +2,7 @@
 
 import logging
 import os
+import subprocess
 import sys
 import time
 from collections.abc import Generator
@@ -27,7 +28,6 @@ from euroeval.data_models import (
     ModelConfig,
     Task,
 )
-from euroeval.enums import TaskGroup
 from euroeval.exceptions import HuggingFaceHubDown
 
 
@@ -75,15 +75,6 @@ def test_benchmark_generative(
     benchmarker: Benchmarker, task: Task, language: Language, generative_model_id: str
 ) -> None:
     """Test that a generative model can be benchmarked."""
-    if not torch.cuda.is_available() and (
-        task.task_group
-        in [TaskGroup.SEQUENCE_CLASSIFICATION, TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION]
-        or task.uses_structured_output
-    ):
-        pytest.skip(
-            f"CUDA is required to run generative models on the {task.name} "
-            "task currently."
-        )
     benchmark_result = benchmarker.benchmark(
         model=generative_model_id, task=task.name, language=language.code
     )
@@ -103,15 +94,6 @@ def test_benchmark_generative_adapter(
     generative_adapter_model_id: str,
 ) -> None:
     """Test that a generative adapter model can be benchmarked."""
-    if not torch.cuda.is_available() and (
-        task.task_group
-        in [TaskGroup.SEQUENCE_CLASSIFICATION, TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION]
-        or task.uses_structured_output
-    ):
-        pytest.skip(
-            f"CUDA is required to run generative models on the {task.name} "
-            "task currently."
-        )
     benchmark_result = benchmarker.benchmark(
         model=generative_adapter_model_id, task=task.name, language=language.code
     )
@@ -135,7 +117,11 @@ def test_benchmark_openai(
 
 
 @pytest.mark.skipif(
-    condition=os.system("uv run ollama -v") != 0, reason="Ollama is not available."
+    condition=subprocess.run(
+        ["uv", "run", "ollama", "-v"], capture_output=True
+    ).returncode
+    != 0,
+    reason="Ollama is not available.",
 )
 def test_benchmark_ollama(
     benchmarker: Benchmarker, task: Task, language: Language, ollama_model_id: str
@@ -148,7 +134,6 @@ def test_benchmark_ollama(
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
 
-@pytest.mark.disable_socket
 @pytest.mark.depends(on=["test_benchmark_encoder"])
 def test_benchmark_encoder_no_internet(
     task: Task, language: Language, encoder_model_id: str
@@ -167,21 +152,11 @@ def test_benchmark_encoder_no_internet(
     condition=sys.platform == "linux" and not torch.cuda.is_available(),
     reason="Running on Ubuntu but no CUDA available",
 )
-@pytest.mark.allow_hosts(["127.0.0.1"])
 @pytest.mark.depends(on=["test_benchmark_generative"])
 def test_benchmark_generative_no_internet(
     task: Task, language: Language, generative_model_id: str
 ) -> None:
     """Test that generative models can be benchmarked without internet."""
-    if not torch.cuda.is_available() and (
-        task.task_group
-        in [TaskGroup.SEQUENCE_CLASSIFICATION, TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION]
-        or task.uses_structured_output
-    ):
-        pytest.skip(
-            f"CUDA is required to run generative models on the {task.name} "
-            "task currently."
-        )
     # We need a new benchmarker since we only check for internet once per instance
     benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
     benchmark_result = benchmarker.benchmark(
@@ -195,7 +170,6 @@ def test_benchmark_generative_no_internet(
     condition=sys.platform == "linux" and not torch.cuda.is_available(),
     reason="Running on Ubuntu but no CUDA available",
 )
-@pytest.mark.allow_hosts(["127.0.0.1"])
 @pytest.mark.skip(
     "Benchmarking adapter models without internet access are not implemented yet."
 )
@@ -204,15 +178,6 @@ def test_benchmark_generative_adapter_no_internet(
     task: Task, language: Language, generative_adapter_model_id: str
 ) -> None:
     """Test that generative adapter models can be benchmarked without internet."""
-    if not torch.cuda.is_available() and (
-        task.task_group
-        in [TaskGroup.SEQUENCE_CLASSIFICATION, TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION]
-        or task.uses_structured_output
-    ):
-        pytest.skip(
-            f"CUDA is required to run generative models on the {task.name} "
-            "task currently."
-        )
     # We need a new benchmarker since we only check for internet once per instance
     benchmarker = Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
     benchmark_result = benchmarker.benchmark(

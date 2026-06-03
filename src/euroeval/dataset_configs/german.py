@@ -2,7 +2,19 @@
 
 from ..data_models import DatasetConfig
 from ..languages import GERMAN
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    GED,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -60,6 +72,16 @@ HELLASWAG_DE_CONFIG = DatasetConfig(
     source="EuroEval/hellaswag-de-mini",
     task=COMMON_SENSE,
     languages=[GERMAN],
+)
+
+IFEVAL_DE_CONFIG = DatasetConfig(
+    name="ifeval-de",
+    pretty_name="IFEval-de",
+    source="EuroEval/ifeval-de",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[GERMAN],
+    train_split=None,
+    val_split=None,
 )
 
 VALEU_DE_CONFIG = DatasetConfig(
@@ -129,5 +151,32 @@ WINOGRANDE_DE_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[GERMAN],
     labels=["a", "b"],
+    unofficial=True,
+)
+
+INCLUDE_DE_CONFIG = DatasetConfig(
+    name="include-de",
+    pretty_name="INCLUDE-de",
+    source="EuroEval/include-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+    unofficial=True,
+)
+
+MULTILOKO_DE_CONFIG = DatasetConfig(
+    name="multiloko-de",
+    pretty_name="MultiLoKo-de",
+    source="EuroEval/multiloko-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+    unofficial=True,
+)
+
+GERLANGMOD_DE_CONFIG = DatasetConfig(
+    name="gerlangmod-de",
+    pretty_name="GerLangMod-de",
+    source="EuroEval/gerlangmod-de",
+    task=GED,
+    languages=[GERMAN],
     unofficial=True,
 )

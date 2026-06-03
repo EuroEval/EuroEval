@@ -73,9 +73,10 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        # This is already set when calling `super.__init__`, but we need it to get a
-        # value from `self.model_max_length`, so we set it here as well.
+        # These are already set when calling `super().__init__`, but we need them to get
+        # values from `self.model_max_length`, so we set them here as well.
         self.model_config = model_config
+        self.benchmark_config = benchmark_config
 
         model, tokeniser = load_model_and_tokeniser(
             model_config=model_config,
@@ -127,6 +128,8 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
         Returns:
             The vocabulary size of the model.
         """
+        if self.benchmark_config.vocabulary_size is not None:
+            return self.benchmark_config.vocabulary_size
         match self.model_config.model_id:
             case "fresh-xlm-roberta-base":
                 return 250_002
@@ -145,6 +148,8 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
         Returns:
             The maximum context length of the model.
         """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
         match self.model_config.model_id:
             case "fresh-xlm-roberta-base":
                 return 512
@@ -298,7 +303,7 @@ def load_model_and_tokeniser(
     prefix_models = ["Roberta", "GPT", "Deberta"]
     prefix = any(model_type in type(model).__name__ for model_type in prefix_models)
     try:
-        tokeniser: Tokeniser = AutoTokenizer.from_pretrained(
+        tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
             real_model_id,
             revision=model_config.revision,
             token=get_hf_token(api_key=benchmark_config.api_key),

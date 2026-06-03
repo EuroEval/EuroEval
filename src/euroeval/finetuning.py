@@ -30,7 +30,7 @@ if t.TYPE_CHECKING:
 
 
 def finetune(
-    model: "BenchmarkModule",
+    model: "BenchmarkModule | None",
     datasets: c.Sequence["DatasetDict"],
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
@@ -68,6 +68,7 @@ def finetune(
 
     bs: int = benchmark_config.finetuning_batch_size
     scores: list[dict[str, float]] = list()
+    model_already_initialized = False
     for idx in get_pbar(
         iterable=range(benchmark_config.num_iterations),
         desc="Benchmarking",
@@ -101,7 +102,7 @@ def finetune(
                 )
 
                 itr_scores = finetune_single_iteration(
-                    model=model if model_already_initialized else None,  # type: ignore[unbound-name]
+                    model=model if model_already_initialized else None,
                     dataset=datasets[idx],
                     training_args=training_args,
                     model_config=model_config,
@@ -212,10 +213,10 @@ def finetune_single_iteration(
         args=training_args,
         train_dataset=dataset["train"],
         eval_dataset=dataset["val"],
-        compute_metrics=partial(model.compute_metrics, dataset=None),
+        compute_metrics=partial(model.compute_metrics, dataset=None),  # ty: ignore[invalid-argument-type],
         callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
         data_collator=model.data_collator,
-        preprocess_logits_for_metrics=remove_extra_tensors_from_logits,
+        preprocess_logits_for_metrics=remove_extra_tensors_from_logits,  # ty: ignore[invalid-argument-type]
     )
 
     if not benchmark_config.verbose:
@@ -223,7 +224,7 @@ def finetune_single_iteration(
         def no_logging(logs: dict[str, float], start_time: float | None = None) -> None:
             return
 
-        trainer.log = no_logging
+        trainer.log = no_logging  # ty: ignore[invalid-assignment]
 
     # Re-block terminal output, as it gets unblocked by the `transformers` package
     # before training
@@ -244,13 +245,15 @@ def finetune_single_iteration(
     with torch.inference_mode():
         try:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],  # type: ignore[bad-argument-type]
-                orig_eval_dataset=dataset["original_test"],  # type: ignore[unexpected-keyword]
+                eval_dataset=dataset["test"],  # ty: ignore[invalid-argument-type]
+                orig_eval_dataset=dataset[  # ty: ignore[unknown-argument]
+                    "original_test"
+                ],
                 metric_key_prefix="test",
             )
         except TypeError:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],  # type: ignore[bad-argument-type]
+                eval_dataset=dataset["test"],  # ty: ignore[invalid-argument-type]
                 metric_key_prefix="test",
             )
         except NaNValueInModelOutput as e:
@@ -325,7 +328,6 @@ def get_training_args(
         bf16=dtype == DataType.BF16,
         disable_tqdm=not benchmark_config.progress_bar,
         ddp_find_unused_parameters=False,
-        save_safetensors=False,
     )
 
     # TEMP: Use only 1 GPU for now for finetuning

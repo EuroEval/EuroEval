@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ESTONIAN
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -69,6 +79,16 @@ WINOGRANDE_ET_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
+IFEVAL_ET_CONFIG = DatasetConfig(
+    name="ifeval-et",
+    pretty_name="IFEval-et",
+    source="EuroEval/ifeval-et",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ESTONIAN],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_ET_CONFIG = DatasetConfig(
     name="valeu-et",
     pretty_name="VaLEU-et",
@@ -106,6 +126,15 @@ MMLU_ET_CONFIG = DatasetConfig(
     name="mmlu-et",
     pretty_name="MMLU-et",
     source="EuroEval/mmlu-et-mini",
+    task=KNOW,
+    languages=[ESTONIAN],
+    unofficial=True,
+)
+
+INCLUDE_ET_CONFIG = DatasetConfig(
+    name="include-et",
+    pretty_name="INCLUDE-et",
+    source="EuroEval/include-et-mini",
     task=KNOW,
     languages=[ESTONIAN],
     unofficial=True,

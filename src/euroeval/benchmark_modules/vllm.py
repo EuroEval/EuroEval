@@ -13,15 +13,15 @@ from pathlib import Path
 from time import sleep
 
 import torch
+import torch.version
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
+from transformers import PythonBackend, SentencePieceBackend, TokenizersBackend
 from transformers.generation.configuration_utils import GenerationConfig
-from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
-    ATTENTION_BACKENDS,
     CUSTOM_STOP_TOKENS,
     GENERATION_KWARGS,
     GENERATIVE_PIPELINE_TAGS,
@@ -43,6 +43,7 @@ from ..enums import (
 from ..exceptions import (
     InvalidBenchmark,
     InvalidModel,
+    InvalidTask,
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
     NeedsSystemDependency,
@@ -85,9 +86,9 @@ from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_conf
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MistralCommonTokenizer,
-    )
+    from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
+
+    MistralCommonTokenizer = MCB
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     import vllm.config
@@ -108,23 +109,18 @@ if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
 if t.TYPE_CHECKING or importlib.util.find_spec("ray") is not None:
     import ray
 
-
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
+    from transformers.configuration_utils import PretrainedConfig
     from transformers.trainer import Trainer
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
-
-MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS: dict[
-    re.Pattern, t.Literal[*ATTENTION_BACKENDS]  # pyrefly: ignore[invalid-literal]
-] = {
-    re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-1b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3n.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"google/gemma-3-(4|12|27)b.*", flags=re.IGNORECASE): "TRITON_ATTN",
-    re.compile(r"PleIAs/Pleias-3b-Preview", flags=re.IGNORECASE): "TRITON_ATTN",
-}
+# Mapping from HuggingFace architecture names that vLLM does not recognise to their
+# vLLM-compatible equivalents.  Transformers 4.57 split Gemma 4 into a multimodal
+# class (Gemma4ForConditionalGeneration) and a text-only class
+# (Gemma4TextForCausalLM).  vLLM only registers the former, so we remap here.
+_ARCHITECTURE_ALIASES: dict[str, str] = {"Gemma4TextForCausalLM": "Gemma4ForCausalLM"}
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -133,7 +129,7 @@ class VLLMModel(HuggingFaceEncoderModel):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = True
-    allowed_params = {
+    allowed_params: dict[re.Pattern[str], list[str]] = {
         re.compile(r".*"): ["thinking", "no-thinking", "slow-tokenizer"],
         re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): ["low", "medium", "high"],
     }
@@ -159,17 +155,20 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         Raises:
             NeedsSystemDependency:
-                If the CUDA Toolkit is not installed.
+                If the CUDA Toolkit is not installed on NVIDIA hardware.
             NeedsExtraInstalled:
                 If the generative extra is not installed.
-            InvalidBenchmark:
-                If no CUDA GPUs are available and the dataset requires structured
-                generation.
+            InvalidModel:
+                If the generative type was None for the model.
         """
         if importlib.util.find_spec("vllm") is None:
             raise NeedsExtraInstalled(extra="generative")
 
-        if torch.cuda.is_available() and shutil.which("nvcc") is None:
+        if (
+            torch.cuda.is_available()
+            and torch.version.hip is None
+            and shutil.which("nvcc") is None
+        ):
             raise NeedsSystemDependency(
                 dependency="nvcc",
                 instructions=(
@@ -179,46 +178,63 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ),
             )
 
-        if not torch.cuda.is_available() and (
-            dataset_config.task.task_group
-            in [
-                TaskGroup.SEQUENCE_CLASSIFICATION,
-                TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION,
-            ]
-            or dataset_config.task.uses_structured_output
-        ):
-            raise InvalidBenchmark(
-                "We currently require CUDA to benchmark generative models on tasks "
-                "that uses structured generation, which includes the current task "
-                f"{dataset_config.task.name}. This is due to an xgrammar issue, which "
-                "will hopefully be fixed soon."
-            )
-
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        # Determine the attention backend to use:
-        # Override for models that require a specific backend, otherwise use user's
-        # choice from CLI (defaults to FLASHINFER)
-        if hasattr(vllm.config, "attention"):
-            for pattern, backend in MODELS_REQUIRING_CUSTOM_ATTENTION_BACKENDS.items():
-                if re.search(pattern=pattern, string=model_config.model_id):
-                    attention_backend = backend
-                    break
-            else:
-                attention_backend = benchmark_config.attention_backend
-        else:
-            attention_backend = benchmark_config.attention_backend
+        # This is already set when calling `super().__init__`, but we need it to get
+        # the correct value from `self.generative_type`, so we set it here as well.
+        self.benchmark_config = benchmark_config
+        self.model_config = model_config
+
+        hf_model_config = load_hf_model_config(
+            model_id=model_config.adapter_base_model_id or model_config.model_id,
+            num_labels=0,
+            id2label=HashableDict(),
+            label2id=HashableDict(),
+            revision=(
+                model_config.revision
+                if model_config.adapter_base_model_id is None
+                else "main"
+            ),
+            model_cache_dir=model_config.model_cache_dir,
+            api_key=benchmark_config.api_key,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            run_with_cli=benchmark_config.run_with_cli,
+        )
+        true_max_model_len = get_true_max_model_len(hf_model_config=hf_model_config)
+
+        tokeniser = load_tokeniser(
+            model_id=model_config.model_id,
+            revision=model_config.revision,
+            adapter_base_model_id=model_config.adapter_base_model_id,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            model_max_length=true_max_model_len,
+            model_config=model_config,
+            hf_model_config=hf_model_config,
+            token=get_hf_token(api_key=benchmark_config.api_key),
+        )
+        self._tokeniser: Tokeniser = tokeniser
+
+        generative_type = self.generative_type
+        if generative_type is None:
+            raise InvalidModel(
+                f"Generative type for model {model_config.model_id!r} was None during "
+                "initialisation. Please report this issue at "
+                "https://github.com/EuroEval/EuroEval/issues/new."
+            )
 
         with no_terminal_output(disable=benchmark_config.verbose):
-            model, tokeniser = load_model_and_tokeniser(
+            model = load_model(
                 model_config=model_config,
                 benchmark_config=benchmark_config,
-                attention_backend=attention_backend,
+                attention_backend=benchmark_config.attention_backend,
+                true_max_model_len=true_max_model_len,
+                generative_type=generative_type,
+                tokeniser=tokeniser,
+                hf_model_config=hf_model_config,
             )
-        self._model: "LLM" = model
-        self._tokeniser: Tokeniser = tokeniser
+        self._model: LLM = model
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
         # to call the `__init__` method of the `BenchmarkModule` class.
@@ -283,14 +299,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             The generative type of the model, or None if it has not been set yet.
         """
-        if not hasattr(self, "_tokeniser"):
-            log_once(
-                "The generative type of the model has not been set yet as the "
-                "tokeniser has not been loaded.",
-                level=logging.DEBUG,
-            )
-            return None
-        elif self.benchmark_config.generative_type is not None:
+        if self.benchmark_config.generative_type is not None:
             type_ = self.benchmark_config.generative_type
         elif self.model_config.param in {"thinking"}:
             type_ = GenerativeType.REASONING
@@ -301,6 +310,13 @@ class VLLMModel(HuggingFaceEncoderModel):
             and self.end_of_reasoning_token is not None
         ):
             type_ = GenerativeType.REASONING
+        elif not hasattr(self, "_tokeniser"):
+            log_once(
+                "The generative type of the model has not been set yet as the "
+                "tokeniser has not been loaded.",
+                level=logging.DEBUG,
+            )
+            return None
         elif (
             has_chat_template(tokeniser=self._tokeniser)
             or "instruct" in self.model_config.model_id.lower()
@@ -397,7 +413,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         else:
             few_shot_examples = list()
 
-        dataset["test"] = dataset["test"].map(  # type: ignore[unsupported-operation]
+        dataset["test"] = dataset["test"].map(
             partial(
                 apply_prompt,
                 few_shot_examples=few_shot_examples,
@@ -414,6 +430,41 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         return dataset
 
+    def update_dataset_config(self, dataset_config: "DatasetConfig") -> t.Self:
+        """Update the dataset config registered in the benchmark module.
+
+        Args:
+            dataset_config:
+                The new dataset config.
+
+        Returns:
+            The benchmark module.
+
+        Raises:
+            InvalidBenchmark:
+                If the dataset requires logprobs, but we weren't able to update the
+                first label token mapping.
+        """
+        self.dataset_config = dataset_config
+        self.buffer["first_label_token_mapping"] = get_first_label_token_mapping(
+            dataset_config=self.dataset_config,
+            model_config=self.model_config,
+            tokeniser=self._tokeniser,
+            generative_type=self.generative_type,
+            log_metadata=self.log_metadata,
+        )
+        if (
+            not self.buffer["first_label_token_mapping"]
+            and self.dataset_config.task.requires_logprobs
+        ):
+            raise InvalidBenchmark(
+                "The dataset requires logprobs, but we encountered an error when "
+                "trying to get the first token of each label in the dataset. You can "
+                "try running this benchmark with the --verbose flag to see what the "
+                "error was. Skipping this evaluation."
+            )
+        return self
+
     def generate(self, inputs: dict) -> "GenerativeModelOutput":
         """Generate outputs from the model.
 
@@ -428,6 +479,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             InvalidBenchmark:
                 If the dataset requires logprobs, but we could not get the first token
                 of each label in the dataset.
+            InvalidTask:
+                If the task requires structured output, but it is not a token
+                classification task and does not define an output structure.
         """
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
@@ -487,21 +541,36 @@ class VLLMModel(HuggingFaceEncoderModel):
                 level=logging.DEBUG,
             )
         elif self.dataset_config.task.uses_structured_output:
-            ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
-            keys_and_their_types: dict[str, t.Any] = {
-                tag_name: (conlist(str, max_length=5), ...)
-                for tag_name in ner_tag_names
-            }
-            answer_format_class = create_model("AnswerFormat", **keys_and_their_types)
-            structured_generation_schema = answer_format_class.model_json_schema()
-            log_once(
-                "Using structured generation with the JSON schema: "
-                f"{json.dumps(structured_generation_schema)}",
-                level=logging.DEBUG,
-            )
-            structured_outputs = StructuredOutputsParams(
-                json=structured_generation_schema
-            )
+            if self.dataset_config.task.structured_output_format is not None:
+                structured_outputs = StructuredOutputsParams(
+                    json=self.dataset_config.task.structured_output_format.model_json_schema()
+                )
+            elif self.dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+                tag_names = list(self.dataset_config.prompt_label_mapping.values())
+                keys_and_their_types: dict[str, t.Any] = {
+                    tag_name: (conlist(str, max_length=5), ...)
+                    for tag_name in tag_names
+                }
+                answer_format_class = create_model(
+                    "AnswerFormat", **keys_and_their_types
+                )
+                structured_generation_schema = answer_format_class.model_json_schema()
+                log_once(
+                    "Using structured generation with the JSON schema: "
+                    f"{json.dumps(structured_generation_schema, ensure_ascii=False)}",
+                    level=logging.DEBUG,
+                )
+                structured_outputs = StructuredOutputsParams(
+                    json=structured_generation_schema
+                )
+            else:
+                raise InvalidTask(
+                    message=(
+                        "Task set to use structured output, but it neither defines "
+                        "an output structure nor is a token classification task "
+                        "- at least one of these must be true."
+                    )
+                )
         elif (
             self.dataset_config.task.uses_logprobs
             and self.dataset_config.labels
@@ -650,9 +719,11 @@ class VLLMModel(HuggingFaceEncoderModel):
                         list(self.end_of_chat_token_ids)
                     )
                     prompt_segments: list[list[str]] = [
-                        prompt.replace(self._tokeniser.bos_token, "").split(
-                            end_of_chat_token
-                        )
+                        (
+                            prompt.replace(self._tokeniser.bos_token, "")
+                            if self._tokeniser.bos_token is not None
+                            else prompt
+                        ).split(end_of_chat_token)
                         for prompt in prompts
                     ]
                     for num_few_shots_to_remove in range(
@@ -693,7 +764,14 @@ class VLLMModel(HuggingFaceEncoderModel):
         truncation_attempts = 1
         for _ in range(num_attempts):
             try:
-                raw_outputs = self._model.generate(
+                # Replace any empty prompts with the BOS token to avoid vLLM
+                # errors. Empty prompts can occur after truncation or other
+                # processing steps.
+                bos_token = str(self._tokeniser.bos_token or "x")
+                prompts = [
+                    prompt if prompt.strip() else bos_token for prompt in prompts
+                ]
+                raw_outputs = self._model.generate(  # ty: ignore[call-non-callable]
                     prompts=prompts,
                     sampling_params=sampling_params,
                     use_tqdm=False if input_is_a_test else get_pbar,
@@ -744,6 +822,18 @@ class VLLMModel(HuggingFaceEncoderModel):
                     raise InvalidBenchmark(
                         f"An error occurred during vLLM generation: {str(e)}"
                     ) from e
+            except Exception as e:
+                # The vLLM v1 engine raises `EngineDeadError` when a worker RPC
+                # times out. The engine cannot be reused once dead, so surface a
+                # clean benchmark error instead of an opaque crash.
+                if type(e).__name__ == "EngineDeadError" or "RPC call" in str(e):
+                    raise InvalidBenchmark(
+                        "The vLLM engine died during generation, likely due to a "
+                        "worker RPC timeout. Consider raising "
+                        "`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` or reducing the "
+                        f"batch size. Underlying error: {str(e)}"
+                    ) from e
+                raise
         else:
             raise InvalidBenchmark(
                 f"Could not generate sequences after {num_attempts} attempts."
@@ -985,14 +1075,16 @@ class VLLMModel(HuggingFaceEncoderModel):
         )
 
 
-def load_model_and_tokeniser(
+def load_model(
     model_config: "ModelConfig",
     benchmark_config: "BenchmarkConfig",
-    attention_backend: t.Literal[
-        *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-    ],
-) -> tuple["LLM", Tokeniser]:
-    """Load the model and tokeniser.
+    attention_backend: str | None,
+    generative_type: "GenerativeType",
+    true_max_model_len: int,
+    tokeniser: Tokeniser,
+    hf_model_config: "PretrainedConfig",
+) -> "LLM":
+    """Load the model.
 
     Args:
         model_config:
@@ -1000,10 +1092,18 @@ def load_model_and_tokeniser(
         benchmark_config:
             The benchmark configuration.
         attention_backend:
-            The attention backend to use.
+            The attention backend to use, or None to use the vLLM default.
+        generative_type:
+            The generative type of the model.
+        true_max_model_len:
+            The maximum context length of the model.
+        tokeniser:
+            The tokeniser associated with the model.
+        hf_model_config:
+            The Hugging Face model configuration.
 
     Returns:
-        A pair (model, tokeniser), with the loaded model and tokeniser
+        The loaded model.
 
     Raises:
         NeedsExtraInstalled:
@@ -1017,18 +1117,6 @@ def load_model_and_tokeniser(
     model_id = model_config.adapter_base_model_id or model_config.model_id
     revision = (
         model_config.revision if model_config.adapter_base_model_id is None else "main"
-    )
-
-    hf_model_config = load_hf_model_config(
-        model_id=model_id,
-        num_labels=0,
-        id2label=HashableDict(),
-        label2id=HashableDict(),
-        revision=revision,
-        model_cache_dir=model_config.model_cache_dir,
-        api_key=benchmark_config.api_key,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        run_with_cli=benchmark_config.run_with_cli,
     )
 
     # Start with dtype being the "auto" vLLM dtype
@@ -1097,43 +1185,33 @@ def load_model_and_tokeniser(
     else:
         download_dir = str(model_config.model_cache_dir)
 
-    potential_max_model_length_config_names = [
-        "max_position_embeddings",
-        "max_sequence_length",
-        "model_max_length",
-        "n_positions",
-    ]
-    true_max_model_len_candidates: list[int] = list()
-    for config_name in potential_max_model_length_config_names:
-        if hasattr(hf_model_config, config_name):
-            model_len = getattr(hf_model_config, config_name)
-            if model_len is not None:
-                true_max_model_len_candidates.append(model_len)
-
-    if len(true_max_model_len_candidates) > 0:
-        true_max_model_len = min(true_max_model_len_candidates)
-    else:
-        true_max_model_len = MAX_CONTEXT_LENGTH
-
-    tokeniser = load_tokeniser(
-        model_id=model_config.model_id,
-        revision=model_config.revision,
-        adapter_base_model_id=model_config.adapter_base_model_id,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        model_max_length=true_max_model_len,
-        model_config=model_config,
-        token=get_hf_token(api_key=benchmark_config.api_key),
-    )
     vllm_params = get_vllm_tokenisation_params(
         tokeniser=tokeniser, model_config=model_config
     )
 
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
-    if hasattr(vllm.config, "attention"):
-        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)
+    if hasattr(vllm.config, "attention") and attention_backend is not None:
+        vllm_params["attention_config"] = AttentionConfig(
+            backend=attention_backend  # ty: ignore[invalid-argument-type]
+        )
 
     clear_vllm()
+
+    hf_overrides: dict[str, list[str]] = {}
+    if hf_model_config.architectures:
+        remapped = [
+            _ARCHITECTURE_ALIASES.get(arch, arch)
+            for arch in hf_model_config.architectures
+        ]
+        if remapped != hf_model_config.architectures:
+            log(
+                f"Remapping model architectures {hf_model_config.architectures} -> "
+                f"{remapped} for vLLM compatibility.",
+                level=logging.INFO,
+            )
+            hf_model_config.architectures = remapped
+            hf_overrides["architectures"] = remapped
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism()
@@ -1147,7 +1225,10 @@ def load_model_and_tokeniser(
         )
 
         max_model_len = min(
-            true_max_model_len, MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
+            true_max_model_len,
+            MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
+            if generative_type == GenerativeType.REASONING
+            else MAX_CONTEXT_LENGTH,
         )
         model = LLM(
             model=model_location,
@@ -1164,13 +1245,14 @@ def load_model_and_tokeniser(
             pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
-            dtype=dtype,  # pyrefly: ignore[bad-argument-type]
+            dtype=dtype,  # ty: ignore[invalid-argument-type]
             enforce_eager=True,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
+            **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
             **vllm_params,
         )
     except (RuntimeError, ValueError, OSError) as e:
@@ -1217,7 +1299,38 @@ def load_model_and_tokeniser(
 
     model.config = hf_model_config
 
-    return model, tokeniser
+    return model
+
+
+def get_true_max_model_len(hf_model_config: "PretrainedConfig") -> int:
+    """Get the true maximum context length of a model.
+
+    Args:
+        hf_model_config:
+            The Hugging Face model configuration.
+
+    Returns:
+        The maximum context length.
+    """
+    potential_max_model_length_config_names = [
+        "max_position_embeddings",
+        "max_sequence_length",
+        "model_max_length",
+        "n_positions",
+    ]
+    true_max_model_len_candidates: list[int] = list()
+    for config_name in potential_max_model_length_config_names:
+        if hasattr(hf_model_config, config_name):
+            model_len = getattr(hf_model_config, config_name)
+            if model_len is not None:
+                true_max_model_len_candidates.append(model_len)
+
+    true_max_model_len = (
+        min(true_max_model_len_candidates)
+        if len(true_max_model_len_candidates) > 0
+        else MAX_CONTEXT_LENGTH
+    )
+    return true_max_model_len
 
 
 def load_tokeniser(
@@ -1227,6 +1340,7 @@ def load_tokeniser(
     trust_remote_code: bool,
     model_max_length: int,
     model_config: "ModelConfig",
+    hf_model_config: "PretrainedConfig",
     token: str | bool,
 ) -> Tokeniser:
     """Load the tokeniser.
@@ -1245,6 +1359,8 @@ def load_tokeniser(
             The maximum length of the model.
         model_config:
             The model configuration.
+        hf_model_config:
+            The Hugging Face model configuration.
         token:
             The Hugging Face API token.
 
@@ -1256,14 +1372,6 @@ def load_tokeniser(
             If the tokeniser could not be loaded.
     """
     revision = revision if adapter_base_model_id is None else "main"
-    config = AutoConfig.from_pretrained(
-        adapter_base_model_id or model_id,
-        revision=revision,
-        cache_dir=model_config.model_cache_dir,
-        token=token,
-        trust_remote_code=trust_remote_code,
-        local_files_only=not internet_connection_available(),
-    )
     num_retries = 5
     for _ in range(num_retries):
         try:
@@ -1287,7 +1395,7 @@ def load_tokeniser(
                 truncation_side="left",
                 model_max_length=model_max_length,
                 cache_dir=model_config.model_cache_dir,
-                config=config,
+                config=hf_model_config,
                 token=token,
                 local_files_only=not internet_connection_available(),
             )
@@ -1333,6 +1441,13 @@ def load_tokeniser(
 
     # Ensure that BOS, EOS and PAD tokens are set
     if not isinstance(tokeniser, MistralCommonTokenizer):
+        if not isinstance(
+            tokeniser, TokenizersBackend | SentencePieceBackend | PythonBackend
+        ):
+            raise InvalidModel(
+                f"Unknown tokenizer type encountered: {tokeniser}. Please report this "
+                "bug at https://github.com/EuroEval/EuroEval/issues."
+            )
         tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)
         tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)
         tokeniser.pad_token, tokeniser.pad_token_id = get_pad_token(tokeniser=tokeniser)
@@ -1388,7 +1503,7 @@ def get_end_of_reasoning_token(
     output = model.generate(
         prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
     )[0]
-    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
@@ -1421,7 +1536,7 @@ def get_end_of_reasoning_token(
         sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
@@ -1513,7 +1628,7 @@ def get_custom_stop_tokens(
         sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=output.outputs[0].token_ids)
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
 
     stop_tokens = [
         stop_token

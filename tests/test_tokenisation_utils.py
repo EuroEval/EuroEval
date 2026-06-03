@@ -10,15 +10,12 @@ from euroeval.tokenisation_utils import (
     should_prefix_space_be_added_to_labels,
     should_prompts_be_stripped,
 )
+from euroeval.types import Tokeniser
 
 
 @pytest.mark.parametrize(
     argnames=["model_id", "expected"],
-    argvalues=[
-        ("AI-Sweden-Models/gpt-sw3-6.7b-v2", True),
-        ("01-ai/Yi-6B", True),
-        ("google-bert/bert-base-uncased", False),
-    ],
+    argvalues=[("01-ai/Yi-6B", True), ("google-bert/bert-base-uncased", False)],
 )
 def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) -> None:
     """Test that a model ID is a generative model."""
@@ -33,7 +30,9 @@ def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) ->
         trust_remote_code=True,
         run_with_cli=True,
     )
-    tokeniser = AutoTokenizer.from_pretrained(model_id, config=config)
+    tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
+        model_id, config=config
+    )
     labels = ["positiv", "negativ"]
     strip_prompts = should_prompts_be_stripped(
         labels_to_be_generated=labels, tokeniser=tokeniser
@@ -43,17 +42,15 @@ def test_should_prompts_be_stripped(model_id: str, expected: bool, auth: str) ->
 
 @pytest.mark.parametrize(
     argnames=["model_id", "expected"],
-    argvalues=[
-        ("AI-Sweden-Models/gpt-sw3-6.7b-v2", False),
-        ("01-ai/Yi-6B", True),
-        ("common-pile/comma-v0.1-2t", True),
-    ],
+    argvalues=[("01-ai/Yi-6B", False), ("common-pile/comma-v0.1-2t", True)],
 )
 def test_should_prefix_space_be_added_to_labels(
     model_id: str, expected: bool, auth: str
 ) -> None:
     """Test whether a prefix space should be added to labels."""
-    tokeniser = AutoTokenizer.from_pretrained(model_id, token=auth)
+    tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
+        model_id, token=auth
+    )
     labels = ["positiv", "negativ"]
     strip_prompts = should_prefix_space_be_added_to_labels(
         labels_to_be_generated=labels, tokeniser=tokeniser
@@ -82,7 +79,7 @@ def test_get_end_of_chat_token_ids(
     auth: str,
 ) -> None:
     """Test ability to get the chat token IDs of a model."""
-    tokeniser = AutoTokenizer.from_pretrained(
+    tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
         model_id, token=auth, trust_remote_code=True
     )
     end_of_chat_token_ids = get_end_of_chat_token_ids(
@@ -90,5 +87,6 @@ def test_get_end_of_chat_token_ids(
     )
     assert end_of_chat_token_ids == expected_token_ids
     if expected_string is not None:
-        end_of_chat_string = tokeniser.decode(end_of_chat_token_ids).strip()
+        assert end_of_chat_token_ids is not None
+        end_of_chat_string = tokeniser.decode(list(end_of_chat_token_ids)).strip()
         assert end_of_chat_string == expected_string

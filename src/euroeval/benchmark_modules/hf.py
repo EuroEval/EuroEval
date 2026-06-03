@@ -20,7 +20,6 @@ from huggingface_hub.errors import (
     HFValidationError,
     LocalTokenNotFoundError,
     RepositoryNotFoundError,
-    RevisionNotFoundError,
 )
 from huggingface_hub.hf_api import ModelInfo as HfApiModelInfo
 from peft import PeftConfig
@@ -65,6 +64,7 @@ from ..generation_utils import raise_if_wrong_params
 from ..languages import get_all_languages
 from ..logging_utils import block_terminal_output, log, log_once
 from ..model_cache import create_model_cache_dir
+from ..safetensors_utils import get_num_params_from_safetensors_metadata
 from ..string_utils import split_model_id
 from ..task_group_utils import (
     multiple_choice_classification,
@@ -79,9 +79,9 @@ from .base import BenchmarkModule
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MistralCommonTokenizer,
-    )
+    from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
+
+    MistralCommonTokenizer = MCB
 
 if t.TYPE_CHECKING:
     from transformers.configuration_utils import PretrainedConfig
@@ -123,6 +123,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
+        # This is already set when calling `super().__init__`, but we need it to get
+        # the correct value from `self.model_max_length`, so we set it here as well.
+        self.benchmark_config = benchmark_config
+
         model, tokeniser = load_model_and_tokeniser(
             model_config=model_config,
             dataset_config=dataset_config,
@@ -152,59 +156,31 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The number of parameters in the model.
         """
-        # No need to try to use the API if we have no internet.
-        if not internet_connection_available():
-            repo_info = None
-        else:
-            token = get_hf_token(api_key=self.benchmark_config.api_key)
-            hf_api = HfApi(token=token)
-            try:
-                repo_info = hf_api.model_info(
-                    repo_id=self.model_config.adapter_base_model_id
-                    or self.model_config.model_id,
-                    revision=self.model_config.revision,
-                )
-            except (
-                RepositoryNotFoundError,
-                RevisionNotFoundError,
-                RequestException,
-                HFValidationError,
-            ):
-                repo_info = None
+        num_params_or_none = get_num_params_from_safetensors_metadata(
+            model_id=(
+                self.model_config.adapter_base_model_id or self.model_config.model_id
+            ),
+            revision=self.model_config.revision,
+            api_key=self.benchmark_config.api_key,
+        )
+        if num_params_or_none is not None:
+            return num_params_or_none
 
+        num_params = -1
         if (
-            repo_info is not None
-            and hasattr(repo_info, "safetensors")
-            and repo_info.safetensors is not None
-            and "total" in repo_info.safetensors
-        ):
-            num_params_candidates: list[int] = [repo_info.safetensors["total"]]
-            if "parameters" in repo_info.safetensors and isinstance(
-                repo_info.safetensors["parameters"], dict
-            ):
-                num_params_candidates.extend(
-                    int(v)
-                    for v in repo_info.safetensors["parameters"].values()
-                    if isinstance(v, int) or (isinstance(v, str) and v.isdigit())
-                )
-            num_params = max(num_params_candidates)
-        elif (
             hasattr(self._model.config, "num_params")
             and self._model.config.num_params is not None
         ):
-            num_params = self._model.config.num_params
+            num_params = int(self._model.config.num_params)  # ty: ignore[invalid-argument-type]
         elif hasattr(self._model, "parameters"):
             num_params = sum(p.numel() for p in self._model.parameters())
         else:
-            log(
-                "The number of parameters could not be determined for the model, since "
-                "the model is not stored in the safetensors format. If this is your "
-                "own model, then you can use this Hugging Face Space to convert your "
-                "model to the safetensors format: "
-                "https://huggingface.co/spaces/safetensors/convert.",
+            log_once(
+                "The number of parameters could not be determined for the model "
+                f"{self.model_config.model_id}, neither from the safetensors metadata "
+                "nor from the model configuration.",
                 level=logging.WARNING,
             )
-            num_params = -1
         return num_params
 
     @cached_property
@@ -214,18 +190,19 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The vocabulary size of the model.
         """
+        if self.benchmark_config.vocabulary_size is not None:
+            return self.benchmark_config.vocabulary_size
+        vocab_size = -1
         if (
             hasattr(self._model.config, "vocab_size")
             and self._model.config.vocab_size is not None
         ):
-            vocab_size = self._model.config.vocab_size
+            vocab_size = int(self._model.config.vocab_size)  # ty: ignore[invalid-argument-type]
         elif (
             hasattr(self._tokeniser, "vocab_size")
             and self._tokeniser.vocab_size is not None
         ):
             vocab_size = self._tokeniser.vocab_size
-        else:
-            vocab_size = -1
         return vocab_size
 
     @cached_property
@@ -235,6 +212,8 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         Returns:
             The maximum context length of the model.
         """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
         all_max_lengths: list[int] = list()
 
         # Add the registered max length of the tokeniser
@@ -377,9 +356,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         def numericalise_labels(examples: dict) -> dict:
             if "label" in examples:
                 try:
+                    label2id = self._model.config.label2id
                     examples["label"] = [
-                        self._model.config.label2id[str(lbl).lower()]
-                        if self._model.config.label2id is not None
+                        label2id[str(lbl).lower()]  # ty: ignore[not-subscriptable,invalid-argument-type]
+                        if label2id is not None
                         else lbl
                         for lbl in examples["label"]
                     ]
@@ -401,7 +381,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 ).map(tokenise, batched=True, load_from_cache_file=False)
 
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                dataset = DatasetDict(  # type: ignore[no-matching-overload]
+                dataset = DatasetDict(
                     {
                         split_name: split.map(
                             partial(
@@ -431,7 +411,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     partial(
                         token_classification.tokenize_and_align_labels,
                         tokeniser=self._tokeniser,
-                        label2id=self._model.config.label2id,
+                        label2id=self._model.config.label2id,  # ty: ignore[invalid-argument-type]
                     ),
                     batched=True,
                     load_from_cache_file=False,
@@ -476,7 +456,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                         load_from_cache_file=False,
                         keep_in_memory=True,
                     )
-                dataset = DatasetDict(data_dict)  # type: ignore[no-matching-overload]
+                dataset: DatasetDict = DatasetDict(data_dict)
 
                 # The Trainer hides the columns that are not used by the model (here
                 # `id` and `offset_mapping` which we will need for our post-processing),
@@ -630,7 +610,7 @@ def load_model_and_tokeniser(
         run_with_cli=benchmark_config.run_with_cli,
     )
 
-    model_kwargs = dict(
+    model_kwargs: dict[str, object] = dict(
         config=config,
         ignore_mismatched_sizes=ignore_mismatched_sizes,
         revision=model_config.revision,
@@ -649,9 +629,12 @@ def load_model_and_tokeniser(
     model: "PreTrainedModel | None" = None
     for _ in range(num_attempts := 5):
         # Get the model class associated with the task group
-        model_cls_or_none: t.Type["PreTrainedModel"] | None = get_class_by_name(
-            class_name=task_group_to_class_name(task_group=task_group),
-            module_name="transformers",
+        model_cls_or_none: t.Type[PreTrainedModel] | None = t.cast(
+            "t.Type[PreTrainedModel] | None",
+            get_class_by_name(
+                class_name=task_group_to_class_name(task_group=task_group),
+                module_name="transformers",
+            ),
         )
 
         # If the model class could not be found then raise an error
@@ -668,8 +651,11 @@ def load_model_and_tokeniser(
             config.pooler_hidden_size = config.hidden_size
 
         try:
-            model_or_tuple = model_cls_or_none.from_pretrained(
-                model_config.model_id, **model_kwargs
+            model_or_tuple: PreTrainedModel | tuple[PreTrainedModel, ...] = (
+                model_cls_or_none.from_pretrained(
+                    model_config.model_id,
+                    **model_kwargs,  # ty: ignore[invalid-argument-type]
+                )
             )
             break
         except (KeyError, RuntimeError) as e:
@@ -711,14 +697,15 @@ def load_model_and_tokeniser(
         )
 
     if isinstance(model_or_tuple, tuple):
-        model = model_or_tuple[0]
+        model = t.cast(PreTrainedModel, model_or_tuple[0])
     else:
-        model = model_or_tuple
+        model = t.cast(PreTrainedModel, model_or_tuple)
 
     assert model is not None, "The model should not be None."
+    model = t.cast("PreTrainedModel", model)  # ty: ignore[redundant-cast]
 
     model.eval()
-    model.to(benchmark_config.device)  # type: ignore[arg-type]
+    model.to(benchmark_config.device)  # ty: ignore[invalid-argument-type]
 
     if (
         isinstance(model, PreTrainedModel)
@@ -901,7 +888,7 @@ def get_model_repo_info(
         generative_class_names = [
             class_name
             for tag in GENERATIVE_PIPELINE_TAGS
-            for class_name in TASK_MAPPING.get(tag, dict()).values()  # type: ignore[attr-defined]
+            for class_name in TASK_MAPPING.get(tag, dict()).values()
         ]
         if class_names is not None and (
             any(class_name in generative_class_names for class_name in class_names)
@@ -1000,7 +987,9 @@ def load_tokeniser(
     num_retries = 5
     for _ in range(num_retries):
         try:
-            tokeniser = AutoTokenizer.from_pretrained(model_id, **loading_kwargs)
+            tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
+                model_id, **loading_kwargs
+            )
             break
         except (JSONDecodeError, OSError, TypeError) as e:
             raise InvalidModel(
@@ -1227,7 +1216,7 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
                 ),
                 dim=0,
             )
-            token_type_embeddings.num_embeddings = 2  # type: ignore[assignment]
+            token_type_embeddings.num_embeddings = 2  # ty: ignore[invalid-assignment]
 
         # Set the model config to use the new type vocab size
         model.config.type_vocab_size = 2
@@ -1300,7 +1289,7 @@ def align_model_and_tokeniser(
     # Move the model to the CPU, since otherwise we can't catch the IndexErrors when
     # finding the maximum sequence length of the model
     model_device = model.device
-    model.to(torch.device("cpu"))  # type: ignore[arg-type]
+    model.to(torch.device("cpu"))  # ty: ignore[invalid-argument-type]
 
     # Manually check that this model max length is valid for the model, and adjust
     # otherwise
@@ -1331,7 +1320,7 @@ def align_model_and_tokeniser(
                     raise e
 
     # Move the model back to the original device
-    model.to(model_device)  # type: ignore[arg-type]
+    model.to(model_device)  # ty: ignore[invalid-argument-type]
 
     # If there is a mismatch between the vocab size according to the tokeniser and
     # the vocab size according to the model, we raise an error

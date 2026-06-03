@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FINNISH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -104,5 +115,24 @@ WINOGRANDE_FI_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[FINNISH],
     labels=["a", "b"],
+    unofficial=True,
+)
+
+IFEVAL_FI_CONFIG = DatasetConfig(
+    name="ifeval-fi",
+    pretty_name="IFEval-fi",
+    source="EuroEval/ifeval-fi",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[FINNISH],
+    train_split=None,
+    val_split=None,
+)
+
+INCLUDE_FI_CONFIG = DatasetConfig(
+    name="include-fi",
+    pretty_name="INCLUDE-fi",
+    source="EuroEval/include-fi-mini",
+    task=KNOW,
+    languages=[FINNISH],
     unofficial=True,
 )

@@ -95,3 +95,12 @@ GOLDENSWAG_PL_CONFIG = DatasetConfig(
     languages=[POLISH],
     unofficial=True,
 )
+
+INCLUDE_PL_CONFIG = DatasetConfig(
+    name="include-pl",
+    pretty_name="INCLUDE-pl",
+    source="EuroEval/include-pl-mini",
+    task=KNOW,
+    languages=[POLISH],
+    unofficial=True,
+)

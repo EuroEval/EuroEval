@@ -132,8 +132,8 @@ class BiasMetric(Metric):
 
     def __call__(
         self,
-        predictions: c.Sequence,
-        references: c.Sequence,
+        predictions: c.Sequence[t.Any],
+        references: c.Sequence[t.Any],
         dataset: "Dataset",
         dataset_config: "DatasetConfig | None",
         benchmark_config: "BenchmarkConfig | None",

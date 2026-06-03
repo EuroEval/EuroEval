@@ -7,8 +7,329 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [v17.3.0] - 2026-05-31
+
 ### Added
 
+- Added the "Dutch Proverbs" dataset. The dataset consists of brief scenarios and two
+  possible proverbs for the LLM to select from. The dataset was created manually and
+  reviewed by native Dutch speakers. This was contributed by @lswiers ✨
+
+### Changed
+
+- Bumped the minimum vLLM version on Linux from v0.14.1 to v0.22.0, for both Linux and
+  MacOS, and updated `vllm-metal` to `v0.2.0-20260531-071330`.
+- Now ignores the language detection logging for Norwegian ('no'), since it's covered by
+  Norwegian Bokmål ('nb') and Norwegian Nynorsk ('nn').
+
+### Fixed
+
+- Running with `HF_HUB_OFFLINE=1` no longer crashes when loading a local custom dataset
+  whose id happens to look like a Hub repo. The Hub existence check now treats an
+  offline-mode error as "not reachable, so not present" and lets the caller fall back to
+  the local config. This was contributed by @Touzen ✨
+- Added an architecture alias remapping `Gemma4TextForCausalLM` to `Gemma4ForCausalLM`
+  so that text-only Gemma 4 fine-tunes can be loaded with vLLM versions that only
+  register the multimodal class. This was contributed by @lardinator ✨
+- Raised the default vLLM worker RPC timeouts (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and
+  `VLLM_ENGINE_ITERATION_TIMEOUT_S`) from 300s to 1800s so that large models on slow
+  hardware no longer crash mid-evaluation with `EngineDeadError: RPC call to
+  sample_tokens timed out`. The engine-dead case is also now caught and reported as an
+  `InvalidBenchmark` error instead of an opaque crash.
+- Fixed a bug where `load_custom_datasets_module` would attempt to load a module spec
+  from the current working directory when an empty path was passed as the custom
+  datasets file, emitting a spurious "Could not load the spec for the custom datasets
+  file" error. It now requires the path to point at an actual file.
+
+## [v17.2.0] - 2026-04-17
+
+### Changed
+
+- Now overrides vLLM's pinned `transformers<5` dependency with `transformers>=5.5.0`, to
+  allow compatibility with the latest models.
+- If evaluating a dataset on the Hugging Face Hub with both a YAML config and a Python
+  config, we first try the YAML one, and then try the Python one if the YAML one failed.
+  Previously the evaluation failed if the YAML config was invalid.
+
+### Fixed
+
+- Fixed a bug when evaluating a generative task that uses logprobs with partial
+  completions. The issue was that the first label token mapping wasn't updated
+  immediately after the dataset config changed, which has been fixed now.
+- Fixed a bug related to evaluating gated datasets on the Hugging Face Hub.
+- We now automatically detect if a dataset doesn't have a training split and force
+  zero-shot evaluation if so.
+- Fixed an issue when the label column of multiple choice datasets contains the full
+  choice text, rather than the a/b/c/d labels. We now convert such labels to the single
+  letters.
+- Updated vLLM from v0.14.1 to v0.18.1 on macOS Apple Silicon, enabling structured
+  output support for tasks such as sequence classification and multiple choice.
+
+## [v17.1.0] - 2026-03-24
+
+### Added
+
+- Added the SICK-NL Dutch Entailment Dataset (`sick-nl`). It is marked as unofficial for
+  now. This was added by @Rijgersberg ✨
+- Allow 'none' reasoning effort with GPT-5* models.
+
+### Changed
+
+- Language penalization for ChrF metrics used in translation and summarization tasks:
+  each per-sentence score is multiplied by a binary language confidence penalty (1.0 if
+  the prediction is in the correct language, 0.0 otherwise) before averaging, using the
+  new `lingua-language-detector` dependency. For datasets with Danish or Norwegian
+  variants (Bokmål/Nynorsk), the confidence scores are summed across all accepted
+  languages before applying the threshold.
+- `get_correct_language_codes` has been moved from `benchmark_config_factory.py` to
+  `languages.py`.
+
+### Fixed
+
+- Fixed a logging bug when evaluating models on the tool calling task.
+- vLLM has been upgraded from v0.11.0 to v0.14.1 on macOS arm64, fixing generation
+  hanging indefinitely. `vLLM` and `vllm-metal` are now both installed from their git
+  sources rather than PyPI (when on MacOS), as there are no wheels for macOS available
+  for `vLLM` and `vllm-metal` PyPI releases lag behind. Note that this means that we no
+  longer support macOS x86_64 (Intel Macs).
+- Now correctly detects models with the new `any-to-any` HF pipeline tag as generative.
+
+### Security
+
+- Disallow installing LiteLLM versions 1.82.7 and 1.82.8, as these were victims of a
+  [credential exploit](https://github.com/BerriAI/litellm/issues/24512).
+
+## [v17.0.0] - 2026-03-16
+
+### Added
+
+- Benchmark results written to `euroeval_benchmark_results.jsonl` now conform to the
+  [Every Eval Ever (EEE) JSON schema
+  v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json). The
+  new format structures results into standardised sections (`source_metadata`,
+  `model_info`, `eval_library`, `evaluation_results`) and supports lossless round-trips
+  via `BenchmarkResult.from_dict()`.
+- - Added the new grammatical error detection task and the Germanic Verb Placement Error
+  Detection datasets for Danish (`gerlangmod-da`), Dutch (`gerlangmod-nl`), Faroese
+  (`gerlangmod-fo`), German (`gerlangmod-de`), Icelandic (`gerlangmod-is`), Norwegian
+  Bokmål (`gerlangmod-nb`), Norwegian Nynorsk (`gerlangmod-nn`), and Swedish
+  (`gerlangmod-sv`), based on the
+  [GerLangMod](https://github.com/noahmanu/gerlangmod) collection. All datasets are
+  marked as unofficial for now.
+- Added the Italian Word-in-Context dataset WiC-ITA, from
+  [Evalita 2023](https://www.evalita.it/campaigns/evalita-2023/). The train and
+  validation splits (1,024 / 256 samples) are sampled from the original training split,
+  stratified on label, and the test split (1,000 samples) is the concatenation of the
+  original development and test splits. It is marked as `unofficial` for now.
+- Added the English Word in Context dataset [WiC](https://aclanthology.org/N19-1128/),
+  based on the SuperGLUE benchmark. The split is given by 1,024 / 256 / 638 samples for
+  train / val / test, respectively. The train and val splits are stratified subsets of
+  the original SuperGLUE training split, and the test split is the original SuperGLUE
+  validation split. It is marked as `unofficial` for now.
+- Added the Danish metaphor interpretation dataset DAMETA, part of the [Danish Semantic
+  Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+  The split is given by 64 / 128 / 723 samples for train / val / test, respectively.
+  It is marked as `unofficial` for now.
+- Added the Icelandic standardised tests datasets icelandic-lang-tests and
+  icelandic-math-tests, based on old Icelandic primary school standardised tests
+  (2013–2017) from mms.is, covering Icelandic language and mathematics, respectively.
+  Both are marked as `unofficial` for now.
+- Added support for the Aya thinking tokens `<|START_THINKING|>` and `<|END_THINKING|>`.
+- If a LiteLLM model uses `reasoning_content` then we automatically mark it as a
+  reasoning model. This is for instance useful when using a custom vLLM inference server
+  with `--reasoning-parser` set.
+
+### Changed
+
+- The DanWiC dataset previously only contained the polysemous samples. We now include
+  both the monosemous samples and the polysemous samples, resulting in 1,024 / 256 / 916
+  samples for train / val / test, respectively.
+
+### Fixed
+
+- Evaluation on AMD/ROCm hardware (e.g., LUMI) was broken due to two NVIDIA-specific
+  checks being applied unconditionally. The `flash_attn` conflict check no longer
+  triggers `sys.exit` on ROCm, and the `nvcc` presence check is now skipped on ROCm
+  hardware since AMD uses HIP tooling instead.
+- Fixed a `ValueError` when evaluating models like Qwen3.5 whose tokeniser returns a
+  `BatchEncoding` from `apply_chat_template(..., tokenise=True)`. The
+  `get_first_label_token_mapping` function now extracts `input_ids` from the
+  `BatchEncoding` before passing it to `convert_ids_to_tokens`.
+- Fixed a `TypeError` in the vLLM `generate()` method when a model's tokeniser has
+  `bos_token = None` (e.g., `Qwen/Qwen3.5-2B`). The prompt truncation logic for
+  instruction-tuned and reasoning models now guards the `str.replace()` call with a
+  `None` check.
+- Removed the `save_safetensors` argument when initialising `TrainingArguments` in
+  `finetuning.py`, as this has been removed from `transformers` and thus causes an error
+  if set.
+
+### Removed
+
+- Removed the deprecated `Benchmarker.__call__` function. Use
+  `Benchmarker(...).benchmark()` instead.
+- Removed the deprecated `DatasetConfig` arguments starting with an underscore, such as
+  `_labels`. Use the corresponding argument without the underscore instead, such as
+  `labels`.
+- Removed the deprecated `--model-language` and `--dataset-language` CLI arguments
+  (`model_language` and `dataset_language` in `Benchmarker`). Use the `--language`
+  argument instead, or `language` in `Benchmarker` instead.
+- Removed the deprecated `--batch-size` argument (`batch_size` in `Benchmarker`). Use
+  `--finetuning-batch-size` instead, or `finetuning_batch_size` in `Benchmarker`
+  instead.
+
+## [v16.17.0] - 2026-03-09
+
+### Added
+
+- A new tool calling task has been added to the framework, including the English
+  Berkeley Function Calling Leaderboard benchmark - benchmark it with the ID `bfcl-v2`.
+  This was added by @harderj ✨
+- Added the new Danish linguistic acceptability dataset DaLA. It's marked as
+  unofficial for now. This was added by @N-essuno ✨
+- It is now possible to benchmark datasets on the Hugging Face Hub using the `eval.yaml`
+  configuration files, fully compatible with the Inspect AI format.
+- Added the Norwegian summarisation datasets NorSumm-nb and NorSumm-nn, based on the
+  [NorSumm dataset](https://github.com/SamiaTouileb/NorSumm). The splits are given by
+  8 samples for train and the remaining articles for test, with no validation split.
+  Both datasets are marked as `unofficial` for now.
+- Added the Norwegian dialect classification dataset NorDial. The split is given
+  by 848 / 106 / 110 samples for train / val / test, respectively. It is marked
+  as `unofficial` for now.
+- Added the English knowledge dataset MMLU-Pro, marked as unofficial. This is a more
+  robust and challenging version of MMLU with 10 answer options per question.
+- Added the MultiNRC knowledge dataset for French and Spanish. These are marked as
+  `unofficial` for now.
+- Added the Greek knowledge dataset GreekMMLU. The split is
+  given by 1,024 / 256 / 2,048 samples for train / val / test, respectively.
+  It is marked as `unofficial` for now.
+- Added the MultiLoKo multilingual local knowledge benchmark datasets for Dutch,
+  English, French, German, Italian, Portuguese, Spanish and Swedish. All datasets
+  are marked as `unofficial` for now.
+- Added the Schibsted front-page title and SEO title datasets, sourced from
+  single newsrooms: `vg-front-title` features front-page titles from VG (Norwegian),
+  and `svd-seo-title` features SEO titles from Svenska Dagbladet (Swedish). Both
+  datasets are marked as `unofficial` for now.
+- A new natural language inference task has been added, including the Danish
+  Entailment Dataset (ID is `danish-entailment`) and the Danish Lexical Inference
+  Dataset (ID is `danish-lexical-inference`). It is marked as unofficial for now.
+- Added a new Word-in-Context task, and added the new Danish Word in Context
+  dataset DanWiC (ID is `danwic`). It is marked as unofficial for now.
+- Added the [INCLUDE](https://huggingface.co/datasets/CohereLabs/include-base-44)
+  knowledge dataset for 17 languages: Albanian, Bulgarian, Croatian, Dutch, Estonian,
+  Finnish, French, German, Greek, Hungarian, Italian, Lithuanian, Polish, Portuguese,
+  Serbian, Spanish, and Ukrainian. All are marked as unofficial for now.
+- Added the new Danish Sentiment in Context dataset, part of the [Danish Semantic
+  Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+  It measures the sentiment of individual words in context (ID is
+  `danish-sentiment-in-context`). It's marked as unofficial for now.
+- Failed generative model instances are now tracked and included in
+  `euroeval_benchmark_results.jsonl`.
+- Added `--max-context-length` and `--vocabulary-size` CLI options (and corresponding
+  `max_context_length` and `vocabulary_size` arguments to `Benchmarker`) to allow
+  overriding the model metadata values that are inferred automatically from the model.
+  This is useful when the model does not have the metadata specified, or has it
+  specified incorrectly.
+- We now allow preprocessing on-the-fly when creating new dataset configs. This includes
+  setting different column names (via the `input_column`, `target_column` and
+  `choices_column` arguments), or alternatively any preprocessing function can be added
+  via the `preprocessing_func` argument. This is either-or: you cannot set both
+  different column names and also specify a custom preprocessing function.
+
+### Changed
+
+- Changed the primary summarisation metric from BERTScore to ChrF3++, as it has better
+  correlation with human judgements, and has the upside of being model-agnostic,
+  reducing potential biases against low-resource languages.
+- Changed the translation metric from BERTScore to ChrF3++, to align with the
+  summarisation task and provide consistent evaluation across text-to-text tasks.
+- We now default to selecting vLLM's default attention backend for the given model, since
+  it now automatically selects the most efficient backend for the given model. It is
+  still possible to override this by setting the `--attention-backend` CLI option or the
+  `attention_backend` argument to `Benchmarker`.
+- We now do not explicitly set the vLLM V1 engine via the `VLLM_USE_V1` environment
+  variable, as it is now always set by default.
+
+### Fixed
+
+- Models that predict an out-of-range choice index for a European Values question no
+  longer crash the evaluation. The invalid prediction is now logged as a warning and
+  defaults to the first valid index instead.
+- There was an issue with caching of answers by generative models when evaluating them
+  on NER tasks - this has now been fixed. This was fixed by @Rijgersberg ✨
+- Evaluating older OpenAI models, such as `gpt-3.5-turbo-1106`, crashed the evaluation
+  due to them not supporting structured generation - this is handled gracefully now.
+  This was fixed by @Rijgersberg ✨
+- The documentation incorrectly stated that the primary metric for the Reading
+  Comprehension task is the Exact Match score. This has been corrected to the
+  character-level F1-score. This was fixed by @Rijgersberg ✨
+
+## [v16.16.1] - 2026-02-25
+
+### Fixed
+
+- LLM-as-a-judge outputs were not cached correctly - this has now been fixed.
+
+## [v16.16.0] - 2026-02-25
+
+### Added
+
+- We now add all metadata (including ground truth labels, if applicable) to the model
+  cache when debug mode is enabled (with `--debug` or `debug=True`). We have added a
+  [section in the
+  documentation](https://euroeval.com/python-package/#analysing-the-results) on how to
+  use this feature.
+- When evaluating community evaluation datasets from the Hugging Face Hub, we now
+  require that the user actively set `--trust-remote-code` (or `trust_remote_code=True`
+  if running with the `Benchmarker` class). This is to prevent accidental execution of
+  malicious code.
+
+### Fixed
+
+- v16.15.0 introduced an error related to the parsing of safetensors metadata from
+  adapter models. This has now been fixed.
+- LiteLLM's structured output support check was failing for custom API URLs, as it can
+  only reliably verify official providers. This check is now skipped for custom
+  endpoints, and we assume they support structured outputs. This was added by
+  @viggo-gascou ✨
+- Fixed issue when evaluating models on custom inference APIs that the model ID would be
+  assigned the `openai/openai/` prefix. This should only happen if the model ID starts
+  with `openai/`, such as `openai/gpt-oss-20b`, for instance (this is because LiteLLM
+  attaches a special meaning to the `openai/` prefix). This has been fixed now.
+- When evaluating models on a custom inference API with a task that uses LLM-as-a-judge
+  metrics, an error caused the same model to be the judge. We now disallow judges to run
+  on custom inference APIs to solve this. Support for running local judges in this sense
+  could be supported in the future.
+
+## [v16.15.0] - 2026-02-18
+
+### Added
+
+- Added a new `translation` task. This uses BERTScore and ROUGE-L as metrics, just like
+  the `summarization` task. This was added by @oliverkinch ✨
+- Added 25 translation datasets from the WMT24++ dataset. These all translate from
+  English to the target language. It's added as unofficial for now.
+- Now supports the `detectable_format:constrained_response_with_argument` IFEval
+  constraint, being the same as `detectable_format:constrained_response` but with
+  a list of options to check for, rather than a hardcoded list of English options.
+
+### Fixed
+
+- The `huggingface_hub` safetensors API has changed, so we did not fetch the number of
+  model parameters correctly - this has now been fixed.
+- For the French, Spanish and Catalan instruction-following datasets, the
+  `detectable_format:constrained_response` constraint was not being applied correctly,
+  so this has now been fixed.
+
+## [v16.14.0] - 2026-02-13
+
+### Added
+
+- Added new instruction-following task! This was added by @slowwavesleep ✨
+- Added instruction-following datasets for English 🇬🇧 and Estonian 🇪🇪. This was added
+  by @slowwavesleep ✨
+- Added instruction-following datasets for Catalan, Danish 🇩🇰, German 🇩🇪,
+  Italian 🇮🇹, Greek 🇬🇷, Spanish 🇪🇸, Finnish 🇫🇮, French 🇫🇷, Portuguese 🇵🇹,
+  Swedish 🇸🇪 and Ukrainian 🇺🇦.
 - Now also logs the number of skipped and errored benchmarks at the end of the
   benchmarking.
 - Now logs a suggested dataset/task name if a user specified a dataset/task that is not

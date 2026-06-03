@@ -54,3 +54,15 @@ WINOGRANDE_BG_CONFIG = DatasetConfig(
     languages=[BULGARIAN],
     labels=["a", "b"],
 )
+
+
+# Unofficial datasets ###
+
+INCLUDE_BG_CONFIG = DatasetConfig(
+    name="include-bg",
+    pretty_name="INCLUDE-bg",
+    source="EuroEval/include-bg-mini",
+    task=KNOW,
+    languages=[BULGARIAN],
+    unofficial=True,
+)

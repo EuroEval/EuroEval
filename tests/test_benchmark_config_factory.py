@@ -8,7 +8,6 @@ import pytest
 import torch
 
 from euroeval.benchmark_config_factory import (
-    get_correct_language_codes,
     prepare_dataset_configs,
     prepare_device,
     prepare_languages,
@@ -24,6 +23,7 @@ from euroeval.languages import (
     NORWEGIAN_BOKMÅL,
     NORWEGIAN_NYNORSK,
     get_all_languages,
+    get_correct_language_codes,
 )
 from euroeval.tasks import LA
 
@@ -42,6 +42,8 @@ def all_official_dataset_configs() -> Generator[list[DatasetConfig], None, None]
             dataset_ids=[],
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         ).values()
         if not cfg.unofficial
     ]
@@ -61,36 +63,11 @@ def all_official_la_dataset_configs() -> Generator[list[DatasetConfig], None, No
             dataset_ids=[],
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         ).values()
         if LA == cfg.task and not cfg.unofficial
     ]
-
-
-@pytest.mark.parametrize(
-    argnames=["input_language_codes", "expected_language_codes"],
-    argvalues=[
-        ("da", ["da"]),
-        (["da"], ["da"]),
-        (["da", "en"], ["da", "en"]),
-        ("no", ["no", "nb", "nn"]),
-        (["nb"], ["nb", "no"]),
-        ("all", list(get_all_languages().keys())),
-    ],
-    ids=[
-        "single language",
-        "single language as list",
-        "multiple languages",
-        "no -> no + nb + nn",
-        "nb -> nb + no",
-        "all -> all languages",
-    ],
-)
-def test_get_correct_language_codes(
-    input_language_codes: str | list[str], expected_language_codes: list[str]
-) -> None:
-    """Test that the correct language codes are returned."""
-    languages = get_correct_language_codes(language_codes=input_language_codes)
-    assert set(languages) == set(expected_language_codes)
 
 
 @pytest.mark.parametrize(
@@ -226,6 +203,8 @@ def test_prepare_dataset_configs(
         custom_datasets_file=Path("custom_datasets.py"),
         api_key=os.getenv("HF_TOKEN"),
         cache_dir=Path(".euroeval_cache"),
+        trust_remote_code=True,
+        run_with_cli=True,
     )
     assert set(prepared_dataset_configs) == set(expected_dataset_configs)
 
@@ -240,6 +219,8 @@ def test_prepare_dataset_configs_invalid_task() -> None:
             custom_datasets_file=Path("custom_datasets.py"),
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         )
     assert exc_info.value.code == 1
 
@@ -254,6 +235,8 @@ def test_prepare_dataset_configs_invalid_dataset() -> None:
             custom_datasets_file=Path("custom_datasets.py"),
             api_key=os.getenv("HF_TOKEN"),
             cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         )
     assert exc_info.value.code == 1
 

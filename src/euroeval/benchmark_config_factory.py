@@ -13,7 +13,7 @@ from .closest_match import get_closest_match
 from .data_models import BenchmarkConfig, BenchmarkConfigParams, DatasetConfig, Task
 from .dataset_configs import get_all_dataset_configs
 from .enums import Device
-from .languages import get_all_languages
+from .languages import get_all_languages, get_correct_language_codes
 from .logging_utils import log
 
 if importlib.util.find_spec("vllm") is not None:
@@ -50,6 +50,8 @@ def build_benchmark_config(
         custom_datasets_file=benchmark_config_params.custom_datasets_file,
         api_key=benchmark_config_params.api_key,
         cache_dir=Path(benchmark_config_params.cache_dir),
+        trust_remote_code=benchmark_config_params.trust_remote_code,
+        run_with_cli=benchmark_config_params.run_with_cli,
     )
 
     return BenchmarkConfig(
@@ -82,42 +84,9 @@ def build_benchmark_config(
         run_with_cli=benchmark_config_params.run_with_cli,
         requires_safetensors=benchmark_config_params.requires_safetensors,
         download_only=benchmark_config_params.download_only,
+        max_context_length=benchmark_config_params.max_context_length,
+        vocabulary_size=benchmark_config_params.vocabulary_size,
     )
-
-
-def get_correct_language_codes(
-    language_codes: str | c.Sequence[str],
-) -> c.Sequence[str]:
-    """Get correct language code(s).
-
-    Args:
-        language_codes:
-            The language codes of the languages to include, both for models and
-            datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this
-            to 'all' if all languages should be considered.
-
-    Returns:
-        The correct language codes.
-    """
-    # Create a dictionary that maps languages to their associated language objects
-    language_mapping = get_all_languages()
-
-    # Create the list `languages`
-    if "all" in language_codes:
-        languages = list(language_mapping.keys())
-    elif isinstance(language_codes, str):
-        languages = [language_codes]
-    else:
-        languages = list(language_codes)
-
-    # If `languages` contains 'no' then also include 'nb' and 'nn'. Conversely, if
-    # either 'nb' or 'nn' are specified then also include 'no'.
-    if "no" in languages:
-        languages = list(set(languages) | {"nb", "nn"})
-    elif "nb" in languages or "nn" in languages:
-        languages = list(set(languages) | {"no"})
-
-    return languages
 
 
 def prepare_languages(
@@ -165,6 +134,8 @@ def prepare_dataset_configs(
     custom_datasets_file: Path,
     api_key: str | None,
     cache_dir: Path,
+    trust_remote_code: bool,
+    run_with_cli: bool,
 ) -> list["DatasetConfig"]:
     """Prepare dataset config(s) for benchmarking.
 
@@ -183,6 +154,10 @@ def prepare_dataset_configs(
             The API key to use for accessing the Hugging Face Hub.
         cache_dir:
             The directory to store the cache in.
+        trust_remote_code:
+            Whether to trust remote code.
+        run_with_cli:
+            Whether to run the benchmark with the CLI.
 
     Returns:
         The prepared dataset configs.
@@ -206,6 +181,8 @@ def prepare_dataset_configs(
         dataset_ids=dataset_ids,
         api_key=api_key,
         cache_dir=cache_dir,
+        trust_remote_code=trust_remote_code,
+        run_with_cli=run_with_cli,
     )
     all_official_dataset_configs: c.Sequence[DatasetConfig] = [
         dataset_config
@@ -229,7 +206,7 @@ def prepare_dataset_configs(
             options=list(all_dataset_configs.keys()),
             case_sensitive=False,
         )
-        msg = f"Dataset {e} not found in the benchmark datasets."
+        msg = f"The dataset {e} was not found in the benchmark datasets."
         if closest_distance < 5:
             msg += f" Maybe you meant to use {closest_match!r}?"
         log(msg, level=logging.ERROR)

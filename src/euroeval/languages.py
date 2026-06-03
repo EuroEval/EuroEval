@@ -4,6 +4,7 @@ The language codes contain both all the ISO 639-1 codes, as well as the ISO 639-
 for languages that do not have an ISO 639-1 code.
 """
 
+import collections.abc as c
 from dataclasses import dataclass, field
 
 
@@ -81,6 +82,41 @@ def get_all_languages() -> dict[str, Language]:
         A mapping between language codes and their configurations.
     """
     return {cfg.code: cfg for cfg in globals().values() if isinstance(cfg, Language)}
+
+
+def get_correct_language_codes(
+    language_codes: str | c.Sequence[str],
+) -> c.Sequence[str]:
+    """Get correct language code(s).
+
+    Args:
+        language_codes:
+            The language codes of the languages to include, both for models and
+            datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this
+            to 'all' if all languages should be considered.
+
+    Returns:
+        The correct language codes.
+    """
+    # Create a dictionary that maps languages to their associated language objects
+    language_mapping = get_all_languages()
+
+    # Create the list `languages`
+    if "all" in language_codes:
+        languages = list(language_mapping.keys())
+    elif isinstance(language_codes, str):
+        languages = [language_codes]
+    else:
+        languages = list(language_codes)
+
+    # If `languages` contains 'no' then also include 'nb' and 'nn'. Conversely, if
+    # either 'nb' or 'nn' are specified then also include 'no'.
+    if "no" in languages:
+        languages = list(set(languages) | {"nb", "nn"})
+    elif "nb" in languages or "nn" in languages:
+        languages = list(set(languages) | {"no"})
+
+    return languages
 
 
 ABKHAZIAN: Language = Language(
@@ -319,7 +355,7 @@ KASHMIRI: Language = Language(
     code="ks", name="Kashmiri", _and_separator="تہٕ", _or_separator="یا"
 )
 KAZAKH: Language = Language(
-    code="kk", name="Kazakh", _and_separator="және", _or_separator="немесе"
+    code="kk", name="Kazakh", _and_separator="және", _or_separator="nemесе"
 )
 CENTRAL_KHMER: Language = Language(
     code="km", name="Central Khmer", _and_separator="និង", _or_separator="ឬ"

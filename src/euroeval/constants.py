@@ -1,12 +1,12 @@
 """Constants used throughout the project."""
 
 import re
-from typing import TypeVar
+import typing as t
 
 from .enums import TaskGroup
 
 # Type variable used for generic typing
-T = TypeVar("T", bound=object)
+T = t.TypeVar("T", bound=object)
 
 # This is used as input to generative models; it cannot be a special token
 DUMMY_FILL_VALUE = 100
@@ -28,6 +28,7 @@ GENERATIVE_PIPELINE_TAGS = [
     "image-text-to-text",
     "audio-text-to-text",
     "video-text-to-text",
+    "any-to-any",
 ]
 
 # Used to disallow non-generative models to be evaluated on these task groups
@@ -51,6 +52,11 @@ MERGE_TAGS = ["merge", "mergekit"]
 # The minimum required CUDA compute capability for using bfloat16 in vLLM
 VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY = 8.0
 
+# Threshold for language confidence scores.
+# When a sample's language confidence score is greater than or equal to this value,
+# its evaluation score is kept as is. Otherwise, the score is set to 0.
+MIN_LANG_CONFIDENCE_SCORE = 0.75
+
 # The candidates for end-of-sequence, beginning-of-sequence and padding tokens
 EOS_TOKENS = ["</s>", "<|end_of_text|>", "<|endoftext|>", "[SEP]", "<|return|>"]
 BOS_TOKENS = ["<s>", "<|begin_of_text|>", "<|startoftext|>", "[CLS]"]
@@ -73,6 +79,7 @@ REASONING_TOKENS: list[tuple[str | re.Pattern, str | re.Pattern]] = [
         re.compile(pattern=r"<\|channel\|>(analysis|commentary)<\|message\|>"),
         "<|channel|>final<|message|>",
     ),
+    ("<|START_THINKING|>", "<|END_THINKING|>"),
 ]
 
 # These tokens are sometimes used by models to indicate the end of a generated
@@ -139,3 +146,48 @@ ATTENTION_BACKENDS: list[str] = [
 # the languages. This is for instance the case for the speed benchmark, which has all
 # the languages. The threshold of 5 is somewhat arbitrary.
 MAX_NUMBER_OF_LOGGING_LANGUAGES = 5
+
+# Language-specific label for the choices section in multiple-choice datasets. The
+# keys are ISO 639-1 language codes.
+CHOICES_MAPPING: dict[str, str] = {
+    "ab": "Choices",
+    "bg": "Възможности",
+    "be": "Варыянты",
+    "ca": "Opcions",
+    "cs": "Výběr",
+    "da": "Svarmuligheder",
+    "de": "Antwortmöglichkeiten",
+    "el": "Επιλογές",
+    "en": "Choices",
+    "es": "Opciones",
+    "et": "Vastusevariandid",
+    "fi": "Vastausvaihtoehdot",
+    "fo": "Svarmøguleikar",
+    "fr": "Choix",
+    "hr": "Izbori",
+    "hu": "Válaszlehetőségek",
+    "is": "Svarmöguleikar",
+    "it": "Scelte",
+    "lt": "Pasirinkimai",
+    "lv": "Izvēles",
+    "nl": "Antwoordopties",
+    "no": "Svaralternativer",
+    "pl": "Opcje",
+    "pt": "Opções",
+    "ro": "Opțiuni",
+    "sk": "Možnosti",
+    "sl": "Možnosti",
+    "sq": "Opsione",
+    "sr": "Opcije",
+    "sv": "Svarsalternativ",
+    "uk": "Варіанти",
+}
+
+# Constants for the tool-calling task
+TOOL_CALLING_CALLS_KEY = "tool_calls"
+TOOL_CALLING_FUNCTION_KEY = "function"
+TOOL_CALLING_ARGUMENTS_KEY = "arguments"
+TOOL_CALLING_KEYS = [TOOL_CALLING_FUNCTION_KEY, TOOL_CALLING_ARGUMENTS_KEY]
+
+# Every Eval Ever (EEE) schema version used when serialising benchmark results
+EEE_SCHEMA_VERSION = "0.2.1"

@@ -33,8 +33,7 @@ def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
         "custom_datasets_file",
         "download_only",
         "debug",
-        "model_language",
-        "dataset_language",
-        "batch_size",
+        "max_context_length",
+        "vocabulary_size",
         "help",
     }

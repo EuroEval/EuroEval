@@ -17,8 +17,8 @@ from torch.distributed import destroy_process_group
 from .benchmark_config_factory import build_benchmark_config
 from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
 from .data_loading import load_data, load_raw_data
-from .data_models import BenchmarkConfigParams, BenchmarkResult
-from .enums import Device, GenerativeType, ModelType
+from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
+from .enums import Device, GenerativeType, InferenceBackend, ModelType
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
@@ -76,17 +76,17 @@ class Benchmarker:
         api_version: str | None = None,
         gpu_memory_utilization: float = 0.8,
         attention_backend: t.Literal[
-            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-        ] = "FLASHINFER",
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
+        ]
+        | None = None,
         generative_type: GenerativeType | None = None,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
         run_with_cli: bool = False,
         requires_safetensors: bool = False,
         download_only: bool = False,
-        model_language: str | c.Sequence[str] | None = None,
-        dataset_language: str | c.Sequence[str] | None = None,
-        batch_size: int | None = None,
+        max_context_length: int | None = None,
+        vocabulary_size: int | None = None,
     ) -> None:
         """Initialise the benchmarker.
 
@@ -149,8 +149,9 @@ class Benchmarker:
                 the risk of running out of GPU memory. Only reduce this if you are
                 running out of GPU memory. Defaults to 0.9.
             attention_backend:
-                The attention backend to use for vLLM. Defaults to FLASHINFER. Only
-                relevant if the model is generative.
+                The attention backend to use for vLLM. Only relevant if the model is
+                generative. If None then vLLM will automatically choose the best
+                backend. Defaults to None.
             generative_type:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
@@ -169,12 +170,12 @@ class Benchmarker:
             download_only:
                 Whether to only download models and datasets without performing any
                 benchmarking. Defaults to False.
-            model_language:
-                Deprecated argument. Please use `language` instead.
-            dataset_language:
-                Deprecated argument. Please use `language` instead.
-            batch_size:
-                Deprecated argument. Please use `finetuning_batch_size` instead.
+            max_context_length:
+                Override for the maximum context length of the model. If None, the value
+                will be inferred automatically from the model. Defaults to None.
+            vocabulary_size:
+                Override for the vocabulary size of the model. If None, the value will
+                be inferred automatically from the model. Defaults to None.
 
         Raises:
             ValueError:
@@ -192,56 +193,11 @@ class Benchmarker:
                 msg += "the argument `download_only` was set to True."
             raise ValueError(msg)
 
-        # Deprecation warnings
-        if batch_size is not None:
-            if run_with_cli:
-                msg = (
-                    "The --batch-size option is deprecated and will be removed in a "
-                    "future version. Please use --finetuning-batch-size instead. "
-                    "Overwriting --finetuning-batch-size with the value from "
-                    "--batch-size."
-                )
-            else:
-                msg = (
-                    "The `batch_size` argument is deprecated and will be removed in a "
-                    "future version. Please use `finetuning_batch_size` instead. "
-                    "Overwriting `finetuning_batch_size` with the value from "
-                    "`batch_size`."
-                )
-            log(msg, level=logging.WARNING)
-            finetuning_batch_size = batch_size
-        if model_language is not None:
-            if run_with_cli:
-                msg = (
-                    "The --model-language option is deprecated and will be removed in "
-                    "a future version. Please use --language instead. Ignoring the "
-                    "--model-language value."
-                )
-            else:
-                msg = (
-                    "The `model_language` argument is deprecated and will be removed "
-                    "in a future version. Please use `language` instead. Ignoring the "
-                    "`model_language` value."
-                )
-            log(msg, level=logging.WARNING)
-        if dataset_language is not None:
-            if run_with_cli:
-                msg = (
-                    "The --dataset-language option is deprecated and will be removed "
-                    "in a future version. Please use --language instead. Ignoring the "
-                    "--dataset-language value."
-                )
-            else:
-                msg = (
-                    "The `dataset_language` argument is deprecated and will be removed "
-                    "in a future version. Please use `language` instead. Ignoring the "
-                    "`dataset_language` value."
-                )
-            log(msg, level=logging.WARNING)
-
         # If FULL_LOG has been set, then force verbose mode
         if os.getenv("FULL_LOG", "0") == "1":
             verbose = True
+
+        adjust_logging_level(verbose=verbose)
 
         self.benchmark_config_default_params = BenchmarkConfigParams(
             task=task,
@@ -271,6 +227,8 @@ class Benchmarker:
             force=force,
             debug=debug,
             run_with_cli=run_with_cli,
+            max_context_length=max_context_length,
+            vocabulary_size=vocabulary_size,
         )
 
         self.benchmark_config = build_benchmark_config(
@@ -389,16 +347,15 @@ class Benchmarker:
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
         attention_backend: t.Literal[
-            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
         | None = None,
         custom_datasets_file: Path | str | None = None,
         force: bool | None = None,
         verbose: bool | None = None,
         debug: bool | None = None,
-        model_language: str | c.Sequence[str] | None = None,
-        dataset_language: str | c.Sequence[str] | None = None,
-        batch_size: int | None = None,
+        max_context_length: int | None = None,
+        vocabulary_size: int | None = None,
     ) -> c.Sequence[BenchmarkResult]:
         """Benchmarks models on datasets.
 
@@ -425,9 +382,9 @@ class Benchmarker:
                 when initialising the benchmarker.
             language:
                 The language codes of the languages to include, both for models and
-                datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this to
-                'all' if all languages should be considered. Defaults to the value
-                specified when initialising the benchmarker.
+                datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn).
+                Set this to 'all' if all languages should be considered.
+                Defaults to the value specified when initialising the benchmarker.
             device:
                 The device to use for benchmarking. Defaults to the value specified when
                 initialising the benchmarker.
@@ -501,12 +458,14 @@ class Benchmarker:
             debug:
                 Whether to output debug information. Defaults to the value specified
                 when initialising the benchmarker.
-            model_language:
-                Deprecated argument. Please use `language` instead.
-            dataset_language:
-                Deprecated argument. Please use `language` instead.
-            batch_size:
-                Deprecated argument. Please use `finetuning_batch_size` instead.
+            max_context_length:
+                Override for the maximum context length of the model. If None, the
+                value will be inferred automatically from the model. Defaults to the
+                value specified when initialising the benchmarker.
+            vocabulary_size:
+                Override for the vocabulary size of the model. If None, the value will
+                be inferred automatically from the model. Defaults to the value
+                specified when initialising the benchmarker.
 
         Returns:
             A list of benchmark results.
@@ -518,38 +477,13 @@ class Benchmarker:
                 If we're offline benchmarking an adapter model, or if model loading
                 failed.
         """
-        log(
+        log_once(
             "Started EuroEval run. Run with `--verbose` for more information.",
             level=logging.INFO,
         )
 
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
-
-        # Deprecation warnings
-        if batch_size is not None:
-            log(
-                "The `batch_size` argument is deprecated and will be removed in a "
-                "future version. Please use `finetuning_batch_size` instead. "
-                "Overwriting `finetuning_batch_size` with the value from "
-                "`batch_size`.",
-                level=logging.WARNING,
-            )
-            finetuning_batch_size = batch_size
-        if model_language is not None:
-            log(
-                "The `model_language` argument is deprecated and will be removed "
-                "in a future version. Please use `language` instead. Ignoring the "
-                "`model_language` value.",
-                level=logging.WARNING,
-            )
-        if dataset_language is not None:
-            log(
-                "The `dataset_language` argument is deprecated and will be removed "
-                "in a future version. Please use `language` instead. Ignoring the "
-                "`dataset_language` value.",
-                level=logging.WARNING,
-            )
 
         # Get a new updated benchmark configuration, based on any changes to the
         # parameters
@@ -683,6 +617,16 @@ class Benchmarker:
                 else self.benchmark_config_default_params.debug
             ),
             run_with_cli=self.benchmark_config_default_params.run_with_cli,
+            max_context_length=(
+                max_context_length
+                if max_context_length is not None
+                else self.benchmark_config_default_params.max_context_length
+            ),
+            vocabulary_size=(
+                vocabulary_size
+                if vocabulary_size is not None
+                else self.benchmark_config_default_params.vocabulary_size
+            ),
         )
         benchmark_config = build_benchmark_config(
             benchmark_config_params=benchmark_config_params
@@ -780,7 +724,7 @@ class Benchmarker:
                     raise InvalidModel(
                         "Offline benchmarking of models with adapters is not currently "
                         "supported. An active internet connection is required. "
-                        "{open_issue_msg}"
+                        f"{open_issue_msg}"
                     )
                 elif benchmark_config.download_only:
                     log_once(
@@ -823,6 +767,15 @@ class Benchmarker:
                     benchmark_params_to_revert["few_shot"] = True
                     benchmark_config.few_shot = False
 
+                if benchmark_config.download_only:
+                    self._download(
+                        dataset_config=dataset_config,
+                        model_config=model_config,
+                        benchmark_config=benchmark_config,
+                    )
+                    num_finished_benchmarks += 1
+                    continue
+
                 # We do not re-initialise generative models as their architecture is not
                 # customised to specific datasets
                 if model_config.model_type == ModelType.GENERATIVE:
@@ -847,8 +800,6 @@ class Benchmarker:
                                 - 1
                             )
                             break
-                    else:
-                        loaded_model.dataset_config = dataset_config
 
                     # Skip the benchmark if the model is not of the correct
                     # generative type
@@ -1001,6 +952,12 @@ class Benchmarker:
             InvalidModel:
                 If the model is invalid.
         """
+        if model is not None:
+            try:
+                model.update_dataset_config(dataset_config=dataset_config)
+            except InvalidBenchmark as e:
+                return e
+
         for _ in range(num_attempts := 5):
             try:
                 # Set random seeds to enforce reproducibility of the randomly
@@ -1095,6 +1052,16 @@ class Benchmarker:
                         if dataset_config.val_split is None
                         else not benchmark_config.evaluate_test_split
                     ),
+                    vllm_version=(
+                        get_package_version("vllm")
+                        if model_config.inference_backend == InferenceBackend.VLLM
+                        else None
+                    ),
+                    litellm_version=(
+                        get_package_version("litellm")
+                        if model_config.inference_backend == InferenceBackend.LITELLM
+                        else None
+                    ),
                 )
                 log(f"Results:\n{results}", level=logging.DEBUG)
                 return record
@@ -1132,25 +1099,6 @@ class Benchmarker:
                 f"Failed to benchmark model {model_config.model_id!r} on dataset "
                 f"{dataset_config.name!r} after {num_attempts} attempts."
             )
-
-    def __call__(self, *args: t.Any, **kwds: t.Any) -> t.Any:  # noqa: ANN401
-        """Alias for `self.benchmark()`.
-
-        Args:
-            *args:
-                Positional arguments to pass to `self.benchmark()`.
-            **kwds:
-                Keyword arguments to pass to `self.benchmark()`.
-
-        Returns:
-            The result of `self.benchmark()`.
-        """
-        log(
-            "Calling the `Benchmarker` class directly is deprecated. Please use the "
-            "`benchmark` function instead. This will be removed in a future version.",
-            level=logging.WARNING,
-        )
-        return self.benchmark(*args, **kwds)
 
 
 def get_record(

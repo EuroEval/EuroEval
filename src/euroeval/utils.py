@@ -13,6 +13,7 @@ import huggingface_hub as hf_hub
 import numpy as np
 import torch
 from huggingface_hub.errors import LocalTokenNotFoundError
+from langdetect import DetectorFactory
 from requests.exceptions import RequestException
 
 from .caching_utils import cache_arguments
@@ -122,6 +123,7 @@ def enforce_reproducibility(seed: int = 4242) -> np.random.Generator:
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
     torch.use_deterministic_algorithms(True, warn_only=True)
+    DetectorFactory.seed = 0
     return rng
 
 
