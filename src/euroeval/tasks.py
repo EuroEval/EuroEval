@@ -299,10 +299,11 @@ HALLU = Task(
     task_group=TaskGroup.QUESTION_ANSWERING,
     template_dict=RC_TEMPLATES,
     metrics=[m.hallucination_metric],
-    default_num_few_shot_examples=5,
-    default_max_generated_tokens=5,
+    default_num_few_shot_examples=0,
+    default_max_generated_tokens=512,
     default_labels=[],
     default_allowed_model_types=[ModelType.GENERATIVE],
+    requires_zero_shot=True,
 )
 
 # Used for custom datasets

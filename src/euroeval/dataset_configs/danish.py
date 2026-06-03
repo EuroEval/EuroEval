@@ -2,6 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import DANISH
+from ..preprocessing import ragtruth_preprocessing_func
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
@@ -112,6 +113,12 @@ RAGTRUTH_DA_CONFIG = DatasetConfig(
     source="EuroEval/ragtruth-translated-hallucinations-da-mini",
     task=HALLU,
     languages=[DANISH],
+    prompt_prefix="",
+    prompt_template="{text}",
+    instruction_prompt="{text}",
+    train_split=None,
+    val_split=None,
+    preprocessing_func=ragtruth_preprocessing_func,
 )
 
 # Unofficial datasets ###
