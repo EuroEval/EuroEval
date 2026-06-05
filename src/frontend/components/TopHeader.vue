@@ -5,6 +5,12 @@ import { toggleDrawer } from "@/drawer";
 import { ref, onMounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 
+interface Props {
+  hasSidebar?: boolean;
+}
+
+const { hasSidebar = false } = defineProps<Props>();
+
 const router = useRouter();
 
 // `?theme=light` or `?theme=dark` overrides the persisted preference. Used by
@@ -163,6 +169,7 @@ onMounted(() => {
   <header class="top-header">
     <div class="header-inner">
       <button
+        v-if="hasSidebar"
         class="hamburger"
         aria-label="Open navigation"
         @click="toggleDrawer"
