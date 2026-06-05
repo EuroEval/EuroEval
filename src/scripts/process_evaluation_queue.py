@@ -304,14 +304,17 @@ def age_sort_value(issue: dict) -> float:
 def process_queue_once() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
-    Issues are sorted by (status priority asc, partial-results rank asc,
-    parameter count asc, num-language-groups asc, age asc). Status
-    priority is 0 for fresh issues, 1 for gated repos (cheap marker
-    refresh), and 2 for retries of previously errored evaluations, so
-    that quicker work is picked up first and gated items are surfaced
-    ahead of errored ones. Age is a final tiebreaker so that, when
-    everything else is equal, the oldest (longest-waiting) issue is
-    picked up first and stale requests don't linger in the queue.
+    Issues are sorted by (status priority asc, slow priority asc,
+    partial-results rank asc, parameter count asc, num-language-groups asc,
+    age asc). Status priority is 0 for fresh issues, 1 for gated repos
+    (cheap marker refresh), and 2 for retries of previously errored
+    evaluations, so that quicker work is picked up first and gated items
+    are surfaced ahead of errored ones. Slow priority is 0 for normal
+    issues and 1 for issues with the 'slow' label, pushing them to the end
+    of the queue regardless of partial-results status. Age is a final
+    tiebreaker so that, when everything else is equal, the oldest
+    (longest-waiting) issue is picked up first and stale requests don't
+    linger in the queue.
     """
     try:
         issues = list_open_unassigned_issues()
@@ -321,7 +324,7 @@ def process_queue_once() -> None:
 
     existing_lines = read_jsonl_lines(path=RESULTS_PATH)
     candidates: list[
-        tuple[int, int, int, int, float, dict, str, list[str], dict | None]
+        tuple[int, int, int, int, int, float, dict, str, list[str], dict | None]
     ] = []
     for issue in issues:
         number = issue["number"]
@@ -356,6 +359,11 @@ def process_queue_once() -> None:
             status_priority = 2
         else:
             status_priority = 0
+        slow_priority = (
+            1
+            if any(label["name"] == "slow" for label in issue.get("labels", []))
+            else 0
+        )
         # Among 'waiting' candidates, push models with partial results ahead so
         # we finish what we already started before claiming a new evaluation.
         languages: list[str] = sorted(
@@ -378,6 +386,7 @@ def process_queue_once() -> None:
         candidates.append(
             (
                 status_priority,
+                slow_priority,
                 partial_rank,
                 param_count,
                 len(groups),
@@ -389,7 +398,7 @@ def process_queue_once() -> None:
             )
         )
 
-    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4]))
+    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4], c[5]))
     logger.info(f"Found {len(candidates)} processable issue(s).")
 
     gpu_bytes = gpu_total_memory_bytes()
@@ -402,6 +411,7 @@ def process_queue_once() -> None:
 
     for (
         status_priority,
+        slow_priority,
         partial_rank,
         param_count,
         num_groups,
@@ -414,9 +424,10 @@ def process_queue_once() -> None:
         status = {0: "fresh", 1: "gated", 2: "retry of errored eval"}[status_priority]
         if status_priority == 0 and partial_rank == 0:
             status = "resuming partial"
+        slow_tag = ", slow" if slow_priority else ""
         logger.info(
             f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
-            f"{num_groups} group(s), {status})."
+            f"{num_groups} group(s), {status}{slow_tag})."
         )
         if gpu_bytes is not None:
             needed = estimated_model_bytes(model_id=model_id)
