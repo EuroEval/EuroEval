@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
+  model architectures and tokenisers.
+
 ## [v17.3.0] - 2026-05-31
 
 ### Added
