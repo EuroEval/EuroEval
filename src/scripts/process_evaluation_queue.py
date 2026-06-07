@@ -306,10 +306,10 @@ def process_queue_once() -> None:
 
     Issues are sorted by (status priority asc, slow priority asc,
     partial-results rank asc, parameter count asc, num-language-groups asc,
-    age asc). Status priority is 0 for fresh issues, 1 for gated repos
-    (cheap marker refresh), and 2 for retries of previously errored
-    evaluations, so that quicker work is picked up first and gated items
-    are surfaced ahead of errored ones. Slow priority is 0 for normal
+    age asc). Status priority is 0 for gated repos (cheap marker refresh),
+    1 for fresh issues, and 2 for retries of previously errored evaluations,
+    so that gated repos are surfaced first and quicker work is picked up
+    ahead of fresh issues. Slow priority is 0 for normal
     issues and 1 for issues with the 'slow' label, pushing them to the end
     of the queue regardless of partial-results status. Age is a final
     tiebreaker so that, when everything else is equal, the oldest
@@ -354,11 +354,11 @@ def process_queue_once() -> None:
 
         param_count = summary["param_count"]
         if summary.get("gated"):
-            status_priority = 1
+            status_priority = 0
         elif errored_marker_present(body=body):
             status_priority = 2
         else:
-            status_priority = 0
+            status_priority = 1
         slow_priority = (
             1
             if any(label["name"] == "slow" for label in issue.get("labels", []))
