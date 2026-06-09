@@ -108,7 +108,6 @@ from leaderboards.queue_runtime import (
     ThermalConfig,
     cool_down_between_issues,
     lower_process_priority,
-    wait_for_gpu_to_cool,
 )
 
 logging.basicConfig(
@@ -623,12 +622,11 @@ def process_issue(
 def _run_claimed_issue(
     issue: dict, model_id: str, languages: list[str], partial_state: dict | None = None
 ) -> None:
-    """Run euroeval one language at a time and maintain a progress comment.
+    """Run euroeval for all languages at once and post results.
 
     A single comment carrying the ``queue-progress`` marker is created
-    (or reused) and rewritten after every language so the issue always
-    shows the completed/in-progress/remaining/failed split along with a
-    link to a gist that holds the accumulated JSONL results.
+    (or reused) showing the final results along with a link to a gist
+    that holds the accumulated JSONL results.
 
     Args:
         issue:
@@ -672,45 +670,18 @@ def _run_claimed_issue(
         if partial_state
         else find_progress_comment(number=number)
     )
-    comment_id = post_or_update_progress_comment(
-        state=progress,
-        comment_id=comment_id,
-        model_id=model_id,
-        done=done,
-        current=None,
-        remaining=pending,
-        failed=failed,
-        lines=accumulated,
-        issue_body=issue_body,
-    )
 
     gated_detected = False
     failure_reason: str | None = None
     failure_output_tail = ""
 
-    for i, lang in enumerate(pending):
-        remaining_after = pending[i + 1 :]
-        comment_id = post_or_update_progress_comment(
-            state=progress,
-            comment_id=comment_id,
-            model_id=model_id,
-            done=done,
-            current=lang,
-            remaining=remaining_after,
-            failed=failed,
-            lines=accumulated,
-            issue_body=issue_body,
-        )
-
+    if pending:
         before = set(read_jsonl_lines(path=RESULTS_PATH))
-        # Only ask euroeval to clear its model cache after the final language so
-        # the model is downloaded once per issue, not once per language.
-        is_last = i == len(pending) - 1
         returncode, output = run_euroeval(
             model_id=model_id,
-            languages=[lang],
+            languages=pending,
             evaluate_test_split=is_core,
-            clear_model_cache=is_last,
+            clear_model_cache=True,
             gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
         )
         after = read_jsonl_lines(path=RESULTS_PATH)
@@ -720,58 +691,49 @@ def _run_claimed_issue(
         if GATED_OUTPUT_RE.search(output):
             gated_detected = True
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            break
 
         num_errored = num_errored_benchmarks(output=output)
         num_skipped = num_skipped_benchmarks(output=output)
         missing = missing_official_dataset_language_pairs(
-            lines=accumulated, requested_languages=[lang]
+            lines=accumulated, requested_languages=pending
         )
         if returncode != 0:
-            reason = f"euroeval exited with code {returncode} for language {lang!r}"
-            failure_reason = failure_reason or reason
+            failure_reason = f"euroeval exited with code {returncode}"
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed.append(lang)
+            failed = pending
         elif num_errored > 0:
-            reason = (
-                f"euroeval reported {num_errored} errored benchmark(s) "
-                f"for language {lang!r}"
-            )
-            failure_reason = failure_reason or reason
+            failure_reason = f"euroeval reported {num_errored} errored benchmark(s)"
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed.append(lang)
+            failed = pending
         elif missing and (not new_lines or len(missing) > num_skipped):
-            reason = (
-                f"missing official dataset-language pair(s) for {lang!r}: "
+            failure_reason = (
+                f"missing official dataset-language pair(s): "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
             )
-            failure_reason = failure_reason or reason
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed.append(lang)
+            failed = pending
         elif missing:
             logger.info(
-                f"#{number}: euroeval skipped {num_skipped} benchmark(s) for "
-                f"{lang!r}; treating missing pair(s) as intentional skips: "
+                f"#{number}: euroeval skipped {num_skipped} benchmark(s); "
+                f"treating missing pair(s) as intentional skips: "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
             )
-            done.append(lang)
+            done.extend(pending)
         else:
-            done.append(lang)
+            done.extend(pending)
 
-        comment_id = post_or_update_progress_comment(
-            state=progress,
-            comment_id=comment_id,
-            model_id=model_id,
-            done=done,
-            current=None,
-            remaining=remaining_after,
-            failed=failed,
-            lines=accumulated,
-            issue_body=issue_body,
-        )
-
-        if not is_last:
-            wait_for_gpu_to_cool(config=THERMAL_CONFIG)
+    # Post final progress comment with all results
+    comment_id = post_or_update_progress_comment(
+        state=progress,
+        comment_id=comment_id,
+        model_id=model_id,
+        done=done,
+        current=None,
+        remaining=[],
+        failed=failed,
+        lines=accumulated,
+        issue_body=issue_body,
+    )
 
     # Upload the fully accumulated results to the gist one final time.
     # This ensures the gist contains all language results after evaluation
