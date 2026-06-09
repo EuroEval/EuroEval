@@ -79,10 +79,8 @@ from leaderboards.queue_markers import (
     VM_MARKER_RE,
     clear_gated_marker,
     clear_vm_marker,
-    errored_marker_present,
     gated_marker_present,
     release_issue_if_owned,
-    set_errored_marker,
     set_gated_marker,
     set_gated_with_errored_block,
     set_vm_marker,
@@ -308,16 +306,14 @@ def process_queue_once() -> None:
     Issues are sorted by (status priority asc, slow priority asc,
     partial-results rank asc, parameter count asc, num-language-groups asc,
     age asc). Status priority is 0 for gated repos (cheap marker refresh),
-    1 for fresh issues, and 2 for retries of previously errored evaluations.
-    An issue is considered errored if it has the ``evaluation-failed`` label
-    or an ``errored-on`` body marker (label is primary, marker is fallback),
-    so that gated repos are surfaced first and quicker work is picked up
-    ahead of fresh issues. Slow priority is 0 for normal
-    issues and 1 for issues with the 'slow' label, pushing them to the end
-    of the queue regardless of partial-results status. Age is a final
-    tiebreaker so that, when everything else is equal, the oldest
-    (longest-waiting) issue is picked up first and stale requests don't
-    linger in the queue.
+    1 for fresh issues, and 2 for retries of previously errored evaluations
+    (issues with the ``evaluation-failed`` label), so that gated repos are
+    surfaced first and quicker work is picked up ahead of fresh issues.
+    Slow priority is 0 for normal issues and 1 for issues with the 'slow'
+    label, pushing them to the end of the queue regardless of partial-results
+    status. Age is a final tiebreaker so that, when everything else is equal,
+    the oldest (longest-waiting) issue is picked up first and stale requests
+    don't linger in the queue.
     """
     try:
         issues = list_open_unassigned_issues()
@@ -358,7 +354,7 @@ def process_queue_once() -> None:
         param_count = summary["param_count"]
         if summary.get("gated"):
             status_priority = 0
-        elif issue_has_failed_label(issue=issue) or errored_marker_present(body=body):
+        elif issue_has_failed_label(issue=issue):
             status_priority = 2
         else:
             status_priority = 1
@@ -796,17 +792,9 @@ def _run_claimed_issue(
         reason = failure_reason or f"failed languages: {', '.join(failed)}"
         tail = failure_output_tail or "(no output captured)"
         if issue_has_matching_error_comment(number=number, reason=reason):
-            # Even if the comment is a duplicate, ensure the errored-on marker
-            # is present so the issue gets retry priority (status_priority=2).
-            if not errored_marker_present(body=issue.get("body")):
-                set_errored_marker(
-                    number=number, body=issue.get("body"), version=version
-                )
-                logger.info(f"#{number}: added missing errored-on marker.")
             release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
             logger.info(
-                f"#{number}: identical error already posted; "
-                "returned to queue with errored marker."
+                f"#{number}: identical error already posted; returned to queue."
             )
             return
         error_comment = (
@@ -815,7 +803,6 @@ def _run_claimed_issue(
             f"EuroEval version: v{version}\n"
         )
         comment_on_issue(number=number, body=error_comment)
-        set_errored_marker(number=number, body=issue.get("body"), version=version)
         add_failed_label(number=number)
         release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
         logger.info(
