@@ -7,10 +7,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- `compare_results.py` script for comparing EuroEval evaluation outputs from JSONL files,
+  producing comparison tables with models as rows and datasets as columns, including
+  bootstrap confidence intervals and statistical significance markers.
+
 ### Changed
 
+- Refactored from body markers to GitHub labels for tracking gated and evaluation-failed
+  states. The `gated` label and `evaluation-failed` label are now the primary signals,
+  eliminating body marker parsing and reducing desync risk.
+- Queue processing now sorts gated repositories before fresh issues, and prioritizes
+  slow-labeled issues last. Oldest issues are used as the tiebreaker.
 - Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
   model architectures and tokenisers.
+
+### Fixed
+
+- Added retry logic with exponential backoff for Hugging Face Hub connection errors
+  during leaderboard generation (retries on `httpx.RemoteProtocolError`,
+  `ConnectionError`, and `OSError`, max 3 attempts).
+- Fixed retry logic to only retry on connection errors, not on repository errors
+  (e.g., missing models or datasets).
 
 ## [v17.3.0] - 2026-05-31
 
