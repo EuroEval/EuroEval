@@ -17,6 +17,9 @@ Vue.js + Typescript + Vite frontend with configs in the repo root (e.g., `packag
 `vite.config.ts`, `tsconfig.json`) and source code in `src/frontend`. Deployment is
 handled with Vercel.
 
+To build and deploy the frontend to production, run `make frontend`. This builds the
+project with `vercel build --prod` and deploys it with `vercel deploy --prebuilt --prod`.
+
 ### Leaderboard Generation
 
 Python package with config in `pyproject.toml` (same as evaluation framework) and source

@@ -54,15 +54,19 @@ from leaderboards.evaluation_common import (
     run_euroeval,
 )
 from leaderboards.github_api import (
+    FAILED_LABEL,
+    GATED_LABEL,
     LABEL,
     REPO,
     RESULTS_READY_LABEL,
     add_failed_label,
+    add_gated_label,
     add_results_ready_label,
     assign_issue,
     comment_on_issue,
     gh_request,
     remove_failed_label,
+    remove_gated_label,
     unassign_issue,
 )
 from leaderboards.paths import CORE_MODELS_CONFIG
@@ -76,14 +80,8 @@ from leaderboards.queue_env import (
 from leaderboards.queue_hf_cache import cached_model_summary
 from leaderboards.queue_markers import (
     VM_MARKER_RE,
-    clear_gated_marker,
     clear_vm_marker,
-    errored_marker_present,
-    gated_marker_present,
     release_issue_if_owned,
-    set_errored_marker,
-    set_gated_marker,
-    set_gated_with_errored_block,
     set_vm_marker,
     vm_marker_matches,
 )
@@ -304,14 +302,17 @@ def age_sort_value(issue: dict) -> float:
 def process_queue_once() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
-    Issues are sorted by (status priority asc, partial-results rank asc,
-    parameter count asc, num-language-groups asc, age asc). Status
-    priority is 0 for fresh issues, 1 for gated repos (cheap marker
-    refresh), and 2 for retries of previously errored evaluations, so
-    that quicker work is picked up first and gated items are surfaced
-    ahead of errored ones. Age is a final tiebreaker so that, when
-    everything else is equal, the oldest (longest-waiting) issue is
-    picked up first and stale requests don't linger in the queue.
+    Issues are sorted by (status priority asc, slow priority asc,
+    partial-results rank asc, parameter count asc, num-language-groups asc,
+    age asc). Status priority is 0 for gated repos (cheap marker refresh),
+    1 for fresh issues, and 2 for retries of previously errored evaluations
+    (issues with the ``evaluation-failed`` label), so that gated repos are
+    surfaced first and quicker work is picked up ahead of fresh issues.
+    Slow priority is 0 for normal issues and 1 for issues with the 'slow'
+    label, pushing them to the end of the queue regardless of partial-results
+    status. Age is a final tiebreaker so that, when everything else is equal,
+    the oldest (longest-waiting) issue is picked up first and stale requests
+    don't linger in the queue.
     """
     try:
         issues = list_open_unassigned_issues()
@@ -321,7 +322,7 @@ def process_queue_once() -> None:
 
     existing_lines = read_jsonl_lines(path=RESULTS_PATH)
     candidates: list[
-        tuple[int, int, int, int, float, dict, str, list[str], dict | None]
+        tuple[int, int, int, int, int, float, dict, str, list[str], dict | None]
     ] = []
     for issue in issues:
         number = issue["number"]
@@ -351,11 +352,16 @@ def process_queue_once() -> None:
 
         param_count = summary["param_count"]
         if summary.get("gated"):
-            status_priority = 1
-        elif errored_marker_present(body=body):
+            status_priority = 0
+        elif issue_has_failed_label(issue=issue):
             status_priority = 2
         else:
-            status_priority = 0
+            status_priority = 1
+        slow_priority = (
+            1
+            if any(label["name"] == "slow" for label in issue.get("labels", []))
+            else 0
+        )
         # Among 'waiting' candidates, push models with partial results ahead so
         # we finish what we already started before claiming a new evaluation.
         languages: list[str] = sorted(
@@ -378,6 +384,7 @@ def process_queue_once() -> None:
         candidates.append(
             (
                 status_priority,
+                slow_priority,
                 partial_rank,
                 param_count,
                 len(groups),
@@ -389,7 +396,7 @@ def process_queue_once() -> None:
             )
         )
 
-    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4]))
+    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4], c[5]))
     logger.info(f"Found {len(candidates)} processable issue(s).")
 
     gpu_bytes = gpu_total_memory_bytes()
@@ -402,6 +409,7 @@ def process_queue_once() -> None:
 
     for (
         status_priority,
+        slow_priority,
         partial_rank,
         param_count,
         num_groups,
@@ -414,9 +422,10 @@ def process_queue_once() -> None:
         status = {0: "fresh", 1: "gated", 2: "retry of errored eval"}[status_priority]
         if status_priority == 0 and partial_rank == 0:
             status = "resuming partial"
+        slow_tag = ", slow" if slow_priority else ""
         logger.info(
             f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
-            f"{num_groups} group(s), {status})."
+            f"{num_groups} group(s), {status}{slow_tag})."
         )
         if gpu_bytes is not None:
             needed = estimated_model_bytes(model_id=model_id)
@@ -487,6 +496,32 @@ def reclaim_orphaned_issues() -> None:
         logger.info(f"#{number}: reclaimed orphaned issue (vm-id {VM_ID}).")
 
 
+def issue_has_failed_label(issue: dict) -> bool:
+    """Return True if the issue has the ``evaluation-failed`` label.
+
+    Args:
+        issue:
+            The issue dict from the GitHub API.
+
+    Returns:
+        True if the failed label is present, False otherwise.
+    """
+    return any(label.get("name") == FAILED_LABEL for label in issue.get("labels", []))
+
+
+def issue_has_gated_label(issue: dict) -> bool:
+    """Return True if the issue has the ``Gated`` label.
+
+    Args:
+        issue:
+            The issue dict from the GitHub API.
+
+    Returns:
+        True if the gated label is present, False otherwise.
+    """
+    return any(label.get("name") == GATED_LABEL for label in issue.get("labels", []))
+
+
 def list_open_unassigned_issues() -> list[dict]:
     """Return open model-evaluation-request issues with no assignee.
 
@@ -539,20 +574,20 @@ def process_issue(
 
     # Re-check gated status here so a stale snapshot from main() doesn't make
     # us run a doomed evaluation, and so we can also pick up newly granted
-    # access when the body marker says gated but HF now says otherwise.
+    # access when the label says gated but HF now says otherwise.
     live_summary = cached_model_summary(model_id=model_id)
-    body = issue.get("body")
-    body_gated = gated_marker_present(body=body)
-    if live_summary is not None and live_summary.get("gated"):
-        if not body_gated:
-            set_gated_marker(number=number, body=body)
+    is_gated = live_summary is not None and live_summary.get("gated")
+    has_gated_label = issue_has_gated_label(issue=issue)
+    if is_gated:
+        if not has_gated_label:
+            add_gated_label(number=number)
             logger.info(f"#{number}: marked gated -- {ASSIGNEE} lacks read access.")
         else:
-            logger.info(f"#{number}: still gated -- leaving marker in place.")
+            logger.info(f"#{number}: still gated -- leaving label in place.")
         return
-    if body_gated:
-        clear_gated_marker(number=number, body=body)
-        logger.info(f"#{number}: access granted, cleared gated marker.")
+    if has_gated_label:
+        remove_gated_label(number=number)
+        logger.info(f"#{number}: access granted, removed gated label.")
 
     logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
     # Set the VM marker BEFORE assigning so a crash between the two leaves
@@ -753,14 +788,12 @@ def _run_claimed_issue(
 
     if gated_detected:
         version = euroeval_version()
-        set_gated_with_errored_block(
-            number=number, body=issue.get("body"), version=version
-        )
+        add_gated_label(number=number)
         add_failed_label(number=number)
         release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
         logger.info(
             f"#{number}: euroeval reported a gated repo for {model_id!r}; "
-            f"marked gated and errored-on v{version} to avoid retry loops."
+            f"added Gated and evaluation-failed labels to avoid retry loops."
         )
         return
 
@@ -771,8 +804,7 @@ def _run_claimed_issue(
         if issue_has_matching_error_comment(number=number, reason=reason):
             release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
             logger.info(
-                f"#{number}: identical error already posted; "
-                "skipping comment and marker updates, returned to queue."
+                f"#{number}: identical error already posted; returned to queue."
             )
             return
         error_comment = (
@@ -781,7 +813,6 @@ def _run_claimed_issue(
             f"EuroEval version: v{version}\n"
         )
         comment_on_issue(number=number, body=error_comment)
-        set_errored_marker(number=number, body=issue.get("body"), version=version)
         add_failed_label(number=number)
         release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
         logger.info(

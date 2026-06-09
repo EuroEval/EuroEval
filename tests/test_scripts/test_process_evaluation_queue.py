@@ -15,7 +15,6 @@ def test_process_issue_fails_when_official_results_are_missing(
 ) -> None:
     """The issue should be marked errored when official results are incomplete."""
     comments: list[str] = []
-    marker_versions: list[str] = []
     unassigned: list[int] = []
     assigned: list[int] = []
 
@@ -72,11 +71,6 @@ def test_process_issue_fails_when_official_results_are_missing(
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
-        name="set_errored_marker",
-        value=lambda number, body, version: marker_versions.append(version),
-    )
-    monkeypatch.setattr(
-        target=process_evaluation_queue,
         name="cached_model_summary",
         value=lambda model_id: None,
     )
@@ -112,6 +106,16 @@ def test_process_issue_fails_when_official_results_are_missing(
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
+        name="add_gated_label",
+        value=lambda number: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="remove_gated_label",
+        value=lambda number: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
         name="issue_has_matching_error_comment",
         value=lambda number, reason: False,
     )
@@ -141,7 +145,6 @@ def test_process_issue_fails_when_official_results_are_missing(
 
     assert assigned == [17]
     assert unassigned == [17]
-    assert marker_versions == ["99.0.0"]
     assert len(comments) == 1
     assert "missing official dataset-language pair(s)" in comments[0]
     assert "danish_ner/da" in comments[0]
@@ -152,7 +155,6 @@ def test_process_issue_does_not_special_case_oom_anymore(
 ) -> None:
     """OOM output should still be treated as a normal failure and commented."""
     comments: list[str] = []
-    marker_versions: list[str] = []
     unassigned: list[int] = []
 
     monkeypatch.setattr(
@@ -208,11 +210,6 @@ def test_process_issue_does_not_special_case_oom_anymore(
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
-        name="set_errored_marker",
-        value=lambda number, body, version: marker_versions.append(version),
-    )
-    monkeypatch.setattr(
-        target=process_evaluation_queue,
         name="cached_model_summary",
         value=lambda model_id: None,
     )
@@ -248,6 +245,16 @@ def test_process_issue_does_not_special_case_oom_anymore(
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
+        name="add_gated_label",
+        value=lambda number: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
+        name="remove_gated_label",
+        value=lambda number: None,
+    )
+    monkeypatch.setattr(
+        target=process_evaluation_queue,
         name="issue_has_matching_error_comment",
         value=lambda number, reason: False,
     )
@@ -273,7 +280,6 @@ def test_process_issue_does_not_special_case_oom_anymore(
 
     assert len(comments) == 1
     assert "euroeval exited with code 1" in comments[0]
-    assert marker_versions == ["99.0.0"]
     assert unassigned == [42]
 
 

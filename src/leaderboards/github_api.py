@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 REPO = "EuroEval/EuroEval"
 LABEL = "model evaluation request"
 FAILED_LABEL = "evaluation-failed"
+GATED_LABEL = "gated"
 RESULTS_READY_LABEL = "results-ready"
 TITLE_PREFIX = "[MODEL EVALUATION REQUEST]"
 
@@ -140,6 +141,42 @@ def remove_failed_label(number: int) -> None:
     except urllib.error.HTTPError as e:
         if e.code != 404:
             logger.warning(f"#{number}: could not remove {FAILED_LABEL!r} label: {e}")
+
+
+def add_gated_label(number: int) -> None:
+    """Attach the ``Gated`` label to an issue.
+
+    Args:
+        number:
+            The issue number to label.
+    """
+    gh_request(
+        path=f"/repos/{REPO}/issues/{number}/labels",
+        method="POST",
+        body={"labels": [GATED_LABEL]},
+    )
+
+
+def remove_gated_label(number: int) -> None:
+    """Remove the ``Gated`` label from an issue if present.
+
+    Args:
+        number:
+            The issue number to unlabel.
+
+    Raises:
+        HTTPError:
+            If the DELETE request fails for a reason other than label not present.
+    """
+    try:
+        gh_request(
+            path=f"/repos/{REPO}/issues/{number}/labels/{GATED_LABEL}", method="DELETE"
+        )
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            logger.debug(f"#{number}: label {GATED_LABEL!r} not present.")
+        else:
+            raise
 
 
 def add_results_ready_label(number: int) -> None:

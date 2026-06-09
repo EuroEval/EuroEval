@@ -99,7 +99,7 @@ useHead(() => {
 
 <template>
   <div class="app" :class="{ embed: isEmbed }">
-    <TopHeader v-if="!isEmbed" />
+    <TopHeader v-if="!isEmbed" :has-sidebar="hasSidebar" />
     <SectionTabs v-if="!isEmbed" :active-id="activeSection.id" />
     <div class="page" :class="layoutClass">
       <SideNav

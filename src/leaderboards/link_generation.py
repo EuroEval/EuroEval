@@ -5,8 +5,10 @@ from __future__ import annotations
 import logging
 import os
 import re
+import time
 from functools import cache
 
+import httpx
 import openai
 from anthropic import Anthropic
 from huggingface_hub import HfApi
@@ -175,6 +177,47 @@ def _remember_model_without_url(model_id: str) -> None:
     _load_models_without_urls_cache.cache_clear()
 
 
+def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
+    """Check if a model exists on the Hugging Face Hub with retry logic.
+
+    Retries only on connection-related errors (not repository errors).
+
+    Args:
+        model_id:
+            The Hugging Face model ID.
+        hf_api:
+            The Hugging Face API client.
+
+    Raises:
+        RepositoryNotFoundError:
+            If the repository does not exist (not retried).
+        GatedRepoError:
+            If the repository is gated (not retried).
+        HFValidationError:
+            If the model ID is invalid (not retried).
+        httpx.RemoteProtocolError:
+            If the server disconnects without sending a response (retried).
+        ConnectionError:
+            If there is a network connection error (retried).
+    """
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            hf_api.model_info(repo_id=model_id)
+            return
+        except (httpx.RemoteProtocolError, ConnectionError) as e:
+            if attempt == max_attempts - 1:
+                raise  # Re-raise on last attempt
+            wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
+            logger.warning(
+                f"Connection error checking {model_id}: {e}. "
+                f"Retrying in {wait_time}s..."
+            )
+            time.sleep(wait_time)
+        except (RepositoryNotFoundError, GatedRepoError, HFValidationError):
+            raise  # Don't retry these errors
+
+
 @cache
 def generate_hf_hub_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on the Hugging Face Hub.
@@ -189,7 +232,7 @@ def generate_hf_hub_url(model_id: str) -> str | None:
     """
     hf_api = HfApi()
     try:
-        hf_api.model_info(repo_id=model_id)
+        _check_model_exists_with_retry(model_id=model_id, hf_api=hf_api)
         return f"https://hf.co/{model_id}"
     except (
         GatedRepoError,
