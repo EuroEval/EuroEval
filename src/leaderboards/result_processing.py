@@ -6,7 +6,6 @@ import io
 import json
 import logging
 import re
-import subprocess
 import tarfile
 import typing as t
 import warnings
@@ -168,19 +167,19 @@ def process_results(
         content = "\n".join(json.dumps(record) for record in records) + "\n"
         file_path.write_text(content, encoding="utf-8")
 
-    # Sync to bucket
-    result = subprocess.run(
-        ["hf", "buckets", "sync", str(processed_cache_dir), f"{hf_processed_bucket}/"],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode == 0:
+    # Sync to bucket using the Python API
+    try:
+        api = HfApi()
+        api.sync_bucket(
+            source=str(processed_cache_dir),
+            dest=hf_processed_bucket,
+        )
         logger.info(
             f"Uploaded {len(processed_by_model):,} model files "
             f"to {hf_processed_bucket}."
         )
-    else:
-        logger.warning(f"Failed to sync processed results: {result.stderr}")
+    except Exception as e:
+        logger.warning(f"Failed to sync processed results: {e}")
 
     # Store records in the tar.gz archive
     with tarfile.open(results_path, "w:gz") as tar:
