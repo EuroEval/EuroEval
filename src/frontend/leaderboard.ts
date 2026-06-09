@@ -451,6 +451,37 @@ export const csvKeys: string[] = Object.keys(csvModules).map((k) =>
 );
 
 /** Async-load and parse a leaderboard by stem (e.g. `danish_generative`). */
+async function loadWithRetry(
+  loadFn: () => Promise<string>,
+  stem: string,
+  maxRetries = 3,
+): Promise<string> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await loadFn();
+    } catch (error) {
+      lastError = error;
+      // Only retry on network-type errors (chunk load failures)
+      const message = error instanceof Error ? error.message : String(error);
+      const isNetworkError =
+        error instanceof TypeError ||
+        /loading dynamically imported module/i.test(message) ||
+        /failed to fetch/i.test(message) ||
+        /network/i.test(message);
+      if (!isNetworkError || attempt === maxRetries) break;
+      // Exponential backoff: 100ms, 200ms, 400ms
+      const delay = 100 * Math.pow(2, attempt - 1);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  const errorMessage =
+    lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(
+    `Failed to load ${stem} after ${maxRetries} attempts: ${errorMessage}`,
+  );
+}
+
 export async function loadLeaderboard(
   stem: string,
 ): Promise<LeaderboardTable | undefined> {
@@ -458,7 +489,7 @@ export async function loadLeaderboard(
     path.endsWith(`/${stem}.csv`),
   );
   if (!entry) return undefined;
-  const text = await entry[1]();
+  const text = await loadWithRetry(entry[1], stem);
   return parseLeaderboard(text);
 }
 
@@ -470,5 +501,5 @@ export async function loadLeaderboardCsv(
     path.endsWith(`/${stem}.csv`),
   );
   if (!entry) return undefined;
-  return await entry[1]();
+  return await loadWithRetry(entry[1], stem);
 }
