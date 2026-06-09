@@ -17,11 +17,13 @@ been picked up by the compute server) and has at least one comment with a
 
 Required env vars
 -----------------
-GITHUB_TOKEN   A PAT with ``issues: write`` for the EuroEval repo.
+GITHUB_TOKEN        A PAT with ``issues: write`` for the EuroEval repo.
+HUGGINGFACE_API_KEY A Hugging Face token with write access to upload results.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import subprocess
@@ -43,6 +45,7 @@ from leaderboards.github_api import (
     gh_request,
     list_comments,
 )
+from leaderboards.paths import RESULTS_PATH
 
 load_dotenv()
 
@@ -53,6 +56,24 @@ logger = logging.getLogger("collect_evaluation_results")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
+RESULTS_CACHE_DIR = REPO_ROOT / ".euroeval_cache/results"
+
+# Canonical HF bucket for storing all results.
+HF_BUCKET = "hf://buckets/EuroEval/euroeval-results"
+
+
+def _model_id_to_filename(model_id: str) -> str:
+    """Convert a model ID to a safe filename.
+
+    Args:
+        model_id:
+            The model identifier (e.g., "meta-llama/Llama-3-8B").
+
+    Returns:
+        A safe filename with slashes and dots replaced by underscores.
+    """
+    return model_id.replace("/", "_").replace(".", "_") + ".jsonl"
+
 
 JSONL_FENCE_RE = re.compile(r"```jsonl\s*\n(.*?)\n```", re.DOTALL)
 
@@ -107,6 +128,14 @@ def main() -> None:
     if not deploy_to_vercel():
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
         sys.exit(1)
+
+    # Upload results to HF bucket
+    if upload_results_to_hf(
+        new_results_path=NEW_RESULTS_PATH, processed_path=RESULTS_PATH
+    ):
+        logger.info("Results uploaded to Hugging Face bucket.")
+    else:
+        logger.warning("Failed to upload results to Hugging Face bucket.")
 
     for number, _, gist_id in harvested:
         try:
@@ -305,6 +334,99 @@ def fetch_gist_content(gist_id: str) -> str | None:
                 return _fetch_url_text(url=first_file["raw_url"])
             return first_file.get("content")
     return None
+
+
+def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
+    """Upload both raw and processed results to Hugging Face bucket.
+
+    This function splits results into per-model files and syncs to the bucket.
+    The bucket's deduplication means only changed files are uploaded.
+
+    Args:
+        new_results_path:
+            Path to the newly harvested results.jsonl file.
+        processed_path:
+            Path to the processed results.tar.gz file.
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    if not HF_BUCKET:
+        logger.info("No HF bucket configured; skipping upload.")
+        return True
+
+    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # Sync existing results from bucket
+        logger.info(f"Syncing existing results from {HF_BUCKET}...")
+        result = subprocess.run(
+            ["hf", "buckets", "sync", f"{HF_BUCKET}/", str(RESULTS_CACHE_DIR)],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            logger.info("Downloaded existing results from bucket.")
+    except Exception as e:
+        logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
+
+    # Load existing results by model
+    existing_by_model: dict[str, set[str]] = {}
+    for model_file in RESULTS_CACHE_DIR.glob("*.jsonl"):
+        lines = {
+            line
+            for line in model_file.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        }
+        existing_by_model[model_file.name] = lines
+
+    # Process new results and split into per-model files
+    new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
+    logger.info(f"Processing {len(new_lines):,} new result lines...")
+
+    for line in new_lines:
+        if not line.strip():
+            continue
+        try:
+            data = json.loads(line)
+            model_id = data.get("model", "unknown")
+            filename = _model_id_to_filename(model_id)
+            model_file = RESULTS_CACHE_DIR / filename
+            # Append if not already present
+            if line not in existing_by_model.get(filename, set()):
+                with open(model_file, "a", encoding="utf-8") as f:
+                    f.write(line + "\n")
+        except json.JSONDecodeError:
+            logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
+
+    # Sync updated results to bucket
+    logger.info(f"Syncing results to {HF_BUCKET}...")
+    result = subprocess.run(
+        ["hf", "buckets", "sync", str(RESULTS_CACHE_DIR), f"{HF_BUCKET}/"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        logger.error(f"Failed to sync to bucket: {result.stderr}")
+        return False
+    logger.info(f"Uploaded results to {HF_BUCKET}.")
+
+    # Upload processed results as well
+    logger.info(f"Uploading processed results to {HF_BUCKET}/processed/...")
+    processed_dest = RESULTS_CACHE_DIR / "processed"
+    processed_dest.mkdir(exist_ok=True)
+    (processed_dest / "results.tar.gz").write_bytes(processed_path.read_bytes())
+    result = subprocess.run(
+        ["hf", "buckets", "sync", str(processed_dest), f"{HF_BUCKET}/processed/"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        logger.error(f"Failed to upload processed results: {result.stderr}")
+        return False
+    logger.info(f"Uploaded processed results to {HF_BUCKET}/processed/.")
+
+    return True
 
 
 def regenerate_leaderboards() -> bool:

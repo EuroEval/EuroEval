@@ -32,8 +32,10 @@ EUROEVAL_VM_ID        Optional identifier for this VM/host, written into a
 from __future__ import annotations
 
 import argparse
+import hashlib
 import logging
 import os
+import subprocess
 import sys
 import time
 import urllib.error
@@ -115,11 +117,19 @@ logging.basicConfig(
 )
 logger = logging.getLogger("process_evaluation_queue")
 
+# Tracks hashes of result lines downloaded from HF bucket at startup.
+_OLD_RESULT_HASHES: set[str] = set()
+
+
 ASSIGNEE = ""
 VM_ID = os.environ.get("EUROEVAL_VM_ID", "")
 VM_ID_ENV_PATH = Path(os.environ.get("EUROEVAL_DOTENV_PATH", ".env"))
 RESULTS_PATH = Path("euroeval_benchmark_results.jsonl")
+RESULTS_CACHE_DIR = Path(".euroeval_cache/results")
 LOCK_PATH = Path(os.environ.get("EUROEVAL_QUEUE_LOCK", "/tmp/euroeval_queue.lock"))
+
+# Canonical HF bucket for storing all results (public read access).
+HF_BUCKET = "hf://buckets/EuroEval/euroeval-results"
 
 # Held for the lifetime of the process so the kernel keeps the queue lock
 # alive; released automatically when the process exits.
@@ -137,6 +147,63 @@ GPU_MEMORY_UTILIZATION: float | None = None
 THERMAL_CONFIG: ThermalConfig = ThermalConfig()
 
 
+def _model_id_to_filename(model_id: str) -> str:
+    """Convert a model ID to a safe filename.
+
+    Args:
+        model_id:
+            The model identifier (e.g., "meta-llama/Llama-3-8B").
+
+    Returns:
+        A safe filename with slashes and dots replaced by underscores.
+    """
+    return model_id.replace("/", "_").replace(".", "_") + ".jsonl"
+
+
+def download_results_from_hf() -> int:
+    """Download all results from the Hugging Face bucket.
+
+    Returns:
+        The number of lines loaded.
+    """
+    global _OLD_RESULT_HASHES
+    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    try:
+        result = subprocess.run(
+            ["hf", "buckets", "sync", f"{HF_BUCKET}/", str(RESULTS_CACHE_DIR)],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            logger.warning(f"Could not sync from bucket: {result.stderr}")
+            return 0
+    except FileNotFoundError:
+        logger.warning("`hf` CLI not found. Cannot sync results from bucket.")
+        return 0
+    except Exception as e:
+        logger.warning(f"Could not sync results from HF bucket: {e}")
+        return 0
+
+    all_lines: list[str] = []
+    for model_file in RESULTS_CACHE_DIR.glob("*.jsonl"):
+        lines = model_file.read_text(encoding="utf-8").splitlines()
+        for line in lines:
+            if line.strip():
+                all_lines.append(line)
+                _OLD_RESULT_HASHES.add(hashlib.sha256(line.encode()).hexdigest())
+
+    if all_lines:
+        RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
+
+    num_models = len(list(RESULTS_CACHE_DIR.glob("*.jsonl")))
+    logger.info(
+        f"Downloaded {len(all_lines):,} result lines from {num_models} model(s) "
+        f"in bucket {HF_BUCKET!r}."
+    )
+    return len(all_lines)
+
+
 def main() -> None:
     """Process the queue forever, sleeping one hour between passes.
 
@@ -146,6 +213,9 @@ def main() -> None:
     parse_args()
     lower_process_priority()
     ensure_credentials()
+
+    # Download the canonical results file from HF before starting.
+    download_results_from_hf()
 
     global _LOCK_FD
     _LOCK_FD = acquire_single_instance_lock(lock_path=LOCK_PATH)
@@ -735,13 +805,19 @@ def _run_claimed_issue(
         issue_body=issue_body,
     )
 
-    # Upload the fully accumulated results to the gist one final time.
-    # This ensures the gist contains all language results after evaluation
-    # completes (the per-language calls above may have been interrupted or
-    # the gist may only contain partial results).
+    # Upload only NEW results (not old ones from HF) to the gist.
+    # This keeps gists small and focused on the current evaluation run.
+    new_lines_for_gist = [
+        line
+        for line in accumulated
+        if hashlib.sha256(line.encode()).hexdigest() not in _OLD_RESULT_HASHES
+    ]
     try:
         upload_results_gist(
-            state=progress, model_id=model_id, lines=accumulated, issue_body=issue_body
+            state=progress,
+            model_id=model_id,
+            lines=new_lines_for_gist,
+            issue_body=issue_body,
         )
     except Exception:
         logger.warning(
