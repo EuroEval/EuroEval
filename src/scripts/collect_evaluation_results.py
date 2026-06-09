@@ -58,9 +58,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
 RESULTS_CACHE_DIR = REPO_ROOT / ".euroeval_cache/results"
 
-# Canonical HF buckets for storing results (public read access).
+# Canonical HF bucket for storing raw results (public read access).
 HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
-HF_PROCESSED_BUCKET = "hf://buckets/EuroEval/processed-results"
 
 
 def _model_id_to_filename(model_id: str) -> str:
@@ -338,17 +337,18 @@ def fetch_gist_content(gist_id: str) -> str | None:
 
 
 def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
-    """Upload both raw and processed results to Hugging Face buckets.
+    """Upload raw results to Hugging Face bucket.
 
-    This function splits results into per-model files and syncs to raw-results bucket.
-    The processed tar.gz goes to processed-results bucket. Bucket deduplication
-    means only changed files are uploaded.
+    This function splits results into per-model files and syncs to raw-results
+    bucket. Processed results are uploaded separately by result_processing.py as
+    per-model JSONL.
 
     Args:
         new_results_path:
             Path to the newly harvested results.jsonl file.
         processed_path:
-            Path to the processed results.tar.gz file.
+            Path to the processed results.tar.gz file (kept for backwards compatibility,
+            but not uploaded to bucket - handled by result_processing.py).
 
     Returns:
         True if upload succeeded, False otherwise.
@@ -409,23 +409,9 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
         return False
     logger.info(f"Uploaded results to {HF_RAW_BUCKET}.")
 
-    # Upload processed results to separate bucket
-    logger.info(f"Uploading processed results to {HF_PROCESSED_BUCKET}...")
-    result = subprocess.run(
-        [
-            "hf",
-            "buckets",
-            "cp",
-            str(processed_path),
-            f"{HF_PROCESSED_BUCKET}/results.tar.gz",
-        ],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        logger.error(f"Failed to upload processed results: {result.stderr}")
-        return False
-    logger.info(f"Uploaded processed results to {HF_PROCESSED_BUCKET}.")
+    # Note: Processed results are uploaded by result_processing.py, not here.
+    # That script groups processed records by model and uploads per-model JSONL
+    # files to HF_PROCESSED_BUCKET for consistency with raw-results format.
 
     return True
 
