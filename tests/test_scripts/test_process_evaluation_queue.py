@@ -15,7 +15,6 @@ def test_process_issue_fails_when_official_results_are_missing(
 ) -> None:
     """The issue should be marked errored when official results are incomplete."""
     comments: list[str] = []
-    marker_versions: list[str] = []
     unassigned: list[int] = []
     assigned: list[int] = []
 
@@ -156,7 +155,6 @@ def test_process_issue_does_not_special_case_oom_anymore(
 ) -> None:
     """OOM output should still be treated as a normal failure and commented."""
     comments: list[str] = []
-    marker_versions: list[str] = []
     unassigned: list[int] = []
 
     monkeypatch.setattr(
