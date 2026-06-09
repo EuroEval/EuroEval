@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Evaluation benchmark for hallucination detection, reporting a hallucination rate
+  (hallucinated_tokens/total_tokens).
 
 ### Changed
 
@@ -419,8 +421,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added better support for unofficial inference providers, allowing model prefixes even
   if they're not in LiteLLM's official list of providers. Currently this only works with
   the "ordbogen/" prefix for models available on ordbogen.dk.
-- Evaluation benchmark for hallucination detection, reporting a hallucination rate
-  (hallucinated_tokens/total_tokens).
 
 ### Changed
 

@@ -120,7 +120,6 @@ vllm = { git = "https://github.com/vllm-project/vllm.git", tag = "v0.22.0", mark
 override-dependencies = [
   "transformers[mistral-common]>=5.10.1",
 ]
-
 environments = [
   # Only support arm64 macos (dont try to resolve darwin + x86_64 or any other platforms)
   # specifically for vLLM building since it tries to resolve torch+cpu deps without disallowing darwin annoyingly
