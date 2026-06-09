@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 REPO = "EuroEval/EuroEval"
 LABEL = "model evaluation request"
 FAILED_LABEL = "evaluation-failed"
-GATED_LABEL = "Gated"
+GATED_LABEL = "gated"
 RESULTS_READY_LABEL = "results-ready"
 TITLE_PREFIX = "[MODEL EVALUATION REQUEST]"
 
