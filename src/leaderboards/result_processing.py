@@ -170,10 +170,7 @@ def process_results(
     # Sync to bucket using the Python API
     try:
         api = HfApi()
-        api.sync_bucket(
-            source=str(processed_cache_dir),
-            dest=hf_processed_bucket,
-        )
+        api.sync_bucket(source=str(processed_cache_dir), dest=hf_processed_bucket)
         logger.info(
             f"Uploaded {len(processed_by_model):,} model files "
             f"to {hf_processed_bucket}."
