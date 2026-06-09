@@ -1,6 +1,7 @@
 export const REPO = "EuroEval/EuroEval";
 export const LABEL = "model evaluation request";
 export const FAILED_LABEL = "evaluation-failed";
+export const GATED_LABEL = "gated";
 export const RESULTS_READY_LABEL = "results-ready";
 export const GGUF_LABEL = "gguf";
 export const TITLE_PREFIX = "[MODEL EVALUATION REQUEST]";
@@ -47,11 +48,9 @@ export interface QueueEntry {
   createdAt: string;
 }
 
-const GATED_MARKER_RE = /<!--\s*gated-model\s*-->/;
 
-export function isGatedModel(body: string | null): boolean {
-  return !!body && GATED_MARKER_RE.test(body);
-}
+
+
 
 export function hasLabel(issue: RawIssue, name: string): boolean {
   return issue.labels.some((l) => (typeof l === "string" ? l : l.name) === name);
@@ -108,7 +107,7 @@ export function toQueueEntry(issue: RawIssue): QueueEntry | null {
   if (hasLabel(issue, GGUF_LABEL)) return null;
   const failed = hasLabel(issue, FAILED_LABEL);
   const resultsReady = hasLabel(issue, RESULTS_READY_LABEL);
-  const gated = isGatedModel(issue.body);
+  const gated = hasLabel(issue, GATED_LABEL);
   const evaluator =
     issue.assignee?.login ?? issue.assignees[0]?.login ?? null;
   return {
