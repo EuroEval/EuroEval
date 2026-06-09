@@ -55,15 +55,18 @@ from leaderboards.evaluation_common import (
 )
 from leaderboards.github_api import (
     FAILED_LABEL,
+    GATED_LABEL,
     LABEL,
     REPO,
     RESULTS_READY_LABEL,
     add_failed_label,
+    add_gated_label,
     add_results_ready_label,
     assign_issue,
     comment_on_issue,
     gh_request,
     remove_failed_label,
+    remove_gated_label,
     unassign_issue,
 )
 from leaderboards.paths import CORE_MODELS_CONFIG
@@ -77,12 +80,8 @@ from leaderboards.queue_env import (
 from leaderboards.queue_hf_cache import cached_model_summary
 from leaderboards.queue_markers import (
     VM_MARKER_RE,
-    clear_gated_marker,
     clear_vm_marker,
-    gated_marker_present,
     release_issue_if_owned,
-    set_gated_marker,
-    set_gated_with_errored_block,
     set_vm_marker,
     vm_marker_matches,
 )
@@ -510,6 +509,19 @@ def issue_has_failed_label(issue: dict) -> bool:
     return any(label.get("name") == FAILED_LABEL for label in issue.get("labels", []))
 
 
+def issue_has_gated_label(issue: dict) -> bool:
+    """Return True if the issue has the ``Gated`` label.
+
+    Args:
+        issue:
+            The issue dict from the GitHub API.
+
+    Returns:
+        True if the gated label is present, False otherwise.
+    """
+    return any(label.get("name") == GATED_LABEL for label in issue.get("labels", []))
+
+
 def list_open_unassigned_issues() -> list[dict]:
     """Return open model-evaluation-request issues with no assignee.
 
@@ -562,20 +574,20 @@ def process_issue(
 
     # Re-check gated status here so a stale snapshot from main() doesn't make
     # us run a doomed evaluation, and so we can also pick up newly granted
-    # access when the body marker says gated but HF now says otherwise.
+    # access when the label says gated but HF now says otherwise.
     live_summary = cached_model_summary(model_id=model_id)
-    body = issue.get("body")
-    body_gated = gated_marker_present(body=body)
-    if live_summary is not None and live_summary.get("gated"):
-        if not body_gated:
-            set_gated_marker(number=number, body=body)
+    is_gated = live_summary is not None and live_summary.get("gated")
+    has_gated_label = issue_has_gated_label(issue=issue)
+    if is_gated:
+        if not has_gated_label:
+            add_gated_label(number=number)
             logger.info(f"#{number}: marked gated -- {ASSIGNEE} lacks read access.")
         else:
-            logger.info(f"#{number}: still gated -- leaving marker in place.")
+            logger.info(f"#{number}: still gated -- leaving label in place.")
         return
-    if body_gated:
-        clear_gated_marker(number=number, body=body)
-        logger.info(f"#{number}: access granted, cleared gated marker.")
+    if has_gated_label:
+        remove_gated_label(number=number)
+        logger.info(f"#{number}: access granted, removed gated label.")
 
     logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
     # Set the VM marker BEFORE assigning so a crash between the two leaves
@@ -776,14 +788,12 @@ def _run_claimed_issue(
 
     if gated_detected:
         version = euroeval_version()
-        set_gated_with_errored_block(
-            number=number, body=issue.get("body"), version=version
-        )
+        add_gated_label(number=number)
         add_failed_label(number=number)
         release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
         logger.info(
             f"#{number}: euroeval reported a gated repo for {model_id!r}; "
-            f"marked gated and errored-on v{version} to avoid retry loops."
+            f"added Gated and evaluation-failed labels to avoid retry loops."
         )
         return
 
