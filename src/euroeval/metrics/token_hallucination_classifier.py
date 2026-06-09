@@ -174,7 +174,7 @@ class TokenHallucinationMetric(Metric):
             dataset=dataset,
             predictions=predictions,
             model=(
-                f"alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
+                f"EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
                 f"{dataset_config.main_language.code}"
             ),
             device=Device(benchmark_config.device.type),
