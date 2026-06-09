@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Fixed validation errors when loading legacy benchmark results missing required fields
+  (`task`, `languages`, `results`, `num_model_parameters`, `max_sequence_length`,
+  `vocabulary_size`). These fields are now populated with sensible defaults when absent.
 - Fixed validation error when loading benchmark results with `languages` field stored as a
   JSON-encoded string (e.g. `'"bg"'` instead of `["bg"]`). This occurred when mixing EEE
   format results with legacy format results.
