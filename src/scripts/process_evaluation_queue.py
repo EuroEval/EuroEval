@@ -128,8 +128,9 @@ RESULTS_PATH = Path("euroeval_benchmark_results.jsonl")
 RESULTS_CACHE_DIR = Path(".euroeval_cache/results")
 LOCK_PATH = Path(os.environ.get("EUROEVAL_QUEUE_LOCK", "/tmp/euroeval_queue.lock"))
 
-# Canonical HF bucket for storing all results (public read access).
-HF_BUCKET = "hf://buckets/EuroEval/euroeval-results"
+# Canonical HF buckets for storing results (public read access).
+HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
+HF_PROCESSED_BUCKET = "hf://buckets/EuroEval/processed-results"
 
 # Held for the lifetime of the process so the kernel keeps the queue lock
 # alive; released automatically when the process exits.
@@ -171,7 +172,7 @@ def download_results_from_hf() -> int:
 
     try:
         result = subprocess.run(
-            ["hf", "buckets", "sync", f"{HF_BUCKET}/", str(RESULTS_CACHE_DIR)],
+            ["hf", "buckets", "sync", f"{HF_RAW_BUCKET}/", str(RESULTS_CACHE_DIR)],
             capture_output=True,
             text=True,
         )
@@ -199,7 +200,7 @@ def download_results_from_hf() -> int:
     num_models = len(list(RESULTS_CACHE_DIR.glob("*.jsonl")))
     logger.info(
         f"Downloaded {len(all_lines):,} result lines from {num_models} model(s) "
-        f"in bucket {HF_BUCKET!r}."
+        f"in bucket {HF_RAW_BUCKET!r}."
     )
     return len(all_lines)
 

@@ -58,8 +58,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
 RESULTS_CACHE_DIR = REPO_ROOT / ".euroeval_cache/results"
 
-# Canonical HF bucket for storing all results.
-HF_BUCKET = "hf://buckets/EuroEval/euroeval-results"
+# Canonical HF buckets for storing results (public read access).
+HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
+HF_PROCESSED_BUCKET = "hf://buckets/EuroEval/processed-results"
 
 
 def _model_id_to_filename(model_id: str) -> str:
@@ -337,10 +338,11 @@ def fetch_gist_content(gist_id: str) -> str | None:
 
 
 def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
-    """Upload both raw and processed results to Hugging Face bucket.
+    """Upload both raw and processed results to Hugging Face buckets.
 
-    This function splits results into per-model files and syncs to the bucket.
-    The bucket's deduplication means only changed files are uploaded.
+    This function splits results into per-model files and syncs to raw-results bucket.
+    The processed tar.gz goes to processed-results bucket. Bucket deduplication
+    means only changed files are uploaded.
 
     Args:
         new_results_path:
@@ -351,17 +353,13 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
     Returns:
         True if upload succeeded, False otherwise.
     """
-    if not HF_BUCKET:
-        logger.info("No HF bucket configured; skipping upload.")
-        return True
-
     RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     try:
-        # Sync existing results from bucket
-        logger.info(f"Syncing existing results from {HF_BUCKET}...")
+        # Sync existing results from raw-results bucket
+        logger.info(f"Syncing existing results from {HF_RAW_BUCKET}...")
         result = subprocess.run(
-            ["hf", "buckets", "sync", f"{HF_BUCKET}/", str(RESULTS_CACHE_DIR)],
+            ["hf", "buckets", "sync", f"{HF_RAW_BUCKET}/", str(RESULTS_CACHE_DIR)],
             capture_output=True,
             text=True,
         )
@@ -399,32 +397,35 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
         except json.JSONDecodeError:
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
 
-    # Sync updated results to bucket
-    logger.info(f"Syncing results to {HF_BUCKET}...")
+    # Sync updated results to raw-results bucket
+    logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
     result = subprocess.run(
-        ["hf", "buckets", "sync", str(RESULTS_CACHE_DIR), f"{HF_BUCKET}/"],
+        ["hf", "buckets", "sync", str(RESULTS_CACHE_DIR), f"{HF_RAW_BUCKET}/"],
         capture_output=True,
         text=True,
     )
     if result.returncode != 0:
         logger.error(f"Failed to sync to bucket: {result.stderr}")
         return False
-    logger.info(f"Uploaded results to {HF_BUCKET}.")
+    logger.info(f"Uploaded results to {HF_RAW_BUCKET}.")
 
-    # Upload processed results as well
-    logger.info(f"Uploading processed results to {HF_BUCKET}/processed/...")
-    processed_dest = RESULTS_CACHE_DIR / "processed"
-    processed_dest.mkdir(exist_ok=True)
-    (processed_dest / "results.tar.gz").write_bytes(processed_path.read_bytes())
+    # Upload processed results to separate bucket
+    logger.info(f"Uploading processed results to {HF_PROCESSED_BUCKET}...")
     result = subprocess.run(
-        ["hf", "buckets", "sync", str(processed_dest), f"{HF_BUCKET}/processed/"],
+        [
+            "hf",
+            "buckets",
+            "cp",
+            str(processed_path),
+            f"{HF_PROCESSED_BUCKET}/results.tar.gz",
+        ],
         capture_output=True,
         text=True,
     )
     if result.returncode != 0:
         logger.error(f"Failed to upload processed results: {result.stderr}")
         return False
-    logger.info(f"Uploaded processed results to {HF_BUCKET}/processed/.")
+    logger.info(f"Uploaded processed results to {HF_PROCESSED_BUCKET}.")
 
     return True
 
