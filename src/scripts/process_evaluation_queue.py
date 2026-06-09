@@ -54,6 +54,7 @@ from leaderboards.evaluation_common import (
     run_euroeval,
 )
 from leaderboards.github_api import (
+    FAILED_LABEL,
     LABEL,
     REPO,
     RESULTS_READY_LABEL,
@@ -307,7 +308,9 @@ def process_queue_once() -> None:
     Issues are sorted by (status priority asc, slow priority asc,
     partial-results rank asc, parameter count asc, num-language-groups asc,
     age asc). Status priority is 0 for gated repos (cheap marker refresh),
-    1 for fresh issues, and 2 for retries of previously errored evaluations,
+    1 for fresh issues, and 2 for retries of previously errored evaluations.
+    An issue is considered errored if it has the ``evaluation-failed`` label
+    or an ``errored-on`` body marker (label is primary, marker is fallback),
     so that gated repos are surfaced first and quicker work is picked up
     ahead of fresh issues. Slow priority is 0 for normal
     issues and 1 for issues with the 'slow' label, pushing them to the end
@@ -355,7 +358,7 @@ def process_queue_once() -> None:
         param_count = summary["param_count"]
         if summary.get("gated"):
             status_priority = 0
-        elif errored_marker_present(body=body):
+        elif issue_has_failed_label(issue=issue) or errored_marker_present(body=body):
             status_priority = 2
         else:
             status_priority = 1
@@ -496,6 +499,19 @@ def reclaim_orphaned_issues() -> None:
             continue
         reclaimed += 1
         logger.info(f"#{number}: reclaimed orphaned issue (vm-id {VM_ID}).")
+
+
+def issue_has_failed_label(issue: dict) -> bool:
+    """Return True if the issue has the ``evaluation-failed`` label.
+
+    Args:
+        issue:
+            The issue dict from the GitHub API.
+
+    Returns:
+        True if the failed label is present, False otherwise.
+    """
+    return any(label.get("name") == FAILED_LABEL for label in issue.get("labels", []))
 
 
 def list_open_unassigned_issues() -> list[dict]:
@@ -780,10 +796,17 @@ def _run_claimed_issue(
         reason = failure_reason or f"failed languages: {', '.join(failed)}"
         tail = failure_output_tail or "(no output captured)"
         if issue_has_matching_error_comment(number=number, reason=reason):
+            # Even if the comment is a duplicate, ensure the errored-on marker
+            # is present so the issue gets retry priority (status_priority=2).
+            if not errored_marker_present(body=issue.get("body")):
+                set_errored_marker(
+                    number=number, body=issue.get("body"), version=version
+                )
+                logger.info(f"#{number}: added missing errored-on marker.")
             release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
             logger.info(
                 f"#{number}: identical error already posted; "
-                "skipping comment and marker updates, returned to queue."
+                "returned to queue with errored marker."
             )
             return
         error_comment = (
