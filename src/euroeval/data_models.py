@@ -893,6 +893,15 @@ class BenchmarkResult(pydantic.BaseModel):
         if "dataset_languages" in config:
             config["languages"] = config.pop("dataset_languages")
 
+        # Handle languages being a JSON-encoded string
+        languages_value = config.get("languages")
+        if isinstance(languages_value, str):
+            try:
+                config["languages"] = json.loads(languages_value)
+            except json.JSONDecodeError:
+                # Fallback: treat as a single language code (e.g. "bg" -> ["bg"])
+                config["languages"] = [languages_value]
+
         return cls(**config)  # ty: ignore[invalid-argument-type]
 
     @classmethod

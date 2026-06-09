@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed validation error when loading benchmark results with `languages` field stored as a
+  JSON-encoded string (e.g. `'"bg"'` instead of `["bg"]`). This occurred when mixing EEE
+  format results with legacy format results.
+
 ### Changed
 
 - Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
