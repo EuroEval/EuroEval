@@ -34,6 +34,8 @@ import urllib.request
 from pathlib import Path
 
 from dotenv import load_dotenv
+from huggingface_hub import HfApi
+from huggingface_hub.errors import HfHubHTTPError
 
 from leaderboards.github_api import (
     LABEL,
@@ -358,14 +360,9 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
     try:
         # Sync existing results from raw-results bucket
         logger.info(f"Syncing existing results from {HF_RAW_BUCKET}...")
-        result = subprocess.run(
-            ["hf", "buckets", "sync", f"{HF_RAW_BUCKET}/", str(RESULTS_CACHE_DIR)],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode == 0:
-            logger.info("Downloaded existing results from bucket.")
-    except Exception as e:
+        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RESULTS_CACHE_DIR))
+        logger.info("Downloaded existing results from bucket.")
+    except HfHubHTTPError as e:
         logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
 
     # Load existing results by model
@@ -399,15 +396,12 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
 
     # Sync updated results to raw-results bucket
     logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
-    result = subprocess.run(
-        ["hf", "buckets", "sync", str(RESULTS_CACHE_DIR), f"{HF_RAW_BUCKET}/"],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        logger.error(f"Failed to sync to bucket: {result.stderr}")
+    try:
+        HfApi().sync_bucket(source=str(RESULTS_CACHE_DIR), dest=HF_RAW_BUCKET + "/")
+        logger.info(f"Uploaded results to {HF_RAW_BUCKET}.")
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to sync to bucket: {e}")
         return False
-    logger.info(f"Uploaded results to {HF_RAW_BUCKET}.")
 
     # Note: Processed results are uploaded by result_processing.py, not here.
     # That script groups processed records by model and uploads per-model JSONL
