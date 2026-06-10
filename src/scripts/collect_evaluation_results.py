@@ -17,11 +17,13 @@ been picked up by the compute server) and has at least one comment with a
 
 Required env vars
 -----------------
-GITHUB_TOKEN   A PAT with ``issues: write`` for the EuroEval repo.
+GITHUB_TOKEN        A PAT with ``issues: write`` for the EuroEval repo.
+HUGGINGFACE_API_KEY A Hugging Face token with write access to upload results.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import subprocess
@@ -32,6 +34,8 @@ import urllib.request
 from pathlib import Path
 
 from dotenv import load_dotenv
+from huggingface_hub import HfApi
+from huggingface_hub.errors import HfHubHTTPError
 
 from leaderboards.github_api import (
     LABEL,
@@ -43,6 +47,7 @@ from leaderboards.github_api import (
     gh_request,
     list_comments,
 )
+from leaderboards.paths import RESULTS_PATH
 
 load_dotenv()
 
@@ -53,6 +58,24 @@ logger = logging.getLogger("collect_evaluation_results")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
+RESULTS_CACHE_DIR = REPO_ROOT / ".euroeval_cache/results"
+
+# Canonical HF bucket for storing raw results (public read access).
+HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
+
+
+def _model_id_to_filename(model_id: str) -> str:
+    """Convert a model ID to a safe filename.
+
+    Args:
+        model_id:
+            The model identifier (e.g., "meta-llama/Llama-3-8B").
+
+    Returns:
+        A safe filename with slashes and dots replaced by underscores.
+    """
+    return model_id.replace("/", "_").replace(".", "_") + ".jsonl"
+
 
 JSONL_FENCE_RE = re.compile(r"```jsonl\s*\n(.*?)\n```", re.DOTALL)
 
@@ -98,15 +121,46 @@ def main() -> None:
     NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
     logger.info(f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH}.")
 
+    # Upload results to HF bucket BEFORE regenerating leaderboards
+    # (leaderboard regeneration consumes/deletes new_results.jsonl)
+    if upload_results_to_hf(
+        new_results_path=NEW_RESULTS_PATH, processed_path=RESULTS_PATH
+    ):
+        logger.info("Results uploaded to Hugging Face bucket.")
+    else:
+        logger.error(
+            "Failed to upload results to Hugging Face bucket. "
+            "The local archive (results.tar.gz) has been updated with the new results, "
+            "but the bucket is now out of sync. Please run upload_results_to_hf() "
+            "manually or check your Hugging Face credentials and re-run this script."
+        )
+        # Don't abort here -- leaderboards will still be correct because
+        # load_raw_results() appends new_results.jsonl locally before deleting it.
+        # But the bucket needs to be synced on the next successful run.
+
     if not regenerate_leaderboards():
         logger.error(
             "Aborting: not closing issues because leaderboard regeneration failed."
         )
         sys.exit(1)
 
+    # Sanity check: verify leaderboards look sane before deploying
+    if not verify_leaderboards():
+        logger.error(
+            "Aborting: leaderboard validation failed. "
+            "Check the logs above, fix the issue, and redeploy manually."
+        )
+        sys.exit(1)
+
     if not deploy_to_vercel():
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
         sys.exit(1)
+
+    # Create backup if using hf-mount
+    from leaderboards.hf_mount import create_backup
+    backup_path = create_backup()
+    if backup_path:
+        logger.info(f"Created backup at {backup_path}.")
 
     for number, _, gist_id in harvested:
         try:
@@ -307,6 +361,78 @@ def fetch_gist_content(gist_id: str) -> str | None:
     return None
 
 
+def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
+    """Upload raw results to Hugging Face bucket.
+
+    This function splits results into per-model files and syncs to raw-results
+    bucket. Processed results are uploaded separately by result_processing.py as
+    per-model JSONL.
+
+    Args:
+        new_results_path:
+            Path to the newly harvested results.jsonl file.
+        processed_path:
+            Path to the processed results.tar.gz file (kept for backwards compatibility,
+            but not uploaded to bucket - handled by result_processing.py).
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # Sync existing results from raw-results bucket
+        logger.info(f"Syncing existing results from {HF_RAW_BUCKET}...")
+        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RESULTS_CACHE_DIR))
+        logger.info("Downloaded existing results from bucket.")
+    except HfHubHTTPError as e:
+        logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
+
+    # Load existing results by model
+    existing_by_model: dict[str, set[str]] = {}
+    for model_file in RESULTS_CACHE_DIR.glob("*.jsonl"):
+        lines = {
+            line
+            for line in model_file.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        }
+        existing_by_model[model_file.name] = lines
+
+    # Process new results and split into per-model files
+    new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
+    logger.info(f"Processing {len(new_lines):,} new result lines...")
+
+    for line in new_lines:
+        if not line.strip():
+            continue
+        try:
+            data = json.loads(line)
+            model_id = data.get("model", "unknown")
+            filename = _model_id_to_filename(model_id)
+            model_file = RESULTS_CACHE_DIR / filename
+            # Append if not already present
+            if line not in existing_by_model.get(filename, set()):
+                with open(model_file, "a", encoding="utf-8") as f:
+                    f.write(line + "\n")
+        except json.JSONDecodeError:
+            logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
+
+    # Sync updated results to raw-results bucket
+    logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
+    try:
+        HfApi().sync_bucket(source=str(RESULTS_CACHE_DIR), dest=HF_RAW_BUCKET + "/")
+        logger.info(f"Uploaded results to {HF_RAW_BUCKET}.")
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to sync to bucket: {e}")
+        return False
+
+    # Note: Processed results are uploaded by result_processing.py, not here.
+    # That script groups processed records by model and uploads per-model JSONL
+    # files to HF_PROCESSED_BUCKET for consistency with raw-results format.
+
+    return True
+
+
 def regenerate_leaderboards() -> bool:
     """Run the existing leaderboard-generation script.
 
@@ -321,6 +447,86 @@ def regenerate_leaderboards() -> bool:
     except subprocess.CalledProcessError as e:
         logger.error(f"generate_leaderboards failed (exit {e.returncode}).")
         return False
+
+
+def verify_leaderboards() -> bool:
+    """Verify that generated leaderboards look sane before deploying.
+
+    Checks:
+    - CSV files exist and are non-empty
+    - Row count is reasonable (>100 models)
+    - Required columns are present
+    - No obvious data corruption (e.g., NaN in critical fields)
+
+    Returns:
+        True if all checks pass, False otherwise.
+    """
+    import csv
+
+    output_dir = REPO_ROOT / "src" / "frontend" / "csv"
+
+    if not output_dir.exists():
+        logger.error(f"Leaderboard output directory {output_dir} not found.")
+        return False
+
+    csv_files = list(output_dir.glob("*.csv"))
+    if not csv_files:
+        logger.error("No CSV files found in output directory.")
+        return False
+
+    logger.info(f"Found {len(csv_files)} leaderboard CSV(s).")
+
+    all_passed = True
+    for csv_file in csv_files:
+        try:
+            with csv_file.open(mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                rows = list(reader)
+
+                if len(rows) < 100:
+                    logger.error(
+                        f"{csv_file.name}: Only {len(rows)} rows (expected >100). "
+                        "Possible data loss?"
+                    )
+                    all_passed = False
+                    continue
+
+                # Check for critical columns
+                if rows:
+                    required_cols = ["Model", "Mean Score"]
+                    missing = [col for col in required_cols if col not in rows[0]]
+                    if missing:
+                        logger.error(
+                            f"{csv_file.name}: Missing required columns: {missing}"
+                        )
+                        all_passed = False
+                        continue
+
+                    # Check for NaN/None in critical fields
+                    nan_count = sum(
+                        1
+                        for row in rows
+                        if not row.get("Model") or row.get("Model") in ("NaN", "None", "")
+                    )
+                    if nan_count > 0:
+                        logger.error(
+                            f"{csv_file.name}: {nan_count} rows with missing Model field."
+                        )
+                        all_passed = False
+
+                logger.info(
+                    f"{csv_file.name}: {len(rows):,} rows ✓"
+                )
+        except Exception as e:
+            logger.error(f"{csv_file.name}: Failed to read: {e}")
+            all_passed = False
+
+    if all_passed:
+        logger.info("All leaderboard CSVs passed sanity checks.")
+    else:
+        logger.error("Leaderboard validation failed. Fix before deploying.")
+
+    return all_passed
 
 
 def deploy_to_vercel() -> bool:

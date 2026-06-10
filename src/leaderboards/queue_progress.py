@@ -9,10 +9,11 @@ one growing gist instead of creating a new gist on every refresh.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import re
 import urllib.error
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .github_api import REPO, gh_request, patch_issue_body
 from .queue_markers import GIST_MARKER_RE
@@ -45,6 +46,85 @@ class ProgressState:
 
     issue_number: int
     gist_id: str | None = None
+
+
+@dataclass
+class IncrementalGistUploader:
+    """Uploads JSONL lines to a gist incrementally, avoiding duplicates.
+
+    Tracks which lines have already been uploaded (by hash) and accumulates
+    new lines. On each upload, PATCHes the gist with the full accumulated
+    content so the gist always contains the complete result set.
+
+    Attributes:
+        state:
+            The progress state holding the gist id.
+        model_id:
+            The Hugging Face model id used to name the gist file.
+        uploaded_hashes:
+            Set of SHA-256 hashes for lines already uploaded.
+        accumulated_lines:
+            All lines uploaded so far (in order).
+    """
+
+    state: ProgressState
+    model_id: str
+    uploaded_hashes: set[str] = field(default_factory=set, init=False)
+    accumulated_lines: list[str] = field(default_factory=list, init=False)
+
+    def seed_from_existing(self, existing_lines: list[str]) -> None:
+        """Pre-populate with lines from a previous run.
+
+        Args:
+            existing_lines:
+                Lines already in the results file (e.g. from partial_state).
+        """
+        for line in existing_lines:
+            line_hash = hashlib.sha256(line.encode()).hexdigest()
+            if line_hash not in self.uploaded_hashes:
+                self.uploaded_hashes.add(line_hash)
+                self.accumulated_lines.append(line)
+
+    def add_new_lines(self, lines: list[str]) -> list[str]:
+        """Add new lines to the accumulator, filtering out duplicates.
+
+        Args:
+            lines:
+                Candidate lines to add (e.g. freshly read from the results
+                file).
+
+        Returns:
+            The subset of lines that were actually new (not duplicates).
+        """
+        new_lines: list[str] = []
+        for line in lines:
+            line_hash = hashlib.sha256(line.encode()).hexdigest()
+            if line_hash not in self.uploaded_hashes:
+                self.uploaded_hashes.add(line_hash)
+                self.accumulated_lines.append(line)
+                new_lines.append(line)
+        return new_lines
+
+    def upload(self, issue_body: str | None = None) -> str | None:
+        """Upload all accumulated lines to the gist.
+
+        This PATCHes the existing gist (or creates a new one on first
+        call) with the complete accumulated content.
+
+        Args:
+            issue_body (optional):
+                The current issue body, used to store the gist marker on
+                first upload. Defaults to None.
+
+        Returns:
+            The gist id if successful, or None on failure.
+        """
+        return upload_results_gist(
+            state=self.state,
+            model_id=self.model_id,
+            lines=self.accumulated_lines,
+            issue_body=issue_body,
+        )
 
 
 def find_partial_results_for_issue(number: int) -> dict | None:
@@ -228,6 +308,13 @@ def upload_results_gist(
     """
     filename = f"{model_id.replace('/', '_').replace('.', '_')}_results.jsonl"
     content = "\n".join(lines) + "\n" if lines else ""
+
+    # GitHub requires at least one file with non-empty content.
+    if not lines and not state.gist_id:
+        logger.debug(
+            f"Skipping gist creation for {model_id!r} -- no results to upload."
+        )
+        return None
 
     if state.gist_id:
         # Update the existing gist with the latest accumulated results.

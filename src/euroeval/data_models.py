@@ -893,6 +893,29 @@ class BenchmarkResult(pydantic.BaseModel):
         if "dataset_languages" in config:
             config["languages"] = config.pop("dataset_languages")
 
+        # Handle languages being a JSON-encoded string
+        languages_value = config.get("languages")
+        if isinstance(languages_value, str):
+            try:
+                config["languages"] = json.loads(languages_value)
+            except json.JSONDecodeError:
+                # Fallback: treat as a single language code (e.g. "bg" -> ["bg"])
+                config["languages"] = [languages_value]
+
+        # Fill in missing required fields with defaults for very old result formats
+        if "task" not in config:
+            config["task"] = ""
+        if "languages" not in config:
+            config["languages"] = []
+        if "results" not in config:
+            config["results"] = {"raw": [], "total": {}}
+        if "num_model_parameters" not in config:
+            config["num_model_parameters"] = 0
+        if "max_sequence_length" not in config:
+            config["max_sequence_length"] = 0
+        if "vocabulary_size" not in config:
+            config["vocabulary_size"] = 0
+
         return cls(**config)  # ty: ignore[invalid-argument-type]
 
     @classmethod

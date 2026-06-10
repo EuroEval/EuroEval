@@ -32,9 +32,11 @@ EUROEVAL_VM_ID        Optional identifier for this VM/host, written into a
 from __future__ import annotations
 
 import argparse
+import hashlib
 import logging
 import os
 import sys
+import threading
 import time
 import urllib.error
 from datetime import datetime
@@ -42,6 +44,7 @@ from functools import cache
 from pathlib import Path
 
 from huggingface_hub import HfApi
+from huggingface_hub.errors import HfHubHTTPError
 from yaml import safe_load
 
 from leaderboards.evaluation_common import (
@@ -98,17 +101,16 @@ from leaderboards.queue_parsing import (
     result_lines_for_model,
 )
 from leaderboards.queue_progress import (
+    IncrementalGistUploader,
     ProgressState,
     find_partial_results_for_issue,
     find_progress_comment,
     post_or_update_progress_comment,
-    upload_results_gist,
 )
 from leaderboards.queue_runtime import (
     ThermalConfig,
     cool_down_between_issues,
     lower_process_priority,
-    wait_for_gpu_to_cool,
 )
 
 logging.basicConfig(
@@ -116,11 +118,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger("process_evaluation_queue")
 
+# Tracks hashes of result lines downloaded from HF bucket at startup.
+_OLD_RESULT_HASHES: set[str] = set()
+
+
 ASSIGNEE = ""
 VM_ID = os.environ.get("EUROEVAL_VM_ID", "")
 VM_ID_ENV_PATH = Path(os.environ.get("EUROEVAL_DOTENV_PATH", ".env"))
 RESULTS_PATH = Path("euroeval_benchmark_results.jsonl")
+RESULTS_CACHE_DIR = Path(".euroeval_cache/results")
 LOCK_PATH = Path(os.environ.get("EUROEVAL_QUEUE_LOCK", "/tmp/euroeval_queue.lock"))
+
+# Canonical HF buckets for storing results (public read access).
+HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
+HF_PROCESSED_BUCKET = "hf://buckets/EuroEval/processed-results"
 
 # Held for the lifetime of the process so the kernel keeps the queue lock
 # alive; released automatically when the process exits.
@@ -138,6 +149,53 @@ GPU_MEMORY_UTILIZATION: float | None = None
 THERMAL_CONFIG: ThermalConfig = ThermalConfig()
 
 
+def _model_id_to_filename(model_id: str) -> str:
+    """Convert a model ID to a safe filename.
+
+    Args:
+        model_id:
+            The model identifier (e.g., "meta-llama/Llama-3-8B").
+
+    Returns:
+        A safe filename with slashes and dots replaced by underscores.
+    """
+    return model_id.replace("/", "_").replace(".", "_") + ".jsonl"
+
+
+def download_results_from_hf() -> int:
+    """Download all results from the Hugging Face bucket.
+
+    Returns:
+        The number of lines loaded.
+    """
+    global _OLD_RESULT_HASHES
+    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    try:
+        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RESULTS_CACHE_DIR))
+    except HfHubHTTPError as e:
+        logger.warning(f"Could not sync results from HF bucket: {e}")
+        return 0
+
+    all_lines: list[str] = []
+    for model_file in RESULTS_CACHE_DIR.glob("*.jsonl"):
+        lines = model_file.read_text(encoding="utf-8").splitlines()
+        for line in lines:
+            if line.strip():
+                all_lines.append(line)
+                _OLD_RESULT_HASHES.add(hashlib.sha256(line.encode()).hexdigest())
+
+    if all_lines:
+        RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
+
+    num_models = len(list(RESULTS_CACHE_DIR.glob("*.jsonl")))
+    logger.info(
+        f"Downloaded {len(all_lines):,} result lines from {num_models} model(s) "
+        f"in bucket {HF_RAW_BUCKET!r}."
+    )
+    return len(all_lines)
+
+
 def main() -> None:
     """Process the queue forever, sleeping one hour between passes.
 
@@ -147,6 +205,9 @@ def main() -> None:
     parse_args()
     lower_process_priority()
     ensure_credentials()
+
+    # Download the canonical results file from HF before starting.
+    download_results_from_hf()
 
     global _LOCK_FD
     _LOCK_FD = acquire_single_instance_lock(lock_path=LOCK_PATH)
@@ -620,15 +681,65 @@ def process_issue(
     _current_issue_number = None
 
 
+def _upload_results_incrementally(
+    uploader: IncrementalGistUploader,
+    stop_event: threading.Event,
+    results_path: Path,
+    issue_number: int,
+    issue_body: str | None,
+    model_id: str,
+) -> None:
+    """Background thread that uploads new results to the gist periodically.
+
+    Polls the results file every 10 seconds, uploads any new lines to the
+    gist, and updates the progress comment.
+
+    Args:
+        uploader:
+            The incremental gist uploader instance.
+        stop_event:
+            Threading event to signal shutdown.
+        results_path:
+            Path to the JSONL results file.
+        issue_number:
+            The GitHub issue number.
+        issue_body (optional):
+            The issue body (used only on first upload).
+        model_id:
+            The Hugging Face model id (for filtering results).
+    """
+    last_upload_count = 0
+    while not stop_event.is_set():
+        stop_event.wait(10)
+        current_lines = result_lines_for_model(
+            lines=read_jsonl_lines(path=results_path), model_id=model_id
+        )
+        new_lines = uploader.add_new_lines(lines=current_lines)
+        if new_lines or uploader.state.gist_id is None:
+            try:
+                uploader.upload(issue_body=issue_body)
+                if len(uploader.accumulated_lines) != last_upload_count:
+                    logger.info(
+                        f"#{issue_number}: uploaded {len(uploader.accumulated_lines)} "
+                        f"result lines to gist {uploader.state.gist_id}"
+                    )
+                    last_upload_count = len(uploader.accumulated_lines)
+            except Exception:
+                logger.warning(
+                    f"#{issue_number}: failed to upload incremental results to gist"
+                )
+
+
 def _run_claimed_issue(
     issue: dict, model_id: str, languages: list[str], partial_state: dict | None = None
 ) -> None:
-    """Run euroeval one language at a time and maintain a progress comment.
+    """Run euroeval for all languages at once and post results.
 
     A single comment carrying the ``queue-progress`` marker is created
-    (or reused) and rewritten after every language so the issue always
-    shows the completed/in-progress/remaining/failed split along with a
-    link to a gist that holds the accumulated JSONL results.
+    (or reused) showing the final results along with a link to a gist
+    that holds the accumulated JSONL results. Results are uploaded to
+    the gist incrementally during evaluation so partial results survive
+    a crash.
 
     Args:
         issue:
@@ -672,47 +783,45 @@ def _run_claimed_issue(
         if partial_state
         else find_progress_comment(number=number)
     )
-    comment_id = post_or_update_progress_comment(
-        state=progress,
-        comment_id=comment_id,
-        model_id=model_id,
-        done=done,
-        current=None,
-        remaining=pending,
-        failed=failed,
-        lines=accumulated,
-        issue_body=issue_body,
-    )
+
+    # Set up incremental gist uploader and seed it with existing results.
+    uploader = IncrementalGistUploader(state=progress, model_id=model_id)
+    uploader.seed_from_existing(existing_lines=existing_lines)
 
     gated_detected = False
     failure_reason: str | None = None
     failure_output_tail = ""
 
-    for i, lang in enumerate(pending):
-        remaining_after = pending[i + 1 :]
-        comment_id = post_or_update_progress_comment(
-            state=progress,
-            comment_id=comment_id,
-            model_id=model_id,
-            done=done,
-            current=lang,
-            remaining=remaining_after,
-            failed=failed,
-            lines=accumulated,
-            issue_body=issue_body,
+    if pending:
+        # Start background thread to upload results incrementally.
+        stop_upload = threading.Event()
+        upload_thread = threading.Thread(
+            target=_upload_results_incrementally,
+            kwargs={
+                "uploader": uploader,
+                "stop_event": stop_upload,
+                "results_path": RESULTS_PATH,
+                "issue_number": number,
+                "issue_body": issue_body,
+                "model_id": model_id,
+            },
+            daemon=True,
         )
+        upload_thread.start()
 
         before = set(read_jsonl_lines(path=RESULTS_PATH))
-        # Only ask euroeval to clear its model cache after the final language so
-        # the model is downloaded once per issue, not once per language.
-        is_last = i == len(pending) - 1
         returncode, output = run_euroeval(
             model_id=model_id,
-            languages=[lang],
+            languages=pending,
             evaluate_test_split=is_core,
-            clear_model_cache=is_last,
+            clear_model_cache=True,
             gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
         )
+
+        # Stop the background uploader and let it finish.
+        stop_upload.set()
+        upload_thread.join(timeout=5)
+
         after = read_jsonl_lines(path=RESULTS_PATH)
         new_lines = [line for line in after if line not in before]
         accumulated.extend(new_lines)
@@ -720,71 +829,65 @@ def _run_claimed_issue(
         if GATED_OUTPUT_RE.search(output):
             gated_detected = True
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            break
 
         num_errored = num_errored_benchmarks(output=output)
         num_skipped = num_skipped_benchmarks(output=output)
         missing = missing_official_dataset_language_pairs(
-            lines=accumulated, requested_languages=[lang]
+            lines=accumulated, requested_languages=pending
         )
         if returncode != 0:
-            reason = f"euroeval exited with code {returncode} for language {lang!r}"
-            failure_reason = failure_reason or reason
+            failure_reason = f"euroeval exited with code {returncode}"
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed.append(lang)
+            failed = pending
         elif num_errored > 0:
-            reason = (
-                f"euroeval reported {num_errored} errored benchmark(s) "
-                f"for language {lang!r}"
-            )
-            failure_reason = failure_reason or reason
+            failure_reason = f"euroeval reported {num_errored} errored benchmark(s)"
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed.append(lang)
+            failed = pending
         elif missing and (not new_lines or len(missing) > num_skipped):
-            reason = (
-                f"missing official dataset-language pair(s) for {lang!r}: "
+            failure_reason = (
+                f"missing official dataset-language pair(s): "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
             )
-            failure_reason = failure_reason or reason
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed.append(lang)
+            failed = pending
         elif missing:
             logger.info(
-                f"#{number}: euroeval skipped {num_skipped} benchmark(s) for "
-                f"{lang!r}; treating missing pair(s) as intentional skips: "
+                f"#{number}: euroeval skipped {num_skipped} benchmark(s); "
+                f"treating missing pair(s) as intentional skips: "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
             )
-            done.append(lang)
+            done.extend(pending)
         else:
-            done.append(lang)
+            done.extend(pending)
 
-        comment_id = post_or_update_progress_comment(
-            state=progress,
-            comment_id=comment_id,
-            model_id=model_id,
-            done=done,
-            current=None,
-            remaining=remaining_after,
-            failed=failed,
-            lines=accumulated,
-            issue_body=issue_body,
-        )
-
-        if not is_last:
-            wait_for_gpu_to_cool(config=THERMAL_CONFIG)
-
-    # Upload the fully accumulated results to the gist one final time.
-    # This ensures the gist contains all language results after evaluation
-    # completes (the per-language calls above may have been interrupted or
-    # the gist may only contain partial results).
+    # Upload any remaining lines that weren't caught by the background thread.
+    final_lines = result_lines_for_model(
+        lines=read_jsonl_lines(path=RESULTS_PATH), model_id=model_id
+    )
+    uploader.add_new_lines(lines=final_lines)
     try:
-        upload_results_gist(
-            state=progress, model_id=model_id, lines=accumulated, issue_body=issue_body
+        uploader.upload(issue_body=issue_body)
+        logger.info(
+            f"#{number}: uploaded {len(uploader.accumulated_lines)} result lines "
+            f"to gist {progress.gist_id}"
         )
     except Exception:
         logger.warning(
             f"#{number}: failed to upload final results gist for {model_id!r}"
         )
+
+    # Post final progress comment with all results.
+    comment_id = post_or_update_progress_comment(
+        state=progress,
+        comment_id=comment_id,
+        model_id=model_id,
+        done=done,
+        current=None,
+        remaining=[],
+        failed=failed,
+        lines=uploader.accumulated_lines,
+        issue_body=issue_body,
+    )
 
     if gated_detected:
         version = euroeval_version()

@@ -460,8 +460,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             raise InvalidBenchmark(
                 "The dataset requires logprobs, but we encountered an error when "
                 "trying to get the first token of each label in the dataset. You can "
-                "try running this benchmark with the --verbose flag to see what the "
-                "error was. Skipping this evaluation."
+                "try running this benchmark with the --verbose flag or setting "
+                "FULL_LOG=1 to see what the error was. Skipping this evaluation."
             )
         return self
 
@@ -525,8 +525,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             raise InvalidBenchmark(
                 "The dataset requires logprobs, but we encountered an error when "
                 "trying to get the first token of each label in the dataset. You can "
-                "try running this benchmark with the --verbose flag to see what the "
-                "error was. Skipping this evaluation."
+                "try running this benchmark with the --verbose flag or setting "
+                "FULL_LOG=1 to see what the error was. Skipping this evaluation."
             )
 
         structured_generation_schema = None

@@ -11,6 +11,7 @@ import typing as t
 import warnings
 from collections import Counter, defaultdict
 from copy import deepcopy
+from pathlib import Path
 
 from huggingface_hub import HfApi
 from huggingface_hub.errors import HFValidationError
@@ -147,6 +148,35 @@ def process_results(
         )
         for record in tqdm(processed_records, desc="Adding missing entries")
     ]
+
+    # Group processed records by model for bucket upload
+    processed_by_model: dict[str, list[dict]] = {}
+    for record in processed_records:
+        model_id = record.get("model", "unknown")
+        filename = model_id.replace("/", "_").replace(".", "_") + ".jsonl"
+        processed_by_model.setdefault(filename, []).append(record)
+
+    # Upload processed results to HF bucket as per-model files
+    hf_processed_bucket = "hf://buckets/EuroEval/processed-results"
+    processed_cache_dir = Path(".euroeval_cache/processed-results")
+    processed_cache_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info("Uploading processed results to HF bucket...")
+    for filename, records in processed_by_model.items():
+        file_path = processed_cache_dir / filename
+        content = "\n".join(json.dumps(record) for record in records) + "\n"
+        file_path.write_text(content, encoding="utf-8")
+
+    # Sync to bucket using the Python API
+    try:
+        api = HfApi()
+        api.sync_bucket(source=str(processed_cache_dir), dest=hf_processed_bucket)
+        logger.info(
+            f"Uploaded {len(processed_by_model):,} model files "
+            f"to {hf_processed_bucket}."
+        )
+    except Exception as e:
+        logger.warning(f"Failed to sync processed results: {e}")
 
     # Store records in the tar.gz archive
     with tarfile.open(results_path, "w:gz") as tar:

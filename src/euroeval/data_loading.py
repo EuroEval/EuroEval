@@ -189,8 +189,8 @@ def load_raw_data(
         else:
             raise InvalidBenchmark(
                 f"Failed to load dataset {dataset_config.source!r} after "
-                f"{num_attempts} attempts. Run with verbose mode to see the individual "
-                "errors."
+                f"{num_attempts} attempts. Run with --verbose or set FULL_LOG=1 to see "
+                "the individual errors."
             )
 
     # Case where the dataset source is a dictionary with keys "train", "val" and "test",

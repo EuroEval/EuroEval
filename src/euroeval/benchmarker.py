@@ -477,8 +477,22 @@ class Benchmarker:
                 If we're offline benchmarking an adapter model, or if model loading
                 failed.
         """
+        # Determine if verbose mode is active (either from parameter, FULL_LOG env var,
+        # or stored config from __init__)
+        is_verbose = (
+            verbose
+            if verbose is not None
+            else self.benchmark_config_default_params.verbose
+        )
+        # FULL_LOG env var always forces verbose mode
+        if os.getenv("FULL_LOG", "0") == "1":
+            is_verbose = True
         log_once(
-            "Started EuroEval run. Run with `--verbose` for more information.",
+            (
+                "Started EuroEval run."
+                if is_verbose
+                else "Started EuroEval run. Run with `--verbose` for more information."
+            ),
             level=logging.INFO,
         )
 
@@ -792,9 +806,9 @@ class Benchmarker:
                             log(e.message, level=logging.ERROR)
 
                             # Add the remaining number of benchmarks for the model to
-                            # our benchmark counter, since we're skipping the rest of
+                            # our benchmark counter, since we're erroring on the rest of
                             # them
-                            num_skipped_benchmarks += (
+                            num_errored_benchmarks += (
                                 len(dataset_configs)
                                 - dataset_configs.index(dataset_config)
                                 - 1
