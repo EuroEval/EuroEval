@@ -309,6 +309,13 @@ def upload_results_gist(
     filename = f"{model_id.replace('/', '_').replace('.', '_')}_results.jsonl"
     content = "\n".join(lines) + "\n" if lines else ""
 
+    # GitHub requires at least one file with non-empty content.
+    if not lines and not state.gist_id:
+        logger.debug(
+            f"Skipping gist creation for {model_id!r} -- no results to upload."
+        )
+        return None
+
     if state.gist_id:
         # Update the existing gist with the latest accumulated results.
         try:
