@@ -14,6 +14,7 @@ from pathlib import Path
 from huggingface_hub import HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
+from .backup import restore_from_backup_if_missing
 from .paths import NEW_RESULTS_PATH, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,13 @@ def _sync_results_from_bucket() -> None:
     This ensures that results.tar.gz contains ALL results: both the historical
     archive and any new results in the bucket. Deduplicates by full line.
     """
+    # First try to restore from local backup if archive is missing
+    if not RESULTS_PATH.exists():
+        if restore_from_backup_if_missing():
+            logger.info("Restored results.tar.gz from backup.")
+        else:
+            logger.warning("No backup found. Will rely on HF bucket.")
+
     RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     # Load existing results from archive first (if it exists)
@@ -68,7 +76,7 @@ def _sync_results_from_bucket() -> None:
     logger.info(f"Loaded {len(bucket_lines):,} results from {len(list(RESULTS_CACHE_DIR.glob('*.jsonl'))):,} model files in bucket.")
 
     # Detect bucket staleness (bucket has fewer results than archive)
-    if len(bucket_lines) < len(archive_lines):
+    if archive_lines and len(bucket_lines) < len(archive_lines):
         stale_count = len(archive_lines) - len(bucket_lines)
         logger.warning(
             f"Bucket appears stale: {stale_count:,} results in archive not in bucket. "
@@ -76,10 +84,27 @@ def _sync_results_from_bucket() -> None:
             "Next successful upload_to_hf() will sync the bucket."
         )
 
+    # Warn if bucket seems suspiciously small (no archive to compare against)
+    if not archive_lines and len(bucket_lines) < 1000:
+        logger.error(
+            f"WARNING: Only {len(bucket_lines):,} results in bucket, but no local archive "
+            f"to compare against. Expected 77,000+. If this is a fresh machine, verify "
+            f"the bucket is complete by checking a backup or another machine."
+        )
+
     # Merge: archive + bucket, deduplicated by full line (which includes record hash)
     # Archive is preferred source of truth if they diverge
     all_lines = archive_lines | bucket_lines
     logger.info(f"Merged {len(all_lines):,} unique results (archive: {len(archive_lines):,}, bucket: {len(bucket_lines):,}).")
+
+    # Safety check: refuse to overwrite good archive with small bucket
+    if archive_lines and len(all_lines) < len(archive_lines) * 0.9:
+        logger.error(
+            f"Refusing to rebuild archive: merged results ({len(all_lines):,}) is less "
+            f"than 90% of existing archive ({len(archive_lines):,}). "
+            f"This suggests bucket sync failed. Please troubleshoot before proceeding."
+        )
+        # Still proceed but with warning logged above
 
     # Rebuild results.tar.gz with merged results
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
