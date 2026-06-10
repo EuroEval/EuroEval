@@ -37,6 +37,7 @@ import logging
 import os
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 from datetime import datetime
@@ -100,11 +101,11 @@ from leaderboards.queue_parsing import (
     result_lines_for_model,
 )
 from leaderboards.queue_progress import (
+    IncrementalGistUploader,
     ProgressState,
     find_partial_results_for_issue,
     find_progress_comment,
     post_or_update_progress_comment,
-    upload_results_gist,
 )
 from leaderboards.queue_runtime import (
     ThermalConfig,
@@ -690,6 +691,55 @@ def process_issue(
     _current_issue_number = None
 
 
+def _upload_results_incrementally(
+    uploader: IncrementalGistUploader,
+    stop_event: threading.Event,
+    results_path: Path,
+    issue_number: int,
+    issue_body: str | None,
+    model_id: str,
+) -> None:
+    """Background thread that uploads new results to the gist periodically.
+
+    Polls the results file every 10 seconds, uploads any new lines to the
+    gist, and updates the progress comment.
+
+    Args:
+        uploader:
+            The incremental gist uploader instance.
+        stop_event:
+            Threading event to signal shutdown.
+        results_path:
+            Path to the JSONL results file.
+        issue_number:
+            The GitHub issue number.
+        issue_body (optional):
+            The issue body (used only on first upload).
+        model_id:
+            The Hugging Face model id (for filtering results).
+    """
+    last_upload_count = 0
+    while not stop_event.is_set():
+        stop_event.wait(10)
+        current_lines = result_lines_for_model(
+            lines=read_jsonl_lines(path=results_path), model_id=model_id
+        )
+        new_lines = uploader.add_new_lines(lines=current_lines)
+        if new_lines or uploader.state.gist_id is None:
+            try:
+                uploader.upload(issue_body=issue_body)
+                if len(uploader.accumulated_lines) != last_upload_count:
+                    logger.info(
+                        f"#{issue_number}: uploaded {len(uploader.accumulated_lines)} "
+                        f"result lines to gist {uploader.state.gist_id}"
+                    )
+                    last_upload_count = len(uploader.accumulated_lines)
+            except Exception:
+                logger.warning(
+                    f"#{issue_number}: failed to upload incremental results to gist"
+                )
+
+
 def _run_claimed_issue(
     issue: dict, model_id: str, languages: list[str], partial_state: dict | None = None
 ) -> None:
@@ -697,7 +747,9 @@ def _run_claimed_issue(
 
     A single comment carrying the ``queue-progress`` marker is created
     (or reused) showing the final results along with a link to a gist
-    that holds the accumulated JSONL results.
+    that holds the accumulated JSONL results. Results are uploaded to
+    the gist incrementally during evaluation so partial results survive
+    a crash.
 
     Args:
         issue:
@@ -742,11 +794,31 @@ def _run_claimed_issue(
         else find_progress_comment(number=number)
     )
 
+    # Set up incremental gist uploader and seed it with existing results.
+    uploader = IncrementalGistUploader(state=progress, model_id=model_id)
+    uploader.seed_from_existing(existing_lines=existing_lines)
+
     gated_detected = False
     failure_reason: str | None = None
     failure_output_tail = ""
 
     if pending:
+        # Start background thread to upload results incrementally.
+        stop_upload = threading.Event()
+        upload_thread = threading.Thread(
+            target=_upload_results_incrementally,
+            kwargs={
+                "uploader": uploader,
+                "stop_event": stop_upload,
+                "results_path": RESULTS_PATH,
+                "issue_number": number,
+                "issue_body": issue_body,
+                "model_id": model_id,
+            },
+            daemon=True,
+        )
+        upload_thread.start()
+
         before = set(read_jsonl_lines(path=RESULTS_PATH))
         returncode, output = run_euroeval(
             model_id=model_id,
@@ -755,6 +827,11 @@ def _run_claimed_issue(
             clear_model_cache=True,
             gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
         )
+
+        # Stop the background uploader and let it finish.
+        stop_upload.set()
+        upload_thread.join(timeout=5)
+
         after = read_jsonl_lines(path=RESULTS_PATH)
         new_lines = [line for line in after if line not in before]
         accumulated.extend(new_lines)
@@ -793,7 +870,23 @@ def _run_claimed_issue(
         else:
             done.extend(pending)
 
-    # Post final progress comment with all results
+    # Upload any remaining lines that weren't caught by the background thread.
+    final_lines = result_lines_for_model(
+        lines=read_jsonl_lines(path=RESULTS_PATH), model_id=model_id
+    )
+    uploader.add_new_lines(lines=final_lines)
+    try:
+        uploader.upload(issue_body=issue_body)
+        logger.info(
+            f"#{number}: uploaded {len(uploader.accumulated_lines)} result lines "
+            f"to gist {progress.gist_id}"
+        )
+    except Exception:
+        logger.warning(
+            f"#{number}: failed to upload final results gist for {model_id!r}"
+        )
+
+    # Post final progress comment with all results.
     comment_id = post_or_update_progress_comment(
         state=progress,
         comment_id=comment_id,
@@ -802,28 +895,9 @@ def _run_claimed_issue(
         current=None,
         remaining=[],
         failed=failed,
-        lines=accumulated,
+        lines=uploader.accumulated_lines,
         issue_body=issue_body,
     )
-
-    # Upload only NEW results (not old ones from HF) to the gist.
-    # This keeps gists small and focused on the current evaluation run.
-    new_lines_for_gist = [
-        line
-        for line in accumulated
-        if hashlib.sha256(line.encode()).hexdigest() not in _OLD_RESULT_HASHES
-    ]
-    try:
-        upload_results_gist(
-            state=progress,
-            model_id=model_id,
-            lines=new_lines_for_gist,
-            issue_body=issue_body,
-        )
-    except Exception:
-        logger.warning(
-            f"#{number}: failed to upload final results gist for {model_id!r}"
-        )
 
     if gated_detected:
         version = euroeval_version()
