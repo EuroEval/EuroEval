@@ -29,6 +29,14 @@ MOUNT_POINT = Path(
     os.getenv("EUROEVAL_MOUNT_POINT", Path.home() / ".local" / "share" / "euroeval-results")
 ).expanduser()
 
+# Verify mount point is not in a git-tracked location
+if MOUNT_POINT.is_relative_to(Path.cwd()) and "euroeval-results" not in str(Path.cwd().parent):
+    logger = logging.getLogger(__name__)
+    logger.warning(
+        f"Mount point {MOUNT_POINT} is inside or near a git repo. "
+        f"Ensure it's .gitignore'd to avoid tracking large data files."
+    )
+
 
 def is_hf_mount_available() -> bool:
     """Check if hf-mount is installed and usable.
