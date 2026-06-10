@@ -121,6 +121,15 @@ def main() -> None:
     NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
     logger.info(f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH}.")
 
+    # Upload results to HF bucket BEFORE regenerating leaderboards
+    # (leaderboard regeneration consumes/deletes new_results.jsonl)
+    if upload_results_to_hf(
+        new_results_path=NEW_RESULTS_PATH, processed_path=RESULTS_PATH
+    ):
+        logger.info("Results uploaded to Hugging Face bucket.")
+    else:
+        logger.warning("Failed to upload results to Hugging Face bucket.")
+
     if not regenerate_leaderboards():
         logger.error(
             "Aborting: not closing issues because leaderboard regeneration failed."
@@ -130,14 +139,6 @@ def main() -> None:
     if not deploy_to_vercel():
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
         sys.exit(1)
-
-    # Upload results to HF bucket
-    if upload_results_to_hf(
-        new_results_path=NEW_RESULTS_PATH, processed_path=RESULTS_PATH
-    ):
-        logger.info("Results uploaded to Hugging Face bucket.")
-    else:
-        logger.warning("Failed to upload results to Hugging Face bucket.")
 
     for number, _, gist_id in harvested:
         try:
