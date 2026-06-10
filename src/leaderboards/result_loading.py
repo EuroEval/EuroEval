@@ -14,7 +14,7 @@ from pathlib import Path
 from huggingface_hub import HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
-from .backup import restore_from_backup_if_missing
+from .hf_mount import hf_mount_context, is_hf_mount_available
 from .paths import NEW_RESULTS_PATH, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
@@ -24,11 +24,42 @@ RESULTS_CACHE_DIR = Path(".euroeval_cache/results")
 
 
 def _sync_results_from_bucket() -> None:
-    """Sync results from HF bucket and merge with existing archive.
+    """Sync results from HF bucket and rebuild results.tar.gz.
 
-    This ensures that results.tar.gz contains ALL results: both the historical
-    archive and any new results in the bucket. Deduplicates by full line.
+    Uses hf-mount if available (live mount, no sync needed), otherwise
+    falls back to huggingface_hub bucket sync.
     """
+    # Prefer hf-mount if available
+    if is_hf_mount_available():
+        _sync_via_hf_mount()
+    else:
+        logger.info("hf-mount not available, using huggingface_hub sync.")
+        _sync_via_huggingface_hub()
+
+
+def _sync_via_hf_mount() -> None:
+    """Sync via hf-mount (fast, live mount).
+
+    Mounts bucket, copies all files to local cache, unmounts.
+    """
+    with hf_mount_context() as mount_point:
+        if not mount_point.exists():
+            raise FileNotFoundError(f"Mount point {mount_point} does not exist.")
+
+        # Copy all model files from mounted bucket to cache
+        RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        file_count = 0
+        for jsonl_file in mount_point.glob("*.jsonl"):
+            import shutil
+            dest = RESULTS_CACHE_DIR / jsonl_file.name
+            shutil.copy2(jsonl_file, dest)
+            file_count += 1
+
+        logger.info(f"Copied {file_count:,} model files from mounted bucket.")
+
+
+def _sync_via_huggingface_hub() -> None:
+    """Fallback: sync via huggingface_hub (older, slower)."""
     # First try to restore from local backup if archive is missing
     if not RESULTS_PATH.exists():
         if restore_from_backup_if_missing():
@@ -96,6 +127,25 @@ def _sync_results_from_bucket() -> None:
     # Archive is preferred source of truth if they diverge
     all_lines = archive_lines | bucket_lines
     logger.info(f"Merged {len(all_lines):,} unique results (archive: {len(archive_lines):,}, bucket: {len(bucket_lines):,}).")
+
+    # Rebuild results.tar.gz with merged results
+    RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(RESULTS_PATH, "w:gz") as tar:
+        # Raw records
+        raw_content_bytes = "\n".join(sorted(all_lines)).encode(encoding="utf-8")
+        raw_tarinfo = tarfile.TarInfo(name="results/results.jsonl")
+        raw_tarinfo.size = len(raw_content_bytes)
+        raw_fileobj = io.BytesIO(raw_content_bytes)
+        tar.addfile(tarinfo=raw_tarinfo, fileobj=raw_fileobj)
+
+        # Processed records (empty initially, will be filled by process_results)
+        processed_content_bytes = b""
+        processed_tarinfo = tarfile.TarInfo(name="results/results.processed.jsonl")
+        processed_tarinfo.size = len(processed_content_bytes)
+        processed_fileobj = io.BytesIO(processed_content_bytes)
+        tar.addfile(tarinfo=processed_tarinfo, fileobj=processed_fileobj)
+
+    logger.info(f"Rebuilt {RESULTS_PATH} with {len(all_lines):,} merged results.")
 
     # Safety check: refuse to overwrite good archive with small bucket
     if archive_lines and len(all_lines) < len(archive_lines) * 0.9:

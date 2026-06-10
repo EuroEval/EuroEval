@@ -156,6 +156,12 @@ def main() -> None:
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
         sys.exit(1)
 
+    # Create backup if using hf-mount
+    from leaderboards.hf_mount import create_backup
+    backup_path = create_backup()
+    if backup_path:
+        logger.info(f"Created backup at {backup_path}.")
+
     for number, _, gist_id in harvested:
         try:
             comment_on_issue(
