@@ -131,10 +131,7 @@ def test_no_hallucinations_returns_zero(
     )
 
     dataset = make_dataset(["ctx1", "ctx2"], ["q1", "q2"])
-    predictions = [
-        {"prediction_text": "answer1"},
-        {"prediction_text": "answer2"},
-    ]
+    predictions = [{"prediction_text": "answer1"}, {"prediction_text": "answer2"}]
     result = metric(
         predictions=predictions,
         dataset=dataset,
@@ -197,10 +194,7 @@ def test_partial_hallucinations_returns_correct_rate(
     )
 
     dataset = make_dataset(["ctx1", "ctx2"], ["q1", "q2"])
-    predictions = [
-        {"prediction_text": "hallucinated"},
-        {"prediction_text": "correct"},
-    ]
+    predictions = [{"prediction_text": "hallucinated"}, {"prediction_text": "correct"}]
     result = metric(
         predictions=predictions,
         dataset=dataset,
