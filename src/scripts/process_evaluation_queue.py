@@ -35,7 +35,6 @@ import argparse
 import hashlib
 import logging
 import os
-import subprocess
 import sys
 import threading
 import time
@@ -45,6 +44,7 @@ from functools import cache
 from pathlib import Path
 
 from huggingface_hub import HfApi
+from huggingface_hub.errors import HfHubHTTPError, LocalError
 from yaml import safe_load
 
 from leaderboards.evaluation_common import (
@@ -172,18 +172,8 @@ def download_results_from_hf() -> int:
     RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     try:
-        result = subprocess.run(
-            ["hf", "buckets", "sync", f"{HF_RAW_BUCKET}/", str(RESULTS_CACHE_DIR)],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0:
-            logger.warning(f"Could not sync from bucket: {result.stderr}")
-            return 0
-    except FileNotFoundError:
-        logger.warning("`hf` CLI not found. Cannot sync results from bucket.")
-        return 0
-    except Exception as e:
+        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RESULTS_CACHE_DIR))
+    except (HfHubHTTPError, LocalError) as e:
         logger.warning(f"Could not sync results from HF bucket: {e}")
         return 0
 
