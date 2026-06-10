@@ -18,6 +18,8 @@ if t.TYPE_CHECKING:
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
     from ..data_models import BenchmarkConfig, DatasetConfig
+
+
 def detect_hallucinations(
     dataset: Dataset,
     predictions: c.Iterable[dict[str, str]],
@@ -27,14 +29,14 @@ def detect_hallucinations(
     """Load tinylettuce model and detect hallucinations.
 
     Args:
-        dataset: 
+        dataset:
             Hallucination dataset, generated with e.g. lettuce. Each example must
             provide a ``"context"`` field containing the full RAG prompt.
         predictions: Iterable of prediction objects, each containing a
             ``"prediction_text"`` field with the model's answer text.
-        model: 
+        model:
             Path to hallucination detection model.
-        device: 
+        device:
             Device to run on ('cpu' or 'cuda').
 
     Returns:
@@ -66,9 +68,7 @@ def detect_hallucinations(
             skipped_samples += 1
             continue
 
-        predict_answer = detector.predict_prompt(
-            prompt=prompt, answer=predicted_text
-        )
+        predict_answer = detector.predict_prompt(prompt=prompt, answer=predicted_text)
 
         for token in predict_answer:
             hallucinated_tokens += token["pred"]
@@ -113,9 +113,7 @@ def _answer_too_long(
     Returns:
         Whether the answer is too long to be evaluated alongside a prompt.
     """
-    answer_token_count = len(
-        tokenizer(answer, add_special_tokens=False)["input_ids"]
-    )
+    answer_token_count = len(tokenizer(answer, add_special_tokens=False)["input_ids"])
     # Reserve room for special tokens ([CLS], two [SEP]) and at least one prompt
     # token, matching the detector's ``truncation="only_first"`` requirement.
     return answer_token_count >= max_length - 4
@@ -142,10 +140,10 @@ class TokenHallucinationMetric(Metric):
     def __call__(
         self,
         predictions: c.Iterable[dict[str, str]],
+        references: c.Sequence,
         dataset: "Dataset",
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
-        **kwargs,
     ) -> float | None:
         """Compute the token-level hallucination rate for a set of predictions.
 
@@ -157,15 +155,15 @@ class TokenHallucinationMetric(Metric):
             predictions:
                 The model predictions. Each prediction must provide a
                 ``"prediction_text"`` field containing the model's answer text.
+            references:
+                The ground truth references. Unused by this metric, but accepted
+                for API consistency with the base ``Metric`` interface.
             dataset:
                 The dataset used for evaluation.
             dataset_config:
                 The dataset configuration.
             benchmark_config:
                 The benchmark configuration, used to determine the compute device.
-            **kwargs:
-                For API consistency, this metric accepts other arguments like
-                `references`, but they are ignored.
 
         Returns:
             The hallucination rate (hallucinated_tokens/total_tokens).
