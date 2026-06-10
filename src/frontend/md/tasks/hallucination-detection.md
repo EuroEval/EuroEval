@@ -12,8 +12,8 @@ The hallucination detection is performed using the
 [LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
 transformer-based classifier to predict hallucination at the token level. The
 hallucination detection classifiers are trained on the publicly available
-hallucination dataset
-[MultiWikiQA-Synthetic-Hallucinations](alexandrainst/multi-wiki-qa-synthetic-hallucinations).
+hallucination datasets
+[MultiWikiQA-Synthetic-Hallucinations](https://huggingface.co/datasets/alexandrainst/multi-wiki-qa-synthetic-hallucinations) and [Translated-RAGTruth-Hallucinations](https://huggingface.co/datasets/alexandrainst/ragtruth-translated-hallucinations).
 
 When evaluating generative models, we allow the model to generate 5 tokens on this task.
 

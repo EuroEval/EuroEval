@@ -14,7 +14,6 @@ from .base import Metric
 logger = logging.getLogger(__name__)
 
 if t.TYPE_CHECKING:
-    from datasets.arrow_dataset import Dataset
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
     from ..data_models import BenchmarkConfig, DatasetConfig
@@ -26,7 +25,7 @@ def detect_hallucinations(
     model: str,
     device: Device = Device.CPU,
 ) -> float:
-    """Load tinylettuce model and detect hallucinations.
+    """Load model and detect hallucinations.
 
     Args:
         dataset:
