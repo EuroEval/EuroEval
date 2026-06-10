@@ -4,7 +4,9 @@ Provides context manager for mounting/unmounting the HF bucket, with
 automatic backup creation to pCloud.
 """
 
+import collections.abc as c
 import io
+import logging
 import os
 import subprocess
 import tarfile
@@ -26,15 +28,18 @@ HF_RAW_BUCKET = "buckets/EuroEval/raw-results"
 # - On persistent storage (not tmpfs)
 # - Optionally on pCloud/external drive for large datasets
 MOUNT_POINT = Path(
-    os.getenv("EUROEVAL_MOUNT_POINT", Path.home() / ".local" / "share" / "euroeval-results")
+    os.getenv(
+        "EUROEVAL_MOUNT_POINT", Path.home() / ".local" / "share" / "euroeval-results"
+    )
 ).expanduser()
 
 # Verify mount point is not in a git-tracked location
-if MOUNT_POINT.is_relative_to(Path.cwd()) and "euroeval-results" not in str(Path.cwd().parent):
+_cwd_parts = str(Path.cwd().parent)
+if MOUNT_POINT.is_relative_to(Path.cwd()) and "euroeval-results" not in _cwd_parts:
     logger = logging.getLogger(__name__)
     logger.warning(
         f"Mount point {MOUNT_POINT} is inside or near a git repo. "
-        f"Ensure it's .gitignore'd to avoid tracking large data files."
+        "Ensure it's .gitignore'd to avoid tracking large data files."
     )
 
 
@@ -45,9 +50,7 @@ def is_hf_mount_available() -> bool:
         True if hf-mount binary is on PATH, False otherwise.
     """
     try:
-        result = subprocess.run(
-            ["which", "hf-mount"], capture_output=True, check=False
-        )
+        result = subprocess.run(["which", "hf-mount"], capture_output=True, check=False)
         return result.returncode == 0
     except FileNotFoundError:
         return False
@@ -58,9 +61,11 @@ def mount_bucket() -> None:
 
     Uses NFS backend (no root required, works everywhere).
     Creates mount point directory if needed.
-    """
-    import os
 
+    Raises:
+        ValueError:
+            If HF_TOKEN environment variable is not set.
+    """
     hf_token = os.getenv("HF_TOKEN")
     if not hf_token:
         raise ValueError(
@@ -86,12 +91,7 @@ def mount_bucket() -> None:
         hf_token,
     ]
 
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
     if result.returncode != 0:
         # Try fallback to daemon mode
@@ -115,13 +115,13 @@ def unmount_bucket() -> None:
 
         print(f"Unmounting {MOUNT_POINT}...")
         subprocess.run(["umount", str(MOUNT_POINT)], check=False)
-        print(f"✓ Unmounted")
+        print("✓ Unmounted")
     except Exception as e:
         print(f"⚠ Unmount failed: {e}")
 
 
 @contextmanager
-def hf_mount_context():
+def hf_mount_context() -> c.Generator[Path, None, None]:
     """Context manager for HF bucket mount.
 
     Mounts on entry, unmounts on exit. Falls back gracefully if
@@ -136,7 +136,7 @@ def hf_mount_context():
             mount_bucket()
             mounted = True
         else:
-            print("⚠ hf-mount not found on PATH. Use tar.gz fallback.")
+            print("⚠ hf-mount not found. Use tar.gz fallback.")
         yield MOUNT_POINT
     finally:
         if mounted:
@@ -182,9 +182,12 @@ def create_backup() -> Path | None:
             processed_content = b""
             processed_tarinfo = tarfile.TarInfo(name="results/results.processed.jsonl")
             processed_tarinfo.size = len(processed_content)
-            tar.addfile(tarinfo=processed_tarinfo, fileobj=io.BytesIO(processed_content))
+            tar.addfile(
+                tarinfo=processed_tarinfo, fileobj=io.BytesIO(processed_content)
+            )
 
-        print(f"✓ Backup created: {backup_path} ({backup_path.stat().st_size / 1e6:.1f} MB)")
+        size_mb = backup_path.stat().st_size / 1e6
+        print(f"✓ Backup created: {backup_path} ({size_mb:.1f} MB)")
 
         # Rotate old backups
         _rotate_backups()
@@ -214,7 +217,7 @@ def _rotate_backups() -> None:
 
 
 @contextmanager
-def hf_mount_with_backup():
+def hf_mount_with_backup() -> c.Generator[Path, None, None]:
     """Context manager with automatic backup after use.
 
     Mounts on entry, creates backup and unmounts on exit.

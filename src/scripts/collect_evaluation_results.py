@@ -23,6 +23,7 @@ HUGGINGFACE_API_KEY A Hugging Face token with write access to upload results.
 
 from __future__ import annotations
 
+import csv
 import json
 import logging
 import re
@@ -47,6 +48,7 @@ from leaderboards.github_api import (
     gh_request,
     list_comments,
 )
+from leaderboards.hf_mount import create_backup
 from leaderboards.paths import RESULTS_PATH
 
 load_dotenv()
@@ -157,7 +159,6 @@ def main() -> None:
         sys.exit(1)
 
     # Create backup if using hf-mount
-    from leaderboards.hf_mount import create_backup
     backup_path = create_backup()
     if backup_path:
         logger.info(f"Created backup at {backup_path}.")
@@ -461,8 +462,6 @@ def verify_leaderboards() -> bool:
     Returns:
         True if all checks pass, False otherwise.
     """
-    import csv
-
     output_dir = REPO_ROOT / "src" / "frontend" / "csv"
 
     if not output_dir.exists():
@@ -506,17 +505,15 @@ def verify_leaderboards() -> bool:
                     nan_count = sum(
                         1
                         for row in rows
-                        if not row.get("Model") or row.get("Model") in ("NaN", "None", "")
+                        if not row.get("Model")
+                        or row.get("Model") in ("NaN", "None", "")
                     )
                     if nan_count > 0:
-                        logger.error(
-                            f"{csv_file.name}: {nan_count} rows with missing Model field."
-                        )
+                        msg = f"{csv_file.name}: {nan_count} rows with missing Model."
+                        logger.error(msg)
                         all_passed = False
 
-                logger.info(
-                    f"{csv_file.name}: {len(rows):,} rows ✓"
-                )
+                logger.info(f"{csv_file.name}: {len(rows):,} rows ✓")
         except Exception as e:
             logger.error(f"{csv_file.name}: Failed to read: {e}")
             all_passed = False
