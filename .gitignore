@@ -105,6 +105,10 @@ results.tar.gz
 new_results.jsonl
 ucloud*_results.jsonl
 
+# hf-mount mount point (HF bucket mounted as filesystem)
+euroeval-results/
+*.euroeval-results/
+
 # Leaderboard CSVs (regenerated build artifact; bundled by Vite at build time).
 src/frontend/csv/
 
