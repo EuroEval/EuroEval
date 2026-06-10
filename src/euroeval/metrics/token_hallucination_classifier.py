@@ -136,7 +136,7 @@ class TokenHallucinationMetric(Metric):
         super().__init__(
             name=name,
             pretty_name=pretty_name,
-            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.2f}"),
+            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.4f}"),
         )
 
     def __call__(
