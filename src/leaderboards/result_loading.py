@@ -67,7 +67,17 @@ def _sync_results_from_bucket() -> None:
 
     logger.info(f"Loaded {len(bucket_lines):,} results from {len(list(RESULTS_CACHE_DIR.glob('*.jsonl'))):,} model files in bucket.")
 
+    # Detect bucket staleness (bucket has fewer results than archive)
+    if len(bucket_lines) < len(archive_lines):
+        stale_count = len(archive_lines) - len(bucket_lines)
+        logger.warning(
+            f"Bucket appears stale: {stale_count:,} results in archive not in bucket. "
+            f"Archive: {len(archive_lines):,}, Bucket: {len(bucket_lines):,}. "
+            "Next successful upload_to_hf() will sync the bucket."
+        )
+
     # Merge: archive + bucket, deduplicated by full line (which includes record hash)
+    # Archive is preferred source of truth if they diverge
     all_lines = archive_lines | bucket_lines
     logger.info(f"Merged {len(all_lines):,} unique results (archive: {len(archive_lines):,}, bucket: {len(bucket_lines):,}).")
 

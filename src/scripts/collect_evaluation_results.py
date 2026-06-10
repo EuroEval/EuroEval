@@ -128,7 +128,15 @@ def main() -> None:
     ):
         logger.info("Results uploaded to Hugging Face bucket.")
     else:
-        logger.warning("Failed to upload results to Hugging Face bucket.")
+        logger.error(
+            "Failed to upload results to Hugging Face bucket. "
+            "The local archive (results.tar.gz) has been updated with the new results, "
+            "but the bucket is now out of sync. Please run upload_results_to_hf() "
+            "manually or check your Hugging Face credentials and re-run this script."
+        )
+        # Don't abort here -- leaderboards will still be correct because
+        # load_raw_results() appends new_results.jsonl locally before deleting it.
+        # But the bucket needs to be synced on the next successful run.
 
     if not regenerate_leaderboards():
         logger.error(
