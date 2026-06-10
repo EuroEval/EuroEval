@@ -136,6 +136,14 @@ def main() -> None:
         )
         sys.exit(1)
 
+    # Sanity check: verify leaderboards look sane before deploying
+    if not verify_leaderboards():
+        logger.error(
+            "Aborting: leaderboard validation failed. "
+            "Check the logs above, fix the issue, and redeploy manually."
+        )
+        sys.exit(1)
+
     if not deploy_to_vercel():
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
         sys.exit(1)
@@ -425,6 +433,86 @@ def regenerate_leaderboards() -> bool:
     except subprocess.CalledProcessError as e:
         logger.error(f"generate_leaderboards failed (exit {e.returncode}).")
         return False
+
+
+def verify_leaderboards() -> bool:
+    """Verify that generated leaderboards look sane before deploying.
+
+    Checks:
+    - CSV files exist and are non-empty
+    - Row count is reasonable (>100 models)
+    - Required columns are present
+    - No obvious data corruption (e.g., NaN in critical fields)
+
+    Returns:
+        True if all checks pass, False otherwise.
+    """
+    import csv
+
+    output_dir = REPO_ROOT / "src" / "frontend" / "csv"
+
+    if not output_dir.exists():
+        logger.error(f"Leaderboard output directory {output_dir} not found.")
+        return False
+
+    csv_files = list(output_dir.glob("*.csv"))
+    if not csv_files:
+        logger.error("No CSV files found in output directory.")
+        return False
+
+    logger.info(f"Found {len(csv_files)} leaderboard CSV(s).")
+
+    all_passed = True
+    for csv_file in csv_files:
+        try:
+            with csv_file.open(mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                rows = list(reader)
+
+                if len(rows) < 100:
+                    logger.error(
+                        f"{csv_file.name}: Only {len(rows)} rows (expected >100). "
+                        "Possible data loss?"
+                    )
+                    all_passed = False
+                    continue
+
+                # Check for critical columns
+                if rows:
+                    required_cols = ["Model", "Mean Score"]
+                    missing = [col for col in required_cols if col not in rows[0]]
+                    if missing:
+                        logger.error(
+                            f"{csv_file.name}: Missing required columns: {missing}"
+                        )
+                        all_passed = False
+                        continue
+
+                    # Check for NaN/None in critical fields
+                    nan_count = sum(
+                        1
+                        for row in rows
+                        if not row.get("Model") or row.get("Model") in ("NaN", "None", "")
+                    )
+                    if nan_count > 0:
+                        logger.error(
+                            f"{csv_file.name}: {nan_count} rows with missing Model field."
+                        )
+                        all_passed = False
+
+                logger.info(
+                    f"{csv_file.name}: {len(rows):,} rows ✓"
+                )
+        except Exception as e:
+            logger.error(f"{csv_file.name}: Failed to read: {e}")
+            all_passed = False
+
+    if all_passed:
+        logger.info("All leaderboard CSVs passed sanity checks.")
+    else:
+        logger.error("Leaderboard validation failed. Fix before deploying.")
+
+    return all_passed
 
 
 def deploy_to_vercel() -> bool:
