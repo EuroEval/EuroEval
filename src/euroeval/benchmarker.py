@@ -806,9 +806,9 @@ class Benchmarker:
                             log(e.message, level=logging.ERROR)
 
                             # Add the remaining number of benchmarks for the model to
-                            # our benchmark counter, since we're skipping the rest of
+                            # our benchmark counter, since we're erroring on the rest of
                             # them
-                            num_skipped_benchmarks += (
+                            num_errored_benchmarks += (
                                 len(dataset_configs)
                                 - dataset_configs.index(dataset_config)
                                 - 1
