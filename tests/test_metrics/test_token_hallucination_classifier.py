@@ -1,16 +1,19 @@
 """Tests for the `token_hallucination_classifier` metrics module."""
 
+import collections.abc as c
 import typing as t
+from unittest.mock import MagicMock, patch
 
 import pytest
 from datasets import Dataset
-from pytest_mock import MockerFixture
 
 from euroeval.exceptions import InvalidBenchmark
 from euroeval.metrics.token_hallucination_classifier import (
-    HallucinationRateMetric,
-    hallucination_rate_metric,
+    TokenHallucinationMetric,
+    hallucination_metric,
 )
+
+DETECTOR_PATH = "euroeval.metrics.token_hallucination_classifier.HallucinationDetector"
 
 
 class DummyLanguage:
@@ -25,14 +28,28 @@ class DummyDatasetConfig:
     main_language = DummyLanguage()
 
 
+class DummyDevice:
+    """Dummy device for testing."""
+
+    type = "cpu"
+
+
+class DummyBenchmarkConfig:
+    """Dummy benchmark config for testing."""
+
+    device = DummyDevice()
+
+
 @pytest.fixture
-def metric() -> t.Generator[HallucinationRateMetric, None, None]:
-    """Yield a fresh HallucinationRateMetric instance for each test.
+def metric() -> t.Generator[TokenHallucinationMetric, None, None]:
+    """Yield a fresh TokenHallucinationMetric instance for each test.
 
     Yields:
-        A new HallucinationRateMetric instance.
+        A new TokenHallucinationMetric instance.
     """
-    yield HallucinationRateMetric()
+    yield TokenHallucinationMetric(
+        name="hallucination_rate", pretty_name="Hallucination rate"
+    )
 
 
 @pytest.fixture
@@ -46,216 +63,190 @@ def dataset_config() -> t.Generator[DummyDatasetConfig, None, None]:
 
 
 @pytest.fixture
-def make_dataset() -> t.Callable[[list[str], list[str]], Dataset]:
-    """Return a factory that builds datasets from contexts and questions.
+def benchmark_config() -> t.Generator[DummyBenchmarkConfig, None, None]:
+    """Yield a dummy benchmark config.
+
+    Yields:
+        A DummyBenchmarkConfig instance.
+    """
+    yield DummyBenchmarkConfig()
+
+
+@pytest.fixture
+def make_dataset() -> t.Callable[[list[str]], Dataset]:
+    """Return a factory that builds datasets from contexts.
 
     Returns:
-        A function that creates datasets from lists of contexts and questions.
+        A function that creates datasets from lists of contexts.
     """
 
-    def _make(contexts: list[str], questions: list[str]) -> Dataset:
-        return Dataset.from_list(
-            [{"context": c, "question": q} for c, q in zip(contexts, questions)]
-        )
+    def _make(contexts: list[str]) -> Dataset:
+        return Dataset.from_list([{"context": ctx} for ctx in contexts])
 
     return _make
 
 
-def test_metric_initialization(metric: HallucinationRateMetric) -> None:
+def _make_detector(
+    predict_return: list[dict[str, int]] | None = None,
+    predict_side_effect: c.Callable[..., list[dict[str, int]]] | None = None,
+    max_length: int = 512,
+) -> MagicMock:
+    """Build a mocked ``HallucinationDetector`` instance.
+
+    Args:
+        predict_return:
+            The value returned by ``predict_prompt`` for every call.
+        predict_side_effect:
+            A callable used as the ``predict_prompt`` side effect, taking
+            precedence over ``predict_return``.
+        max_length:
+            The detector's maximum input sequence length.
+
+    Returns:
+        A configured mock detector instance.
+    """
+    detector = MagicMock()
+    detector.detector.tokenizer.return_value = {"input_ids": [1, 2, 3]}
+    detector.detector.max_length = max_length
+    if predict_side_effect is not None:
+        detector.predict_prompt.side_effect = predict_side_effect
+    else:
+        detector.predict_prompt.return_value = predict_return
+    return detector
+
+
+def test_metric_initialization(metric: TokenHallucinationMetric) -> None:
     """Test that the metric is initialised with correct attributes."""
     assert metric.name == "hallucination_rate"
     assert metric.pretty_name == "Hallucination rate"
-    # The base class substitutes None with a default lambda, verify it behaves correctly
     assert callable(metric.postprocessing_fn)
     score, score_str = metric.postprocessing_fn(0.25)
-    assert score == pytest.approx(25.0)
-    assert score_str == "25.00%"
-    assert metric.detector is None
+    assert score == pytest.approx(0.25)
+    assert score_str == "0.2500"
 
 
 def test_module_level_instance() -> None:
     """Test that the module-level instance has the correct type."""
-    assert isinstance(hallucination_rate_metric, HallucinationRateMetric)
-
-
-def test_empty_predictions_returns_zero(
-    metric: HallucinationRateMetric,
-    dataset_config: DummyDatasetConfig,
-    make_dataset: t.Callable[[list[str], list[str]], Dataset],
-    mocker: MockerFixture,
-) -> None:
-    """Return 0.0 when no predictions are provided."""
-    mocker.patch(
-        "euroeval.metrics.token_hallucination_classifier.HallucinationDetector"
-    )
-    dataset = make_dataset([], [])
-    result = metric(
-        predictions=[],
-        dataset=dataset,
-        dataset_config=dataset_config,  # type: ignore[arg-type]
-    )
-    assert result == 0.0
-
-
-def test_mismatched_lengths_raise_invalid_benchmark(
-    metric: HallucinationRateMetric,
-    dataset_config: DummyDatasetConfig,
-    make_dataset: t.Callable[[list[str], list[str]], Dataset],
-    mocker: MockerFixture,
-) -> None:
-    """Raise InvalidBenchmark when prediction count differs from dataset length."""
-    mocker.patch(
-        "euroeval.metrics.token_hallucination_classifier.HallucinationDetector"
-    )
-    dataset = make_dataset(["ctx1", "ctx2"], ["q1", "q2"])
-    with pytest.raises(InvalidBenchmark):
-        metric(
-            predictions=[{"prediction_text": "answer1"}],
-            dataset=dataset,
-            dataset_config=dataset_config,  # type: ignore[arg-type]
-        )
+    assert isinstance(hallucination_metric, TokenHallucinationMetric)
 
 
 def test_no_hallucinations_returns_zero(
-    metric: HallucinationRateMetric,
+    metric: TokenHallucinationMetric,
     dataset_config: DummyDatasetConfig,
-    make_dataset: t.Callable[[list[str], list[str]], Dataset],
-    mocker: MockerFixture,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
 ) -> None:
     """Return 0.0 when the detector finds no hallucinated tokens."""
-    mock_detector = mocker.MagicMock()
-    mock_detector.predict.return_value = [{"pred": 0}, {"pred": 0}]
-    mocker.patch(
-        "euroeval.metrics.token_hallucination_classifier.HallucinationDetector",
-        return_value=mock_detector,
-    )
-
-    dataset = make_dataset(["ctx1", "ctx2"], ["q1", "q2"])
+    detector = _make_detector(predict_return=[{"pred": 0}])
+    dataset = make_dataset(["ctx1", "ctx2"])
     predictions = [{"prediction_text": "answer1"}, {"prediction_text": "answer2"}]
-    result = metric(
-        predictions=predictions,
-        dataset=dataset,
-        dataset_config=dataset_config,  # type: ignore[arg-type]
-    )
+    with patch(DETECTOR_PATH, return_value=detector):
+        result = metric(
+            predictions=predictions,
+            references=[],
+            dataset=dataset,
+            dataset_config=dataset_config,  # type: ignore[arg-type]
+            benchmark_config=benchmark_config,  # type: ignore[arg-type]
+        )
     assert result == pytest.approx(0.0)
 
 
 def test_all_hallucinations_returns_one(
-    metric: HallucinationRateMetric,
+    metric: TokenHallucinationMetric,
     dataset_config: DummyDatasetConfig,
-    make_dataset: t.Callable[[list[str], list[str]], Dataset],
-    mocker: MockerFixture,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
 ) -> None:
-    """Return 1.0 when every sample is flagged as hallucinated."""
-    mock_detector = mocker.MagicMock()
-    mock_detector.predict.return_value = [{"pred": 1}, {"pred": 1}]
-    mocker.patch(
-        "euroeval.metrics.token_hallucination_classifier.HallucinationDetector",
-        return_value=mock_detector,
-    )
-
-    dataset = make_dataset(["ctx1", "ctx2"], ["q1", "q2"])
+    """Return 1.0 when every token is flagged as hallucinated."""
+    detector = _make_detector(predict_return=[{"pred": 1}])
+    dataset = make_dataset(["ctx1", "ctx2"])
     predictions = [
         {"prediction_text": "hallucinated1"},
         {"prediction_text": "hallucinated2"},
     ]
-    result = metric(
-        predictions=predictions,
-        dataset=dataset,
-        dataset_config=dataset_config,  # type: ignore[arg-type]
-    )
+    with patch(DETECTOR_PATH, return_value=detector):
+        result = metric(
+            predictions=predictions,
+            references=[],
+            dataset=dataset,
+            dataset_config=dataset_config,  # type: ignore[arg-type]
+            benchmark_config=benchmark_config,  # type: ignore[arg-type]
+        )
     assert result == pytest.approx(1.0)
 
 
 def test_partial_hallucinations_returns_correct_rate(
-    metric: HallucinationRateMetric,
+    metric: TokenHallucinationMetric,
     dataset_config: DummyDatasetConfig,
-    make_dataset: t.Callable[[list[str], list[str]], Dataset],
-    mocker: MockerFixture,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
 ) -> None:
-    """Return the correct fraction when only some samples are hallucinated."""
+    """Return the correct fraction when only some tokens are hallucinated."""
     call_count = 0
 
-    def predict_side_effect(
-        context: list[str], question: str, answer: str
-    ) -> list[dict[str, int]]:
+    def predict_side_effect(prompt: str, answer: str) -> list[dict[str, int]]:
         nonlocal call_count
         call_count += 1
-        # First call: hallucinated, second: not hallucinated
         if call_count == 1:
             return [{"pred": 1}]
         return [{"pred": 0}]
 
-    mock_detector = mocker.MagicMock()
-    mock_detector.predict.side_effect = predict_side_effect
-    mocker.patch(
-        "euroeval.metrics.token_hallucination_classifier.HallucinationDetector",
-        return_value=mock_detector,
-    )
-
-    dataset = make_dataset(["ctx1", "ctx2"], ["q1", "q2"])
+    detector = _make_detector(predict_side_effect=predict_side_effect)
+    dataset = make_dataset(["ctx1", "ctx2"])
     predictions = [{"prediction_text": "hallucinated"}, {"prediction_text": "correct"}]
-    result = metric(
-        predictions=predictions,
-        dataset=dataset,
-        dataset_config=dataset_config,  # type: ignore[arg-type]
-    )
+    with patch(DETECTOR_PATH, return_value=detector):
+        result = metric(
+            predictions=predictions,
+            references=[],
+            dataset=dataset,
+            dataset_config=dataset_config,  # type: ignore[arg-type]
+            benchmark_config=benchmark_config,  # type: ignore[arg-type]
+        )
     assert result == pytest.approx(0.5)
 
 
-def test_detector_uses_correct_model_id(
-    metric: HallucinationRateMetric,
+def test_no_tokens_raises_invalid_benchmark(
+    metric: TokenHallucinationMetric,
     dataset_config: DummyDatasetConfig,
-    make_dataset: t.Callable[[list[str], list[str]], Dataset],
-    mocker: MockerFixture,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
+) -> None:
+    """Raise InvalidBenchmark when no tokens are found in the predictions."""
+    detector = _make_detector(predict_return=[])
+    dataset = make_dataset(["ctx1"])
+    predictions = [{"prediction_text": "answer"}]
+    with patch(DETECTOR_PATH, return_value=detector):
+        with pytest.raises(InvalidBenchmark):
+            metric(
+                predictions=predictions,
+                references=[],
+                dataset=dataset,
+                dataset_config=dataset_config,  # type: ignore[arg-type]
+                benchmark_config=benchmark_config,  # type: ignore[arg-type]
+            )
+
+
+def test_detector_uses_correct_model_id(
+    metric: TokenHallucinationMetric,
+    dataset_config: DummyDatasetConfig,
+    benchmark_config: DummyBenchmarkConfig,
+    make_dataset: t.Callable[[list[str]], Dataset],
 ) -> None:
     """Verify the model ID is built from dataset_config.main_language.code."""
-    mock_detector = mocker.MagicMock()
-    mock_detector.predict.return_value = [{"pred": 0}]
-    mock_cls = mocker.patch(
-        "euroeval.metrics.token_hallucination_classifier.HallucinationDetector",
-        return_value=mock_detector,
-    )
-
-    dataset = make_dataset(["ctx1"], ["q1"])
-    metric(
-        predictions=[{"prediction_text": "answer"}],
-        dataset=dataset,
-        dataset_config=dataset_config,  # type: ignore[arg-type]
-    )
+    detector = _make_detector(predict_return=[{"pred": 0}])
+    dataset = make_dataset(["ctx1"])
+    with patch(DETECTOR_PATH, return_value=detector) as mock_cls:
+        metric(
+            predictions=[{"prediction_text": "answer"}],
+            references=[],
+            dataset=dataset,
+            dataset_config=dataset_config,  # type: ignore[arg-type]
+            benchmark_config=benchmark_config,  # type: ignore[arg-type]
+        )
 
     expected_model_id = (
-        "alexandrainst/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-da"
+        "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-da"
     )
     mock_cls.assert_called_once_with(
         method="transformer", model_path=expected_model_id, device="cpu"
     )
-
-
-def test_detector_is_reused_across_calls(
-    metric: HallucinationRateMetric,
-    dataset_config: DummyDatasetConfig,
-    make_dataset: t.Callable[[list[str], list[str]], Dataset],
-    mocker: MockerFixture,
-) -> None:
-    """Ensure the detector is only created once and reused on subsequent calls."""
-    mock_detector = mocker.MagicMock()
-    mock_detector.predict.return_value = [{"pred": 0}]
-    mock_cls = mocker.patch(
-        "euroeval.metrics.token_hallucination_classifier.HallucinationDetector",
-        return_value=mock_detector,
-    )
-
-    dataset = make_dataset(["ctx1"], ["q1"])
-    predictions = [{"prediction_text": "answer"}]
-    call_kwargs = dict(
-        predictions=predictions,
-        dataset=dataset,
-        dataset_config=dataset_config,  # type: ignore[arg-type]
-    )
-
-    metric(**call_kwargs)
-    metric(**call_kwargs)
-
-    # Constructor should only be called once
-    assert mock_cls.call_count == 1
