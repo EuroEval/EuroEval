@@ -44,7 +44,7 @@ from functools import cache
 from pathlib import Path
 
 from huggingface_hub import HfApi
-from huggingface_hub.errors import HfHubHTTPError, LocalError
+from huggingface_hub.errors import HfHubHTTPError
 from yaml import safe_load
 
 from leaderboards.evaluation_common import (
@@ -173,7 +173,7 @@ def download_results_from_hf() -> int:
 
     try:
         HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RESULTS_CACHE_DIR))
-    except (HfHubHTTPError, LocalError) as e:
+    except HfHubHTTPError as e:
         logger.warning(f"Could not sync results from HF bucket: {e}")
         return 0
 
