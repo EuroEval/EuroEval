@@ -15,6 +15,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed validation error when loading benchmark results with `languages` field stored as
   a JSON-encoded string (e.g. `'"bg"'` instead of `["bg"]`). This occurred when mixing
   EEE format results with legacy format results.
+- Fixed model loading failures (e.g., shape mismatches, CUDA errors) incorrectly being
+  counted as "skipped" benchmarks instead of "errored". The queue processor now correctly
+  detects these as failures and applies the `evaluation-failed` label to GitHub issues.
 
 ### Changed
 
