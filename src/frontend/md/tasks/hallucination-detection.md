@@ -15,7 +15,7 @@ hallucination detection classifiers are trained on the publicly available
 hallucination datasets
 [MultiWikiQA-Synthetic-Hallucinations](https://huggingface.co/datasets/alexandrainst/multi-wiki-qa-synthetic-hallucinations) and [Translated-RAGTruth-Hallucinations](https://huggingface.co/datasets/alexandrainst/ragtruth-translated-hallucinations).
 
-When evaluating generative models, we allow the model to generate 5 tokens on this task.
+When evaluating generative models, we allow the model to generate 512 tokens on this task.
 
 ## 📊 Metrics
 
