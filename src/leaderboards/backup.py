@@ -17,7 +17,7 @@ import logging
 import shutil
 from pathlib import Path
 
-from .paths import BACKUPS_DIR, BACKUPS_MAX_BYTES, RESULTS_PATH
+from .paths import BACKUPS_DIR, BACKUPS_MAX_BYTES, MAX_BACKUPS, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -116,8 +116,17 @@ def _files_equal(a: Path, b: Path, chunk_size: int = 1 << 20) -> bool:
 
 
 def _prune_backups() -> None:
-    """Delete the oldest backups until the dir is under BACKUPS_MAX_BYTES."""
+    """Delete oldest backups until under BACKUPS_MAX_BYTES and MAX_BACKUPS."""
     backups = _list_backups()
+    
+    # Prune by count first (keep at most MAX_BACKUPS)
+    while len(backups) > MAX_BACKUPS:
+        oldest = backups.pop()  # Remove from end (oldest)
+        size = oldest.stat().st_size
+        oldest.unlink()
+        logger.info(f"Pruned old backup {oldest.name} ({size:,} bytes) - over count limit")
+    
+    # Then prune by size if still over cap
     total = sum(p.stat().st_size for p in backups)
     if total <= BACKUPS_MAX_BYTES:
         return
@@ -130,4 +139,4 @@ def _prune_backups() -> None:
         size = old.stat().st_size
         old.unlink()
         total -= size
-        logger.info(f"Pruned old backup {old.name} ({size:,} bytes)")
+        logger.info(f"Pruned old backup {old.name} ({size:,} bytes) - over size limit")
