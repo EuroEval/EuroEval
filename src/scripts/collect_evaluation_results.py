@@ -49,7 +49,7 @@ from leaderboards.github_api import (
     list_comments,
 )
 from leaderboards.hf_mount import create_backup
-from leaderboards.paths import RESULTS_PATH
+from leaderboards.paths import RESULTS_PATH, RAW_RESULTS_DIR
 
 load_dotenv()
 
@@ -60,7 +60,6 @@ logger = logging.getLogger("collect_evaluation_results")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
-RESULTS_CACHE_DIR = REPO_ROOT / ".euroeval_cache/results"
 
 # Canonical HF bucket for storing raw results (public read access).
 HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
@@ -379,19 +378,19 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
     Returns:
         True if upload succeeded, False otherwise.
     """
-    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     try:
         # Sync existing results from raw-results bucket
         logger.info(f"Syncing existing results from {HF_RAW_BUCKET}...")
-        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RESULTS_CACHE_DIR))
+        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RAW_RESULTS_DIR))
         logger.info("Downloaded existing results from bucket.")
     except HfHubHTTPError as e:
         logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
 
     # Load existing results by model
     existing_by_model: dict[str, set[str]] = {}
-    for model_file in RESULTS_CACHE_DIR.glob("*.jsonl"):
+    for model_file in RAW_RESULTS_DIR.glob("*.jsonl"):
         lines = {
             line
             for line in model_file.read_text(encoding="utf-8").splitlines()
@@ -410,7 +409,7 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
             data = json.loads(line)
             model_id = data.get("model", "unknown")
             filename = _model_id_to_filename(model_id)
-            model_file = RESULTS_CACHE_DIR / filename
+            model_file = RAW_RESULTS_DIR / filename
             # Append if not already present
             if line not in existing_by_model.get(filename, set()):
                 with open(model_file, "a", encoding="utf-8") as f:
@@ -421,7 +420,7 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
     # Sync updated results to raw-results bucket
     logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
     try:
-        HfApi().sync_bucket(source=str(RESULTS_CACHE_DIR), dest=HF_RAW_BUCKET + "/")
+        HfApi().sync_bucket(source=str(RAW_RESULTS_DIR), dest=HF_RAW_BUCKET + "/")
         logger.info(f"Uploaded results to {HF_RAW_BUCKET}.")
     except HfHubHTTPError as e:
         logger.error(f"Failed to sync to bucket: {e}")
