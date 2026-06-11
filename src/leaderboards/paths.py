@@ -49,12 +49,6 @@ NEW_RESULTS_PATH: Path = _env_path(
 RESULTS_DIR: Path = REPO_ROOT / "results"
 RAW_RESULTS_DIR: Path = RESULTS_DIR / "raw"
 PROCESSED_RESULTS_DIR: Path = RESULTS_DIR / "processed"
-# Note: `.euroeval_cache/` is now deprecated for results storage.
-
-# Persistent results directories (HF bucket sync points, git-ignored)
-RESULTS_DIR: Path = REPO_ROOT / "results"
-RAW_RESULTS_DIR: Path = RESULTS_DIR / "raw"
-PROCESSED_RESULTS_DIR: Path = RESULTS_DIR / "processed"
 
 # Note: `.euroeval_cache/` is now deprecated for results storage.
 
