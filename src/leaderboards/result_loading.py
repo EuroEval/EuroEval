@@ -39,51 +39,40 @@ def _sync_results_from_bucket() -> None:
 
 
 def _sync_via_hf_mount() -> None:
-    """Sync via hf-mount daemon or fall back to existing cache.
+    """Use hf-mount if available, otherwise fall back to existing local files.
 
-    Tries hf-mount first. If the mount has fewer files than the
-    local cache, the cache is authoritative and is used instead.
+    Since MOUNT_POINT == RAW_RESULTS_DIR, the mount writes directly to the
+    persistent directory. No copying needed.
 
     Raises:
         FileNotFoundError:
-            If neither mount nor cache exist.
+            If mount is not active and no local files exist.
     """
     RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Count files in existing cache (authoritative)
-    cache_file_count = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
-
-    # Try hf-mount first
+    # Check if mount point is actually mounted
     mount_point = MOUNT_POINT
-    if mount_point.exists():
-        file_count = 0
-        for jsonl_file in mount_point.glob("*.jsonl"):
-            dest = RAW_RESULTS_DIR / jsonl_file.name
-            shutil.copy2(jsonl_file, dest)
-            file_count += 1
-
-        # Use mount if it has at least as many files as the cache
-        if file_count >= cache_file_count:
-            logger.info(f"Copied {file_count:,} model files from hf-mount daemon.")
+    if mount_point.is_mount():
+        file_count = len(list(mount_point.glob("*.jsonl")))
+        if file_count > 0:
+            logger.info(f"Using hf-mount at {mount_point} with {file_count:,} model files.")
             return
-        elif cache_file_count > 0:
-            logger.info(
-                f"hf-mount has {file_count:,} files vs {cache_file_count:,} in cache. "
-                "Using cache."
-            )
         else:
-            logger.info(f"hf-mount has {file_count:,} files (no cache to compare).")
+            logger.info(f"hf-mount is active but shows 0 files (may be loading).")
+            # Mount is active, files will appear on-demand - proceed
+            return
 
-    # Fall back to existing cache
-    if cache_file_count > 0:
+    # Mount not active - check if we have local files from previous sync
+    local_file_count = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
+    if local_file_count > 0:
         logger.info(
-            f"Using existing cache with {cache_file_count:,} model files "
-            f"(from {RAW_RESULTS_DIR})."
+            f"hf-mount not active. Using {local_file_count:,} local files "
+            f"from previous sync at {RAW_RESULTS_DIR}."
         )
         return
 
     raise FileNotFoundError(
-        "No results available. Start hf-mount or populate results/raw/"
+        "No results available. Start hf-mount or run huggingface_hub sync first."
     )
 
 
