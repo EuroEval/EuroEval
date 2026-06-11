@@ -10,7 +10,7 @@ from functools import cache
 
 import httpx
 import openai
-from anthropic import Anthropic
+
 from huggingface_hub import HfApi
 from huggingface_hub.errors import (
     GatedRepoError,
@@ -284,20 +284,25 @@ def generate_openai_url(model_id: str) -> str | None:
 def generate_anthropic_url(model_id: str) -> str | None:
     """Generate a model URL for a model hosted on Anthropic.
 
+    Checks if the model ID matches Anthropic's naming patterns (claude-*).
+    Does not validate against the API list, as older models may not appear there
+    even though they're still valid.
+
     Args:
         model_id:
             The Anthropic model ID.
 
     Returns:
-        The URL for the model on Anthropic, or None if the model does not exist on
-        Anthropic.
+        The URL for the model on Anthropic, or None if the model does not match
+        Anthropic's naming pattern.
     """
     model_id = model_id.replace("anthropic/", "")
-    client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-    available_anthropic_models = [
-        model_info.id for model_info in client.models.list().data
-    ]
-    if model_id in available_anthropic_models:
+    # Match Anthropic model naming patterns:
+    # - claude-3-7-sonnet-20250219
+    # - claude-sonnet-4-5-20250929
+    # - claude-opus-4-20250514
+    # - claude-haiku-4-5-20251001
+    if model_id.startswith("claude-"):
         return "https://docs.anthropic.com/en/docs/about-claude"
     return None
 
