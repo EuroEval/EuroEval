@@ -113,7 +113,7 @@ def generate_anchor_tag(model_id: str) -> str | None:
     if url is None:
         url = generate_xai_url(model_id=model_id_without_extras)
     if url is None:
-        url = generate_chatdk_url(model_id=model_id_without_extras)
+        url = generate_ordbogen_url(model_id=model_id_without_extras)
     if url is None:
         remove_model = ask_user_to_remove_model(model_id=model_id_without_extras)
         if remove_model:
@@ -359,21 +359,18 @@ def generate_xai_url(model_id: str) -> str | None:
 
 
 @cache
-def generate_chatdk_url(model_id: str) -> str | None:
-    """Generate a model URL for a model hosted on ChatDK/Ordbogen.
+def generate_ordbogen_url(model_id: str) -> str | None:
+    """Generate a model URL for a model hosted on Ordbogen.
 
     Args:
         model_id:
-            The ChatDK or Ordbogen model ID.
+            The Ordbogen model ID.
 
     Returns:
-        The URL for the model on Chat.dk/Ordbogen, or None if the model does not exist on
-        Chat.dk/Ordbogen.
+        The URL for the model on Ordbogen, or None if the model does not exist on
+        Ordbogen.
     """
-    if model_id.startswith("chatdk/"):
-        model_id = model_id.replace("chatdk/", "")
-    elif model_id.startswith("ordbogen/"):
-        model_id = model_id.replace("ordbogen/", "")
-    else:
+    if not model_id.startswith("ordbogen/"):
         return None
+    model_id = model_id.replace("ordbogen/", "")
     return f"https://www.ordbogen.ai/docs/models/{model_id}"
