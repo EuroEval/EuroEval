@@ -54,8 +54,11 @@ def process_results(
     """
     results_path = RESULTS_PATH
 
-    # Build the cache from the processed records file
-    cache = Cache.from_processed_records(compressed_results_path=results_path)
+    # Build the cache from the processed records directory if available,
+    # otherwise fall back to the compressed results file
+    cache = Cache.from_processed_records(
+        compressed_results_path=results_path, processed_dir=PROCESSED_RESULTS_DIR
+    )
 
     # Load all the raw records
     records = load_raw_results()
