@@ -16,31 +16,23 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from .paths import BACKUPS_DIR, BACKUPS_MAX_BYTES
+from .paths import (
+    BACKUPS_DIR,
+    BACKUPS_MAX_BYTES,
+    PROCESSED_RESULTS_DIR,
+    RAW_RESULTS_DIR,
+    REPO_ROOT,
+)
 
 load_dotenv()
 
+# Raw results bucket mount point - configured to use persistent directory
 HF_RAW_BUCKET = "buckets/EuroEval/raw-results"
+MOUNT_POINT = RAW_RESULTS_DIR  # Mount directly to results/raw/
 
-# Mount point configurable via env var, defaults to ~/.local/share/euroeval-results
-# This directory should be:
-# - .gitignore'd (add /euroeval-results or customize path)
-# - On persistent storage (not tmpfs)
-# - Optionally on pCloud/external drive for large datasets
-MOUNT_POINT = Path(
-    os.getenv(
-        "EUROEVAL_MOUNT_POINT", Path.home() / ".local" / "share" / "euroeval-results"
-    )
-).expanduser()
-
-# Verify mount point is not in a git-tracked location
-_cwd_parts = str(Path.cwd().parent)
-if MOUNT_POINT.is_relative_to(Path.cwd()) and "euroeval-results" not in _cwd_parts:
-    logger = logging.getLogger(__name__)
-    logger.warning(
-        f"Mount point {MOUNT_POINT} is inside or near a git repo. "
-        "Ensure it's .gitignore'd to avoid tracking large data files."
-    )
+# Processed results bucket mount point - configured to use persistent directory
+HF_PROCESSED_BUCKET = "buckets/EuroEval/processed-results"
+PROCESSED_MOUNT_POINT = PROCESSED_RESULTS_DIR  # Mount directly to results/processed/
 
 
 def is_hf_mount_available() -> bool:
@@ -57,10 +49,10 @@ def is_hf_mount_available() -> bool:
 
 
 def mount_bucket() -> None:
-    """Mount the HF results bucket at the mount point.
+    """Mount both HF buckets (raw and processed) at their mount points.
 
     Uses NFS backend (no root required, works everywhere).
-    Creates mount point directory if needed.
+    Creates mount point directories if needed.
 
     Raises:
         ValueError:
@@ -73,34 +65,45 @@ def mount_bucket() -> None:
             "Set it in your .env file or export it."
         )
 
+    # Mount raw results bucket
     MOUNT_POINT.mkdir(parents=True, exist_ok=True)
-
-    # Check if already mounted
     if MOUNT_POINT.is_mount():
-        print(f"✓ Already mounted at {MOUNT_POINT}")
-        return
+        print(f"✓ Raw bucket already mounted at {MOUNT_POINT}")
+    else:
+        print(f"Mounting raw bucket {HF_RAW_BUCKET} at {MOUNT_POINT}...")
+        cmd = [
+            "hf-mount-nfs",
+            "bucket",
+            HF_RAW_BUCKET,
+            str(MOUNT_POINT),
+            "--hf-token",
+            hf_token,
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            print(f"⚠ hf-mount-nfs failed for raw bucket: {result.stderr}")
+        else:
+            print(f"✓ Mounted raw bucket at {MOUNT_POINT}")
 
-    print(f"Mounting HF bucket {HF_RAW_BUCKET} at {MOUNT_POINT}...")
-
-    cmd = [
-        "hf-mount-nfs",
-        "bucket",
-        HF_RAW_BUCKET,
-        str(MOUNT_POINT),
-        "--hf-token",
-        hf_token,
-    ]
-
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-
-    if result.returncode != 0:
-        # Try fallback to daemon mode
-        print("Daemon mode failed, trying foreground check...")
-        # Just warn and continue - will fall back to tar.gz
-        print(f"⚠ hf-mount failed: {result.stderr}")
-        return
-
-    print(f"✓ Mounted at {MOUNT_POINT}")
+    # Mount processed results bucket
+    PROCESSED_MOUNT_POINT.mkdir(parents=True, exist_ok=True)
+    if PROCESSED_MOUNT_POINT.is_mount():
+        print(f"✓ Processed bucket already mounted at {PROCESSED_MOUNT_POINT}")
+    else:
+        print(f"Mounting processed bucket {HF_PROCESSED_BUCKET} at {PROCESSED_MOUNT_POINT}...")
+        cmd = [
+            "hf-mount-nfs",
+            "bucket",
+            HF_PROCESSED_BUCKET,
+            str(PROCESSED_MOUNT_POINT),
+            "--hf-token",
+            hf_token,
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            print(f"⚠ hf-mount-nfs failed for processed bucket: {result.stderr}")
+        else:
+            print(f"✓ Mounted processed bucket at {PROCESSED_MOUNT_POINT}")
 
 
 def unmount_bucket() -> None:
