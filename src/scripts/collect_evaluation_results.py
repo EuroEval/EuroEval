@@ -491,7 +491,7 @@ def verify_leaderboards() -> bool:
 
                 # Check for critical columns
                 if rows:
-                    required_cols = ["Model", "Mean Score"]
+                    required_cols = ["model", "mean_rank_score"]
                     missing = [col for col in required_cols if col not in rows[0]]
                     if missing:
                         logger.error(
@@ -504,11 +504,11 @@ def verify_leaderboards() -> bool:
                     nan_count = sum(
                         1
                         for row in rows
-                        if not row.get("Model")
-                        or row.get("Model") in ("NaN", "None", "")
+                        if not row.get("model")
+                        or row.get("model") in ("NaN", "None", "")
                     )
                     if nan_count > 0:
-                        msg = f"{csv_file.name}: {nan_count} rows with missing Model."
+                        msg = f"{csv_file.name}: {nan_count} rows with missing model."
                         logger.error(msg)
                         all_passed = False
 
