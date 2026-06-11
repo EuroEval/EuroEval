@@ -27,11 +27,11 @@ from .paths import (
 load_dotenv()
 
 # Raw results bucket mount point - configured to use persistent directory
-HF_RAW_BUCKET = "EuroEval/raw-results"  # Bucket ID for hf-mount-nfs (no 'buckets/' prefix)
+HF_RAW_BUCKET = "EuroEval/raw-results"  # Bucket ID for hf-mount (no 'buckets/' prefix)
 MOUNT_POINT = RAW_RESULTS_DIR  # Mount directly to results/raw/
 
 # Processed results bucket mount point - configured to use persistent directory
-HF_PROCESSED_BUCKET = "EuroEval/processed-results"  # Bucket ID for hf-mount-nfs
+HF_PROCESSED_BUCKET = "EuroEval/processed-results"  # Bucket ID for hf-mount
 PROCESSED_MOUNT_POINT = PROCESSED_RESULTS_DIR  # Mount directly to results/processed/
 
 
