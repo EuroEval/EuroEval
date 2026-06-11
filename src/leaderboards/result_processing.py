@@ -11,7 +11,6 @@ import typing as t
 import warnings
 from collections import Counter, defaultdict
 from copy import deepcopy
-from pathlib import Path
 
 from huggingface_hub import HfApi
 from huggingface_hub.errors import HFValidationError

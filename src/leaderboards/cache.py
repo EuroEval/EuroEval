@@ -45,7 +45,9 @@ class Cache:
 
     @classmethod
     def from_processed_records(
-        cls, compressed_results_path: Path | None = None, processed_dir: Path | None = None
+        cls,
+        compressed_results_path: Path | None = None,
+        processed_dir: Path | None = None,
     ) -> "Cache":
         """Create a cache from processed records.
 

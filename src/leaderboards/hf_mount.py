@@ -6,8 +6,6 @@ automatic backup creation to pCloud.
 
 import collections.abc as c
 import io
-import logging
-import os
 import subprocess
 import tarfile
 from contextlib import contextmanager
@@ -21,7 +19,6 @@ from .paths import (
     BACKUPS_MAX_BYTES,
     PROCESSED_RESULTS_DIR,
     RAW_RESULTS_DIR,
-    REPO_ROOT,
 )
 
 load_dotenv()
@@ -56,6 +53,11 @@ def mount_bucket() -> None:
 
     HF_TOKEN is loaded from .env by load_dotenv() at module import.
     """
+    hf_token = os.getenv("HF_TOKEN")
+    if not hf_token:
+        print("⚠ HF_TOKEN not set. Cannot start hf-mount daemon.")
+        return
+
     # Mount raw results bucket
     MOUNT_POINT.mkdir(parents=True, exist_ok=True)
     if MOUNT_POINT.is_mount():
@@ -63,8 +65,11 @@ def mount_bucket() -> None:
     else:
         print(f"Starting hf-mount daemon for {HF_RAW_BUCKET}...")
         result = subprocess.run(
-            ["hf-mount", "start", HF_RAW_BUCKET, str(MOUNT_POINT)],
-            capture_output=True, text=True, check=False
+            ["hf-mount", "start", "bucket", HF_RAW_BUCKET, str(MOUNT_POINT)],
+            capture_output=True,
+            text=True,
+            check=False,
+            env={**os.environ, "HF_TOKEN": hf_token},
         )
         if result.returncode != 0:
             print(f"⚠ hf-mount start failed: {result.stderr}")
@@ -78,8 +83,11 @@ def mount_bucket() -> None:
     else:
         print(f"Starting hf-mount daemon for {HF_PROCESSED_BUCKET}...")
         result = subprocess.run(
-            ["hf-mount", "start", HF_PROCESSED_BUCKET, str(PROCESSED_MOUNT_POINT)],
-            capture_output=True, text=True, check=False
+            ["hf-mount", "start", "bucket", HF_PROCESSED_BUCKET, str(PROCESSED_MOUNT_POINT)],
+            capture_output=True,
+            text=True,
+            check=False,
+            env={**os.environ, "HF_TOKEN": hf_token},
         )
         if result.returncode != 0:
             print(f"⚠ hf-mount start failed: {result.stderr}")

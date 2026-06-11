@@ -118,14 +118,16 @@ def _files_equal(a: Path, b: Path, chunk_size: int = 1 << 20) -> bool:
 def _prune_backups() -> None:
     """Delete oldest backups until under BACKUPS_MAX_BYTES and MAX_BACKUPS."""
     backups = _list_backups()
-    
+
     # Prune by count first (keep at most MAX_BACKUPS)
     while len(backups) > MAX_BACKUPS:
         oldest = backups.pop()  # Remove from end (oldest)
         size = oldest.stat().st_size
         oldest.unlink()
-        logger.info(f"Pruned old backup {oldest.name} ({size:,} bytes) - over count limit")
-    
+        logger.info(
+            f"Pruned old backup {oldest.name} ({size:,} bytes) - over count limit"
+        )
+
     # Then prune by size if still over cap
     total = sum(p.stat().st_size for p in backups)
     if total <= BACKUPS_MAX_BYTES:

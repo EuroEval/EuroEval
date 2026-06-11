@@ -49,7 +49,7 @@ from leaderboards.github_api import (
     list_comments,
 )
 from leaderboards.hf_mount import create_backup
-from leaderboards.paths import RESULTS_PATH, RAW_RESULTS_DIR
+from leaderboards.paths import RAW_RESULTS_DIR, RESULTS_PATH
 
 load_dotenv()
 

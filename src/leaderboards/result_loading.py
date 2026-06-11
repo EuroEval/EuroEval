@@ -9,7 +9,6 @@ import re
 import tarfile
 import typing as t
 from functools import cache
-from pathlib import Path
 
 from .hf_mount import MOUNT_POINT
 from .paths import NEW_RESULTS_PATH, RAW_RESULTS_DIR, RESULTS_PATH
@@ -46,11 +45,12 @@ def _sync_via_hf_mount() -> None:
     # Start daemon if not already running (daemon persists across runs)
     mount_point = MOUNT_POINT
     if not mount_point.is_mount():
-        logger.info(f"hf-mount daemon not running. Starting...")
+        logger.info("hf-mount daemon not running. Starting...")
         try:
             mount_bucket()
             # Give daemon a moment to establish mount
             import time
+
             time.sleep(2)
         except Exception as e:
             logger.error(f"Failed to start hf-mount daemon: {e}")
@@ -97,9 +97,7 @@ def _rebuild_results_tar_gz() -> None:
         all_lines.update(lines)
 
     n_files = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
-    logger.info(
-        f"Loaded {len(all_lines):,} results from {n_files:,} model files."
-    )
+    logger.info(f"Loaded {len(all_lines):,} results from {n_files:,} model files.")
 
     if not all_lines:
         logger.warning("No results found in mount point. results.tar.gz will be empty.")
