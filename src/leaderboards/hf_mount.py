@@ -76,10 +76,10 @@ def mount_bucket() -> None:
             "bucket",
             HF_RAW_BUCKET,
             str(MOUNT_POINT),
-            "--hf-token",
-            hf_token,
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, env={**os.environ, "HF_TOKEN": hf_token}
+        )
         if result.returncode != 0:
             print(f"⚠ hf-mount-nfs failed for raw bucket: {result.stderr}")
         else:
@@ -96,10 +96,10 @@ def mount_bucket() -> None:
             "bucket",
             HF_PROCESSED_BUCKET,
             str(PROCESSED_MOUNT_POINT),
-            "--hf-token",
-            hf_token,
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, env={**os.environ, "HF_TOKEN": hf_token}
+        )
         if result.returncode != 0:
             print(f"⚠ hf-mount-nfs failed for processed bucket: {result.stderr}")
         else:
