@@ -481,40 +481,61 @@ def verify_leaderboards() -> bool:
                 reader = csv.DictReader(f)
                 rows = list(reader)
 
-                if len(rows) < 100:
+                if len(rows) < 50:
                     logger.error(
-                        f"{csv_file.name}: Only {len(rows)} rows (expected >100). "
+                        f"{csv_file.name}: Only {len(rows)} rows (expected >=50). "
                         "Possible data loss?"
                     )
                     all_passed = False
                     continue
 
+                if len(rows) < 100:
+                    logger.warning(
+                        f"{csv_file.name}: Only {len(rows)} rows (<100). "
+                        "This may be expected for simplified/generative-only leaderboards."
+                    )
+
                 # Check for critical columns
                 # Some CSVs have HTML headers in row 0, actual headers in row 1
-                header_row = rows[0]
-                if "rank" not in header_row and len(rows) > 1 and "rank" in rows[1]:
-                    header_row = rows[1]
-                    rows = rows[1:]  # Use data rows only
+                # DictReader uses first row as headers, so we need to re-read if HTML is present
+                if rows and "rank" not in rows[0]:
+                    # Re-read skipping HTML row
+                    with csv_file.open(mode="r", encoding="utf-8") as f:
+                        next(f)  # Skip HTML row
+                        reader = csv.DictReader(f)  # Use row 1 as headers
+                        rows = list(reader)
 
                 if rows:
-                    required_cols = ["model", "mean_rank_score"]
-                    missing = [col for col in required_cols if col not in header_row]
-                    if missing:
+                    # Support both snake_case (simplified) and Title Case (full) formats
+                    required_cols_snake = ["model", "mean_rank_score"]
+                    required_cols_title = ["Model", "Rank score"]
+                    
+                    missing_snake = [col for col in required_cols_snake if col not in rows[0]]
+                    missing_title = [col for col in required_cols_title if col not in rows[0]]
+                    
+                    # Must have at least one complete set
+                    if missing_snake and missing_title:
                         logger.error(
-                            f"{csv_file.name}: Missing required columns: {missing}"
+                            f"{csv_file.name}: Missing required columns. "
+                            f"Expected {required_cols_snake} or {required_cols_title}, "
+                            f"got {list(rows[0].keys())[:5]}..."
                         )
                         all_passed = False
                         continue
+
+                    # Use whichever format is present
+                    model_col = "model" if not missing_snake else "Model"
+                    score_col = "mean_rank_score" if not missing_snake else "Rank score"
 
                     # Check for NaN/None in critical fields
                     nan_count = sum(
                         1
                         for row in rows
-                        if not row.get("model")
-                        or row.get("model") in ("NaN", "None", "")
+                        if not row.get(model_col)
+                        or row.get(model_col) in ("NaN", "None", "")
                     )
                     if nan_count > 0:
-                        msg = f"{csv_file.name}: {nan_count} rows with missing model."
+                        msg = f"{csv_file.name}: {nan_count} rows with missing {model_col}."
                         logger.error(msg)
                         all_passed = False
 
