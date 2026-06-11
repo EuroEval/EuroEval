@@ -46,54 +46,56 @@ def is_hf_mount_available() -> bool:
         return False
 
 
-def mount_bucket() -> None:
-    """Mount both HF buckets (raw and processed) using hf-mount daemon.
+def sync_bucket() -> None:
+    """Sync both HF buckets (raw and processed) using hf sync.
 
-    The daemon persists independently and handles reconnection automatically.
-    Creates mount point directories if needed.
+    Syncs from bucket to local directory using the official hf CLI.
+    Creates local directories if needed.
 
     HF_TOKEN is loaded from .env by load_dotenv() at module import.
     """
     hf_token = os.getenv("HF_TOKEN")
     if not hf_token:
-        print("⚠ HF_TOKEN not set. Cannot start hf-mount daemon.")
+        print("⚠ HF_TOKEN not set. Cannot sync from bucket.")
         return
 
-    # Mount raw results bucket
+    # Sync raw results bucket
     MOUNT_POINT.mkdir(parents=True, exist_ok=True)
-    if MOUNT_POINT.is_mount():
-        print(f"✓ Raw bucket already mounted at {MOUNT_POINT}")
+    print(f"Syncing raw bucket {HF_RAW_BUCKET} → {MOUNT_POINT}...")
+    result = subprocess.run(
+        [
+            "hf", "sync",
+            f"hf://buckets/{HF_RAW_BUCKET}/",
+            str(MOUNT_POINT),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "HF_TOKEN": hf_token},
+    )
+    if result.returncode != 0:
+        print(f"⚠ hf sync failed for raw bucket: {result.stderr}")
     else:
-        print(f"Starting hf-mount daemon for {HF_RAW_BUCKET}...")
-        result = subprocess.run(
-            ["hf-mount", "start", "bucket", HF_RAW_BUCKET, str(MOUNT_POINT)],
-            capture_output=True,
-            text=True,
-            check=False,
-            env={**os.environ, "HF_TOKEN": hf_token},
-        )
-        if result.returncode != 0:
-            print(f"⚠ hf-mount start failed: {result.stderr}")
-        else:
-            print(f"✓ hf-mount daemon started for {MOUNT_POINT}")
+        print(f"✓ Synced raw bucket: {result.stdout.strip()}")
 
-    # Mount processed results bucket
+    # Sync processed results bucket
     PROCESSED_MOUNT_POINT.mkdir(parents=True, exist_ok=True)
-    if PROCESSED_MOUNT_POINT.is_mount():
-        print(f"✓ Processed bucket already mounted at {PROCESSED_MOUNT_POINT}")
+    print(f"Syncing processed bucket {HF_PROCESSED_BUCKET} → {PROCESSED_MOUNT_POINT}...")
+    result = subprocess.run(
+        [
+            "hf", "sync",
+            f"hf://buckets/{HF_PROCESSED_BUCKET}/",
+            str(PROCESSED_MOUNT_POINT),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "HF_TOKEN": hf_token},
+    )
+    if result.returncode != 0:
+        print(f"⚠ hf sync failed for processed bucket: {result.stderr}")
     else:
-        print(f"Starting hf-mount daemon for {HF_PROCESSED_BUCKET}...")
-        result = subprocess.run(
-            ["hf-mount", "start", "bucket", HF_PROCESSED_BUCKET, str(PROCESSED_MOUNT_POINT)],
-            capture_output=True,
-            text=True,
-            check=False,
-            env={**os.environ, "HF_TOKEN": hf_token},
-        )
-        if result.returncode != 0:
-            print(f"⚠ hf-mount start failed: {result.stderr}")
-        else:
-            print(f"✓ hf-mount daemon started for {PROCESSED_MOUNT_POINT}")
+        print(f"✓ Synced processed bucket: {result.stdout.strip()}")
 
 
 def unmount_bucket() -> None:

@@ -26,52 +26,41 @@ def _sync_results_from_bucket() -> None:
 
 
 def _sync_via_hf_mount() -> None:
-    """Mount HF bucket via hf-mount daemon, rebuild results.tar.gz, and backup.
+    """Sync HF buckets via hf sync, rebuild results.tar.gz, and backup.
 
-    Since MOUNT_POINT == RAW_RESULTS_DIR, the mount writes directly to the
-    persistent directory. After mounting, rebuilds results.tar.gz and backs up.
+    After syncing, rebuilds results.tar.gz and backs up.
 
     Raises:
         FileNotFoundError:
-            If mount fails and no local files exist.
+            If sync fails and no local files exist.
     """
     from .backup import backup_results
 
     RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     # Import here to avoid circular imports
-    from .hf_mount import mount_bucket
+    from .hf_mount import sync_bucket
 
-    # Start daemon if not already running (daemon persists across runs)
-    mount_point = MOUNT_POINT
-    if not mount_point.is_mount():
-        logger.info("hf-mount daemon not running. Starting...")
-        try:
-            mount_bucket()
-            # Give daemon a moment to establish mount
-            import time
+    # Sync from bucket
+    logger.info("Syncing results from HF bucket...")
+    sync_bucket()
 
-            time.sleep(2)
-        except Exception as e:
-            logger.error(f"Failed to start hf-mount daemon: {e}")
-
-    # Verify mount is available
-    if not mount_point.is_mount():
+    # Verify files exist
+    file_count = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
+    if file_count == 0:
         # Check if we have local files from previous run
         local_file_count = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
         if local_file_count > 0:
             logger.info(
-                f"Mount not available. Using {local_file_count:,} local files "
+                f"Sync returned 0 files. Using {local_file_count:,} local files "
                 f"from {RAW_RESULTS_DIR}."
             )
         else:
             raise FileNotFoundError(
-                "No results available. Daemon failed and no local cache exists."
+                "No results available. Sync failed and no local cache exists."
             )
 
-    # Count available files
-    file_count = len(list(mount_point.glob("*.jsonl")))
-    logger.info(f"Using hf-mount at {mount_point} with {file_count:,} model files.")
+    logger.info(f"Synced {file_count:,} model files to {RAW_RESULTS_DIR}.")
 
     # Rebuild results.tar.gz from mounted files
     _rebuild_results_tar_gz()
