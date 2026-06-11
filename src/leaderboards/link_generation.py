@@ -360,17 +360,20 @@ def generate_xai_url(model_id: str) -> str | None:
 
 @cache
 def generate_chatdk_url(model_id: str) -> str | None:
-    """Generate a model URL for a model hosted on ChatDK.
+    """Generate a model URL for a model hosted on ChatDK/Ordbogen.
 
     Args:
         model_id:
-            The Chat.dk model ID.
+            The ChatDK or Ordbogen model ID.
 
     Returns:
-        The URL for the model on Chat.dk, or None if the model does not exist on
-        Chat.dk.
+        The URL for the model on Chat.dk/Ordbogen, or None if the model does not exist on
+        Chat.dk/Ordbogen.
     """
-    if not model_id.startswith("chatdk/"):
+    if model_id.startswith("chatdk/"):
+        model_id = model_id.replace("chatdk/", "")
+    elif model_id.startswith("ordbogen/"):
+        model_id = model_id.replace("ordbogen/", "")
+    else:
         return None
-    model_id = model_id.replace("chatdk/", "")
     return f"https://www.ordbogen.ai/docs/models/{model_id}"
