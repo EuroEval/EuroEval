@@ -49,58 +49,42 @@ def is_hf_mount_available() -> bool:
 
 
 def mount_bucket() -> None:
-    """Mount both HF buckets (raw and processed) at their mount points.
+    """Mount both HF buckets (raw and processed) using hf-mount daemon.
 
-    Uses NFS backend (no root required, works everywhere).
+    The daemon persists independently and handles reconnection automatically.
     Creates mount point directories if needed.
-    Runs mount commands in background (NFS daemon persists independently).
 
     HF_TOKEN is loaded from .env by load_dotenv() at module import.
     """
-    import time
-
     # Mount raw results bucket
     MOUNT_POINT.mkdir(parents=True, exist_ok=True)
     if MOUNT_POINT.is_mount():
         print(f"✓ Raw bucket already mounted at {MOUNT_POINT}")
     else:
-        print(f"Mounting raw bucket {HF_RAW_BUCKET} at {MOUNT_POINT}...")
-        # Start in background - NFS mount daemon persists independently
-        proc = subprocess.Popen(
-            ["hf-mount-nfs", "bucket", HF_RAW_BUCKET, str(MOUNT_POINT)],
-            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
+        print(f"Starting hf-mount daemon for {HF_RAW_BUCKET}...")
+        result = subprocess.run(
+            ["hf-mount", "start", HF_RAW_BUCKET, str(MOUNT_POINT)],
+            capture_output=True, text=True, check=False
         )
-        # Wait briefly for mount to establish
-        time.sleep(2)
-        if MOUNT_POINT.is_mount():
-            print(f"✓ Mounted raw bucket at {MOUNT_POINT}")
+        if result.returncode != 0:
+            print(f"⚠ hf-mount start failed: {result.stderr}")
         else:
-            # Check if process failed
-            stderr = proc.stderr.read().decode() if proc.stderr else ""
-            if stderr:
-                print(f"⚠ hf-mount-nfs failed for raw bucket: {stderr}")
-            else:
-                print(f"⚠ Mount not established after 2s (may still be loading)")
+            print(f"✓ hf-mount daemon started for {MOUNT_POINT}")
 
     # Mount processed results bucket
     PROCESSED_MOUNT_POINT.mkdir(parents=True, exist_ok=True)
     if PROCESSED_MOUNT_POINT.is_mount():
         print(f"✓ Processed bucket already mounted at {PROCESSED_MOUNT_POINT}")
     else:
-        print(f"Mounting processed bucket {HF_PROCESSED_BUCKET} at {PROCESSED_MOUNT_POINT}...")
-        proc = subprocess.Popen(
-            ["hf-mount-nfs", "bucket", HF_PROCESSED_BUCKET, str(PROCESSED_MOUNT_POINT)],
-            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
+        print(f"Starting hf-mount daemon for {HF_PROCESSED_BUCKET}...")
+        result = subprocess.run(
+            ["hf-mount", "start", HF_PROCESSED_BUCKET, str(PROCESSED_MOUNT_POINT)],
+            capture_output=True, text=True, check=False
         )
-        time.sleep(2)
-        if PROCESSED_MOUNT_POINT.is_mount():
-            print(f"✓ Mounted processed bucket at {PROCESSED_MOUNT_POINT}")
+        if result.returncode != 0:
+            print(f"⚠ hf-mount start failed: {result.stderr}")
         else:
-            stderr = proc.stderr.read().decode() if proc.stderr else ""
-            if stderr:
-                print(f"⚠ hf-mount-nfs failed for processed bucket: {stderr}")
-            else:
-                print(f"⚠ Mount not established after 2s (may still be loading)")
+            print(f"✓ hf-mount daemon started for {PROCESSED_MOUNT_POINT}")
 
 
 def unmount_bucket() -> None:
