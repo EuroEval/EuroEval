@@ -16,13 +16,12 @@ from huggingface_hub import HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
 from .backup import restore_from_backup_if_missing
-from .hf_mount import hf_mount_context, is_hf_mount_available
-from .paths import NEW_RESULTS_PATH, RESULTS_PATH
+from .hf_mount import MOUNT_POINT, hf_mount_context, is_hf_mount_available
+from .paths import NEW_RESULTS_PATH, RAW_RESULTS_DIR, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
 HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
-RESULTS_CACHE_DIR = Path(".euroeval_cache/results")
 
 
 def _sync_results_from_bucket() -> None:
@@ -40,27 +39,52 @@ def _sync_results_from_bucket() -> None:
 
 
 def _sync_via_hf_mount() -> None:
-    """Sync via hf-mount (fast, live mount).
+    """Sync via hf-mount daemon or fall back to existing cache.
 
-    Mounts bucket, copies all files to local cache, unmounts.
+    Tries hf-mount first. If the mount has fewer files than the
+    local cache, the cache is authoritative and is used instead.
 
     Raises:
         FileNotFoundError:
-            If mount point does not exist.
+            If neither mount nor cache exist.
     """
-    with hf_mount_context() as mount_point:
-        if not mount_point.exists():
-            raise FileNotFoundError(f"Mount point {mount_point} does not exist.")
+    RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-        # Copy all model files from mounted bucket to cache
-        RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    # Count files in existing cache (authoritative)
+    cache_file_count = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
+
+    # Try hf-mount first
+    mount_point = MOUNT_POINT
+    if mount_point.exists():
         file_count = 0
         for jsonl_file in mount_point.glob("*.jsonl"):
-            dest = RESULTS_CACHE_DIR / jsonl_file.name
+            dest = RAW_RESULTS_DIR / jsonl_file.name
             shutil.copy2(jsonl_file, dest)
             file_count += 1
 
-        logger.info(f"Copied {file_count:,} model files from mounted bucket.")
+        # Use mount if it has at least as many files as the cache
+        if file_count >= cache_file_count:
+            logger.info(f"Copied {file_count:,} model files from hf-mount daemon.")
+            return
+        elif cache_file_count > 0:
+            logger.info(
+                f"hf-mount has {file_count:,} files vs {cache_file_count:,} in cache. "
+                "Using cache."
+            )
+        else:
+            logger.info(f"hf-mount has {file_count:,} files (no cache to compare).")
+
+    # Fall back to existing cache
+    if cache_file_count > 0:
+        logger.info(
+            f"Using existing cache with {cache_file_count:,} model files "
+            f"(from {RAW_RESULTS_DIR})."
+        )
+        return
+
+    raise FileNotFoundError(
+        "No results available. Start hf-mount or populate results/raw/"
+    )
 
 
 def _sync_via_huggingface_hub() -> None:
@@ -72,7 +96,7 @@ def _sync_via_huggingface_hub() -> None:
         else:
             logger.warning("No backup found. Will rely on HF bucket.")
 
-    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     # Load existing results from archive first (if it exists)
     archive_lines: set[str] = set()
@@ -95,7 +119,7 @@ def _sync_via_huggingface_hub() -> None:
     # Sync from bucket
     try:
         logger.info(f"Syncing results from {HF_RAW_BUCKET}...")
-        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RESULTS_CACHE_DIR))
+        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RAW_RESULTS_DIR))
         logger.info("Downloaded results from bucket.")
     except HfHubHTTPError as e:
         logger.warning(f"Could not sync from bucket: {e}. Using existing archive only.")
@@ -103,7 +127,7 @@ def _sync_via_huggingface_hub() -> None:
 
     # Load all per-model files from bucket cache
     bucket_lines: set[str] = set()
-    for model_file in RESULTS_CACHE_DIR.glob("*.jsonl"):
+    for model_file in RAW_RESULTS_DIR.glob("*.jsonl"):
         lines = {
             line
             for line in model_file.read_text(encoding="utf-8").splitlines()
@@ -111,7 +135,7 @@ def _sync_via_huggingface_hub() -> None:
         }
         bucket_lines.update(lines)
 
-    n_files = len(list(RESULTS_CACHE_DIR.glob("*.jsonl")))
+    n_files = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
     logger.info(
         f"Loaded {len(bucket_lines):,} results from {n_files:,} model files in bucket."
     )
