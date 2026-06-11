@@ -54,56 +54,39 @@ def mount_bucket() -> None:
     Uses NFS backend (no root required, works everywhere).
     Creates mount point directories if needed.
 
-    Raises:
-        ValueError:
-            If HF_TOKEN environment variable is not set.
+    HF_TOKEN is loaded from .env by load_dotenv() at module import.
     """
-    hf_token = os.getenv("HF_TOKEN")
-    if not hf_token:
-        raise ValueError(
-            "HF_TOKEN environment variable required for hf-mount. "
-            "Set it in your .env file or export it."
-        )
-
     # Mount raw results bucket
     MOUNT_POINT.mkdir(parents=True, exist_ok=True)
     if MOUNT_POINT.is_mount():
         print(f"✓ Raw bucket already mounted at {MOUNT_POINT}")
+        return
+
+    print(f"Mounting raw bucket {HF_RAW_BUCKET} at {MOUNT_POINT}...")
+    result = subprocess.run(
+        ["hf-mount-nfs", "bucket", HF_RAW_BUCKET, str(MOUNT_POINT)],
+        capture_output=True, text=True, check=False
+    )
+    if result.returncode != 0:
+        print(f"⚠ hf-mount-nfs failed for raw bucket: {result.stderr}")
     else:
-        print(f"Mounting raw bucket {HF_RAW_BUCKET} at {MOUNT_POINT}...")
-        cmd = [
-            "hf-mount-nfs",
-            "bucket",
-            HF_RAW_BUCKET,
-            str(MOUNT_POINT),
-        ]
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, check=False, env={**os.environ, "HF_TOKEN": hf_token}
-        )
-        if result.returncode != 0:
-            print(f"⚠ hf-mount-nfs failed for raw bucket: {result.stderr}")
-        else:
-            print(f"✓ Mounted raw bucket at {MOUNT_POINT}")
+        print(f"✓ Mounted raw bucket at {MOUNT_POINT}")
 
     # Mount processed results bucket
     PROCESSED_MOUNT_POINT.mkdir(parents=True, exist_ok=True)
     if PROCESSED_MOUNT_POINT.is_mount():
         print(f"✓ Processed bucket already mounted at {PROCESSED_MOUNT_POINT}")
+        return
+
+    print(f"Mounting processed bucket {HF_PROCESSED_BUCKET} at {PROCESSED_MOUNT_POINT}...")
+    result = subprocess.run(
+        ["hf-mount-nfs", "bucket", HF_PROCESSED_BUCKET, str(PROCESSED_MOUNT_POINT)],
+        capture_output=True, text=True, check=False
+    )
+    if result.returncode != 0:
+        print(f"⚠ hf-mount-nfs failed for processed bucket: {result.stderr}")
     else:
-        print(f"Mounting processed bucket {HF_PROCESSED_BUCKET} at {PROCESSED_MOUNT_POINT}...")
-        cmd = [
-            "hf-mount-nfs",
-            "bucket",
-            HF_PROCESSED_BUCKET,
-            str(PROCESSED_MOUNT_POINT),
-        ]
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, check=False, env={**os.environ, "HF_TOKEN": hf_token}
-        )
-        if result.returncode != 0:
-            print(f"⚠ hf-mount-nfs failed for processed bucket: {result.stderr}")
-        else:
-            print(f"✓ Mounted processed bucket at {PROCESSED_MOUNT_POINT}")
+        print(f"✓ Mounted processed bucket at {PROCESSED_MOUNT_POINT}")
 
 
 def unmount_bucket() -> None:
