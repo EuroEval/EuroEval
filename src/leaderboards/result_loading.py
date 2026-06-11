@@ -50,6 +50,9 @@ def _sync_via_hf_mount() -> None:
     """
     RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Import here to avoid circular imports
+    from .hf_mount import mount_bucket
+
     # Check if mount point is actually mounted
     mount_point = MOUNT_POINT
     if mount_point.is_mount():
@@ -57,17 +60,29 @@ def _sync_via_hf_mount() -> None:
         if file_count > 0:
             logger.info(f"Using hf-mount at {mount_point} with {file_count:,} model files.")
             return
-        else:
-            logger.info(f"hf-mount is active but shows 0 files (may be loading).")
-            # Mount is active, files will appear on-demand - proceed
-            return
+        logger.info(f"hf-mount is active but shows {file_count:,} files (may be loading).")
+        # Mount is active, files will appear on-demand - proceed
+        return
 
-    # Mount not active - check if we have local files from previous sync
+    # Not mounted - try to mount automatically
+    logger.info(f"hf-mount not active at {mount_point}. Attempting to mount...")
+    try:
+        mount_bucket()
+        # Give mount a moment to initialize
+        import time
+        time.sleep(1)
+        if mount_point.is_mount():
+            file_count = len(list(mount_point.glob("*.jsonl")))
+            logger.info(f"Mounted successfully with {file_count:,} model files.")
+            return
+    except Exception as e:
+        logger.warning(f"Auto-mount failed: {e}. Falling back to local files.")
+
+    # Mount failed or not available - check if we have local files from previous sync
     local_file_count = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
     if local_file_count > 0:
         logger.info(
-            f"hf-mount not active. Using {local_file_count:,} local files "
-            f"from previous sync at {RAW_RESULTS_DIR}."
+            f"Using {local_file_count:,} local files from previous sync at {RAW_RESULTS_DIR}."
         )
         return
 
