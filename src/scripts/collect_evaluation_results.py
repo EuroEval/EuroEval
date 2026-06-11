@@ -490,9 +490,15 @@ def verify_leaderboards() -> bool:
                     continue
 
                 # Check for critical columns
+                # Some CSVs have HTML headers in row 0, actual headers in row 1
+                header_row = rows[0]
+                if "rank" not in header_row and len(rows) > 1 and "rank" in rows[1]:
+                    header_row = rows[1]
+                    rows = rows[1:]  # Use data rows only
+
                 if rows:
                     required_cols = ["model", "mean_rank_score"]
-                    missing = [col for col in required_cols if col not in rows[0]]
+                    missing = [col for col in required_cols if col not in header_row]
                     if missing:
                         logger.error(
                             f"{csv_file.name}: Missing required columns: {missing}"
