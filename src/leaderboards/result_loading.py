@@ -7,6 +7,7 @@ import logging
 import re
 import tarfile
 import typing as t
+from functools import cache
 from pathlib import Path
 
 from .hf_mount import MOUNT_POINT
