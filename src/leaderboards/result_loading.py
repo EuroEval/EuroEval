@@ -2,52 +2,40 @@
 
 from __future__ import annotations
 
-import io
 import json
 import logging
 import re
-import shutil
 import tarfile
 import typing as t
-from functools import cache
 from pathlib import Path
 
-from huggingface_hub import HfApi
-from huggingface_hub.errors import HfHubHTTPError
-
-from .backup import restore_from_backup_if_missing
-from .hf_mount import MOUNT_POINT, hf_mount_context, is_hf_mount_available
+from .hf_mount import MOUNT_POINT
 from .paths import NEW_RESULTS_PATH, RAW_RESULTS_DIR, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
-HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
-
 
 def _sync_results_from_bucket() -> None:
-    """Sync results from HF bucket and rebuild results.tar.gz.
+    """Mount HF bucket via hf-mount and rebuild results.tar.gz.
 
-    Uses hf-mount if available (live mount, no sync needed), otherwise
-    falls back to huggingface_hub bucket sync.
+    Uses hf-mount exclusively (no huggingface_hub fallback). After mounting,
+    rebuilds results.tar.gz from the mounted files and creates a backup.
     """
-    # Prefer hf-mount if available
-    if is_hf_mount_available():
-        _sync_via_hf_mount()
-    else:
-        logger.info("hf-mount not available, using huggingface_hub sync.")
-        _sync_via_huggingface_hub()
+    _sync_via_hf_mount()
 
 
 def _sync_via_hf_mount() -> None:
-    """Use hf-mount if available, otherwise fall back to existing local files.
+    """Mount HF bucket via hf-mount, rebuild results.tar.gz, and backup.
 
     Since MOUNT_POINT == RAW_RESULTS_DIR, the mount writes directly to the
-    persistent directory. No copying needed.
+    persistent directory. After mounting, rebuilds results.tar.gz and backs up.
 
     Raises:
         FileNotFoundError:
-            If mount is not active and no local files exist.
+            If mount fails and no local files exist.
     """
+    from .backup import backup_results
+
     RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     # Import here to avoid circular imports
@@ -55,125 +43,67 @@ def _sync_via_hf_mount() -> None:
 
     # Check if mount point is actually mounted
     mount_point = MOUNT_POINT
-    if mount_point.is_mount():
-        file_count = len(list(mount_point.glob("*.jsonl")))
-        if file_count > 0:
-            logger.info(f"Using hf-mount at {mount_point} with {file_count:,} model files.")
-            return
-        logger.info(f"hf-mount is active but shows {file_count:,} files (may be loading).")
-        # Mount is active, files will appear on-demand - proceed
-        return
+    if not mount_point.is_mount():
+        # Not mounted - try to mount automatically
+        logger.info(f"hf-mount not active at {mount_point}. Attempting to mount...")
+        try:
+            mount_bucket()
+            # Give mount a moment to initialize
+            import time
+            time.sleep(1)
+        except Exception as e:
+            logger.error(f"Auto-mount failed: {e}")
 
-    # Not mounted - try to mount automatically
-    logger.info(f"hf-mount not active at {mount_point}. Attempting to mount...")
-    try:
-        mount_bucket()
-        # Give mount a moment to initialize
-        import time
-        time.sleep(1)
-        if mount_point.is_mount():
-            file_count = len(list(mount_point.glob("*.jsonl")))
-            logger.info(f"Mounted successfully with {file_count:,} model files.")
-            return
-    except Exception as e:
-        logger.warning(f"Auto-mount failed: {e}. Falling back to local files.")
-
-    # Mount failed or not available - check if we have local files from previous sync
-    local_file_count = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
-    if local_file_count > 0:
-        logger.info(
-            f"Using {local_file_count:,} local files from previous sync at {RAW_RESULTS_DIR}."
-        )
-        return
-
-    raise FileNotFoundError(
-        "No results available. Start hf-mount or run huggingface_hub sync first."
-    )
-
-
-def _sync_via_huggingface_hub() -> None:
-    """Fallback: sync via huggingface_hub (older, slower)."""
-    # First try to restore from local backup if archive is missing
-    if not RESULTS_PATH.exists():
-        if restore_from_backup_if_missing():
-            logger.info("Restored results.tar.gz from backup.")
+    # Verify mount succeeded
+    if not mount_point.is_mount():
+        # Check if we have local files from previous sync
+        local_file_count = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
+        if local_file_count > 0:
+            logger.info(
+                f"Mount not available. Using {local_file_count:,} local files "
+                f"from previous sync at {RAW_RESULTS_DIR}."
+            )
         else:
-            logger.warning("No backup found. Will rely on HF bucket.")
+            raise FileNotFoundError(
+                "No results available. Mount failed and no local cache exists."
+            )
 
+    # Count available files
+    file_count = len(list(mount_point.glob("*.jsonl")))
+    logger.info(f"Using hf-mount at {mount_point} with {file_count:,} model files.")
+
+    # Rebuild results.tar.gz from mounted files
+    _rebuild_results_tar_gz()
+
+    # Create backup
+    backup_path = backup_results()
+    if backup_path:
+        logger.info(f"Backup created at {backup_path}.")
+
+
+def _rebuild_results_tar_gz() -> None:
+    """Rebuild results.tar.gz from mounted files in RAW_RESULTS_DIR."""
     RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load existing results from archive first (if it exists)
-    archive_lines: set[str] = set()
-    if RESULTS_PATH.exists():
-        try:
-            with tarfile.open(RESULTS_PATH, "r:gz") as tar:
-                results_file = tar.extractfile(member="results/results.jsonl")
-                if results_file is not None:
-                    archive_lines = {
-                        line
-                        for line in results_file.read()
-                        .decode(encoding="utf-8")
-                        .splitlines()
-                        if line.strip()
-                    }
-            logger.info(f"Loaded {len(archive_lines):,} existing results from archive.")
-        except Exception as e:
-            logger.warning(f"Could not load archive: {e}. Starting fresh.")
-
-    # Sync from bucket
-    try:
-        logger.info(f"Syncing results from {HF_RAW_BUCKET}...")
-        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RAW_RESULTS_DIR))
-        logger.info("Downloaded results from bucket.")
-    except HfHubHTTPError as e:
-        logger.warning(f"Could not sync from bucket: {e}. Using existing archive only.")
-        return
-
-    # Load all per-model files from bucket cache
-    bucket_lines: set[str] = set()
+    # Load all per-model files from mount point
+    all_lines: set[str] = set()
     for model_file in RAW_RESULTS_DIR.glob("*.jsonl"):
         lines = {
             line
             for line in model_file.read_text(encoding="utf-8").splitlines()
             if line.strip()
         }
-        bucket_lines.update(lines)
+        all_lines.update(lines)
 
     n_files = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
     logger.info(
-        f"Loaded {len(bucket_lines):,} results from {n_files:,} model files in bucket."
+        f"Loaded {len(all_lines):,} results from {n_files:,} model files."
     )
 
-    # Detect bucket staleness (bucket has fewer results than archive)
-    if archive_lines and len(bucket_lines) < len(archive_lines):
-        stale_count = len(archive_lines) - len(bucket_lines)
-        logger.warning(
-            f"Bucket appears stale: {stale_count:,} results in archive not in bucket. "
-            f"Archive: {len(archive_lines):,}, Bucket: {len(bucket_lines):,}. "
-            "Next successful upload_to_hf() will sync the bucket."
-        )
+    if not all_lines:
+        logger.warning("No results found in mount point. results.tar.gz will be empty.")
 
-    # Warn if bucket seems suspiciously small (no archive to compare against)
-    if not archive_lines and len(bucket_lines) < 1000:
-        logger.error(
-            "WARNING: Only %d results in bucket, but no local archive "
-            "to compare against. Expected 77,000+. If this is a fresh "
-            "machine, verify the bucket is complete by checking a backup "
-            "or another machine.",
-            len(bucket_lines),
-        )
-
-    # Merge: archive + bucket, deduplicated by full line (which includes record hash)
-    # Archive is preferred source of truth if they diverge
-    all_lines = archive_lines | bucket_lines
-    logger.info(
-        "Merged %d unique results (archive: %d, bucket: %d).",
-        len(all_lines),
-        len(archive_lines),
-        len(bucket_lines),
-    )
-
-    # Rebuild results.tar.gz with merged results
+    # Build results.tar.gz
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with tarfile.open(RESULTS_PATH, "w:gz") as tar:
         # Raw records
@@ -183,14 +113,14 @@ def _sync_via_huggingface_hub() -> None:
         raw_fileobj = io.BytesIO(raw_content_bytes)
         tar.addfile(tarinfo=raw_tarinfo, fileobj=raw_fileobj)
 
-        # Processed records (empty initially, will be filled by process_results)
+        # Processed records (empty initially, filled by process_results)
         processed_content_bytes = b""
         processed_tarinfo = tarfile.TarInfo(name="results/results.processed.jsonl")
         processed_tarinfo.size = len(processed_content_bytes)
         processed_fileobj = io.BytesIO(processed_content_bytes)
         tar.addfile(tarinfo=processed_tarinfo, fileobj=processed_fileobj)
 
-    logger.info(f"Rebuilt {RESULTS_PATH} with {len(all_lines):,} merged results.")
+    logger.info(f"Rebuilt {RESULTS_PATH} with {len(all_lines):,} results.")
 
 
 def load_raw_results() -> list[dict[str, t.Any]]:
