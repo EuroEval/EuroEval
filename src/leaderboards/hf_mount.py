@@ -6,6 +6,7 @@ automatic backup creation to pCloud.
 
 import collections.abc as c
 import io
+import os
 import subprocess
 import tarfile
 from contextlib import contextmanager
