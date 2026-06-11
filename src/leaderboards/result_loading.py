@@ -27,7 +27,7 @@ def _sync_results_from_bucket() -> None:
 
 
 def _sync_via_hf_mount() -> None:
-    """Mount HF bucket via hf-mount, rebuild results.tar.gz, and backup.
+    """Mount HF bucket via hf-mount daemon, rebuild results.tar.gz, and backup.
 
     Since MOUNT_POINT == RAW_RESULTS_DIR, the mount writes directly to the
     persistent directory. After mounting, rebuilds results.tar.gz and backs up.
@@ -43,31 +43,30 @@ def _sync_via_hf_mount() -> None:
     # Import here to avoid circular imports
     from .hf_mount import mount_bucket
 
-    # Check if mount point is actually mounted
+    # Start daemon if not already running (daemon persists across runs)
     mount_point = MOUNT_POINT
     if not mount_point.is_mount():
-        # Not mounted - try to mount automatically
-        logger.info(f"hf-mount not active at {mount_point}. Attempting to mount...")
+        logger.info(f"hf-mount daemon not running. Starting...")
         try:
             mount_bucket()
-            # Give mount a moment to initialize
+            # Give daemon a moment to establish mount
             import time
-            time.sleep(1)
+            time.sleep(2)
         except Exception as e:
-            logger.error(f"Auto-mount failed: {e}")
+            logger.error(f"Failed to start hf-mount daemon: {e}")
 
-    # Verify mount succeeded
+    # Verify mount is available
     if not mount_point.is_mount():
-        # Check if we have local files from previous sync
+        # Check if we have local files from previous run
         local_file_count = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
         if local_file_count > 0:
             logger.info(
                 f"Mount not available. Using {local_file_count:,} local files "
-                f"from previous sync at {RAW_RESULTS_DIR}."
+                f"from {RAW_RESULTS_DIR}."
             )
         else:
             raise FileNotFoundError(
-                "No results available. Mount failed and no local cache exists."
+                "No results available. Daemon failed and no local cache exists."
             )
 
     # Count available files
