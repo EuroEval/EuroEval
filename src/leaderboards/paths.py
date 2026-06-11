@@ -36,6 +36,16 @@ def _env_path(name: str, default: Path) -> Path:
     return Path(value).expanduser() if value else default
 
 
+# Off-repo backup location for snapshots of results.tar.gz.
+# The working copy lives at BACKUPS_DIR/results.tar.gz.
+# Snapshots are timestamped and pruned when exceeding limits.
+BACKUPS_DIR: Path = _env_path(
+    "EUROEVAL_RESULTS_BACKUP_DIR",
+    Path.home() / "pCloud Drive" / "data" / "euroeval_backup",
+)
+BACKUPS_MAX_BYTES: int = 1_000_000_000  # ~1 GB total size cap
+MAX_BACKUPS: int = 10  # Keep at most 10 timestamped snapshots
+
 # Historical archive of all benchmark records. Stored in BACKUPS_DIR,
 # not tracked in git (43+ MB compressed).
 RESULTS_PATH: Path = BACKUPS_DIR / "results.tar.gz"
@@ -51,13 +61,3 @@ RAW_RESULTS_DIR: Path = RESULTS_DIR / "raw"
 PROCESSED_RESULTS_DIR: Path = RESULTS_DIR / "processed"
 
 # Note: `.euroeval_cache/` is now deprecated for results storage.
-
-# Off-repo backup location for snapshots of results.tar.gz.
-# The working copy lives at BACKUPS_DIR/results.tar.gz.
-# Snapshots are timestamped and pruned when exceeding limits.
-BACKUPS_DIR: Path = _env_path(
-    "EUROEVAL_RESULTS_BACKUP_DIR",
-    Path.home() / "pCloud Drive" / "data" / "euroeval_backup",
-)
-BACKUPS_MAX_BYTES: int = 1_000_000_000  # ~1 GB total size cap
-MAX_BACKUPS: int = 10  # Keep at most 10 timestamped snapshots
