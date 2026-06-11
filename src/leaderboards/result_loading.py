@@ -83,21 +83,47 @@ def _sync_via_hf_mount() -> None:
 
 
 def _rebuild_results_tar_gz() -> None:
-    """Rebuild results.tar.gz from mounted files in RAW_RESULTS_DIR."""
+    """Rebuild results.tar.gz from mounted files in RAW_RESULTS_DIR.
+
+    Skips files that can't be read (NFS lazy-loading quirks).
+    Logs progress every 100 files.
+    """
+    import time
+
     RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load all per-model files from mount point
-    all_lines: set[str] = set()
-    for model_file in RAW_RESULTS_DIR.glob("*.jsonl"):
-        lines = {
-            line
-            for line in model_file.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        }
-        all_lines.update(lines)
+    model_files = sorted(RAW_RESULTS_DIR.glob("*.jsonl"))
+    n_files = len(model_files)
+    logger.info(f"Reading {n_files:,} model files from mount point...")
 
-    n_files = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
-    logger.info(f"Loaded {len(all_lines):,} results from {n_files:,} model files.")
+    all_lines: set[str] = set()
+    start = time.time()
+    unreadable = 0
+    for i, model_file in enumerate(model_files, 1):
+        try:
+            lines = {
+                line
+                for line in model_file.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            }
+            all_lines.update(lines)
+        except (OSError, FileNotFoundError) as e:
+            unreadable += 1
+            logger.debug(f"Skipping {model_file.name}: {e}")
+
+        if i % 100 == 0 or i == n_files:
+            elapsed = time.time() - start
+            rate = i / elapsed if elapsed > 0 else 0
+            logger.info(
+                f"  {i}/{n_files} files ({len(all_lines):,} lines) - {rate:.1f} files/s"
+            )
+
+    elapsed = time.time() - start
+    logger.info(
+        f"Loaded {len(all_lines):,} results from {n_files - unreadable:,}/{n_files:,} "
+        f"files in {elapsed:.1f}s"
+        + (f" ({unreadable} unreadable)" if unreadable else "")
+    )
 
     if not all_lines:
         logger.warning("No results found in mount point. results.tar.gz will be empty.")
