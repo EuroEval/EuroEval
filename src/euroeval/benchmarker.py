@@ -814,11 +814,7 @@ class Benchmarker:
                             remaining_configs = model_dataset_configs[
                                 model_dataset_configs.index(dataset_config) + 1 :
                             ]
-                            for remaining_config in remaining_configs:
-                                if remaining_config.task.name in ORTHOGONAL_TASKS:
-                                    num_skipped_benchmarks += 1
-                                else:
-                                    num_errored_benchmarks += 1
+                            num_errored_benchmarks += len(remaining_configs)
                             break
 
                     # Skip the benchmark if the model is not of the correct
@@ -871,18 +867,14 @@ class Benchmarker:
                     log(benchmark_output_or_err.message, level=logging.WARNING)
 
                     # Add the remaining number of benchmarks for the model to our
-                    # benchmark counter, since we're skipping the rest of them
+                    # benchmark counter, since we're erroring on the rest of them
                     model_dataset_configs = model_config_to_dataset_configs[
                         model_config
                     ]
                     remaining_configs = model_dataset_configs[
                         model_dataset_configs.index(dataset_config) + 1 :
                     ]
-                    for remaining_config in remaining_configs:
-                        if remaining_config.task.name in ORTHOGONAL_TASKS:
-                            num_skipped_benchmarks += 1
-                        else:
-                            num_errored_benchmarks += 1
+                    num_errored_benchmarks += len(remaining_configs)
                     break
 
                 else:
