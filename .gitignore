@@ -106,8 +106,13 @@ new_results.jsonl
 ucloud*_results.jsonl
 
 # hf-mount mount point (HF bucket mounted as filesystem)
-euroeval-results/
-*.euroeval-results/
+.hf-mount/
+*.hf-mount/
+
+# Persistent results directories (HF bucket sync points)
+results/raw/
+results/processed/
+
 
 # Leaderboard CSVs (regenerated build artifact; bundled by Vite at build time).
 src/frontend/csv/
