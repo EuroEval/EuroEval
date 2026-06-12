@@ -7,6 +7,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v17.4.0] - 2026-06-12
+
 ### Fixed
 
 - Fixed a bug where evaluating on AngryTweets sentiment classification raised
