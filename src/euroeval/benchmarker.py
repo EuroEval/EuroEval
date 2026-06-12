@@ -28,7 +28,7 @@ from .model_loading import load_model
 from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .string_utils import split_model_id
-from .tasks import SPEED
+from .tasks import ORTHOGONAL_TASKS, SPEED
 from .utils import enforce_reproducibility, internet_connection_available
 
 if t.TYPE_CHECKING:
@@ -808,11 +808,19 @@ class Benchmarker:
                             # Add the remaining number of benchmarks for the model to
                             # our benchmark counter, since we're erroring on the rest of
                             # them
-                            num_errored_benchmarks += (
-                                len(dataset_configs)
-                                - dataset_configs.index(dataset_config)
+                            model_dataset_configs = model_config_to_dataset_configs[
+                                model_config
+                            ]
+                            remaining = (
+                                len(model_dataset_configs)
+                                - model_dataset_configs.index(dataset_config)
                                 - 1
                             )
+                            # Check if remaining benchmarks are orthogonal tasks
+                            if dataset_config.task.name in ORTHOGONAL_TASKS:
+                                num_skipped_benchmarks += remaining
+                            else:
+                                num_errored_benchmarks += remaining
                             break
 
                     # Skip the benchmark if the model is not of the correct
@@ -854,7 +862,11 @@ class Benchmarker:
 
                 elif isinstance(benchmark_output_or_err, InvalidBenchmark):
                     log(benchmark_output_or_err.message, level=logging.WARNING)
-                    num_errored_benchmarks += 1
+                    # Orthogonal task failures count as skipped, not errored
+                    if dataset_config.task.name in ORTHOGONAL_TASKS:
+                        num_skipped_benchmarks += 1
+                    else:
+                        num_errored_benchmarks += 1
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
@@ -862,9 +874,14 @@ class Benchmarker:
 
                     # Add the remaining number of benchmarks for the model to our
                     # benchmark counter, since we're skipping the rest of them
-                    num_errored_benchmarks += (
+                    remaining = (
                         len(dataset_configs) - dataset_configs.index(dataset_config) - 1
                     )
+                    # Check if remaining benchmarks are orthogonal tasks
+                    if dataset_config.task.name in ORTHOGONAL_TASKS:
+                        num_skipped_benchmarks += remaining
+                    else:
+                        num_errored_benchmarks += remaining
                     break
 
                 else:
