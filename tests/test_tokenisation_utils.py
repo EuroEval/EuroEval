@@ -113,6 +113,9 @@ def test_load_xlmr_tokeniser_with_fallback(
         model_config=model_config,
     )
 
+    # Verify that the fallback to the slow tokenizer was used
+    assert tokeniser.is_fast is False
+
     # Verify tokenizer attributes are set
     assert tokeniser.bos_token is not None
     assert tokeniser.eos_token is not None
