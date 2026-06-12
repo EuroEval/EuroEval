@@ -9,6 +9,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed a bug where evaluating on AngryTweets sentiment classification raised
+  `Sequences and scores must have the same length` when the model returned no choices for
+  some samples. The `_create_model_output` method now appends an empty score list
+  alongside the empty sequence to keep both lists in sync.
 - Fixed deprecation warnings from `transformers` v5.2+:
   - Replaced deprecated `warmup_ratio` with dynamic `warmup_steps` calculation (1% of
     `max_steps`, minimum 1 step).
