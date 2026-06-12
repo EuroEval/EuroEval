@@ -934,6 +934,7 @@ class LiteLLMModel(BenchmarkModule):
         for model_response in model_responses:
             if not model_response.choices:
                 sequences.append("")
+                scores.append([])
                 log(
                     f"The model {model_id!r} did not end up "
                     "generating any text. This is likely because the model ran "
