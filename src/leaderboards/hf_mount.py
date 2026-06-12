@@ -63,11 +63,7 @@ def sync_bucket() -> None:
     MOUNT_POINT.mkdir(parents=True, exist_ok=True)
     print(f"Syncing raw bucket {HF_RAW_BUCKET} → {MOUNT_POINT}...")
     result = subprocess.run(
-        [
-            "hf", "sync",
-            f"hf://buckets/{HF_RAW_BUCKET}/",
-            str(MOUNT_POINT),
-        ],
+        ["hf", "sync", f"hf://buckets/{HF_RAW_BUCKET}/", str(MOUNT_POINT)],
         capture_output=True,
         text=True,
         check=False,
@@ -80,10 +76,13 @@ def sync_bucket() -> None:
 
     # Sync processed results bucket
     PROCESSED_MOUNT_POINT.mkdir(parents=True, exist_ok=True)
-    print(f"Syncing processed bucket {HF_PROCESSED_BUCKET} → {PROCESSED_MOUNT_POINT}...")
+    print(
+        f"Syncing processed bucket {HF_PROCESSED_BUCKET} → {PROCESSED_MOUNT_POINT}..."
+    )
     result = subprocess.run(
         [
-            "hf", "sync",
+            "hf",
+            "sync",
             f"hf://buckets/{HF_PROCESSED_BUCKET}/",
             str(PROCESSED_MOUNT_POINT),
         ],
@@ -96,6 +95,29 @@ def sync_bucket() -> None:
         print(f"⚠ hf sync failed for processed bucket: {result.stderr}")
     else:
         print(f"✓ Synced processed bucket: {result.stdout.strip()}")
+
+
+def mount_bucket() -> None:
+    """Mount the HF bucket if not already mounted."""
+    if MOUNT_POINT.exists() and MOUNT_POINT.is_mount():
+        return
+
+    hf_token = os.getenv("HF_TOKEN")
+    if not hf_token:
+        print("⚠ HF_TOKEN not set. Cannot mount bucket.")
+        return
+
+    try:
+        MOUNT_POINT.mkdir(parents=True, exist_ok=True)
+        print(f"Mounting {HF_RAW_BUCKET} → {MOUNT_POINT}...")
+        subprocess.run(
+            ["hf-mount", "start", HF_RAW_BUCKET, str(MOUNT_POINT)],
+            env={**os.environ, "HF_TOKEN": hf_token},
+            check=True,
+        )
+        print("✓ Mounted")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠ Mount failed: {e}")
 
 
 def unmount_bucket() -> None:

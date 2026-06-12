@@ -7,10 +7,12 @@ import json
 import logging
 import re
 import tarfile
+import time
 import typing as t
 from functools import cache
 
-from .hf_mount import MOUNT_POINT
+from .backup import backup_results
+from .hf_mount import sync_bucket
 from .paths import NEW_RESULTS_PATH, RAW_RESULTS_DIR, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
@@ -34,12 +36,7 @@ def _sync_via_hf_mount() -> None:
         FileNotFoundError:
             If sync fails and no local files exist.
     """
-    from .backup import backup_results
-
     RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Import here to avoid circular imports
-    from .hf_mount import sync_bucket
 
     # Sync from bucket
     logger.info("Syncing results from HF bucket...")
@@ -77,8 +74,6 @@ def _rebuild_results_tar_gz() -> None:
     Skips files that can't be read (NFS lazy-loading quirks).
     Logs progress every 100 files.
     """
-    import time
-
     RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     model_files = sorted(RAW_RESULTS_DIR.glob("*.jsonl"))

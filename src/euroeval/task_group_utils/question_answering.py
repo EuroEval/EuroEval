@@ -340,7 +340,7 @@ def prepare_train_examples(
         # One example can give several spans, this is the index of the example
         # containing this span of text.
         sample_index = sample_mapping[i]
-        answers = examples["answers"][sample_index]  # ty: ignore[not-subscriptable]
+        answers = examples["answers"][sample_index]
 
         # If no answers are given, set the cls_index as answer.
         if len(answers["answer_start"]) == 0:
@@ -495,9 +495,7 @@ def prepare_test_examples(
         # containing this span of text.
         sample_index = sample_mapping[i]
 
-        tokenised_examples.id.append(
-            examples["id"][sample_index]  # ty: ignore[not-subscriptable]
-        )
+        tokenised_examples.id.append(examples["id"][sample_index])
 
         # Set to (-1, -1) the offset_mapping that are not part of the context so it's
         # easy to determine if a token position is part of the context or not.

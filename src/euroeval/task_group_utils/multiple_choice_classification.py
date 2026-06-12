@@ -104,7 +104,7 @@ def prepare_examples(
     Returns:
         The prepared examples.
     """
-    doc: str = examples["text"][0]  # ty: ignore[not-subscriptable]
+    doc: str = examples["text"][0]
     sections = doc.split("\n")
 
     candidate_choice_idxs = [
@@ -142,7 +142,7 @@ def prepare_examples(
         truncation=True,
     )
     new_examples["label"] = [
-        int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])  # ty: ignore[not-subscriptable]
+        int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])
         for letter, choice in zip("abcdefghijklmnopqrstuvwxyz", choices)
     ]
     new_examples["id"] = [hashlib.md5(string=doc.encode()).hexdigest()] * len(choices)

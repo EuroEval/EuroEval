@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 import logging
-import os
 import re
 import time
 from functools import cache
 
 import httpx
 import openai
-
 from huggingface_hub import HfApi
 from huggingface_hub.errors import (
     GatedRepoError,
