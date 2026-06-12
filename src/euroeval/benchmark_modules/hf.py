@@ -985,13 +985,28 @@ def load_tokeniser(
             loading_kwargs["add_prefix_space"] = True
 
     num_retries = 5
-    for _ in range(num_retries):
+    for attempt in range(num_retries):
         try:
             tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
                 model_id, **loading_kwargs
             )
             break
-        except (JSONDecodeError, OSError, TypeError) as e:
+        except TypeError as e:
+            # XLM-RoBERTa variant models like 'EMBEDDIA/litlat-bert' raise TypeError
+            # when loading fast tokenizers. Fall back to slow tokenizer.
+            if loading_kwargs.get("use_fast", True):
+                log(
+                    f"TypeError occurred during the loading of the tokeniser for "
+                    f"{model_id!r}. Retrying with use_fast=False.",
+                    level=logging.DEBUG,
+                )
+                loading_kwargs["use_fast"] = False
+                continue
+            else:
+                raise InvalidModel(
+                    f"Could not load tokeniser for model {model_id!r}."
+                ) from e
+        except (JSONDecodeError, OSError) as e:
             raise InvalidModel(
                 f"Could not load tokeniser for model {model_id!r}."
             ) from e
