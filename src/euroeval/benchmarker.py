@@ -15,7 +15,7 @@ from time import sleep
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
-from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
+from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS, ORTHOGONAL_TASKS
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
 from .enums import Device, GenerativeType, InferenceBackend, ModelType
@@ -28,7 +28,7 @@ from .model_loading import load_model
 from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .string_utils import split_model_id
-from .tasks import ORTHOGONAL_TASKS, SPEED
+from .tasks import SPEED
 from .utils import enforce_reproducibility, internet_connection_available
 
 if t.TYPE_CHECKING:
