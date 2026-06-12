@@ -811,16 +811,14 @@ class Benchmarker:
                             model_dataset_configs = model_config_to_dataset_configs[
                                 model_config
                             ]
-                            remaining = (
-                                len(model_dataset_configs)
-                                - model_dataset_configs.index(dataset_config)
-                                - 1
-                            )
-                            # Check if remaining benchmarks are orthogonal tasks
-                            if dataset_config.task.name in ORTHOGONAL_TASKS:
-                                num_skipped_benchmarks += remaining
-                            else:
-                                num_errored_benchmarks += remaining
+                            remaining_configs = model_dataset_configs[
+                                model_dataset_configs.index(dataset_config) + 1 :
+                            ]
+                            for remaining_config in remaining_configs:
+                                if remaining_config.task.name in ORTHOGONAL_TASKS:
+                                    num_skipped_benchmarks += 1
+                                else:
+                                    num_errored_benchmarks += 1
                             break
 
                     # Skip the benchmark if the model is not of the correct
@@ -874,14 +872,17 @@ class Benchmarker:
 
                     # Add the remaining number of benchmarks for the model to our
                     # benchmark counter, since we're skipping the rest of them
-                    remaining = (
-                        len(dataset_configs) - dataset_configs.index(dataset_config) - 1
-                    )
-                    # Check if remaining benchmarks are orthogonal tasks
-                    if dataset_config.task.name in ORTHOGONAL_TASKS:
-                        num_skipped_benchmarks += remaining
-                    else:
-                        num_errored_benchmarks += remaining
+                    model_dataset_configs = model_config_to_dataset_configs[
+                        model_config
+                    ]
+                    remaining_configs = model_dataset_configs[
+                        model_dataset_configs.index(dataset_config) + 1 :
+                    ]
+                    for remaining_config in remaining_configs:
+                        if remaining_config.task.name in ORTHOGONAL_TASKS:
+                            num_skipped_benchmarks += 1
+                        else:
+                            num_errored_benchmarks += 1
                     break
 
                 else:
