@@ -3,8 +3,9 @@
 import pytest
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
-from euroeval.benchmark_modules.hf import load_hf_model_config
-from euroeval.data_models import HashableDict
+from euroeval.benchmark_modules.hf import load_hf_model_config, load_tokeniser
+from euroeval.data_models import BenchmarkConfig, HashableDict
+from euroeval.model_config import get_model_config
 from euroeval.tokenisation_utils import (
     get_end_of_chat_token_ids,
     should_prefix_space_be_added_to_labels,
@@ -90,3 +91,26 @@ def test_get_end_of_chat_token_ids(
         assert end_of_chat_token_ids is not None
         end_of_chat_string = tokeniser.decode(list(end_of_chat_token_ids)).strip()
         assert end_of_chat_string == expected_string
+
+
+def test_load_xlmr_tokeniser_with_fallback(
+    auth: str, benchmark_config: BenchmarkConfig
+) -> None:
+    """Test that XLM-RoBERTa tokenizers load with use_fast=False fallback.
+    
+    Regression test for EMBEDDIA/litlat-bert and similar XLM-RoBERTa variants
+    that raise TypeError when loading fast tokenizers.
+    """
+    model_id = "EMBEDDIA/litlat-bert"
+    model_config = get_model_config(model_id=model_id, benchmark_config=benchmark_config)
+    
+    tokeniser: Tokeniser = load_tokeniser(
+        model=None,
+        model_id=model_id,
+        trust_remote_code=benchmark_config.trust_remote_code,
+        model_config=model_config,
+    )
+    
+    # Verify tokenizer attributes are set
+    assert tokeniser.bos_token is not None
+    assert tokeniser.eos_token is not None
