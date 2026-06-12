@@ -5,17 +5,20 @@ from ..languages import DUTCH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    GED,
     KNOW,
     LA,
     MCRC,
+    MCSTEREO,
     NER,
+    NLI,
     RC,
     SENT,
     SIMPL,
     SUMM,
 )
 
-### Official datasets ###
+# Official datasets ###
 
 DBRD_CONFIG = DatasetConfig(
     name="dbrd",
@@ -23,7 +26,7 @@ DBRD_CONFIG = DatasetConfig(
     source="EuroEval/dbrd-mini",
     task=SENT,
     languages=[DUTCH],
-    _labels=["negative", "positive"],
+    labels=["negative", "positive"],
 )
 
 SCALA_NL_CONFIG = DatasetConfig(
@@ -88,13 +91,23 @@ VALEU_NL_CONFIG = DatasetConfig(
     source="EuroEval/european-values-nl",
     task=EUROPEAN_VALUES,
     languages=[DUTCH],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
+)
+
+MBBQ_NL_CONFIG = DatasetConfig(
+    name="mbbq-nl",
+    pretty_name="MBBQ-nl",
+    source="EuroEval/mbbq-nl",
+    task=MCSTEREO,
+    languages=[DUTCH],
+    train_split=None,
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 DUTCH_COLA_CONFIG = DatasetConfig(
     name="dutch-cola",
@@ -111,6 +124,17 @@ DUTCH_COLA_FULL_CONFIG = DatasetConfig(
     source="EuroEval/dutch-cola-full",
     task=LA,
     languages=[DUTCH],
+    unofficial=True,
+)
+
+DUTCH_PROVERBS_CONFIG = DatasetConfig(
+    name="dutch-proverbs",
+    pretty_name="Dutch Proverbs",
+    source="EuroEval/dutch-proverbs",
+    task=KNOW,
+    languages=[DUTCH],
+    labels=["a", "b"],
+    val_split=None,
     unofficial=True,
 )
 
@@ -148,7 +172,7 @@ COPA_NL_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[DUTCH],
     unofficial=True,
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )
 
 GOLDENSWAG_NL_CONFIG = DatasetConfig(
@@ -166,6 +190,42 @@ WINOGRANDE_NL_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-nl",
     task=COMMON_SENSE,
     languages=[DUTCH],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+    unofficial=True,
+)
+
+INCLUDE_NL_CONFIG = DatasetConfig(
+    name="include-nl",
+    pretty_name="INCLUDE-nl",
+    source="EuroEval/include-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
+MULTILOKO_NL_CONFIG = DatasetConfig(
+    name="multiloko-nl",
+    pretty_name="MultiLoKo-nl",
+    source="EuroEval/multiloko-nl-mini",
+    task=KNOW,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
+GERLANGMOD_NL_CONFIG = DatasetConfig(
+    name="gerlangmod-nl",
+    pretty_name="GerLangMod-nl",
+    source="EuroEval/gerlangmod-nl",
+    task=GED,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
+SICK_NL_CONFIG = DatasetConfig(
+    name="sick-nl",
+    pretty_name="The Dutch SICK-NL Entailment Dataset",
+    source="EuroEval/sick-nl",
+    task=NLI,
+    languages=[DUTCH],
     unofficial=True,
 )

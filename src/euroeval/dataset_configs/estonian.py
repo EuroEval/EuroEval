@@ -2,9 +2,19 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ESTONIAN
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
-### Official datasets ###
+# Official datasets ###
 
 ESTONIAN_VALENCE_CONFIG = DatasetConfig(
     name="estonian-valence",
@@ -60,13 +70,23 @@ WINOGRANDE_ET_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-et",
     task=COMMON_SENSE,
     languages=[ESTONIAN],
-    _prompt_prefix="Sulle esitatakse lüngaga (_) tekstülesanded, "
+    prompt_prefix="Sulle esitatakse lüngaga (_) tekstülesanded, "
     "igal ülesandel on kaks vastusevarianti (a ja b).",
-    _prompt_template="Tekstülesanne: {text}\nVastus: {label}",
-    _instruction_prompt="Tekstülesanne: {text}\n\n"
+    prompt_template="Tekstülesanne: {text}\nVastus: {label}",
+    instruction_prompt="Tekstülesanne: {text}\n\n"
     "Sinu ülesanne on valida lünka sobiv vastusevariant. "
     "Vasta ainult {labels_str}. Muud vastused ei ole lubatud.",
-    _labels=["a", "b"],
+    labels=["a", "b"],
+)
+
+IFEVAL_ET_CONFIG = DatasetConfig(
+    name="ifeval-et",
+    pretty_name="IFEval-et",
+    source="EuroEval/ifeval-et",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ESTONIAN],
+    train_split=None,
+    val_split=None,
 )
 
 VALEU_ET_CONFIG = DatasetConfig(
@@ -75,12 +95,13 @@ VALEU_ET_CONFIG = DatasetConfig(
     source="EuroEval/european-values-et",
     task=EUROPEAN_VALUES,
     languages=[ESTONIAN],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 SCALA_ET_CONFIG = DatasetConfig(
     name="scala-et",
@@ -97,7 +118,7 @@ EXAM_ET_CONFIG = DatasetConfig(
     source="EuroEval/exam-et",
     task=KNOW,
     languages=[ESTONIAN],
-    _labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"],
+    labels=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o"],
     unofficial=True,
 )
 
@@ -105,6 +126,15 @@ MMLU_ET_CONFIG = DatasetConfig(
     name="mmlu-et",
     pretty_name="MMLU-et",
     source="EuroEval/mmlu-et-mini",
+    task=KNOW,
+    languages=[ESTONIAN],
+    unofficial=True,
+)
+
+INCLUDE_ET_CONFIG = DatasetConfig(
+    name="include-et",
+    pretty_name="INCLUDE-et",
+    source="EuroEval/include-et-mini",
     task=KNOW,
     languages=[ESTONIAN],
     unofficial=True,

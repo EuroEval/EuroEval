@@ -2,9 +2,21 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SWEDISH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    GED,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
-### Official datasets ###
+# Official datasets ###
 
 SWEREC_CONFIG = DatasetConfig(
     name="swerec",
@@ -62,19 +74,30 @@ HELLASWAG_SV_CONFIG = DatasetConfig(
     languages=[SWEDISH],
 )
 
+IFEVAL_SV_CONFIG = DatasetConfig(
+    name="ifeval-sv",
+    pretty_name="IFEval-sv",
+    source="EuroEval/ifeval-sv",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[SWEDISH],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_SV_CONFIG = DatasetConfig(
     name="valeu-sv",
     pretty_name="VaLEU-sv",
     source="EuroEval/european-values-sv",
     task=EUROPEAN_VALUES,
     languages=[SWEDISH],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 SCHIBSTED_SV_CONFIG = DatasetConfig(
     name="schibsted-sv",
@@ -83,6 +106,21 @@ SCHIBSTED_SV_CONFIG = DatasetConfig(
     task=SUMM,
     languages=[SWEDISH],
     unofficial=True,
+)
+
+SCHIBSTED_SEO_TITLE_SV_CONFIG = DatasetConfig(
+    name="svd-seo-title",
+    pretty_name="SVD SEO Title",
+    source="EuroEval/svd-seo-title",
+    task=SUMM,
+    languages=[SWEDISH],
+    unofficial=True,
+    max_generated_tokens=64,
+    prompt_prefix="Nedan följer artiklar med tillhörande SEO-rubriker.",
+    prompt_template="Artikel: {text}\nSEO-rubrik: {target_text}",
+    instruction_prompt=(
+        "Artikel: {text}\n\nSkriv en SEO-rubrik för ovanstående artikel."
+    ),
 )
 
 ARC_SV_CONFIG = DatasetConfig(
@@ -127,7 +165,7 @@ WINOGRANDE_SV_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-sv",
     task=COMMON_SENSE,
     languages=[SWEDISH],
-    _labels=["a", "b"],
+    labels=["a", "b"],
     unofficial=True,
 )
 
@@ -145,6 +183,24 @@ SWEDISH_FACTS_CONFIG = DatasetConfig(
     pretty_name="Swedish Facts",
     source="EuroEval/swedish-facts",
     task=KNOW,
+    languages=[SWEDISH],
+    unofficial=True,
+)
+
+MULTILOKO_SV_CONFIG = DatasetConfig(
+    name="multiloko-sv",
+    pretty_name="MultiLoKo-sv",
+    source="EuroEval/multiloko-sv-mini",
+    task=KNOW,
+    languages=[SWEDISH],
+    unofficial=True,
+)
+
+GERLANGMOD_SV_CONFIG = DatasetConfig(
+    name="gerlangmod-sv",
+    pretty_name="GerLangMod-sv",
+    source="EuroEval/gerlangmod-sv",
+    task=GED,
     languages=[SWEDISH],
     unofficial=True,
 )

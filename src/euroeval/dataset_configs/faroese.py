@@ -2,9 +2,9 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FAROESE
-from ..tasks import LA, NER, RC, SENT
+from ..tasks import GED, LA, NER, RC, SENT
 
-### Official datasets ###
+# Official datasets ###
 
 FOSENT_CONFIG = DatasetConfig(
     name="fosent",
@@ -12,7 +12,7 @@ FOSENT_CONFIG = DatasetConfig(
     source="EuroEval/fosent",
     task=SENT,
     languages=[FAROESE],
-    _num_few_shot_examples=5,
+    num_few_shot_examples=5,
 )
 
 SCALA_FO_CONFIG = DatasetConfig(
@@ -40,7 +40,7 @@ FOQA_CONFIG = DatasetConfig(
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 WIKIANN_FO_CONFIG = DatasetConfig(
     name="wikiann-fo",
@@ -56,6 +56,15 @@ MULTI_WIKI_QA_FO_CONFIG = DatasetConfig(
     pretty_name="MultiWikiQA-fo",
     source="EuroEval/multi-wiki-qa-fo-mini",
     task=RC,
+    languages=[FAROESE],
+    unofficial=True,
+)
+
+GERLANGMOD_FO_CONFIG = DatasetConfig(
+    name="gerlangmod-fo",
+    pretty_name="GerLangMod-fo",
+    source="EuroEval/gerlangmod-fo",
+    task=GED,
     languages=[FAROESE],
     unofficial=True,
 )

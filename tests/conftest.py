@@ -35,7 +35,12 @@ if os.environ.get("CHECK_DATASET") is not None:
     dataset_configs = [
         dataset_config
         for dataset_config in get_all_dataset_configs(
-            custom_datasets_file=Path("custom_datasets.py")
+            custom_datasets_file=Path("custom_datasets.py"),
+            dataset_ids=[],
+            api_key=os.getenv("HF_TOKEN"),
+            cache_dir=Path(".euroeval_cache"),
+            trust_remote_code=True,
+            run_with_cli=True,
         ).values()
         if dataset_config.name in os.environ["CHECK_DATASET"].split(",")
         or any(
@@ -55,7 +60,11 @@ else:
 
 @pytest.fixture(scope="session")
 def auth() -> Generator[str | bool, None, None]:
-    """Yields the authentication token to the Hugging Face Hub."""
+    """Yields the authentication token to the Hugging Face Hub.
+
+    Yields:
+        The authentication token to the Hugging Face Hub.
+    """
     # Get the authentication token to the Hugging Face Hub
     auth = os.environ.get("HUGGINGFACE_API_KEY", True)
 
@@ -68,7 +77,11 @@ def auth() -> Generator[str | bool, None, None]:
 
 @pytest.fixture(scope="session")
 def device() -> Generator[torch.device, None, None]:
-    """Yields the device to use for the tests."""
+    """Yields the device to use for the tests.
+
+    Yields:
+        The device to use for the tests.
+    """
     if torch.cuda.is_available():
         device = torch.device("cuda")
     elif torch.backends.mps.is_available():
@@ -82,12 +95,21 @@ def device() -> Generator[torch.device, None, None]:
 def benchmark_config(
     auth: str, device: torch.device
 ) -> Generator[BenchmarkConfig, None, None]:
-    """Yields a benchmark configuration used in tests."""
+    """Yields a benchmark configuration used in tests.
+
+    Yields:
+        A benchmark configuration used in tests.
+    """
     yield BenchmarkConfig(
         languages=[DANISH],
         datasets=list(
             get_all_dataset_configs(
-                custom_datasets_file=Path("custom_datasets.py")
+                custom_datasets_file=Path("custom_datasets.py"),
+                dataset_ids=[],
+                api_key=os.getenv("HF_TOKEN"),
+                cache_dir=Path(".euroeval_cache"),
+                trust_remote_code=True,
+                run_with_cli=True,
             ).values()
         ),
         finetuning_batch_size=1,
@@ -107,17 +129,24 @@ def benchmark_config(
         api_base=None,
         api_version=None,
         gpu_memory_utilization=0.8,
+        attention_backend=None,
         generative_type=None,
         debug=False,
         run_with_cli=True,
         requires_safetensors=False,
         download_only=False,
+        max_context_length=None,
+        vocabulary_size=None,
     )
 
 
 @pytest.fixture(scope="session")
 def metric() -> Generator[HuggingFaceMetric, None, None]:
-    """Yields a metric configuration used in tests."""
+    """Yields a metric configuration used in tests.
+
+    Yields:
+        A metric configuration used in tests.
+    """
     yield HuggingFaceMetric(
         name="metric_name",
         pretty_name="Metric name",
@@ -132,14 +161,23 @@ def metric() -> Generator[HuggingFaceMetric, None, None]:
         {
             dataset_config.task
             for dataset_config in get_all_dataset_configs(
-                custom_datasets_file=Path("custom_datasets.py")
+                custom_datasets_file=Path("custom_datasets.py"),
+                dataset_ids=[],
+                api_key=os.getenv("HF_TOKEN"),
+                cache_dir=Path(".euroeval_cache"),
+                trust_remote_code=True,
+                run_with_cli=True,
             ).values()
         }
     ),
     ids=lambda task: task.name,
 )
 def task(request: pytest.FixtureRequest) -> Generator[Task, None, None]:
-    """Yields a dataset task used in tests."""
+    """Yields a dataset task used in tests.
+
+    Yields:
+        A dataset task used in tests.
+    """
     yield request.param
 
 
@@ -149,43 +187,71 @@ def task(request: pytest.FixtureRequest) -> Generator[Task, None, None]:
     ids=list(ACTIVE_LANGUAGES.keys()),
 )
 def language(request: pytest.FixtureRequest) -> Generator[str, None, None]:
-    """Yields a language used in tests."""
+    """Yields a language used in tests.
+
+    Yields:
+        A language used in tests.
+    """
     yield request.param
 
 
 @pytest.fixture(scope="session")
 def encoder_model_id() -> Generator[str, None, None]:
-    """Yields a model ID used in tests."""
+    """Yields a model ID used in tests.
+
+    Yields:
+        A model ID used in tests.
+    """
     yield "jonfd/electra-small-nordic"
 
 
 @pytest.fixture(scope="session")
 def generative_model_id() -> Generator[str, None, None]:
-    """Yields a generative model ID used in tests."""
+    """Yields a generative model ID used in tests.
+
+    Yields:
+        A generative model ID used in tests.
+    """
     yield "HuggingFaceTB/SmolLM2-135M"
 
 
 @pytest.fixture(scope="session")
 def generative_adapter_model_id() -> Generator[str, None, None]:
-    """Yields a generative adapter model ID used in tests."""
+    """Yields a generative adapter model ID used in tests.
+
+    Yields:
+        A generative adapter model ID used in tests.
+    """
     yield "jekunz/smollm-135m-lora-fineweb-swedish"
 
 
 @pytest.fixture(scope="session")
 def openai_model_id() -> Generator[str, None, None]:
-    """Yields an OpenAI model ID used in tests."""
+    """Yields an OpenAI model ID used in tests.
+
+    Yields:
+        An OpenAI model ID used in tests.
+    """
     yield "gpt-4o-mini"
 
 
 @pytest.fixture(scope="session")
 def ollama_model_id() -> Generator[str, None, None]:
-    """Yields an Ollama model ID used in tests."""
+    """Yields an Ollama model ID used in tests.
+
+    Yields:
+        An Ollama model ID used in tests.
+    """
     yield "ollama_chat/smollm2:135m"
 
 
 @pytest.fixture(scope="session")
 def model_config() -> Generator[ModelConfig, None, None]:
-    """Yields a model configuration used in tests."""
+    """Yields a model configuration used in tests.
+
+    Yields:
+        A model configuration used in tests.
+    """
     yield ModelConfig(
         model_id="model_id",
         revision="revision",
@@ -203,14 +269,22 @@ def model_config() -> Generator[ModelConfig, None, None]:
 
 @pytest.fixture(scope="module")
 def cli_params() -> Generator[dict[str | None, ParamType], None, None]:
-    """Yields a dictionary of the CLI parameters."""
+    """Yields a dictionary of the CLI parameters.
+
+    Yields:
+        A dictionary of the CLI parameters.
+    """
     ctx = benchmark.make_context(info_name="testing", args=["--model", "test-model"])
     yield {p.name: p.type for p in benchmark.get_params(ctx)}
 
 
 @pytest.fixture(scope="session")
 def dataset_config() -> c.Generator[DatasetConfig, None, None]:
-    """Yields a dataset configuration used in tests."""
+    """Yields a dataset configuration used in tests.
+
+    Yields:
+        A dataset configuration used in tests.
+    """
     yield DatasetConfig(
         name="dataset",
         pretty_name="Dataset",

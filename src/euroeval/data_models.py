@@ -1,7 +1,9 @@
 """Data models used in EuroEval."""
 
 import collections.abc as c
+import importlib.metadata
 import json
+import logging
 import re
 import typing as t
 from copy import deepcopy
@@ -10,8 +12,15 @@ from pathlib import Path
 
 import pydantic
 import torch
+from datasets import DatasetDict
 from transformers.generation.configuration_utils import GenerationConfig
 
+from .constants import (
+    ATTENTION_BACKENDS,
+    CHOICES_MAPPING,
+    MAX_NUMBER_OF_LOGGING_LANGUAGES,
+)
+from .eee_utils import benchmark_result_from_eee_dict, benchmark_result_to_eee_dict
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
 from .languages import (
@@ -23,12 +32,29 @@ from .languages import (
     PORTUGUESE,
     Language,
 )
+from .logging_utils import log_once
 from .metrics.base import Metric
-from .types import ScoreDict
-from .utils import get_package_version
+from .preprocessing import build_preprocessing_func
+from .types import FailedInstance, ScoreDict
 
 if t.TYPE_CHECKING:
     from .enums import InferenceBackend
+
+
+def get_package_version(package_name: str) -> str | None:
+    """Get the version of a package.
+
+    Args:
+        package_name:
+            The name of the package.
+
+    Returns:
+        The version of the package, or None if the package is not installed.
+    """
+    try:
+        return importlib.metadata.version(package_name)
+    except importlib.metadata.PackageNotFoundError:
+        return None
 
 
 @dataclass
@@ -69,7 +95,8 @@ class Task:
         task_group:
             The task group of the task.
         template_dict:
-            The template dictionary for the task, from language to prompt template.
+            The template dictionary for the task, from language (or language tuples) to
+            prompt template.
         metrics:
             The metrics used to evaluate the task.
         default_num_few_shot_examples:
@@ -79,14 +106,21 @@ class Task:
         default_max_generated_tokens:
             The default maximum number of tokens to generate when benchmarking the task
             using few-shot evaluation.
-        default_labels:
-            The default labels for datasets using this task.
+        default_labels (optional):
+            The default labels for datasets using this task. Can be None if the labels
+            should be set manually in the dataset configs. Defaults to an empty tuple.
         requires_zero_shot (optional):
             Whether to only allow zero-shot evaluation for this task. If True, the
             task will not be evaluated using few-shot examples.
         uses_structured_output (optional):
             Whether the task uses structured output. If True, the task will return
             structured output (e.g., BIO tags for NER). Defaults to False.
+        structured_output_format (optional):
+            Schema to use for structured output as a (deserializable) JSON string.
+            Only used if `uses_structured_output` is True.
+            If None output structure will be determined by a default behavior
+            based on the task.
+            Defaults to None.
         uses_logprobs (optional):
             Whether the task uses log probabilities. If True, the task will return
             log probabilities for the generated tokens. Defaults to False.
@@ -113,13 +147,16 @@ class Task:
 
     name: str
     task_group: TaskGroup
-    template_dict: dict[Language, PromptConfig]
+    template_dict: (
+        dict[Language, PromptConfig] | dict[tuple[Language, Language], PromptConfig]
+    )
     metrics: c.Sequence[Metric]
     default_num_few_shot_examples: int
     default_max_generated_tokens: int
-    default_labels: c.Sequence[str] | None
+    default_labels: c.Sequence[str] | None = tuple()
     requires_zero_shot: bool = False
     uses_structured_output: bool = False
+    structured_output_format: pydantic.BaseModel | None = None
     uses_logprobs: bool = False
     requires_logprobs: bool = False
     default_allowed_model_types: c.Sequence[ModelType] = field(
@@ -137,139 +174,361 @@ class Task:
     def __post_init__(self) -> None:
         """Post-initialisation checks."""
         self.uses_logprobs = self.uses_logprobs or self.requires_logprobs
+        if not self.uses_structured_output and self.structured_output_format:
+            log_once(
+                "`structured_output_format` is specified however "
+                "`uses_structured_output=False` "
+                "- thus this specified structure will not be used.",
+                level=logging.WARNING,
+            )
 
     def __hash__(self) -> int:
         """Return a hash of the task."""
         return hash(self.name)
 
 
-@dataclass
 class DatasetConfig:
-    """Configuration for a dataset.
+    """Configuration for a dataset."""
 
-    Attributes:
-        name:
-            The name of the dataset. Must be lower case with no spaces.
-        pretty_name:
-            A longer prettier name for the dataset, which allows cases and spaces. Used
-            for logging.
-        source:
-            The source of the dataset, which can be a Hugging Face ID or a dictionary
-            with keys "train", "val" and "test" mapping to local CSV file paths.
-        task:
-            The task of the dataset.
-        languages:
-            The ISO 639-1 language codes of the entries in the dataset.
-        id2label:
-            The mapping from ID to label.
-        label2id:
-            The mapping from label to ID.
-        num_labels:
-            The number of labels in the dataset.
-        _prompt_prefix (optional):
-            The prefix to use in the few-shot prompt. Defaults to the template for the
-            task and language.
-        _prompt_template (optional):
-            The template for the prompt to use when benchmarking the dataset using
-            few-shot evaluation. Defaults to the template for the task and language.
-        _instruction_prompt (optional):
-            The prompt to use when benchmarking the dataset using instruction-based
-            evaluation. Defaults to the template for the task and language.
-        _num_few_shot_examples (optional):
-            The number of examples to use when benchmarking the dataset using few-shot
-            evaluation. For a classification task, these will be drawn evenly from
-            each label. Defaults to the template for the task and language.
-        _max_generated_tokens (optional):
-            The maximum number of tokens to generate when benchmarking the dataset
-            using few-shot evaluation. Defaults to the template for the task and
-            language.
-        _labels (optional):
-            The labels in the dataset. Defaults to the template for the task and
-            language.
-        _prompt_label_mapping (optional):
-            A mapping from the labels to another phrase which is used as a substitute
-            for the label in few-shot evaluation. If "auto" then the mapping will be set
-            to a 1:1 mapping between the labels and themselves. If None then the mapping
-            will be set to the default mapping for the task and language. Defaults to
-            None.
-        _allowed_model_types (optional):
-            A list of model types that are allowed to be evaluated on this dataset.
-            Defaults to the one for the task.
-        _allowed_generative_types (optional):
-            A list of generative model types that are allowed to be evaluated on this
-            dataset. If None, all generative model types are allowed. Only relevant if
-            `allowed_model_types` includes generative models. Defaults to the one for
-            the task.
-        _allow_invalid_model_outputs (optional):
-            Whether to allow invalid model outputs. This is only relevant for
-            generative models on classification tasks, where the model may generate an
-            output which is not one of the allowed labels. If True, the model output
-            will be mapped to the closest valid label. If False, the model output will
-            be considered incorrect and the evaluation will be aborted. Defaults to
-            the one for the task.
-        _logging_string (optional):
-            The string used to describe evaluation on the dataset in logging. If not
-            provided, a default string will be generated, based on the pretty name. Only
-            use this if the default string is not suitable.
-        splits (optional):
-            The names of the splits in the dataset. If not provided, defaults to
-            ["train", "val", "test"].
-        bootstrap_samples (optional):
-            Whether to bootstrap the dataset samples. Defaults to True.
-        unofficial (optional):
-            Whether the dataset is unofficial. Defaults to False.
-    """
+    def __init__(
+        self,
+        task: Task,
+        languages: c.Sequence[Language],
+        name: str | None = None,
+        pretty_name: str | None = None,
+        source: str | dict[str, str] | None = None,
+        prompt_prefix: str | None = None,
+        prompt_template: str | None = None,
+        instruction_prompt: str | None = None,
+        num_few_shot_examples: int | None = None,
+        max_generated_tokens: int | None = None,
+        labels: c.Sequence[str] | None = None,
+        prompt_label_mapping: dict[str, str] | t.Literal["auto"] | None = None,
+        allowed_model_types: c.Sequence[ModelType] | None = None,
+        allowed_generative_types: c.Sequence[GenerativeType] | None = None,
+        allow_invalid_model_outputs: bool | None = None,
+        train_split: str | None = "train",
+        val_split: str | None = "val",
+        test_split: str = "test",
+        bootstrap_samples: bool = True,
+        unofficial: bool = False,
+        input_column: str = "text",
+        target_column: str | None = None,
+        choices_column: str | list[str] | None = None,
+        preprocessing_func: c.Callable[[DatasetDict], DatasetDict] | None = None,
+    ) -> None:
+        """Initialise a DatasetConfig object.
 
-    name: str
-    pretty_name: str
-    source: str | dict[str, str]
-    task: Task
-    languages: c.Sequence[Language]
-    _prompt_prefix: str | None = None
-    _prompt_template: str | None = None
-    _instruction_prompt: str | None = None
-    _num_few_shot_examples: int | None = None
-    _max_generated_tokens: int | None = None
-    _labels: c.Sequence[str] | None = None
-    _prompt_label_mapping: dict[str, str] | t.Literal["auto"] | None = None
-    _allowed_model_types: c.Sequence[ModelType] | None = None
-    _allowed_generative_types: c.Sequence[GenerativeType] | None = None
-    _allow_invalid_model_outputs: bool | None = None
-    _logging_string: str | None = None
-    splits: c.Sequence[str] = field(default_factory=lambda: ["train", "val", "test"])
-    bootstrap_samples: bool = True
-    unofficial: bool = False
+        Args:
+            task:
+                The task of the dataset.
+            languages:
+                The ISO 639-1 language codes of the entries in the dataset.
+            name (optional):
+                The name of the dataset. Must be lower case with no spaces. Can be None
+                if and only if the dataset config resides directly in the Hugging Face
+                dataset repo. Defaults to None.
+            pretty_name (optional):
+                A longer prettier name for the dataset, which allows cases and spaces.
+                Used for logging. Can be None if and only if the dataset config resides
+                directly in the Hugging Face dataset repo. Defaults to None.
+            source (optional):
+                The source of the dataset, which can be a Hugging Face ID or a
+                dictionary with keys "train", "val" and "test" mapping to local CSV file
+                paths. Can be None if and only if the dataset config resides directly in
+                the Hugging Face dataset repo. Defaults to None.
+            prompt_prefix (optional):
+                The prefix to use in the few-shot prompt. Defaults to the template for
+                the task and language.
+            prompt_template (optional):
+                The template for the prompt to use when benchmarking the dataset using
+                few-shot evaluation. Defaults to the template for the task and language.
+            instruction_prompt (optional):
+                The prompt to use when benchmarking the dataset using instruction-based
+                evaluation. Defaults to the template for the task and language.
+            num_few_shot_examples (optional):
+                The number of examples to use when benchmarking the dataset using
+                few-shot evaluation. For a classification task, these will be drawn
+                evenly from each label. Defaults to the template for the task and
+                language.
+            max_generated_tokens (optional):
+                The maximum number of tokens to generate when benchmarking the dataset
+                using few-shot evaluation. Defaults to the template for the task and
+                language.
+            labels (optional):
+                The labels in the dataset. Defaults to the template for the task and
+                language.
+            prompt_label_mapping (optional):
+                A mapping from the labels to another phrase which is used as a
+                substitute for the label in few-shot evaluation. If "auto" then the
+                mapping will be set to a 1:1 mapping between the labels and themselves.
+                If None then the mapping will be set to the default mapping for the task
+                and language. Defaults to None.
+            allowed_model_types (optional):
+                A list of model types that are allowed to be evaluated on this dataset.
+                Defaults to the one for the task.
+            allowed_generative_types (optional):
+                A list of generative model types that are allowed to be evaluated on
+                this dataset. If None, all generative model types are allowed. Only
+                relevant if `allowed_model_types` includes generative models. Defaults
+                to the one for the task.
+            allow_invalid_model_outputs (optional):
+                Whether to allow invalid model outputs. This is only relevant for
+                generative models on classification tasks, where the model may generate
+                an output which is not one of the allowed labels. If True, the model
+                output will be mapped to the closest valid label. If False, the model
+                output will be considered incorrect and the evaluation will be aborted.
+                Defaults to the one for the task.
+            train_split (optional):
+                The name of the split to use as the training set. Can be None if there
+                is no training split in the dataset. Defaults to "train".
+            val_split (optional):
+                The name of the split to use as the validation set. Can be None if there
+                is no validation split in the dataset. Defaults to "val".
+            test_split (optional):
+                The name of the split to use as the test set. Defaults to "test".
+            bootstrap_samples (optional):
+                Whether to bootstrap the dataset samples. Defaults to True.
+            unofficial (optional):
+                Whether the dataset is unofficial. Defaults to False.
+            input_column (optional):
+                The name of the column in the dataset that contains the input texts.
+                If different from "text", this column will be renamed to "text". If
+                `choices_column` is also set, the two columns are merged into a single
+                "text" column formatted as in the official dataset creation scripts.
+                Defaults to "text".
+            target_column (optional):
+                The name of the column in the dataset that contains the labels. If None,
+                the default column name for the task group is used ("label" for most
+                tasks, "labels" for token classification, "target_text" for text-to-text
+                tasks). Defaults to None.
+            choices_column (optional):
+                The name of the column (or list of column names) in the dataset that
+                contains the answer choices. If a single column name is provided, that
+                column must hold a list of answer-choice strings. If a list of column
+                names is provided, each column holds a single answer-choice string.
+                When set, the input text and choices are merged into a single "text"
+                column. Defaults to None.
+            preprocessing_func (optional):
+                A custom preprocessing function that takes a DatasetDict and returns a
+                DatasetDict. If set together with any of the column arguments, a warning
+                is logged and `preprocessing_func` takes precedence. Defaults to None.
+        """
+        self._name = name
+        self._pretty_name = pretty_name
+        self._source = source
+        self.task = task
+        self.languages = languages
 
-    @property
-    def main_language(self) -> Language:
-        """Get the main language of the dataset.
+        template = self.task.template_dict.get(self.main_language)
+        self.prompt_prefix = (
+            prompt_prefix
+            if prompt_prefix is not None
+            else template.default_prompt_prefix
+            if template is not None
+            else ""
+        )
+        self.prompt_template = (
+            prompt_template
+            if prompt_template is not None
+            else template.default_prompt_template
+            if template is not None
+            else ""
+        )
+        self.instruction_prompt = (
+            instruction_prompt
+            if instruction_prompt is not None
+            else template.default_instruction_prompt
+            if template is not None
+            else ""
+        )
+        self.num_few_shot_examples = (
+            num_few_shot_examples
+            if num_few_shot_examples is not None
+            else self.task.default_num_few_shot_examples
+        )
+        self.max_generated_tokens = (
+            max_generated_tokens
+            if max_generated_tokens is not None
+            else self.task.default_max_generated_tokens
+        )
+        self.labels = (
+            labels if labels is not None else self.task.default_labels or list()
+        )
+        if prompt_label_mapping is None:
+            prompt_label_mapping = (
+                template.default_prompt_label_mapping
+                if template is not None
+                else dict()
+            )
+        self.prompt_label_mapping = (
+            {label: label for label in self.labels}
+            if prompt_label_mapping == "auto"
+            else prompt_label_mapping
+        )
+        self.allowed_model_types = (
+            allowed_model_types
+            if allowed_model_types is not None
+            else self.task.default_allowed_model_types
+        )
+        self.allowed_generative_types = (
+            allowed_generative_types
+            if allowed_generative_types is not None
+            else self.task.default_allowed_generative_types
+        )
+        self.allow_invalid_model_outputs = (
+            allow_invalid_model_outputs
+            if allow_invalid_model_outputs is not None
+            else self.task.default_allow_invalid_model_outputs
+        )
+        self.train_split = train_split
+        self.val_split = val_split
+        self.test_split = test_split
+        self.bootstrap_samples = bootstrap_samples
+        self.unofficial = unofficial
+
+        # Build or assign the preprocessing function
+        column_args_set = any(
+            (
+                input_column != "text",
+                target_column is not None,
+                choices_column is not None,
+            )
+        )
+        if preprocessing_func is not None and column_args_set:
+            log_once(
+                "Both `preprocessing_func` and column arguments (`input_column`, "
+                "`target_column`, `choices_column`) are set. `preprocessing_func` "
+                "takes precedence and the column arguments will be ignored.",
+                level=logging.WARNING,
+            )
+            self.preprocessing_func: c.Callable[[DatasetDict], DatasetDict] | None = (
+                preprocessing_func
+            )
+        elif column_args_set:
+            # Determine the language-specific choices label
+            main_lang = self.languages[0] if self.languages else None
+            lang_code = main_lang.code if main_lang is not None else "en"
+            choices_label = CHOICES_MAPPING.get(lang_code, "Choices")
+            self.preprocessing_func = build_preprocessing_func(
+                dataset_name=name or "",
+                task_group=self.task.task_group,
+                input_column=input_column,
+                target_column=target_column,
+                choices_column=choices_column,
+                choices_label=choices_label,
+            )
+        else:
+            self.preprocessing_func = preprocessing_func  # None or user-provided
+
+    def __repr__(self) -> str:
+        """The representation of the dataset configuration.
 
         Returns:
-            The main language.
+            The string representation.
         """
-        match len(self.languages):
-            case 0:
-                raise InvalidBenchmark(
-                    f"Dataset {self.name!r} must have at least one language."
-                )
-            case 1:
-                return self.languages[0]
-            case _:
-                if ENGLISH in self.languages:
-                    return ENGLISH
-                elif NORWEGIAN in self.languages:
-                    return NORWEGIAN
-                elif PORTUGUESE in self.languages:
-                    return PORTUGUESE
-                else:
-                    return self.languages[0]
+        language_repr = (
+            self.languages
+            if len(self.languages) < 5
+            else list(self.languages[:5]) + ["..."]
+        )
+        parts = [f"task={self.task.name}", f"languages={language_repr}"]
+        try:
+            parts.append(f"name={self.name}")
+        except ValueError:
+            pass
+        try:
+            parts.append(f"pretty_name={self.pretty_name}")
+        except ValueError:
+            pass
+        try:
+            parts.append(f"source={self.source}")
+        except ValueError:
+            pass
+        return f"DatasetConfig({', '.join(parts)})"
+
+    @property
+    def name(self) -> str:
+        """The name of the dataset.
+
+        Returns:
+            The name of the dataset.
+
+        Raises:
+            ValueError:
+                If the name of the dataset is not set.
+        """
+        if self._name is None:
+            raise ValueError("The name of the dataset is not set!")
+        return self._name
+
+    @name.setter
+    def name(self, value: str) -> None:
+        """Set the name of the dataset.
+
+        Args:
+            value:
+                The new name of the dataset.
+        """
+        self._name = value
+
+    @property
+    def pretty_name(self) -> str:
+        """The pretty name of the dataset.
+
+        Returns:
+            The pretty name of the dataset.
+
+        Raises:
+            ValueError:
+                If the pretty name of the dataset is not set.
+        """
+        if self._pretty_name is None:
+            raise ValueError("The pretty name of the dataset is not set!")
+        return self._pretty_name
+
+    @pretty_name.setter
+    def pretty_name(self, value: str) -> None:
+        """Set the pretty name of the dataset.
+
+        Args:
+            value:
+                The new pretty name of the dataset.
+        """
+        self._pretty_name = value
+
+    @property
+    def source(self) -> str | dict[str, str]:
+        """The source of the dataset.
+
+        Returns:
+            The source of the dataset.
+
+        Raises:
+            ValueError:
+                If the source of the dataset is not set.
+        """
+        if self._source is None:
+            raise ValueError("The source of the dataset is not set!")
+        return self._source
+
+    @source.setter
+    def source(self, value: str | dict[str, str]) -> None:
+        """Set the source of the dataset.
+
+        Args:
+            value:
+                The new source of the dataset.
+        """
+        self._source = value
 
     @property
     def logging_string(self) -> str:
-        """The string used to describe evaluation on the dataset in logging."""
-        if self._logging_string is not None:
-            return self._logging_string
+        """The string used to describe evaluation on the dataset in logging.
 
+        Returns:
+            The logging string.
+        """
         truncated_str = (
             "truncated version of the "
             if isinstance(self.source, str) and self.source.endswith("-mini")
@@ -293,126 +552,59 @@ class DatasetConfig:
             if PORTUGUESE in self.languages and EUROPEAN_PORTUGUESE in self.languages:
                 logging_languages.remove(EUROPEAN_PORTUGUESE)
 
-        if len(logging_languages) > 1:
+        if len(logging_languages) > MAX_NUMBER_OF_LOGGING_LANGUAGES:
+            languages_str = ""
+        elif len(logging_languages) > 1:
             languages_str = (
                 ", ".join([lang.name for lang in logging_languages[:-1]])
                 + f" and {logging_languages[-1].name}"
+                + " "
             )
         else:
-            languages_str = logging_languages[0].name
+            languages_str = logging_languages[0].name + " "
 
         task_str = self.task.name.replace("-", " ")
         dataset_name_str = (
             self.pretty_name or self.name.replace("-", " ").replace("_", " ").title()
         )
         return (
-            f"the {truncated_str}{languages_str} {task_str} dataset {dataset_name_str}"
+            f"the {truncated_str}{languages_str}{task_str} dataset {dataset_name_str}"
         )
 
     @property
-    def prompt_prefix(self) -> str:
-        """The prefix to use in the few-shot prompt."""
-        prompt_config = self.task.template_dict[self.main_language]
-        prompt_prefix = (
-            prompt_config.default_prompt_prefix
-            if self._prompt_prefix is None
-            else self._prompt_prefix
-        )
-        return prompt_prefix
+    def main_language(self) -> Language | tuple[Language, Language]:
+        """Get the main language of the dataset.
 
-    @property
-    def prompt_template(self) -> str:
-        """The template used during few-shot evaluation."""
-        prompt_config = self.task.template_dict[self.main_language]
-        prompt_template = (
-            prompt_config.default_prompt_template
-            if self._prompt_template is None
-            else self._prompt_template
-        )
-        return prompt_template
+        Returns:
+            The main language or languages of the dataset.
 
-    @property
-    def instruction_prompt(self) -> str:
-        """The prompt to use when evaluating instruction-tuned models."""
-        prompt_config = self.task.template_dict[self.main_language]
-        instruction_prompt = (
-            prompt_config.default_instruction_prompt
-            if self._instruction_prompt is None
-            else self._instruction_prompt
-        )
-        return instruction_prompt
+        Raises:
+            InvalidBenchmark:
+                If the dataset has no languages.
+        """
+        # Importing here to avoid circular imports
+        from .tasks import TRANSLATION  # noqa: PLC0415
 
-    @property
-    def num_few_shot_examples(self) -> int:
-        """The number of few-shot examples to use."""
-        return (
-            self._num_few_shot_examples
-            if self._num_few_shot_examples is not None
-            else self.task.default_num_few_shot_examples
-        )
+        # Special case for datasets with multiple languages
+        if self.task == TRANSLATION:
+            return (self.languages[0], self.languages[1])
 
-    @property
-    def max_generated_tokens(self) -> int:
-        """The maximum number of tokens to generate when evaluating a model."""
-        return (
-            self._max_generated_tokens
-            if self._max_generated_tokens is not None
-            else self.task.default_max_generated_tokens
-        )
-
-    @property
-    def labels(self) -> c.Sequence[str]:
-        """The labels in the dataset."""
-        if self._labels is not None:
-            return self._labels
-        elif self.task.default_labels is not None:
-            return self.task.default_labels
-        else:
-            raise ValueError(
-                f"Labels must be specified for dataset {self.name!r} with the "
-                f"attribute `_labels`, as the task {self.task.name!r} does not have "
-                "default labels."
-            )
-
-    @property
-    def prompt_label_mapping(self) -> dict[str, str]:
-        """Mapping from English labels to localised labels."""
-        if self._prompt_label_mapping == "auto":
-            return {label: label for label in self.labels}
-        elif self._prompt_label_mapping is not None:
-            return self._prompt_label_mapping
-        prompt_config = self.task.template_dict[self.main_language]
-        if prompt_config.default_prompt_label_mapping == "auto":
-            return {label: label for label in self.labels}
-        else:
-            return prompt_config.default_prompt_label_mapping
-
-    @property
-    def allowed_model_types(self) -> c.Sequence[ModelType]:
-        """A list of model types that are allowed to be evaluated on this dataset."""
-        return (
-            self._allowed_model_types
-            if self._allowed_model_types is not None
-            else self.task.default_allowed_model_types
-        )
-
-    @property
-    def allowed_generative_types(self) -> c.Sequence[GenerativeType]:
-        """A list of generative model types that are allowed on this dataset."""
-        return (
-            self._allowed_generative_types
-            if self._allowed_generative_types is not None
-            else self.task.default_allowed_generative_types
-        )
-
-    @property
-    def allow_invalid_model_outputs(self) -> bool:
-        """Whether to allow invalid model outputs."""
-        return (
-            self._allow_invalid_model_outputs
-            if self._allow_invalid_model_outputs is not None
-            else self.task.default_allow_invalid_model_outputs
-        )
+        match len(self.languages):
+            case 0:
+                raise InvalidBenchmark(
+                    f"Dataset {self.name!r} must have at least one language."
+                )
+            case 1:
+                return self.languages[0]
+            case _:
+                if ENGLISH in self.languages:
+                    return ENGLISH
+                elif NORWEGIAN in self.languages:
+                    return NORWEGIAN
+                elif PORTUGUESE in self.languages:
+                    return PORTUGUESE
+                else:
+                    return self.languages[0]
 
     @property
     def id2label(self) -> "HashableDict":
@@ -517,6 +709,10 @@ class BenchmarkConfig:
             faster evaluation, but at the risk of running out of GPU memory. Only reduce
             this if you are running out of GPU memory. Only relevant if the model is
             generative.
+        attention_backend:
+            The attention backend to use for vLLM. Only relevant if the model is
+            generative. If None then vLLM will automatically select the best attention
+            backend.
         requires_safetensors:
             Whether to only allow models that use the safetensors format.
         generative_type:
@@ -534,6 +730,12 @@ class BenchmarkConfig:
             Whether to run the benchmark in debug mode.
         run_with_cli:
             Whether the benchmark is being run with the CLI.
+        max_context_length:
+            Override for the maximum context length of the model. If None, the value
+            will be inferred automatically from the model.
+        vocabulary_size:
+            Override for the vocabulary size of the model. If None, the value will be
+            inferred automatically from the model.
     """
 
     datasets: c.Sequence[DatasetConfig]
@@ -553,6 +755,7 @@ class BenchmarkConfig:
     few_shot: bool
     num_iterations: int
     gpu_memory_utilization: float
+    attention_backend: t.Literal[*ATTENTION_BACKENDS] | None
     requires_safetensors: bool
     generative_type: GenerativeType | None
     download_only: bool
@@ -560,6 +763,8 @@ class BenchmarkConfig:
     verbose: bool
     debug: bool
     run_with_cli: bool
+    max_context_length: int | None
+    vocabulary_size: int | None
 
     @property
     def tasks(self) -> c.Sequence[Task]:
@@ -601,12 +806,15 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     requires_safetensors: bool
     download_only: bool
     gpu_memory_utilization: float
+    attention_backend: t.Literal[*ATTENTION_BACKENDS] | None
     generative_type: GenerativeType | None
     custom_datasets_file: Path
     force: bool
     verbose: bool
     debug: bool
     run_with_cli: bool
+    max_context_length: int | None
+    vocabulary_size: int | None
 
 
 class BenchmarkResult(pydantic.BaseModel):
@@ -630,9 +838,10 @@ class BenchmarkResult(pydantic.BaseModel):
     torch_version: str | None = get_package_version("torch")
     vllm_version: str | None = get_package_version("vllm")
     xgrammar_version: str | None = get_package_version("xgrammar")
+    litellm_version: str | None = None
 
     @classmethod
-    def from_dict(cls, config: dict) -> "BenchmarkResult":
+    def from_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
         """Create a benchmark result from a dictionary.
 
         Args:
@@ -642,6 +851,10 @@ class BenchmarkResult(pydantic.BaseModel):
         Returns:
             The benchmark result.
         """
+        # Detect Every Eval Ever format by the presence of schema_version
+        if "schema_version" in config:
+            return cls.from_eee_dict(config)
+
         # To be backwards compatible, we accept old results which changed the model
         # name with parameters rather than adding them as explicit parameters
         val_matches = re.search(r"\(.*val.*\)$", config["model"])
@@ -668,7 +881,62 @@ class BenchmarkResult(pydantic.BaseModel):
         if "dataset_languages" in config:
             config["languages"] = config.pop("dataset_languages")
 
+        # Handle languages being a JSON-encoded string
+        languages_value = config.get("languages")
+        if isinstance(languages_value, str):
+            try:
+                config["languages"] = json.loads(languages_value)
+            except json.JSONDecodeError:
+                # Fallback: treat as a single language code (e.g. "bg" -> ["bg"])
+                config["languages"] = [languages_value]
+
+        # Fill in missing required fields with defaults for very old result formats
+        if "task" not in config:
+            config["task"] = ""
+        if "languages" not in config:
+            config["languages"] = []
+        if "results" not in config:
+            config["results"] = {"raw": [], "total": {}}
+        if "num_model_parameters" not in config:
+            config["num_model_parameters"] = 0
+        if "max_sequence_length" not in config:
+            config["max_sequence_length"] = 0
+        if "vocabulary_size" not in config:
+            config["vocabulary_size"] = 0
+
         return cls(**config)
+
+    @classmethod
+    def from_eee_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
+        """Create a BenchmarkResult from an Every Eval Ever format dictionary.
+
+        Reconstructs a full `BenchmarkResult` from a dictionary conforming to the
+        Every Eval Ever (EEE) JSON schema v0.2.1.  The method is the inverse of
+        `to_eee_dict` and enables lossless round-trips via `from_dict`.
+
+        Args:
+            config:
+                A dictionary conforming to the EEE JSON schema v0.2.1, as produced
+                by `to_eee_dict`.
+
+        Returns:
+            The reconstructed benchmark result.
+        """
+        return benchmark_result_from_eee_dict(config=config)
+
+    def to_eee_dict(self) -> dict[str, object]:
+        """Convert this benchmark result to the Every Eval Ever (EEE) format.
+
+        Produces a dictionary conforming to the Every Eval Ever JSON schema v0.2.1
+        (https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json).
+        The resulting dict can be written directly to
+        `euroeval_benchmark_results.jsonl` and later reconstructed without loss
+        via `from_eee_dict` (or `from_dict`).
+
+        Returns:
+            A dictionary matching the EEE JSON schema v0.2.1.
+        """
+        return benchmark_result_to_eee_dict(result=self)
 
     def append_to_results(self, results_path: Path) -> None:
         """Append the benchmark result to the results file.
@@ -677,7 +945,7 @@ class BenchmarkResult(pydantic.BaseModel):
             results_path:
                 The path to the results file.
         """
-        json_str = json.dumps(self.model_dump())
+        json_str = json.dumps(self.to_eee_dict(), ensure_ascii=False)
         with results_path.open("a") as f:
             f.write("\n" + json_str)
 
@@ -760,14 +1028,33 @@ class GenerativeModelOutput:
     Attributes:
         sequences:
             The generated sequences.
-        scores:
+        predicted_labels (optional):
+            The predicted labels from the `sequences` and sometimes also `scores`. Can
+            be None if the labels have not been predicted yet. Defaults to None.
+        scores (optional):
             The scores of the sequences. This is an array of shape (batch_size,
             num_tokens, num_logprobs, 2), where the last dimension contains the
-            token and its logprob. Can be None if the scores are not available.
+            token and its logprob. Can be None if the scores are not available. Defaults
+            to None.
+        metadatas (optional):
+            All the metadata fields for the samples, including ground truth labels (if
+            applicable). Defaults to an empty list.
+        failed_instances (optional):
+            A list of dictionaries, one per failed instance, each containing
+            ``"sample_index"`` (the index of the sample in the batch) and ``"error"``
+            (a short description of why it failed). Defaults to an empty list.
     """
 
     sequences: c.Sequence[str]
+    predicted_labels: c.Sequence[object] | None = None
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
+    metadatas: list["HashableDict | None"] = field(default_factory=list)
+    failed_instances: list["FailedInstance"] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        """Post-initialisation."""
+        if not self.metadatas:
+            self.metadatas = [None] * len(self.sequences)
 
 
 @dataclass
@@ -777,14 +1064,22 @@ class SingleGenerativeModelOutput:
     Attributes:
         sequence:
             The generated sequence.
-        scores:
+        predicted_label (optional):
+            The predicted label from the `sequence` and sometimes also `scores`. Can be
+            None if the label has not been predicted yet. Defaults to None.
+        scores (optional):
             The scores of the sequence. This is an array of shape (num_tokens,
             num_logprobs, 2), where the last dimension contains the token and its
-            logprob. Can be None if the scores are not available.
+            logprob. Can be None if the scores are not available. Defaults to None.
+        metadata (optional):
+            The metadata fields for the sample, including ground truth labels (if
+            applicable). Can be None if the metadata is not available. Defaults to None.
     """
 
     sequence: str
+    predicted_label: str | None = None
     scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
+    metadata: "HashableDict | None" = None
 
 
 @dataclass
@@ -824,9 +1119,9 @@ class ModelIdComponents:
     param: str | None
 
 
-class HashableDict(dict):
+class HashableDict(dict[t.Any, t.Any]):
     """A hashable dictionary."""
 
-    def __hash__(self) -> int:  # type: ignore[override]
+    def __hash__(self) -> int:
         """Return the hash of the dictionary."""
         return hash(frozenset(self.items()))

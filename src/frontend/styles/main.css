@@ -1,0 +1,661 @@
+:root,
+[data-theme="dark"] {
+  --color-bg: #1a1d22;
+  --color-surface: #22262c;
+  --color-text: #e6e6e6;
+  --color-muted: #9aa0a6;
+  --color-link: #5b9dd9;
+  --color-link-hover: #82b8e6;
+  --color-border: #2e333a;
+  --color-header-bg: #546e7a;
+  --color-header-text: #ffffff;
+  --color-footer-bg: #0f1114;
+  --color-footer-text: #9aa0a6;
+  --color-code-bg: #2b2f36;
+  --color-code-text: #e6e6e6;
+  --color-code-border: #3a3f47;
+  --color-code-inline-bg: rgba(110, 118, 129, 0.35);
+  --color-table-header-bg: #2a2f36;
+  --color-danger: #ff6b6b;
+
+  /* highlight.js token colors (atom-one-dark inspired) */
+  --hljs-comment: #7f848e;
+  --hljs-keyword: #c678dd;
+  --hljs-string: #98c379;
+  --hljs-number: #d19a66;
+  --hljs-function: #61afef;
+  --hljs-variable: #e06c75;
+  --hljs-tag: #e06c75;
+  --hljs-type: #e5c07b;
+  --hljs-builtin: #56b6c2;
+  --hljs-meta: #abb2bf;
+
+  /* Leaderboard cell colors. */
+  --color-icon-good: #6dba6d;
+  --color-icon-bad: #d57676;
+  --color-icon-unknown: #9aa0a6;
+  --heatmap-best: 110, 186, 124;   /* greenish RGB */
+  --heatmap-worst: 220, 120, 120;  /* reddish RGB */
+}
+
+[data-theme="light"] {
+  --color-bg: #ffffff;
+  --color-surface: #f5f7f9;
+  --color-text: #1f2328;
+  --color-muted: #57606a;
+  --color-link: #1976d2;
+  --color-link-hover: #0d47a1;
+  --color-border: #d0d7de;
+  --color-header-bg: #546e7a;
+  --color-header-text: #ffffff;
+  --color-footer-bg: #eaeef2;
+  --color-footer-text: #57606a;
+  --color-code-bg: #eef1f5;
+  --color-code-text: #1f2328;
+  --color-code-border: #c8cfd6;
+  --color-code-inline-bg: rgba(175, 184, 193, 0.35);
+  --color-table-header-bg: #f0f2f5;
+  --color-danger: #cf222e;
+
+  /* highlight.js token colors (atom-one-light inspired) */
+  --hljs-comment: #8a8f99;
+  --hljs-keyword: #a626a4;
+  --hljs-string: #50a14f;
+  --hljs-number: #986801;
+  --hljs-function: #4078f2;
+  --hljs-variable: #e45649;
+  --hljs-tag: #e45649;
+  --hljs-type: #c18401;
+  --hljs-builtin: #0184bc;
+  --hljs-meta: #383a42;
+
+  /* Leaderboard cell colors. */
+  --color-icon-good: #2e8b57;
+  --color-icon-bad: #c0392b;
+  --color-icon-unknown: #57606a;
+  --heatmap-best: 90, 170, 110;
+  --heatmap-worst: 200, 100, 100;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Roboto", "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+html {
+  scroll-padding-top: 120px;
+  scrollbar-gutter: stable;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: var(--color-link-hover);
+}
+
+button {
+  font-family: inherit;
+}
+
+.markdown-body {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin: 1.6em 0 0.6em;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.markdown-body h1 {
+  font-size: 2rem;
+  font-weight: 300;
+  margin-top: 0;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.markdown-body h1:empty,
+.markdown-body h2:empty,
+.markdown-body h3:empty {
+  display: none;
+}
+
+.markdown-body h2 {
+  font-size: 1.5rem;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.markdown-body h3 {
+  font-size: 1.2rem;
+}
+
+.markdown-body p {
+  margin: 0 0 1em;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0 0 1em;
+  padding-left: 1.6em;
+}
+
+.markdown-body li + li {
+  margin-top: 0.25em;
+}
+
+.markdown-body blockquote {
+  margin: 0 0 1em;
+  padding: 0.2em 1em;
+  color: var(--color-muted);
+  border-left: 4px solid var(--color-border);
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  margin: 0 0 1em;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid var(--color-border);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+.markdown-body th {
+  background: var(--color-table-header-bg);
+  font-weight: 600;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.markdown-body code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: var(--color-code-inline-bg);
+  color: var(--color-code-text);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+
+.markdown-body pre {
+  background: var(--color-code-bg);
+  border: 1px solid var(--color-code-border);
+  border-radius: 6px;
+  padding: 0.9em 1em;
+  overflow-x: auto;
+  margin: 0 0 1em;
+}
+
+.markdown-body pre code,
+.markdown-body pre .hljs {
+  background: transparent;
+  color: var(--color-code-text);
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.85rem;
+}
+
+/* highlight.js token classes — theme-aware via CSS variables */
+.hljs-comment,
+.hljs-quote {
+  color: var(--hljs-comment);
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-section,
+.hljs-link {
+  color: var(--hljs-keyword);
+}
+
+.hljs-string,
+.hljs-meta-string {
+  color: var(--hljs-string);
+}
+
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-regexp {
+  color: var(--hljs-number);
+}
+
+.hljs-title,
+.hljs-name,
+.hljs-title.class_,
+.hljs-title.function_ {
+  color: var(--hljs-function);
+}
+
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-attribute,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: var(--hljs-variable);
+}
+
+.hljs-tag,
+.hljs-doctag,
+.hljs-deletion {
+  color: var(--hljs-tag);
+}
+
+.hljs-type,
+.hljs-class .hljs-title,
+.hljs-built_in,
+.hljs-builtin-name {
+  color: var(--hljs-type);
+}
+
+.hljs-meta,
+.hljs-meta .hljs-keyword {
+  color: var(--hljs-meta);
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+.markdown-body hr {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  margin: 2em 0;
+}
+
+/* Pure-CSS tab group emitted from `/// tab | Title` blocks. */
+.md-tabs {
+  display: block;
+  margin: 1em 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.md-tabs > .md-tab-radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.md-tabs > .md-tab-label {
+  display: inline-block;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  border-bottom: 2px solid transparent;
+  user-select: none;
+}
+
+.md-tabs > .md-tab-label:hover {
+  color: var(--color-text);
+}
+
+.md-tabs > .md-tab-radio:checked + .md-tab-label {
+  color: var(--color-link);
+  border-bottom-color: var(--color-link);
+  font-weight: 600;
+}
+
+.md-tabs > .md-tab-radio:focus-visible + .md-tab-label {
+  outline: 2px solid var(--color-link);
+  outline-offset: -2px;
+}
+
+.md-tabs > .md-tab-pane {
+  display: none;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.md-tabs > .md-tab-radio-0:checked ~ .md-tab-pane[data-idx="0"],
+.md-tabs > .md-tab-radio-1:checked ~ .md-tab-pane[data-idx="1"],
+.md-tabs > .md-tab-radio-2:checked ~ .md-tab-pane[data-idx="2"],
+.md-tabs > .md-tab-radio-3:checked ~ .md-tab-pane[data-idx="3"],
+.md-tabs > .md-tab-radio-4:checked ~ .md-tab-pane[data-idx="4"],
+.md-tabs > .md-tab-radio-5:checked ~ .md-tab-pane[data-idx="5"] {
+  display: block;
+}
+
+.md-tab-pane > :first-child {
+  margin-top: 0;
+}
+
+.md-tab-pane > :last-child {
+  margin-bottom: 0;
+}
+
+/* Collapsible admonitions emitted from `??? type "title"` blocks. The accent
+   colour is set per-type below; the base box reuses it via --md-adm-accent. */
+.md-admonition {
+  --md-adm-accent: #5b9dd9;
+  --md-adm-accent-soft: rgba(91, 157, 217, 0.12);
+  margin: 1em 0;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--md-adm-accent);
+  border-radius: 6px;
+  background: var(--md-adm-accent-soft);
+  padding: 0;
+  overflow: hidden;
+}
+
+.md-admonition-title {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.5rem 0.85rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--md-adm-accent);
+  user-select: none;
+  position: relative;
+  padding-right: 2rem;
+}
+
+.md-admonition-title::-webkit-details-marker {
+  display: none;
+}
+
+.md-admonition-title::after {
+  content: "▸";
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: transform 0.15s ease;
+  font-size: 0.75rem;
+}
+
+.md-admonition[open] > .md-admonition-title::after {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.md-admonition[open] > .md-admonition-title {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.md-admonition > :not(.md-admonition-title) {
+  margin: 0.75rem 0.85rem;
+}
+
+.md-admonition > :not(.md-admonition-title):first-of-type {
+  margin-top: 0.75rem;
+}
+
+.md-admonition > :not(.md-admonition-title):last-child {
+  margin-bottom: 0.75rem;
+}
+
+/* Per-type accents. */
+.md-admonition-note,
+.md-admonition-info {
+  --md-adm-accent: #5b9dd9;
+  --md-adm-accent-soft: rgba(91, 157, 217, 0.12);
+}
+
+.md-admonition-tip,
+.md-admonition-hint,
+.md-admonition-success {
+  --md-adm-accent: #4caf76;
+  --md-adm-accent-soft: rgba(76, 175, 118, 0.12);
+}
+
+.md-admonition-warning,
+.md-admonition-caution,
+.md-admonition-attention {
+  --md-adm-accent: #e0a23a;
+  --md-adm-accent-soft: rgba(224, 162, 58, 0.15);
+}
+
+.md-admonition-danger,
+.md-admonition-error,
+.md-admonition-failure,
+.md-admonition-bug {
+  --md-adm-accent: #d8645a;
+  --md-adm-accent-soft: rgba(216, 100, 90, 0.13);
+}
+
+.md-admonition-example {
+  --md-adm-accent: #a06ddb;
+  --md-adm-accent-soft: rgba(160, 109, 219, 0.13);
+}
+
+.md-admonition-abstract,
+.md-admonition-summary,
+.md-admonition-tldr {
+  --md-adm-accent: #4ab2c7;
+  --md-adm-accent-soft: rgba(74, 178, 199, 0.13);
+}
+
+.md-admonition-question,
+.md-admonition-help,
+.md-admonition-faq {
+  --md-adm-accent: #6ec07e;
+  --md-adm-accent-soft: rgba(110, 192, 126, 0.13);
+}
+
+.md-admonition-quote,
+.md-admonition-cite {
+  --md-adm-accent: #9aa0a6;
+  --md-adm-accent-soft: rgba(154, 160, 166, 0.12);
+}
+
+/* Collapsible module sections in the auto-generated API reference. */
+.markdown-body .api-module {
+  margin: 0.75rem 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.markdown-body .api-module-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.5rem 0.9rem;
+  user-select: none;
+  position: relative;
+  padding-left: 2.1rem;
+}
+
+.markdown-body .api-module-summary::-webkit-details-marker {
+  display: none;
+}
+
+.markdown-body .api-module-summary::before {
+  content: "▸";
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  transition: transform 0.15s ease;
+}
+
+.markdown-body .api-module[open] > .api-module-summary::before {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.markdown-body .api-module-heading {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.markdown-body .api-module-heading code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}
+
+.markdown-body .api-module[open] {
+  background: var(--color-bg);
+}
+
+.markdown-body .api-module[open] > .api-module-summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.markdown-body .api-module > :not(.api-module-summary) {
+  margin-left: 0.9rem;
+  margin-right: 0.9rem;
+}
+
+.markdown-body .api-module > :not(.api-module-summary):first-of-type {
+  margin-top: 0.9rem;
+}
+
+.markdown-body .api-module > :not(.api-module-summary):last-child {
+  margin-bottom: 0.9rem;
+}
+
+/* Nested submodule collapsibles inside a module — same font weight as the
+   surrounding body text, just slightly indented so the hierarchy is
+   obvious without the panel feeling cramped. */
+.markdown-body .api-submodule {
+  margin: 0.4rem 0 0.4rem 0.5rem;
+  border-left: 2px solid var(--color-border);
+}
+
+.markdown-body .api-submodule-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.3rem 0.5rem 0.3rem 1.6rem;
+  position: relative;
+  user-select: none;
+  font-weight: 500;
+}
+
+.markdown-body .api-submodule-summary::-webkit-details-marker {
+  display: none;
+}
+
+.markdown-body .api-submodule-summary::before {
+  content: "▸";
+  position: absolute;
+  left: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  transition: transform 0.15s ease;
+}
+
+.markdown-body .api-submodule[open] > .api-submodule-summary::before {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+.markdown-body .api-submodule-summary code {
+  background: transparent;
+  padding: 0;
+  font-size: 1rem;
+}
+
+.markdown-body .api-submodule > :not(.api-submodule-summary) {
+  margin-left: 1.6rem;
+  margin-right: 0.5rem;
+}
+
+/* "source" anchors appended to every module / class / function heading in
+   the auto-generated API reference. Kept small and muted so they don't
+   compete with the symbol name. */
+.markdown-body .api-source-link {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--color-muted);
+  text-decoration: none;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.markdown-body .api-source-link:hover {
+  color: var(--color-link);
+  border-color: var(--color-link);
+}
+
+/* Raw HTML headings emitted for classes / functions / methods. Same visual
+   weight across every nesting level — the surrounding collapsible boxes
+   already convey the hierarchy, and varying the type size just makes deep
+   signatures (like `Class.__init__(self, …)`) hard to read. */
+.markdown-body h3.api-symbol,
+.markdown-body h4.api-symbol,
+.markdown-body h5.api-symbol,
+.markdown-body h6.api-symbol {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1em 0 0.4em;
+}
+
+.markdown-body .api-symbol code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Viewport-based visibility for intro guidance text */
+.viewport-desktop {
+  display: block;
+}
+
+.viewport-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .viewport-desktop {
+    display: none;
+  }
+
+  .viewport-mobile {
+    display: block;
+  }
+}

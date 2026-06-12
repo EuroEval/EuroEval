@@ -1,12 +1,12 @@
 """Constants used throughout the project."""
 
 import re
-from typing import TypeVar
+import typing as t
 
 from .enums import TaskGroup
 
 # Type variable used for generic typing
-T = TypeVar("T", bound=object)
+T = t.TypeVar("T", bound=object)
 
 # This is used as input to generative models; it cannot be a special token
 DUMMY_FILL_VALUE = 100
@@ -28,13 +28,14 @@ GENERATIVE_PIPELINE_TAGS = [
     "image-text-to-text",
     "audio-text-to-text",
     "video-text-to-text",
+    "any-to-any",
 ]
 
 # Used to disallow non-generative models to be evaluated on these task groups
 GENERATIVE_DATASET_TASK_GROUPS = [TaskGroup.TEXT_TO_TEXT]
 
-# Local models are required to have these files in their directory
-LOCAL_MODELS_REQUIRED_FILES = ["config.json"]
+# Local models are required to have one of these files in their directory
+LOCAL_MODELS_REQUIRED_FILES = ["config.json", "adapter_config.json"]
 
 # The number of top log probabilities to return for generative models. For several APIs
 # this is the maximum number of log probabilities that can be returned
@@ -50,6 +51,11 @@ MERGE_TAGS = ["merge", "mergekit"]
 
 # The minimum required CUDA compute capability for using bfloat16 in vLLM
 VLLM_BF16_MIN_CUDA_COMPUTE_CAPABILITY = 8.0
+
+# Threshold for language confidence scores.
+# When a sample's language confidence score is greater than or equal to this value,
+# its evaluation score is kept as is. Otherwise, the score is set to 0.
+MIN_LANG_CONFIDENCE_SCORE = 0.75
 
 # The candidates for end-of-sequence, beginning-of-sequence and padding tokens
 EOS_TOKENS = ["</s>", "<|end_of_text|>", "<|endoftext|>", "[SEP]", "<|return|>"]
@@ -73,6 +79,7 @@ REASONING_TOKENS: list[tuple[str | re.Pattern, str | re.Pattern]] = [
         re.compile(pattern=r"<\|channel\|>(analysis|commentary)<\|message\|>"),
         "<|channel|>final<|message|>",
     ),
+    ("<|START_THINKING|>", "<|END_THINKING|>"),
 ]
 
 # These tokens are sometimes used by models to indicate the end of a generated
@@ -105,3 +112,82 @@ GENERATION_KWARGS = {
     "top_k": 0,
     "repetition_penalty": 1.0,
 }
+
+# This is a mirror of `AttentionBackendEnum` in vLLM, but since we don't have access to
+# this when running on CPU/MacOS (as we can only run an old vLLM version), we have to
+# define it here
+ATTENTION_BACKENDS: list[str] = [
+    "FLASH_ATTN",
+    "FLASH_ATTN_DIFFKV",
+    "TRITON_ATTN",
+    "ROCM_ATTN",
+    "ROCM_AITER_MLA",
+    "ROCM_AITER_TRITON_MLA",
+    "ROCM_AITER_FA",
+    "ROCM_AITER_MLA_SPARSE",
+    "TORCH_SDPA",
+    "FLASHINFER",
+    "FLASHINFER_MLA",
+    "TRITON_MLA",
+    "CUTLASS_MLA",
+    "FLASHMLA",
+    "FLASHMLA_SPARSE",
+    "FLASH_ATTN_MLA",
+    "IPEX",
+    "NO_ATTENTION",
+    "FLEX_ATTENTION",
+    "TREE_ATTN",
+    "ROCM_AITER_UNIFIED_ATTN",
+    "CPU_ATTN",
+    "CUSTOM",
+]
+
+# If a dataset configuration has more than this number of languages, we won't log any of
+# the languages. This is for instance the case for the speed benchmark, which has all
+# the languages. The threshold of 5 is somewhat arbitrary.
+MAX_NUMBER_OF_LOGGING_LANGUAGES = 5
+
+# Language-specific label for the choices section in multiple-choice datasets. The
+# keys are ISO 639-1 language codes.
+CHOICES_MAPPING: dict[str, str] = {
+    "ab": "Choices",
+    "bg": "Възможности",
+    "be": "Варыянты",
+    "ca": "Opcions",
+    "cs": "Výběr",
+    "da": "Svarmuligheder",
+    "de": "Antwortmöglichkeiten",
+    "el": "Επιλογές",
+    "en": "Choices",
+    "es": "Opciones",
+    "et": "Vastusevariandid",
+    "fi": "Vastausvaihtoehdot",
+    "fo": "Svarmøguleikar",
+    "fr": "Choix",
+    "hr": "Izbori",
+    "hu": "Válaszlehetőségek",
+    "is": "Svarmöguleikar",
+    "it": "Scelte",
+    "lt": "Pasirinkimai",
+    "lv": "Izvēles",
+    "nl": "Antwoordopties",
+    "no": "Svaralternativer",
+    "pl": "Opcje",
+    "pt": "Opções",
+    "ro": "Opțiuni",
+    "sk": "Možnosti",
+    "sl": "Možnosti",
+    "sq": "Opsione",
+    "sr": "Opcije",
+    "sv": "Svarsalternativ",
+    "uk": "Варіанти",
+}
+
+# Constants for the tool-calling task
+TOOL_CALLING_CALLS_KEY = "tool_calls"
+TOOL_CALLING_FUNCTION_KEY = "function"
+TOOL_CALLING_ARGUMENTS_KEY = "arguments"
+TOOL_CALLING_KEYS = [TOOL_CALLING_FUNCTION_KEY, TOOL_CALLING_ARGUMENTS_KEY]
+
+# Every Eval Ever (EEE) schema version used when serialising benchmark results
+EEE_SCHEMA_VERSION = "0.2.1"

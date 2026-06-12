@@ -2,9 +2,21 @@
 
 from ..data_models import DatasetConfig
 from ..languages import NORWEGIAN, NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    GED,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+    TEXT_CLASSIFICATION,
+)
 
-### Official datasets ###
+# Official datasets ###
 
 NOREC_CONFIG = DatasetConfig(
     name="norec",
@@ -52,7 +64,7 @@ NORQUAD_CONFIG = DatasetConfig(
     source="EuroEval/norquad-mini",
     task=RC,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
-    _num_few_shot_examples=2,
+    num_few_shot_examples=2,
 )
 
 NO_SAMMENDRAG_CONFIG = DatasetConfig(
@@ -85,7 +97,7 @@ NOR_COMMON_SENSE_QA_CONFIG = DatasetConfig(
     source="EuroEval/nor-common-sense-qa",
     task=COMMON_SENSE,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
-    _labels=["a", "b", "c", "d", "e"],
+    labels=["a", "b", "c", "d", "e"],
 )
 
 VALEU_NO_CONFIG = DatasetConfig(
@@ -94,13 +106,14 @@ VALEU_NO_CONFIG = DatasetConfig(
     source="EuroEval/european-values-no",
     task=EUROPEAN_VALUES,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 NO_COLA_CONFIG = DatasetConfig(
     name="no-cola",
@@ -136,6 +149,21 @@ SCHIBSTED_NO_CONFIG = DatasetConfig(
     task=SUMM,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
+)
+
+SCHIBSTED_FRONT_TITLE_NO_CONFIG = DatasetConfig(
+    name="vg-front-title",
+    pretty_name="VG Front Title",
+    source="EuroEval/vg-front-title",
+    task=SUMM,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
+    unofficial=True,
+    max_generated_tokens=64,
+    prompt_prefix="Her følger nyhetsartikler med tilhørende titler.",
+    prompt_template="Nyhetsartikkel: {text}\nTittel: {target_text}",
+    instruction_prompt=(
+        "Nyhetsartikkel: {text}\n\nSkriv en tittel for den ovennevnte artikkelen."
+    ),
 )
 
 PERSONAL_SUM_CONFIG = DatasetConfig(
@@ -207,6 +235,62 @@ WINOGRANDE_NO_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-no",
     task=COMMON_SENSE,
     languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+    unofficial=True,
+)
+
+NORDIAL_CONFIG = DatasetConfig(
+    name="nordial",
+    pretty_name="NorDial",
+    source="EuroEval/nordial",
+    task=TEXT_CLASSIFICATION,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN_NYNORSK, NORWEGIAN],
+    labels=["bokmål", "nynorsk", "dialectal", "mixed"],
+    prompt_prefix="Følgende er norske tweets og hvilken skriftform de er skrevet på, "
+    "som kan være {labels_str}.",
+    prompt_template="Tweet: {text}\nSkriftform: {label}",
+    instruction_prompt="Tweet: {text}\n\nKlassifiser skriftformen av tweeten. Svar med "
+    "{labels_str}, og ikke noe annet.",
+    prompt_label_mapping=dict(
+        bokmål="bokmål", nynorsk="nynorsk", dialectal="dialekt", mixed="blandet"
+    ),
+    unofficial=True,
+)
+
+NORSUMM_NB_CONFIG = DatasetConfig(
+    name="norsumm-nb",
+    pretty_name="NorSumm-nb",
+    source="EuroEval/norsumm-nb",
+    task=SUMM,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    unofficial=True,
+    val_split=None,
+)
+
+NORSUMM_NN_CONFIG = DatasetConfig(
+    name="norsumm-nn",
+    pretty_name="NorSumm-nn",
+    source="EuroEval/norsumm-nn",
+    task=SUMM,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+    unofficial=True,
+    val_split=None,
+)
+
+GERLANGMOD_NB_CONFIG = DatasetConfig(
+    name="gerlangmod-nb",
+    pretty_name="GerLangMod-nb",
+    source="EuroEval/gerlangmod-nb",
+    task=GED,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    unofficial=True,
+)
+
+GERLANGMOD_NN_CONFIG = DatasetConfig(
+    name="gerlangmod-nn",
+    pretty_name="GerLangMod-nn",
+    source="EuroEval/gerlangmod-nn",
+    task=GED,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
 )

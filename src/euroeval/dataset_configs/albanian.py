@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import ALBANIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 MMS_SQ_CONFIG = DatasetConfig(
     name="mms-sq",
@@ -60,5 +60,17 @@ WINOGRANDE_SQ_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-sq",
     task=COMMON_SENSE,
     languages=[ALBANIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+)
+
+
+# Unofficial datasets ###
+
+INCLUDE_SQ_CONFIG = DatasetConfig(
+    name="include-sq",
+    pretty_name="INCLUDE-sq",
+    source="EuroEval/include-sq-mini",
+    task=KNOW,
+    languages=[ALBANIAN],
+    unofficial=True,
 )

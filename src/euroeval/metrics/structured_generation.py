@@ -48,6 +48,10 @@ class StructuredGenerationMetric(Metric):
 
         Returns:
             The calculated metric, or None if the score should be ignored.
+
+        Raises:
+            InvalidBenchmark:
+                If the number of predictions doesn't match the number of references.
         """  # noqa: D214, D405, D410, D411
         if not predictions or not references:
             return None
@@ -62,9 +66,9 @@ class StructuredGenerationMetric(Metric):
 
         # Parse the model outputs and create predictions
         if self._check_full_type(raw_predictions, list[dict[str, list[str]]]):
-            formatted_predictions: list[dict[str, list[str]]] = deepcopy(
-                raw_predictions
-            )  # type: ignore[arg-type]
+            formatted_predictions: list[dict[str, list[str]]] = t.cast(
+                list[dict[str, list[str]]], deepcopy(raw_predictions)
+            )
         else:
             formatted_predictions = []
             for raw_prediction in raw_predictions:
@@ -85,10 +89,12 @@ class StructuredGenerationMetric(Metric):
                     formatted_prediction = {
                         "object_1": [f"Invalid prediction: {raw_prediction}"]
                     }
-                formatted_predictions.append(formatted_prediction)  # type: ignore[arg-type]
+                formatted_predictions.append(formatted_prediction)
         # Parse the labels
         if self._check_full_type(raw_labels, list[dict[str, list[str]]]):
-            labels: list[dict[str, list[str]]] = deepcopy(raw_labels)  # type: ignore[arg-type]
+            labels: list[dict[str, list[str]]] = t.cast(
+                list[dict[str, list[str]]], deepcopy(raw_labels)
+            )
         else:
             labels = []
             for raw_label in raw_labels:
@@ -103,7 +109,7 @@ class StructuredGenerationMetric(Metric):
                         "The label string was not converted to a dictionary. "
                         "Please ensure that the labels are parsed correctly."
                     )
-                labels.append(extract_json_dict_from_string(s=raw_label))  # type: ignore[arg-type]
+                labels.append(extract_json_dict_from_string(s=raw_label))
 
         results = self._compare_all_json_predictions_and_labels(
             predictions=formatted_predictions, labels=labels
@@ -113,7 +119,17 @@ class StructuredGenerationMetric(Metric):
 
     @staticmethod
     def _check_full_type(variable: object, expected_type: t.Type) -> bool:
-        """Check if a variable is of the expected type."""
+        """Check if a variable is of the expected type.
+
+        Args:
+            variable:
+                The variable to check.
+            expected_type:
+                The expected type.
+
+        Returns:
+            True if the variable is of the expected type, False otherwise.
+        """
         try:
             check_type(variable, expected_type)
             return True
@@ -135,6 +151,10 @@ class StructuredGenerationMetric(Metric):
 
         Returns:
             An array with comparison results.
+
+        Raises:
+            InvalidBenchmark:
+                If the prediction or label is not a dictionary.
         """
         n_puzzles = len(labels)
 

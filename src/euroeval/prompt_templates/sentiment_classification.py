@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     ALBANIAN,
+    BELARUSIAN,
     BOSNIAN,
     BULGARIAN,
     CATALAN,
@@ -51,6 +52,16 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nNdjenja: {label}",
         default_instruction_prompt="Dokument: {text}\n\nKlasifikoni ndjenjën në "
         "dokument. Përgjigjuni vetëm me {labels_str}, dhe asgjë tjetër.",
+    ),
+    BELARUSIAN: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="станоўчы", neutral="нейтральны", negative="адмоўны"
+        ),
+        default_prompt_prefix="Ніжэй прыведзены дакументы і іх сентымент, які можа "
+        "быць {labels_str}.",
+        default_prompt_template="Дакумент: {text}\nСентымент: {label}",
+        default_instruction_prompt="Дакумент: {text}\n\nКласіфікуйце сентымент у "
+        "дакуменце. Адкажыце толькі {labels_str}, і нічога іншага.",
     ),
     BOSNIAN: PromptConfig(
         default_prompt_label_mapping=dict(

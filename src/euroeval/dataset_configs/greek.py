@@ -2,9 +2,9 @@
 
 from ..data_models import DatasetConfig
 from ..languages import GREEK
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 GREEK_SA_CONFIG = DatasetConfig(
     name="greek-sa",
@@ -12,7 +12,7 @@ GREEK_SA_CONFIG = DatasetConfig(
     source="EuroEval/greek-sa-mini",
     task=SENT,
     languages=[GREEK],
-    _labels=["negative", "positive"],
+    labels=["negative", "positive"],
 )
 
 SCALA_EL_CONFIG = DatasetConfig(
@@ -61,4 +61,35 @@ WINOGRANDE_EL_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-el",
     task=COMMON_SENSE,
     languages=[GREEK],
+)
+
+IFEVAL_EL_CONFIG = DatasetConfig(
+    name="ifeval-el",
+    pretty_name="IFEval-el",
+    source="EuroEval/ifeval-el",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[GREEK],
+    train_split=None,
+    val_split=None,
+)
+
+
+# Unofficial datasets ###
+
+INCLUDE_EL_CONFIG = DatasetConfig(
+    name="include-el",
+    pretty_name="INCLUDE-el",
+    source="EuroEval/include-el-mini",
+    task=KNOW,
+    languages=[GREEK],
+    unofficial=True,
+)
+
+GREEK_MMLU_CONFIG = DatasetConfig(
+    name="greek-mmlu",
+    pretty_name="GreekMMLU",
+    source="EuroEval/greek-mmlu-mini",
+    task=KNOW,
+    languages=[GREEK],
+    unofficial=True,
 )

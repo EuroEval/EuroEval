@@ -5,6 +5,7 @@ from pathlib import Path
 import click
 
 from .benchmarker import Benchmarker
+from .constants import ATTENTION_BACKENDS
 from .data_models import DatasetConfig
 from .enums import Device, GenerativeType
 from .languages import get_all_languages
@@ -171,6 +172,14 @@ from .languages import get_all_languages
     "if you are running out of GPU memory. Only relevant if the model is generative.",
 )
 @click.option(
+    "--attention-backend",
+    default=None,
+    show_default=True,
+    type=click.Choice(ATTENTION_BACKENDS, case_sensitive=True),
+    help="The attention backend to use for vLLM. Only relevant if the model is "
+    "generative. If None then the attention backend will be selected automatically.",
+)
+@click.option(
     "--requires-safetensors",
     is_flag=True,
     help="Only allow loading models that have safetensors weights available",
@@ -206,31 +215,20 @@ from .languages import get_all_languages
     "relevant if the model is generative.",
 )
 @click.option(
-    "--model-language",
-    "-ml",
+    "--max-context-length",
     default=None,
+    type=int,
     show_default=True,
-    multiple=True,
-    metavar="ISO 639-1 LANGUAGE CODE",
-    type=click.Choice(["all"] + list(get_all_languages().keys())),
-    help="""This option is deprecated - please use --language instead.""",
+    help="Override for the maximum context length of the model. If not specified, the "
+    "value will be inferred automatically from the model.",
 )
 @click.option(
-    "--dataset-language",
-    "-dl",
+    "--vocabulary-size",
     default=None,
+    type=int,
     show_default=True,
-    multiple=True,
-    metavar="ISO 639-1 LANGUAGE CODE",
-    type=click.Choice(["all"] + list(get_all_languages().keys())),
-    help="""This option is deprecated - please use --language instead.""",
-)
-@click.option(
-    "--batch-size",
-    default=None,
-    type=click.Choice(["1", "2", "4", "8", "16", "32"]),
-    help="This option is deprecated - please use --finetuning-batch-size instead.",
-    deprecated=True,
+    help="Override for the vocabulary size of the model. If not specified, the value "
+    "will be inferred automatically from the model.",
 )
 def benchmark(
     model: tuple[str],
@@ -254,14 +252,14 @@ def benchmark(
     api_base: str | None,
     api_version: str | None,
     gpu_memory_utilization: float,
+    attention_backend: str,
     requires_safetensors: bool,
     generative_type: str | None,
     custom_datasets_file: Path,
     download_only: bool,
     debug: bool,
-    model_language: tuple[str],
-    dataset_language: tuple[str],
-    batch_size: str | None,
+    max_context_length: int | None,
+    vocabulary_size: int | None,
 ) -> None:
     """Benchmark pretrained language models on language tasks."""
     Benchmarker(
@@ -285,6 +283,7 @@ def benchmark(
         api_base=api_base,
         api_version=api_version,
         gpu_memory_utilization=gpu_memory_utilization,
+        attention_backend=attention_backend,
         generative_type=GenerativeType[generative_type.upper()]
         if generative_type
         else None,
@@ -293,9 +292,8 @@ def benchmark(
         run_with_cli=True,
         requires_safetensors=requires_safetensors,
         download_only=download_only,
-        model_language=None if len(model_language) == 0 else list(model_language),
-        dataset_language=None if len(dataset_language) == 0 else list(dataset_language),
-        batch_size=int(batch_size) if batch_size is not None else None,
+        max_context_length=max_context_length,
+        vocabulary_size=vocabulary_size,
     ).benchmark(model=list(model))
 
 

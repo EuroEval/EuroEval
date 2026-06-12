@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import SERBIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 MMS_SR_CONFIG = DatasetConfig(
     name="mms-sr",
@@ -60,5 +60,17 @@ WINOGRANDE_SR_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-sr",
     task=COMMON_SENSE,
     languages=[SERBIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+)
+
+
+# Unofficial datasets ###
+
+INCLUDE_SR_CONFIG = DatasetConfig(
+    name="include-sr",
+    pretty_name="INCLUDE-sr",
+    source="EuroEval/include-sr-mini",
+    task=KNOW,
+    languages=[SERBIAN],
+    unofficial=True,
 )

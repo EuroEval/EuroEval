@@ -41,7 +41,7 @@ class QuestionAnsweringTrainer(Trainer):
         train_dataset: "Dataset",
         eval_dataset: "Dataset",
         compute_metrics: "c.Callable[[EvalPrediction], dict[str, float]]",
-        callbacks: "c.Sequence[TrainerCallback]",
+        callbacks: "list[TrainerCallback]",
         data_collator: "c.Callable",
         **kwargs,
     ) -> None:
@@ -58,21 +58,21 @@ class QuestionAnsweringTrainer(Trainer):
             **kwargs,
         )
 
-        # Get the CLS token id for the tokeniser
-        if self.tokenizer is not None:
-            assert isinstance(self.tokenizer, PreTrainedTokenizerBase)
-            special_token_metadata = get_special_token_metadata(self.tokenizer)
+        # Get the CLS token id for the processing_class
+        if self.processing_class is not None:
+            assert isinstance(self.processing_class, PreTrainedTokenizerBase)
+            special_token_metadata = get_special_token_metadata(self.processing_class)
             self.cls_token_id = special_token_metadata["cls_token_id"]
 
         # Set the label names
         self.label_names = ["start_positions", "end_positions"]
 
-    def evaluate(  # type: ignore[override]
+    def evaluate(
         self,
-        eval_dataset: "Dataset | None" = None,
-        orig_eval_dataset: "Dataset | None" = None,
+        eval_dataset: "Dataset | dict[str, Dataset] | None" = None,
         ignore_keys: list[str] | None = None,
         metric_key_prefix: str = "eval",
+        orig_eval_dataset: "Dataset | None" = None,
     ) -> dict[str, float]:
         """Evaluate the model on the given dataset.
 
@@ -91,10 +91,12 @@ class QuestionAnsweringTrainer(Trainer):
         Returns:
             The metrics computed on the evaluation dataset.
         """
-        eval_dataloader = self.get_eval_dataloader(eval_dataset)  #  type: ignore[bad-argument-type]
+        eval_dataloader = self.get_eval_dataloader(
+            eval_dataset if eval_dataset is not None else None
+        )
 
         # Temporarily disable metric computation, we will do it in the loop here.
-        compute_metrics = self.compute_metrics  # type: ignore[has-type]
+        compute_metrics = self.compute_metrics
         self.compute_metrics = None
         eval_loop = (
             self.prediction_loop
@@ -120,13 +122,14 @@ class QuestionAnsweringTrainer(Trainer):
 
         if orig_eval_dataset is not None and eval_dataset is not None:
             preds_and_labels = postprocess_predictions_and_labels(
-                predictions=predictions,  # type: ignore[arg-type]
+                predictions=t.cast("tuple[np.ndarray, ...]", predictions),
                 dataset=orig_eval_dataset,
-                prepared_dataset=eval_dataset,
+                prepared_dataset=t.cast("Dataset", eval_dataset),
                 cls_token_index=self.cls_token_id,
             )
             assert self.compute_metrics is not None
-            new_metrics = self.compute_metrics(preds_and_labels)  # type: ignore[arg-type]
+
+            new_metrics = self.compute_metrics(EvalPrediction(*preds_and_labels))
             metrics.update(new_metrics)
 
             # Prefix all keys with metric_key_prefix + '_'
@@ -175,7 +178,7 @@ def compute_metrics(
     if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
         model_outputs = model_outputs[0]
 
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)  # type: ignore[bad-argument-type]
+    raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     model_output_dtype = np.asarray(model_outputs).dtype
     if model_output_dtype in [np.float16, np.float32, np.float64]:
@@ -186,8 +189,8 @@ def compute_metrics(
     results: dict[str, float] = dict()
     for metric in dataset_config.task.metrics:
         score: float | None = metric(
-            predictions=predictions,  #  type: ignore[bad-argument-type]
-            references=labels,  #  type: ignore[bad-argument-type]
+            predictions=predictions,
+            references=labels,
             dataset=dataset,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
@@ -241,7 +244,8 @@ def prepare_train_examples(
     # Some of the questions have lots of whitespace on the left, which is not useful
     # and will make the truncation of the context fail (the tokenized question will
     # take a lots of space). So we remove that left whitespace
-    examples["question"] = [q.lstrip() for q in examples["question"]]  #  type: ignore[not-iterable]
+
+    examples["question"] = [q.lstrip() for q in examples["question"]]
 
     # Extract special token metadata from the tokeniser
     special_token_metadata = get_special_token_metadata(tokeniser=tokeniser)
@@ -256,7 +260,8 @@ def prepare_train_examples(
         examples["question"] = [
             f"{cls_token}{q}{sep_token}" for q in examples["question"]
         ]
-        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]  #  type: ignore[not-iterable]
+
+        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]
 
     # Set the stride used during tokenisation, when the context is long enough to be
     # split into several features. Since we are always keeping the question tokens, we
@@ -325,7 +330,7 @@ def prepare_train_examples(
         # One example can give several spans, this is the index of the example
         # containing this span of text.
         sample_index = sample_mapping[i]
-        answers = examples["answers"][sample_index]  #  type: ignore[bad-index]
+        answers = examples["answers"][sample_index]
 
         # If no answers are given, set the cls_index as answer.
         if len(answers["answer_start"]) == 0:
@@ -404,7 +409,8 @@ def prepare_test_examples(
     # Some of the questions have lots of whitespace on the left, which is not useful
     # and will make the truncation of the context fail (the tokenised question will
     # take a lots of space). So we remove that left whitespace
-    examples["question"] = [q.lstrip() for q in examples["question"]]  #  type: ignore[not-iterable]
+
+    examples["question"] = [q.lstrip() for q in examples["question"]]
 
     # Extract special token metadata from the tokeniser
     special_token_metadata = get_special_token_metadata(tokeniser=tokeniser)
@@ -418,7 +424,8 @@ def prepare_test_examples(
         examples["question"] = [
             f"{cls_token}{q}{sep_token}" for q in examples["question"]
         ]
-        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]  #  type: ignore[not-iterable]
+
+        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]
 
     # Set the stride used during tokenisation, when the context is long enough to be
     # split into several features. Since we are always keeping the question tokens, we
@@ -467,7 +474,8 @@ def prepare_test_examples(
         # One example can give several spans, this is the index of the example
         # containing this span of text.
         sample_index = sample_mapping[i]
-        tokenised_examples.id.append(examples["id"][sample_index])  #  type: ignore[bad-index]
+
+        tokenised_examples.id.append(examples["id"][sample_index])
 
         # Set to (-1, -1) the offset_mapping that are not part of the context so it's
         # easy to determine if a token position is part of the context or not.
@@ -499,6 +507,11 @@ def postprocess_predictions_and_labels(
 
     Returns:
         The postprocessed predictions and labels.
+
+    Raises:
+        InvalidBenchmark:
+            If the predictions are not a tuple with the first two elements being
+            (start_logits, end_logits).
     """
     if len(predictions) < 2:
         raise InvalidBenchmark(

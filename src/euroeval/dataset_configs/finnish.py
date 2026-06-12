@@ -2,9 +2,20 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FINNISH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
-### Official datasets ###
+# Official datasets ###
 
 SCANDISENT_FI_CONFIG = DatasetConfig(
     name="scandisent-fi",
@@ -12,7 +23,7 @@ SCANDISENT_FI_CONFIG = DatasetConfig(
     source="EuroEval/scandisent-fi-mini",
     task=SENT,
     languages=[FINNISH],
-    _labels=["negative", "positive"],
+    labels=["negative", "positive"],
 )
 
 TURKU_NER_FI_CONFIG = DatasetConfig(
@@ -61,13 +72,14 @@ VALEU_FI_CONFIG = DatasetConfig(
     source="EuroEval/european-values-fi",
     task=EUROPEAN_VALUES,
     languages=[FINNISH],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 BELEBELE_FI_CONFIG = DatasetConfig(
     name="belebele-fi",
@@ -102,6 +114,25 @@ WINOGRANDE_FI_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-fi",
     task=COMMON_SENSE,
     languages=[FINNISH],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+    unofficial=True,
+)
+
+IFEVAL_FI_CONFIG = DatasetConfig(
+    name="ifeval-fi",
+    pretty_name="IFEval-fi",
+    source="EuroEval/ifeval-fi",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[FINNISH],
+    train_split=None,
+    val_split=None,
+)
+
+INCLUDE_FI_CONFIG = DatasetConfig(
+    name="include-fi",
+    pretty_name="INCLUDE-fi",
+    source="EuroEval/include-fi-mini",
+    task=KNOW,
+    languages=[FINNISH],
     unofficial=True,
 )

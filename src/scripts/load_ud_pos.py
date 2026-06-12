@@ -8,11 +8,11 @@
 
 """Load the part-of-speech part of a Universal Dependencies treebank."""
 
+import collections.abc as c
 import logging
 import re
 from collections import defaultdict
 from functools import partial
-from typing import Callable, DefaultDict
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -608,6 +608,24 @@ def load_sqdt_pos() -> dict[str, pd.DataFrame]:
     return df_dict
 
 
+def load_bedt_pos() -> dict[str, pd.DataFrame]:
+    """Load the part-of-speech part of the Belarusian Dependency Treebank.
+
+    Returns:
+        The dataframes, stored in the keys `train`, `val`, and `test`.
+    """
+    # Define download URLs
+    base_url = (
+        "https://raw.githubusercontent.com/UniversalDependencies/UD_Belarusian-HSE/refs"
+        "/heads/master/be_hse-ud-{}.conllu"
+    )
+    train_url = base_url.format("train")
+    val_url = base_url.format("dev")
+    test_url = base_url.format("test")
+
+    return load_ud_pos(train_url=train_url, val_url=val_url, test_url=test_url)
+
+
 def _load_file_or_url(url_or_path: str) -> list[str]:
     """Load a file from a URL or local path.
 
@@ -643,7 +661,7 @@ def _filter_token_range(data_dict: dict[str, list]) -> dict[str, list]:
     Returns:
         The filtered data dictionary. Its format is identical to the input.
     """
-    output: DefaultDict[str, list] = defaultdict(list)
+    output: dict[str, list] = defaultdict(list)
 
     range_start: int = 0
     range_end: int = 0
@@ -687,7 +705,7 @@ def _load_split(
     *,
     lines: list[str],
     filter_source: str | None = None,
-    doc_process_fn: Callable[[str], str] = lambda x: x,
+    doc_process_fn: c.Callable[[str], str] = lambda x: x,
 ) -> pd.DataFrame:
     """Load single split of the POS part of a Universal Dependencies treebank.
 
@@ -751,7 +769,7 @@ def load_ud_pos(
     train_url: str,
     val_url: str,
     test_url: str,
-    doc_process_fn: Callable[[str], str] = lambda x: x,
+    doc_process_fn: c.Callable[[str], str] = lambda x: x,
     filter_source: str | None = None,
 ) -> dict[str, pd.DataFrame]:
     """Load the part-of-speech part of a Universal Dependencies treebank.

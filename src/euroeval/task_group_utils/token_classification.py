@@ -9,10 +9,8 @@ import numpy as np
 
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
-from ..utils import (
-    extract_json_dict_from_string,
-    raise_if_model_output_contains_nan_values,
-)
+from ..string_utils import extract_json_dict_from_string
+from ..utils import raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -50,6 +48,11 @@ def compute_metrics(
     Returns:
         A dictionary with the names of the metrics as keys and the metric values as
         values.
+
+    Raises:
+        InvalidBenchmark:
+            If the tokeniser is not of a "fast" variant and the word IDs cannot be
+            extracted.
     """
     model_outputs, labels = model_outputs_and_labels
 
@@ -59,8 +62,9 @@ def compute_metrics(
         model_outputs = model_outputs[0]
 
     predictions: list[list[str]]
-    if not isinstance(model_outputs[0][0], str):  #  type: ignore[bad-index]
-        raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()  # type: ignore[no-matching-overload]
+
+    if not isinstance(model_outputs[0][0], str):
+        raw_predictions: list[list[int]] = np.argmax(model_outputs, axis=-1).tolist()
 
         # Remove ignored index (special tokens)
         predictions = [
@@ -85,7 +89,7 @@ def compute_metrics(
         ]
 
     else:
-        predictions = model_outputs  # type: ignore[assignment]
+        predictions = list(model_outputs)  # ty: ignore[invalid-assignment]
 
     raise_if_model_output_contains_nan_values(model_output=predictions)
 
@@ -107,83 +111,64 @@ def compute_metrics(
                 else:
                     predictions[i][j] = "o"
 
-    # Remove MISC labels from predictions
-    predictions_no_misc = deepcopy(predictions)
-    for i, prediction_list in enumerate(predictions_no_misc):
-        for j, ner_tag in enumerate(prediction_list):
-            if ner_tag[-4:] == "misc":
-                predictions_no_misc[i][j] = "o"
-
-    # Remove MISC labels from labels
-    labels_no_misc: list[list[str]] = deepcopy(labels)  # type: ignore[arg-type]
-    for i, label_list in enumerate(labels_no_misc):
-        for j, ner_tag in enumerate(label_list):
-            if (
-                isinstance(ner_tag, str)
-                and len(ner_tag) >= 4
-                and ner_tag[-4:] == "misc"
-            ):
-                labels_no_misc[i][j] = "o"
-
-    # Compute the metrics
-    # We manually set the F1 metric to be 100% if both the labels and the models
-    # have no NER tags in them, since this causes an error with the `compute`
-    # method otherwise
-    predictions_all_zero = all(
-        all(ner_tag == "o" for ner_tag in prediction_list)
-        for prediction_list in predictions
+    # Build no-misc variants only when needed by any metric
+    needs_no_misc = any(
+        m.name == "micro_f1_no_misc" for m in dataset_config.task.metrics
     )
-    labels_all_zero = all(
-        all(ner_tag == "o" for ner_tag in label_list) for label_list in labels
-    )
-    if predictions_all_zero and labels_all_zero:
-        micro_f1_score: float | None = 1.0
-    else:
-        metric = next(
-            metric
-            for metric in dataset_config.task.metrics
-            if metric.name == "micro_f1"
-        )
-        micro_f1_score = metric(
-            predictions=predictions,
-            references=list(labels),
-            dataset=dataset,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-        )
+    predictions_no_misc: list[list[str]] = []
+    labels_no_misc: list[list[str]] = []
+    if needs_no_misc:
+        predictions_no_misc = deepcopy(predictions)
+        for i, prediction_list in enumerate(predictions_no_misc):
+            for j, ner_tag in enumerate(prediction_list):
+                if ner_tag[-4:] == "misc":
+                    predictions_no_misc[i][j] = "o"
 
-    # Compute the metrics without MISC tags
-    # We manually set the F1 metric to be 100% if both the labels and the models
-    # have no NER tags in them, since this causes an error with the `compute`
-    # method otherwise
-    predictions_no_misc_all_zero = all(
-        all(ner_tag == "o" for ner_tag in prediction_list)
-        for prediction_list in predictions_no_misc
-    )
-    labels_no_misc_all_zero = all(
-        all(ner_tag == "o" for ner_tag in label_list) for label_list in labels_no_misc
-    )
-    if predictions_no_misc_all_zero and labels_no_misc_all_zero:
-        micro_f1_no_misc_score: float | None = 1.0
-    else:
-        metric = next(
-            metric
-            for metric in dataset_config.task.metrics
-            if metric.name == "micro_f1_no_misc"
-        )
-        micro_f1_no_misc_score = metric(
-            predictions=predictions_no_misc,
-            references=labels_no_misc,
-            dataset=dataset,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-        )
+        labels_no_misc = deepcopy(labels)  # ty: ignore[invalid-assignment]
+        for i, label_list in enumerate(labels_no_misc):
+            for j, ner_tag in enumerate(label_list):
+                if (
+                    isinstance(ner_tag, str)
+                    and len(ner_tag) >= 4
+                    and ner_tag[-4:] == "misc"
+                ):
+                    labels_no_misc[i][j] = "o"
 
-    # Raise error if the metrics are invalid
-    if micro_f1_score is None or micro_f1_no_misc_score is None:
-        raise InvalidBenchmark("The predictions and labels are not of the same length.")
+    # Compute each metric defined on the task
+    result: dict[str, float] = {}
+    for metric in dataset_config.task.metrics:
+        # Select the appropriate predictions/labels variant
+        if metric.name == "micro_f1_no_misc":
+            preds = predictions_no_misc
+            refs = labels_no_misc
+        else:
+            preds = predictions
+            refs = list(labels)
 
-    return dict(micro_f1_no_misc=micro_f1_no_misc_score, micro_f1=micro_f1_score)
+        # We manually set the F1 metric to be 100% if both the labels and the
+        # predictions have no NER tags in them, since this causes an error with
+        # the `compute` method otherwise
+        all_zero = all(
+            all(tag == "o" for tag in pred_list) for pred_list in preds
+        ) and all(all(tag == "o" for tag in ref_list) for ref_list in refs)
+
+        if all_zero:
+            result[metric.name] = 1.0
+        else:
+            score: float | None = metric(
+                predictions=preds,
+                references=refs,
+                dataset=dataset,
+                dataset_config=dataset_config,
+                benchmark_config=benchmark_config,
+            )
+            if score is None:
+                raise InvalidBenchmark(
+                    "The predictions and labels are not of the same length."
+                )
+            result[metric.name] = score
+
+    return result
 
 
 def extract_labels_from_generation(
@@ -210,6 +195,9 @@ def extract_labels_from_generation(
     for idx, raw_prediction in enumerate(model_output.sequences):
         prediction_dict = extract_json_dict_from_string(s=raw_prediction)
         if prediction_dict is None:
+            model_output.failed_instances.append(
+                dict(sample_index=idx, error="Could not parse JSON from model output")
+            )
             continue
 
         prompt_label_mapping = dataset_config.prompt_label_mapping
@@ -274,6 +262,11 @@ def tokenize_and_align_labels(
 
     Returns:
         A dictionary containing the tokenized data as well as labels.
+
+    Raises:
+        InvalidBenchmark:
+            If the tokeniser is not of a "fast" variant and the word IDs cannot be
+            extracted, or if a label was not found in the model's config.
     """
     # Tokenise the texts. We use the `is_split_into_words` argument here because
     # the texts in our dataset are lists of words (with a label for each word)
@@ -304,6 +297,7 @@ def tokenize_and_align_labels(
             # Decode the token IDs
             tokens = tokeniser.convert_ids_to_tokens(tok_ids)
             assert isinstance(tokens, list)
+            tokens = t.cast(list[str], tokens)
 
             # Remove prefixes from the tokens
             prefixes_to_remove = ["▁", "##"]

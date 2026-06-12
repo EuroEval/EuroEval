@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import POLISH
 from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 POLEMO2_CONFIG = DatasetConfig(
     name="polemo2",
@@ -60,7 +60,7 @@ WINOGRANDE_PL_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-pl",
     task=COMMON_SENSE,
     languages=[POLISH],
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )
 
 VALEU_PL_CONFIG = DatasetConfig(
@@ -69,13 +69,14 @@ VALEU_PL_CONFIG = DatasetConfig(
     source="EuroEval/european-values-pl",
     task=EUROPEAN_VALUES,
     languages=[POLISH],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 MULTI_WIKI_QA_PL_CONFIG = DatasetConfig(
     name="multi-wiki-qa-pl",
@@ -91,6 +92,15 @@ GOLDENSWAG_PL_CONFIG = DatasetConfig(
     pretty_name="GoldenSwag-pl",
     source="EuroEval/goldenswag-pl-mini",
     task=COMMON_SENSE,
+    languages=[POLISH],
+    unofficial=True,
+)
+
+INCLUDE_PL_CONFIG = DatasetConfig(
+    name="include-pl",
+    pretty_name="INCLUDE-pl",
+    source="EuroEval/include-pl-mini",
+    task=KNOW,
     languages=[POLISH],
     unofficial=True,
 )

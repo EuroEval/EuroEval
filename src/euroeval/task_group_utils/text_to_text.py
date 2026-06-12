@@ -57,7 +57,7 @@ def compute_metrics(
     if isinstance(model_outputs, tuple) and len(model_outputs) == 2:
         model_outputs = model_outputs[0]
 
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)  # type: ignore[bad-argument-type]
+    raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     labels = raw_labels
     model_output_dtype = np.asarray(model_outputs).dtype
@@ -80,8 +80,8 @@ def compute_metrics(
         for _ in range(num_attempts := 5):
             try:
                 score: float | None = metric(
-                    predictions=predictions,  #  type: ignore[bad-argument-type]
-                    references=labels,  #  type: ignore[bad-argument-type]
+                    predictions=list(predictions),
+                    references=list(labels),
                     dataset=dataset,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,
@@ -138,8 +138,10 @@ def extract_labels_from_generation(
     """Extract the predicted labels from the generated output.
 
     Args:
-        predictions: The model predictions as a list of dictionaries.
-        labels: The true labels as a list of dictionaries.
+        input_batch:
+            The input batch dictionary.
+        model_output:
+            The generative model output.
 
     Returns:
         Results for a metric.

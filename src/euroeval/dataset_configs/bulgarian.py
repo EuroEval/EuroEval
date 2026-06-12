@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import BULGARIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
-### Official datasets ###
+# Official datasets ###
 
 CINEXIO_CONFIG = DatasetConfig(
     name="cinexio",
@@ -52,5 +52,17 @@ WINOGRANDE_BG_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-bg",
     task=COMMON_SENSE,
     languages=[BULGARIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+)
+
+
+# Unofficial datasets ###
+
+INCLUDE_BG_CONFIG = DatasetConfig(
+    name="include-bg",
+    pretty_name="INCLUDE-bg",
+    source="EuroEval/include-bg-mini",
+    task=KNOW,
+    languages=[BULGARIAN],
+    unofficial=True,
 )

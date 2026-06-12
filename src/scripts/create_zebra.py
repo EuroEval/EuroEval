@@ -12,6 +12,7 @@
 """Create the zebra puzzle datasets and upload them to the HF Hub."""
 
 import json
+import typing as t
 
 import pandas as pd
 from datasets import Dataset, DatasetDict, Split, load_dataset
@@ -47,9 +48,9 @@ def main() -> None:
         assert len(test_data) == n_test
 
         # Convert the dataset to a dataframe
-        train_df: pd.DataFrame = train_data.to_pandas()
-        val_df: pd.DataFrame = val_data.to_pandas()
-        test_df: pd.DataFrame = test_data.to_pandas()
+        train_df: pd.DataFrame = t.cast(pd.DataFrame, train_data.to_pandas())
+        val_df: pd.DataFrame = t.cast(pd.DataFrame, val_data.to_pandas())
+        test_df: pd.DataFrame = t.cast(pd.DataFrame, test_data.to_pandas())
 
         # Remove unused columns
         # TODO: Consider including format_example in the dataset
@@ -97,9 +98,11 @@ def main() -> None:
 
         # Collect datasets in a dataset dictionary
         dataset = DatasetDict(
-            train=Dataset.from_pandas(train_df, split=Split.TRAIN),
-            val=Dataset.from_pandas(val_df, split=Split.VALIDATION),
-            test=Dataset.from_pandas(test_df, split=Split.TEST),
+            {
+                "train": Dataset.from_pandas(train_df, split=Split.TRAIN),
+                "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
+                "test": Dataset.from_pandas(test_df, split=Split.TEST),
+            }
         )
 
         # Create dataset ID

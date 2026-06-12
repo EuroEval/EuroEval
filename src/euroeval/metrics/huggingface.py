@@ -88,6 +88,7 @@ class HuggingFaceMetric(Metric):
             The metric object itself.
         """
         metric_cache_dir = Path(cache_dir) / "metrics"
+        metric_cache_dir.mkdir(parents=True, exist_ok=True)
         download_config = DownloadConfig(cache_dir=metric_cache_dir)
         self.metric = evaluate.load(
             path=self.huggingface_id,
@@ -181,12 +182,16 @@ class SourceBasedMetric(HuggingFaceMetric):
 
         Returns:
             The calculated metric score, or None if the score should be ignored.
+
+        Raises:
+            InvalidBenchmark:
+                If the dataset is not passed to the metric.
         """
         if dataset is None:
             raise InvalidBenchmark("SourceBasedMetric requires `dataset` to be passed.")
 
         if self.metric is None:
-            self.metric = evaluate.load(path=self.huggingface_id)
+            self.download(cache_dir=benchmark_config.cache_dir)
 
         sources = dataset["text"]
 
@@ -237,7 +242,7 @@ macro_f1_metric = HuggingFaceMetric(
 
 micro_f1_metric = HuggingFaceMetric(
     name="micro_f1",
-    pretty_name="Micro-average F1-score with MISC tags",
+    pretty_name="Micro-average F1-score",
     huggingface_id="seqeval",
     results_key="overall_f1",
 )

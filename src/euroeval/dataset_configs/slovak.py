@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import SLOVAK
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
 
-### Official datasets ###
+# Official datasets ###
 
 CSFD_SENTIMENT_SK_CONFIG = DatasetConfig(
     name="csfd-sentiment-sk",

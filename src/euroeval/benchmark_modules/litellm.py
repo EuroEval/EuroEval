@@ -7,18 +7,13 @@ import logging
 import os
 import re
 import typing as t
+from copy import deepcopy
 from functools import cached_property, partial
 from time import sleep
 
 import litellm
 import ollama
 from datasets import Dataset
-from huggingface_hub import HfApi
-from huggingface_hub.errors import (
-    HFValidationError,
-    RepositoryNotFoundError,
-    RevisionNotFoundError,
-)
 from litellm.exceptions import (
     APIConnectionError,
     APIError,
@@ -37,15 +32,15 @@ from litellm.types.router import RouterRateLimitError
 from litellm.types.utils import ChoiceLogprobs, Logprobs
 from litellm.utils import supports_reasoning, supports_response_schema
 from pydantic import ValidationError, conlist, create_model
-from requests.exceptions import RequestException
 from tqdm.asyncio import tqdm as tqdm_async
 
-from ..caching_utils import cache_arguments
+from ..async_utils import add_semaphore_and_catch_exception, safe_run
 from ..constants import (
     JSON_STRIP_CHARACTERS,
     LITELLM_CLASSIFICATION_OUTPUT_KEY,
     MAX_LITELLM_LOGPROBS,
     REASONING_MAX_TOKENS,
+    TOOL_CALLING_KEYS,
 )
 from ..data_models import (
     BenchmarkConfig,
@@ -74,22 +69,18 @@ from ..generation_utils import (
     raise_if_wrong_params,
 )
 from ..logging_utils import get_pbar, log, log_once
+from ..model_cache import create_model_cache_dir
+from ..safetensors_utils import get_num_params_from_safetensors_metadata
+from ..string_utils import split_model_id
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
     text_to_text,
     token_classification,
 )
-from ..tasks import LOGIC, NER
+from ..tasks import LOGIC
 from ..tokenisation_utils import get_first_label_token_mapping
 from ..types import ExtractLabelsFunction
-from ..utils import (
-    add_semaphore_and_catch_exception,
-    create_model_cache_dir,
-    get_hf_token,
-    safe_run,
-    split_model_id,
-)
 from .base import BenchmarkModule
 from .hf import HuggingFaceEncoderModel, load_hf_model_config, load_tokeniser
 
@@ -101,15 +92,15 @@ if t.TYPE_CHECKING:
 
 VOCAB_SIZE_MAPPING = {
     # OpenAI models
-    r"gpt-5\.2.*": -1,
-    r"gpt-5-.*": 100_256,
-    r"gpt-4-(32k)?(-[0-9]{4})?": 100_256,
-    r"gpt-4-[0-9]{4}-preview": 100_256,
-    r"gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 100_256,
-    r"gpt-4-(vision|turbo)(-preview)?": 100_256,
-    r"gpt-3\.5-turbo-instruct(-[0-9]{4})?": 100_256,
-    r"gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_019,
-    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
+    r"(openai/)?gpt-5\.[234].*": -1,
+    r"(openai/)?gpt-5-.*": 100_256,
+    r"(openai/)?gpt-4-(32k)?(-[0-9]{4})?": 100_256,
+    r"(openai/)?gpt-4-[0-9]{4}-preview": 100_256,
+    r"(openai/)?gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 100_256,
+    r"(openai/)?gpt-4-(vision|turbo)(-preview)?": 100_256,
+    r"(openai/)?gpt-3\.5-turbo-instruct(-[0-9]{4})?": 100_256,
+    r"(openai/)?gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_019,
+    r"(openai/)?o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
     # Anthropic models
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": -1,
     # Gemini models
@@ -124,19 +115,21 @@ VOCAB_SIZE_MAPPING = {
 
 MODEL_MAX_LENGTH_MAPPING = {
     # OpenAI models
-    r"gpt-5\.2.*": 400_000,
-    r"gpt-5-.*": 272_000,
-    r"gpt-4(-[0-9]{4})?": 8_191,
-    r"gpt-4-32k(-[0-9]{4})?": 32_767,
-    r"gpt-4-[0-9]{4}-preview": 128_000,
-    r"gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
-    r"gpt-4-(vision|turbo)(-preview)?": 128_000,
-    r"gpt-3\.5-turbo-instruct(-[0-9]{4})?": 4_095,
-    r"gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
-    r"o1-(mini|preview)(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
-    r"o1(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
-    r"o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
-    r"gpt-4\.1.*": 1_047_576,
+    r"(openai/)?gpt-5\.4-(mini|nano)-.*": 400_000,
+    r"(openai/)?gpt-5\.4-.*": 1_050_000,
+    r"(openai/)?gpt-5\.2.*": 400_000,
+    r"(openai/)?gpt-5-.*": 272_000,
+    r"(openai/)?gpt-4(-[0-9]{4})?": 8_191,
+    r"(openai/)?gpt-4-32k(-[0-9]{4})?": 32_767,
+    r"(openai/)?gpt-4-[0-9]{4}-preview": 128_000,
+    r"(openai/)?gpt-4-turbo(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
+    r"(openai/)?gpt-4-(vision|turbo)(-preview)?": 128_000,
+    r"(openai/)?gpt-3\.5-turbo-instruct(-[0-9]{4})?": 4_095,
+    r"(openai/)?gpt-4o(-mini)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
+    r"(openai/)?o1-(mini|preview)(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 128_000,
+    r"(openai/)?o1(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
+    r"(openai/)?o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
+    r"(openai/)?gpt-4\.1.*": 1_047_576,
     # Anthropic models
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
     r"(anthropic/)?claude-(opus|sonnet|haiku)-[1-9](-[1-9])?-[0-9]{8}": 200_000,
@@ -154,9 +147,9 @@ MODEL_MAX_LENGTH_MAPPING = {
 
 NUM_PARAMS_MAPPING = {
     # OpenAI models
-    r"gpt-5.*": -1,
-    r"gpt-4.*": -1,
-    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
+    r"(openai/)?gpt-5.*": -1,
+    r"(openai/)?gpt-4.*": -1,
+    r"(openai/)?o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": -1,
     # Anthropic models
     r"(anthropic/)?claude-*": -1,
     # Gemini models
@@ -172,7 +165,8 @@ NUM_PARAMS_MAPPING = {
 
 
 REASONING_MODELS = [
-    r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?",
+    r"(openai/)?gpt-5.4-.*",
+    r"(openai/)?o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?",
     r"(gemini/)?gemini.*thinking.*",
     r"(gemini/)?gemini-2.5.*",
     r"(xai/)?grok-3-mini.*",
@@ -181,12 +175,12 @@ REASONING_MODELS = [
 ]
 
 BASE_DECODER_MODELS = [
-    r"gpt-3.5-turbo-instruct.*",
-    r"ada-[0-9]{3}",
-    r"babbage-[0-9]{3}",
-    r"curie-[0-9]{3}",
-    r"davinci-[0-9]{3}",
-    r"text-davinci-[0-9]{3}",
+    r"(openai/)?gpt-3.5-turbo-instruct.*",
+    r"(openai/)?ada-[0-9]{3}",
+    r"(openai/)?babbage-[0-9]{3}",
+    r"(openai/)?curie-[0-9]{3}",
+    r"(openai/)?davinci-[0-9]{3}",
+    r"(openai/)?text-davinci-[0-9]{3}",
 ]
 
 CUSTOM_INFERENCE_API_PREFIXES = [
@@ -197,7 +191,6 @@ CUSTOM_INFERENCE_API_PREFIXES = [
     "llamafile/",
     "litellm_proxy/",
     "lm_studio/",
-    "openai/",
 ]
 
 UNOFFICIAL_INFERENCE_API_PREFIXES = ["ordbogen/"]
@@ -209,14 +202,19 @@ class LiteLLMModel(BenchmarkModule):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = False
-    allowed_params = {
+    allowed_params: dict[re.Pattern[str], list[str]] = {
         # OpenAI models
-        re.compile(r"gpt-5-.*"): ["minimal", "low", "medium", "high"],
-        re.compile(r"o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?"): [
+        re.compile(r"(openai/)?gpt-5.*"): [
+            "none",
+            "minimal",
             "low",
             "medium",
             "high",
+            "xhigh",
         ],
+        re.compile(
+            r"(openai/)?o[1-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?"
+        ): ["low", "medium", "high"],
         # Anthropic models
         re.compile(r"(anthropic/)?claude-3-7-sonnet.*"): ["no-thinking", "thinking"],
         re.compile(r"(anthropic/)?claude-(sonnet|opus)-4.*"): [
@@ -324,6 +322,8 @@ class LiteLLMModel(BenchmarkModule):
             type_ = GenerativeType.BASE
         elif supports_reasoning(model=self.model_config.model_id):
             type_ = GenerativeType.REASONING
+        elif self.buffer.get("uses_reasoning_content", False):
+            type_ = GenerativeType.REASONING
         else:
             type_ = GenerativeType.INSTRUCTION_TUNED
 
@@ -384,10 +384,7 @@ class LiteLLMModel(BenchmarkModule):
             batch_indices, batch_inputs = zip(*inputs_to_run)
             successes, failures = safe_run(
                 self._generate_async(
-                    model_id=clean_model_id(
-                        model_id=self.model_config.model_id,
-                        benchmark_config=self.benchmark_config,
-                    ),
+                    model_id=self.model_config.model_id,
                     inputs=list(batch_inputs),
                     max_concurrent_calls=self.buffer["max_concurrent_calls"],
                     **generation_kwargs,
@@ -486,6 +483,14 @@ class LiteLLMModel(BenchmarkModule):
             A pair (generation_kwargs, retry_delay_seconds), where `generation_kwargs`
             is the updated generation kwargs to pass to the model, and
             `retry_delay_seconds` is the number of seconds to wait before retrying.
+
+        Raises:
+            NeedsAdditionalArgument:
+                If the API key is not specified, but required.
+            InvalidModel:
+                If the model was not found, or does not specify a given parameter.
+            InvalidBenchmark:
+                If the model's reasoning budget is not specified correctly.
         """
         error_msg = str(error).lower()
         model_id = self.model_config.model_id
@@ -528,7 +533,10 @@ class LiteLLMModel(BenchmarkModule):
             "Only temperature=1 is supported",
         ]
         max_items_messages = ["'maxItems' is not permitted."]
-        no_json_schema_messages = ["Property keys should match pattern"]
+        no_json_schema_messages = [
+            "Property keys should match pattern",
+            "'json_schema' is not supported",
+        ]
         thinking_budget_pattern = re.compile(
             r"the thinking budget [0-9]+ is invalid. please choose a value between "
             r"[0-9]+ and ([0-9]+)\."
@@ -539,6 +547,7 @@ class LiteLLMModel(BenchmarkModule):
             "got an unexpected keyword argument 'response_format'",
             "the model returned empty outputs",
             "'maxitems' is not supported",
+            "must contain the word 'json'",
         ]
 
         if (
@@ -619,18 +628,19 @@ class LiteLLMModel(BenchmarkModule):
             return generation_kwargs, 0
         elif (
             any(msg.lower() in error_msg for msg in max_items_messages)
-            and self.dataset_config.task == NER
+            and self.dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION
         ):
             log_once(
                 f"The model {model_id!r} does not support "
                 "maxItems in the JSON schema, so disabling it.",
                 level=logging.DEBUG,
             )
-            ner_tag_names = list(self.dataset_config.prompt_label_mapping.values())
+            tag_names = list(self.dataset_config.prompt_label_mapping.values())
             keys_and_their_types = {
-                tag_name: (c.Sequence[str], ...) for tag_name in ner_tag_names
+                tag_name: (c.Sequence[str], ...) for tag_name in tag_names
             }
-            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)  #  type: ignore[no-matching-overload]
+
+            pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
             return generation_kwargs, 0
         elif any(msg.lower() in error_msg for msg in no_json_schema_messages):
@@ -700,10 +710,10 @@ class LiteLLMModel(BenchmarkModule):
         elif isinstance(
             error, (Timeout, ServiceUnavailableError, InternalServerError, SystemError)
         ):
-            log_once(
-                f"Service temporarily unavailable. The error message was: {error}. "
-                "Retrying in 10 seconds...",
-                level=logging.DEBUG,
+            log(
+                "Service temporarily unavailable during generation. The error "
+                f"message was: {error}. Retrying in 10 seconds...",
+                level=logging.INFO,
             )
             return generation_kwargs, 10
         elif isinstance(error, UnsupportedParamsError):
@@ -764,6 +774,20 @@ class LiteLLMModel(BenchmarkModule):
                 run_with_cli=self.benchmark_config.run_with_cli,
             ) from error
 
+        if (
+            isinstance(error, (BadRequestError, NotFoundError))
+            and self.benchmark_config.api_base is not None
+            and not self.benchmark_config.api_base.endswith("/v1")
+        ):
+            log_once(
+                f"The API base {self.benchmark_config.api_base!r} is not valid. We "
+                "will try appending '/v1' to it and try again.",
+                level=logging.DEBUG,
+            )
+            self.benchmark_config.api_base += "/v1"
+            generation_kwargs["api_base"] = self.benchmark_config.api_base
+            return generation_kwargs, 0
+
         raise InvalidBenchmark(
             f"Failed to generate text. The error message was: {error}"
         ) from error
@@ -793,14 +817,24 @@ class LiteLLMModel(BenchmarkModule):
             A tuple (successes, failures), each being a list of tuples (idx, content),
             where the `idx` corresponds to the index of `conversations`, and `content`
             is either the model response or an Exception.
+
+        Raises:
+            InvalidBenchmark:
+                If the model input is invalid.
         """
+        cleaned_model_id = clean_model_id(
+            model_id=model_id, benchmark_config=self.benchmark_config
+        )
+
         # Create a LiteLLM router, which will ensure that we only use a single client
         # for all the requests, preventing "too many open files" errors
         router = Router(
             model_list=[
                 litellm.DeploymentTypedDict(
-                    model_name=self.model_config.model_id,
-                    litellm_params=litellm.LiteLLMParamsTypedDict(model=model_id),
+                    model_name=cleaned_model_id,
+                    litellm_params=litellm.LiteLLMParamsTypedDict(
+                        model=cleaned_model_id
+                    ),
                 )
             ]
         )
@@ -815,11 +849,7 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.atext_completion(
-                        model=clean_model_id(
-                            model_id=model_id, benchmark_config=self.benchmark_config
-                        ),
-                        prompt=input_,
-                        **generation_kwargs,
+                        model=cleaned_model_id, prompt=input_, **generation_kwargs
                     ),
                     semaphore=semaphore,
                 )
@@ -835,11 +865,7 @@ class LiteLLMModel(BenchmarkModule):
             requests = [
                 add_semaphore_and_catch_exception(
                     router.acompletion(
-                        model=clean_model_id(
-                            model_id=model_id, benchmark_config=self.benchmark_config
-                        ),
-                        messages=input_,
-                        **generation_kwargs,
+                        model=cleaned_model_id, messages=input_, **generation_kwargs
                     ),
                     semaphore=semaphore,
                 )
@@ -899,12 +925,17 @@ class LiteLLMModel(BenchmarkModule):
 
         Returns:
             A GenerativeModelOutput object.
+
+        Raises:
+            InvalidBenchmark:
+                If the model response is invalid.
         """
         sequences = []
-        scores = []
+        scores: list[c.Sequence[c.Sequence[tuple[str, float]]] | None] = []
         for model_response in model_responses:
             if not model_response.choices:
                 sequences.append("")
+                scores.append(None)
                 log(
                     f"The model {model_id!r} did not end up "
                     "generating any text. This is likely because the model ran "
@@ -930,8 +961,11 @@ class LiteLLMModel(BenchmarkModule):
             # In the case where we're dealing with a classification task, the model is
             # outputting a JSON dictionary, so we will extract the generated text from
             # within the dictionary
+            # This is not relevant for tooling and may cause problems there
             generation_dct: dict[str, t.Any] | None = None
-            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output:
+            if LITELLM_CLASSIFICATION_OUTPUT_KEY in generation_output and not all(
+                [k in generation_output for k in TOOL_CALLING_KEYS]
+            ):
                 try:
                     generation_dct = json.loads(generation_output)
                     assert isinstance(generation_dct, dict)
@@ -946,6 +980,7 @@ class LiteLLMModel(BenchmarkModule):
 
             # Structure the model output as a GenerativeModelOutput object
             sequences.append(generation_output)
+            sample_scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
             if (
                 hasattr(model_response_choices, "logprobs")
                 and model_response_choices.logprobs is not None
@@ -1019,7 +1054,8 @@ class LiteLLMModel(BenchmarkModule):
                         )
                     ]
 
-                scores.append(logprobs_list)
+                sample_scores = logprobs_list
+            scores.append(sample_scores)
 
         if not sequences:
             log(
@@ -1036,9 +1072,15 @@ class LiteLLMModel(BenchmarkModule):
                 f"Got {len(sequences)} sequences and {len(scores)} scores."
             )
 
-        return GenerativeModelOutput(
-            sequences=sequences, scores=scores if scores else None
-        )
+        # Only return scores if at least one sample has logprobs
+        has_logprobs = any(s is not None for s in scores)
+        # Convert None placeholders to empty lists for type compatibility
+        scores_out: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None
+        if has_logprobs:
+            scores_out = [s if s is not None else [] for s in scores]
+        else:
+            scores_out = None
+        return GenerativeModelOutput(sequences=sequences, scores=scores_out)
 
     @cached_property
     def num_params(self) -> int:
@@ -1069,6 +1111,16 @@ class LiteLLMModel(BenchmarkModule):
             if HuggingFaceEncoderModel.model_exists(
                 model_id=model_id, benchmark_config=self.benchmark_config
             ):
+                # Try safetensors metadata first
+                num_params_or_none = get_num_params_from_safetensors_metadata(
+                    model_id=model_id,
+                    revision="main",
+                    api_key=self.benchmark_config.api_key,
+                )
+                if num_params_or_none is not None:
+                    return num_params_or_none
+
+                # Otherwise, try the Hugging Face model configuration
                 hf_config = load_hf_model_config(
                     model_id=model_id,
                     num_labels=self.dataset_config.num_labels,
@@ -1080,30 +1132,7 @@ class LiteLLMModel(BenchmarkModule):
                     trust_remote_code=self.benchmark_config.trust_remote_code,
                     run_with_cli=self.benchmark_config.run_with_cli,
                 )
-
-                hf_api = HfApi()
-                try:
-                    repo_info = hf_api.model_info(
-                        repo_id=model_id,
-                        revision="main",
-                        token=get_hf_token(api_key=self.benchmark_config.api_key),
-                    )
-                except (
-                    RepositoryNotFoundError,
-                    RevisionNotFoundError,
-                    RequestException,
-                    HFValidationError,
-                ):
-                    repo_info = None
-
                 if (
-                    repo_info is not None
-                    and hasattr(repo_info, "safetensors")
-                    and repo_info.safetensors is not None
-                    and "total" in repo_info.safetensors
-                ):
-                    return repo_info.safetensors["total"]
-                elif (
                     hasattr(hf_config, "num_params")
                     and hf_config.num_params is not None
                 ):
@@ -1118,6 +1147,8 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The vocabulary size of the model.
         """
+        if self.benchmark_config.vocabulary_size is not None:
+            return self.benchmark_config.vocabulary_size
         # Start by trying out the regex mapping, and use the value if it matches
         for key, value in VOCAB_SIZE_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
@@ -1173,6 +1204,8 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             The maximum length of the model.
         """
+        if self.benchmark_config.max_context_length is not None:
+            return self.benchmark_config.max_context_length
         # Start by trying out the regex mapping, and use the value if it matches
         for key, value in MODEL_MAX_LENGTH_MAPPING.items():
             if re.fullmatch(pattern=key, string=self.model_config.model_id) is not None:
@@ -1348,6 +1381,10 @@ class LiteLLMModel(BenchmarkModule):
         Returns:
             Whether the model exists, or an error describing why we cannot check
             whether the model exists.
+
+        Raises:
+            APIError:
+                The the API is not available.
         """
         model_id = split_model_id(model_id=model_id).model_id
         if model_id in litellm.model_list:
@@ -1368,7 +1405,7 @@ class LiteLLMModel(BenchmarkModule):
         num_attempts = 10
         for _ in range(num_attempts):
             try:
-                litellm.completion(  # type: ignore[not-callable]
+                litellm.completion(
                     messages=[dict(role="user", content="X")],
                     model=clean_model_id(
                         model_id=model_id, benchmark_config=benchmark_config
@@ -1390,9 +1427,10 @@ class LiteLLMModel(BenchmarkModule):
                 InternalServerError,
             ) as e:
                 log(
-                    f"Service temporarily unavailable. The error message was: {e}. "
+                    "Service temporarily unavailable while checking for model "
+                    f"existence of the model {model_id!r}. The error message was: {e}. "
                     "Retrying in 10 seconds...",
-                    level=logging.DEBUG,
+                    level=logging.INFO,
                 )
                 sleep(10)
             except APIError as e:
@@ -1404,7 +1442,13 @@ class LiteLLMModel(BenchmarkModule):
                     level=logging.WARNING,
                 )
                 sleep(10)
-            except (BadRequestError, NotFoundError):
+            except (BadRequestError, NotFoundError) as e:
+                # Sometimes the error is simply because the completion couldn't finish.
+                # We don't really care about that, since it still shows that the model
+                # exists.
+                if "could not finish the message" in str(e).lower():
+                    return True
+
                 # In case we're using `api_base`, try again with the `/v1` suffix
                 if (
                     benchmark_config.api_base is not None
@@ -1567,7 +1611,6 @@ class LiteLLMModel(BenchmarkModule):
 
         return dataset
 
-    @cache_arguments()
     def get_generation_kwargs(self, dataset_config: DatasetConfig) -> dict[str, t.Any]:
         """Get the generation arguments for the model.
 
@@ -1580,6 +1623,13 @@ class LiteLLMModel(BenchmarkModule):
 
         Returns:
             The generation arguments for the model.
+
+        Raises:
+            InvalidModel:
+                If the model did not respond.
+            InvalidBenchmark:
+                If the dataset requires structured generation, but it hasn't been
+                implemented yet.
         """
         # Set the core generation arguments
         generation_kwargs: dict[str, t.Any] = dict(
@@ -1598,21 +1648,49 @@ class LiteLLMModel(BenchmarkModule):
         )
 
         # Set up the `response_format` generation argument if we are dealing with a task
-        # using structured generation
-        if dataset_config.task.uses_structured_output:
-            if self.generative_type == GenerativeType.REASONING:
+        # using structured generation and the model isn't a reasoning model
+        if self.generative_type == GenerativeType.REASONING and (
+            dataset_config.task.uses_structured_output
+            or (self.dataset_config.task.uses_logprobs and self.dataset_config.labels)
+        ):
+            log_once(
+                f"The model {self.model_config.model_id!r} is a reasoning model "
+                "and thus does not support structured generation, so we do not "
+                "enable it.",
+                level=logging.DEBUG,
+            )
+        elif dataset_config.task.uses_structured_output:
+            if dataset_config.task.structured_output_format is not None:
+                pydantic_class = dataset_config.task.structured_output_format
+                # TODO: here it would be nice to just input the pydantic class
+                # directly instead. However this caused problems with e.g.
+                # gpt-4o-mini (error: "additional_properties not defined")
+                generation_kwargs["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": pydantic_class.__class__.__name__,
+                        "schema": pydantic_class.model_json_schema(),
+                    },
+                }
                 log_once(
-                    f"The model {self.model_config.model_id!r} is a reasoning model "
-                    "and thus does not support structured generation, so we do not "
-                    "enable it.",
+                    "Enabling structured generation for model "
+                    f"{self.model_config.model_id!r} with response_format "
+                    f"{pydantic_class.model_json_schema()}.",
                     level=logging.DEBUG,
                 )
-            elif supports_response_schema(model=self.model_config.model_id):
-                if dataset_config.task == NER:
-                    ner_tag_names = list(dataset_config.prompt_label_mapping.values())
+
+            # Skip LiteLLM's support check when using a custom base_api URL, as litellm
+            # can only reliably verify support for their official API providers, not
+            # custom endpoints. We assume custom endpoint models support structured
+            # generation.
+            elif self.benchmark_config.api_base is not None or supports_response_schema(
+                model=self.model_config.model_id
+            ):
+                if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+                    tag_names = list(dataset_config.prompt_label_mapping.values())
                     keys_and_their_types: dict[str, t.Any] = {
                         tag_name: (conlist(str, max_length=5), ...)
-                        for tag_name in ner_tag_names
+                        for tag_name in tag_names
                     }
                     pydantic_class = create_model(
                         "AnswerFormat", **keys_and_their_types
@@ -1645,13 +1723,17 @@ class LiteLLMModel(BenchmarkModule):
                     "the model does not support schemas.",
                     level=logging.DEBUG,
                 )
+
         elif self.dataset_config.task.uses_logprobs and self.dataset_config.labels:
             localised_labels = [
                 self.dataset_config.prompt_label_mapping[label]
                 for label in self.dataset_config.labels
             ]
             keys_and_their_types = {
-                LITELLM_CLASSIFICATION_OUTPUT_KEY: (t.Literal[*localised_labels], ...)  #  type: ignore[invalid-literal]
+                LITELLM_CLASSIFICATION_OUTPUT_KEY: (
+                    t.Literal[*localised_labels],  # ty: ignore[invalid-type-form]
+                    ...,
+                )
             }
             pydantic_class = create_model("AnswerFormat", **keys_and_their_types)
             generation_kwargs["response_format"] = pydantic_class
@@ -1688,7 +1770,14 @@ class LiteLLMModel(BenchmarkModule):
                 f"Disabling thinking mode for model {self.model_config.model_id!r}",
                 level=logging.DEBUG,
             )
-        elif self.model_config.param in {"minimal", "low", "medium", "high"}:
+        elif self.model_config.param in {
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+        }:
             generation_kwargs["reasoning_effort"] = self.model_config.param
             log_once(
                 f"Enabling reasoning effort {self.model_config.param!r} for model "
@@ -1711,19 +1800,39 @@ class LiteLLMModel(BenchmarkModule):
                 )
             ]
         for _ in range(num_attempts := 10):
-            _, failures = safe_run(
+            successes, failures = safe_run(
                 self._generate_async(
-                    model_id=clean_model_id(
-                        model_id=self.model_config.model_id,
-                        benchmark_config=self.benchmark_config,
-                    ),
+                    model_id=self.model_config.model_id,
                     inputs=[test_input],
                     max_concurrent_calls=1,
                     **generation_kwargs,
                 )
             )
+
+            # Check if the model is using the `reasoning_content` attribute, in which
+            # case we want to mark the model as a reasoning model.
+            if successes and self.generative_type != GenerativeType.REASONING:
+                _, successful_content = successes[0]
+                successful_message = successful_content.choices[0].message
+                if (
+                    hasattr(successful_message, "reasoning_content")
+                    and successful_message.reasoning_content is not None
+                ):
+                    self.buffer["uses_reasoning_content"] = True
+                    generation_kwargs["max_completion_tokens"] = REASONING_MAX_TOKENS
+                    generation_kwargs.pop("response_format", None)
+                    if self.is_ollama:
+                        generation_kwargs["think"] = True
+                    log_once(
+                        "Detected reasoning content in model output for the model "
+                        f"{self.model_config.model_id!r}, so changing the generative "
+                        "type to reasoning.",
+                        level=logging.DEBUG,
+                    )
+
             if not failures:
                 break
+
             time_to_wait = 0
             for _, error in failures:
                 generation_kwargs, wait_time = self._handle_exception(
@@ -1862,21 +1971,31 @@ def clean_model_id(model_id: str, benchmark_config: BenchmarkConfig) -> str:
     Returns:
         The cleaned model ID.
     """
+    new_model_id = deepcopy(model_id)
+
     # Remove unofficial prefixes
     for unofficial_prefix in UNOFFICIAL_INFERENCE_API_PREFIXES:
-        model_id = re.sub(
-            pattern=rf"^{re.escape(unofficial_prefix)}", repl="", string=model_id
+        new_model_id = re.sub(
+            pattern=rf"^{re.escape(unofficial_prefix)}", repl="", string=new_model_id
         )
 
     if benchmark_config.api_base is not None and not any(
-        model_id.startswith(prefix) for prefix in CUSTOM_INFERENCE_API_PREFIXES
+        new_model_id.startswith(prefix) for prefix in CUSTOM_INFERENCE_API_PREFIXES
     ):
         if benchmark_config.generative_type == GenerativeType.BASE:
             prefix = "text-completion-openai/"
         else:
             prefix = "openai/"
-        model_id = prefix + model_id
-    return model_id
+        new_model_id = prefix + new_model_id
+
+    # When we want to evaluate an OpenAI model on a custom inference server, such as HF
+    # inference endpoints, LiteLLM gets confused since it's already using the `openai/`
+    # prefix. We thus have to add it twice, and this hack here is to ensure that we
+    # don't store the results with model ID `openai/openai/...`.
+    elif benchmark_config.api_base is not None and new_model_id.startswith("openai/"):
+        new_model_id = "openai/openai/" + re.sub(r"(openai/)*", "", new_model_id)
+
+    return new_model_id
 
 
 def set_up_benchmark_config_for_model(

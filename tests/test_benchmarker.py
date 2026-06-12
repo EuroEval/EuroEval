@@ -2,6 +2,8 @@
 
 import logging
 import os
+import subprocess
+import sys
 import time
 from collections.abc import Generator
 from dataclasses import replace
@@ -17,7 +19,6 @@ from euroeval.benchmarker import (
     adjust_logging_level,
     clear_model_cache_fn,
     get_record,
-    prepare_dataset_configs,
 )
 from euroeval.data_models import (
     BenchmarkConfig,
@@ -27,13 +28,16 @@ from euroeval.data_models import (
     ModelConfig,
     Task,
 )
-from euroeval.dataset_configs import get_dataset_config
 from euroeval.exceptions import HuggingFaceHubDown
 
 
 @pytest.fixture(scope="module")
 def benchmarker() -> Generator[Benchmarker, None, None]:
-    """A `Benchmarker` instance."""
+    """A `Benchmarker` instance.
+
+    Yields:
+        A `Benchmarker` instance.
+    """
     yield Benchmarker(progress_bar=False, save_results=False, num_iterations=1)
 
 
@@ -47,6 +51,7 @@ def test_benchmark_encoder(
     benchmarker: Benchmarker, task: Task, language: Language, encoder_model_id: str
 ) -> None:
     """Test that an encoder model can be benchmarked."""
+    benchmark_result = None
     for _ in range(10):
         try:
             benchmark_result = benchmarker.benchmark(
@@ -57,13 +62,13 @@ def test_benchmark_encoder(
             time.sleep(5)
     else:
         pytest.skip(reason="Hugging Face Hub is down, so we skip this test.")
-        return
     assert isinstance(benchmark_result, list)
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
 
 @pytest.mark.skipif(
-    condition=not torch.cuda.is_available(), reason="CUDA is not available."
+    condition=sys.platform == "linux" and not torch.cuda.is_available(),
+    reason="Running on Ubuntu but no CUDA available",
 )
 @pytest.mark.depends(on=["tests/test_model_loading.py::test_load_generative_model"])
 def test_benchmark_generative(
@@ -78,7 +83,8 @@ def test_benchmark_generative(
 
 
 @pytest.mark.skipif(
-    condition=not torch.cuda.is_available(), reason="CUDA is not available."
+    condition=sys.platform == "linux" and not torch.cuda.is_available(),
+    reason="Running on Ubuntu but no CUDA available",
 )
 @pytest.mark.depends(on=["tests/test_model_loading.py::test_load_generative_model"])
 def test_benchmark_generative_adapter(
@@ -111,7 +117,11 @@ def test_benchmark_openai(
 
 
 @pytest.mark.skipif(
-    condition=os.system("uv run ollama -v") != 0, reason="Ollama is not available."
+    condition=subprocess.run(
+        ["uv", "run", "ollama", "-v"], capture_output=True
+    ).returncode
+    != 0,
+    reason="Ollama is not available.",
 )
 def test_benchmark_ollama(
     benchmarker: Benchmarker, task: Task, language: Language, ollama_model_id: str
@@ -124,7 +134,6 @@ def test_benchmark_ollama(
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
 
-@pytest.mark.disable_socket
 @pytest.mark.depends(on=["test_benchmark_encoder"])
 def test_benchmark_encoder_no_internet(
     task: Task, language: Language, encoder_model_id: str
@@ -139,10 +148,9 @@ def test_benchmark_encoder_no_internet(
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
 
-# Allow localhost since vllm uses it for some things
-@pytest.mark.allow_hosts(["127.0.0.1"])
 @pytest.mark.skipif(
-    condition=not torch.cuda.is_available(), reason="CUDA is not available."
+    condition=sys.platform == "linux" and not torch.cuda.is_available(),
+    reason="Running on Ubuntu but no CUDA available",
 )
 @pytest.mark.depends(on=["test_benchmark_generative"])
 def test_benchmark_generative_no_internet(
@@ -158,8 +166,10 @@ def test_benchmark_generative_no_internet(
     assert all(isinstance(result, BenchmarkResult) for result in benchmark_result)
 
 
-# Allow localhost since vllm uses it for some things
-@pytest.mark.allow_hosts(["127.0.0.1"])
+@pytest.mark.skipif(
+    condition=sys.platform == "linux" and not torch.cuda.is_available(),
+    reason="Running on Ubuntu but no CUDA available",
+)
 @pytest.mark.skip(
     "Benchmarking adapter models without internet access are not implemented yet."
 )
@@ -443,43 +453,3 @@ class TestClearCacheFn:
         assert example_model_dir.exists()
 
         rmtree(path=cache_dir, ignore_errors=True)
-
-
-@pytest.mark.parametrize(
-    argnames=["dataset_names", "dataset_configs"],
-    argvalues=[
-        ([], []),
-        (
-            ["angry-tweets"],
-            [
-                get_dataset_config(
-                    dataset_name="angry-tweets",
-                    custom_datasets_file=Path("custom_datasets.py"),
-                )
-            ],
-        ),
-        (
-            ["angry-tweets", "dansk"],
-            [
-                get_dataset_config(
-                    dataset_name="angry-tweets",
-                    custom_datasets_file=Path("custom_datasets.py"),
-                ),
-                get_dataset_config(
-                    dataset_name="dansk",
-                    custom_datasets_file=Path("custom_datasets.py"),
-                ),
-            ],
-        ),
-    ],
-)
-def test_prepare_dataset_configs(
-    dataset_names: list[str], dataset_configs: list[DatasetConfig]
-) -> None:
-    """Test that the `prepare_dataset_configs` function works as expected."""
-    assert (
-        prepare_dataset_configs(
-            dataset_names=dataset_names, custom_datasets_file=Path("custom_datasets.py")
-        )
-        == dataset_configs
-    )

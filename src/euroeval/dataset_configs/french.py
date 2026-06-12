@@ -2,9 +2,20 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FRENCH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
-### Official datasets ###
+# Official datasets ###
 
 ALLOCINE_CONFIG = DatasetConfig(
     name="allocine",
@@ -12,8 +23,8 @@ ALLOCINE_CONFIG = DatasetConfig(
     source="EuroEval/allocine-mini",
     task=SENT,
     languages=[FRENCH],
-    _labels=["negative", "positive"],
-    _prompt_label_mapping=dict(positive="positif", negative="négatif"),
+    labels=["negative", "positive"],
+    prompt_label_mapping=dict(positive="positif", negative="négatif"),
 )
 
 SCALA_FR_CONFIG = DatasetConfig(
@@ -64,19 +75,30 @@ HELLASWAG_FR_CONFIG = DatasetConfig(
     languages=[FRENCH],
 )
 
+IFEVAL_FR_CONFIG = DatasetConfig(
+    name="ifeval-fr",
+    pretty_name="IFEval-fr",
+    source="EuroEval/ifeval-fr",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[FRENCH],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_FR_CONFIG = DatasetConfig(
     name="valeu-fr",
     pretty_name="VaLEU-fr",
     source="EuroEval/european-values-fr",
     task=EUROPEAN_VALUES,
     languages=[FRENCH],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 BELEBELE_FR_CONFIG = DatasetConfig(
     name="belebele-fr",
@@ -111,6 +133,33 @@ WINOGRANDE_FR_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-fr",
     task=COMMON_SENSE,
     languages=[FRENCH],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+    unofficial=True,
+)
+
+INCLUDE_FR_CONFIG = DatasetConfig(
+    name="include-fr",
+    pretty_name="INCLUDE-fr",
+    source="EuroEval/include-fr-mini",
+    task=KNOW,
+    languages=[FRENCH],
+    unofficial=True,
+)
+
+MULTILOKO_FR_CONFIG = DatasetConfig(
+    name="multiloko-fr",
+    pretty_name="MultiLoKo-fr",
+    source="EuroEval/multiloko-fr-mini",
+    task=KNOW,
+    languages=[FRENCH],
+    unofficial=True,
+)
+
+MULTINRC_FR_CONFIG = DatasetConfig(
+    name="multinrc-fr",
+    pretty_name="MultiNRC-fr",
+    source="EuroEval/multinrc-fr",
+    task=KNOW,
+    languages=[FRENCH],
     unofficial=True,
 )

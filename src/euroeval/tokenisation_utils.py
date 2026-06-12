@@ -6,7 +6,9 @@ import re
 import typing as t
 
 import torch
+from transformers import BatchEncoding
 
+from .caching_utils import cache_arguments
 from .constants import BOS_TOKENS, EOS_TOKENS, PAD_TOKENS
 from .enums import GenerativeType
 from .exceptions import InvalidModel
@@ -16,9 +18,9 @@ from .types import Tokeniser
 try:
     from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MistralCommonTokenizer,
-    )
+    from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
+
+    MistralCommonTokenizer = MCB
 
 if t.TYPE_CHECKING:
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
@@ -323,6 +325,10 @@ def get_end_of_chat_token_ids(
     Returns:
         The token IDs used to end chats, or None if the tokeniser does not have a chat
         template or if no end-of-chat token could be found.
+
+    Raises:
+        InvalidModel:
+            If the tokeniser does not have a chat template.
     """
     if generative_type == GenerativeType.BASE:
         return None
@@ -340,7 +346,17 @@ def get_end_of_chat_token_ids(
         if "does not have a chat template" in str(e):
             return None
         raise e
-    assert isinstance(token_ids, list)
+
+    assert isinstance(token_ids, (BatchEncoding, list)), (
+        f"Expected token_ids to be a BatchEncoding or list, but got {type(token_ids)}.",
+    )
+
+    if isinstance(token_ids, BatchEncoding):
+        token_ids = token_ids.input_ids
+
+    assert isinstance(token_ids, list), (
+        f"Expected token_ids to be a list, but got {type(token_ids)}.",
+    )
 
     for idx, token in enumerate(tokeniser.convert_ids_to_tokens(token_ids)):
         if "X" in token:
@@ -355,7 +371,8 @@ def get_end_of_chat_token_ids(
     end_of_chat_tokens = token_ids[x_token_index + 1 :]
     if len(end_of_chat_tokens) == 0:
         log(
-            "Could not locate the end-of-chat token for the model.", level=logging.DEBUG
+            "The end-of-chat token seems to be empty for the model.",
+            level=logging.DEBUG,
         )
         return None
 
@@ -367,6 +384,7 @@ def get_end_of_chat_token_ids(
     return end_of_chat_tokens
 
 
+@cache_arguments("dataset_config", "model_config")
 def get_first_label_token_mapping(
     dataset_config: "DatasetConfig",
     model_config: "ModelConfig",
@@ -393,19 +411,19 @@ def get_first_label_token_mapping(
         Boolean value indicating whether the model should output scores (if the mapping
         is outputted then the model will always output scores).
     """
-    if not (dataset_config.task.uses_logprobs and dataset_config.labels):
-        if log_metadata:
-            log_once(
-                "We will not use logprobs with the model, since the dataset does not "
-                "have labels.",
-                level=logging.DEBUG,
-            )
-        return False
-    elif generative_type == GenerativeType.REASONING:
+    if generative_type == GenerativeType.REASONING:
         if log_metadata:
             log_once(
                 f"The model {model_config.model_id!r} is a reasoning model and "
                 "thus does not support logprobs, so we do not enable it.",
+                level=logging.DEBUG,
+            )
+        return False
+    elif not (dataset_config.task.uses_logprobs and dataset_config.labels):
+        if log_metadata:
+            log_once(
+                "We will not use logprobs with the model, since the dataset does not "
+                "have labels.",
                 level=logging.DEBUG,
             )
         return False
@@ -425,7 +443,7 @@ def get_first_label_token_mapping(
 
     # Tokenise some text containing each label, which we will use to extract the
     # first token of each label
-    all_tokens: c.Sequence[c.Sequence[str]]
+    all_tokens: c.Sequence[c.Sequence[str | list[str]]]
     if not has_chat_template(tokeniser=tokeniser):
         add_prefix_space = should_prefix_space_be_added_to_labels(
             labels_to_be_generated=local_labels, tokeniser=tokeniser
@@ -441,23 +459,30 @@ def get_first_label_token_mapping(
             for label in local_labels
         ]
     else:
-        all_tokens = [
-            tokeniser.convert_ids_to_tokens(
-                ids=apply_chat_template(  # type: ignore[no-matching-overload]
-                    conversation=[
-                        dict(role="user", content=""),
-                        dict(role="assistant", content=label),
-                        # Adding extra user message as Mistral tokenisers require
-                        # conversations to end with a user message
-                        dict(role="user", content=""),
-                    ],
-                    tokeniser=tokeniser,
-                    tokenise=True,
-                    add_generation_prompt=True,
-                    enable_thinking=generative_type == GenerativeType.REASONING,
-                )
+        all_token_ids: list[list[int]] = []
+        for label in local_labels:
+            token_ids = apply_chat_template(
+                conversation=[
+                    dict(role="user", content=""),
+                    dict(role="assistant", content=label),
+                    # Adding extra user message as Mistral tokenisers require
+                    # conversations to end with a user message
+                    dict(role="user", content=""),
+                ],
+                tokeniser=tokeniser,
+                tokenise=True,
+                add_generation_prompt=True,
+                enable_thinking=generative_type == GenerativeType.REASONING,
             )
-            for label in local_labels
+            if isinstance(token_ids, BatchEncoding):
+                token_ids = token_ids.input_ids
+            assert isinstance(token_ids, list), (
+                f"Expected token_ids to be a list, but got {type(token_ids)}."
+            )
+            all_token_ids.append(token_ids)
+        all_tokens = [
+            tokeniser.convert_ids_to_tokens(ids=token_ids)
+            for token_ids in all_token_ids
         ]
 
     # Remove any non-alphabetic characters from the tokens
@@ -600,4 +625,4 @@ def apply_chat_template(
             tokenize=tokenise,
             **extra_kwargs,
         )
-    return templated_prompt  #  type: ignore[bad-return]
+    return templated_prompt  # ty: ignore[invalid-return-type]

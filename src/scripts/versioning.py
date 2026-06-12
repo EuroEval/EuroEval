@@ -8,8 +8,8 @@
 import datetime as dt
 import re
 import subprocess
+import typing as t
 from pathlib import Path
-from typing import Tuple
 
 
 def bump_major() -> None:
@@ -42,6 +42,10 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
             happened.
         patch:
             The patch version. This changes when the only new changes are bug fixes.
+
+    Raises:
+        RuntimeError:
+            If no version can be found in the `pyproject.toml` file.
     """
     version = f"{major}.{minor}.{patch}"
 
@@ -80,11 +84,15 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     subprocess.run(["git", "push", "--tags"])
 
 
-def get_current_version() -> Tuple[int, int, int]:
+def get_current_version() -> t.Tuple[int, int, int]:
     """Fetch the current version of the package.
 
     Returns:
         The current version, separated into major, minor and patch versions.
+
+    Raises:
+        RuntimeError:
+            If no version can be found in the `pyproject.toml` file.
     """
     # Get all the version candidates from pyproject.toml
     version_candidates = re.search(

@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import LATVIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 LATVIAN_TWITTER_SENTIMENT_CONFIG = DatasetConfig(
     name="latvian-twitter-sentiment",
@@ -61,11 +61,11 @@ COPA_LV_CONFIG = DatasetConfig(
     source="EuroEval/copa-lv",
     task=COMMON_SENSE,
     languages=[LATVIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 WIKIANN_LV_CONFIG = DatasetConfig(
     name="wikiann-lv",
@@ -82,6 +82,6 @@ WINOGRANDE_LV_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-lv",
     task=COMMON_SENSE,
     languages=[LATVIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
     unofficial=True,
 )

@@ -5,6 +5,7 @@ import typing as t
 from ..data_models import PromptConfig
 from ..languages import (
     ALBANIAN,
+    BELARUSIAN,
     BOSNIAN,
     BULGARIAN,
     CATALAN,
@@ -61,6 +62,26 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "emërtuara në fjali. Duhet t’i jepni ato si një fjalor JSON me çelësat "
         "{labels_str}. Vlerat duhet të jenë lista të entiteteve të emërtuara të atij "
         "lloji, saktësisht ashtu siç shfaqen në fjali.",
+    ),
+    BELARUSIAN: PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "асоба",
+            "i-per": "асоба",
+            "b-loc": "месца",
+            "i-loc": "месца",
+            "b-org": "арганізацыя",
+            "i-org": "арганізацыя",
+            "b-misc": "рознае",
+            "i-misc": "рознае",
+        },
+        default_prompt_prefix="Ніжэй прыведзены сказы і JSON-слоўнікі з іменаванымі "
+        "сутнасцямі, якія прысутнічаюць у дадзеным сказе.",
+        default_prompt_template="Сказ: {text}\nІменаваныя сутнасці: {label}",
+        default_instruction_prompt="Сказ: {text}\n\n"
+        "Ідэнтыфікуйце іменаваныя сутнасці ў сказе. Вы павінны вывесці гэта як "
+        "JSON-слоўнік з ключамі {labels_str}. Значэнні павінны быць спісамі "
+        "іменаваных сутнасцей гэтага тыпу, дакладна такімі, як яны з'яўляюцца ў "
+        "сказе.",
     ),
     BOSNIAN: PromptConfig(
         default_prompt_label_mapping={

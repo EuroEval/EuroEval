@@ -2,9 +2,21 @@
 
 from ..data_models import DatasetConfig
 from ..languages import GERMAN
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    GED,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
-### Official datasets ###
+# Official datasets ###
 
 SB10K_CONFIG = DatasetConfig(
     name="sb10k",
@@ -62,19 +74,30 @@ HELLASWAG_DE_CONFIG = DatasetConfig(
     languages=[GERMAN],
 )
 
+IFEVAL_DE_CONFIG = DatasetConfig(
+    name="ifeval-de",
+    pretty_name="IFEval-de",
+    source="EuroEval/ifeval-de",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[GERMAN],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_DE_CONFIG = DatasetConfig(
     name="valeu-de",
     pretty_name="VaLEU-de",
     source="EuroEval/european-values-de",
     task=EUROPEAN_VALUES,
     languages=[GERMAN],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 XQUAD_DE_CONFIG = DatasetConfig(
     name="xquad-de",
@@ -127,6 +150,33 @@ WINOGRANDE_DE_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-de",
     task=COMMON_SENSE,
     languages=[GERMAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+    unofficial=True,
+)
+
+INCLUDE_DE_CONFIG = DatasetConfig(
+    name="include-de",
+    pretty_name="INCLUDE-de",
+    source="EuroEval/include-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+    unofficial=True,
+)
+
+MULTILOKO_DE_CONFIG = DatasetConfig(
+    name="multiloko-de",
+    pretty_name="MultiLoKo-de",
+    source="EuroEval/multiloko-de-mini",
+    task=KNOW,
+    languages=[GERMAN],
+    unofficial=True,
+)
+
+GERLANGMOD_DE_CONFIG = DatasetConfig(
+    name="gerlangmod-de",
+    pretty_name="GerLangMod-de",
+    source="EuroEval/gerlangmod-de",
+    task=GED,
+    languages=[GERMAN],
     unofficial=True,
 )

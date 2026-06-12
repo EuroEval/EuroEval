@@ -2,9 +2,21 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ITALIAN
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+    WIC,
+)
 
-### Official datasets ###
+# Official datasets ###
 
 SENTIPOLC_CONFIG = DatasetConfig(
     name="sentipolc16",
@@ -62,19 +74,30 @@ HELLASWAG_IT_CONFIG = DatasetConfig(
     languages=[ITALIAN],
 )
 
+IFEVAL_IT_CONFIG = DatasetConfig(
+    name="ifeval-it",
+    pretty_name="IFEval-it",
+    source="EuroEval/ifeval-it",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ITALIAN],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_IT_CONFIG = DatasetConfig(
     name="valeu-it",
     pretty_name="VaLEU-it",
     source="EuroEval/european-values-it",
     task=EUROPEAN_VALUES,
     languages=[ITALIAN],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 WIKINEURAL_IT_CONFIG = DatasetConfig(
     name="wikineural-it",
@@ -118,6 +141,33 @@ WINOGRANDE_IT_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-it",
     task=COMMON_SENSE,
     languages=[ITALIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+    unofficial=True,
+)
+
+INCLUDE_IT_CONFIG = DatasetConfig(
+    name="include-it",
+    pretty_name="INCLUDE-it",
+    source="EuroEval/include-it-mini",
+    task=KNOW,
+    languages=[ITALIAN],
+    unofficial=True,
+)
+
+MULTILOKO_IT_CONFIG = DatasetConfig(
+    name="multiloko-it",
+    pretty_name="MultiLoKo-it",
+    source="EuroEval/multiloko-it-mini",
+    task=KNOW,
+    languages=[ITALIAN],
+    unofficial=True,
+)
+
+WIC_ITA_CONFIG = DatasetConfig(
+    name="wic-ita",
+    pretty_name="WiC-ITA",
+    source="EuroEval/wic-ita",
+    task=WIC,
+    languages=[ITALIAN],
     unofficial=True,
 )

@@ -2,9 +2,20 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SPANISH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
-### Official datasets ###
+# Official datasets ###
 
 SENTIMENT_HEADLINES_CONFIG = DatasetConfig(
     name="sentiment-headlines-es",
@@ -62,19 +73,30 @@ HELLASWAG_ES_CONFIG = DatasetConfig(
     languages=[SPANISH],
 )
 
+IFEVAL_ES_CONFIG = DatasetConfig(
+    name="ifeval-es",
+    pretty_name="IFEval-es",
+    source="EuroEval/ifeval-es",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[SPANISH],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_ES_CONFIG = DatasetConfig(
     name="valeu-es",
     pretty_name="VaLEU-es",
     source="EuroEval/european-values-es",
     task=EUROPEAN_VALUES,
     languages=[SPANISH],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 XQUAD_ES_CONFIG = DatasetConfig(
     name="xquad-es",
@@ -127,6 +149,33 @@ WINOGRANDE_ES_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-es",
     task=COMMON_SENSE,
     languages=[SPANISH],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+    unofficial=True,
+)
+
+INCLUDE_ES_CONFIG = DatasetConfig(
+    name="include-es",
+    pretty_name="INCLUDE-es",
+    source="EuroEval/include-es-mini",
+    task=KNOW,
+    languages=[SPANISH],
+    unofficial=True,
+)
+
+MULTILOKO_ES_CONFIG = DatasetConfig(
+    name="multiloko-es",
+    pretty_name="MultiLoKo-es",
+    source="EuroEval/multiloko-es-mini",
+    task=KNOW,
+    languages=[SPANISH],
+    unofficial=True,
+)
+
+MULTINRC_ES_CONFIG = DatasetConfig(
+    name="multinrc-es",
+    pretty_name="MultiNRC-es",
+    source="EuroEval/multinrc-es",
+    task=KNOW,
+    languages=[SPANISH],
     unofficial=True,
 )

@@ -5,17 +5,14 @@ import logging
 import re
 import typing as t
 
-import Levenshtein
 import numpy as np
 
+from ..closest_match import get_closest_match
 from ..enums import TaskGroup
 from ..exceptions import InvalidBenchmark
+from ..string_utils import extract_multiple_choice_labels
 from ..types import Predictions
-from ..utils import (
-    extract_multiple_choice_labels,
-    log_once,
-    raise_if_model_output_contains_nan_values,
-)
+from ..utils import log_once, raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
@@ -68,19 +65,34 @@ def compute_metrics(
     else:
         predictions = model_outputs
 
-    raise_if_model_output_contains_nan_values(model_output=model_outputs)  # type: ignore[bad-argument-type]
+    raise_if_model_output_contains_nan_values(model_output=model_outputs)
 
     prompt_label_to_label_mapping = {
         prompt_label: label
         for label, prompt_label in dataset_config.prompt_label_mapping.items()
     }
+
+    # For datasets with dynamic labels (e.g. community multiple-choice with
+    # default_labels=None), both label2id and prompt_label_to_label_mapping are
+    # empty.  Build a temporary mapping from the observed predictions and ground
+    # truth so that the metrics can still be computed.
+    if not label2id:
+        all_observed = sorted(
+            {
+                v.lower() if isinstance(v, str) else str(v)
+                for v in list(predictions) + list(labels)
+            }
+        )
+        label2id = {lbl: idx for idx, lbl in enumerate(all_observed)}
+        prompt_label_to_label_mapping = {lbl: lbl for lbl in all_observed}
+
     predictions = [
         (
             label2id[prompt_label_to_label_mapping[pred.lower()]]
             if isinstance(pred, str)
             else pred
         )
-        for pred in predictions  # type: ignore[not-iterable]
+        for pred in predictions
     ]
 
     label_ids = [
@@ -194,30 +206,29 @@ def extract_labels_from_generation(
         # We set the word edit distance weights such that we heavily penalise insertions
         # and substitutions, so that we don't just insert the correct label, but that we
         # want the model to have included the correct label in its output.
-        insertion_weight = 1000
-        deletion_weight = 1
-        substitution_weight = 1000
 
         # Compute the word edit distances between the predicted label and all candidate
         # labels
-        edit_distances = [
-            Levenshtein.distance(
-                s1=predicted_label.lower(),
-                s2=candidate_label.lower(),
-                weights=(insertion_weight, deletion_weight, substitution_weight),
-            )
-            for candidate_label in sample_candidate_labels[idx]
-        ]
-
-        best_candidate_label = sample_candidate_labels[idx][
-            np.argmin(edit_distances).item()
-        ]
+        best_candidate_label, closest_distance = get_closest_match(
+            string=predicted_label.lower(),
+            options=[
+                candidate_label.lower()
+                for candidate_label in sample_candidate_labels[idx]
+            ],
+            case_sensitive=False,
+            insertion_weight=1000,
+            deletion_weight=1,
+            substitution_weight=1000,
+        )
 
         # If no candidate labels were found, we either pick the label with the smallest
         # word edit distance to the predicted label (if invalid model outputs are
         # allowed), or we raise an error
-        if min(edit_distances) >= 1000:
+        if closest_distance >= 1000:
             num_predictions_being_very_off += 1
+            model_output.failed_instances.append(
+                dict(sample_index=idx, error="No candidate label found in model output")
+            )
 
         new_predicted_labels.append(best_candidate_label)
 

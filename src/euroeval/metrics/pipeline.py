@@ -11,8 +11,8 @@ import numpy as np
 from scipy.special import expit as sigmoid
 
 from ..exceptions import InvalidBenchmark
-from ..logging_utils import log, no_terminal_output
-from ..utils import unscramble
+from ..logging_utils import log, log_once, no_terminal_output
+from ..string_utils import unscramble
 from .base import Metric
 
 if t.TYPE_CHECKING:
@@ -68,9 +68,8 @@ class PipelineMetric(Metric):
                 The pretty name of the metric, used for display purposes.
             pipeline_repo:
                 The Hugging Face repository ID of the scikit-learn pipeline to load.
-            pipeline_scoring_method:
-                The method to use for scoring the predictions with the pipeline. Takes
-                a 1D sequence of predictions and returns a float score.
+            pipeline_scoring_function:
+                The function to use to score the predictions.
             pipeline_file_name (optional):
                 The name of the file to download from the Hugging Face repository.
                 Defaults to "pipeline.joblib".
@@ -162,7 +161,7 @@ class PipelineMetric(Metric):
         return pipeline
 
 
-### European Values Metric ###
+# European Values Metric ###
 
 
 def european_values_preprocessing_fn(
@@ -184,9 +183,8 @@ def european_values_preprocessing_fn(
         mapping.
 
     Raises:
-        AssertionError:
-            If the number of predictions is not a multiple of 53, which is required
-            for the European Values metric.
+        InvalidBenchmark:
+            If the question has no valid choices (all choices were None).
     """
     num_questions = 53
     num_phrasings_per_question = 5
@@ -199,11 +197,21 @@ def european_values_preprocessing_fn(
             for idx, choice in idx_to_choice.items()
             if choice is not None
         }
-        if prediction not in idx_to_choice:
+        if not idx_to_choice:
             raise InvalidBenchmark(
-                f"The prediction {prediction} is not a valid index for the "
-                f"question with choices {idx_to_choice}."
+                "The question has no valid choices (all choices were None), which "
+                "should never happen. Please report this issue to the EuroEval team "
+                "at github.com/EuroEval/EuroEval/issues."
             )
+        if prediction not in idx_to_choice:
+            first_valid_idx = min(idx_to_choice.keys())
+            log_once(
+                f"The prediction {prediction} is not a valid index for the question "
+                f"with choices {idx_to_choice}. Defaulting to the first valid index "
+                f"({first_valid_idx}).",
+                level=logging.WARNING,
+            )
+            prediction = first_valid_idx
         integer_prediction = idx_to_choice[prediction]
         integer_predictions.append(integer_prediction)
 
@@ -238,7 +246,9 @@ def european_values_preprocessing_fn(
 
         # Use majority voting to get the final prediction for each question
         # Shape: (53,)
-        arr = np.apply_along_axis(lambda x: np.bincount(x).argmax(), axis=1, arr=arr)  #  type: ignore[no-matching-overload]
+        arr = np.apply_along_axis(
+            func1d=lambda x: np.bincount(x).argmax(), axis=1, arr=arr
+        )
 
         # Convert the array to a list
         integer_predictions = arr.tolist()
@@ -273,7 +283,17 @@ def european_values_preprocessing_fn(
 def european_values_scoring_function(
     pipeline: "Pipeline", predictions: c.Sequence[int]
 ) -> float:
-    """Scoring function for the European Values metric."""
+    """Scoring function for the European Values metric.
+
+    Args:
+        pipeline:
+            The pipeline to use for scoring.
+        predictions:
+            The predictions to score.
+
+    Returns:
+        The score.
+    """
     normalised_predictions = pipeline[0].transform([predictions])
     log_likelihoods = pipeline[1].transform(normalised_predictions)[0]
     score = sigmoid(pipeline[2].alpha_ * (log_likelihoods - pipeline[2].center_))

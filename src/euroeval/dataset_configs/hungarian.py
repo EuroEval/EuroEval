@@ -4,7 +4,7 @@ from ..data_models import DatasetConfig
 from ..languages import HUNGARIAN
 from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
 
-### Official datasets ###
+# Official datasets ###
 
 HUSST_CONFIG = DatasetConfig(
     name="husst",
@@ -60,5 +60,17 @@ WINOGRANDE_HU_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-hu",
     task=COMMON_SENSE,
     languages=[HUNGARIAN],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+)
+
+
+# Unofficial datasets ###
+
+INCLUDE_HU_CONFIG = DatasetConfig(
+    name="include-hu",
+    pretty_name="INCLUDE-hu",
+    source="EuroEval/include-hu-mini",
+    task=KNOW,
+    languages=[HUNGARIAN],
+    unofficial=True,
 )

@@ -2,9 +2,20 @@
 
 from ..data_models import DatasetConfig
 from ..languages import EUROPEAN_PORTUGUESE, PORTUGUESE
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, MCRC, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    MCRC,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
-### Official datasets ###
+# Official datasets ###
 
 SST2_PT_CONFIG = DatasetConfig(
     name="sst2-pt",
@@ -12,7 +23,7 @@ SST2_PT_CONFIG = DatasetConfig(
     source="EuroEval/sst2-pt-mini",
     task=SENT,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-    _labels=["positive", "negative"],
+    labels=["positive", "negative"],
 )
 
 SCALA_PT = DatasetConfig(
@@ -63,19 +74,30 @@ GOLDENSWAG_PT_CONFIG = DatasetConfig(
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
 )
 
+IFEVAL_PT_CONFIG = DatasetConfig(
+    name="ifeval-pt",
+    pretty_name="IFEval-pt",
+    source="EuroEval/ifeval-pt",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[PORTUGUESE],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_PT_CONFIG = DatasetConfig(
     name="valeu-pt",
     pretty_name="VaLEU-pt",
     source="EuroEval/european-values-pt",
     task=EUROPEAN_VALUES,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-    splits=["test"],
+    train_split=None,
+    val_split=None,
     bootstrap_samples=False,
-    _instruction_prompt="{text}",
+    instruction_prompt="{text}",
 )
 
 
-### Unofficial datasets ###
+# Unofficial datasets ###
 
 BOOLQ_PT_CONFIG = DatasetConfig(
     name="boolq-pt",
@@ -92,6 +114,24 @@ WINOGRANDE_PT_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-pt",
     task=COMMON_SENSE,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-    _labels=["a", "b"],
+    labels=["a", "b"],
+    unofficial=True,
+)
+
+INCLUDE_PT_CONFIG = DatasetConfig(
+    name="include-pt",
+    pretty_name="INCLUDE-pt",
+    source="EuroEval/include-pt-mini",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    unofficial=True,
+)
+
+MULTILOKO_PT_CONFIG = DatasetConfig(
+    name="multiloko-pt",
+    pretty_name="MultiLoKo-pt",
+    source="EuroEval/multiloko-pt-mini",
+    task=KNOW,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     unofficial=True,
 )

@@ -5,7 +5,7 @@ from typing import Generator
 import pytest
 
 from euroeval.data_models import Language
-from euroeval.languages import get_all_languages
+from euroeval.languages import get_all_languages, get_correct_language_codes
 
 
 class TestGetAllLanguages:
@@ -39,3 +39,30 @@ class TestGetAllLanguages:
         assert "de" in languages
         assert "nl" in languages
         assert "en" in languages
+
+
+@pytest.mark.parametrize(
+    argnames=["input_language_codes", "expected_language_codes"],
+    argvalues=[
+        ("da", ["da"]),
+        (["da"], ["da"]),
+        (["da", "en"], ["da", "en"]),
+        ("no", ["no", "nb", "nn"]),
+        (["nb"], ["nb", "no"]),
+        ("all", list(get_all_languages().keys())),
+    ],
+    ids=[
+        "single language",
+        "single language as list",
+        "multiple languages",
+        "no -> no + nb + nn",
+        "nb -> nb + no",
+        "all -> all languages",
+    ],
+)
+def test_get_correct_language_codes(
+    input_language_codes: str | list[str], expected_language_codes: list[str]
+) -> None:
+    """Test that the correct language codes are returned."""
+    languages = get_correct_language_codes(language_codes=input_language_codes)
+    assert set(languages) == set(expected_language_codes)

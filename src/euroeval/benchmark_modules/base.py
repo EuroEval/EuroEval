@@ -6,6 +6,7 @@ import re
 import typing as t
 from abc import ABC, abstractmethod
 from functools import cached_property, partial
+from typing import cast
 
 from datasets import Dataset, DatasetDict
 from torch import nn
@@ -52,7 +53,8 @@ class BenchmarkModule(ABC):
     fresh_model: bool
     batching_preference: "BatchingPreference"
     high_priority: bool
-    allowed_params: dict[re.Pattern, c.Sequence[str]] = {re.compile(r".*"): []}
+    allowed_params: dict[re.Pattern[str], c.Sequence[str]] = {re.compile(r".*"): []}
+    _model: nn.Module
 
     def __init__(
         self,
@@ -184,35 +186,50 @@ class BenchmarkModule(ABC):
         """
         match self.dataset_config.task.task_group:
             case TaskGroup.SEQUENCE_CLASSIFICATION:
-                return partial(
-                    sequence_classification.compute_metrics,
-                    dataset_config=self.dataset_config,
-                    benchmark_config=self.benchmark_config,
+                return cast(
+                    "ComputeMetricsFunction",
+                    partial(
+                        sequence_classification.compute_metrics,
+                        dataset_config=self.dataset_config,
+                        benchmark_config=self.benchmark_config,
+                    ),
                 )
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                return partial(
-                    sequence_classification.compute_metrics,
-                    dataset_config=self.dataset_config,
-                    benchmark_config=self.benchmark_config,
+                return cast(
+                    "ComputeMetricsFunction",
+                    partial(
+                        sequence_classification.compute_metrics,
+                        dataset_config=self.dataset_config,
+                        benchmark_config=self.benchmark_config,
+                    ),
                 )
             case TaskGroup.TEXT_TO_TEXT:
-                return partial(
-                    text_to_text.compute_metrics,
-                    dataset_config=self.dataset_config,
-                    benchmark_config=self.benchmark_config,
+                return cast(
+                    "ComputeMetricsFunction",
+                    partial(
+                        text_to_text.compute_metrics,
+                        dataset_config=self.dataset_config,
+                        benchmark_config=self.benchmark_config,
+                    ),
                 )
             case TaskGroup.TOKEN_CLASSIFICATION:
-                return partial(
-                    token_classification.compute_metrics,
-                    has_misc_tags=self.buffer.get("has_misc_tags", True),
-                    dataset_config=self.dataset_config,
-                    benchmark_config=self.benchmark_config,
+                return cast(
+                    "ComputeMetricsFunction",
+                    partial(
+                        token_classification.compute_metrics,
+                        has_misc_tags=self.buffer.get("has_misc_tags", True),
+                        dataset_config=self.dataset_config,
+                        benchmark_config=self.benchmark_config,
+                    ),
                 )
             case TaskGroup.QUESTION_ANSWERING:
-                return partial(
-                    question_answering.compute_metrics,
-                    dataset_config=self.dataset_config,
-                    benchmark_config=self.benchmark_config,
+                return cast(
+                    "ComputeMetricsFunction",
+                    partial(
+                        question_answering.compute_metrics,
+                        dataset_config=self.dataset_config,
+                        benchmark_config=self.benchmark_config,
+                    ),
                 )
             case _:
                 raise NotImplementedError(
@@ -238,6 +255,19 @@ class BenchmarkModule(ABC):
             The Trainer class.
         """
         ...
+
+    def update_dataset_config(self, dataset_config: "DatasetConfig") -> t.Self:
+        """Update the dataset config registered in the benchmark module.
+
+        Args:
+            dataset_config:
+                The new dataset config.
+
+        Returns:
+            The benchmark module.
+        """
+        self.dataset_config = dataset_config
+        return self
 
     def prepare_datasets(
         self, datasets: list[DatasetDict], task: "Task"
@@ -288,7 +318,8 @@ class BenchmarkModule(ABC):
                 datasets_dict[str(split_name)] = split
             for split_name, split in dataset.items():
                 datasets_dict[f"original_{split_name}"] = split
-            datasets[idx] = DatasetDict(datasets_dict)  # type: ignore[no-matching-overload]
+
+            datasets[idx] = DatasetDict(datasets_dict)
         return datasets
 
     @abstractmethod

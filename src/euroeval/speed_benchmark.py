@@ -57,8 +57,15 @@ def benchmark_speed_single_iteration(
 
     Returns:
         A dictionary containing the scores for the current iteration.
+
+    Raises:
+        ValueError:
+            If the model is not a supported model type.
+        InvalidBenchmark:
+            If the speed benchmark failed.
     """
     gpt2_tokeniser = AutoTokenizer.from_pretrained("gpt2", trust_remote_code=True)
+    assert gpt2_tokeniser is not None, "gpt2 tokenizer should not be None"
 
     base_doc = "Document which contains roughly 10 tokens. "
     multiplier = 10 * (1 + itr_idx)

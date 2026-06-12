@@ -1,0 +1,9 @@
+addAssignees: author
+numberOfAssignees: 1
+
+addReviewers: true
+numberOfReviewers: 1
+reviewers:
+  - saattrupdan
+
+runOnDraft: true

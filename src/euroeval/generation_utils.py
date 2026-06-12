@@ -13,8 +13,8 @@ from datasets import Dataset
 from .enums import GenerativeType, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import log_once
+from .string_utils import extract_multiple_choice_labels
 from .tokenisation_utils import apply_chat_template
-from .utils import extract_multiple_choice_labels
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -52,6 +52,15 @@ def extract_few_shot_examples(
         InvalidBenchmark:
             If there are not enough short examples for few-shot learning.
     """
+    if "train" not in dataset:
+        log_once(
+            "There is no training split in the dataset, so we cannot extract any "
+            "few-shot examples, even though you requested few-shot evaluation (it's "
+            "the default). We will therefore evaluate the model zero-shot.",
+            level=logging.DEBUG,
+        )
+        return list()
+
     if dataset_config.task.requires_zero_shot and benchmark_config.few_shot:
         msg = (
             "This task only allows zero-shot evaluation, so even though you have "
@@ -92,33 +101,52 @@ def extract_few_shot_examples(
                     "Could not find enough short examples for few-shot learning."
                 )
 
-            labels = it.cycle(dataset_config.labels)
-            labels_with_no_samples: set[str] = set()
-            while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
-                if len(labels_with_no_samples) == len(dataset_config.labels):
-                    raise InvalidBenchmark(
-                        "Could not find enough examples for few-shot learning. "
-                        "Please check the dataset and the labels."
+            if dataset_config.labels:
+                labels = it.cycle(dataset_config.labels)
+                labels_with_no_samples: set[str] = set()
+                while (
+                    len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0
+                ):
+                    if len(labels_with_no_samples) == len(dataset_config.labels):
+                        raise InvalidBenchmark(
+                            "Could not find enough examples for few-shot learning. "
+                            "Please check the dataset and the labels."
+                        )
+                    label = next(labels)
+                    possible_examples = shuffled_train.filter(
+                        lambda x: str(x["label"]).lower() == label.lower()
                     )
-                label = next(labels)
-                possible_examples = shuffled_train.filter(
-                    lambda x: x["label"].lower() == label.lower()
-                )
-                assert isinstance(possible_examples, Dataset), (
-                    f"Expected `possible_examples` to be a Dataset, but got "
-                    f"{type(possible_examples)} instead."
-                )
-                if len(possible_examples) == 0:
-                    labels_with_no_samples.add(label)
-                    continue
-                example = possible_examples.select(range(1))[0]
-                assert isinstance(example, dict), (
-                    f"Expected `example` to be a dict, but got {type(example)} instead."
-                )
-                few_shot_examples.append(example)
-                shuffled_train = shuffled_train.filter(
-                    lambda x: x["text"] != example["text"]
-                )
+                    assert isinstance(possible_examples, Dataset), (
+                        f"Expected `possible_examples` to be a Dataset, but got "
+                        f"{type(possible_examples)} instead."
+                    )
+                    if len(possible_examples) == 0:
+                        labels_with_no_samples.add(label)
+                        continue
+                    example = possible_examples.select(range(1))[0]
+                    assert isinstance(example, dict), (
+                        f"Expected `example` to be a dict, but got "
+                        f"{type(example)} instead."
+                    )
+                    few_shot_examples.append(example)
+                    shuffled_train = shuffled_train.filter(
+                        lambda x: x["text"] != example["text"]
+                    )
+            else:
+                # No labels defined (e.g. community datasets with variable number of
+                # choices) — fall back to random sampling.
+                while (
+                    len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0
+                ):
+                    example = shuffled_train.select(range(1))[0]
+                    assert isinstance(example, dict), (
+                        f"Expected `example` to be a dict, but got "
+                        f"{type(example)} instead."
+                    )
+                    few_shot_examples.append(example)
+                    shuffled_train = shuffled_train.filter(
+                        lambda x: x["text"] != example["text"]
+                    )
 
         case TaskGroup.TEXT_TO_TEXT:
             while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
@@ -142,7 +170,7 @@ def extract_few_shot_examples(
             while len(few_shot_examples) < num_few_shots and len(shuffled_train) > 0:
                 label = next(labels)
                 possible_examples = shuffled_train.filter(
-                    lambda x: label in [tag.lower() for tag in x["labels"]]
+                    lambda x: label in [str(tag).lower() for tag in x["labels"]]
                 )
                 assert isinstance(possible_examples, Dataset), (
                     f"Expected `possible_examples` to be a Dataset, but got "
@@ -228,6 +256,11 @@ def apply_prompt(
 
     Returns:
         The example with the few-shot examples applied.
+
+    Raises:
+        ValueError:
+            If the `tokeniser` argument is not provided when the model is instruction
+            tuned and when we are not just returning the raw messages.
     """
     # Sanity check
     if (
@@ -274,7 +307,7 @@ def apply_prompt(
             few_shot_sections = [
                 create_prompt(
                     text=example["text"].replace("\n", " ").strip(),
-                    label=example["label"].replace("\n", " ").strip(),
+                    label=str(example["label"]).replace("\n", " ").strip(),
                     labels_str=labels_str,
                 )
                 for example in few_shot_examples
@@ -292,7 +325,7 @@ def apply_prompt(
             few_shot_sections = [
                 create_prompt(
                     text=example["text"].replace("\n", " ").strip(),
-                    label=example["label"].replace("\n", " ").strip(),
+                    label=str(example["label"]).replace("\n", " ").strip(),
                     labels_str=dataset_config.get_labels_str(
                         labels=extract_multiple_choice_labels(
                             prompt=example["text"],
@@ -337,7 +370,7 @@ def apply_prompt(
                     prompt_label: list() for prompt_label in prompt_labels
                 }
                 for token, label in zip(example["tokens"], example["labels"]):
-                    label = label.lower()
+                    label = str(label).lower()
                     if label == "o":
                         continue
                     prompt_label = dataset_config.prompt_label_mapping[label]
@@ -471,7 +504,7 @@ def apply_prompt(
 
 
 def raise_if_wrong_params(
-    model_config: "ModelConfig", allowed_params: dict[re.Pattern, c.Sequence[str]]
+    model_config: "ModelConfig", allowed_params: c.Mapping[re.Pattern[str], list[str]]
 ) -> None:
     """Raise an error if the model configuration has invalid parameters.
 

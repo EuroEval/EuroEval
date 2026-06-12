@@ -12,7 +12,7 @@ def test_all_classes_are_enums() -> None:
         getattr(enums, obj_name)
         for obj_name in dir(enums)
         if not obj_name.startswith("_")
-        and inspect.isclass(object=getattr(enums, obj_name))
+        and inspect.isclass(getattr(enums, obj_name))
         and not hasattr(enum, obj_name)
     ]
     for obj in all_classes:

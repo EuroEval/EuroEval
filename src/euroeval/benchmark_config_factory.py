@@ -1,17 +1,23 @@
 """Factory class for creating dataset configurations."""
 
 import collections.abc as c
+import importlib.util
+import logging
 import sys
 import typing as t
 from pathlib import Path
 
 import torch
 
+from .closest_match import get_closest_match
 from .data_models import BenchmarkConfig, BenchmarkConfigParams, DatasetConfig, Task
 from .dataset_configs import get_all_dataset_configs
 from .enums import Device
-from .exceptions import InvalidBenchmark
-from .languages import get_all_languages
+from .languages import get_all_languages, get_correct_language_codes
+from .logging_utils import log
+
+if importlib.util.find_spec("vllm") is not None:
+    pass
 
 if t.TYPE_CHECKING:
     from .data_models import Language
@@ -42,6 +48,10 @@ def build_benchmark_config(
         dataset=benchmark_config_params.dataset,
         languages=languages,
         custom_datasets_file=benchmark_config_params.custom_datasets_file,
+        api_key=benchmark_config_params.api_key,
+        cache_dir=Path(benchmark_config_params.cache_dir),
+        trust_remote_code=benchmark_config_params.trust_remote_code,
+        run_with_cli=benchmark_config_params.run_with_cli,
     )
 
     return BenchmarkConfig(
@@ -68,47 +78,15 @@ def build_benchmark_config(
         api_base=benchmark_config_params.api_base,
         api_version=benchmark_config_params.api_version,
         gpu_memory_utilization=benchmark_config_params.gpu_memory_utilization,
+        attention_backend=benchmark_config_params.attention_backend,
         generative_type=benchmark_config_params.generative_type,
         debug=benchmark_config_params.debug,
         run_with_cli=benchmark_config_params.run_with_cli,
         requires_safetensors=benchmark_config_params.requires_safetensors,
         download_only=benchmark_config_params.download_only,
+        max_context_length=benchmark_config_params.max_context_length,
+        vocabulary_size=benchmark_config_params.vocabulary_size,
     )
-
-
-def get_correct_language_codes(
-    language_codes: str | c.Sequence[str],
-) -> c.Sequence[str]:
-    """Get correct language code(s).
-
-    Args:
-        language_codes:
-            The language codes of the languages to include, both for models and
-            datasets. Here 'no' means both Bokmål (nb) and Nynorsk (nn). Set this
-            to 'all' if all languages should be considered.
-
-    Returns:
-        The correct language codes.
-    """
-    # Create a dictionary that maps languages to their associated language objects
-    language_mapping = get_all_languages()
-
-    # Create the list `languages`
-    if "all" in language_codes:
-        languages = list(language_mapping.keys())
-    elif isinstance(language_codes, str):
-        languages = [language_codes]
-    else:
-        languages = list(language_codes)
-
-    # If `languages` contains 'no' then also include 'nb' and 'nn'. Conversely, if
-    # either 'nb' or 'nn' are specified then also include 'no'.
-    if "no" in languages:
-        languages = list(set(languages) | {"nb", "nn"})
-    elif "nb" in languages or "nn" in languages:
-        languages = list(set(languages) | {"no"})
-
-    return languages
 
 
 def prepare_languages(
@@ -154,7 +132,11 @@ def prepare_dataset_configs(
     languages: c.Sequence["Language"],
     dataset: "str | DatasetConfig | c.Sequence[str | DatasetConfig] | None",
     custom_datasets_file: Path,
-) -> c.Sequence["DatasetConfig"]:
+    api_key: str | None,
+    cache_dir: Path,
+    trust_remote_code: bool,
+    run_with_cli: bool,
+) -> list["DatasetConfig"]:
     """Prepare dataset config(s) for benchmarking.
 
     Args:
@@ -168,17 +150,39 @@ def prepare_dataset_configs(
             included, limited by the `task` and `languages` parameters.
         custom_datasets_file:
             A path to a Python file containing custom dataset configurations.
+        api_key:
+            The API key to use for accessing the Hugging Face Hub.
+        cache_dir:
+            The directory to store the cache in.
+        trust_remote_code:
+            Whether to trust remote code.
+        run_with_cli:
+            Whether to run the benchmark with the CLI.
 
     Returns:
         The prepared dataset configs.
-
-    Raises:
-        InvalidBenchmark:
-            If the task or dataset is not found in the benchmark tasks or datasets.
     """
+    # Extract the dataset IDs from the `dataset` argument
+    dataset_ids: list[str] = list()
+    if isinstance(dataset, str):
+        dataset_ids.append(dataset)
+    elif isinstance(dataset, DatasetConfig):
+        dataset_ids.append(dataset.name)
+    elif isinstance(dataset, list):
+        for d in dataset:
+            if isinstance(d, str):
+                dataset_ids.append(d)
+            elif isinstance(d, DatasetConfig):
+                dataset_ids.append(d.name)
+
     # Create the list of dataset configs
     all_dataset_configs = get_all_dataset_configs(
-        custom_datasets_file=custom_datasets_file
+        custom_datasets_file=custom_datasets_file,
+        dataset_ids=dataset_ids,
+        api_key=api_key,
+        cache_dir=cache_dir,
+        trust_remote_code=trust_remote_code,
+        run_with_cli=run_with_cli,
     )
     all_official_dataset_configs: c.Sequence[DatasetConfig] = [
         dataset_config
@@ -197,9 +201,16 @@ def prepare_dataset_configs(
                 all_dataset_configs[d] if isinstance(d, str) else d for d in dataset
             ]
     except KeyError as e:
-        raise InvalidBenchmark(
-            f"Dataset {e} not found in the benchmark datasets."
-        ) from e
+        closest_match, closest_distance = get_closest_match(
+            string=e.args[0],
+            options=list(all_dataset_configs.keys()),
+            case_sensitive=False,
+        )
+        msg = f"The dataset {e} was not found in the benchmark datasets."
+        if closest_distance < 5:
+            msg += f" Maybe you meant to use {closest_match!r}?"
+        log(msg, level=logging.ERROR)
+        sys.exit(1)
 
     # Create the list of dataset tasks
     task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
@@ -214,7 +225,14 @@ def prepare_dataset_configs(
         else:
             tasks = [task_mapping[t] if isinstance(t, str) else t for t in task]
     except KeyError as e:
-        raise InvalidBenchmark(f"Task {e} not found in the benchmark tasks.") from e
+        closest_match, closest_distance = get_closest_match(
+            string=e.args[0], options=list(task_mapping.keys()), case_sensitive=False
+        )
+        msg = f"Task {e} not found in the benchmark tasks."
+        if closest_distance < 5:
+            msg += f" Maybe you meant to use {closest_match!r}?"
+        log(msg, level=logging.ERROR)
+        sys.exit(1)
 
     # Filter the dataset configs based on the specified tasks and languages
     datasets = [
