@@ -16,7 +16,8 @@ from collections import defaultdict
 
 import numpy as np
 
-from .constants import ORTHOGONAL_TASKS
+from euroeval.constants import ORTHOGONAL_TASKS
+
 from .task_metadata import task_category
 
 logger = logging.getLogger(__name__)
