@@ -23,6 +23,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed model loading failures (e.g., shape mismatches, CUDA errors) incorrectly being
   counted as "skipped" benchmarks instead of "errored". The queue processor now correctly
   detects these as failures and applies the `evaluation-failed` label to GitHub issues.
+- Fixed tokenizer loading failures for XLM-RoBERTa variant models (e.g.
+  `EMBEDDIA/litlat-bert`) that raised `TypeError: argument 'vocab': 'dict' object cannot
+  be converted to 'Sequence'`. The tokenizer loader now falls back to `use_fast=False`
+  when this error occurs.
 
 ### Changed
 
