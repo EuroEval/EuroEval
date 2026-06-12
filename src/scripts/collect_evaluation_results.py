@@ -492,12 +492,12 @@ def verify_leaderboards() -> bool:
                 if len(rows) < 100:
                     logger.warning(
                         f"{csv_file.name}: Only {len(rows)} rows (<100). "
-                        "This may be expected for simplified/generative-only leaderboards."
+                        "Expected for simplified/generative-only."
                     )
 
                 # Check for critical columns
                 # Some CSVs have HTML headers in row 0, actual headers in row 1
-                # DictReader uses first row as headers, so we need to re-read if HTML is present
+                # Re-read if HTML is present
                 if rows and "rank" not in rows[0]:
                     # Re-read skipping HTML row
                     with csv_file.open(mode="r", encoding="utf-8") as f:
@@ -509,10 +509,14 @@ def verify_leaderboards() -> bool:
                     # Support both snake_case (simplified) and Title Case (full) formats
                     required_cols_snake = ["model", "mean_rank_score"]
                     required_cols_title = ["Model", "Rank score"]
-                    
-                    missing_snake = [col for col in required_cols_snake if col not in rows[0]]
-                    missing_title = [col for col in required_cols_title if col not in rows[0]]
-                    
+
+                    missing_snake = [
+                        col for col in required_cols_snake if col not in rows[0]
+                    ]
+                    missing_title = [
+                        col for col in required_cols_title if col not in rows[0]
+                    ]
+
                     # Must have at least one complete set
                     if missing_snake and missing_title:
                         logger.error(
@@ -525,7 +529,6 @@ def verify_leaderboards() -> bool:
 
                     # Use whichever format is present
                     model_col = "model" if not missing_snake else "Model"
-                    score_col = "mean_rank_score" if not missing_snake else "Rank score"
 
                     # Check for NaN/None in critical fields
                     nan_count = sum(
@@ -535,7 +538,7 @@ def verify_leaderboards() -> bool:
                         or row.get(model_col) in ("NaN", "None", "")
                     )
                     if nan_count > 0:
-                        msg = f"{csv_file.name}: {nan_count} rows with missing {model_col}."
+                        msg = f"{csv_file.name}: {nan_count} rows missing {model_col}."
                         logger.error(msg)
                         all_passed = False
 

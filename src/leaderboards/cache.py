@@ -142,6 +142,8 @@ class Cache:
         Raises:
             ValueError:
                 If any JSONL file contains invalid JSON.
+            FileNotFoundError:
+                If the processed directory does not exist.
         """
         if not processed_dir.exists():
             raise FileNotFoundError(
