@@ -303,6 +303,9 @@ def get_training_args(
     if batch_size is None:
         batch_size = benchmark_config.finetuning_batch_size
 
+    max_steps = 1 if hasattr(sys, "_called_from_test") else 10_000
+    warmup_steps = max(1, max_steps // 100)
+
     training_args = TrainingArguments(
         output_dir=model_config.model_cache_dir,
         eval_strategy=IntervalStrategy.STEPS,
@@ -311,7 +314,7 @@ def get_training_args(
         eval_steps=30,
         logging_steps=30,
         save_steps=30,
-        max_steps=1 if hasattr(sys, "_called_from_test") else 10_000,
+        max_steps=max_steps,
         use_cpu=benchmark_config.device == torch.device("cpu"),
         report_to=[],
         save_total_limit=1,
@@ -320,7 +323,7 @@ def get_training_args(
         eval_accumulation_steps=32,
         optim=OptimizerNames.ADAMW_TORCH,
         learning_rate=2e-5,
-        warmup_ratio=0.01,
+        warmup_steps=warmup_steps,
         gradient_accumulation_steps=32 // batch_size,
         load_best_model_at_end=True,
         seed=4242 + iteration_idx,

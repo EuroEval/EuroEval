@@ -9,6 +9,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed deprecation warnings from `transformers` v5.2+:
+  - Replaced deprecated `warmup_ratio` with dynamic `warmup_steps` calculation (1% of
+    `max_steps`, minimum 1 step).
+  - Replaced `self.tokenizer` with `self.processing_class` in `QuestionAnsweringTrainer`
+    to match the renamed attribute in the `Trainer` base class.
 - Fixed validation errors when loading legacy benchmark results missing required fields
   (`task`, `languages`, `results`, `num_model_parameters`, `max_sequence_length`,
   `vocabulary_size`). These fields are now populated with sensible defaults when absent.
