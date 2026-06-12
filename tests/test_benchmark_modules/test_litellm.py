@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock
 
-import pytest
 from litellm.types.utils import Choices
 
 from euroeval.benchmark_modules.litellm import LiteLLMModel
@@ -63,9 +62,10 @@ class TestCreateModelOutput:
             log_metadata=False,
         )
 
-        # This should NOT raise InvalidBenchmark about length mismatch
+        # This should NOT raise InvalidBenchmark about length mismatch.
         # Without the fix, this raises:
-        # "Sequences and scores must have the same length. Got 2 sequences and 1 scores."
+        # "Sequences and scores must have the same length. Got 2 sequences and 1
+        # scores."
         output = model._create_model_output(
             model_responses=[mock_valid_response, mock_empty_response],
             model_id="test-model",
@@ -78,7 +78,7 @@ class TestCreateModelOutput:
         # Scores should be non-None since at least one sample has logprobs
         assert output.scores is not None
         assert len(output.scores) == 2
-        # First sample has logprobs, second sample (empty choices) has None
+        # First sample has logprobs, second sample (empty choices) has empty list
         assert output.scores[0] is not None
         assert len(output.scores[0]) == 1
-        assert output.scores[1] is None
+        assert output.scores[1] == []

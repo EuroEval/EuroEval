@@ -1073,9 +1073,13 @@ class LiteLLMModel(BenchmarkModule):
 
         # Only return scores if at least one sample has logprobs
         has_logprobs = any(s is not None for s in scores)
-        return GenerativeModelOutput(
-            sequences=sequences, scores=scores if has_logprobs else None
-        )
+        # Convert None placeholders to empty lists for type compatibility
+        scores_out: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None
+        if has_logprobs:
+            scores_out = [s if s is not None else [] for s in scores]
+        else:
+            scores_out = None
+        return GenerativeModelOutput(sequences=sequences, scores=scores_out)
 
     @cached_property
     def num_params(self) -> int:
