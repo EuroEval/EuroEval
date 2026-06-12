@@ -843,6 +843,8 @@ def _run_claimed_issue(
             failure_reason = f"euroeval reported {num_errored} errored benchmark(s)"
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
             failed = pending
+        # Note: orthogonal task failures (e.g., european-values) are counted as
+        # skipped by the benchmarker, so they don't trigger the failure path above.
         elif missing and (not new_lines or len(missing) > num_skipped):
             failure_reason = (
                 f"missing official dataset-language pair(s): "

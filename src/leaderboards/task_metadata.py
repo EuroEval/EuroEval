@@ -39,10 +39,6 @@ LEADERBOARD_TASKS: list[str] = [
     "european-values",
 ]
 
-# Tasks that don't contribute to the main rank score and are rendered
-# alongside model metadata instead of inside the task-grouped columns.
-ORTHOGONAL_TASKS: frozenset[str] = frozenset({"european-values"})
-
 # TaskGroup -> "nlu"/"nlg". The "all_models" leaderboard variant only
 # scores NLU tasks so non-generative models can compete.
 _NLU_GROUPS: frozenset[TaskGroup] = frozenset(

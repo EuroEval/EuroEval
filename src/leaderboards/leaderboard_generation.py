@@ -12,16 +12,14 @@ from itertools import chain
 import numpy as np
 import pandas as pd
 
+from euroeval.constants import ORTHOGONAL_TASKS
+
 from .link_generation import generate_task_link
 from .paths import OUTPUT_DIR
 from .result_loading import load_processed_results
 from .result_processing import extract_model_metadata, group_results_by_model
 from .score_computation import compute_ranks_bootstrap, compute_standard_ranks_bootstrap
-from .task_metadata import (
-    ORTHOGONAL_TASKS,
-    official_datasets_for_language,
-    task_category,
-)
+from .task_metadata import official_datasets_for_language, task_category
 from .utils import convert_to_float, drop_val_duplicates
 
 # Number of bootstrap replicates for both confidence interval estimation of rank scores

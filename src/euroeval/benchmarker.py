@@ -15,7 +15,7 @@ from time import sleep
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
-from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
+from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS, ORTHOGONAL_TASKS
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
 from .enums import Device, GenerativeType, InferenceBackend, ModelType
@@ -808,11 +808,13 @@ class Benchmarker:
                             # Add the remaining number of benchmarks for the model to
                             # our benchmark counter, since we're erroring on the rest of
                             # them
-                            num_errored_benchmarks += (
-                                len(dataset_configs)
-                                - dataset_configs.index(dataset_config)
-                                - 1
-                            )
+                            model_dataset_configs = model_config_to_dataset_configs[
+                                model_config
+                            ]
+                            remaining_configs = model_dataset_configs[
+                                model_dataset_configs.index(dataset_config) + 1 :
+                            ]
+                            num_errored_benchmarks += 1 + len(remaining_configs)
                             break
 
                     # Skip the benchmark if the model is not of the correct
@@ -854,17 +856,25 @@ class Benchmarker:
 
                 elif isinstance(benchmark_output_or_err, InvalidBenchmark):
                     log(benchmark_output_or_err.message, level=logging.WARNING)
-                    num_errored_benchmarks += 1
+                    # Orthogonal task failures count as skipped, not errored
+                    if dataset_config.task.name in ORTHOGONAL_TASKS:
+                        num_skipped_benchmarks += 1
+                    else:
+                        num_errored_benchmarks += 1
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
                     log(benchmark_output_or_err.message, level=logging.WARNING)
 
                     # Add the remaining number of benchmarks for the model to our
-                    # benchmark counter, since we're skipping the rest of them
-                    num_errored_benchmarks += (
-                        len(dataset_configs) - dataset_configs.index(dataset_config) - 1
-                    )
+                    # benchmark counter, since we're erroring on the rest of them
+                    model_dataset_configs = model_config_to_dataset_configs[
+                        model_config
+                    ]
+                    remaining_configs = model_dataset_configs[
+                        model_dataset_configs.index(dataset_config) + 1 :
+                    ]
+                    num_errored_benchmarks += 1 + len(remaining_configs)
                     break
 
                 else:
