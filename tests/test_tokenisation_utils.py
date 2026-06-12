@@ -1,11 +1,12 @@
 """Tests for the `tokenisation_utils` module."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 from euroeval.benchmark_modules.hf import load_hf_model_config, load_tokeniser
 from euroeval.data_models import BenchmarkConfig, HashableDict
-from euroeval.model_config import get_model_config
 from euroeval.tokenisation_utils import (
     get_end_of_chat_token_ids,
     should_prefix_space_be_added_to_labels,
@@ -102,20 +103,54 @@ def test_load_xlmr_tokeniser_with_fallback(
     that raise TypeError when loading fast tokenizers.
     """
     model_id = "EMBEDDIA/litlat-bert"
-    model_config = get_model_config(
-        model_id=model_id, benchmark_config=benchmark_config
-    )
 
-    tokeniser: Tokeniser = load_tokeniser(
-        model=None,
-        model_id=model_id,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        model_config=model_config,
-    )
+    # Create a mock model config to avoid network calls
+    mock_model_config = MagicMock()
+    mock_model_config.param = None
+    mock_model_config.model_cache_dir = None
+
+    # Create a mock slow tokenizer
+    mock_slow_tokeniser = MagicMock()
+    mock_slow_tokeniser.is_fast = False
+    mock_slow_tokeniser.bos_token = "<s>"
+    mock_slow_tokeniser.eos_token = "</s>"
+    mock_slow_tokeniser.bos_token_id = 0
+    mock_slow_tokeniser.eos_token_id = 2
+    mock_slow_tokeniser.pad_token = None
+    mock_slow_tokeniser.pad_token_id = None
+
+    # Mock AutoTokenizer.from_pretrained to:
+    # 1. First raise TypeError when use_fast=True (simulating the XLM-R issue)
+    # 2. Then return the mock slow tokenizer when use_fast=False (the fallback)
+    with patch.object(
+        AutoTokenizer,
+        "from_pretrained",
+        side_effect=[TypeError("fast tokenizer not supported"), mock_slow_tokeniser],
+    ) as mock_from_pretrained:
+        tokeniser: Tokeniser = load_tokeniser(
+            model=None,
+            model_id=model_id,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            model_config=mock_model_config,
+        )
+
+    # Verify that AutoTokenizer.from_pretrained was called twice
+    # (once with use_fast=True, once with use_fast=False)
+    assert mock_from_pretrained.call_count == 2
+
+    # Verify the first call had use_fast=True
+    first_call_args = mock_from_pretrained.call_args_list[0]
+    assert first_call_args.kwargs.get("use_fast") is True
+    assert first_call_args.args[0] == model_id
+
+    # Verify the second call had use_fast=False (the fallback)
+    second_call_args = mock_from_pretrained.call_args_list[1]
+    assert second_call_args.kwargs.get("use_fast") is False
+    assert second_call_args.args[0] == model_id
 
     # Verify that the fallback to the slow tokenizer was used
     assert tokeniser.is_fast is False
 
     # Verify tokenizer attributes are set
-    assert tokeniser.bos_token is not None
-    assert tokeniser.eos_token is not None
+    assert tokeniser.bos_token == "<s>"
+    assert tokeniser.eos_token == "</s>"
