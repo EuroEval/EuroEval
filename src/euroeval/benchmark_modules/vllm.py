@@ -970,15 +970,18 @@ class VLLMModel(HuggingFaceEncoderModel):
         model_id = model_id_components.model_id
         revision = model_id_components.revision
 
-        model_info = get_model_repo_info(
-            model_id=model_id,
-            revision=revision,
-            api_key=benchmark_config.api_key,
-            cache_dir=benchmark_config.cache_dir,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            requires_safetensors=benchmark_config.requires_safetensors,
-            run_with_cli=benchmark_config.run_with_cli,
-        )
+        try:
+            model_info = get_model_repo_info(
+                model_id=model_id,
+                revision=revision,
+                api_key=benchmark_config.api_key,
+                cache_dir=benchmark_config.cache_dir,
+                trust_remote_code=benchmark_config.trust_remote_code,
+                requires_safetensors=benchmark_config.requires_safetensors,
+                run_with_cli=benchmark_config.run_with_cli,
+            )
+        except InvalidModel:
+            return False
         return (
             model_info is not None
             and model_info.pipeline_tag in GENERATIVE_PIPELINE_TAGS
