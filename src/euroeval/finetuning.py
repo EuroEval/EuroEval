@@ -320,7 +320,7 @@ def get_training_args(
         eval_accumulation_steps=32,
         optim=OptimizerNames.ADAMW_TORCH,
         learning_rate=2e-5,
-        warmup_ratio=0.01,
+        warmup_steps=100,
         gradient_accumulation_steps=32 // batch_size,
         load_best_model_at_end=True,
         seed=4242 + iteration_idx,
