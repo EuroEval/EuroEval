@@ -97,20 +97,22 @@ def test_load_xlmr_tokeniser_with_fallback(
     auth: str, benchmark_config: BenchmarkConfig
 ) -> None:
     """Test that XLM-RoBERTa tokenizers load with use_fast=False fallback.
-    
+
     Regression test for EMBEDDIA/litlat-bert and similar XLM-RoBERTa variants
     that raise TypeError when loading fast tokenizers.
     """
     model_id = "EMBEDDIA/litlat-bert"
-    model_config = get_model_config(model_id=model_id, benchmark_config=benchmark_config)
-    
+    model_config = get_model_config(
+        model_id=model_id, benchmark_config=benchmark_config
+    )
+
     tokeniser: Tokeniser = load_tokeniser(
         model=None,
         model_id=model_id,
         trust_remote_code=benchmark_config.trust_remote_code,
         model_config=model_config,
     )
-    
+
     # Verify tokenizer attributes are set
     assert tokeniser.bos_token is not None
     assert tokeniser.eos_token is not None
