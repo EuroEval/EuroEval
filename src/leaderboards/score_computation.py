@@ -7,7 +7,8 @@ from collections import defaultdict
 import numpy as np
 
 from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
-from .task_metadata import ORTHOGONAL_TASKS, task_category
+from .constants import ORTHOGONAL_TASKS
+from .task_metadata import task_category
 
 logger = logging.getLogger(__name__)
 
