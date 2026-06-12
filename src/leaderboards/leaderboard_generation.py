@@ -12,7 +12,8 @@ from itertools import chain
 import numpy as np
 import pandas as pd
 
-from .constants import ORTHOGONAL_TASKS
+from euroeval.constants import ORTHOGONAL_TASKS
+
 from .link_generation import generate_task_link
 from .paths import OUTPUT_DIR
 from .result_loading import load_processed_results

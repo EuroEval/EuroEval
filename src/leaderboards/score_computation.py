@@ -6,8 +6,9 @@ from collections import defaultdict
 
 import numpy as np
 
+from euroeval.constants import ORTHOGONAL_TASKS
+
 from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
-from .constants import ORTHOGONAL_TASKS
 from .task_metadata import task_category
 
 logger = logging.getLogger(__name__)
