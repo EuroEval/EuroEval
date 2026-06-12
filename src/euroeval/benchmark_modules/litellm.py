@@ -930,11 +930,11 @@ class LiteLLMModel(BenchmarkModule):
                 If the model response is invalid.
         """
         sequences = []
-        scores = []
+        scores: list[c.Sequence[c.Sequence[tuple[str, float]]] | None] = []
         for model_response in model_responses:
             if not model_response.choices:
                 sequences.append("")
-                scores.append([])
+                scores.append(None)
                 log(
                     f"The model {model_id!r} did not end up "
                     "generating any text. This is likely because the model ran "
@@ -979,6 +979,7 @@ class LiteLLMModel(BenchmarkModule):
 
             # Structure the model output as a GenerativeModelOutput object
             sequences.append(generation_output)
+            sample_scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
             if (
                 hasattr(model_response_choices, "logprobs")
                 and model_response_choices.logprobs is not None
@@ -1052,7 +1053,8 @@ class LiteLLMModel(BenchmarkModule):
                         )
                     ]
 
-                scores.append(logprobs_list)
+                sample_scores = logprobs_list
+            scores.append(sample_scores)
 
         if not sequences:
             log(
@@ -1069,8 +1071,10 @@ class LiteLLMModel(BenchmarkModule):
                 f"Got {len(sequences)} sequences and {len(scores)} scores."
             )
 
+        # Only return scores if at least one sample has logprobs
+        has_logprobs = any(s is not None for s in scores)
         return GenerativeModelOutput(
-            sequences=sequences, scores=scores if scores else None
+            sequences=sequences, scores=scores if has_logprobs else None
         )
 
     @cached_property

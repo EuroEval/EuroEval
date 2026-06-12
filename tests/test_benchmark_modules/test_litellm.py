@@ -71,9 +71,14 @@ class TestCreateModelOutput:
             model_id="test-model",
         )
 
-        # Verify the output is valid
+        # Verify the output is valid - sequences and scores are aligned
         assert len(output.sequences) == 2
         assert output.sequences[0] == "positive"
         assert output.sequences[1] == ""
+        # Scores should be non-None since at least one sample has logprobs
         assert output.scores is not None
         assert len(output.scores) == 2
+        # First sample has logprobs, second sample (empty choices) has None
+        assert output.scores[0] is not None
+        assert len(output.scores[0]) == 1
+        assert output.scores[1] is None
