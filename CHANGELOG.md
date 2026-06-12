@@ -19,6 +19,15 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed a bug where evaluating on AngryTweets sentiment classification raised
+  `Sequences and scores must have the same length` when the model returned no choices for
+  some samples. The `_create_model_output` method now appends an empty score list
+  alongside the empty sequence to keep both lists in sync.
+- Fixed deprecation warnings from `transformers` v5.2+:
+  - Replaced deprecated `warmup_ratio` with dynamic `warmup_steps` calculation (1% of
+    `max_steps`, minimum 1 step).
+  - Replaced `self.tokenizer` with `self.processing_class` in `QuestionAnsweringTrainer`
+    to match the renamed attribute in the `Trainer` base class.
 - Fixed validation errors when loading legacy benchmark results missing required fields
   (`task`, `languages`, `results`, `num_model_parameters`, `max_sequence_length`,
   `vocabulary_size`). These fields are now populated with sensible defaults when absent.
@@ -28,6 +37,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed model loading failures (e.g., shape mismatches, CUDA errors) incorrectly being
   counted as "skipped" benchmarks instead of "errored". The queue processor now correctly
   detects these as failures and applies the `evaluation-failed` label to GitHub issues.
+- Fixed tokenizer loading failures for XLM-RoBERTa variant models (e.g.
+  `EMBEDDIA/litlat-bert`) that raised `TypeError: argument 'vocab': 'dict' object cannot
+  be converted to 'Sequence'`. The tokenizer loader now falls back to `use_fast=False`
+  when this error occurs.
 
 ## [v17.3.0] - 2026-05-31
 

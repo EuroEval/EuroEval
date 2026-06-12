@@ -11,7 +11,6 @@ import typing as t
 import warnings
 from collections import Counter, defaultdict
 from copy import deepcopy
-from pathlib import Path
 
 from huggingface_hub import HfApi
 from huggingface_hub.errors import HFValidationError
@@ -20,7 +19,7 @@ from tqdm.auto import tqdm
 
 from .cache import Cache
 from .link_generation import generate_anchor_tag
-from .paths import RESULTS_PATH
+from .paths import PROCESSED_RESULTS_DIR, RESULTS_PATH
 from .result_loading import load_raw_results
 from .task_metadata import task_metric_names
 from .utils import extract_model_ids_from_record, get_record_hash, log_once
@@ -54,8 +53,11 @@ def process_results(
     """
     results_path = RESULTS_PATH
 
-    # Build the cache from the processed records file
-    cache = Cache.from_processed_records(compressed_results_path=results_path)
+    # Build the cache from the processed records directory if available,
+    # otherwise fall back to the compressed results file
+    cache = Cache.from_processed_records(
+        compressed_results_path=results_path, processed_dir=PROCESSED_RESULTS_DIR
+    )
 
     # Load all the raw records
     records = load_raw_results()
@@ -158,19 +160,18 @@ def process_results(
 
     # Upload processed results to HF bucket as per-model files
     hf_processed_bucket = "hf://buckets/EuroEval/processed-results"
-    processed_cache_dir = Path(".euroeval_cache/processed-results")
-    processed_cache_dir.mkdir(parents=True, exist_ok=True)
+    PROCESSED_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     logger.info("Uploading processed results to HF bucket...")
     for filename, records in processed_by_model.items():
-        file_path = processed_cache_dir / filename
+        file_path = PROCESSED_RESULTS_DIR / filename
         content = "\n".join(json.dumps(record) for record in records) + "\n"
         file_path.write_text(content, encoding="utf-8")
 
     # Sync to bucket using the Python API
     try:
         api = HfApi()
-        api.sync_bucket(source=str(processed_cache_dir), dest=hf_processed_bucket)
+        api.sync_bucket(source=str(PROCESSED_RESULTS_DIR), dest=hf_processed_bucket)
         logger.info(
             f"Uploaded {len(processed_by_model):,} model files "
             f"to {hf_processed_bucket}."

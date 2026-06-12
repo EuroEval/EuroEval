@@ -366,9 +366,9 @@ def process_queue_once() -> None:
     Issues are sorted by (status priority asc, slow priority asc,
     partial-results rank asc, parameter count asc, num-language-groups asc,
     age asc). Status priority is 0 for gated repos (cheap marker refresh),
-    1 for fresh issues, and 2 for retries of previously errored evaluations
-    (issues with the ``evaluation-failed`` label), so that gated repos are
-    surfaced first and quicker work is picked up ahead of fresh issues.
+    1 for retries of previously errored evaluations (issues with the
+    ``evaluation-failed`` label), and 2 for fresh issues, so that gated repos
+    are surfaced first, then retries, then new work.
     Slow priority is 0 for normal issues and 1 for issues with the 'slow'
     label, pushing them to the end of the queue regardless of partial-results
     status. Age is a final tiebreaker so that, when everything else is equal,
@@ -415,9 +415,9 @@ def process_queue_once() -> None:
         if summary.get("gated"):
             status_priority = 0
         elif issue_has_failed_label(issue=issue):
-            status_priority = 2
-        else:
             status_priority = 1
+        else:
+            status_priority = 2
         slow_priority = (
             1
             if any(label["name"] == "slow" for label in issue.get("labels", []))
@@ -480,7 +480,7 @@ def process_queue_once() -> None:
         groups,
         partial_state,
     ) in candidates:
-        status = {0: "fresh", 1: "gated", 2: "retry of errored eval"}[status_priority]
+        status = {0: "gated", 1: "retry of errored eval", 2: "fresh"}[status_priority]
         if status_priority == 0 and partial_rank == 0:
             status = "resuming partial"
         slow_tag = ", slow" if slow_priority else ""

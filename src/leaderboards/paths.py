@@ -36,19 +36,28 @@ def _env_path(name: str, default: Path) -> Path:
     return Path(value).expanduser() if value else default
 
 
-# Historical archive of all benchmark records. Operators provide this file;
-# it is not tracked in git (43+ MB compressed).
-RESULTS_PATH: Path = REPO_ROOT / "results.tar.gz"
+# Off-repo backup location for snapshots of results.tar.gz.
+# The working copy lives at BACKUPS_DIR/results.tar.gz.
+# Snapshots are timestamped and pruned when exceeding limits.
+BACKUPS_DIR: Path = _env_path(
+    "EUROEVAL_RESULTS_BACKUP_DIR",
+    Path.home() / "pCloud Drive" / "data" / "euroeval_backup",
+)
+BACKUPS_MAX_BYTES: int = 1_000_000_000  # ~1 GB total size cap
+MAX_BACKUPS: int = 10  # Keep at most 10 timestamped snapshots
+
+# Historical archive of all benchmark records. Stored in BACKUPS_DIR,
+# not tracked in git (43+ MB compressed).
+RESULTS_PATH: Path = BACKUPS_DIR / "results.tar.gz"
 
 # Incremental jsonl of new benchmark records to fold into RESULTS_PATH.
 NEW_RESULTS_PATH: Path = _env_path(
     "EUROEVAL_NEW_RESULTS_PATH", REPO_ROOT / "new_results.jsonl"
 )
 
-# Off-repo backup location for snapshots of results.tar.gz. The backup
-# rotation keeps the total directory size under BACKUPS_MAX_BYTES.
-BACKUPS_DIR: Path = _env_path(
-    "EUROEVAL_RESULTS_BACKUP_DIR",
-    Path.home() / "pCloud Drive" / "data" / "euroeval_backup",
-)
-BACKUPS_MAX_BYTES: int = 1_000_000_000  # ~1 GB
+# Persistent results directories (HF bucket sync points, git-ignored)
+RESULTS_DIR: Path = REPO_ROOT / "results"
+RAW_RESULTS_DIR: Path = RESULTS_DIR / "raw"
+PROCESSED_RESULTS_DIR: Path = RESULTS_DIR / "processed"
+
+# Note: `.euroeval_cache/` is now deprecated for results storage.
