@@ -814,7 +814,7 @@ class Benchmarker:
                             remaining_configs = model_dataset_configs[
                                 model_dataset_configs.index(dataset_config) + 1 :
                             ]
-                            num_errored_benchmarks += len(remaining_configs)
+                            num_errored_benchmarks += 1 + len(remaining_configs)
                             break
 
                     # Skip the benchmark if the model is not of the correct
@@ -874,7 +874,7 @@ class Benchmarker:
                     remaining_configs = model_dataset_configs[
                         model_dataset_configs.index(dataset_config) + 1 :
                     ]
-                    num_errored_benchmarks += len(remaining_configs)
+                    num_errored_benchmarks += 1 + len(remaining_configs)
                     break
 
                 else:

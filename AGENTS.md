@@ -33,9 +33,9 @@ building SEO files, API reference, creating individual datasets, etc.
 
 ### Tests
 
-All evaluation framework tests are in `tests` and can be run with `make test`. This take
-s a very long time though, so prefer to just running the tests in the modules you have
-changed. There are no tests for the frontend or leaderboard generation.
+All evaluation framework tests are in `tests` and can be run with `make test`. This
+takes a very long time though, so prefer to just running the tests in the modules you
+have changed. There are no tests for the frontend or leaderboard generation.
 
 ## Formatting, linting, and type checking
 
