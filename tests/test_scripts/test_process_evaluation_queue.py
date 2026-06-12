@@ -130,7 +130,7 @@ def test_process_issue_fails_when_official_results_are_missing(
         value=lambda **kwargs: None,
     )
     monkeypatch.setattr(
-        target=process_evaluation_queue,
+        target="leaderboards.queue_progress",
         name="upload_results_gist",
         value=lambda **kwargs: None,
     )
@@ -269,7 +269,7 @@ def test_process_issue_does_not_special_case_oom_anymore(
         value=lambda **kwargs: None,
     )
     monkeypatch.setattr(
-        target=process_evaluation_queue,
+        target="leaderboards.queue_progress",
         name="upload_results_gist",
         value=lambda **kwargs: None,
     )
