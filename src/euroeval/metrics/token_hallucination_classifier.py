@@ -23,7 +23,7 @@ def detect_hallucinations(
     dataset: Dataset,
     predictions: c.Iterable[dict[str, str]],
     model: str,
-    device: Device = Device.CPU,
+    device: Device,
 ) -> float:
     """Load model and detect hallucinations.
 
@@ -36,7 +36,7 @@ def detect_hallucinations(
         model:
             Path to hallucination detection model.
         device:
-            Device to run on ('cpu' or 'cuda').
+            Device to run on.
 
     Returns:
         A hallucination rate (hallucinated_tokens/total_tokens).
