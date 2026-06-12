@@ -348,6 +348,3 @@ OPEN_ENDED_QA = Task(
     requires_zero_shot=True,
     uses_logprobs=False,
 )
-
-# Tasks that don't contribute to the main rank score and are evaluated separately.
-ORTHOGONAL_TASKS: frozenset[str] = frozenset({"european-values"})
