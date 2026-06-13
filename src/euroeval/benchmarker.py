@@ -12,6 +12,7 @@ from pathlib import Path
 from shutil import rmtree
 from time import sleep
 
+from huggingface_hub import snapshot_download
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
@@ -306,12 +307,13 @@ class Benchmarker:
         )
         del dataset
 
-        model = load_model(
-            model_config=model_config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
+        log_once(f"Downloading model {model_config.model_id!r}...", level=logging.INFO)
+        snapshot_download(
+            repo_id=model_config.model_id,
+            revision=model_config.revision,
+            cache_dir=model_config.model_cache_dir,
+            token=benchmark_config.api_key,
         )
-        del model
 
         log_once(
             f"Loading metrics for the '{dataset_config.task.name}' task",
