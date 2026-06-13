@@ -677,19 +677,6 @@ def process_issue(
     _current_issue_number = None
 
 
-def _model_id_to_filename(model_id: str) -> str:
-    """Convert a model ID to a safe filename.
-
-    Args:
-        model_id:
-            The model identifier (e.g., "meta-llama/Llama-3-8B").
-
-    Returns:
-        A safe filename with slashes and dots replaced by underscores.
-    """
-    return model_id.replace("/", "_").replace(".", "_") + ".jsonl"
-
-
 def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     """Upload result lines to the HF raw-results bucket.
 
