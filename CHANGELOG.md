@@ -13,6 +13,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   don't contribute to the main ranking score and are rendered separately from the
   task-grouped columns on leaderboards. Currently only includes `"european-values"`.
 
+### Fixed
+
 - Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
   - `get_hf_token` now catches `httpx.ConnectError` to gracefully degrade when token
     validation fails offline
