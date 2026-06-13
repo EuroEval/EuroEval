@@ -36,7 +36,6 @@ import hashlib
 import logging
 import os
 import sys
-import threading
 import time
 import urllib.error
 from datetime import datetime
@@ -99,13 +98,6 @@ from leaderboards.queue_parsing import (
     num_skipped_benchmarks,
     read_jsonl_lines,
     result_lines_for_model,
-)
-from leaderboards.queue_progress import (
-    IncrementalGistUploader,
-    ProgressState,
-    find_partial_results_for_issue,
-    find_progress_comment,
-    post_or_update_progress_comment,
 )
 from leaderboards.queue_runtime import (
     ThermalConfig,
@@ -382,9 +374,7 @@ def process_queue_once() -> None:
         return
 
     existing_lines = read_jsonl_lines(path=RESULTS_PATH)
-    candidates: list[
-        tuple[int, int, int, int, int, float, dict, str, list[str], dict | None]
-    ] = []
+    candidates: list[tuple[int, int, int, int, int, float, dict, str, list[str]]] = []
     for issue in issues:
         number = issue["number"]
         title = issue.get("title", "")
@@ -428,16 +418,9 @@ def process_queue_once() -> None:
         languages: list[str] = sorted(
             {code for g in groups for code in LANGUAGE_GROUP_CODES[g]}
         )
-        # A previous VM may have crashed mid-run on this now-unassigned
-        # issue; if its progress comment links to a still-reachable gist,
-        # that gist holds the canonical partial results even when our
-        # local results file is empty.
-        partial_state = find_partial_results_for_issue(number=number)
-        combined_lines = existing_lines + (
-            partial_state["lines"] if partial_state else []
-        )
-        if status_priority == 0 and model_has_partial_results(
-            lines=combined_lines, model_id=model_id, requested_languages=languages
+        # Check for partial results from a previous run (resuming after crash).
+        if model_has_partial_results(
+            lines=existing_lines, model_id=model_id, requested_languages=languages
         ):
             partial_rank = 0
         else:
@@ -453,7 +436,6 @@ def process_queue_once() -> None:
                 issue,
                 model_id,
                 groups,
-                partial_state,
             )
         )
 
@@ -478,7 +460,6 @@ def process_queue_once() -> None:
         issue,
         model_id,
         groups,
-        partial_state,
     ) in candidates:
         status = {0: "gated", 1: "retry of errored eval", 2: "fresh"}[status_priority]
         if status_priority == 0 and partial_rank == 0:
@@ -500,12 +481,7 @@ def process_queue_once() -> None:
                 )
                 continue
         try:
-            process_issue(
-                issue=issue,
-                model_id=model_id,
-                groups=groups,
-                partial_state=partial_state,
-            )
+            process_issue(issue=issue, model_id=model_id, groups=groups)
         except Exception as e:  # noqa: BLE001
             logger.exception(f"Error while processing issue #{issue['number']}: {e}")
         cool_down_between_issues(config=THERMAL_CONFIG)
@@ -602,9 +578,7 @@ def list_open_unassigned_issues() -> list[dict]:
     return [i for i in issues if "pull_request" not in i]
 
 
-def process_issue(
-    issue: dict, model_id: str, groups: list[str], partial_state: dict | None = None
-) -> None:
+def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     """Claim, evaluate, and report back on a single queue issue.
 
     Args:
@@ -614,12 +588,6 @@ def process_issue(
             The Hugging Face model id to evaluate.
         groups:
             The selected language-group labels for this issue.
-        partial_state (optional):
-            Optional pre-fetched partial-results state from a prior run
-            on this issue (``comment_id``, ``gist_id``, ``lines``). When
-            set, the existing gist is reused and its lines seed the
-            accumulated results so an evaluation orphaned by another VM
-            can be continued. Defaults to None.
     """
     number = issue["number"]
     languages: list[str] = []
@@ -669,77 +637,68 @@ def process_issue(
     global _current_issue_number
     _current_issue_number = number
     try:
-        _run_claimed_issue(
-            issue=issue,
-            model_id=model_id,
-            languages=languages,
-            partial_state=partial_state,
-        )
+        _run_claimed_issue(issue=issue, model_id=model_id, languages=languages)
     except BaseException:
         release_current_issue()
         raise
     _current_issue_number = None
 
 
-def _upload_results_incrementally(
-    uploader: IncrementalGistUploader,
-    stop_event: threading.Event,
-    results_path: Path,
-    issue_number: int,
-    issue_body: str | None,
-    model_id: str,
-) -> None:
-    """Background thread that uploads new results to the gist periodically.
+def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
+    """Upload result lines to the HF raw-results bucket.
 
-    Polls the results file every 10 seconds, uploads any new lines to the
-    gist, and updates the progress comment.
+    Syncs existing results from the bucket, appends new lines for the
+    model, and syncs back. Uses the raw-results bucket as the canonical
+    source.
 
     Args:
-        uploader:
-            The incremental gist uploader instance.
-        stop_event:
-            Threading event to signal shutdown.
-        results_path:
-            Path to the JSONL results file.
-        issue_number:
-            The GitHub issue number.
-        issue_body (optional):
-            The issue body (used only on first upload).
+        lines:
+            The JSONL result lines to upload.
         model_id:
-            The Hugging Face model id (for filtering results).
+            The HuggingFace model ID.
+
+    Returns:
+        True if upload succeeded, False otherwise.
     """
-    last_upload_count = 0
-    while not stop_event.is_set():
-        stop_event.wait(10)
-        current_lines = result_lines_for_model(
-            lines=read_jsonl_lines(path=results_path), model_id=model_id
+    # Ensure cache dir exists
+    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    filename = _model_id_to_filename(model_id)
+    model_file = RESULTS_CACHE_DIR / filename
+
+    # Load existing lines for dedup within this batch
+    existing_lines: set[str] = set()
+    if model_file.exists():
+        existing_lines = {
+            line
+            for line in model_file.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        }
+
+    # Append new unique lines to cache file
+    new_lines = [line for line in lines if line and line not in existing_lines]
+    if new_lines:
+        with open(model_file, "a", encoding="utf-8") as f:
+            for line in new_lines:
+                f.write(line + "\n")
+
+    # Sync entire cache dir to bucket (upload only changed files)
+    try:
+        logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
+        api = HfApi()
+        api.sync_bucket(source=str(RESULTS_CACHE_DIR), dest=HF_RAW_BUCKET + "/")
+        logger.info(
+            f"Uploaded {len(new_lines)} new result lines for {model_id!r} to HF bucket."
         )
-        new_lines = uploader.add_new_lines(lines=current_lines)
-        if new_lines or uploader.state.gist_id is None:
-            try:
-                uploader.upload(issue_body=issue_body)
-                if len(uploader.accumulated_lines) != last_upload_count:
-                    logger.info(
-                        f"#{issue_number}: uploaded {len(uploader.accumulated_lines)} "
-                        f"result lines to gist {uploader.state.gist_id}"
-                    )
-                    last_upload_count = len(uploader.accumulated_lines)
-            except Exception:
-                logger.warning(
-                    f"#{issue_number}: failed to upload incremental results to gist"
-                )
+        return True
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to sync to HF bucket: {e}")
+        return False
 
 
-def _run_claimed_issue(
-    issue: dict, model_id: str, languages: list[str], partial_state: dict | None = None
-) -> None:
-    """Run euroeval for all languages at once and post results.
+def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None:
+    """Run euroeval for all languages and upload results to HF bucket.
 
-    A single comment carrying the ``queue-progress`` marker is created
-    (or reused) showing the final results along with a link to a gist
-    that holds the accumulated JSONL results. Results are uploaded to
-    the gist incrementally during evaluation so partial results survive
-    a crash.
+    Results are uploaded to the Hugging Face raw-results bucket on success.
 
     Args:
         issue:
@@ -748,67 +707,24 @@ def _run_claimed_issue(
             The Hugging Face model id to evaluate.
         languages:
             The flattened list of language codes for this evaluation.
-        partial_state (optional):
-            Optional pre-fetched partial-results state from a prior run
-            on this issue. When set, the existing gist is reused (so the
-            progress comment keeps pointing at a single, growing gist)
-            and its lines seed the accumulated results. Defaults to None.
     """
     number = issue["number"]
     is_core = model_id in load_core_model_ids()
-    issue_body = issue.get("body")
 
-    progress = ProgressState(issue_number=number)
-
+    # Load existing results from cache for resume support
     existing_lines = result_lines_for_model(
         lines=read_jsonl_lines(path=RESULTS_PATH), model_id=model_id
     )
-    if partial_state:
-        progress.gist_id = partial_state["gist_id"]
-        gist_lines = result_lines_for_model(
-            lines=partial_state["lines"], model_id=model_id
-        )
-        seen = set(existing_lines)
-        for line in gist_lines:
-            if line not in seen:
-                existing_lines.append(line)
-                seen.add(line)
     accumulated = list(existing_lines)
     done = completed_languages(lines=accumulated, requested_languages=languages)
     pending = [lang for lang in languages if lang not in done]
     failed: list[str] = []
-
-    comment_id = (
-        partial_state["comment_id"]
-        if partial_state
-        else find_progress_comment(number=number)
-    )
-
-    # Set up incremental gist uploader and seed it with existing results.
-    uploader = IncrementalGistUploader(state=progress, model_id=model_id)
-    uploader.seed_from_existing(existing_lines=existing_lines)
 
     gated_detected = False
     failure_reason: str | None = None
     failure_output_tail = ""
 
     if pending:
-        # Start background thread to upload results incrementally.
-        stop_upload = threading.Event()
-        upload_thread = threading.Thread(
-            target=_upload_results_incrementally,
-            kwargs={
-                "uploader": uploader,
-                "stop_event": stop_upload,
-                "results_path": RESULTS_PATH,
-                "issue_number": number,
-                "issue_body": issue_body,
-                "model_id": model_id,
-            },
-            daemon=True,
-        )
-        upload_thread.start()
-
         before = set(read_jsonl_lines(path=RESULTS_PATH))
         returncode, output = run_euroeval(
             model_id=model_id,
@@ -817,10 +733,6 @@ def _run_claimed_issue(
             clear_model_cache=True,
             gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
         )
-
-        # Stop the background uploader and let it finish.
-        stop_upload.set()
-        upload_thread.join(timeout=5)
 
         after = read_jsonl_lines(path=RESULTS_PATH)
         new_lines = [line for line in after if line not in before]
@@ -862,34 +774,26 @@ def _run_claimed_issue(
         else:
             done.extend(pending)
 
-    # Upload any remaining lines that weren't caught by the background thread.
-    final_lines = result_lines_for_model(
-        lines=read_jsonl_lines(path=RESULTS_PATH), model_id=model_id
-    )
-    uploader.add_new_lines(lines=final_lines)
-    try:
-        uploader.upload(issue_body=issue_body)
-        logger.info(
-            f"#{number}: uploaded {len(uploader.accumulated_lines)} result lines "
-            f"to gist {progress.gist_id}"
-        )
-    except Exception:
-        logger.warning(
-            f"#{number}: failed to upload final results gist for {model_id!r}"
-        )
+    # On success, upload results to HF bucket and post comment.
+    if not failed and accumulated:
+        upload_ok = upload_results_to_hf_bucket(lines=accumulated, model_id=model_id)
+        if not upload_ok:
+            logger.error(
+                f"#{number}: bucket upload failed for {model_id!r}; "
+                "not adding results-ready label."
+            )
+            failed.append("bucket-upload")
 
-    # Post final progress comment with all results.
-    comment_id = post_or_update_progress_comment(
-        state=progress,
-        comment_id=comment_id,
-        model_id=model_id,
-        done=done,
-        current=None,
-        remaining=[],
-        failed=failed,
-        lines=uploader.accumulated_lines,
-        issue_body=issue_body,
-    )
+    # Log completion status
+    if failed:
+        logger.info(
+            f"#{number}: evaluation failed for {model_id!r} after "
+            f"{len(done)} completed language(s)."
+        )
+    else:
+        logger.info(
+            f"#{number}: completed all {len(done)} language(s) for {model_id!r}."
+        )
 
     if gated_detected:
         version = euroeval_version()
@@ -929,10 +833,6 @@ def _run_claimed_issue(
     remove_failed_label(number=number)
     add_results_ready_label(number=number)
     clear_vm_marker(number=number, vm_id=VM_ID)
-    logger.info(
-        f"#{number}: completed all {len(done)} language(s) for {model_id!r}; "
-        "progress comment updated."
-    )
 
 
 def issue_is_still_claimable(number: int) -> bool:

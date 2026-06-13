@@ -4,7 +4,6 @@ The queue uses HTML-comment markers in the issue body to track per-issue
 state that needs to survive across runs and be readable by the frontend:
 
 * ``<!-- vm-id: HOST-XXXX -->`` -- which VM currently owns the evaluation.
-* ``<!-- euroeval-results-gist: ID -->`` -- gist holding partial results.
 
 Note: The ``gated`` and ``evaluation-failed`` states are now tracked via
 GitHub labels instead of body markers.
@@ -21,7 +20,6 @@ from .github_api import fetch_issue_body, patch_issue_body, unassign_issue
 logger = logging.getLogger(__name__)
 
 VM_MARKER_RE = re.compile(r"<!--\s*vm-id:\s*([^\s>]+)\s*-->")
-GIST_MARKER_RE = re.compile(r"<!--\s*euroeval-results-gist:\s*([^\s>]+)\s*-->")
 
 
 def set_vm_marker(number: int, vm_id: str) -> None:
