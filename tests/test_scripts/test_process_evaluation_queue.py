@@ -77,7 +77,7 @@ def test_process_issue_fails_when_official_results_are_missing(
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="set_vm_marker",
-        value=lambda number, vm_id: None,
+        value=lambda number, vm_id: True,
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -118,16 +118,6 @@ def test_process_issue_fails_when_official_results_are_missing(
         target=process_evaluation_queue,
         name="issue_has_matching_error_comment",
         value=lambda number, reason: False,
-    )
-    monkeypatch.setattr(
-        target=process_evaluation_queue,
-        name="find_progress_comment",
-        value=lambda number: None,
-    )
-    monkeypatch.setattr(
-        target=process_evaluation_queue,
-        name="post_or_update_progress_comment",
-        value=lambda **kwargs: None,
     )
 
     process_evaluation_queue.process_issue(
@@ -211,7 +201,7 @@ def test_process_issue_does_not_special_case_oom_anymore(
     monkeypatch.setattr(
         target=process_evaluation_queue,
         name="set_vm_marker",
-        value=lambda number, vm_id: None,
+        value=lambda number, vm_id: True,
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -252,16 +242,6 @@ def test_process_issue_does_not_special_case_oom_anymore(
         target=process_evaluation_queue,
         name="issue_has_matching_error_comment",
         value=lambda number, reason: False,
-    )
-    monkeypatch.setattr(
-        target=process_evaluation_queue,
-        name="find_progress_comment",
-        value=lambda number: None,
-    )
-    monkeypatch.setattr(
-        target=process_evaluation_queue,
-        name="post_or_update_progress_comment",
-        value=lambda **kwargs: None,
     )
 
     process_evaluation_queue.process_issue(
