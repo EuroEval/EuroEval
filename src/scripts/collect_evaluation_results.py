@@ -12,7 +12,10 @@ been picked up by the compute server), it:
    (so Vercel's CLI never has to upload the >100 MB ``.git`` packfile).
 5. Posts a comment and closes each processed issue.
 
-To avoid race conditions, the script snapshots the list of results-ready issues at the start (for logging purposes) and only closes issues with successfully harvested results at the end (ignoring any new results-ready issues that appeared during the run).
+To avoid race conditions, the script snapshots the list of results-ready
+issues at the start (for logging purposes) and only closes issues with
+successfully harvested results at the end (ignoring any new results-ready
+issues that appeared during the run).
 
 Required env vars
 -----------------
@@ -160,7 +163,7 @@ def main() -> None:
     for number, _ in harvested:
         try:
             comment_on_issue(
-                number=number, body="Results now live on the leaderboards 🎉"
+                number=number, body="Results now live on the leaderboards!"
             )
             close_issue(number=number)
             logger.info(f"#{number}: closed.")
@@ -213,7 +216,7 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
     try:
         api = HfApi()
         api.download_bucket_files(
-            bucket_id="EuroEval/raw-results",
+            bucket_id=HF_RAW_BUCKET.replace("hf://buckets/", ""),
             files=[(filename, local_path)],
             raise_on_missing_files=False,
         )

@@ -36,7 +36,6 @@ import hashlib
 import logging
 import os
 import sys
-import tempfile
 import time
 import urllib.error
 from datetime import datetime
@@ -707,47 +706,39 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     Returns:
         True if upload succeeded, False otherwise.
     """
-    with tempfile.TemporaryDirectory() as tmpdir:
-        raw_dir = Path(tmpdir) / "raw-results"
-        raw_dir.mkdir(parents=True, exist_ok=True)
+    # Ensure cache dir exists
+    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    filename = _model_id_to_filename(model_id)
+    model_file = RESULTS_CACHE_DIR / filename
 
-        try:
-            # Sync existing results from HF bucket
-            logger.info(f"Syncing existing results from {HF_RAW_BUCKET}...")
-            api = HfApi()
-            api.sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(raw_dir))
-        except HfHubHTTPError as e:
-            logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
+    # Load existing lines for dedup within this batch
+    existing_lines: set[str] = set()
+    if model_file.exists():
+        existing_lines = {
+            line
+            for line in model_file.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        }
 
-        # Load existing lines for this model
-        filename = _model_id_to_filename(model_id)
-        model_file = raw_dir / filename
-        existing_lines = set()
-        if model_file.exists():
-            existing_lines = {
-                line
-                for line in model_file.read_text(encoding="utf-8").splitlines()
-                if line.strip()
-            }
-
-        # Append new lines
+    # Append new unique lines to cache file
+    new_lines = [line for line in lines if line and line not in existing_lines]
+    if new_lines:
         with open(model_file, "a", encoding="utf-8") as f:
-            for line in lines:
-                if line and line not in existing_lines:
-                    f.write(line + "\n")
+            for line in new_lines:
+                f.write(line + "\n")
 
-        # Sync back to HF bucket
-        try:
-            logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
-            api = HfApi()
-            api.sync_bucket(source=str(raw_dir), dest=HF_RAW_BUCKET + "/")
-            logger.info(
-                f"Uploaded {len(lines)} result lines for {model_id!r} to HF bucket."
-            )
-            return True
-        except HfHubHTTPError as e:
-            logger.error(f"Failed to sync to HF bucket: {e}")
-            return False
+    # Sync entire cache dir to bucket (upload only changed files)
+    try:
+        logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
+        api = HfApi()
+        api.sync_bucket(source=str(RESULTS_CACHE_DIR), dest=HF_RAW_BUCKET + "/")
+        logger.info(
+            f"Uploaded {len(new_lines)} new result lines for {model_id!r} to HF bucket."
+        )
+        return True
+    except HfHubHTTPError as e:
+        logger.error(f"Failed to sync to HF bucket: {e}")
+        return False
 
 
 def _run_claimed_issue(
@@ -855,7 +846,13 @@ def _run_claimed_issue(
 
     # On success, upload results to HF bucket and post comment.
     if not failed and accumulated:
-        upload_results_to_hf_bucket(lines=accumulated, model_id=model_id)
+        upload_ok = upload_results_to_hf_bucket(lines=accumulated, model_id=model_id)
+        if not upload_ok:
+            logger.error(
+                f"#{number}: bucket upload failed for {model_id!r}; "
+                "not adding results-ready label."
+            )
+            failed.append("bucket-upload")
 
     # Post final progress comment with all results.
     comment_id = post_or_update_progress_comment(

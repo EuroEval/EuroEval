@@ -39,7 +39,8 @@ def find_partial_results_for_issue(number: int) -> dict | None:
     Returns:
         A dict with keys ``comment_id`` and ``lines`` when an
         existing progress comment is found, or None when no
-        progress comment is present.
+        progress comment is present. The ``lines`` key is kept
+        for backwards compatibility but always returns an empty list.
     """
     try:
         comments = gh_request(
@@ -60,7 +61,8 @@ def find_partial_results_for_issue(number: int) -> dict | None:
     comment_id = progress.get("id")
     if not isinstance(comment_id, int):
         return None
-    # We no longer fetch lines from a gist; they come from the local results file.
+    # Lines are kept for backwards compatibility but always empty; resume
+    # now uses the local cache file rather than GitHub comments.
     return {"comment_id": comment_id, "lines": []}
 
 
