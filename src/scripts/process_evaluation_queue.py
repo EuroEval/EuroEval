@@ -106,11 +106,11 @@ from leaderboards.queue_runtime import (
 
 # Param bucket thresholds matching leaderboards (src/leaderboards/core_models.py)
 _BUCKET_THRESHOLDS = [
-    (2_000_000_000, 0),   # tiny
+    (2_000_000_000, 0),  # tiny
     (10_000_000_000, 1),  # small
     (40_000_000_000, 2),  # medium
     (80_000_000_000, 3),  # large
-    (float("inf"), 4),    # xlarge
+    (float("inf"), 4),  # xlarge
 ]
 
 
@@ -741,8 +741,7 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
     # This restores crash resilience lost when removing gist-based uploads.
     for i, lang in enumerate(pending):
         logger.info(
-            f"#{number}: running {model_id!r} on {lang} "
-            f"({i + 1}/{len(pending)})."
+            f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
         )
         before = set(read_jsonl_lines(path=RESULTS_PATH))
         returncode, output = run_euroeval(
