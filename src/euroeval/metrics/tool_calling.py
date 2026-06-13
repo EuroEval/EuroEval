@@ -91,12 +91,18 @@ def _evaluate_function_toolcall_response(
     for pred_call, ref_call, description in zip(pred_calls, ref_calls, descriptions):
         # each predicted function call should be a dict
         if not isinstance(pred_call, dict):
+            log_once(
+                "Tool call prediction was not a "
+                f"dict (got {type(pred_call).__name__}): {pred_call!r}",
+                level=logging.DEBUG,
+            )
             return False
 
         # get predicted function name
         if "function" not in pred_call:
             log_once(
-                "Tool call prediction did not contain required keyword 'function'.",
+                "Tool call prediction missing required keyword 'function'. "
+                f"Full pred_call: {pred_call!r}",
                 level=logging.DEBUG,
             )
             return False
@@ -106,7 +112,8 @@ def _evaluate_function_toolcall_response(
         # get predicted arguments
         if "arguments" not in pred_call:
             log_once(
-                "Tool call prediction did not contain required keyword 'arguments'.",
+                "Tool call prediction missing required keyword 'arguments'. "
+                f"Full pred_call: {pred_call!r}",
                 level=logging.DEBUG,
             )
             return False
@@ -115,7 +122,9 @@ def _evaluate_function_toolcall_response(
             # Validate that pred_args is actually a dict
             if not isinstance(pred_args, dict):
                 log_once(
-                    "Tool call prediction 'arguments' was not a dict.",
+                    "Tool call prediction 'arguments' was not a dict "
+                    f"(got {type(pred_args).__name__}): {pred_args!r}. "
+                    f"Full pred_call: {pred_call!r}",
                     level=logging.DEBUG,
                 )
                 return False
