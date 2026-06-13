@@ -696,9 +696,10 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
 
 
 def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None:
-    """Run euroeval for all languages and upload results to HF bucket.
+    """Run euroeval for all languages, uploading to HF bucket after each.
 
-    Results are uploaded to the Hugging Face raw-results bucket on success.
+    Results are uploaded incrementally to the Hugging Face raw-results bucket
+    after each language completes, enabling crash recovery with minimal loss.
 
     Args:
         issue:
@@ -723,72 +724,92 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
     gated_detected = False
     failure_reason: str | None = None
     failure_output_tail = ""
+    last_output = ""
 
-    if pending:
+    # Run languages one at a time and upload after each completes.
+    # This restores crash resilience lost when removing gist-based uploads.
+    for i, lang in enumerate(pending):
+        logger.info(
+            f"#{number}: running {model_id!r} on {lang} "
+            f"({i + 1}/{len(pending)})."
+        )
         before = set(read_jsonl_lines(path=RESULTS_PATH))
         returncode, output = run_euroeval(
             model_id=model_id,
-            languages=pending,
+            languages=[lang],
             evaluate_test_split=is_core,
             clear_model_cache=True,
             gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
         )
+        last_output = output
 
         after = read_jsonl_lines(path=RESULTS_PATH)
         new_lines = [line for line in after if line not in before]
         accumulated.extend(new_lines)
 
+        # Upload immediately after each language completes.
+        if new_lines:
+            upload_ok = upload_results_to_hf_bucket(lines=new_lines, model_id=model_id)
+            if not upload_ok:
+                logger.error(
+                    f"#{number}: bucket upload failed after {lang}; "
+                    "continuing with remaining languages."
+                )
+                failed.append(f"{lang} (upload-failed)")
+                continue
+            done.append(lang)
+            logger.info(f"#{number}: uploaded results for {lang}.")
+
+        # Check for gating after each language.
         if GATED_OUTPUT_RE.search(output):
             gated_detected = True
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
+            failed.append(lang)
+            break
 
+        # Check for errors.
         num_errored = num_errored_benchmarks(output=output)
-        num_skipped = num_skipped_benchmarks(output=output)
-        missing = missing_official_dataset_language_pairs(
-            lines=accumulated, requested_languages=pending
-        )
         if returncode != 0:
             failure_reason = f"euroeval exited with code {returncode}"
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed = pending
+            failed.append(lang)
+            break
         elif num_errored > 0:
             failure_reason = f"euroeval reported {num_errored} errored benchmark(s)"
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed = pending
-        # Note: orthogonal task failures (e.g., european-values) are counted as
-        # skipped by the benchmarker, so they don't trigger the failure path above.
-        elif missing and (not new_lines or len(missing) > num_skipped):
+            failed.append(lang)
+            break
+
+    # Handle skips for missing official pairs (only if no hard failures).
+    if not failed:
+        num_skipped = num_skipped_benchmarks(output=last_output)
+        missing = missing_official_dataset_language_pairs(
+            lines=accumulated, requested_languages=pending
+        )
+        if missing and (
+            len(accumulated) == len(existing_lines) or len(missing) > num_skipped
+        ):
             failure_reason = (
                 f"missing official dataset-language pair(s): "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
             )
-            failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed = pending
+            failure_output_tail = last_output[-6000:].strip() or "(no output captured)"
+            failed.extend([lang for lang in pending if lang not in done])
         elif missing:
             logger.info(
                 f"#{number}: euroeval skipped {num_skipped} benchmark(s); "
                 f"treating missing pair(s) as intentional skips: "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
             )
-            done.extend(pending)
+            done.extend([lang for lang in pending if lang not in done])
         else:
-            done.extend(pending)
+            done.extend([lang for lang in pending if lang not in done])
 
-    # On success, upload results to HF bucket and post comment.
-    if not failed and accumulated:
-        upload_ok = upload_results_to_hf_bucket(lines=accumulated, model_id=model_id)
-        if not upload_ok:
-            logger.error(
-                f"#{number}: bucket upload failed for {model_id!r}; "
-                "not adding results-ready label."
-            )
-            failed.append("bucket-upload")
-
-    # Log completion status
+    # Log completion status.
     if failed:
         logger.info(
-            f"#{number}: evaluation failed for {model_id!r} after "
-            f"{len(done)} completed language(s)."
+            f"#{number}: evaluation failed for {model_id!r} "
+            f"after {len(done)} completed language(s)."
         )
     else:
         logger.info(
@@ -796,7 +817,6 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
         )
 
     if gated_detected:
-        version = euroeval_version()
         add_gated_label(number=number)
         add_failed_label(number=number)
         release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
