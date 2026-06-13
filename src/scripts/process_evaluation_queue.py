@@ -374,9 +374,7 @@ def process_queue_once() -> None:
         return
 
     existing_lines = read_jsonl_lines(path=RESULTS_PATH)
-    candidates: list[
-        tuple[int, int, int, int, int, float, dict, str, list[str]]
-    ] = []
+    candidates: list[tuple[int, int, int, int, int, float, dict, str, list[str]]] = []
     for issue in issues:
         number = issue["number"]
         title = issue.get("title", "")
@@ -483,11 +481,7 @@ def process_queue_once() -> None:
                 )
                 continue
         try:
-            process_issue(
-                issue=issue,
-                model_id=model_id,
-                groups=groups,
-            )
+            process_issue(issue=issue, model_id=model_id, groups=groups)
         except Exception as e:  # noqa: BLE001
             logger.exception(f"Error while processing issue #{issue['number']}: {e}")
         cool_down_between_issues(config=THERMAL_CONFIG)
@@ -584,9 +578,7 @@ def list_open_unassigned_issues() -> list[dict]:
     return [i for i in issues if "pull_request" not in i]
 
 
-def process_issue(
-    issue: dict, model_id: str, groups: list[str]
-) -> None:
+def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     """Claim, evaluate, and report back on a single queue issue.
 
     Args:
@@ -645,11 +637,7 @@ def process_issue(
     global _current_issue_number
     _current_issue_number = number
     try:
-        _run_claimed_issue(
-            issue=issue,
-            model_id=model_id,
-            languages=languages,
-        )
+        _run_claimed_issue(issue=issue, model_id=model_id, languages=languages)
     except BaseException:
         release_current_issue()
         raise
@@ -707,9 +695,7 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
         return False
 
 
-def _run_claimed_issue(
-    issue: dict, model_id: str, languages: list[str]
-) -> None:
+def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None:
     """Run euroeval for all languages and upload results to HF bucket.
 
     Results are uploaded to the Hugging Face raw-results bucket on success.
