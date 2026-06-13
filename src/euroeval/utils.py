@@ -10,6 +10,7 @@ import typing as t
 from pathlib import Path
 
 import huggingface_hub as hf_hub
+import httpx
 import numpy as np
 import torch
 from huggingface_hub.errors import LocalTokenNotFoundError
@@ -228,7 +229,7 @@ def get_hf_token(api_key: str | None) -> str | bool:
             level=logging.DEBUG,
         )
         return False
-    except RequestException:
+    except (RequestException, httpx.ConnectError):
         log_once(
             "No Hugging Face API key was set and the connection to Hugging Face "
             "failed, so no token will be used.",

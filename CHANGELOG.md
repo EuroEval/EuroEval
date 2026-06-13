@@ -15,6 +15,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed benchmark failures on air-gapped / offline systems (e.g. supercomputers with
+  Slurm) where the Hugging Face token validation would crash with `httpx.ConnectError`
+  instead of gracefully degrading. The `get_hf_token` function now catches both
+  `RequestException` and `httpx.ConnectError`, allowing evaluation to proceed using
+  locally cached models and tokens when no internet connection is available.
 - Fixed orthogonal benchmark failures (e.g., `european-values`) being incorrectly
   counted as "errored" in the benchmark summary. These are now counted as "skipped"
   instead, preventing the `evaluation-failed` label from being applied to GitHub issues
