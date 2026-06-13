@@ -93,7 +93,6 @@ from leaderboards.queue_parsing import (
     euroeval_version,
     extract_model_id,
     format_dataset_language_pairs,
-    model_has_partial_results,
     num_errored_benchmarks,
     num_skipped_benchmarks,
     read_jsonl_lines,
@@ -104,6 +103,32 @@ from leaderboards.queue_runtime import (
     cool_down_between_issues,
     lower_process_priority,
 )
+
+# Param bucket thresholds matching leaderboards (src/leaderboards/core_models.py)
+_BUCKET_THRESHOLDS = [
+    (2_000_000_000, 0),  # tiny
+    (10_000_000_000, 1),  # small
+    (40_000_000_000, 2),  # medium
+    (80_000_000_000, 3),  # large
+    (float("inf"), 4),  # xlarge
+]
+
+
+def _param_bucket(param_count: int) -> int:
+    """Map parameter count to bucket index for queue sorting.
+
+    Args:
+        param_count:
+            Number of parameters in the model.
+
+    Returns:
+        Bucket index (0=tiny, 1=small, 2=medium, 3=large, 4=xlarge).
+    """
+    for threshold, bucket in _BUCKET_THRESHOLDS:
+        if param_count < threshold:
+            return bucket
+    return 4
+
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -355,15 +380,17 @@ def age_sort_value(issue: dict) -> float:
 def process_queue_once() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
-    Issues are sorted by (status priority asc, slow priority asc,
-    partial-results rank asc, parameter count asc, num-language-groups asc,
-    age asc). Status priority is 0 for gated repos (cheap marker refresh),
+    Issues are sorted by (slow priority asc, status priority asc,
+    parameter bucket asc, age asc). Parameter buckets match the
+    leaderboards: tiny (<2B), small (2-10B), medium (10-40B),
+    large (40-80B), xlarge (>=80B).
+    Slow priority is 0 for normal issues and 1 for issues with the 'slow'
+    label, pushing slow evaluations to the end of the queue.
+    Status priority is 0 for gated repos (cheap marker refresh),
     1 for retries of previously errored evaluations (issues with the
     ``evaluation-failed`` label), and 2 for fresh issues, so that gated repos
     are surfaced first, then retries, then new work.
-    Slow priority is 0 for normal issues and 1 for issues with the 'slow'
-    label, pushing them to the end of the queue regardless of partial-results
-    status. Age is a final tiebreaker so that, when everything else is equal,
+    Age is a final tiebreaker so that, when everything else is equal,
     the oldest (longest-waiting) issue is picked up first and stale requests
     don't linger in the queue.
     """
@@ -373,8 +400,7 @@ def process_queue_once() -> None:
         logger.error(f"Failed to list issues: {e}")
         return
 
-    existing_lines = read_jsonl_lines(path=RESULTS_PATH)
-    candidates: list[tuple[int, int, int, int, int, float, dict, str, list[str]]] = []
+    candidates: list[tuple[int, int, int, float, dict, str, list[str]]] = []
     for issue in issues:
         number = issue["number"]
         title = issue.get("title", "")
@@ -413,25 +439,13 @@ def process_queue_once() -> None:
             if any(label["name"] == "slow" for label in issue.get("labels", []))
             else 0
         )
-        # Among 'waiting' candidates, push models with partial results ahead so
-        # we finish what we already started before claiming a new evaluation.
-        languages: list[str] = sorted(
-            {code for g in groups for code in LANGUAGE_GROUP_CODES[g]}
-        )
-        # Check for partial results from a previous run (resuming after crash).
-        if model_has_partial_results(
-            lines=existing_lines, model_id=model_id, requested_languages=languages
-        ):
-            partial_rank = 0
-        else:
-            partial_rank = 1
+
+        param_bucket_idx = _param_bucket(param_count)
         candidates.append(
             (
-                status_priority,
                 slow_priority,
-                partial_rank,
-                param_count,
-                len(groups),
+                status_priority,
+                param_bucket_idx,
                 age_sort_value(issue=issue),
                 issue,
                 model_id,
@@ -439,7 +453,7 @@ def process_queue_once() -> None:
             )
         )
 
-    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4], c[5]))
+    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3]))
     logger.info(f"Found {len(candidates)} processable issue(s).")
 
     gpu_bytes = gpu_total_memory_bytes()
@@ -451,23 +465,19 @@ def process_queue_once() -> None:
         logger.info(f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB.")
 
     for (
-        status_priority,
         slow_priority,
-        partial_rank,
+        status_priority,
         param_count,
-        num_groups,
         _age,
         issue,
         model_id,
         groups,
     ) in candidates:
         status = {0: "gated", 1: "retry of errored eval", 2: "fresh"}[status_priority]
-        if status_priority == 0 and partial_rank == 0:
-            status = "resuming partial"
         slow_tag = ", slow" if slow_priority else ""
         logger.info(
             f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
-            f"{num_groups} group(s), {status}{slow_tag})."
+            f"{status}{slow_tag})."
         )
         if gpu_bytes is not None:
             needed = estimated_model_bytes(model_id=model_id)
@@ -696,9 +706,10 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
 
 
 def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None:
-    """Run euroeval for all languages and upload results to HF bucket.
+    """Run euroeval for all languages, uploading to HF bucket after each.
 
-    Results are uploaded to the Hugging Face raw-results bucket on success.
+    Results are uploaded incrementally to the Hugging Face raw-results bucket
+    after each language completes, enabling crash recovery with minimal loss.
 
     Args:
         issue:
@@ -723,72 +734,101 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
     gated_detected = False
     failure_reason: str | None = None
     failure_output_tail = ""
+    last_output = ""
+    total_skipped = 0
 
-    if pending:
+    # Run languages one at a time and upload after each completes.
+    # This restores crash resilience lost when removing gist-based uploads.
+    for i, lang in enumerate(pending):
+        logger.info(
+            f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
+        )
         before = set(read_jsonl_lines(path=RESULTS_PATH))
         returncode, output = run_euroeval(
             model_id=model_id,
-            languages=pending,
+            languages=[lang],
             evaluate_test_split=is_core,
             clear_model_cache=True,
             gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
         )
+        last_output = output
 
-        after = read_jsonl_lines(path=RESULTS_PATH)
-        new_lines = [line for line in after if line not in before]
-        accumulated.extend(new_lines)
+        # Check for gating / errors BEFORE uploading results.
+        # This prevents partial/broken results from being synced to the bucket.
+        gated_in_lang = GATED_OUTPUT_RE.search(output)
+        num_errored = num_errored_benchmarks(output=output)
+        num_skipped_lang = num_skipped_benchmarks(output=output)
+        total_skipped += num_skipped_lang
+        has_error = returncode != 0 or num_errored > 0
 
-        if GATED_OUTPUT_RE.search(output):
+        if not gated_in_lang and not has_error:
+            # Only upload if the language run succeeded.
+            after = read_jsonl_lines(path=RESULTS_PATH)
+            new_lines = [line for line in after if line not in before]
+            accumulated.extend(new_lines)
+
+            if new_lines:
+                upload_ok = upload_results_to_hf_bucket(
+                    lines=new_lines, model_id=model_id
+                )
+                if not upload_ok:
+                    logger.error(
+                        f"#{number}: bucket upload failed after {lang}; "
+                        "continuing with remaining languages."
+                    )
+                    failed.append(f"{lang} (upload-failed)")
+                    continue
+                done.append(lang)
+                logger.info(f"#{number}: uploaded results for {lang}.")
+
+        # Handle gating.
+        if gated_in_lang:
             gated_detected = True
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
+            failed.append(lang)
+            break
 
-        num_errored = num_errored_benchmarks(output=output)
-        num_skipped = num_skipped_benchmarks(output=output)
-        missing = missing_official_dataset_language_pairs(
-            lines=accumulated, requested_languages=pending
-        )
+        # Handle errors.
         if returncode != 0:
             failure_reason = f"euroeval exited with code {returncode}"
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed = pending
+            failed.append(lang)
+            break
         elif num_errored > 0:
             failure_reason = f"euroeval reported {num_errored} errored benchmark(s)"
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed = pending
-        # Note: orthogonal task failures (e.g., european-values) are counted as
-        # skipped by the benchmarker, so they don't trigger the failure path above.
-        elif missing and (not new_lines or len(missing) > num_skipped):
+            failed.append(lang)
+            break
+
+    # Handle skips for missing official pairs (only if no hard failures).
+    if not failed:
+        missing = missing_official_dataset_language_pairs(
+            lines=accumulated, requested_languages=pending
+        )
+        if missing and (
+            len(accumulated) == len(existing_lines) or len(missing) > total_skipped
+        ):
             failure_reason = (
                 f"missing official dataset-language pair(s): "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
             )
-            failure_output_tail = output[-6000:].strip() or "(no output captured)"
-            failed = pending
+            failure_output_tail = last_output[-6000:].strip() or "(no output captured)"
+            failed.extend([lang for lang in pending if lang not in done])
         elif missing:
             logger.info(
-                f"#{number}: euroeval skipped {num_skipped} benchmark(s); "
+                f"#{number}: euroeval skipped {total_skipped} benchmark(s); "
                 f"treating missing pair(s) as intentional skips: "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
             )
-            done.extend(pending)
+            done.extend([lang for lang in pending if lang not in done])
         else:
-            done.extend(pending)
+            done.extend([lang for lang in pending if lang not in done])
 
-    # On success, upload results to HF bucket and post comment.
-    if not failed and accumulated:
-        upload_ok = upload_results_to_hf_bucket(lines=accumulated, model_id=model_id)
-        if not upload_ok:
-            logger.error(
-                f"#{number}: bucket upload failed for {model_id!r}; "
-                "not adding results-ready label."
-            )
-            failed.append("bucket-upload")
-
-    # Log completion status
+    # Log completion status.
     if failed:
         logger.info(
-            f"#{number}: evaluation failed for {model_id!r} after "
-            f"{len(done)} completed language(s)."
+            f"#{number}: evaluation failed for {model_id!r} "
+            f"after {len(done)} completed language(s)."
         )
     else:
         logger.info(
@@ -796,7 +836,6 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
         )
 
     if gated_detected:
-        version = euroeval_version()
         add_gated_label(number=number)
         add_failed_label(number=number)
         release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE)
