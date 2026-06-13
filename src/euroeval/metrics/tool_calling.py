@@ -118,16 +118,17 @@ def _evaluate_function_toolcall_response(
             )
             return False
         else:
-            pred_args: dict = pred_call["arguments"]
+            pred_args_raw = pred_call["arguments"]
             # Validate that pred_args is actually a dict
-            if not isinstance(pred_args, dict):
+            if not isinstance(pred_args_raw, dict):
                 log_once(
                     "Tool call prediction 'arguments' was not a dict "
-                    f"(got {type(pred_args).__name__}): {pred_args!r}. "
+                    f"(got {type(pred_args_raw).__name__}): {pred_args_raw!r}. "
                     f"Full pred_call: {pred_call!r}",
                     level=logging.DEBUG,
                 )
                 return False
+            pred_args: dict = pred_args_raw
 
         ref_name: str
         ref_args: dict
