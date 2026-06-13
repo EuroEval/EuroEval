@@ -99,12 +99,6 @@ from leaderboards.queue_parsing import (
     read_jsonl_lines,
     result_lines_for_model,
 )
-from leaderboards.queue_progress import (
-    ProgressState,
-    find_partial_results_for_issue,
-    find_progress_comment,
-    post_or_update_progress_comment,
-)
 from leaderboards.queue_runtime import (
     ThermalConfig,
     cool_down_between_issues,
@@ -381,7 +375,7 @@ def process_queue_once() -> None:
 
     existing_lines = read_jsonl_lines(path=RESULTS_PATH)
     candidates: list[
-        tuple[int, int, int, int, int, float, dict, str, list[str], dict | None]
+        tuple[int, int, int, int, int, float, dict, str, list[str]]
     ] = []
     for issue in issues:
         number = issue["number"]
@@ -426,16 +420,9 @@ def process_queue_once() -> None:
         languages: list[str] = sorted(
             {code for g in groups for code in LANGUAGE_GROUP_CODES[g]}
         )
-        # A previous VM may have crashed mid-run on this now-unassigned
-        # issue; if its progress comment links to a still-reachable gist,
-        # that gist holds the canonical partial results even when our
-        # local results file is empty.
-        partial_state = find_partial_results_for_issue(number=number)
-        combined_lines = existing_lines + (
-            partial_state["lines"] if partial_state else []
-        )
-        if status_priority == 0 and model_has_partial_results(
-            lines=combined_lines, model_id=model_id, requested_languages=languages
+        # Check for partial results from a previous run (resuming after crash).
+        if model_has_partial_results(
+            lines=existing_lines, model_id=model_id, requested_languages=languages
         ):
             partial_rank = 0
         else:
@@ -451,7 +438,6 @@ def process_queue_once() -> None:
                 issue,
                 model_id,
                 groups,
-                partial_state,
             )
         )
 
@@ -476,7 +462,6 @@ def process_queue_once() -> None:
         issue,
         model_id,
         groups,
-        partial_state,
     ) in candidates:
         status = {0: "gated", 1: "retry of errored eval", 2: "fresh"}[status_priority]
         if status_priority == 0 and partial_rank == 0:
@@ -502,7 +487,6 @@ def process_queue_once() -> None:
                 issue=issue,
                 model_id=model_id,
                 groups=groups,
-                partial_state=partial_state,
             )
         except Exception as e:  # noqa: BLE001
             logger.exception(f"Error while processing issue #{issue['number']}: {e}")
@@ -601,7 +585,7 @@ def list_open_unassigned_issues() -> list[dict]:
 
 
 def process_issue(
-    issue: dict, model_id: str, groups: list[str], partial_state: dict | None = None
+    issue: dict, model_id: str, groups: list[str]
 ) -> None:
     """Claim, evaluate, and report back on a single queue issue.
 
@@ -612,10 +596,6 @@ def process_issue(
             The Hugging Face model id to evaluate.
         groups:
             The selected language-group labels for this issue.
-        partial_state (optional):
-            Optional pre-fetched partial-results state from a prior run
-            on this issue (``comment_id`` and ``lines``). Used to resume
-            the progress comment. Defaults to None.
     """
     number = issue["number"]
     languages: list[str] = []
@@ -669,7 +649,6 @@ def process_issue(
             issue=issue,
             model_id=model_id,
             languages=languages,
-            partial_state=partial_state,
         )
     except BaseException:
         release_current_issue()
@@ -729,13 +708,11 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
 
 
 def _run_claimed_issue(
-    issue: dict, model_id: str, languages: list[str], partial_state: dict | None = None
+    issue: dict, model_id: str, languages: list[str]
 ) -> None:
-    """Run euroeval for all languages at once and post results.
+    """Run euroeval for all languages and upload results to HF bucket.
 
-    A single comment carrying the ``queue-progress`` marker is created
-    (or reused) showing the final status. Results are uploaded to the
-    Hugging Face raw-results bucket on success.
+    Results are uploaded to the Hugging Face raw-results bucket on success.
 
     Args:
         issue:
@@ -744,38 +721,18 @@ def _run_claimed_issue(
             The Hugging Face model id to evaluate.
         languages:
             The flattened list of language codes for this evaluation.
-        partial_state (optional):
-            Optional pre-fetched partial-results state from a prior run
-            on this issue. Used to resume the progress comment. Defaults to None.
     """
     number = issue["number"]
     is_core = model_id in load_core_model_ids()
 
-    progress = ProgressState(issue_number=number)
-
+    # Load existing results from cache for resume support
     existing_lines = result_lines_for_model(
         lines=read_jsonl_lines(path=RESULTS_PATH), model_id=model_id
     )
-    if partial_state:
-        # Seed with lines from previous run
-        gist_lines = result_lines_for_model(
-            lines=partial_state["lines"], model_id=model_id
-        )
-        seen = set(existing_lines)
-        for line in gist_lines:
-            if line not in seen:
-                existing_lines.append(line)
-                seen.add(line)
     accumulated = list(existing_lines)
     done = completed_languages(lines=accumulated, requested_languages=languages)
     pending = [lang for lang in languages if lang not in done]
     failed: list[str] = []
-
-    comment_id = (
-        partial_state["comment_id"]
-        if partial_state
-        else find_progress_comment(number=number)
-    )
 
     gated_detected = False
     failure_reason: str | None = None
@@ -841,16 +798,16 @@ def _run_claimed_issue(
             )
             failed.append("bucket-upload")
 
-    # Post final progress comment with all results.
-    comment_id = post_or_update_progress_comment(
-        state=progress,
-        comment_id=comment_id,
-        model_id=model_id,
-        done=done,
-        current=None,
-        remaining=[],
-        failed=failed,
-    )
+    # Log completion status
+    if failed:
+        logger.info(
+            f"#{number}: evaluation failed for {model_id!r} after "
+            f"{len(done)} completed language(s)."
+        )
+    else:
+        logger.info(
+            f"#{number}: completed all {len(done)} language(s) for {model_id!r}."
+        )
 
     if gated_detected:
         version = euroeval_version()
@@ -890,10 +847,6 @@ def _run_claimed_issue(
     remove_failed_label(number=number)
     add_results_ready_label(number=number)
     clear_vm_marker(number=number, vm_id=VM_ID)
-    logger.info(
-        f"#{number}: completed all {len(done)} language(s) for {model_id!r}; "
-        "progress comment updated."
-    )
 
 
 def issue_is_still_claimable(number: int) -> bool:
