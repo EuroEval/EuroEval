@@ -216,6 +216,11 @@ def test_download_only_does_not_instantiate_model(
     monkeypatch.setattr("huggingface_hub.snapshot_download", mock_snapshot_download)
     monkeypatch.setattr("euroeval.model_loading.load_model", mock_load_model)
 
+    def mock_load_raw_data(*_args, **_kwargs) -> None:
+        pass
+
+    monkeypatch.setattr("euroeval.benchmarker.load_raw_data", mock_load_raw_data)
+
     dataset_config = DatasetConfig(
         task=task,
         languages=[language],
