@@ -201,6 +201,11 @@ def test_download_only_does_not_instantiate_model(
 
     This ensures that --download-only mode works on machines without CUDA/GPUs.
     """
+    if task.name == "translation":
+        pytest.skip("Translation tasks require two languages")
+
+    This ensures that --download-only mode works on machines without CUDA/GPUs.
+    """
     snapshot_download_called = False
     load_model_called = False
 
