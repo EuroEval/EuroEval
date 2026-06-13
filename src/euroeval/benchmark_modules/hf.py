@@ -1129,6 +1129,15 @@ def load_hf_model_config(
                     "or `HF_TOKEN` environment variable or the `--api-key` argument. "
                     "Also check that your account has access to this model."
                 ) from e
+            # If we're offline and files aren't cached, return a minimal config
+            if not internet_connection_available():
+                log(
+                    f"Couldn't load model config for {model_id!r} offline. "
+                    f"The error was {e!r}. Returning minimal config.",
+                    level=logging.WARNING,
+                )
+                from transformers import PretrainedConfig
+                return PretrainedConfig()
             raise InvalidModel(
                 f"Couldn't load model config for {model_id!r}. The error was "
                 f"{e!r}. Skipping"
