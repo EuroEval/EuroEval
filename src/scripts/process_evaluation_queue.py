@@ -355,7 +355,7 @@ def process_queue_once() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
     Issues are sorted by (slow priority asc, status priority asc,
-    parameter count asc, num-language-groups asc, age asc).
+    parameter count asc, age asc).
     Slow priority is 0 for normal issues and 1 for issues with the 'slow'
     label, pushing slow evaluations to the end of the queue.
     Status priority is 0 for gated repos (cheap marker refresh),
@@ -372,7 +372,7 @@ def process_queue_once() -> None:
         logger.error(f"Failed to list issues: {e}")
         return
 
-    candidates: list[tuple[int, int, int, int, float, dict, str, list[str]]] = []
+    candidates: list[tuple[int, int, int, float, dict, str, list[str]]] = []
     for issue in issues:
         number = issue["number"]
         title = issue.get("title", "")
@@ -417,7 +417,6 @@ def process_queue_once() -> None:
                 slow_priority,
                 status_priority,
                 param_count,
-                len(groups),
                 age_sort_value(issue=issue),
                 issue,
                 model_id,
@@ -425,7 +424,7 @@ def process_queue_once() -> None:
             )
         )
 
-    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4], c[5]))
+    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3]))
     logger.info(f"Found {len(candidates)} processable issue(s).")
 
     gpu_bytes = gpu_total_memory_bytes()
@@ -440,7 +439,6 @@ def process_queue_once() -> None:
         slow_priority,
         status_priority,
         param_count,
-        num_groups,
         _age,
         issue,
         model_id,
@@ -450,7 +448,7 @@ def process_queue_once() -> None:
         slow_tag = ", slow" if slow_priority else ""
         logger.info(
             f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
-            f"{num_groups} group(s), {status}{slow_tag})."
+            f"{status}{slow_tag})."
         )
         if gpu_bytes is not None:
             needed = estimated_model_bytes(model_id=model_id)
