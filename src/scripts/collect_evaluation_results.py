@@ -78,10 +78,9 @@ def _model_id_to_filename(model_id: str) -> str:
 def main() -> None:
     """Harvest finished evaluations and regenerate leaderboards.
 
-    Every issue returned by the listing is treated as complete: the
-    queue processor only stamps ``results-ready`` once euroeval has
-    finished every language (intentional skips included), so the label
-    is authoritative.
+    Only issues with successfully harvested results are closed. Issues
+    with the ``results-ready`` label may not yet have their results
+    synced to the bucket, so the label alone is not sufficient.
     """
     logger.info("Fetching open model evaluation request issues...")
     try:
@@ -157,9 +156,10 @@ def main() -> None:
     if backup_path:
         logger.info(f"Created backup at {backup_path}.")
 
-    # Close ONLY the issues from the original snapshot (not any new results-ready
-    # issues that may have appeared during the run).
-    for number in snapshot_issue_numbers:
+    # Close ONLY the issues with successfully harvested results (not all snapshot
+    # issues, as some may have the results-ready label but not yet synced to the
+    # bucket).
+    for number, _ in harvested:
         try:
             comment_on_issue(
                 number=number, body="Results now live on the leaderboards 🎉"
