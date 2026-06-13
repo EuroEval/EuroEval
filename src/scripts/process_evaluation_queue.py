@@ -631,7 +631,9 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
     logger.info(f"#{number}: claiming issue for {model_id!r}, languages={languages}")
     # Set the VM marker BEFORE assigning so a crash between the two leaves
     # the issue unassigned (harmless) rather than assigned-but-unowned.
-    set_vm_marker(number=number, vm_id=VM_ID)
+    if not set_vm_marker(number=number, vm_id=VM_ID):
+        logger.info(f"#{number}: another VM already owns this issue; aborting.")
+        return
     assign_issue(number=number, assignee=ASSIGNEE)
     # Two VMs sharing a PAT cannot be told apart by the assignee, so another
     # VM that raced through the same set_vm_marker + assign_issue window will
