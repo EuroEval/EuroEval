@@ -735,6 +735,7 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
     failure_reason: str | None = None
     failure_output_tail = ""
     last_output = ""
+    total_skipped = 0
 
     # Run languages one at a time and upload after each completes.
     # This restores crash resilience lost when removing gist-based uploads.
@@ -753,32 +754,42 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
         )
         last_output = output
 
-        after = read_jsonl_lines(path=RESULTS_PATH)
-        new_lines = [line for line in after if line not in before]
-        accumulated.extend(new_lines)
+        # Check for gating / errors BEFORE uploading results.
+        # This prevents partial/broken results from being synced to the bucket.
+        gated_in_lang = GATED_OUTPUT_RE.search(output)
+        num_errored = num_errored_benchmarks(output=output)
+        num_skipped_lang = num_skipped_benchmarks(output=output)
+        total_skipped += num_skipped_lang
+        has_error = returncode != 0 or num_errored > 0
 
-        # Upload immediately after each language completes.
-        if new_lines:
-            upload_ok = upload_results_to_hf_bucket(lines=new_lines, model_id=model_id)
-            if not upload_ok:
-                logger.error(
-                    f"#{number}: bucket upload failed after {lang}; "
-                    "continuing with remaining languages."
+        if not gated_in_lang and not has_error:
+            # Only upload if the language run succeeded.
+            after = read_jsonl_lines(path=RESULTS_PATH)
+            new_lines = [line for line in after if line not in before]
+            accumulated.extend(new_lines)
+
+            if new_lines:
+                upload_ok = upload_results_to_hf_bucket(
+                    lines=new_lines, model_id=model_id
                 )
-                failed.append(f"{lang} (upload-failed)")
-                continue
-            done.append(lang)
-            logger.info(f"#{number}: uploaded results for {lang}.")
+                if not upload_ok:
+                    logger.error(
+                        f"#{number}: bucket upload failed after {lang}; "
+                        "continuing with remaining languages."
+                    )
+                    failed.append(f"{lang} (upload-failed)")
+                    continue
+                done.append(lang)
+                logger.info(f"#{number}: uploaded results for {lang}.")
 
-        # Check for gating after each language.
-        if GATED_OUTPUT_RE.search(output):
+        # Handle gating.
+        if gated_in_lang:
             gated_detected = True
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
             failed.append(lang)
             break
 
-        # Check for errors.
-        num_errored = num_errored_benchmarks(output=output)
+        # Handle errors.
         if returncode != 0:
             failure_reason = f"euroeval exited with code {returncode}"
             failure_output_tail = output[-6000:].strip() or "(no output captured)"
@@ -792,12 +803,11 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
 
     # Handle skips for missing official pairs (only if no hard failures).
     if not failed:
-        num_skipped = num_skipped_benchmarks(output=last_output)
         missing = missing_official_dataset_language_pairs(
             lines=accumulated, requested_languages=pending
         )
         if missing and (
-            len(accumulated) == len(existing_lines) or len(missing) > num_skipped
+            len(accumulated) == len(existing_lines) or len(missing) > total_skipped
         ):
             failure_reason = (
                 f"missing official dataset-language pair(s): "
@@ -807,7 +817,7 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
             failed.extend([lang for lang in pending if lang not in done])
         elif missing:
             logger.info(
-                f"#{number}: euroeval skipped {num_skipped} benchmark(s); "
+                f"#{number}: euroeval skipped {total_skipped} benchmark(s); "
                 f"treating missing pair(s) as intentional skips: "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
             )
