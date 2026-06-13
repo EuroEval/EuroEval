@@ -28,6 +28,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   was inverted, causing the function to raise an error when files were unique instead
   of when duplicates existed. This prevented model loading even when cache files were
   correctly structured.
+- Fixed redundant model re-downloads in `--download-only` mode where `snapshot_download`
+  was called once per dataset even when models were already cached. The benchmarker now
+  checks for cached `.safetensors` files before attempting to download, significantly
+  speeding up repeated downloads.
 - Fixed orthogonal benchmark failures (e.g., `european-values`) being incorrectly
   counted as "errored" in the benchmark summary. These are now counted as "skipped"
   instead, preventing the `evaluation-failed` label from being applied to GitHub issues
