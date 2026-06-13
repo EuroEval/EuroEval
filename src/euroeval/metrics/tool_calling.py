@@ -112,6 +112,13 @@ def _evaluate_function_toolcall_response(
             return False
         else:
             pred_args: dict = pred_call["arguments"]
+            # Validate that pred_args is actually a dict
+            if not isinstance(pred_args, dict):
+                log_once(
+                    "Tool call prediction 'arguments' was not a dict.",
+                    level=logging.DEBUG,
+                )
+                return False
 
         ref_name: str
         ref_args: dict
