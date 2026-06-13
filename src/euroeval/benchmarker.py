@@ -307,13 +307,35 @@ class Benchmarker:
         )
         del dataset
 
-        log_once(f"Downloading model {model_config.model_id!r}...", level=logging.INFO)
-        snapshot_download(
-            repo_id=model_config.model_id,
-            revision=model_config.revision,
-            cache_dir=model_config.model_cache_dir,
-            token=get_hf_token(api_key=benchmark_config.api_key),
-        )
+        # Skip download if model is a local path
+        if not Path(model_config.model_id).exists():
+            log_once(
+                f"Downloading model {model_config.model_id!r}...", level=logging.INFO
+            )
+            snapshot_download(
+                repo_id=model_config.model_id,
+                revision=model_config.revision,
+                cache_dir=model_config.model_cache_dir,
+                token=get_hf_token(api_key=benchmark_config.api_key),
+            )
+
+            # For adapter models, also download the base model
+            if model_config.adapter_base_model_id:
+                log_once(
+                    f"Downloading adapter base model {model_config.adapter_base_model_id!r}...",
+                    level=logging.INFO,
+                )
+                snapshot_download(
+                    repo_id=model_config.adapter_base_model_id,
+                    revision="main",
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
+        else:
+            log_once(
+                f"Model {model_config.model_id!r} is a local path, skipping download",
+                level=logging.INFO,
+            )
 
         log_once(
             f"Loading metrics for the '{dataset_config.task.name}' task",
