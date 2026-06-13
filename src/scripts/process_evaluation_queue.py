@@ -36,7 +36,7 @@ import hashlib
 import logging
 import os
 import sys
-import threading
+import tempfile
 import time
 import urllib.error
 from datetime import datetime
@@ -101,7 +101,6 @@ from leaderboards.queue_parsing import (
     result_lines_for_model,
 )
 from leaderboards.queue_progress import (
-    IncrementalGistUploader,
     ProgressState,
     find_partial_results_for_issue,
     find_progress_comment,
@@ -616,10 +615,8 @@ def process_issue(
             The selected language-group labels for this issue.
         partial_state (optional):
             Optional pre-fetched partial-results state from a prior run
-            on this issue (``comment_id``, ``gist_id``, ``lines``). When
-            set, the existing gist is reused and its lines seed the
-            accumulated results so an evaluation orphaned by another VM
-            can be continued. Defaults to None.
+            on this issue (``comment_id`` and ``lines``). Used to resume
+            the progress comment. Defaults to None.
     """
     number = issue["number"]
     languages: list[str] = []
@@ -681,53 +678,76 @@ def process_issue(
     _current_issue_number = None
 
 
-def _upload_results_incrementally(
-    uploader: IncrementalGistUploader,
-    stop_event: threading.Event,
-    results_path: Path,
-    issue_number: int,
-    issue_body: str | None,
-    model_id: str,
-) -> None:
-    """Background thread that uploads new results to the gist periodically.
-
-    Polls the results file every 10 seconds, uploads any new lines to the
-    gist, and updates the progress comment.
+def _model_id_to_filename(model_id: str) -> str:
+    """Convert a model ID to a safe filename.
 
     Args:
-        uploader:
-            The incremental gist uploader instance.
-        stop_event:
-            Threading event to signal shutdown.
-        results_path:
-            Path to the JSONL results file.
-        issue_number:
-            The GitHub issue number.
-        issue_body (optional):
-            The issue body (used only on first upload).
         model_id:
-            The Hugging Face model id (for filtering results).
+            The model identifier (e.g., "meta-llama/Llama-3-8B").
+
+    Returns:
+        A safe filename with slashes and dots replaced by underscores.
     """
-    last_upload_count = 0
-    while not stop_event.is_set():
-        stop_event.wait(10)
-        current_lines = result_lines_for_model(
-            lines=read_jsonl_lines(path=results_path), model_id=model_id
-        )
-        new_lines = uploader.add_new_lines(lines=current_lines)
-        if new_lines or uploader.state.gist_id is None:
-            try:
-                uploader.upload(issue_body=issue_body)
-                if len(uploader.accumulated_lines) != last_upload_count:
-                    logger.info(
-                        f"#{issue_number}: uploaded {len(uploader.accumulated_lines)} "
-                        f"result lines to gist {uploader.state.gist_id}"
-                    )
-                    last_upload_count = len(uploader.accumulated_lines)
-            except Exception:
-                logger.warning(
-                    f"#{issue_number}: failed to upload incremental results to gist"
-                )
+    return model_id.replace("/", "_").replace(".", "_") + ".jsonl"
+
+
+def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
+    """Upload result lines to the HF raw-results bucket.
+
+    Syncs existing results from the bucket, appends new lines for the
+    model, and syncs back. Uses the raw-results bucket as the canonical
+    source.
+
+    Args:
+        lines:
+            The JSONL result lines to upload.
+        model_id:
+            The HuggingFace model ID.
+
+    Returns:
+        True if upload succeeded, False otherwise.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        raw_dir = Path(tmpdir) / "raw-results"
+        raw_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            # Sync existing results from HF bucket
+            logger.info(f"Syncing existing results from {HF_RAW_BUCKET}...")
+            api = HfApi()
+            api.sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(raw_dir))
+        except HfHubHTTPError as e:
+            logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
+
+        # Load existing lines for this model
+        filename = _model_id_to_filename(model_id)
+        model_file = raw_dir / filename
+        existing_lines = set()
+        if model_file.exists():
+            existing_lines = {
+                line
+                for line in model_file.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            }
+
+        # Append new lines
+        with open(model_file, "a", encoding="utf-8") as f:
+            for line in lines:
+                if line and line not in existing_lines:
+                    f.write(line + "\n")
+
+        # Sync back to HF bucket
+        try:
+            logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
+            api = HfApi()
+            api.sync_bucket(source=str(raw_dir), dest=HF_RAW_BUCKET + "/")
+            logger.info(
+                f"Uploaded {len(lines)} result lines for {model_id!r} to HF bucket."
+            )
+            return True
+        except HfHubHTTPError as e:
+            logger.error(f"Failed to sync to HF bucket: {e}")
+            return False
 
 
 def _run_claimed_issue(
@@ -736,10 +756,8 @@ def _run_claimed_issue(
     """Run euroeval for all languages at once and post results.
 
     A single comment carrying the ``queue-progress`` marker is created
-    (or reused) showing the final results along with a link to a gist
-    that holds the accumulated JSONL results. Results are uploaded to
-    the gist incrementally during evaluation so partial results survive
-    a crash.
+    (or reused) showing the final status. Results are uploaded to the
+    Hugging Face raw-results bucket on success.
 
     Args:
         issue:
@@ -750,13 +768,10 @@ def _run_claimed_issue(
             The flattened list of language codes for this evaluation.
         partial_state (optional):
             Optional pre-fetched partial-results state from a prior run
-            on this issue. When set, the existing gist is reused (so the
-            progress comment keeps pointing at a single, growing gist)
-            and its lines seed the accumulated results. Defaults to None.
+            on this issue. Used to resume the progress comment. Defaults to None.
     """
     number = issue["number"]
     is_core = model_id in load_core_model_ids()
-    issue_body = issue.get("body")
 
     progress = ProgressState(issue_number=number)
 
@@ -764,7 +779,7 @@ def _run_claimed_issue(
         lines=read_jsonl_lines(path=RESULTS_PATH), model_id=model_id
     )
     if partial_state:
-        progress.gist_id = partial_state["gist_id"]
+        # Seed with lines from previous run
         gist_lines = result_lines_for_model(
             lines=partial_state["lines"], model_id=model_id
         )
@@ -784,31 +799,11 @@ def _run_claimed_issue(
         else find_progress_comment(number=number)
     )
 
-    # Set up incremental gist uploader and seed it with existing results.
-    uploader = IncrementalGistUploader(state=progress, model_id=model_id)
-    uploader.seed_from_existing(existing_lines=existing_lines)
-
     gated_detected = False
     failure_reason: str | None = None
     failure_output_tail = ""
 
     if pending:
-        # Start background thread to upload results incrementally.
-        stop_upload = threading.Event()
-        upload_thread = threading.Thread(
-            target=_upload_results_incrementally,
-            kwargs={
-                "uploader": uploader,
-                "stop_event": stop_upload,
-                "results_path": RESULTS_PATH,
-                "issue_number": number,
-                "issue_body": issue_body,
-                "model_id": model_id,
-            },
-            daemon=True,
-        )
-        upload_thread.start()
-
         before = set(read_jsonl_lines(path=RESULTS_PATH))
         returncode, output = run_euroeval(
             model_id=model_id,
@@ -817,10 +812,6 @@ def _run_claimed_issue(
             clear_model_cache=True,
             gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
         )
-
-        # Stop the background uploader and let it finish.
-        stop_upload.set()
-        upload_thread.join(timeout=5)
 
         after = read_jsonl_lines(path=RESULTS_PATH)
         new_lines = [line for line in after if line not in before]
@@ -862,21 +853,9 @@ def _run_claimed_issue(
         else:
             done.extend(pending)
 
-    # Upload any remaining lines that weren't caught by the background thread.
-    final_lines = result_lines_for_model(
-        lines=read_jsonl_lines(path=RESULTS_PATH), model_id=model_id
-    )
-    uploader.add_new_lines(lines=final_lines)
-    try:
-        uploader.upload(issue_body=issue_body)
-        logger.info(
-            f"#{number}: uploaded {len(uploader.accumulated_lines)} result lines "
-            f"to gist {progress.gist_id}"
-        )
-    except Exception:
-        logger.warning(
-            f"#{number}: failed to upload final results gist for {model_id!r}"
-        )
+    # On success, upload results to HF bucket and post comment.
+    if not failed and accumulated:
+        upload_results_to_hf_bucket(lines=accumulated, model_id=model_id)
 
     # Post final progress comment with all results.
     comment_id = post_or_update_progress_comment(
@@ -887,8 +866,6 @@ def _run_claimed_issue(
         current=None,
         remaining=[],
         failed=failed,
-        lines=uploader.accumulated_lines,
-        issue_body=issue_body,
     )
 
     if gated_detected:
