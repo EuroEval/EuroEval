@@ -321,9 +321,9 @@ class Benchmarker:
 
             # For adapter models, also download the base model
             if model_config.adapter_base_model_id:
+                base_id = model_config.adapter_base_model_id
                 log_once(
-                    f"Downloading adapter base model {model_config.adapter_base_model_id!r}...",
-                    level=logging.INFO,
+                    f"Downloading adapter base model {base_id!r}...", level=logging.INFO
                 )
                 snapshot_download(
                     repo_id=model_config.adapter_base_model_id,
