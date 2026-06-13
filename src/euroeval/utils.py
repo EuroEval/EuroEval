@@ -53,23 +53,27 @@ def resolve_model_path(download_dir: str) -> str:
             "but it does not exist."
         )
 
-    # Get all files in the model path
-    found_files = [
-        found_file for found_file in model_path.rglob("*") if found_file.is_file()
+    # Get snapshot directories (commit hashes), excluding .locks and model_files
+    snapshot_dirs = [
+        d for d in model_path.iterdir()
+        if d.is_dir() and d.name not in (".locks", "model_files")
     ]
+    
+    # Prefer actual commit snapshots over model_files symlinks
+    if snapshot_dirs:
+        # Use the most recent commit snapshot (by modification time)
+        model_path = max(snapshot_dirs, key=lambda d: d.stat().st_mtime)
+    elif (model_path / "model_files").exists():
+        model_path = model_path / "model_files"
+    
+    # Get all files in the selected snapshot directory
+    found_files = [f for f in model_path.rglob("*") if f.is_file()]
     if not found_files:
         raise InvalidModel(f"No model files found at {model_path}")
 
-    # Make sure that there arent multiples of the files found
-    if len(found_files) != len(set(found_files)):
-        raise InvalidModel(
-            f"Found multiple model config files for {model_id_path.strip('models--')}"
-            f" at {model_path}"
-        )
-
     # Check that found_files contains at least one of the required files
     found_required_file = next(
-        (file for file in found_files if file.name in LOCAL_MODELS_REQUIRED_FILES), None
+        (f for f in found_files if f.name in LOCAL_MODELS_REQUIRED_FILES), None
     )
     if found_required_file is None:
         raise InvalidModel(
@@ -77,19 +81,6 @@ def resolve_model_path(download_dir: str) -> str:
             f"for {model_id_path.strip('models--')} at {model_path}"
         )
     model_path = found_required_file.parent
-
-    # As a precaution we also check that all of the files are in the same directory
-    # if not we create a new dir with symlinks to all of the files from all snapshots
-    # this is especially useful for vllm where we can only specify one folder and e.g.,
-    # the safetensors version of the weights was added in an unmerged PR
-    if not all(
-        [found_file.parent == found_files[0].parent for found_file in found_files]
-    ):
-        new_model_path = model_path.parent / "model_files"
-        new_model_path.mkdir(exist_ok=True)
-        for found_file in found_files:
-            Path(new_model_path / found_file.name).symlink_to(found_file)
-        model_path = new_model_path
 
     return str(model_path)
 
