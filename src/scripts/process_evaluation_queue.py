@@ -93,7 +93,6 @@ from leaderboards.queue_parsing import (
     euroeval_version,
     extract_model_id,
     format_dataset_language_pairs,
-    model_has_partial_results,
     num_errored_benchmarks,
     num_skipped_benchmarks,
     read_jsonl_lines,
@@ -355,15 +354,15 @@ def age_sort_value(issue: dict) -> float:
 def process_queue_once() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
-    Issues are sorted by (status priority asc, slow priority asc,
-    partial-results rank asc, parameter count asc, num-language-groups asc,
-    age asc). Status priority is 0 for gated repos (cheap marker refresh),
+    Issues are sorted by (slow priority asc, status priority asc,
+    parameter count asc, num-language-groups asc, age asc).
+    Slow priority is 0 for normal issues and 1 for issues with the 'slow'
+    label, pushing slow evaluations to the end of the queue.
+    Status priority is 0 for gated repos (cheap marker refresh),
     1 for retries of previously errored evaluations (issues with the
     ``evaluation-failed`` label), and 2 for fresh issues, so that gated repos
     are surfaced first, then retries, then new work.
-    Slow priority is 0 for normal issues and 1 for issues with the 'slow'
-    label, pushing them to the end of the queue regardless of partial-results
-    status. Age is a final tiebreaker so that, when everything else is equal,
+    Age is a final tiebreaker so that, when everything else is equal,
     the oldest (longest-waiting) issue is picked up first and stale requests
     don't linger in the queue.
     """
@@ -373,8 +372,7 @@ def process_queue_once() -> None:
         logger.error(f"Failed to list issues: {e}")
         return
 
-    existing_lines = read_jsonl_lines(path=RESULTS_PATH)
-    candidates: list[tuple[int, int, int, int, int, float, dict, str, list[str]]] = []
+    candidates: list[tuple[int, int, int, int, float, dict, str, list[str]]] = []
     for issue in issues:
         number = issue["number"]
         title = issue.get("title", "")
@@ -413,23 +411,11 @@ def process_queue_once() -> None:
             if any(label["name"] == "slow" for label in issue.get("labels", []))
             else 0
         )
-        # Among 'waiting' candidates, push models with partial results ahead so
-        # we finish what we already started before claiming a new evaluation.
-        languages: list[str] = sorted(
-            {code for g in groups for code in LANGUAGE_GROUP_CODES[g]}
-        )
-        # Check for partial results from a previous run (resuming after crash).
-        if model_has_partial_results(
-            lines=existing_lines, model_id=model_id, requested_languages=languages
-        ):
-            partial_rank = 0
-        else:
-            partial_rank = 1
+
         candidates.append(
             (
-                status_priority,
                 slow_priority,
-                partial_rank,
+                status_priority,
                 param_count,
                 len(groups),
                 age_sort_value(issue=issue),
@@ -451,9 +437,8 @@ def process_queue_once() -> None:
         logger.info(f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB.")
 
     for (
-        status_priority,
         slow_priority,
-        partial_rank,
+        status_priority,
         param_count,
         num_groups,
         _age,
@@ -462,8 +447,6 @@ def process_queue_once() -> None:
         groups,
     ) in candidates:
         status = {0: "gated", 1: "retry of errored eval", 2: "fresh"}[status_priority]
-        if status_priority == 0 and partial_rank == 0:
-            status = "resuming partial"
         slow_tag = ", slow" if slow_priority else ""
         logger.info(
             f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
