@@ -30,7 +30,7 @@ from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .string_utils import split_model_id
 from .tasks import SPEED
-from .utils import enforce_reproducibility, internet_connection_available
+from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -312,7 +312,7 @@ class Benchmarker:
             repo_id=model_config.model_id,
             revision=model_config.revision,
             cache_dir=model_config.model_cache_dir,
-            token=benchmark_config.api_key,
+            token=get_hf_token(api_key=benchmark_config.api_key),
         )
 
         log_once(
