@@ -13,6 +13,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   don't contribute to the main ranking score and are rendered separately from the
   task-grouped columns on leaderboards. Currently only includes `"european-values"`.
 
+### Fixed
+
 - Fixed benchmark failures on air-gapped / offline systems (e.g. supercomputers with
   Slurm) where the Hugging Face token validation would crash with `httpx.ConnectError`
   instead of gracefully degrading. The `get_hf_token` function now catches both
