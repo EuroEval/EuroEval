@@ -5,7 +5,6 @@ from types import SimpleNamespace
 import pytest
 from huggingface_hub import ModelInfo
 
-import leaderboards.queue_progress as queue_progress
 from leaderboards import evaluation_common
 from leaderboards.queue_hf_cache import is_gguf_model
 from src.scripts import process_evaluation_queue
@@ -129,9 +128,6 @@ def test_process_issue_fails_when_official_results_are_missing(
         target=process_evaluation_queue,
         name="post_or_update_progress_comment",
         value=lambda **kwargs: None,
-    )
-    monkeypatch.setattr(
-        target=queue_progress, name="upload_results_gist", value=lambda **kwargs: None
     )
 
     process_evaluation_queue.process_issue(
@@ -266,9 +262,6 @@ def test_process_issue_does_not_special_case_oom_anymore(
         target=process_evaluation_queue,
         name="post_or_update_progress_comment",
         value=lambda **kwargs: None,
-    )
-    monkeypatch.setattr(
-        target=queue_progress, name="upload_results_gist", value=lambda **kwargs: None
     )
 
     process_evaluation_queue.process_issue(
