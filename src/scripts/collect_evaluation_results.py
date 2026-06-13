@@ -12,9 +12,7 @@ been picked up by the compute server), it:
    (so Vercel's CLI never has to upload the >100 MB ``.git`` packfile).
 5. Posts a comment and closes each processed issue.
 
-To avoid race conditions, the script snapshots the list of results-ready
-issues at the start and only closes those issues at the end (ignoring any
-new results-ready issues that appeared during the run).
+To avoid race conditions, the script snapshots the list of results-ready issues at the start (for logging purposes) and only closes issues with successfully harvested results at the end (ignoring any new results-ready issues that appeared during the run).
 
 Required env vars
 -----------------
