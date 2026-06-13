@@ -137,8 +137,11 @@ def resolve_vm_id(env_path: Path) -> str:
     Resolution order:
 
     1. ``EUROEVAL_VM_ID=...`` line in ``env_path``.
-    2. Newly generated ``<hostname>-<8-char-uuid>``, appended to
+    2. Newly generated ``<hostname>-<8-char-uuid>-<pid>``, appended to
        ``env_path`` so subsequent runs reuse the same id.
+
+    The PID suffix ensures uniqueness even when multiple queue processors
+    run on the same machine (e.g., during development or accidental dual-launch).
 
     Failures to persist a freshly generated id are logged and the in-memory
     id is still returned.
@@ -165,7 +168,7 @@ def resolve_vm_id(env_path: Path) -> str:
         except OSError as e:
             logger.warning(f"Could not read {env_path}: {e}")
 
-    generated = f"{socket.gethostname()}-{uuid.uuid4().hex[:8]}"
+    generated = f"{socket.gethostname()}-{uuid.uuid4().hex[:8]}-{os.getpid()}"
     try:
         existing = ""
         if env_path.is_file():
