@@ -22,8 +22,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
     instead of raising `InvalidModel`
   - `snapshot_download` now checks for existing cached weights before downloading,
     avoiding redundant downloads in `--download-only` mode
-- Fixed inverted logic in `resolve_model_path` that raised errors on unique files
-  instead of duplicates, preventing model loading from valid caches
+- Fixed `resolve_model_path` to prefer actual commit snapshots over stale `model_files`
+  symlink directories, preventing broken symlink errors when cache has multiple snapshots
 - Fixed orthogonal benchmark failures (e.g. `european-values`) being counted as
   "errored" instead of "skipped" in the summary
 
