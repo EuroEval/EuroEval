@@ -61,10 +61,10 @@ def resolve_model_path(download_dir: str) -> str:
         raise InvalidModel(f"No model files found at {model_path}")
 
     # Make sure that there arent multiples of the files found
-    if len(found_files) == len(set(found_files)):
+    if len(found_files) != len(set(found_files)):
         raise InvalidModel(
             f"Found multiple model config files for {model_id_path.strip('models--')}"
-            f"at {model_path}"
+            f" at {model_path}"
         )
 
     # Check that found_files contains at least one of the required files
