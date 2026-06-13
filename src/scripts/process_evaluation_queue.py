@@ -104,6 +104,32 @@ from leaderboards.queue_runtime import (
     lower_process_priority,
 )
 
+# Param bucket thresholds matching leaderboards (src/leaderboards/core_models.py)
+_BUCKET_THRESHOLDS = [
+    (2_000_000_000, 0),   # tiny
+    (10_000_000_000, 1),  # small
+    (40_000_000_000, 2),  # medium
+    (80_000_000_000, 3),  # large
+    (float("inf"), 4),    # xlarge
+]
+
+
+def _param_bucket(param_count: int) -> int:
+    """Map parameter count to bucket index for queue sorting.
+
+    Args:
+        param_count:
+            Number of parameters in the model.
+
+    Returns:
+        Bucket index (0=tiny, 1=small, 2=medium, 3=large, 4=xlarge).
+    """
+    for threshold, bucket in _BUCKET_THRESHOLDS:
+        if param_count < threshold:
+            return bucket
+    return 4
+
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
@@ -355,7 +381,9 @@ def process_queue_once() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
     Issues are sorted by (slow priority asc, status priority asc,
-    parameter count asc, age asc).
+    parameter bucket asc, age asc). Parameter buckets match the
+    leaderboards: tiny (<2B), small (2-10B), medium (10-40B),
+    large (40-80B), xlarge (>=80B).
     Slow priority is 0 for normal issues and 1 for issues with the 'slow'
     label, pushing slow evaluations to the end of the queue.
     Status priority is 0 for gated repos (cheap marker refresh),
@@ -412,11 +440,12 @@ def process_queue_once() -> None:
             else 0
         )
 
+        param_bucket_idx = _param_bucket(param_count)
         candidates.append(
             (
                 slow_priority,
                 status_priority,
-                param_count,
+                param_bucket_idx,
                 age_sort_value(issue=issue),
                 issue,
                 model_id,
