@@ -216,7 +216,9 @@ def test_download_only_does_not_instantiate_model(
     monkeypatch.setattr("huggingface_hub.snapshot_download", mock_snapshot_download)
     monkeypatch.setattr("euroeval.model_loading.load_model", mock_load_model)
 
-    dataset_config = DatasetConfig(task=task, languages=[language], name="test_dataset")
+    dataset_config = DatasetConfig(
+        task=task, languages=[language], name="test_dataset", source="test/source"
+    )
 
     model_config = ModelConfig(
         model_id=encoder_model_id,
