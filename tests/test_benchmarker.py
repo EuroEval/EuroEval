@@ -204,11 +204,11 @@ def test_download_only_does_not_instantiate_model(
     snapshot_download_called = False
     load_model_called = False
 
-    def mock_snapshot_download(*args, **kwargs) -> None:
+    def mock_snapshot_download(*_args, **_kwargs) -> None:
         nonlocal snapshot_download_called
         snapshot_download_called = True
 
-    def mock_load_model(*args, **kwargs) -> Never:
+    def mock_load_model(*_args, **_kwargs) -> Never:
         nonlocal load_model_called
         load_model_called = True
         raise RuntimeError("load_model should not be called in download_only mode")
@@ -217,7 +217,11 @@ def test_download_only_does_not_instantiate_model(
     monkeypatch.setattr("euroeval.model_loading.load_model", mock_load_model)
 
     dataset_config = DatasetConfig(
-        task=task, languages=[language], name="test_dataset", source="test/source"
+        task=task,
+        languages=[language],
+        name="test_dataset",
+        pretty_name="Test Dataset",
+        source="test/source",
     )
 
     model_config = ModelConfig(
