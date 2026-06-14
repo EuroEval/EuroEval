@@ -135,6 +135,9 @@ class PipelineMetric(Metric):
         """
         if self.pipeline is None:
             self.download(cache_dir=benchmark_config.cache_dir)
+        assert self.pipeline is not None, (
+            "Pipeline should be initialized after download"
+        )
         if self.preprocessing_fn is not None:
             predictions = self.preprocessing_fn(
                 predictions=predictions, dataset=dataset
