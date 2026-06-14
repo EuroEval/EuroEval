@@ -21,7 +21,6 @@ if os.getenv("FULL_LOG") != "1":
     os.environ["VLLM_CONFIGURE_LOGGING"] = "0"
 
 # Set up logging
-# fmt = colored("%(asctime)s", "light_blue") + " ⋅ " + colored("%(message)s", "green")
 fmt = colored("%(message)s", "light_yellow")
 logging.basicConfig(
     level=logging.CRITICAL if hasattr(sys, "_called_from_test") else logging.INFO,
