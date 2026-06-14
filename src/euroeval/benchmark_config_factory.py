@@ -58,10 +58,9 @@ def build_benchmark_config(
         for ds in dataset_configs:
             if ds.task.task_group != TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 log_once(
-                    f"Cloze Formulation (CF) scoring is only supported for "
-                    f"multiple-choice tasks. Dataset {ds.name!r} uses task group "
-                    f"{ds.task.task_group.value!r}, so Multiple-Choice Formulation "
-                    "(MCF) scoring will be used instead.",
+                    f"Dataset {ds.name!r} uses task group "
+                    f"{ds.task.task_group.value!r} — not a multiple-choice task. "
+                    "CF scoring has no effect; MCF will be used instead.",
                     level=logging.DEBUG,
                 )
 
