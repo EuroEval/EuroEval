@@ -7,12 +7,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Added
-
-- Added `ORTHOGONAL_TASKS` constant to `src/euroeval/constants.py`, defining tasks that
-  don't contribute to the main ranking score and are rendered separately from the
-  task-grouped columns on leaderboards. Currently only includes `"european-values"`.
-
 ### Fixed
 
 - Fixed benchmark failures on air-gapped / offline systems (e.g. supercomputers with
