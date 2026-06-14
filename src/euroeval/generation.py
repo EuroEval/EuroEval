@@ -63,9 +63,14 @@ def generate(
         model_cache_dir = Path.cwd()
     else:
         model_cache_dir = Path(model_config.model_cache_dir)
-    # Namespace the cache by scoring method so different formulations do not
-    # collide (e.g. CF vs MCF).
-    cache_suffix = f"-{benchmark_config.scoring_method.value}"
+    # Namespace the cache by scoring method for MCQ tasks so different
+    # formulations do not collide (e.g. CF vs MCF). Non-MCQ tasks always use
+    # MCF-like scoring, so no suffix needed.
+    cache_suffix = (
+        f"-{benchmark_config.scoring_method.value}"
+        if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        else ""
+    )
     if hasattr(sys, "_called_from_test"):
         cache_name = f"{dataset_config.name}{cache_suffix}-model-outputs-test.json"
         (model_cache_dir / cache_name).unlink(missing_ok=True)
