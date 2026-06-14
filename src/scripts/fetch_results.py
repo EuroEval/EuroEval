@@ -29,7 +29,9 @@ def main() -> None:
 def merge_results() -> int:
     """Merge all results into euroeval_benchmark_results.jsonl.
 
-    Deduplicates by (model_id, dataset, task, config) key.
+    Deduplicates by (model_id, dataset, validation_split, few_shot) key,
+    which uniquely identifies an evaluation configuration.
+
     Local results are preserved; bucket results fill in gaps.
 
     Reuses similar logic to _rebuild_results_tar_gz(), but outputs to
@@ -47,13 +49,9 @@ def merge_results() -> int:
             for line in f:
                 if line.strip():
                     rec = json.loads(line)
-                    key = (
-                        rec.get("model_id"),
-                        rec.get("dataset"),
-                        rec.get("task"),
-                        rec.get("config"),
-                    )
-                    existing[key] = line.strip()
+                    key = _extract_dedup_key(rec)
+                    if key:
+                        existing[key] = line.strip()
         logger.info("Found %s existing results", f"{len(existing):,}")
 
     # Load results from raw bucket
@@ -65,14 +63,10 @@ def merge_results() -> int:
                 for line in f:
                     if line.strip():
                         rec = json.loads(line)
-                        key = (
-                            rec.get("model_id"),
-                            rec.get("dataset"),
-                            rec.get("task"),
-                            rec.get("config"),
-                        )
-                        existing[key] = line.strip()
-                        bucket_count += 1
+                        key = _extract_dedup_key(rec)
+                        if key:
+                            existing[key] = line.strip()
+                            bucket_count += 1
         logger.info("Loaded %s results from bucket", f"{bucket_count:,}")
 
     if not existing:
@@ -86,6 +80,42 @@ def merge_results() -> int:
             f.write(line + "\n")
 
     return len(existing)
+
+
+def _extract_dedup_key(rec: dict) -> tuple | None:
+    """Extract deduplication key from an evaluation result record.
+
+    Key consists of:
+    - model_id: from model_info.id
+    - dataset: from eval_library.additional_details.dataset
+    - validation_split: from eval_library.additional_details.validation_split
+    - few_shot: from eval_library.additional_details.few_shot
+
+    Args:
+        rec: Evaluation result record as dictionary.
+
+    Returns:
+        Tuple key for deduplication, or None if required fields are missing.
+    """
+    try:
+        model_id = rec.get("model_info", {}).get("id")
+        eval_details = rec.get("eval_library", {}).get("additional_details", {})
+        dataset = eval_details.get("dataset")
+        validation_split = eval_details.get("validation_split")
+        few_shot = eval_details.get("few_shot")
+
+        if not all([model_id, dataset, validation_split, few_shot]):
+            logger.debug(
+                "Skipping record with missing fields: model_id=%s, dataset=%s",
+                model_id,
+                dataset,
+            )
+            return None
+
+        return (model_id, dataset, str(validation_split), str(few_shot))
+    except Exception as e:
+        logger.debug("Failed to extract key from record: %s", e)
+        return None
 
 
 if __name__ == "__main__":
