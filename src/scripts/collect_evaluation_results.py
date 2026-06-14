@@ -37,6 +37,7 @@ from dotenv import load_dotenv
 from huggingface_hub import HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
+from leaderboards.bucket_sync import create_backup
 from leaderboards.github_api import (
     LABEL,
     REPO,
@@ -45,7 +46,6 @@ from leaderboards.github_api import (
     comment_on_issue,
     gh_request,
 )
-from leaderboards.hf_mount import create_backup
 from leaderboards.paths import RAW_RESULTS_DIR, RESULTS_PATH
 from leaderboards.queue_parsing import extract_model_id
 
@@ -152,7 +152,7 @@ def main() -> None:
         logger.error("Aborting: not closing issues because the Vercel deploy failed.")
         sys.exit(1)
 
-    # Create backup if using hf-mount
+    # Create backup
     backup_path = create_backup()
     if backup_path:
         logger.info(f"Created backup at {backup_path}.")
