@@ -9,8 +9,8 @@ import sys
 import typing as t
 from pathlib import Path
 
-import huggingface_hub as hf_hub
 import httpx
+import huggingface_hub as hf_hub
 import numpy as np
 import torch
 from huggingface_hub.errors import LocalTokenNotFoundError
