@@ -63,9 +63,13 @@ def generate(
         model_cache_dir = Path.cwd()
     else:
         model_cache_dir = Path(model_config.model_cache_dir)
-    # Namespace the cache by evaluation type so Cloze Formulation runs do not
-    # collide with cached Multiple-Choice Formulation outputs.
-    cache_suffix = "-cf" if benchmark_config.scoring_method == ScoringMethod.CF else ""
+    # Namespace the cache by scoring method so different formulations do not
+    # collide (e.g. CF vs MCF). MCF is the default and gets no suffix.
+    cache_suffix = (
+        f"-{benchmark_config.scoring_method.value}"
+        if benchmark_config.scoring_method != ScoringMethod.MCF
+        else ""
+    )
     if hasattr(sys, "_called_from_test"):
         cache_name = f"{dataset_config.name}{cache_suffix}-model-outputs-test.json"
         (model_cache_dir / cache_name).unlink(missing_ok=True)
