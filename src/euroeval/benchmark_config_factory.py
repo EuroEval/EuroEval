@@ -60,7 +60,7 @@ def build_benchmark_config(
                 log_once(
                     f"Dataset {ds.name!r} uses task group "
                     f"{ds.task.task_group.value!r} — not a multiple-choice task. "
-                    "CF scoring has no effect; MCF will be used instead.",
+                    f"CF scoring has no effect.",
                     level=logging.DEBUG,
                 )
 

@@ -359,8 +359,8 @@ class LiteLLMModel(BenchmarkModule):
             log_once(
                 "Cloze Formulation (CF) scoring is not supported by the LiteLLM "
                 "backend (per-token logprobs for forced completions are not reliably "
-                "exposed across API providers). Multiple-Choice Formulation (MCF) will "
-                "be used instead. CF is currently only supported by the vLLM backend.",
+                "exposed across API providers). CF is currently only supported by the "
+                "vLLM backend.",
                 level=logging.DEBUG,
             )
 

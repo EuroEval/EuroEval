@@ -132,8 +132,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         ):
             log_once(
                 "Cloze Formulation (CF) scoring is not supported by the Hugging Face "
-                "encoder backend. Multiple-Choice Formulation (MCF) will be used "
-                "instead. CF is currently only supported by the vLLM backend.",
+                "encoder backend. CF is currently only supported by the vLLM backend.",
                 level=logging.DEBUG,
             )
 
