@@ -252,7 +252,6 @@ class TestScoringMethodGating:
             dataset="belebele-nl", scoring_method=ScoringMethod.CF
         )
         assert benchmarker.benchmark_config.scoring_method == ScoringMethod.CF
-        assert ()
 
     def test_cf_on_non_mcq_dataset_raises(self) -> None:
         """CF on a non-MCQ dataset raises InvalidBenchmark during config build."""
