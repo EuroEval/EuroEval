@@ -102,6 +102,8 @@ class PipelineMetric(Metric):
         Returns:
             The metric object itself.
         """
+        if self.pipeline is not None:
+            return self
         pipeline_cache_dir = Path(cache_dir) / "pipelines"
         pipeline_cache_dir.mkdir(parents=True, exist_ok=True)
         self.pipeline = self._download_pipeline(cache_dir=pipeline_cache_dir.as_posix())
