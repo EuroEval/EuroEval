@@ -11,6 +11,8 @@ from pathlib import Path
 from euroeval.leaderboards.bucket_sync import sync_bucket
 from euroeval.leaderboards.paths import RAW_RESULTS_DIR
 
+from euroeval.data_models import BenchmarkResult
+
 logger = logging.getLogger(__name__)
 
 RESULTS_FILE = Path("euroeval_benchmark_results.jsonl")
@@ -49,7 +51,8 @@ def merge_results() -> int:
             for line in f:
                 if line.strip():
                     rec = json.loads(line)
-                    key = _extract_dedup_key(rec)
+                    result = BenchmarkResult.from_dict(rec)
+                    key = _extract_dedup_key(result)
                     if key:
                         existing[key] = line.strip()
         logger.info("Found %s existing results", f"{len(existing):,}")
@@ -63,10 +66,14 @@ def merge_results() -> int:
                 for line in f:
                     if line.strip():
                         rec = json.loads(line)
-                        key = _extract_dedup_key(rec)
-                        if key:
-                            existing[key] = line.strip()
-                            bucket_count += 1
+                        try:
+                            result = BenchmarkResult.from_dict(rec)
+                            key = _extract_dedup_key(result)
+                            if key:
+                                existing[key] = line.strip()
+                                bucket_count += 1
+                        except Exception as e:
+                            logger.debug("Skipping invalid record: %s", e)
         logger.info("Loaded %s results from bucket", f"{bucket_count:,}")
 
     if not existing:
@@ -82,39 +89,33 @@ def merge_results() -> int:
     return len(existing)
 
 
-def _extract_dedup_key(rec: dict) -> tuple | None:
-    """Extract deduplication key from an evaluation result record.
+def _extract_dedup_key(result: BenchmarkResult) -> tuple | None:
+    """Extract deduplication key from a BenchmarkResult.
 
     Key consists of:
-    - model_id: from model_info.id
-    - dataset: from eval_library.additional_details.dataset
-    - validation_split: from eval_library.additional_details.validation_split
-    - few_shot: from eval_library.additional_details.few_shot
+    - model_id: the model identifier
+    - dataset: the dataset name
+    - validation_split: whether eval used validation split
+    - few_shot: whether eval used few-shot prompting
 
     Args:
-        rec: Evaluation result record as dictionary.
+        result: Parsed benchmark result.
 
     Returns:
         Tuple key for deduplication, or None if required fields are missing.
     """
     try:
-        model_id = rec.get("model_info", {}).get("id")
-        eval_details = rec.get("eval_library", {}).get("additional_details", {})
-        dataset = eval_details.get("dataset")
-        validation_split = eval_details.get("validation_split")
-        few_shot = eval_details.get("few_shot")
-
-        if not all([model_id, dataset, validation_split, few_shot]):
-            logger.debug(
-                "Skipping record with missing fields: model_id=%s, dataset=%s",
-                model_id,
-                dataset,
-            )
+        if not result.model or not result.dataset:
             return None
 
-        return (model_id, dataset, str(validation_split), str(few_shot))
+        return (
+            result.model,
+            result.dataset,
+            str(result.validation_split),
+            str(result.few_shot),
+        )
     except Exception as e:
-        logger.debug("Failed to extract key from record: %s", e)
+        logger.debug("Failed to extract key from result: %s", e)
         return None
 
 
