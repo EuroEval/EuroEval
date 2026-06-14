@@ -23,6 +23,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [v17.4.0] - 2026-06-12
 
+### Changed
+
+- Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
+  model architectures and tokenisers.
+
 ### Fixed
 
 - Fixed a bug where evaluating on AngryTweets sentiment classification raised
@@ -47,11 +52,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `EMBEDDIA/litlat-bert`) that raised `TypeError: argument 'vocab': 'dict' object cannot
   be converted to 'Sequence'`. The tokenizer loader now falls back to `use_fast=False`
   when this error occurs.
-
-### Changed
-
-- Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
-  model architectures and tokenisers.
 
 ## [v17.3.0] - 2026-05-31
 
