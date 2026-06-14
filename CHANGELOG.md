@@ -17,30 +17,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   LiteLLM backends raise `InvalidBenchmark` if CF is requested. The selected
   scoring method is now persisted in `euroeval_benchmark_results.jsonl` so MCF
   and CF runs can be distinguished. Thanks to @tvosch for the contribution!
-- Added `download()` method to `PipelineMetric` class
-  - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
-    Values metric)
-  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
-    the pipeline
-
-### Changed
-
-- Bumped the minimum vLLM version on Linux from v0.14.1 to v0.21.0.
-
-### Fixed
-
-- Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
-  - `get_hf_token` now catches `httpx.ConnectError` to gracefully degrade when token
-    validation fails offline
-  - `load_hf_model_config` returns a minimal config when files aren't fully cached
-    instead of raising `InvalidModel`
-  - `snapshot_download` now checks for existing cached weights before downloading,
-    avoiding redundant downloads in `--download-only` mode
-- Fixed `resolve_model_path` to prefer actual commit snapshots over stale `model_files`
-  symlink directories, preventing broken symlink errors when cache has multiple
-  snapshots
-- Fixed orthogonal benchmark failures (e.g. `european-values`) being counted as
-  "errored" instead of "skipped" in the summary
 
 ## [v17.4.0] - 2026-06-12
 
