@@ -33,6 +33,22 @@ distribution, and report the 95% confidence interval — i.e. roughly 1.96 × st
 error around the mean. Two models are considered statistically tied on a dataset when
 their score distributions overlap in this sense.
 
+## What's the difference between MCF and CF scoring?
+
+For multiple-choice tasks, EuroEval supports two scoring formulations:
+
+- **MCF (Multiple-Choice Formulation)**: The default. The model sees enumerated choices
+  (`a.`, `b.`, `c.`, …) and we compare first-token logprobs of the label letters. Fast
+  and works with any decoder model.
+- **CF (Cloze Formulation)**: Each answer text is scored as a cloze continuation using
+  `sum(log P(answer_tokens | prompt))`, with character-length normalization. Matches
+  the OLMES protocol and EleutherAI LM Evaluation Harness defaults, but currently only
+  supported by the vLLM backend.
+
+Use `--scoring-method cf` to enable CF on multiple-choice tasks. Official leaderboards
+only display MCF scores for consistency; CF runs are tracked separately in the results
+file but excluded from rankings.
+
 ## Why do some model names end in `(val)`?
 
 The `(val)` suffix marks models that have only been evaluated on the validation splits

@@ -62,6 +62,16 @@ Pin a model revision (branch, tag, or commit) by suffixing `@`:
 euroeval --model <model-id>@<sha>
 ```
 
+For multiple-choice tasks, choose a scoring method:
+
+```bash
+euroeval --model <model-id> --scoring-method cf
+```
+
+MCF (default) compares first-token logprobs of label letters; CF scores full answer
+texts as cloze continuations. CF is only valid for multiple-choice tasks and currently
+requires the vLLM backend. See [Evaluation Methodology](/methodology) for details.
+
 Run `euroeval --help` for the complete flag list.
 
 ///

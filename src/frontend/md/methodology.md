@@ -36,6 +36,24 @@ differently depending on whether the model is instruction tuned or not, as the
 instruction tuned models require a different prompt structure to ensure that they
 generate the correct output.
 
+### Multiple-Choice Scoring Methods
+
+For multiple-choice classification tasks, EuroEval supports two scoring formulations:
+
+**Multiple-Choice Formulation (MCF)** — The default method. The model sees the question
+with enumerated choices (`a.`, `b.`, `c.`, …) and we compare the first-token logprobs
+of the label letters. This is fast and works with any decoder model.
+
+**Cloze Formulation (CF)** — An alternative OLMES-style approach. For each answer
+choice, we score the full answer text as a continuation of a bare-question prompt using
+`sum(log P(answer_tokens | prompt))`, then select the highest-scoring choice after
+character-length normalization. This matches the default used by Llama and the
+EleutherAI LM Evaluation Harness, but is currently only supported by the vLLM backend.
+
+Use `--scoring-method cf` to enable Cloze Formulation. On non-multiple-choice tasks,
+this option has no effect. CF runs are tracked separately in the results file but
+excluded from official leaderboards, which only display MCF scores for consistency.
+
 For the base (i.e., non-instruction tuned) models, we use the following prompt
 structure:
 
