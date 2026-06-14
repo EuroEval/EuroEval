@@ -8,7 +8,7 @@ import json
 import logging
 from pathlib import Path
 
-from euroeval.leaderboards.hf_mount import sync_bucket
+from euroeval.leaderboards.bucket_sync import sync_bucket
 from euroeval.leaderboards.paths import RAW_RESULTS_DIR
 
 logger = logging.getLogger(__name__)

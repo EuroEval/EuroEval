@@ -12,22 +12,21 @@ import typing as t
 from functools import cache
 
 from .backup import backup_results
-from .hf_mount import sync_bucket
+from .bucket_sync import sync_bucket
 from .paths import NEW_RESULTS_PATH, RAW_RESULTS_DIR, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
 
 def _sync_results_from_bucket() -> None:
-    """Mount HF bucket via hf-mount and rebuild results.tar.gz.
+    """Sync HF bucket and rebuild results.tar.gz.
 
-    Uses hf-mount exclusively (no huggingface_hub fallback). After mounting,
-    rebuilds results.tar.gz from the mounted files and creates a backup.
+    After syncing, rebuilds results.tar.gz from the files and creates a backup.
     """
-    _sync_via_hf_mount()
+    _sync_buckets()
 
 
-def _sync_via_hf_mount() -> None:
+def _sync_buckets() -> None:
     """Sync HF buckets via hf sync, rebuild results.tar.gz, and backup.
 
     After syncing, rebuilds results.tar.gz and backs up.
