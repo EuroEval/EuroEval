@@ -22,10 +22,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
     instead of raising `InvalidModel`
   - `snapshot_download` now checks for existing cached weights before downloading,
     avoiding redundant downloads in `--download-only` mode
-  - Added `download()` method to `PipelineMetric` class to enable offline mode for
-    metrics that use scikit-learn pipelines (e.g. European Values):
-    - The method eagerly downloads and caches the pipeline, following the same pattern
-      as `HuggingFaceMetric`
 - Fixed `resolve_model_path` to prefer actual commit snapshots over stale `model_files`
   symlink directories, preventing broken symlink errors when cache has multiple snapshots
 - Fixed orthogonal benchmark failures (e.g. `european-values`) being counted as
