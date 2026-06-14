@@ -6,7 +6,6 @@ import typing as t
 
 import numpy as np
 
-from ..enums import CFNormalization
 from ..exceptions import InvalidBenchmark
 
 if t.TYPE_CHECKING:
@@ -149,36 +148,23 @@ def parse_mcq_text(text: str) -> tuple[str, list[str]]:
     return bare_input, raw_choices
 
 
-def normalize_cf_score(
-    token_logprobs: c.Sequence[float], answer_text: str, method: CFNormalization
-) -> float:
+def normalize_cf_score(token_logprobs: c.Sequence[float], answer_text: str) -> float:
     """Compute the normalized CF score for a single answer candidate.
+
+    Scores are normalized by the character length of the answer text, matching
+    the default used by Llama and the EleutherAI LM Evaluation Harness.
 
     Args:
         token_logprobs:
             Per-token logprobs of the candidate continuation.
         answer_text:
             The raw candidate text, used for character-length normalization.
-        method:
-            The length-normalization method to apply.
 
     Returns:
         The normalized score. Higher is better.
-
-    Raises:
-        InvalidBenchmark:
-            If the normalization method is not supported.
     """
     total = float(sum(token_logprobs))
-    match method:
-        case CFNormalization.NONE:
-            return total
-        case CFNormalization.TOKEN:
-            return total / max(1, len(token_logprobs))  # max(1,...) guards div-by-zero
-        case CFNormalization.CHARACTER:
-            return total / max(1, len(answer_text))  # max(1,...) guards div-by-zero
-        case _:
-            raise InvalidBenchmark(f"Unsupported CF normalization: {method!r}.")
+    return total / max(1, len(answer_text))
 
 
 def extract_labels_from_cf(

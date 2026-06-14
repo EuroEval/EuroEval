@@ -16,7 +16,7 @@ from euroeval.benchmark_config_factory import (
 from euroeval.data_models import DatasetConfig, Language
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.dataset_configs.danish import MULTI_WIKI_QA_DA_CONFIG, SCALA_DA_CONFIG
-from euroeval.enums import CFNormalization, Device, ScoringMethod
+from euroeval.enums import Device, ScoringMethod
 from euroeval.exceptions import InvalidBenchmark
 from euroeval.languages import (
     DANISH,
@@ -249,14 +249,10 @@ class TestScoringMethodGating:
     def test_cf_on_mcq_dataset_passes(self) -> None:
         """CF on a multiple-choice dataset builds a config without raising."""
         benchmarker = Benchmarker(
-            dataset="belebele-nl",
-            scoring_method=ScoringMethod.CF,
-            cf_normalization=CFNormalization.CHARACTER,
+            dataset="belebele-nl", scoring_method=ScoringMethod.CF
         )
         assert benchmarker.benchmark_config.scoring_method == ScoringMethod.CF
-        assert (
-            benchmarker.benchmark_config.cf_normalization == CFNormalization.CHARACTER
-        )
+        assert ()
 
     def test_cf_on_non_mcq_dataset_raises(self) -> None:
         """CF on a non-MCQ dataset raises InvalidBenchmark during config build."""

@@ -7,7 +7,7 @@ import click
 from .benchmarker import Benchmarker
 from .constants import ATTENTION_BACKENDS
 from .data_models import DatasetConfig
-from .enums import CFNormalization, Device, GenerativeType, ScoringMethod
+from .enums import Device, GenerativeType, ScoringMethod
 from .languages import get_all_languages
 
 
@@ -204,14 +204,6 @@ from .languages import get_all_languages
     "currently only supported by the vLLM backend.",
 )
 @click.option(
-    "--cf-normalization",
-    type=click.Choice(["none", "token", "character"]),
-    default="character",
-    show_default=True,
-    help="Length normalization applied to CF logprob scores. Only relevant when "
-    "--scoring-method=cf.",
-)
-@click.option(
     "--custom-datasets-file",
     type=click.Path(exists=False, dir_okay=False, path_type=Path),
     default="custom_datasets.py",
@@ -274,7 +266,6 @@ def benchmark(
     requires_safetensors: bool,
     generative_type: str | None,
     scoring_method: str,
-    cf_normalization: str,
     custom_datasets_file: Path,
     download_only: bool,
     debug: bool,
@@ -308,7 +299,6 @@ def benchmark(
         if generative_type
         else None,
         scoring_method=ScoringMethod[scoring_method.upper()],
-        cf_normalization=CFNormalization[cf_normalization.upper()],
         custom_datasets_file=custom_datasets_file,
         debug=debug,
         run_with_cli=True,

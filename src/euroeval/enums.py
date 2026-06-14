@@ -167,21 +167,3 @@ class ScoringMethod(AutoStrEnum):
 
     MCF = auto()
     CF = auto()
-
-
-class CFNormalization(AutoStrEnum):
-    """Length-normalization method used for Cloze Formulation (CF) scores.
-
-    Attributes:
-        NONE:
-            No normalization. Raw sum of per-token logprobs.
-        TOKEN:
-            Divide the logprob sum by the number of answer tokens.
-        CHARACTER:
-            Divide the logprob sum by the number of answer characters. Matches the
-            default used by Llama and the EleutherAI LM Evaluation Harness.
-    """
-
-    NONE = auto()
-    TOKEN = auto()
-    CHARACTER = auto()

@@ -461,7 +461,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 for ex in few_shot_examples
             ]
 
-            dataset["test"] = dataset["test"].map(  # ty: ignore[unsupported-operation]
+            dataset["test"] = dataset["test"].map(  # ty: ignore[unsupported-operator]
                 _ensure_cf_columns, load_from_cache_file=False, keep_in_memory=True
             )
 
@@ -477,12 +477,12 @@ class VLLMModel(HuggingFaceEncoderModel):
                 )
                 return {"text": text, "prompt": text}
 
-            dataset["test"] = dataset["test"].map(  # ty: ignore[unsupported-operation]
+            dataset["test"] = dataset["test"].map(  # ty: ignore[unsupported-operator]
                 _build_cf_prompt, load_from_cache_file=False, keep_in_memory=True
             )
             return dataset
 
-        dataset["test"] = dataset["test"].map(  # ty: ignore[unsupported-operation]
+        dataset["test"] = dataset["test"].map(  # ty: ignore[unsupported-operator]
             partial(
                 apply_prompt,
                 few_shot_examples=few_shot_examples,
@@ -1053,12 +1053,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             prompts=prompts, completions=raw_choices
         )
 
-        method = self.benchmark_config.cf_normalization
         cf_scores: list[list[float]] = [
             [
-                cloze.normalize_cf_score(
-                    token_logprobs=token_lps, answer_text=answer, method=method
-                )
+                cloze.normalize_cf_score(token_logprobs=token_lps, answer_text=answer)
                 for token_lps, answer in zip(sample_lps, sample_choices)
             ]
             for sample_lps, sample_choices in zip(per_token_logprobs, raw_choices)

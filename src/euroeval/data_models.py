@@ -21,14 +21,7 @@ from .constants import (
     MAX_NUMBER_OF_LOGGING_LANGUAGES,
 )
 from .eee_utils import benchmark_result_from_eee_dict, benchmark_result_to_eee_dict
-from .enums import (
-    CFNormalization,
-    Device,
-    GenerativeType,
-    ModelType,
-    ScoringMethod,
-    TaskGroup,
-)
+from .enums import Device, GenerativeType, ModelType, ScoringMethod, TaskGroup
 from .exceptions import InvalidBenchmark
 from .languages import (
     ENGLISH,
@@ -749,9 +742,6 @@ class BenchmarkConfig:
             Which formulation to use for multiple-choice evaluation. ``MCF`` (default)
             compares first-token logprobs of the label letters; ``CF`` scores each
             answer text as a continuation (cloze formulation).
-        cf_normalization:
-            The length-normalization method used when ``scoring_method`` is ``CF``.
-            Ignored for ``MCF``.
     """
 
     datasets: c.Sequence[DatasetConfig]
@@ -787,7 +777,6 @@ class BenchmarkConfig:
     max_context_length: int | None
     vocabulary_size: int | None
     scoring_method: ScoringMethod = ScoringMethod.MCF
-    cf_normalization: CFNormalization = CFNormalization.CHARACTER
 
     @property
     def tasks(self) -> c.Sequence[Task]:
@@ -844,7 +833,6 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     max_context_length: int | None
     vocabulary_size: int | None
     scoring_method: ScoringMethod = ScoringMethod.MCF
-    cf_normalization: CFNormalization = CFNormalization.CHARACTER
 
 
 class BenchmarkResult(pydantic.BaseModel):
@@ -864,7 +852,6 @@ class BenchmarkResult(pydantic.BaseModel):
     few_shot: bool | None
     validation_split: bool | None
     scoring_method: str | None = None
-    cf_normalization: str | None = None
     euroeval_version: str | None = get_package_version("euroeval")
     transformers_version: str | None = get_package_version("transformers")
     torch_version: str | None = get_package_version("torch")
@@ -910,8 +897,6 @@ class BenchmarkResult(pydantic.BaseModel):
             config["validation_split"] = val_matches is not None
         if "scoring_method" not in config:
             config["scoring_method"] = "mcf"
-        if "cf_normalization" not in config:
-            config["cf_normalization"] = None
 
         # Backwards compatibility
         if "dataset_languages" in config:

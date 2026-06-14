@@ -103,7 +103,6 @@ def build_benchmark_config(
         attention_backend=benchmark_config_params.attention_backend,
         generative_type=benchmark_config_params.generative_type,
         scoring_method=benchmark_config_params.scoring_method,
-        cf_normalization=benchmark_config_params.cf_normalization,
         debug=benchmark_config_params.debug,
         run_with_cli=benchmark_config_params.run_with_cli,
         requires_safetensors=benchmark_config_params.requires_safetensors,

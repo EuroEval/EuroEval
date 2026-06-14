@@ -5,7 +5,6 @@ import math
 import pytest
 
 from euroeval.data_models import GenerativeModelOutput
-from euroeval.enums import CFNormalization
 from euroeval.exceptions import InvalidBenchmark
 from euroeval.task_group_utils import cloze
 
@@ -15,47 +14,21 @@ class TestNormalizeCfScore:
 
     token_lps = [-1.0, -2.0, -3.0]
 
-    def test_none(self) -> None:
-        """Raw sum is returned when no normalization is applied."""
-        score = cloze.normalize_cf_score(
-            token_logprobs=self.token_lps,
-            answer_text="abcd",
-            method=CFNormalization.NONE,
-        )
-        assert math.isclose(score, -6.0)
-
-    def test_token(self) -> None:
-        """Sum is divided by number of tokens."""
-        score = cloze.normalize_cf_score(
-            token_logprobs=self.token_lps,
-            answer_text="abcd",
-            method=CFNormalization.TOKEN,
-        )
-        assert math.isclose(score, -6.0 / 3)
-
-    def test_character(self) -> None:
+    def test_character_normalization(self) -> None:
         """Sum is divided by number of characters."""
         score = cloze.normalize_cf_score(
-            token_logprobs=self.token_lps,
-            answer_text="abcd",
-            method=CFNormalization.CHARACTER,
+            token_logprobs=self.token_lps, answer_text="abcd"
         )
         assert math.isclose(score, -6.0 / 4)
 
     def test_empty_tokens_does_not_divide_by_zero(self) -> None:
         """Empty logprob sequences return 0 without raising."""
-        score = cloze.normalize_cf_score(
-            token_logprobs=[], answer_text="abcd", method=CFNormalization.TOKEN
-        )
+        score = cloze.normalize_cf_score(token_logprobs=[], answer_text="abcd")
         assert score == 0.0
 
     def test_empty_answer_does_not_divide_by_zero(self) -> None:
         """Empty answer strings still produce a finite character-normalized score."""
-        score = cloze.normalize_cf_score(
-            token_logprobs=self.token_lps,
-            answer_text="",
-            method=CFNormalization.CHARACTER,
-        )
+        score = cloze.normalize_cf_score(token_logprobs=self.token_lps, answer_text="")
         assert math.isclose(score, -6.0)
 
 

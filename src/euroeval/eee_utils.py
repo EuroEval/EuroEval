@@ -151,7 +151,6 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         if result.validation_split is not None
         else None,
         "scoring_method": result.scoring_method or "mcf",
-        "cf_normalization": result.cf_normalization or None,
         "transformers_version": result.transformers_version or None,
         "torch_version": result.torch_version or None,
         "vllm_version": result.vllm_version or None,
@@ -267,9 +266,6 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
             eval_lib_additional.get("validation_split")
         ),
         scoring_method=eval_lib_additional.get("scoring_method", "mcf"),
-        cf_normalization=parse_optional_str(
-            eval_lib_additional.get("cf_normalization")
-        ),
         euroeval_version=parse_optional_str(
             None
             if eval_library.get("version") == "unknown"

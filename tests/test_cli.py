@@ -31,7 +31,6 @@ def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
         "requires_safetensors",
         "generative_type",
         "scoring_method",
-        "cf_normalization",
         "custom_datasets_file",
         "download_only",
         "debug",
