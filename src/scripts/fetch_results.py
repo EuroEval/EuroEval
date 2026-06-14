@@ -8,10 +8,9 @@ import json
 import logging
 from pathlib import Path
 
-from euroeval.leaderboards.bucket_sync import sync_bucket
-from euroeval.leaderboards.paths import RAW_RESULTS_DIR
-
 from euroeval.data_models import BenchmarkResult
+from leaderboards.bucket_sync import sync_bucket
+from leaderboards.paths import RAW_RESULTS_DIR
 
 logger = logging.getLogger(__name__)
 
