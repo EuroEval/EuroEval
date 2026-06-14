@@ -18,9 +18,6 @@ if t.TYPE_CHECKING:
     from ..types import Tokeniser
 
 
-_CHOICE_LINE_RE = re.compile(r"^[a-z0-9]+\. ")
-
-
 def build_cf_prompt(
     bare_input: str,
     few_shot_rendered: c.Sequence[str],
@@ -117,7 +114,7 @@ def parse_mcq_text(text: str) -> tuple[str, list[str]]:
     candidate_choice_idxs = [
         idx
         for idx, section in enumerate(sections)
-        if _CHOICE_LINE_RE.match(section) is not None
+        if re.match(r"^[a-z0-9]+\. ", section) is not None
     ]
 
     # Walk backwards so we anchor to the *last* block of choices in the text,
@@ -141,7 +138,7 @@ def parse_mcq_text(text: str) -> tuple[str, list[str]]:
         )
 
     choices = [sections[idx] for idx in choice_idxs]
-    raw_choices = [_CHOICE_LINE_RE.sub("", choice).strip() for choice in choices]
+    raw_choices = [re.sub(r"^[a-z0-9]+\. ", "", choice).strip() for choice in choices]
 
     # Drop the 'Choices:' header line immediately above the first choice, if any.
     first_choice_idx = choice_idxs[0]
