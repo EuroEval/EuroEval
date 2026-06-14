@@ -99,6 +99,10 @@ def generate_leaderboard(
     # Load results and set them up for the leaderboard
     results = load_processed_results()
     results = [record for record in results if record["dataset"] in datasets]
+    # Filter out CF (Cloze Formulation) runs - only MCF scores go on leaderboards
+    results = [
+        record for record in results if record.get("scoring_method", "mcf") == "mcf"
+    ]
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
         group_results_by_model(results=results)
     )

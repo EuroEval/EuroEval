@@ -161,7 +161,9 @@ def result_lines_for_model(lines: list[str], model_id: str) -> list[str]:
             parsed = BenchmarkResult.from_dict(config=json.loads(line))
         except (TypeError, ValueError, json.JSONDecodeError):
             continue
-        if parsed.model == model_id:
+        # Only MCF runs count towards leaderboard completion
+        is_mcf = getattr(parsed, "scoring_method", "mcf") == "mcf"
+        if parsed.model == model_id and is_mcf:
             out.append(line)
     return out
 
