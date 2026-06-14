@@ -7,6 +7,14 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Added `download()` method to `PipelineMetric` class
+  - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
+    Values metric)
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
+    the pipeline
+
 ### Fixed
 
 - Added `download()` method to `PipelineMetric` class
@@ -23,7 +31,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   - `snapshot_download` now checks for existing cached weights before downloading,
     avoiding redundant downloads in `--download-only` mode
 - Fixed `resolve_model_path` to prefer actual commit snapshots over stale `model_files`
-  symlink directories, preventing broken symlink errors when cache has multiple snapshots
+  symlink directories, preventing broken symlink errors when cache has multiple
+  snapshots
 - Fixed orthogonal benchmark failures (e.g. `european-values`) being counted as
   "errored" instead of "skipped" in the summary
 
@@ -37,8 +46,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Fixed a bug where evaluating on AngryTweets sentiment classification raised
-  `Sequences and scores must have the same length` when the model returned no choices for
-  some samples. The `_create_model_output` method now appends an empty score list
+  `Sequences and scores must have the same length` when the model returned no choices
+  for some samples. The `_create_model_output` method now appends an empty score list
   alongside the empty sequence to keep both lists in sync.
 - Fixed deprecation warnings from `transformers` v5.2+:
   - Replaced deprecated `warmup_ratio` with dynamic `warmup_steps` calculation (1% of
@@ -52,12 +61,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   a JSON-encoded string (e.g. `'"bg"'` instead of `["bg"]`). This occurred when mixing
   EEE format results with legacy format results.
 - Fixed model loading failures (e.g., shape mismatches, CUDA errors) incorrectly being
-  counted as "skipped" benchmarks instead of "errored". The queue processor now correctly
-  detects these as failures and applies the `evaluation-failed` label to GitHub issues.
+  counted as "skipped" benchmarks instead of "errored". The queue processor now
+  correctly detects these as failures and applies the `evaluation-failed` label to
+  GitHub issues.
 - Fixed tokenizer loading failures for XLM-RoBERTa variant models (e.g.
-  `EMBEDDIA/litlat-bert`) that raised `TypeError: argument 'vocab': 'dict' object cannot
-  be converted to 'Sequence'`. The tokenizer loader now falls back to `use_fast=False`
-  when this error occurs.
+  `EMBEDDIA/litlat-bert`) that raised
+  `TypeError: argument 'vocab': 'dict' object cannot be converted to 'Sequence'`. The
+  tokenizer loader now falls back to `use_fast=False` when this error occurs.
 
 ## [v17.3.0] - 2026-05-31
 
