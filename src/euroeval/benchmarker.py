@@ -703,10 +703,9 @@ class Benchmarker:
         adjust_logging_level(verbose=benchmark_config.verbose)
 
         if benchmark_config.scoring_method == ScoringMethod.CF:
-            norm = "character"  # Always normalize by character length for CF
-            log(
-                f"CF scoring is active (normalization: {norm}). Results will differ "
-                "from default MCF runs and are stored separately on disk.",
+            log_once(
+                "Cloze Formulation (CF) scoring is active. Results will differ from "
+                "default Multiple-Choice Formulation (MCF) runs.",
                 level=logging.INFO,
             )
 
