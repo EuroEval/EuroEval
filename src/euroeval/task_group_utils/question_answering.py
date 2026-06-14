@@ -98,9 +98,8 @@ class QuestionAnsweringTrainer(Trainer):
         # Temporarily disable metric computation, we will do it in the loop here.
         compute_metrics = self.compute_metrics
         self.compute_metrics = None
-        eval_loop = self.evaluation_loop
         try:
-            output = eval_loop(
+            output = self.evaluation_loop(
                 eval_dataloader,
                 description="Evaluation",
                 prediction_loss_only=True if compute_metrics is None else None,
