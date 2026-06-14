@@ -461,7 +461,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 for ex in few_shot_examples
             ]
 
-            dataset["test"] = dataset["test"].map(  # pyrefly: ignore[unsupported-operation]
+            dataset["test"] = dataset["test"].map(  # ty: ignore[unsupported-operation]
                 _ensure_cf_columns, load_from_cache_file=False, keep_in_memory=True
             )
 
@@ -477,12 +477,12 @@ class VLLMModel(HuggingFaceEncoderModel):
                 )
                 return {"text": text, "prompt": text}
 
-            dataset["test"] = dataset["test"].map(  # pyrefly: ignore[unsupported-operation]
+            dataset["test"] = dataset["test"].map(  # ty: ignore[unsupported-operation]
                 _build_cf_prompt, load_from_cache_file=False, keep_in_memory=True
             )
             return dataset
 
-        dataset["test"] = dataset["test"].map(  # pyrefly: ignore[unsupported-operation]
+        dataset["test"] = dataset["test"].map(  # ty: ignore[unsupported-operation]
             partial(
                 apply_prompt,
                 few_shot_examples=few_shot_examples,
