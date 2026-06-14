@@ -6,6 +6,7 @@ import re
 import typing as t
 
 import numpy as np
+from transformers.trainer_utils import EvalPrediction
 
 from ..closest_match import get_closest_match
 from ..enums import TaskGroup
@@ -16,7 +17,6 @@ from ..utils import log_once, raise_if_model_output_contains_nan_values
 
 if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
-    from transformers.trainer_utils import EvalPrediction
 
     from ..data_models import (
         BenchmarkConfig,
