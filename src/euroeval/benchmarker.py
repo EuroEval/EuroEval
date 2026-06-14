@@ -309,15 +309,26 @@ class Benchmarker:
 
         # Skip download if model is a local path
         if not Path(model_config.model_id).exists():
-            log_once(
-                f"Downloading model {model_config.model_id!r}...", level=logging.INFO
-            )
-            snapshot_download(
-                repo_id=model_config.model_id,
-                revision=model_config.revision,
-                cache_dir=model_config.model_cache_dir,
-                token=get_hf_token(api_key=benchmark_config.api_key),
-            )
+            # Check if model is already cached before downloading
+            cache_path = Path(model_config.model_cache_dir)
+            has_cached = cache_path.exists() and any(cache_path.rglob("*.safetensors"))
+            if has_cached:
+                log_once(
+                    f"Model {model_config.model_id!r} is already cached, skipping "
+                    "download.",
+                    level=logging.DEBUG,
+                )
+            else:
+                log_once(
+                    f"Downloading model {model_config.model_id!r}...",
+                    level=logging.INFO,
+                )
+                snapshot_download(
+                    repo_id=model_config.model_id,
+                    revision=model_config.revision,
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
 
             # For adapter models, also download the base model
             if model_config.adapter_base_model_id:

@@ -9,17 +9,17 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed benchmark failures on air-gapped / offline systems (e.g. supercomputers with
-  Slurm) where the Hugging Face token validation would crash with `httpx.ConnectError`
-  instead of gracefully degrading. The `get_hf_token` function now catches both
-  `RequestException` and `httpx.ConnectError`, allowing evaluation to proceed using
-  locally cached models and tokens when no internet connection is available.
-- Fixed orthogonal benchmark failures (e.g., `european-values`) being incorrectly
-  counted as "errored" in the benchmark summary. These are now counted as "skipped"
-  instead, preventing the `evaluation-failed` label from being applied to GitHub issues
-  when only orthogonal tasks fail. Note that `InvalidModel` errors (model loading
-  failures) still count all remaining benchmarks as errored, as the model itself is
-  broken in that case.
+- Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
+  - `get_hf_token` now catches `httpx.ConnectError` to gracefully degrade when token
+    validation fails offline
+  - `load_hf_model_config` returns a minimal config when files aren't fully cached
+    instead of raising `InvalidModel`
+  - `snapshot_download` now checks for existing cached weights before downloading,
+    avoiding redundant downloads in `--download-only` mode
+- Fixed `resolve_model_path` to prefer actual commit snapshots over stale `model_files`
+  symlink directories, preventing broken symlink errors when cache has multiple snapshots
+- Fixed orthogonal benchmark failures (e.g. `european-values`) being counted as
+  "errored" instead of "skipped" in the summary
 
 ## [v17.4.0] - 2026-06-12
 
