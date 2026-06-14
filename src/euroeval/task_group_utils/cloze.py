@@ -1,7 +1,6 @@
 """Utilities for Cloze Formulation (CF) evaluation of multiple-choice tasks."""
 
 import collections.abc as c
-import re
 import typing as t
 
 import numpy as np
@@ -50,8 +49,7 @@ def build_cf_prompt(
     # label="" renders the template's trailing marker (e.g. "Answer: ") without
     # any choice text, so candidates can be appended directly for scoring.
     tail = prompt_template.format(text=bare_input.replace("\n", " ").strip(), label="")
-    # Only {labels_str} is used in prompt_prefix templates today; a new slot
-    # added in future would silently KeyError here if not listed in the format call.
+    # Only {labels_str} is currently used in prompt_prefix templates.
     rendered_prefix = prompt_prefix.format(labels_str="") if prompt_prefix else ""
     if rendered_prefix:
         rendered_prefix += "\n\n"
@@ -79,75 +77,6 @@ def render_cf_few_shot(bare_input: str, answer_text: str, prompt_template: str) 
         text=bare_input.replace("\n", " ").strip(),
         label=answer_text.replace("\n", " ").strip(),
     )
-
-
-def parse_mcq_text(text: str) -> tuple[str, list[str]]:
-    """Recover the bare question and choice texts from a formatted MCQ prompt.
-
-    EuroEval-prepared MCQ datasets store `text` as a single string of the form::
-
-        <passage/question>
-        Choices:
-        a. <option a>
-        b. <option b>
-        ...
-
-    Called as a fallback when `bare_input` and `raw_choices` are not already
-    present in the dataset example (e.g. datasets cached before CF support was
-    added). Freshly loaded datasets have these columns pre-computed during
-    preprocessing, so this regex-based parsing is not the hot path.
-
-    Args:
-        text:
-            The formatted MCQ text as stored in the dataset's `"text"` column.
-
-    Returns:
-        A pair `(bare_input, raw_choices)` where `bare_input` is everything
-        before the enumerated choices (typically the passage and question) and
-        `raw_choices` are the option texts with the letter prefix stripped.
-
-    Raises:
-        InvalidBenchmark:
-            If no enumerated choices can be located in `text`.
-    """
-    sections = text.split("\n")
-    candidate_choice_idxs = [
-        idx
-        for idx, section in enumerate(sections)
-        if re.match(r"^[a-z0-9]+\. ", section) is not None
-    ]
-
-    # Walk backwards so we anchor to the *last* block of choices in the text,
-    # skipping any lines that coincidentally start with "a. " etc. earlier in
-    # the passage. The first two candidates are always taken (to bootstrap a
-    # block); after that we stop as soon as we hit a gap, keeping only the
-    # final contiguous run.
-    choice_idxs: list[int] = list()
-    for idx in reversed(candidate_choice_idxs):
-        if len(choice_idxs) < 2 or (
-            len(choice_idxs) >= 2 and idx == choice_idxs[-1] - 1
-        ):
-            choice_idxs.append(idx)
-    choice_idxs = list(reversed(choice_idxs))
-
-    if len(choice_idxs) < 2:
-        raise InvalidBenchmark(
-            "CF evaluation needs at least two enumerated answer choices in the "
-            "MCQ prompt, but none were found. The prompt may not be formatted as "
-            f"expected:\n{text!r}"
-        )
-
-    choices = [sections[idx] for idx in choice_idxs]
-    raw_choices = [re.sub(r"^[a-z0-9]+\. ", "", choice).strip() for choice in choices]
-
-    # Drop the 'Choices:' header line immediately above the first choice, if any.
-    first_choice_idx = choice_idxs[0]
-    if first_choice_idx >= 2 and sections[first_choice_idx - 1].strip().endswith(":"):
-        bare_end = first_choice_idx - 1
-    else:
-        bare_end = first_choice_idx
-    bare_input = "\n".join(sections[:bare_end]).strip()
-    return bare_input, raw_choices
 
 
 def normalize_cf_score(token_logprobs: c.Sequence[float], answer_text: str) -> float:
@@ -264,13 +193,11 @@ def prepare_cf_dataset(
     """
 
     def _ensure_cf_columns(example: dict) -> dict:
-        if "raw_choices" in example and "bare_input" in example:
-            return {
-                "bare_input": example["bare_input"],
-                "raw_choices": example["raw_choices"],
-            }
-        bare_input, raw_choices = parse_mcq_text(example["text"])
-        return {"bare_input": bare_input, "raw_choices": raw_choices}
+        # Preprocessing always provides these columns; this is a sanity check
+        return {
+            "bare_input": example["bare_input"],
+            "raw_choices": example["raw_choices"],
+        }
 
     few_shot_examples = [{**ex, **_ensure_cf_columns(ex)} for ex in few_shot_examples]
     few_shot_rendered = [

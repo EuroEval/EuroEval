@@ -63,38 +63,6 @@ class TestExtractLabelsFromCf:
             )
 
 
-class TestParseMcqText:
-    """Tests for `parse_mcq_text`."""
-
-    def test_standard_mcq_format(self) -> None:
-        """Parses EuroEval-formatted MCQ text with a 'Choices:' header."""
-        text = (
-            "Tekst: De aarde is de derde planeet.\n"
-            "Vraag: Welke planeet is de derde?\n"
-            "Keuzes:\n"
-            "a. Mercurius\n"
-            "b. Venus\n"
-            "c. Aarde\n"
-            "d. Mars"
-        )
-        bare, choices = cloze.parse_mcq_text(text)
-        assert "Mercurius" not in bare
-        assert "Keuzes:" not in bare
-        assert choices == ["Mercurius", "Venus", "Aarde", "Mars"]
-
-    def test_no_choices_header(self) -> None:
-        """Parses MCQ text without a 'Choices:' header line."""
-        text = "Question?\na. alpha\nb. beta\nc. gamma\nd. delta"
-        bare, choices = cloze.parse_mcq_text(text)
-        assert bare == "Question?"
-        assert choices == ["alpha", "beta", "gamma", "delta"]
-
-    def test_no_choices_raises(self) -> None:
-        """Input without enumerated choices raises `InvalidBenchmark`."""
-        with pytest.raises(InvalidBenchmark):
-            cloze.parse_mcq_text("Just a question with no choices.")
-
-
 class TestLetterToChoiceText:
     """Tests for `letter_to_choice_text`."""
 
