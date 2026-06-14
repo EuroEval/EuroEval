@@ -494,17 +494,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             ),
             batched=True,
             load_from_cache_file=False,
-            partial(
-                apply_prompt,
-                few_shot_examples=few_shot_examples,
-                model_config=self.model_config,
-                dataset_config=self.dataset_config,
-                generative_type=self.generative_type,
-                always_populate_text_field=True,
-                tokeniser=self._tokeniser,
-            ),
-            batched=True,
-            load_from_cache_file=False,
             keep_in_memory=True,
         )
 
@@ -1114,6 +1103,16 @@ class VLLMModel(HuggingFaceEncoderModel):
                     )
                 full = prompt + candidate
                 full_ids = list(tok(full, add_special_tokens=False).input_ids)
+                # An empty candidate (or one whose tokens are entirely absorbed at
+                # the prompt seam) has nothing to score.
+                if len(full_ids) <= len(prompt_ids) and (
+                    full_ids == prompt_ids[: len(full_ids)]
+                ):
+                    raise InvalidBenchmark(
+                        "Candidate is empty after tokenisation: cannot score an "
+                        f"empty continuation. Prompt: {prompt!r}, candidate: "
+                        f"{candidate!r}."
+                    )
                 # The prompt's final token often merges with the first candidate
                 # token at tokeniser seams (e.g. SentencePiece "_Foo" vs "Foo").
                 # Find the longest prefix of the prompt's token sequence that
@@ -1139,7 +1138,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         sampling_params = SamplingParams(
             max_tokens=1, prompt_logprobs=1, temperature=0.0
         )
-        raw_outputs = self._model.generate(
+        raw_outputs = self._model.generate(  # ty: ignore[call-non-callable]
             prompts=flat_prompts,
             sampling_params=sampling_params,
             use_tqdm=False,

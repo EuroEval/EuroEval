@@ -240,10 +240,7 @@ def prepare_train_examples(
     # and will make the truncation of the context fail (the tokenized question will
     # take a lots of space). So we remove that left whitespace
 
-    examples["question"] = [
-        q.lstrip()
-        for q in examples["question"]  # ty: ignore[not-iterable]
-    ]
+    examples["question"] = [q.lstrip() for q in examples["question"]]
 
     # Extract special token metadata from the tokeniser
     special_token_metadata = get_special_token_metadata(tokeniser=tokeniser)
@@ -256,23 +253,16 @@ def prepare_train_examples(
     # If the tokeniser is not adding special tokens, then we add them manually
     if not has_cls_token and not has_sep_token:
         examples["question"] = [
-            f"{cls_token}{q}{sep_token}"
-            for q in examples["question"]  # ty: ignore[not-iterable]
+            f"{cls_token}{q}{sep_token}" for q in examples["question"]
         ]
 
-        examples["context"] = [
-            f"{c}{sep_token}"
-            for c in examples["context"]  # ty: ignore[not-iterable]
-        ]
+        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]
 
     # Set the stride used during tokenisation, when the context is long enough to be
     # split into several features. Since we are always keeping the question tokens, we
     # need to make sure that the stride does not exceed the resulting maximum context
     # length.
-    max_question_tokens = max(
-        len(tokeniser(q).input_ids)
-        for q in examples["question"]  # ty: ignore[not-iterable]
-    )
+    max_question_tokens = max(len(tokeniser(q).input_ids) for q in examples["question"])
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
     stride = tokeniser.model_max_length // 4
     stride = min(
@@ -415,10 +405,7 @@ def prepare_test_examples(
     # and will make the truncation of the context fail (the tokenised question will
     # take a lots of space). So we remove that left whitespace
 
-    examples["question"] = [
-        q.lstrip()
-        for q in examples["question"]  # ty: ignore[not-iterable]
-    ]
+    examples["question"] = [q.lstrip() for q in examples["question"]]
 
     # Extract special token metadata from the tokeniser
     special_token_metadata = get_special_token_metadata(tokeniser=tokeniser)
@@ -430,23 +417,16 @@ def prepare_test_examples(
     # If the tokeniser is not adding special tokens, then we add them manually
     if not has_cls_token and not has_sep_token:
         examples["question"] = [
-            f"{cls_token}{q}{sep_token}"
-            for q in examples["question"]  # ty: ignore[not-iterable]
+            f"{cls_token}{q}{sep_token}" for q in examples["question"]
         ]
 
-        examples["context"] = [
-            f"{c}{sep_token}"
-            for c in examples["context"]  # ty: ignore[not-iterable]
-        ]
+        examples["context"] = [f"{c}{sep_token}" for c in examples["context"]]
 
     # Set the stride used during tokenisation, when the context is long enough to be
     # split into several features. Since we are always keeping the question tokens, we
     # need to make sure that the stride does not exceed the resulting maximum context
     # length.
-    max_question_tokens = max(
-        len(tokeniser(q).input_ids)
-        for q in examples["question"]  # ty: ignore[not-iterable]
-    )
+    max_question_tokens = max(len(tokeniser(q).input_ids) for q in examples["question"])
     num_special_tokens = int(has_cls_token) + int(has_sep_token)
     stride = tokeniser.model_max_length // 4
     stride = min(

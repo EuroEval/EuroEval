@@ -550,3 +550,24 @@ class TestScoreCompletions:
         with patch("euroeval.benchmark_modules.vllm.SamplingParams", create=True):
             with pytest.raises(InvalidBenchmark, match="empty after tokenisation"):
                 model.score_completions(prompts=[prompt], completions=[[candidate]])
+
+    def test_candidate_absorbed_at_seam_raises(self) -> None:
+        """When candidate tokens are entirely absorbed at the prompt seam, raise.
+
+        This happens when the full token sequence equals the prompt tokens
+        (e.g. the candidate is whitespace that merges into the prompt's final
+        token). The upfront guard catches this before the prefix-trim loop
+        would incorrectly score the last prompt token as a phantom continuation.
+        """
+        prompt = "Q"
+        candidate = ""
+        tokenize_map = {
+            prompt: [1, 2, 3],
+            prompt + candidate: [1, 2, 3],  # full_ids == prompt_ids
+        }
+        model = self._build_model(
+            tokenize_map=tokenize_map, prompt_logprobs_per_call=[]
+        )
+        with patch("euroeval.benchmark_modules.vllm.SamplingParams", create=True):
+            with pytest.raises(InvalidBenchmark, match="empty after tokenisation"):
+                model.score_completions(prompts=[prompt], completions=[[candidate]])

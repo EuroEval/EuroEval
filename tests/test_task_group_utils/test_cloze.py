@@ -71,8 +71,8 @@ class TestExtractLabelsFromCf:
         labels = cloze.extract_labels_from_cf(
             input_batch={"prompt": ["", ""]},
             model_output=output,
-            dataset_config=None,  # pyrefly: ignore[bad-argument-type]
-            model_config=None,  # pyrefly: ignore[bad-argument-type]
+            dataset_config=None,  # ty: ignore[invalid-argument-type]
+            model_config=None,  # ty: ignore[invalid-argument-type]
             first_label_token_mapping=False,
         )
         assert list(labels) == ["b", "c"]
@@ -84,8 +84,8 @@ class TestExtractLabelsFromCf:
             cloze.extract_labels_from_cf(
                 input_batch={"prompt": [""]},
                 model_output=output,
-                dataset_config=None,  # pyrefly: ignore[bad-argument-type]
-                model_config=None,  # pyrefly: ignore[bad-argument-type]
+                dataset_config=None,  # ty: ignore[invalid-argument-type]
+                model_config=None,  # ty: ignore[invalid-argument-type]
                 first_label_token_mapping=False,
             )
 
