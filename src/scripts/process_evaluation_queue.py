@@ -16,10 +16,11 @@ GITHUB_TOKEN          A PAT with ``issues: write`` for the EuroEval repo.
                       Issues are assigned to the PAT owner while being
                       evaluated; the owner's login is resolved at startup
                       via the ``/user`` endpoint.
-HUGGINGFACE_API_KEY   A Hugging Face token with read access to any gated
+HF_TOKEN              A Hugging Face token with read access to any gated
                       repos that are expected to be evaluated. Used both
                       for Hub metadata lookups and for downloads inside
-                      the ``euroeval`` subprocess.
+                      the ``euroeval`` subprocess. ``HUGGINGFACE_API_KEY``
+                      is accepted as an alias.
 EUROEVAL_VM_ID        Optional identifier for this VM/host, written into a
                       hidden ``<!-- vm-id: ... -->`` marker on each issue
                       while it is being evaluated. Used to reclaim
@@ -304,17 +305,23 @@ def ensure_credentials() -> None:
             secret=True,
         )
         os.environ["GITHUB_TOKEN"] = token
-    if not os.environ.get("HUGGINGFACE_API_KEY"):
+    # Accept HF_TOKEN or HUGGINGFACE_API_KEY; normalize to HF_TOKEN for huggingface_hub.
+    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
+    if not hf_token:
         token = prompt_and_persist_env_var(
             env_path=VM_ID_ENV_PATH,
-            name="HUGGINGFACE_API_KEY",
+            name="HF_TOKEN",
             prompt_text=(
-                "HUGGINGFACE_API_KEY is required (a Hugging Face token with read "
-                "access to gated repos you intend to evaluate). Enter token"
+                "HF_TOKEN is required (a Hugging Face token with read access to gated "
+                "repos you intend to evaluate; HUGGINGFACE_API_KEY is also accepted). "
+                "Enter token"
             ),
             secret=True,
         )
-        os.environ["HUGGINGFACE_API_KEY"] = token
+        os.environ["HF_TOKEN"] = token
+    elif not os.environ.get("HF_TOKEN"):
+        # HUGGINGFACE_API_KEY was set, but not HF_TOKEN; copy for huggingface_hub.
+        os.environ["HF_TOKEN"] = hf_token
     global ASSIGNEE
     ASSIGNEE = resolve_assignee_from_token()
     global VM_ID

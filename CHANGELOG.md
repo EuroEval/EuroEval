@@ -18,9 +18,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Added `download()` method to `PipelineMetric` class
-    - Enables offline mode for metrics that use scikit-learn pipelines (e.g.,
+  - Enables offline mode for metrics that use scikit-learn pipelines (e.g.,
       European Values metric)
-    - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and
       caching the pipeline
 
 - Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
