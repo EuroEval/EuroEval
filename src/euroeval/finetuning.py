@@ -68,6 +68,7 @@ def finetune(
 
     bs: int = benchmark_config.finetuning_batch_size
     scores: list[dict[str, float]] = list()
+    model_already_initialized = False
     for idx in get_pbar(
         iterable=range(benchmark_config.num_iterations),
         desc="Benchmarking",
@@ -101,7 +102,6 @@ def finetune(
                 )
 
                 itr_scores = finetune_single_iteration(
-                    # pyrefly: ignore[unbound-name]
                     model=model if model_already_initialized else None,
                     dataset=datasets[idx],
                     training_args=training_args,
@@ -213,10 +213,10 @@ def finetune_single_iteration(
         args=training_args,
         train_dataset=dataset["train"],
         eval_dataset=dataset["val"],
-        compute_metrics=partial(model.compute_metrics, dataset=None),
+        compute_metrics=partial(model.compute_metrics, dataset=None),  # ty: ignore[invalid-argument-type],
         callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
         data_collator=model.data_collator,
-        preprocess_logits_for_metrics=remove_extra_tensors_from_logits,
+        preprocess_logits_for_metrics=remove_extra_tensors_from_logits,  # ty: ignore[invalid-argument-type]
     )
 
     if not benchmark_config.verbose:
@@ -224,7 +224,7 @@ def finetune_single_iteration(
         def no_logging(logs: dict[str, float], start_time: float | None = None) -> None:
             return
 
-        trainer.log = no_logging
+        trainer.log = no_logging  # ty: ignore[invalid-assignment]
 
     # Re-block terminal output, as it gets unblocked by the `transformers` package
     # before training
@@ -245,15 +245,15 @@ def finetune_single_iteration(
     with torch.inference_mode():
         try:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],  # pyrefly: ignore[bad-argument-type]
-                orig_eval_dataset=dataset[  # pyrefly: ignore[unexpected-keyword]
+                eval_dataset=dataset["test"],  # ty: ignore[invalid-argument-type]
+                orig_eval_dataset=dataset[  # ty: ignore[unknown-argument]
                     "original_test"
                 ],
                 metric_key_prefix="test",
             )
         except TypeError:
             test_scores = trainer.evaluate(
-                eval_dataset=dataset["test"],  # pyrefly: ignore[bad-argument-type]
+                eval_dataset=dataset["test"],  # ty: ignore[invalid-argument-type]
                 metric_key_prefix="test",
             )
         except NaNValueInModelOutput as e:
@@ -303,6 +303,9 @@ def get_training_args(
     if batch_size is None:
         batch_size = benchmark_config.finetuning_batch_size
 
+    max_steps = 1 if hasattr(sys, "_called_from_test") else 10_000
+    warmup_steps = max(1, max_steps // 100)
+
     training_args = TrainingArguments(
         output_dir=model_config.model_cache_dir,
         eval_strategy=IntervalStrategy.STEPS,
@@ -311,7 +314,7 @@ def get_training_args(
         eval_steps=30,
         logging_steps=30,
         save_steps=30,
-        max_steps=1 if hasattr(sys, "_called_from_test") else 10_000,
+        max_steps=max_steps,
         use_cpu=benchmark_config.device == torch.device("cpu"),
         report_to=[],
         save_total_limit=1,
@@ -320,7 +323,7 @@ def get_training_args(
         eval_accumulation_steps=32,
         optim=OptimizerNames.ADAMW_TORCH,
         learning_rate=2e-5,
-        warmup_ratio=0.01,
+        warmup_steps=warmup_steps,
         gradient_accumulation_steps=32 // batch_size,
         load_best_model_at_end=True,
         seed=4242 + iteration_idx,

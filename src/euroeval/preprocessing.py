@@ -206,6 +206,7 @@ def build_preprocessing_func(
                     split = split.map(_fix_mc_label_column)
 
                 # Handle input column (optionally merging with choices)
+                assert choices_column is not None
                 merge_fn = functools.partial(
                     merge_input_and_choices,
                     input_column=input_column,
@@ -238,7 +239,7 @@ def build_preprocessing_func(
                     split = split.remove_columns([std_target])
                 split = split.rename_column(target_column, std_target)
 
-            dataset[split_name] = split  # pyrefly: ignore[unsupported-operation]
+            dataset[split_name] = split
 
         return dataset
 

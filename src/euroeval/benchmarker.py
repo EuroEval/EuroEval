@@ -12,10 +12,11 @@ from pathlib import Path
 from shutil import rmtree
 from time import sleep
 
+from huggingface_hub import snapshot_download
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
-from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
+from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS, ORTHOGONAL_TASKS
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
 from .enums import (
@@ -36,7 +37,7 @@ from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .string_utils import split_model_id
 from .tasks import SPEED
-from .utils import enforce_reproducibility, internet_connection_available
+from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -83,7 +84,7 @@ class Benchmarker:
         api_version: str | None = None,
         gpu_memory_utilization: float = 0.8,
         attention_backend: t.Literal[
-            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
         | None = None,
         generative_type: GenerativeType | None = None,
@@ -325,12 +326,46 @@ class Benchmarker:
         )
         del dataset
 
-        model = load_model(
-            model_config=model_config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-        )
-        del model
+        # Skip download if model is a local path
+        if not Path(model_config.model_id).exists():
+            # Check if model is already cached before downloading
+            cache_path = Path(model_config.model_cache_dir)
+            has_cached = cache_path.exists() and any(cache_path.rglob("*.safetensors"))
+            if has_cached:
+                log_once(
+                    f"Model {model_config.model_id!r} is already cached, skipping "
+                    "download.",
+                    level=logging.DEBUG,
+                )
+            else:
+                log_once(
+                    f"Downloading model {model_config.model_id!r}...",
+                    level=logging.INFO,
+                )
+                snapshot_download(
+                    repo_id=model_config.model_id,
+                    revision=model_config.revision,
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
+
+            # For adapter models, also download the base model
+            if model_config.adapter_base_model_id:
+                base_id = model_config.adapter_base_model_id
+                log_once(
+                    f"Downloading adapter base model {base_id!r}...", level=logging.INFO
+                )
+                snapshot_download(
+                    repo_id=model_config.adapter_base_model_id,
+                    revision="main",
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
+        else:
+            log_once(
+                f"Model {model_config.model_id!r} is a local path, skipping download",
+                level=logging.INFO,
+            )
 
         log_once(
             f"Loading metrics for the '{dataset_config.task.name}' task",
@@ -368,7 +403,7 @@ class Benchmarker:
         scoring_method: ScoringMethod | None = None,
         cf_normalization: CFNormalization | None = None,
         attention_backend: t.Literal[
-            *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
         | None = None,
         custom_datasets_file: Path | str | None = None,
@@ -507,8 +542,22 @@ class Benchmarker:
                 If we're offline benchmarking an adapter model, or if model loading
                 failed.
         """
+        # Determine if verbose mode is active (either from parameter, FULL_LOG env var,
+        # or stored config from __init__)
+        is_verbose = (
+            verbose
+            if verbose is not None
+            else self.benchmark_config_default_params.verbose
+        )
+        # FULL_LOG env var always forces verbose mode
+        if os.getenv("FULL_LOG", "0") == "1":
+            is_verbose = True
         log_once(
-            "Started EuroEval run. Run with `--verbose` for more information.",
+            (
+                "Started EuroEval run."
+                if is_verbose
+                else "Started EuroEval run. Run with `--verbose` for more information."
+            ),
             level=logging.INFO,
         )
 
@@ -840,13 +889,15 @@ class Benchmarker:
                             log(e.message, level=logging.ERROR)
 
                             # Add the remaining number of benchmarks for the model to
-                            # our benchmark counter, since we're skipping the rest of
+                            # our benchmark counter, since we're erroring on the rest of
                             # them
-                            num_skipped_benchmarks += (
-                                len(dataset_configs)
-                                - dataset_configs.index(dataset_config)
-                                - 1
-                            )
+                            model_dataset_configs = model_config_to_dataset_configs[
+                                model_config
+                            ]
+                            remaining_configs = model_dataset_configs[
+                                model_dataset_configs.index(dataset_config) + 1 :
+                            ]
+                            num_errored_benchmarks += 1 + len(remaining_configs)
                             break
 
                     # Skip the benchmark if the model is not of the correct
@@ -888,17 +939,25 @@ class Benchmarker:
 
                 elif isinstance(benchmark_output_or_err, InvalidBenchmark):
                     log(benchmark_output_or_err.message, level=logging.WARNING)
-                    num_errored_benchmarks += 1
+                    # Orthogonal task failures count as skipped, not errored
+                    if dataset_config.task.name in ORTHOGONAL_TASKS:
+                        num_skipped_benchmarks += 1
+                    else:
+                        num_errored_benchmarks += 1
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
                     log(benchmark_output_or_err.message, level=logging.WARNING)
 
                     # Add the remaining number of benchmarks for the model to our
-                    # benchmark counter, since we're skipping the rest of them
-                    num_errored_benchmarks += (
-                        len(dataset_configs) - dataset_configs.index(dataset_config) - 1
-                    )
+                    # benchmark counter, since we're erroring on the rest of them
+                    model_dataset_configs = model_config_to_dataset_configs[
+                        model_config
+                    ]
+                    remaining_configs = model_dataset_configs[
+                        model_dataset_configs.index(dataset_config) + 1 :
+                    ]
+                    num_errored_benchmarks += 1 + len(remaining_configs)
                     break
 
                 else:
@@ -1074,12 +1133,12 @@ class Benchmarker:
                 if model_config.param is not None:
                     model_id_to_be_stored += f"#{model_config.param}"
 
-                record = BenchmarkResult(  # pyrefly: ignore[bad-argument-type]
+                record = BenchmarkResult(
                     dataset=dataset_config.name,
                     task=dataset_config.task.name,
                     languages=[language.code for language in dataset_config.languages],
                     model=model_id_to_be_stored,
-                    results=results,  # pyrefly: ignore[bad-argument-type]
+                    results=results,
                     num_model_parameters=model.num_params,
                     max_sequence_length=model.model_max_length,
                     vocabulary_size=model.vocab_size,

@@ -108,6 +108,13 @@ os.environ["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
 os.environ["VLLM_ALLOW_LONG_MAX_MODEL_LEN"] = "1"
 
 
+# Raise the vLLM worker RPC timeouts. The defaults (300s) can be exceeded by very
+# large models on slow/saturated hardware, causing the engine to die mid-evaluation
+# with a `TimeoutError: RPC call to sample_tokens timed out`.
+os.environ.setdefault("VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS", "1800")
+os.environ.setdefault("VLLM_ENGINE_ITERATION_TIMEOUT_S", "1800")
+
+
 # Avoid the "Unclosed client session" error when evaluating Ollama models with LiteLLM.
 # The error comes from the `aiohttp` package, and this environment variable forces the
 # use of `httpx` instead.

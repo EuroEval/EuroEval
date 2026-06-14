@@ -78,9 +78,7 @@ def load_data(
     # evaluation
     if hasattr(sys, "_called_from_test") and dataset_config.task != EUROPEAN_VALUES:
         # Truncate test set to one sample for testing
-        dataset["test"] = dataset["test"].select(  # pyrefly: ignore[unsupported-operation]
-            range(1)
-        )
+        dataset["test"] = dataset["test"].select(range(1))
 
     # Bootstrap the splits, if applicable
     if dataset_config.bootstrap_samples:
@@ -91,12 +89,12 @@ def load_data(
                 len(dataset[split]),
                 size=(benchmark_config.num_iterations, len(dataset[split])),
             )
-            bootstrapped_splits[split] = [  # pyrefly: ignore[unsupported-operation]
+            bootstrapped_splits[split] = [
                 dataset[split].select(bootstrap_indices[idx])
                 for idx in range(benchmark_config.num_iterations)
             ]
         datasets = [
-            DatasetDict(  # pyrefly: ignore[no-matching-overload]
+            DatasetDict(
                 {
                     split: bootstrapped_splits[split][idx]
                     for split in ["train", "val", "test"]
@@ -191,8 +189,8 @@ def load_raw_data(
         else:
             raise InvalidBenchmark(
                 f"Failed to load dataset {dataset_config.source!r} after "
-                f"{num_attempts} attempts. Run with verbose mode to see the individual "
-                "errors."
+                f"{num_attempts} attempts. Run with --verbose or set FULL_LOG=1 to see "
+                "the individual errors."
             )
 
     # Case where the dataset source is a dictionary with keys "train", "val" and "test",
@@ -242,7 +240,7 @@ def load_raw_data(
     # Normalise the split keys to the standard names ("train", "val", "test")
     # that the rest of the codebase expects.  Community datasets may use
     # non-standard names such as "training", "validation", or "eval".
-    dataset = DatasetDict(  # pyrefly: ignore[no-matching-overload]
+    dataset = DatasetDict(
         {
             standard_name: dataset[hf_name]
             for standard_name, hf_name in [

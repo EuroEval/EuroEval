@@ -113,7 +113,7 @@ def test_postprocessing_fn() -> None:
     """Test that the postprocessing function works correctly."""
     score: float = 75.0  # CHRF returns scores as percentages (0-100)
 
-    (processed_score, score_str) = chrf3pp_metric.postprocessing_fn(score)  # type: ignore[misc]
+    (processed_score, score_str) = chrf3pp_metric.postprocessing_fn(score)
 
     # The postprocessing function returns the score as-is (already a percentage)
     # and formats it as a string with "%"
@@ -148,8 +148,8 @@ def test_chrffully_matches_predictions(
         predictions=predictions,
         references=references,
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # ty: ignore[invalid-argument-type]
     )
 
     assert score is not None
@@ -180,14 +180,14 @@ def test_all_chrff_variants(
     dataset: Dataset = make_dataset(predictions, references)
 
     metric: ChrF = ChrF(word_order=word_order, beta=beta)
-    metric = metric.download(".cache")  # type: ignore[assignment]
+    metric = metric.download(".cache")
 
     score = metric(
         predictions=predictions,
         references=references,
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # ty: ignore[invalid-argument-type]
     )
 
     assert score is not None
@@ -207,8 +207,8 @@ def test_chrff_empty_predictions(
         predictions=[],
         references=[],
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # ty: ignore[invalid-argument-type]
     )
 
     # When there are no predictions, the metric returns 1.0 (perfect score)
@@ -232,8 +232,8 @@ def test_chrff_different_word_orders(
         predictions=predictions,
         references=references,
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # ty: ignore[invalid-argument-type]
     )
 
     # Word order 2 (with bi-grams)
@@ -242,8 +242,8 @@ def test_chrff_different_word_orders(
         predictions=predictions,
         references=references,
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # ty: ignore[invalid-argument-type]
     )
 
     # Scores should be different due to different word order handling
@@ -267,8 +267,8 @@ def test_chrff_partial_match(
         predictions=predictions,
         references=references,
         dataset=dataset,
-        dataset_config=dummy_dataset_config,  # type: ignore[arg-type]
-        benchmark_config=dummy_benchmark_config,  # type: ignore[arg-type]
+        dataset_config=dummy_dataset_config,  # ty: ignore[invalid-argument-type]
+        benchmark_config=dummy_benchmark_config,  # ty: ignore[invalid-argument-type]
     )
 
     assert score is not None
@@ -280,6 +280,6 @@ def test_chrff_partial_match(
 def test_chrff_metric_download() -> None:
     """Test that the download method returns the same metric instance."""
     metric = chrf3pp_metric
-    downloaded_metric: ChrF = metric.download("/tmp/test_cache")  # type: ignore[assignment]
+    downloaded_metric: ChrF = metric.download("/tmp/test_cache")
 
     assert downloaded_metric is metric

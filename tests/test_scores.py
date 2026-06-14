@@ -116,7 +116,7 @@ class TestLogScores:
         )
         total_dict = result["total"]
         assert isinstance(total_dict, dict)
-        assert total_dict["num_failed_instances"] == 0.0
+        assert total_dict["num_failed_instances"] == 0.0  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule, invalid-argument-type]
 
     def test_num_failed_instances_sums_across_iterations(self, metric: Metric) -> None:
         """Test that `log_scores` sums `num_failed_instances` across iterations."""
@@ -148,4 +148,4 @@ class TestLogScores:
         )
         total_dict = result["total"]
         assert isinstance(total_dict, dict)
-        assert total_dict["num_failed_instances"] == 5.0
+        assert total_dict["num_failed_instances"] == 5.0  # ty: ignore[index]  # ty:ignore[ignore-comment-unknown-rule, invalid-argument-type]

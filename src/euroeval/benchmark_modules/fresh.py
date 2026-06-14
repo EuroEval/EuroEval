@@ -303,7 +303,7 @@ def load_model_and_tokeniser(
     prefix_models = ["Roberta", "GPT", "Deberta"]
     prefix = any(model_type in type(model).__name__ for model_type in prefix_models)
     try:
-        tokeniser: Tokeniser = AutoTokenizer.from_pretrained(
+        tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
             real_model_id,
             revision=model_config.revision,
             token=get_hf_token(api_key=benchmark_config.api_key),

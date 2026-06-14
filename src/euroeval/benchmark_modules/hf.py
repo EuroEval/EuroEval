@@ -25,6 +25,7 @@ from huggingface_hub.hf_api import ModelInfo as HfApiModelInfo
 from peft import PeftConfig
 from requests.exceptions import RequestException
 from torch import nn
+from transformers import PretrainedConfig
 from transformers.data.data_collator import (
     DataCollatorForTokenClassification,
     DataCollatorWithPadding,
@@ -78,15 +79,11 @@ from ..utils import get_hf_token, internet_connection_available
 from .base import BenchmarkModule
 
 try:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonTokenizer,  # pyrefly: ignore[missing-module-attribute]
-    )
+    from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MCB,  # pyrefly: ignore[missing-module-attribute]
-    )
+    from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
 
-    MistralCommonTokenizer = MCB  # pyrefly: ignore[assignment]
+    MistralCommonTokenizer = MCB
 
 if t.TYPE_CHECKING:
     from transformers.configuration_utils import PretrainedConfig
@@ -183,11 +180,12 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         if num_params_or_none is not None:
             return num_params_or_none
 
+        num_params = -1
         if (
             hasattr(self._model.config, "num_params")
             and self._model.config.num_params is not None
         ):
-            num_params = self._model.config.num_params
+            num_params = int(self._model.config.num_params)  # ty: ignore[invalid-argument-type]
         elif hasattr(self._model, "parameters"):
             num_params = sum(p.numel() for p in self._model.parameters())
         else:
@@ -197,7 +195,6 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 "nor from the model configuration.",
                 level=logging.WARNING,
             )
-            num_params = -1
         return num_params
 
     @cached_property
@@ -209,18 +206,17 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         """
         if self.benchmark_config.vocabulary_size is not None:
             return self.benchmark_config.vocabulary_size
+        vocab_size = -1
         if (
             hasattr(self._model.config, "vocab_size")
             and self._model.config.vocab_size is not None
         ):
-            vocab_size = self._model.config.vocab_size
+            vocab_size = int(self._model.config.vocab_size)  # ty: ignore[invalid-argument-type]
         elif (
             hasattr(self._tokeniser, "vocab_size")
             and self._tokeniser.vocab_size is not None
         ):
             vocab_size = self._tokeniser.vocab_size
-        else:
-            vocab_size = -1
         return vocab_size
 
     @cached_property
@@ -374,9 +370,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         def numericalise_labels(examples: dict) -> dict:
             if "label" in examples:
                 try:
+                    label2id = self._model.config.label2id
                     examples["label"] = [
-                        self._model.config.label2id[str(lbl).lower()]
-                        if self._model.config.label2id is not None
+                        label2id[str(lbl).lower()]  # ty: ignore[not-subscriptable,invalid-argument-type]
+                        if label2id is not None
                         else lbl
                         for lbl in examples["label"]
                     ]
@@ -398,7 +395,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 ).map(tokenise, batched=True, load_from_cache_file=False)
 
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                dataset = DatasetDict(  # pyrefly: ignore[no-matching-overload]
+                dataset = DatasetDict(
                     {
                         split_name: split.map(
                             partial(
@@ -428,7 +425,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                     partial(
                         token_classification.tokenize_and_align_labels,
                         tokeniser=self._tokeniser,
-                        label2id=self._model.config.label2id,
+                        label2id=self._model.config.label2id,  # ty: ignore[invalid-argument-type]
                     ),
                     batched=True,
                     load_from_cache_file=False,
@@ -473,9 +470,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                         load_from_cache_file=False,
                         keep_in_memory=True,
                     )
-                dataset: DatasetDict = DatasetDict(  # pyrefly: ignore[no-matching-overload]
-                    data_dict
-                )
+                dataset: DatasetDict = DatasetDict(data_dict)
 
                 # The Trainer hides the columns that are not used by the model (here
                 # `id` and `offset_mapping` which we will need for our post-processing),
@@ -629,7 +624,7 @@ def load_model_and_tokeniser(
         run_with_cli=benchmark_config.run_with_cli,
     )
 
-    model_kwargs = dict(
+    model_kwargs: dict[str, object] = dict(
         config=config,
         ignore_mismatched_sizes=ignore_mismatched_sizes,
         revision=model_config.revision,
@@ -648,9 +643,12 @@ def load_model_and_tokeniser(
     model: "PreTrainedModel | None" = None
     for _ in range(num_attempts := 5):
         # Get the model class associated with the task group
-        model_cls_or_none: t.Type["PreTrainedModel"] | None = get_class_by_name(
-            class_name=task_group_to_class_name(task_group=task_group),
-            module_name="transformers",
+        model_cls_or_none: t.Type[PreTrainedModel] | None = t.cast(
+            "t.Type[PreTrainedModel] | None",
+            get_class_by_name(
+                class_name=task_group_to_class_name(task_group=task_group),
+                module_name="transformers",
+            ),
         )
 
         # If the model class could not be found then raise an error
@@ -667,8 +665,11 @@ def load_model_and_tokeniser(
             config.pooler_hidden_size = config.hidden_size
 
         try:
-            model_or_tuple = model_cls_or_none.from_pretrained(
-                model_config.model_id, **model_kwargs
+            model_or_tuple: PreTrainedModel | tuple[PreTrainedModel, ...] = (
+                model_cls_or_none.from_pretrained(
+                    model_config.model_id,
+                    **model_kwargs,  # ty: ignore[invalid-argument-type]
+                )
             )
             break
         except (KeyError, RuntimeError) as e:
@@ -710,14 +711,15 @@ def load_model_and_tokeniser(
         )
 
     if isinstance(model_or_tuple, tuple):
-        model = model_or_tuple[0]
+        model = t.cast(PreTrainedModel, model_or_tuple[0])
     else:
-        model = model_or_tuple
+        model = t.cast(PreTrainedModel, model_or_tuple)
 
     assert model is not None, "The model should not be None."
+    model = t.cast("PreTrainedModel", model)  # ty: ignore[redundant-cast]
 
     model.eval()
-    model.to(benchmark_config.device)  # pyrefly: ignore[arg-type]
+    model.to(benchmark_config.device)  # ty: ignore[invalid-argument-type]
 
     if (
         isinstance(model, PreTrainedModel)
@@ -900,7 +902,6 @@ def get_model_repo_info(
         generative_class_names = [
             class_name
             for tag in GENERATIVE_PIPELINE_TAGS
-            # pyrefly: ignore[attr-defined]
             for class_name in TASK_MAPPING.get(tag, dict()).values()
         ]
         if class_names is not None and (
@@ -998,11 +999,28 @@ def load_tokeniser(
             loading_kwargs["add_prefix_space"] = True
 
     num_retries = 5
-    for _ in range(num_retries):
+    for attempt in range(num_retries):
         try:
-            tokeniser = AutoTokenizer.from_pretrained(model_id, **loading_kwargs)
+            tokeniser: Tokeniser = AutoTokenizer.from_pretrained(  # ty: ignore[invalid-assignment]
+                model_id, **loading_kwargs
+            )
             break
-        except (JSONDecodeError, OSError, TypeError) as e:
+        except TypeError as e:
+            # XLM-RoBERTa variant models like 'EMBEDDIA/litlat-bert' raise TypeError
+            # when loading fast tokenizers. Fall back to slow tokenizer.
+            if loading_kwargs.get("use_fast", True):
+                log(
+                    f"TypeError occurred during the loading of the tokeniser for "
+                    f"{model_id!r}. Retrying with use_fast=False.",
+                    level=logging.DEBUG,
+                )
+                loading_kwargs["use_fast"] = False
+                continue
+            else:
+                raise InvalidModel(
+                    f"Could not load tokeniser for model {model_id!r}."
+                ) from e
+        except (JSONDecodeError, OSError) as e:
             raise InvalidModel(
                 f"Could not load tokeniser for model {model_id!r}."
             ) from e
@@ -1125,6 +1143,14 @@ def load_hf_model_config(
                     "or `HF_TOKEN` environment variable or the `--api-key` argument. "
                     "Also check that your account has access to this model."
                 ) from e
+            # If we're offline and files aren't cached, return a minimal config
+            if not internet_connection_available():
+                log(
+                    f"Couldn't load model config for {model_id!r} offline. "
+                    f"The error was {e!r}. Returning minimal config.",
+                    level=logging.WARNING,
+                )
+                return PretrainedConfig()
             raise InvalidModel(
                 f"Couldn't load model config for {model_id!r}. The error was "
                 f"{e!r}. Skipping"
@@ -1227,7 +1253,7 @@ def setup_model_for_question_answering(model: "PreTrainedModel") -> "PreTrainedM
                 ),
                 dim=0,
             )
-            token_type_embeddings.num_embeddings = 2  # pyrefly: ignore[bad-argument-type]
+            token_type_embeddings.num_embeddings = 2  # ty: ignore[invalid-assignment]
 
         # Set the model config to use the new type vocab size
         model.config.type_vocab_size = 2
@@ -1300,7 +1326,7 @@ def align_model_and_tokeniser(
     # Move the model to the CPU, since otherwise we can't catch the IndexErrors when
     # finding the maximum sequence length of the model
     model_device = model.device
-    model.to(torch.device("cpu"))  # pyrefly: ignore[arg-type]
+    model.to(torch.device("cpu"))  # ty: ignore[invalid-argument-type]
 
     # Manually check that this model max length is valid for the model, and adjust
     # otherwise
@@ -1331,7 +1357,7 @@ def align_model_and_tokeniser(
                     raise e
 
     # Move the model back to the original device
-    model.to(model_device)  # pyrefly: ignore[arg-type]
+    model.to(model_device)  # ty: ignore[invalid-argument-type]
 
     # If there is a mismatch between the vocab size according to the tokeniser and
     # the vocab size according to the model, we raise an error

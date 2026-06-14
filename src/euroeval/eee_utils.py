@@ -56,7 +56,7 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
     raw_results: list = []
     if isinstance(result.results, dict):
         if "total" in result.results and isinstance(result.results["total"], dict):
-            total_results = result.results["total"]
+            total_results = result.results["total"]  # ty: ignore[invalid-assignment]
         if "raw" in result.results:
             raw_results = list(result.results["raw"])
 

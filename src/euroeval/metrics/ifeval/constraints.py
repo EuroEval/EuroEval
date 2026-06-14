@@ -64,7 +64,7 @@ def register(
         """
         # This enables us to chain the register decorator
         if hasattr(fn, "_original_fn"):
-            fn = fn._original_fn
+            fn = fn._original_fn  # ty: ignore[invalid-assignment]
 
         @wraps(fn)
         def wrapper(response: str, **constraint_kwargs) -> bool:

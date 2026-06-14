@@ -270,7 +270,7 @@ class TestLoadModelMaxModelLen:
         the true max length is used instead.
         """
         mock_llm_instance = MagicMock()
-        mock_hf_model_config = MagicMock(spec=["dtype"])
+        mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
         mock_hf_model_config.dtype = torch.float16
         mock_tokeniser = MagicMock()
 

@@ -65,7 +65,7 @@ class TestFlashAttnCheck:
 
             if importlib.util.find_spec("flash_attn") is not None:
                 try:
-                    _is_rocm = fake_version.hip is not None  # type: ignore[attr-defined]
+                    _is_rocm = fake_version.hip is not None
                 except (ImportError, AttributeError):
                     _is_rocm = False
                 if not _is_rocm:

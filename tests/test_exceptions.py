@@ -11,7 +11,7 @@ def test_all_classes_are_exceptions() -> None:
         getattr(exceptions, obj_name)
         for obj_name in dir(exceptions)
         if not obj_name.startswith("_")
-        and inspect.isclass(object=getattr(exceptions, obj_name))
+        and inspect.isclass(getattr(exceptions, obj_name))
     ]
     for obj in all_classes:
         assert issubclass(obj, Exception), f"Class {obj.__name__} is not an exception."

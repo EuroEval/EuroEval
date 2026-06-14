@@ -1,7 +1,6 @@
 """Tests for the `model_loading` module."""
 
 import os
-import sys
 from pathlib import Path
 from shutil import rmtree
 
@@ -39,8 +38,7 @@ def test_load_non_generative_model(
 
 
 @pytest.mark.skipif(
-    condition=sys.platform == "linux" and not torch.cuda.is_available(),
-    reason="Running on Ubuntu but no CUDA available",
+    condition=torch.cuda.is_available() is False, reason="CUDA not available"
 )
 def test_load_generative_model(
     generative_model_id: str, benchmark_config: BenchmarkConfig

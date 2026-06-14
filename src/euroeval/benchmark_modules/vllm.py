@@ -16,12 +16,12 @@ import torch
 import torch.version
 from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
+from transformers import PythonBackend, SentencePieceBackend, TokenizersBackend
 from transformers.generation.configuration_utils import GenerationConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
-    ATTENTION_BACKENDS,
     CUSTOM_STOP_TOKENS,
     GENERATION_KWARGS,
     GENERATIVE_PIPELINE_TAGS,
@@ -86,15 +86,11 @@ from ..utils import (
 from .hf import HuggingFaceEncoderModel, get_model_repo_info, load_hf_model_config
 
 try:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonTokenizer,  # pyrefly: ignore[missing-module-attribute]
-    )
+    from transformers.tokenization_mistral_common import MistralCommonTokenizer
 except ImportError:
-    from transformers.tokenization_mistral_common import (
-        MistralCommonBackend as MCB,  # pyrefly: ignore[missing-module-attribute]
-    )
+    from transformers.tokenization_mistral_common import MistralCommonBackend as MCB
 
-    MistralCommonTokenizer = MCB  # pyrefly: ignore[assignment]
+    MistralCommonTokenizer = MCB
 
 if t.TYPE_CHECKING or importlib.util.find_spec("vllm") is not None:
     import vllm.config
@@ -122,6 +118,12 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
+# Mapping from HuggingFace architecture names that vLLM does not recognise to their
+# vLLM-compatible equivalents.  Transformers 4.57 split Gemma 4 into a multimodal
+# class (Gemma4ForConditionalGeneration) and a text-only class
+# (Gemma4TextForCausalLM).  vLLM only registers the former, so we remap here.
+_ARCHITECTURE_ALIASES: dict[str, str] = {"Gemma4TextForCausalLM": "Gemma4ForCausalLM"}
+
 
 class VLLMModel(HuggingFaceEncoderModel):
     """A generative model using the vLLM inference framework."""
@@ -129,7 +131,7 @@ class VLLMModel(HuggingFaceEncoderModel):
     fresh_model = False
     batching_preference = BatchingPreference.ALL_AT_ONCE
     high_priority = True
-    allowed_params = {
+    allowed_params: dict[re.Pattern[str], list[str]] = {
         re.compile(r".*"): ["thinking", "no-thinking", "slow-tokenizer"],
         re.compile(r".*gpt-oss.*", flags=re.IGNORECASE): ["low", "medium", "high"],
     }
@@ -234,7 +236,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 tokeniser=tokeniser,
                 hf_model_config=hf_model_config,
             )
-        self._model: LLM = model  # pyrefly: ignore[bad-override]
+        self._model: LLM = model
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
         # to call the `__init__` method of the `BenchmarkModule` class.
@@ -492,6 +494,17 @@ class VLLMModel(HuggingFaceEncoderModel):
             ),
             batched=True,
             load_from_cache_file=False,
+            partial(
+                apply_prompt,
+                few_shot_examples=few_shot_examples,
+                model_config=self.model_config,
+                dataset_config=self.dataset_config,
+                generative_type=self.generative_type,
+                always_populate_text_field=True,
+                tokeniser=self._tokeniser,
+            ),
+            batched=True,
+            load_from_cache_file=False,
             keep_in_memory=True,
         )
 
@@ -527,8 +540,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             raise InvalidBenchmark(
                 "The dataset requires logprobs, but we encountered an error when "
                 "trying to get the first token of each label in the dataset. You can "
-                "try running this benchmark with the --verbose flag to see what the "
-                "error was. Skipping this evaluation."
+                "try running this benchmark with the --verbose flag or setting "
+                "FULL_LOG=1 to see what the error was. Skipping this evaluation."
             )
         return self
 
@@ -599,8 +612,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             raise InvalidBenchmark(
                 "The dataset requires logprobs, but we encountered an error when "
                 "trying to get the first token of each label in the dataset. You can "
-                "try running this benchmark with the --verbose flag to see what the "
-                "error was. Skipping this evaluation."
+                "try running this benchmark with the --verbose flag or setting "
+                "FULL_LOG=1 to see what the error was. Skipping this evaluation."
             )
 
         structured_generation_schema = None
@@ -845,7 +858,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 prompts = [
                     prompt if prompt.strip() else bos_token for prompt in prompts
                 ]
-                raw_outputs = self._model.generate(
+                raw_outputs = self._model.generate(  # ty: ignore[call-non-callable]
                     prompts=prompts,
                     sampling_params=sampling_params,
                     use_tqdm=False if input_is_a_test else get_pbar,
@@ -896,6 +909,18 @@ class VLLMModel(HuggingFaceEncoderModel):
                     raise InvalidBenchmark(
                         f"An error occurred during vLLM generation: {str(e)}"
                     ) from e
+            except Exception as e:
+                # The vLLM v1 engine raises `EngineDeadError` when a worker RPC
+                # times out. The engine cannot be reused once dead, so surface a
+                # clean benchmark error instead of an opaque crash.
+                if type(e).__name__ == "EngineDeadError" or "RPC call" in str(e):
+                    raise InvalidBenchmark(
+                        "The vLLM engine died during generation, likely due to a "
+                        "worker RPC timeout. Consider raising "
+                        "`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` or reducing the "
+                        f"batch size. Underlying error: {str(e)}"
+                    ) from e
+                raise
         else:
             raise InvalidBenchmark(
                 f"Could not generate sequences after {num_attempts} attempts."
@@ -1276,10 +1301,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 def load_model(
     model_config: "ModelConfig",
     benchmark_config: "BenchmarkConfig",
-    attention_backend: t.Literal[
-        *ATTENTION_BACKENDS  # pyrefly: ignore[invalid-literal]
-    ]
-    | None,
+    attention_backend: str | None,
     generative_type: "GenerativeType",
     true_max_model_len: int,
     tokeniser: Tokeniser,
@@ -1393,9 +1415,26 @@ def load_model(
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
     if hasattr(vllm.config, "attention") and attention_backend is not None:
-        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)
+        vllm_params["attention_config"] = AttentionConfig(
+            backend=attention_backend  # ty: ignore[invalid-argument-type]
+        )
 
     clear_vllm()
+
+    hf_overrides: dict[str, list[str]] = {}
+    if hf_model_config.architectures:
+        remapped = [
+            _ARCHITECTURE_ALIASES.get(arch, arch)
+            for arch in hf_model_config.architectures
+        ]
+        if remapped != hf_model_config.architectures:
+            log(
+                f"Remapping model architectures {hf_model_config.architectures} -> "
+                f"{remapped} for vLLM compatibility.",
+                level=logging.INFO,
+            )
+            hf_model_config.architectures = remapped
+            hf_overrides["architectures"] = remapped
 
     distributed_executor_backend, tensor_parallel_size, pipeline_parallel_size = (
         select_backend_and_parallelism()
@@ -1429,13 +1468,14 @@ def load_model(
             pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
-            dtype=dtype,  # pyrefly: ignore[bad-argument-type]
+            dtype=dtype,  # ty: ignore[invalid-argument-type]
             enforce_eager=True,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
+            **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
             **vllm_params,
         )
     except (RuntimeError, ValueError, OSError) as e:
@@ -1624,6 +1664,13 @@ def load_tokeniser(
 
     # Ensure that BOS, EOS and PAD tokens are set
     if not isinstance(tokeniser, MistralCommonTokenizer):
+        if not isinstance(
+            tokeniser, TokenizersBackend | SentencePieceBackend | PythonBackend
+        ):
+            raise InvalidModel(
+                f"Unknown tokenizer type encountered: {tokeniser}. Please report this "
+                "bug at https://github.com/EuroEval/EuroEval/issues."
+            )
         tokeniser.bos_token, tokeniser.bos_token_id = get_bos_token(tokeniser=tokeniser)
         tokeniser.eos_token, tokeniser.eos_token_id = get_eos_token(tokeniser=tokeniser)
         tokeniser.pad_token, tokeniser.pad_token_id = get_pad_token(tokeniser=tokeniser)
@@ -1679,7 +1726,7 @@ def get_end_of_reasoning_token(
     output = model.generate(
         prompts=[prompt], sampling_params=SamplingParams(max_tokens=10), use_tqdm=False
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # pyrefly: ignore[bad-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
     bor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in REASONING_TOKENS
@@ -1712,7 +1759,7 @@ def get_end_of_reasoning_token(
         sampling_params=SamplingParams(max_tokens=REASONING_MAX_TOKENS),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # pyrefly: ignore[bad-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
     eor_reasoning_matches = [
         (bor_token, eor_token)
         for bor_token, eor_token in bor_reasoning_matches
@@ -1804,7 +1851,7 @@ def get_custom_stop_tokens(
         sampling_params=SamplingParams(max_tokens=max_tokens, temperature=0.0),
         use_tqdm=False,
     )[0]
-    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))  # pyrefly: ignore[bad-argument-type]
+    completion = tokeniser.decode(token_ids=list(output.outputs[0].token_ids))
 
     stop_tokens = [
         stop_token

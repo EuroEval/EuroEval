@@ -2,14 +2,89 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this
+project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+
+- Added `download()` method to `PipelineMetric` class
+  - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
+    Values metric)
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
+    the pipeline
 
 ### Changed
 
 - Bumped the minimum vLLM version on Linux from v0.14.1 to v0.21.0.
+
+### Fixed
+
+- Added `download()` method to `PipelineMetric` class
+  - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
+    Values metric)
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
+    the pipeline
+
+- Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
+  - `get_hf_token` now catches `httpx.ConnectError` to gracefully degrade when token
+    validation fails offline
+  - `load_hf_model_config` returns a minimal config when files aren't fully cached
+    instead of raising `InvalidModel`
+  - `snapshot_download` now checks for existing cached weights before downloading,
+    avoiding redundant downloads in `--download-only` mode
+- Fixed `resolve_model_path` to prefer actual commit snapshots over stale `model_files`
+  symlink directories, preventing broken symlink errors when cache has multiple
+  snapshots
+- Fixed orthogonal benchmark failures (e.g. `european-values`) being counted as
+  "errored" instead of "skipped" in the summary
+
+## [v17.4.0] - 2026-06-12
+
+### Changed
+
+- Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
+  model architectures and tokenisers.
+
+### Fixed
+
+- Fixed a bug where evaluating on AngryTweets sentiment classification raised
+  `Sequences and scores must have the same length` when the model returned no choices
+  for some samples. The `_create_model_output` method now appends an empty score list
+  alongside the empty sequence to keep both lists in sync.
+- Fixed deprecation warnings from `transformers` v5.2+:
+  - Replaced deprecated `warmup_ratio` with dynamic `warmup_steps` calculation (1% of
+    `max_steps`, minimum 1 step).
+  - Replaced `self.tokenizer` with `self.processing_class` in `QuestionAnsweringTrainer`
+    to match the renamed attribute in the `Trainer` base class.
+- Fixed validation errors when loading legacy benchmark results missing required fields
+  (`task`, `languages`, `results`, `num_model_parameters`, `max_sequence_length`,
+  `vocabulary_size`). These fields are now populated with sensible defaults when absent.
+- Fixed validation error when loading benchmark results with `languages` field stored as
+  a JSON-encoded string (e.g. `'"bg"'` instead of `["bg"]`). This occurred when mixing
+  EEE format results with legacy format results.
+- Fixed model loading failures (e.g., shape mismatches, CUDA errors) incorrectly being
+  counted as "skipped" benchmarks instead of "errored". The queue processor now
+  correctly detects these as failures and applies the `evaluation-failed` label to
+  GitHub issues.
+- Fixed tokenizer loading failures for XLM-RoBERTa variant models (e.g.
+  `EMBEDDIA/litlat-bert`) that raised
+  `TypeError: argument 'vocab': 'dict' object cannot be converted to 'Sequence'`. The
+  tokenizer loader now falls back to `use_fast=False` when this error occurs.
+
+## [v17.3.0] - 2026-05-31
+
+### Added
+
+- Added the "Dutch Proverbs" dataset. The dataset consists of brief scenarios and two
+  possible proverbs for the LLM to select from. The dataset was created manually and
+  reviewed by native Dutch speakers. This was contributed by @lswiers ✨
+
+### Changed
+
+- Bumped the minimum vLLM version on Linux from v0.14.1 to v0.22.0, for both Linux and
+  MacOS, and updated `vllm-metal` to `v0.2.0-20260531-071330`.
 - Now ignores the language detection logging for Norwegian ('no'), since it's covered by
   Norwegian Bokmål ('nb') and Norwegian Nynorsk ('nn').
 
@@ -23,7 +98,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added an architecture alias remapping `Gemma4TextForCausalLM` to
   `Gemma4ForCausalLM` so that text-only Gemma 4 fine-tunes can be loaded with
   vLLM versions that only register the multimodal class. Thanks to
-  [@lardinator](https://github.com/lardinator) for the contribution!
+  [@lardiator](https://github.com/lardiator) for the contribution!
 - Raised the default vLLM worker RPC timeouts
   (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and `VLLM_ENGINE_ITERATION_TIMEOUT_S`)
   from 300s to 1800s so that large models on slow hardware no longer crash
@@ -51,6 +126,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   The dataset consists of brief scenarios and two possible proverbs for
   the Large Language Model to select from.
   The dataset was created manually and reviewed by native Dutch speakers.
+
 ## [v17.2.0] - 2026-04-17
 
 ### Changed
@@ -81,7 +157,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the SICK-NL Dutch Entailment Dataset (`sick-nl`). It is marked as unofficial for
   now. This was added by @Rijgersberg ✨
-- Allow 'none' reasoning effort with GPT-5* models.
+- Allow 'none' reasoning effort with GPT-5\* models.
 
 ### Changed
 
@@ -114,18 +190,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Benchmark results written to `euroeval_benchmark_results.jsonl` now conform to the
-  [Every Eval Ever (EEE) JSON schema
-  v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json). The
-  new format structures results into standardised sections (`source_metadata`,
+  [Every Eval Ever (EEE) JSON schema v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json).
+  The new format structures results into standardised sections (`source_metadata`,
   `model_info`, `eval_library`, `evaluation_results`) and supports lossless round-trips
   via `BenchmarkResult.from_dict()`.
 - - Added the new grammatical error detection task and the Germanic Verb Placement Error
-  Detection datasets for Danish (`gerlangmod-da`), Dutch (`gerlangmod-nl`), Faroese
-  (`gerlangmod-fo`), German (`gerlangmod-de`), Icelandic (`gerlangmod-is`), Norwegian
-  Bokmål (`gerlangmod-nb`), Norwegian Nynorsk (`gerlangmod-nn`), and Swedish
-  (`gerlangmod-sv`), based on the
-  [GerLangMod](https://github.com/noahmanu/gerlangmod) collection. All datasets are
-  marked as unofficial for now.
+    Detection datasets for Danish (`gerlangmod-da`), Dutch (`gerlangmod-nl`), Faroese
+    (`gerlangmod-fo`), German (`gerlangmod-de`), Icelandic (`gerlangmod-is`), Norwegian
+    Bokmål (`gerlangmod-nb`), Norwegian Nynorsk (`gerlangmod-nn`), and Swedish
+    (`gerlangmod-sv`), based on the [GerLangMod](https://github.com/noahmanu/gerlangmod)
+    collection. All datasets are marked as unofficial for now.
 - Added the Italian Word-in-Context dataset WiC-ITA, from
   [Evalita 2023](https://www.evalita.it/campaigns/evalita-2023/). The train and
   validation splits (1,024 / 256 samples) are sampled from the original training split,
@@ -136,10 +210,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   train / val / test, respectively. The train and val splits are stratified subsets of
   the original SuperGLUE training split, and the test split is the original SuperGLUE
   validation split. It is marked as `unofficial` for now.
-- Added the Danish metaphor interpretation dataset DAMETA, part of the [Danish Semantic
-  Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
-  The split is given by 64 / 128 / 723 samples for train / val / test, respectively.
-  It is marked as `unofficial` for now.
+- Added the Danish metaphor interpretation dataset DAMETA, part of the
+  [Danish Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+  The split is given by 64 / 128 / 723 samples for train / val / test, respectively. It
+  is marked as `unofficial` for now.
 - Added the Icelandic standardised tests datasets icelandic-lang-tests and
   icelandic-math-tests, based on old Icelandic primary school standardised tests
   (2013–2017) from mms.is, covering Icelandic language and mathematics, respectively.
@@ -194,42 +268,41 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A new tool calling task has been added to the framework, including the English
   Berkeley Function Calling Leaderboard benchmark - benchmark it with the ID `bfcl-v2`.
   This was added by @harderj ✨
-- Added the new Danish linguistic acceptability dataset DaLA. It's marked as
-  unofficial for now. This was added by @N-essuno ✨
+- Added the new Danish linguistic acceptability dataset DaLA. It's marked as unofficial
+  for now. This was added by @N-essuno ✨
 - It is now possible to benchmark datasets on the Hugging Face Hub using the `eval.yaml`
   configuration files, fully compatible with the Inspect AI format.
 - Added the Norwegian summarisation datasets NorSumm-nb and NorSumm-nn, based on the
-  [NorSumm dataset](https://github.com/SamiaTouileb/NorSumm). The splits are given by
-  8 samples for train and the remaining articles for test, with no validation split.
-  Both datasets are marked as `unofficial` for now.
-- Added the Norwegian dialect classification dataset NorDial. The split is given
-  by 848 / 106 / 110 samples for train / val / test, respectively. It is marked
-  as `unofficial` for now.
+  [NorSumm dataset](https://github.com/SamiaTouileb/NorSumm). The splits are given by 8
+  samples for train and the remaining articles for test, with no validation split. Both
+  datasets are marked as `unofficial` for now.
+- Added the Norwegian dialect classification dataset NorDial. The split is given by 848
+  / 106 / 110 samples for train / val / test, respectively. It is marked as `unofficial`
+  for now.
 - Added the English knowledge dataset MMLU-Pro, marked as unofficial. This is a more
   robust and challenging version of MMLU with 10 answer options per question.
 - Added the MultiNRC knowledge dataset for French and Spanish. These are marked as
   `unofficial` for now.
-- Added the Greek knowledge dataset GreekMMLU. The split is
-  given by 1,024 / 256 / 2,048 samples for train / val / test, respectively.
-  It is marked as `unofficial` for now.
+- Added the Greek knowledge dataset GreekMMLU. The split is given by 1,024 / 256 / 2,048
+  samples for train / val / test, respectively. It is marked as `unofficial` for now.
 - Added the MultiLoKo multilingual local knowledge benchmark datasets for Dutch,
-  English, French, German, Italian, Portuguese, Spanish and Swedish. All datasets
+  English, French, German, Italian, Portuguese, Spanish and Swedish. All datasets are
+  marked as `unofficial` for now.
+- Added the Schibsted front-page title and SEO title datasets, sourced from single
+  newsrooms: `vg-front-title` features front-page titles from VG (Norwegian), and
+  `svd-seo-title` features SEO titles from Svenska Dagbladet (Swedish). Both datasets
   are marked as `unofficial` for now.
-- Added the Schibsted front-page title and SEO title datasets, sourced from
-  single newsrooms: `vg-front-title` features front-page titles from VG (Norwegian),
-  and `svd-seo-title` features SEO titles from Svenska Dagbladet (Swedish). Both
-  datasets are marked as `unofficial` for now.
-- A new natural language inference task has been added, including the Danish
-  Entailment Dataset (ID is `danish-entailment`) and the Danish Lexical Inference
-  Dataset (ID is `danish-lexical-inference`). It is marked as unofficial for now.
-- Added a new Word-in-Context task, and added the new Danish Word in Context
-  dataset DanWiC (ID is `danwic`). It is marked as unofficial for now.
+- A new natural language inference task has been added, including the Danish Entailment
+  Dataset (ID is `danish-entailment`) and the Danish Lexical Inference Dataset (ID is
+  `danish-lexical-inference`). It is marked as unofficial for now.
+- Added a new Word-in-Context task, and added the new Danish Word in Context dataset
+  DanWiC (ID is `danwic`). It is marked as unofficial for now.
 - Added the [INCLUDE](https://huggingface.co/datasets/CohereLabs/include-base-44)
   knowledge dataset for 17 languages: Albanian, Bulgarian, Croatian, Dutch, Estonian,
   Finnish, French, German, Greek, Hungarian, Italian, Lithuanian, Polish, Portuguese,
   Serbian, Spanish, and Ukrainian. All are marked as unofficial for now.
-- Added the new Danish Sentiment in Context dataset, part of the [Danish Semantic
-  Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+- Added the new Danish Sentiment in Context dataset, part of the
+  [Danish Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
   It measures the sentiment of individual words in context (ID is
   `danish-sentiment-in-context`). It's marked as unofficial for now.
 - Failed generative model instances are now tracked and included in
@@ -252,10 +325,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   reducing potential biases against low-resource languages.
 - Changed the translation metric from BERTScore to ChrF3++, to align with the
   summarisation task and provide consistent evaluation across text-to-text tasks.
-- We now default to selecting vLLM's default attention backend for the given model, since
-  it now automatically selects the most efficient backend for the given model. It is
-  still possible to override this by setting the `--attention-backend` CLI option or the
-  `attention_backend` argument to `Benchmarker`.
+- We now default to selecting vLLM's default attention backend for the given model,
+  since it now automatically selects the most efficient backend for the given model. It
+  is still possible to override this by setting the `--attention-backend` CLI option or
+  the `attention_backend` argument to `Benchmarker`.
 - We now do not explicitly set the vLLM V1 engine via the `VLLM_USE_V1` environment
   variable, as it is now always set by default.
 
@@ -285,9 +358,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - We now add all metadata (including ground truth labels, if applicable) to the model
   cache when debug mode is enabled (with `--debug` or `debug=True`). We have added a
-  [section in the
-  documentation](https://euroeval.com/python-package/#analysing-the-results) on how to
-  use this feature.
+  [section in the documentation](https://euroeval.com/python-package/#analysing-the-results)
+  on how to use this feature.
 - When evaluating community evaluation datasets from the Hugging Face Hub, we now
   require that the user actively set `--trust-remote-code` (or `trust_remote_code=True`
   if running with the `Benchmarker` class). This is to prevent accidental execution of
@@ -319,8 +391,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added 25 translation datasets from the WMT24++ dataset. These all translate from
   English to the target language. It's added as unofficial for now.
 - Now supports the `detectable_format:constrained_response_with_argument` IFEval
-  constraint, being the same as `detectable_format:constrained_response` but with
-  a list of options to check for, rather than a hardcoded list of English options.
+  constraint, being the same as `detectable_format:constrained_response` but with a list
+  of options to check for, rather than a hardcoded list of English options.
 
 ### Fixed
 
@@ -335,11 +407,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Added new instruction-following task! This was added by @slowwavesleep ✨
-- Added instruction-following datasets for English 🇬🇧 and Estonian 🇪🇪. This was added
-  by @slowwavesleep ✨
-- Added instruction-following datasets for Catalan, Danish 🇩🇰, German 🇩🇪,
-  Italian 🇮🇹, Greek 🇬🇷, Spanish 🇪🇸, Finnish 🇫🇮, French 🇫🇷, Portuguese 🇵🇹,
-  Swedish 🇸🇪 and Ukrainian 🇺🇦.
+- Added instruction-following datasets for English and Estonian. This was added by
+  @slowwavesleep ✨
+- Added instruction-following datasets for Catalan, Danish, German, Italian, Greek,
+  Spanish, Finnish, French, Portuguese, Swedish and Ukrainian.
 - Now also logs the number of skipped and errored benchmarks at the end of the
   benchmarking.
 - Now logs a suggested dataset/task name if a user specified a dataset/task that is not
@@ -390,8 +461,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for vLLM Metal, so that generative models can now be evaluated on Apple
   Silicon. Note that this currently does not support structured generation, which means
   that classification and named entity recognitions tasks unfortunately won't work yet.
-  This is due to [this xgrammar
-  issue](https://github.com/vllm-project/vllm/issues/31901).
+  This is due to
+  [this xgrammar issue](https://github.com/vllm-project/vllm/issues/31901).
 
 ### Changed
 
@@ -399,8 +470,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `AttentionConfig` API. Added `--attention-backend` CLI option to configure the
   attention backend. Defaults to FLASHINFER. This was added by @SwekeR-463 ✨
 - Now requires Python >=3.12, as Python 3.11 does not support some dependencies.
-- We now up the vLLM maximum context length for reasoning models, from 8,192 to
-  16,384, to accommodate for reasoning tokens for some datasets that have long documents.
+- We now up the vLLM maximum context length for reasoning models, from 8,192 to 16,384,
+  to accommodate for reasoning tokens for some datasets that have long documents.
 - We opened up the pinned vLLM version now, now set to version `>=0.14.1`.
 - Made changes to the codebase that makes it compatible with Transformers 5.0, for when
   vLLM starts supporting it.
@@ -412,9 +483,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   isn't integrated into the `transformers` library.
 - Fixed an issue when a model config had no `pad_token_id` and/or `eos_token_id`.
 - There was an error when evaluating local adapter models, which has been fixed now.
-- Now ensures that the vLLM argument `max_num_batched_tokens` is at least as large as the
-  maximum context length of the model, which gave errors with models that had a maximum
-  context length of less than 8,192.
+- Now ensures that the vLLM argument `max_num_batched_tokens` is at least as large as
+  the maximum context length of the model, which gave errors with models that had a
+  maximum context length of less than 8,192.
 
 ## [v16.11.0] - 2026-01-21
 
@@ -476,14 +547,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Albanian 🇦🇱! This includes the sentiment classification dataset
   MMS-sq, the linguistic acceptability dataset ScaLA-sq, the named entity recognition
   dataset WikiANN-sq, the reading comprehension dataset MultiWikiQA-sq, the
-  summarisation dataset LR-Sum-sq, the knowledge dataset Global-MMLU-Lite-sq,
-  and the common-sense reasoning dataset Winogrande-sq. This was contributed by
-  @oliverkinch ✨
+  summarisation dataset LR-Sum-sq, the knowledge dataset Global-MMLU-Lite-sq, and the
+  common-sense reasoning dataset Winogrande-sq. This was contributed by @oliverkinch ✨
 - Added the Dutch common sense reasoning dataset COPA-NL, which is part of the Dutch
   [DUMB benchmark](https://github.com/wietsedv/dumb). This was contributed by @tvosch ✨
-- Added new task for simplification and Dutch simplification dataset [Duidelijke
-  Taal](http://hdl.handle.net/10032/tm-a2-y8). dataset. This was contributed by
-  @simonevanbruggen ✨
+- Added new task for simplification and Dutch simplification dataset
+  [Duidelijke Taal](http://hdl.handle.net/10032/tm-a2-y8). dataset. This was contributed
+  by @simonevanbruggen ✨
 - Added multi-node support with Ray as a backend in this case. This was contributed by
   @tvosch ✨
 - Added metadata for the Gemini-3 models.
@@ -530,18 +600,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Romanian 🇷🇴! This includes the sentiment classification dataset
   RoSent, the linguistic acceptability dataset ScaLA-ro, the named entity recognition
   dataset RoNEC, the reading comprehension dataset MultiWikiQA-ro, the summarisation
-  dataset SumO-Ro, the knowledge dataset Global-MMLU-ro, and the common-sense
-  reasoning dataset Winogrande-ro. This was contributed by @oliverkinch ✨
+  dataset SumO-Ro, the knowledge dataset Global-MMLU-ro, and the common-sense reasoning
+  dataset Winogrande-ro. This was contributed by @oliverkinch ✨
 - Added support for Hungarian 🇭🇺! This includes the sentiment classification dataset
   HuSST, the linguistic acceptability dataset ScaLA-hu, the named entity recognition
-  dataset SzegedNER, the reading comprehension dataset MultiWikiQA-hu, the
-  summarisation dataset HunSum, the knowledge dataset MMLU-hu, and the common-sense
-  reasoning dataset Winogrande-hu. This was contributed by @oliverkinch ✨
-- Added support for Catalan! This includes the sentiment classification dataset
-  GuiaCat, the linguistic acceptability dataset ScaLA-ca, the named entity recognition
-  dataset WikiANN-ca, the reading comprehension dataset MultiWikiQA-ca, the summarisation
-  dataset DACSA-ca, the knowledge dataset MMLU-ca, and the common-sense reasoning dataset
-  Winogrande-ca. This was contributed by @oliverkinch ✨
+  dataset SzegedNER, the reading comprehension dataset MultiWikiQA-hu, the summarisation
+  dataset HunSum, the knowledge dataset MMLU-hu, and the common-sense reasoning dataset
+  Winogrande-hu. This was contributed by @oliverkinch ✨
+- Added support for Catalan! This includes the sentiment classification dataset GuiaCat,
+  the linguistic acceptability dataset ScaLA-ca, the named entity recognition dataset
+  WikiANN-ca, the reading comprehension dataset MultiWikiQA-ca, the summarisation
+  dataset DACSA-ca, the knowledge dataset MMLU-ca, and the common-sense reasoning
+  dataset Winogrande-ca. This was contributed by @oliverkinch ✨
 - Added Spanish summarisation dataset DACSA-es as an unofficial dataset.
 - Added Lithuanian sentiment classification dataset Atsiliepimai to replace the now
   unofficial Lithuanian Emotions dataset. This was contributed by @oliverkinch ✨
@@ -590,13 +660,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Improved the support for evaluating models on custom inference API servers. This
   includes the following:
-  - We now dynamically reduce the number of concurrent connections if we run into
-      issues with too many requests.
+  - We now dynamically reduce the number of concurrent connections if we run into issues
+    with too many requests.
   - When benchmarking models on custom servers, we now automatically add the LiteLLM
-      prefix `openai/` to the model ID if no prefix is given, as LiteLLM requires this.
+    prefix `openai/` to the model ID if no prefix is given, as LiteLLM requires this.
   - We don't require the API key to be given if the server does not require it.
-  - We added a more detailed documentation on how to evaluate models on custom
-      inference APIs in the readme.
+  - We added a more detailed documentation on how to evaluate models on custom inference
+    APIs in the readme.
 - Now always truncates prompts to fit within the model's maximum context length when
   evaluating vLLM models. Previously we only did this when catching the associated
   error, but we cannot do this anymore as vLLM only returns generic errors now.
@@ -656,9 +726,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   the CSV files.
 - Added support for Slovene 🇸🇮! This includes the sentiment classification dataset
   Sentinews, the linguistic acceptability dataset ScaLA-sl, the named entity recognition
-  dataset ssj500k-NER, the reading comprehension
-  dataset MultiWikiQA-sl, the knowledge dataset MMLU-sl, and the common-sense reasoning
-  dataset Winogrande-sl. This was contributed by @oliverkinch ✨
+  dataset ssj500k-NER, the reading comprehension dataset MultiWikiQA-sl, the knowledge
+  dataset MMLU-sl, and the common-sense reasoning dataset Winogrande-sl. This was
+  contributed by @oliverkinch ✨
 - Added support for Serbian 🇷🇸! This includes the sentiment classification dataset
   MMS-sr, the linguistic acceptability dataset ScaLA-sr, the named entity recognition
   dataset UNER-sr, the reading comprehension dataset MultiWikiQA-sr, the summarisation
@@ -699,8 +769,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   argument. Previously, this conflicted with the Hugging Face API key.
 - Fixed an issue where some pretrained generative models required prefix spaces in the
   labels for classification tasks, which resulted in faulty structured choice
-  generation. We now correctly take this into account, which significantly increases
-  the classification performance of these models.
+  generation. We now correctly take this into account, which significantly increases the
+  classification performance of these models.
 
 ## [v16.4.0] - 2025-10-21
 
@@ -717,11 +787,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   comprehension dataset SQAD, the summarization dataset Czech News, the common-sense
   reasoning dataset HellaSwag-cs, and the knowledge dataset Umimeto-qa. This was
   contributed by @oliverkinch ✨
-- Added the Lithuanian summarisation dataset Lrytas based on the Lithuanian
-  public media news portal [Lrytas.lt](https://www.lrytas.lt/). This was contributed by
-  @oliverkinch ✨
-- Added the Estonian translation of MMLU, `mmlu-et`, as an unofficial knowledge
-  dataset.
+- Added the Lithuanian summarisation dataset Lrytas based on the Lithuanian public media
+  news portal [Lrytas.lt](https://www.lrytas.lt/). This was contributed by @oliverkinch
+  ✨
+- Added the Estonian translation of MMLU, `mmlu-et`, as an unofficial knowledge dataset.
 
 ### Changed
 
@@ -840,9 +909,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   get near-random performance and these scores are not used in the leaderboards. We can
   change this in the future if we find a way to make encoder models work better on these
   tasks.
-- For generative vLLM models that can swap between reasoning and non-reasoning modes,
-  we previously defaulted to reasoning. We now default to what the model uses by
-  default, which is non-reasoning for most models.
+- For generative vLLM models that can swap between reasoning and non-reasoning modes, we
+  previously defaulted to reasoning. We now default to what the model uses by default,
+  which is non-reasoning for most models.
 
 ### Fixed
 
@@ -875,10 +944,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added the Swedish knowledge dataset Skolprov. It is unofficial for now. This was
   contributed by @oliverkinch ✨
 - Added the knowledge dataset Trivia-et for Estonian. The dataset contains 800 trivia
-  questions about Estonia. In this version we rearrange the examples in
-  240 / 60 / 500 samples for training, validation and test splits, respectively.
-  This replaces Exam-et as the official Estonian knowledge dataset. This was contributed
-  by @slowwavesleep ✨
+  questions about Estonia. In this version we rearrange the examples in 240 / 60 / 500
+  samples for training, validation and test splits, respectively. This replaces Exam-et
+  as the official Estonian knowledge dataset. This was contributed by @slowwavesleep ✨
 - Added the English and German versions of XQuAD as unofficial reading comprehension
   datasets.
 - Added the English common-sense reasoning dataset Winogrande and its translated
@@ -895,8 +963,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 - Changed the model ID syntax, where we now use `#` to indicate parameters and still use
-  `@` to indicate revision. For instance, `o3#low` indicates the `o3` model with the
-  low reasoning effort, and `tencent/Hunyuan-1.8B-Instruct@v1#no-thinking` indicates the
+  `@` to indicate revision. For instance, `o3#low` indicates the `o3` model with the low
+  reasoning effort, and `tencent/Hunyuan-1.8B-Instruct@v1#no-thinking` indicates the
   Hunyuan model from the `v1` branch and with the `enable_thinking=False` parameter set.
   This is fully backwards compatible, in the sense that API models still support using
   `@` for parameters as well, just like previously, but you will get a warning that this
@@ -928,10 +996,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   for such tasks. This did not affect the results, but it meant that some evaluations
   failed.
 - Now includes FlashInfer as a dependency, as it is required by vLLM.
-- Changed the choices in European values to use letters, like the other multiple
-  choice tasks, rather than numbers. Aside from ensuring consistency, we also avoid the
-  issue where '10' and '1' often both have the same first token ('1'), causing us not to
-  be able to use logprobs to determine the answer.
+- Changed the choices in European values to use letters, like the other multiple choice
+  tasks, rather than numbers. Aside from ensuring consistency, we also avoid the issue
+  where '10' and '1' often both have the same first token ('1'), causing us not to be
+  able to use logprobs to determine the answer.
 
 ## [v16.0.0] - 2025-09-05
 
@@ -940,13 +1008,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added support for Latvian 🇱🇻! This includes the sentiment classification dataset
   Latvian Twitter Sentiment, the linguistic acceptability dataset ScaLA-lv, the named
   entity recognition datasets FullStack-NER-lv and WikiANN-lv, the reading comprehension
-  dataset MultiWikiQA, the knowledge dataset MMLU-lv, the common-sense reasoning
-  dataset COPA-lv, and the summarisation dataset LSM.
+  dataset MultiWikiQA, the knowledge dataset MMLU-lv, the common-sense reasoning dataset
+  COPA-lv, and the summarisation dataset LSM.
 - Added support for Estonian 🇪🇪! It includes the sentiment classification dataset
   Estonian Valence, the linguistic acceptability datasets Grammar-et and ScaLA-et, the
   named entity recognition dataset EstNER, the reading comprehension dataset
-  MultiWikiQA-et, the summarisation dataset ERRNews, the knowledge dataset Exam-et,
-  and the common-sense reasoning dataset Winogrande-et. This was contributed by
+  MultiWikiQA-et, the summarisation dataset ERRNews, the knowledge dataset Exam-et, and
+  the common-sense reasoning dataset Winogrande-et. This was contributed by
   @slowwavesleep ✨
 - It is now possible to evaluate how much a model adhere to European values! 🇪🇺 This
   probes 53 questions from the European values survey, which have been chosen based on
@@ -1007,8 +1075,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - If the model uses 'mxfp4' quantisation then we allow the dtype to be bfloat16, rather
   than forcing float16. This caused issues with the new GPT-OSS models.
-- Prevent multiple `Model <model-id> does not exist` logs when evaluating a model
-  that does not exist - now only logs this once.
+- Prevent multiple `Model <model-id> does not exist` logs when evaluating a model that
+  does not exist - now only logs this once.
 - Cleaner error message when attempting to benchmark a generative model without having a
   GPU available.
 - Now raises error if an inference API is used with a parameter that is not supported.
@@ -1017,10 +1085,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added the common-sense reasoning dataset GoldenSwag for the following
-  languages: Danish, German, Spanish, Finnish, French, Italian, Dutch, Swedish.
-  The datasets are unofficial for now. This was contributed by
-  @oliverkinch ✨
+- Added the common-sense reasoning dataset GoldenSwag for the following languages:
+  Danish, German, Spanish, Finnish, French, Italian, Dutch, Swedish. The datasets are
+  unofficial for now. This was contributed by @oliverkinch ✨
 
 ### Changed
 
@@ -1055,8 +1122,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - Disabling thinking (with the `@no-thinking` suffix) did not work properly for
-  Anthropic models, as they don't support the `budget_tokens` parameter when thinking
-  is disabled. This has been fixed now, so that the `@no-thinking` suffix now works
+  Anthropic models, as they don't support the `budget_tokens` parameter when thinking is
+  disabled. This has been fixed now, so that the `@no-thinking` suffix now works
   properly for all models that support it.
 
 ## [v15.13.0] - 2025-07-21
@@ -1104,12 +1171,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the English knowledge dataset Life in the UK, which has been added as an
   official dataset, replacing the existing English knowledge dataset MMLU, which in turn
-  has been marked as unofficial now. This was contributed by
-  @oliverkinch ✨
+  has been marked as unofficial now. This was contributed by @oliverkinch ✨
 - Added the Norwegian knowledge dataset Idioms-no, which is a multiple-choice question
   dataset where the alternative answers have been generated using GPT-4o. This has been
-  added as an official dataset, and was contributed by
-  @oliverkinch ✨
+  added as an official dataset, and was contributed by @oliverkinch ✨
 - Added new `LLMAsAJudgeMetric`, which allows evaluating the performance of a model with
   another judge model. This is useful for evaluating models in a reference-free manner,
   or if the metric is sufficiently complex. It is currently not used in any task, but
@@ -1117,8 +1182,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `no-thinking` and `thinking` options for Gemini-2.5-flash and
   Gemini-2.5-flash-lite, which allows disabling and enabling the reasoning mode for
   these models, respectively. Note that the former model has reasoning enabled by
-  default and the latter has it disabled by default (see the defaults in the [Gemini-2.5
-  docs](https://ai.google.dev/gemini-api/docs/thinking#set-budget)).
+  default and the latter has it disabled by default (see the defaults in the
+  [Gemini-2.5 docs](https://ai.google.dev/gemini-api/docs/thinking#set-budget)).
 
 ### Fixed
 
@@ -1169,8 +1234,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Allow a model to not have any BOS and EOS tokens.
 - Improved detection of beginning-of-reasoning tokens for models.
-- Improves detection of reasoning tokens, by having a more strict list of possible
-  such tokens.
+- Improves detection of reasoning tokens, by having a more strict list of possible such
+  tokens.
 
 ## [v15.9.1] - 2025-06-01
 
@@ -1223,8 +1288,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Added the BeleBele datasets for Finnish, Italian and Spanish. They are listed as
-  unofficial for now. This was contributed by
-  @oliverkinch ✨
+  unofficial for now. This was contributed by @oliverkinch ✨
 
 ### Changed
 
@@ -1280,11 +1344,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   [TydiQA-fi](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train),
   the Finnish part of the binary sentiment classification dataset
   [ScandiSent](https://github.com/timpal0l/ScandiSent), the linguistic acceptability
-  dataset ScaLA with the [Finnish Universal
-  Dependencies](https://github.com/UniversalDependencies/UD_Finnish-TDT), the NER
-  dataset [Turku NER](https://aclanthology.org/2020.lrec-1.567/), the summarisation
-  dataset [XL-Sum-fi](https://huggingface.co/datasets/TurkuNLP/xlsum-fi), and the
-  common-sense reasoning dataset
+  dataset ScaLA with the
+  [Finnish Universal Dependencies](https://github.com/UniversalDependencies/UD_Finnish-TDT),
+  the NER dataset [Turku NER](https://aclanthology.org/2020.lrec-1.567/), the
+  summarisation dataset [XL-Sum-fi](https://huggingface.co/datasets/TurkuNLP/xlsum-fi),
+  and the common-sense reasoning dataset
   [HellaSwag-fi](https://huggingface.co/datasets/Finnish-NLP/hellaswag-fi-google-translate).
   This was contributed by @oliverkinch ✨
 - Added metadata for GPT-4.1 and Grok-3 models.
@@ -1317,11 +1381,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed a GPU memory error while computing the BERTScore for the summarisation task,
   resulting in a memory crash. We have now reduced the batch size to 1 for this task,
   making it slightly slower but more memory efficient.
-- Disabled structured outputs and logprobs for reasoning models, to ensure that they
-  are allowed to output reasoning tokens before they output their answer.
+- Disabled structured outputs and logprobs for reasoning models, to ensure that they are
+  allowed to output reasoning tokens before they output their answer.
 - Do not supply stop sequences to API models if they do not support it.
-- If a `SystemError` happens during LiteLLM generation then we now retry the
-  generation.
+- If a `SystemError` happens during LiteLLM generation then we now retry the generation.
 - Handle if a LiteLLM model does not support specifying maxItems in the JSON schema
   during structured generation.
 - Truncate prompts to decoder model's maximum sequence length if the model's maximum
@@ -1347,8 +1410,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - We now support specifying custom inference providers when benchmarking via the Hugging
   Face inference APIs. This can be done by specifying the model as
-  `huggingface/<inference-provider>/<organisation>/<model>`, as described in [these
-  LiteLLM docs](https://docs.litellm.ai/docs/providers/huggingface).
+  `huggingface/<inference-provider>/<organisation>/<model>`, as described in
+  [these LiteLLM docs](https://docs.litellm.ai/docs/providers/huggingface).
 
 ### Changed
 
@@ -1360,9 +1423,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   bound for xAI models.
 - When benchmarking Ollama models, if the model is not found, we now also check if the
   model exists if prefixed with 'hf.co/'.
-- Uniformised the prompt templates used for each task, so that they are more
-  consistent across tasks. Evaluation tests across different model types and sizes show
-  no significant performance difference between the new and old templates. This was
+- Uniformised the prompt templates used for each task, so that they are more consistent
+  across tasks. Evaluation tests across different model types and sizes show no
+  significant performance difference between the new and old templates. This was
   contributed by @viggo-gascou ✨
 
 ### Fixed
@@ -1437,8 +1500,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
-  compatibility < 8.0. This was contributed by
-  @marksverdhei ✨
+  compatibility < 8.0. This was contributed by @marksverdhei ✨
 - Corrected the name of the French sentiment dataset AlloCiné. This was contributed by
   @Alkarex ✨
 - Evaluating a specific model revision did not work for adapter models, as there was a
@@ -1452,8 +1514,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   giving up on evaluating the dataset.
 - A bug in `transformers` caused models with the `image-text-to-text` pipeline tag to
   not be detected as generative models. This has been patched now, and will be fixed
-  properly when [this transformers
-  PR](https://github.com/huggingface/transformers/pull/37107) has been merged.
+  properly when
+  [this transformers PR](https://github.com/huggingface/transformers/pull/37107) has
+  been merged.
 - Force `vllm` v0.8.0 for now, as the severe degradation in generation output of some
   models has not been resolved in versions v0.8.2 and v0.8.3.
 - Only accepts the local labels for text classification tasks when evaluating decoder
@@ -1465,17 +1528,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   as the API sometimes fails. If it still fails after 3 attempts, we raise the
   `HuggingFaceHubDown` exception.
 - Now uses `fp16` instead of `bf16` when evaluating decoder models on GPUs with CUDA
-  compatibility < 8.0. This was contributed by
-  @marksverdhei ✨
-- Fixed docs for ScandiQA-da and ScandiQA-sv, where it was incorrectly stated that
-  the splits were made by considering the original train/validation/test splits.
+  compatibility < 8.0. This was contributed by @marksverdhei ✨
+- Fixed docs for ScandiQA-da and ScandiQA-sv, where it was incorrectly stated that the
+  splits were made by considering the original train/validation/test splits.
 
 ## [v15.4.1] - 2025-03-25
 
 ### Fixed
 
-- Disallow `vllm` v0.8.1, as it causes severe degradation in generation output of
-  some models, resulting in artificially low scores.
+- Disallow `vllm` v0.8.1, as it causes severe degradation in generation output of some
+  models, resulting in artificially low scores.
 - Fixed an issue with text classification tasks if the first token of multiple labels
   are identical, when tokenising with the model's tokeniser.
 
@@ -1487,8 +1549,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   [XQuAD-es](https://huggingface.co/datasets/google/xquad/viewer/xquad.es) and
   [MLQA-es](https://huggingface.co/datasets/facebook/mlqa/viewer/mlqa.es.es),
   [SentimentHeadlines-es](https://huggingface.co/datasets/pysentimiento/spanish-targeted-sentiment-headlines),
-  the linguistic acceptability dataset ScaLA with the [Spanish Universal
-  Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora),
+  the linguistic acceptability dataset ScaLA with the
+  [Spanish Universal Dependencies](https://github.com/UniversalDependencies/UD_Spanish-AnCora),
   [MLSum-es](https://huggingface.co/datasets/reciTAL/mlsum), the knowledge dataset
   [MMLU-es](https://hf.co/datasets/alexandrainst/m_mmlu), the common-sense reasoning
   dataset [HellaSwag-es](https://hf.co/datasets/alexandrainst/m_hellaswag), and the
@@ -1533,7 +1595,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Now handles `ConnectionError`s when loading datasets, rather than aborting evaluations.
+- Now handles `ConnectionError`s when loading datasets, rather than aborting
+  evaluations.
 
 ## [v15.3.0] - 2025-03-12
 
@@ -1545,12 +1608,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   [Sentipolc-16](https://hf.co/datasets/cardiffnlp/tweet_sentiment_multilingual), the
   common-sense reasoning dataset
   [HellaSwag-it](https://hf.co/datasets/alexandrainst/m_hellaswag), the linguistic
-  acceptability dataset ScaLA with the [Italian Universal Dependencies
-  treebank](https://github.com/UniversalDependencies/UD_Italian-ISDT), the knowledge
-  dataset [MMLU-it](https://hf.co/datasets/alexandrainst/m_mmlu), and the named entity
-  recognition dataset [MultiNERD IT](https://hf.co/datasets/Babelscape/multinerd) (and
-  unofficially [WikiNEuRal IT](https://hf.co/datasets/Babelscape/wikineural)). This was
-  contributed by @viggo-gascou ✨
+  acceptability dataset ScaLA with the
+  [Italian Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Italian-ISDT),
+  the knowledge dataset [MMLU-it](https://hf.co/datasets/alexandrainst/m_mmlu), and the
+  named entity recognition dataset
+  [MultiNERD IT](https://hf.co/datasets/Babelscape/multinerd) (and unofficially
+  [WikiNEuRal IT](https://hf.co/datasets/Babelscape/wikineural)). This was contributed
+  by @viggo-gascou ✨
 - Added the new Norwegian knowledge dataset NRK-Quiz-QA, consisting of quizzes on the
   Norwegian language and culture, in both Bokmål and Nynorsk. The dataset has been split
   into 635 / 256 / 2,048 samples for train, val, and test, respectively. This replaces
@@ -1562,8 +1626,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Norwegian common-sense reasoning dataset.
 - Added the Norwegian linguistic acceptability dataset NoCoLA, which is based on the
   annotated language learner corpus ASK. The dataset has been split into 1,024 / 256 /
-  2,048 samples and converted into a binary correct/incorrect dataset, but
-  stratified across the error categories.
+  2,048 samples and converted into a binary correct/incorrect dataset, but stratified
+  across the error categories.
 
 ### Changed
 
@@ -1644,8 +1708,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added the summarisation dataset
   [personal-sum](https://github.com/SmartmediaAI/PersonalSum). It has been split into
   121 / 64 / 256 samples for train / validation / test, respectively, and is set to
-  `unofficial` for now. This was contributed by
-  @oliverkinch ✨
+  `unofficial` for now. This was contributed by @oliverkinch ✨
 - Added the Jentoft dataset - a linguistic acceptability dataset which was published in
   [this Master's thesis](https://www.duo.uio.no/handle/10852/103885) by Matias Jentoft.
   The original dataset consists of 85,771 / 10,827 / 10487 samples for training,
@@ -1656,14 +1719,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added the dataset icelandic-knowledge, which is derived from the IcelandicQA dataset,
   reformatted as a knowledge dataset with GPT-4o generated candidate answers. The split
   is given by 845 / 128 / 1024 for train, val, and test, respectively. It is marked as
-  `unofficial` for now. This was contributed by
-  @oliverkinch ✨
+  `unofficial` for now. This was contributed by @oliverkinch ✨
 
 ### Changed
 
-- Changed the instruction prompts to all text classification tasks by specifying
-  that only the labels are allowed to be generated. This caused an issue with some of
-  the reasoning models, as they tended to output a more verbose answer.
+- Changed the instruction prompts to all text classification tasks by specifying that
+  only the labels are allowed to be generated. This caused an issue with some of the
+  reasoning models, as they tended to output a more verbose answer.
 
 ### Fixed
 
@@ -1686,11 +1748,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added support for French! 🇫🇷This includes the sentiment classification dataset
   [AlloCiné](https://hf.co/datasets/tblard/allocine), the linguistic acceptability
-  dataset ScaLA with the [French Universal
-  Dependencies](https://github.com/UniversalDependencies/UD_French-GSD), the reading
-  comprehension dataset [FQuAD](https://hf.co/datasets/illuin/fquad) (and unofficially
-  [Belebele-fr](https://hf.co/datasets/facebook/belebele)), the named entity recognition
-  dataset
+  dataset ScaLA with the
+  [French Universal Dependencies](https://github.com/UniversalDependencies/UD_French-GSD),
+  the reading comprehension dataset [FQuAD](https://hf.co/datasets/illuin/fquad) (and
+  unofficially [Belebele-fr](https://hf.co/datasets/facebook/belebele)), the named
+  entity recognition dataset
   [ELTeC](https://dspace-clarin-it.ilc.cnr.it/repository/xmlui/handle/20.500.11752/OPEN-986),
   the knowledge dataset [MMLU-fr](https://hf.co/datasets/alexandrainst/m_mmlu), the
   common-sense reasoning dataset
@@ -1698,8 +1760,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   dataset [OrangeSum](https://hf.co/datasets/EdinburghNLP/orange_sum).
 - Added support for evaluating local models again, which supports models stored in the
   Hugging Face format with a Hugging Face model configuration file (`config.json`) in
-  the model directory. This was contributed by @rlrs and
-  @peter-sk ✨
+  the model directory. This was contributed by @rlrs and @peter-sk ✨
 
 ### Changed
 
@@ -1740,9 +1801,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Updated the Dutch reading comprehension dataset SQuAD-nl, being a machine translated
   version of the English SQuAD dataset. Previously we used the `yhavinga/squad_v2_dutch`
-  version, but this has been changed to `GroNLP/squad-nl-v2.0`, following [this
-  evaluation showing that the latter is of higher
-  quality](https://huggingface.co/datasets/yhavinga/squad_v2_dutch/discussions/2#6763ed4c42436c7f7005f4b4).
+  version, but this has been changed to `GroNLP/squad-nl-v2.0`, following
+  [this evaluation showing that the latter is of higher quality](https://huggingface.co/datasets/yhavinga/squad_v2_dutch/discussions/2#6763ed4c42436c7f7005f4b4).
 - Moved the label definition from the task-level to dataset-level, which now allows
   specifying dataset-specific labels that differ from other datasets in the same task.
 
@@ -1759,8 +1819,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - If the model cache is corrupted, we now log this and re-initialise it, rather than
   raising an error.
 - Some models were detected as API models when they were not, due to the fact that they
-  _were_ available in LiteLLM. We now default to using vLLM for these models, as this
-  is the default backend for ScandEval.
+  _were_ available in LiteLLM. We now default to using vLLM for these models, as this is
+  the default backend for ScandEval.
 - Now correctly displays a message to the user when access to a model is contingent on
   approval from the repository authors, rather than raising an error.
 - Fixed issue while determining the maximal sequence length of encoder models on CUDA
@@ -1807,8 +1867,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Downgraded `vllm` down to `>=0.6.3,<0.6.5`, as the later versions of vLLM uses a newer
   version of outlines, which causes memory errors. This will be updated when this is
-  resolved. [Relevant `outlines`
-  issue](https://github.com/dottxt-ai/outlines/issues/1351).
+  resolved.
+  [Relevant `outlines` issue](https://github.com/dottxt-ai/outlines/issues/1351).
 - Display initial "Benchmarking X on Y" logging for all datasets being benchmarked,
   instead of just the first one.
 - Removed the `--load-in-4bit` argument, as it is not used anymore, since it was only
@@ -1857,8 +1917,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - Enforce `scikit-learn<1.6.0`, since 1.6.0 is incompatible with `evaluate`. This bound
-  will be removed when [this `evaluate`
-  issue](https://github.com/huggingface/evaluate/issues/655) has been fixed.
+  will be removed when
+  [this `evaluate` issue](https://github.com/huggingface/evaluate/issues/655) has been
+  fixed.
 
 ## [v14.0.2] - 2024-12-13
 
@@ -1910,9 +1971,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Removed
 
-- Removed the option to evaluate on the training split, as this is not a common use
-  case and simplified the codebase. If you find that this should be re-added, please
-  open an issue in the GitHub repository.
+- Removed the option to evaluate on the training split, as this is not a common use case
+  and simplified the codebase. If you find that this should be re-added, please open an
+  issue in the GitHub repository.
 - All generative on-premises models are now evaluated with vLLM and thus does not use
   the `transformers` backend as a backup, as this was not used in practice, and
   simplified the codebase. If you find that this should be re-added, please open an
@@ -1963,10 +2024,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Norwegian benchmarks. It has been marked as `unofficial` for now. This was contributed
   by @viggo-gascou ✨
 - Added `ice-linguistic` a linguistic acceptability dataset which is a subset of the
-  Icelandic Linguistic Benchmarks dataset. It is a small dataset with 94 train
-  samples, 32 validation samples, and 256 test samples, and has been marked as
-  `unofficial` for now. This was contributed by
-  @oliverkinch ✨
+  Icelandic Linguistic Benchmarks dataset. It is a small dataset with 94 train samples,
+  32 validation samples, and 256 test samples, and has been marked as `unofficial` for
+  now. This was contributed by @oliverkinch ✨
 - Added `icelandic-qa`, an Icelandic question answering dataset about Icelandic culture
   and history. The original dataset has 2000 samples, but only 375 of the samples have
   answers that are found in the context (exact match). An LLM has therefore been used to
@@ -1991,15 +2051,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   split into two separate small datasets, `schibsted-sv` for Swedish and `schibsted-no`
   for Norwegian. Note that both of these datasets are really small (89 and 374 test
   samples in `schibsted-sv` and `schibsted-no`, respectively), and have been set to
-  `unofficial` for now. This was contributed by
-  @oliverkinch ✨
+  `unofficial` for now. This was contributed by @oliverkinch ✨
 - Added the Icelandic summarisation dataset IceSum. IceSum is a collection of 1,000
   Icelandic news articles from mbl.is, which have been manually annotated with
   summaries. The dataset has been marked as unofficial, meaning that it will not be
   automatically included when benchmarking models, but can be included by specifying the
   dataset explicitly using the --dataset argument (or dataset argument if using the
-  Benchmarker API). This was contributed by
-  @viggo-gascou ✨
+  Benchmarker API). This was contributed by @viggo-gascou ✨
 - Added the new Faroese reading comprehension dataset FoQA. This is now the default
   Faroese reading comprehension benchmark, as there was none previously.
 - Now supports evaluation of models with adapters. This requires that the model
@@ -2113,9 +2171,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 - Remove almost all upper version bounds on dependencies. This makes it easier to be
-  compatible with the `scandeval` package, with the risk of potentially introducing
-  bugs when new dependency versions appear. We will monitor this risk and see if this
-  is the way to go.
+  compatible with the `scandeval` package, with the risk of potentially introducing bugs
+  when new dependency versions appear. We will monitor this risk and see if this is the
+  way to go.
 
 ### Fixed
 
@@ -2157,8 +2215,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Now recognises the metadata for the new GPT-4o models correctly. Currently there is a
   version clash between `vllm` and `tiktoken`, meaning that one needs to manually
-  upgrade `tiktoken` to evaluate GPT-4o - an informative error message notes this to
-  the user now in that case.
+  upgrade `tiktoken` to evaluate GPT-4o - an informative error message notes this to the
+  user now in that case.
 - Number of generated tokens for sequence classification tasks has been changed back to
   1 (from 3). This makes no difference to open source models, as we only use the
   logprobs from the first token anyway, but this makes a big difference on multiple
@@ -2167,10 +2225,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   this might accidentally cause the final prediction to be different from "a".
 - An error in `outlines<=0.0.36` meant that NER evaluations were near-random.
   Unfortunately, due to a strict `outlines` requirement in `vllm`, we cannot enforce
-  `outlines>0.0.37` (see [this vLLM PR for a future
-  fix](https://github.com/vllm-project/vllm/pull/4109)). For now, to prevent faulty
-  evaluations, we raise an error, asking the user to manually upgrade `outlines` if
-  they have an old version.
+  `outlines>0.0.37` (see
+  [this vLLM PR for a future fix](https://github.com/vllm-project/vllm/pull/4109)). For
+  now, to prevent faulty evaluations, we raise an error, asking the user to manually
+  upgrade `outlines` if they have an old version.
 
 ## [v12.10.0] - 2024-05-08
 
@@ -2196,8 +2254,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Disables the prefix caching of vLLMs, as it has not been implemented with sliding
   window attention yet, causing re-initialisation errors.
-- Updates `vllm` to `>=0.4.1,<0.5.0`, as this fixes an issue with benchmarking
-  freezing.
+- Updates `vllm` to `>=0.4.1,<0.5.0`, as this fixes an issue with benchmarking freezing.
 
 ## [v12.9.0] - 2024-04-26
 
@@ -2208,8 +2265,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Pin `vllm` to `v0.4.0`, since `v0.4.1` has breaking changes and is causing issues
-  with flash attention.
+- Pin `vllm` to `v0.4.0`, since `v0.4.1` has breaking changes and is causing issues with
+  flash attention.
 - Catch vLLM error when prefix caching is set for models with sliding window attention,
   as this is not supported yet in vLLM.
 
@@ -2221,9 +2278,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   benchmarking as well as supporting more models.
 - Updated `transformers` to `>=4.40.0,<4.41.0`, to support more models.
 - Removed the `olmo` extra, as it is now included in `transformers`.
-- Downgraded `outlines` to `v0.0.34` as any newer version is currently incompatible
-  with `vllm`. This will be changed back to newer versions when [this vLLM
-  PR](https://github.com/vllm-project/vllm/pull/4109) has been merged and released.
+- Downgraded `outlines` to `v0.0.34` as any newer version is currently incompatible with
+  `vllm`. This will be changed back to newer versions when
+  [this vLLM PR](https://github.com/vllm-project/vllm/pull/4109) has been merged and
+  released.
 
 ### Fixed
 
@@ -2246,11 +2304,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- If a model has a very small maximal context length in its tokeniser configuration
-  then we ignore this value and instead use the default value.
+- If a model has a very small maximal context length in its tokeniser configuration then
+  we ignore this value and instead use the default value.
 - When a model is generative then we use default context length to be 32,768.
-- Now ensures that we use mixed precision when CUDA is available, as this is required
-  by Flash Attention.
+- Now ensures that we use mixed precision when CUDA is available, as this is required by
+  Flash Attention.
 - By default we only use flash attention for generative models, as it leads to errors
   with several encoder models.
 - Add missing OpenAI models to the model cache, to checking model existence when no
@@ -2270,9 +2328,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   which makes it possible to evaluate larger models on the same hardware as previously.
   Concretely, the `gpu_memory_utilization` has been raised from 0.9 to 0.95,
   `enforce_eager` is set to True, the `max_model_len` has been reduced from (at most)
-  10,000 to (at most) 5,000. See [this
-  issue](https://github.com/ScandEval/ScandEval/issues/383) for an overview of maximum
-  amount of tokens in each dataset (as of v12.6.0 of ScandEval).
+  10,000 to (at most) 5,000. See
+  [this issue](https://github.com/ScandEval/ScandEval/issues/383) for an overview of
+  maximum amount of tokens in each dataset (as of v12.6.0 of ScandEval).
 - Removed 1 sample from the Swedish sentiment classification dataset SweReC which was
   abnormally long, to keep the maximum amount of tokens in the samples below 5,000.
   Replaced the outlier sample with a new one.
@@ -2312,15 +2370,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now using the same label order in the NER task as is in the dataset configuration.
   From v12.1.0 and onwards these were updated to sorting the labels, but this has
   resulted in significantly worse performance.
-- Added GPT-4-turbo name variations to cached OpenAI model IDs. This means that we'll
-  be able to see if a model ID should be an OpenAI model, without an OpenAI API key.
+- Added GPT-4-turbo name variations to cached OpenAI model IDs. This means that we'll be
+  able to see if a model ID should be an OpenAI model, without an OpenAI API key.
 
 ## [v12.5.1] - 2024-04-03
 
 ### Security
 
-- Now uses an access token to access datasets, allowing the datasets to not be
-  publicly available on the Hugging Face Hub.
+- Now uses an access token to access datasets, allowing the datasets to not be publicly
+  available on the Hugging Face Hub.
 
 ## [v12.5.0] - 2024-04-02
 
@@ -2333,8 +2391,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Move tensor to the correct device when benchmarking seq-to-seq models (#363). Thanks
   to @ThomasKluiters for this contribution! :tada:
-- Deals with the case where an instruction tuned model does not use any special token
-  at the end of the chat, such as `<|im_end|>`. This holds for, e.g., Qwen models.
+- Deals with the case where an instruction tuned model does not use any special token at
+  the end of the chat, such as `<|im_end|>`. This holds for, e.g., Qwen models.
 - Better auto-detection of pipeline tag for models on the Hugging Face Hub, in case the
   tag is not manually set.
 
@@ -2342,18 +2400,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Support for Azure OpenAI models! These can now be benchmarked as with any other
-  model, where either the environment variables `AZURE_OPENAI_API_KEY`,
-  `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_API_VERSION` need to have been set, or
-  alternatively through the `--azure-openai-api-key`, `--azure-openai-endpoint` and
-  `--azure-openai-api-version` arguments. Thanks to
-  @BramVanroy for all the help regarding the
-  implementation of this :tada:
+- Support for Azure OpenAI models! These can now be benchmarked as with any other model,
+  where either the environment variables `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`
+  and `AZURE_OPENAI_API_VERSION` need to have been set, or alternatively through the
+  `--azure-openai-api-key`, `--azure-openai-endpoint` and `--azure-openai-api-version`
+  arguments. Thanks to @BramVanroy for all the help regarding the implementation of this
+  :tada:
 - We now use the new JSON mode for newer OpenAI models for the NER task, to ensure
   better JSON generation.
 - If an error is thrown during generation with an OpenAI model, which for instance
-  happens when the prompt is caught by the content filter, then we simply return a
-  blank string instead.
+  happens when the prompt is caught by the content filter, then we simply return a blank
+  string instead.
 
 ### Changed
 
@@ -2366,8 +2423,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   when flash attention is enabled.
 - When benchmarking instruction tuned models, we now ensure that generation stops when
   the end-of-chat token is reached (such as `<|im_end|>` and `[/INST]`). This had a
-  negative performance impact on question answering and summarization, but the
-  remaining tasks were not affected.
+  negative performance impact on question answering and summarization, but the remaining
+  tasks were not affected.
 
 ## [v12.3.2] - 2024-03-19
 
@@ -2377,13 +2434,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   generation, where many of the generations stop prematurely when the batch is too
   large. We fix this temporarily by lowering the batch size from the entire dataset to
   the standard 32 when vLLM is used for NER tasks. This will be changed back when the
-  bug is fixed. Follow the progress in [this `outlines`
-  issue](https://github.com/outlines-dev/outlines/issues/757).
+  bug is fixed. Follow the progress in
+  [this `outlines` issue](https://github.com/outlines-dev/outlines/issues/757).
 - Issue when checking if the `openai` extra needed to be installed, or when the
   `OPENAI_API_KEY` needs to be set.
 - Setting `add_prefix_space=False` caused an error during the loading of some
-  tokenizers. To fix this, we only supply the `add_prefix_space` keyword argument
-  during the loading of the tokenizer if it is True.
+  tokenizers. To fix this, we only supply the `add_prefix_space` keyword argument during
+  the loading of the tokenizer if it is True.
 
 ## [v12.3.1] - 2024-03-13
 
@@ -2417,8 +2474,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added the Icelandic common sense reasoning dataset Winogrande-is, being a manually
   translated version of the English Winogrande dataset. This also means that the
-  HellaSwag-is dataset has been marked as unofficial, and will thus not automatically
-  be included when benchmarking models on the Icelandic common sense reasoning task.
+  HellaSwag-is dataset has been marked as unofficial, and will thus not automatically be
+  included when benchmarking models on the Icelandic common sense reasoning task.
 
 ### Changed
 
@@ -2431,9 +2488,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Only use bfloat16 as quantisation compute type if it is available and that
   `torch_dtype` is set to "bfloat16" in the Hugging Face configuration - otherwise we
   use float16.
-- Since flash attention is now enabled by default, some models couldn't be loaded due
-  to them not supporting it. For these models, flash attention will now be disabled
-  during model loading.
+- Since flash attention is now enabled by default, some models couldn't be loaded due to
+  them not supporting it. For these models, flash attention will now be disabled during
+  model loading.
 - Now uses a single GPU when finetuning, as previously evaluation would just freeze in
   this case. In the future we might support multi-GPU finetuning, but since encoder
   models usually doesn't require multiple GPUs, this is currently not prioritised.
@@ -2452,9 +2509,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - Evaluating models on NER tasks used excessive amounts of memory and took very long.
-  This was due to a bug in vLLM v0.3.2, and will be fixed in vLLM v0.3.3. We thus
-  forbid v0.3.2, making it fast again, and we'll remain compatible with the new v0.3.3
-  when it is released.
+  This was due to a bug in vLLM v0.3.2, and will be fixed in vLLM v0.3.3. We thus forbid
+  v0.3.2, making it fast again, and we'll remain compatible with the new v0.3.3 when it
+  is released.
 - A name clash has been fixed, which caused the MMLU-no dataset to not be run when
   running all Norwegian datasets.
 
@@ -2471,15 +2528,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   datasets when they are replaced by newer ones.
 - The following datasets have been added as unofficial, all datasets that used to be
   part of ScandEval but has since been replaced:
-    1. ARC-da
-    2. ARC-no
-    3. ARC-sv
-    4. ARC-is
-    5. ARC-de
-    6. ARC-nl
-    7. ARC
-    8. DaNE
-    9. WikiANN-fo
+  1. ARC-da
+  2. ARC-no
+  3. ARC-sv
+  4. ARC-is
+  5. ARC-de
+  6. ARC-nl
+  7. ARC
+  8. DaNE
+  9. WikiANN-fo
 - A more informative error message is now being thrown if additional arguments need to
   be supplied to evaluate the model, such as
   `--trust-remote-code`/`trust_remote_code=True`.
@@ -2496,10 +2553,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Updated `transformers` dependency to `>=4.38.1,<4.39.0`, and `vllm` dependency to
   `>=0.3.2,<0.4.0`. This allows the benchmarking of the new Gemma and OLMO models.
 - When using the `Benchmarker` API, the `save_results` argument now defaults to True.
-- The `Benchmarker.benchmark` method now only returns the list of benchmark results
-  from the given run, rather than all historic benchmark results as well.
-- The framework now defaults to using a Hugging Face Hub token when accessing models,
-  if available.
+- The `Benchmarker.benchmark` method now only returns the list of benchmark results from
+  the given run, rather than all historic benchmark results as well.
+- The framework now defaults to using a Hugging Face Hub token when accessing models, if
+  available.
 
 ## [v11.0.0] - 2024-02-16
 
@@ -2507,13 +2564,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Added arguments to `Benchmarker.benchmark` (or simply `Benchmarker.__call_`),
   corresponding to the same arguments during initialisation. The idea here is that the
-  default parameters are set during initialisation, and then any of these can be
-  changed if needed when performing a concrete evaluation, without having to
-  re-initialise the `Benchmarker`.
+  default parameters are set during initialisation, and then any of these can be changed
+  if needed when performing a concrete evaluation, without having to re-initialise the
+  `Benchmarker`.
 - Added the Danish knowledge datasets `danske-talemaader` and `danish-citizen-tests`.
   Both are multiple choice datasets, where the first one tests knowledge about Danish
-  idioms, and the second one tests knowledge about the Danish society. These replace
-  the machine translated MMLU-da dataset.
+  idioms, and the second one tests knowledge about the Danish society. These replace the
+  machine translated MMLU-da dataset.
 - Added a `--num-iterations` flag (`num_iterations` in the Python CLI), which controls
   the number of times each model should be evaluated, defaulting to the usual 10
   iterations. This is only meant to be changed for power users, and if it is changed
@@ -2551,10 +2608,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- A prefix space was added to labels in sequence classification tasks that
-  automatically adds a prefix space (such as Mistral). We now check for this and ensure
-  to only manually add prefix space to models that don't automatically do this (such as
-  the Yi models).
+- A prefix space was added to labels in sequence classification tasks that automatically
+  adds a prefix space (such as Mistral). We now check for this and ensure to only
+  manually add prefix space to models that don't automatically do this (such as the Yi
+  models).
 
 ## [v10.0.0] - 2024-02-12
 
@@ -2565,17 +2622,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Many dependencies are now optional, to make the package less bloated. These extras
-  are `jax`, for models based on the JAX framework, `generative` for evaluating
-  generative models, `olmo` for models based on the OLMO architecture, `openai` for
-  evaluating OpenAI models, and `all` to install all of them.
+- Many dependencies are now optional, to make the package less bloated. These extras are
+  `jax`, for models based on the JAX framework, `generative` for evaluating generative
+  models, `olmo` for models based on the OLMO architecture, `openai` for evaluating
+  OpenAI models, and `all` to install all of them.
 - Updated many dependencies. In particular now uses `openai` version 1.x.x, which
   required some changes to the code base as they changed their API.
 - Changed the `--dataset-task` CLI argument (`dataset_task` in the Python API) to
   `--task` (`task`). This is now the preferred way to choose what to benchmark a model
   on, rather than remembering all the names of the datasets. E.g., to benchmark a model
-  on all Danish question-answering datasets, we call `scandeval -m <model_id> -l da -t
-  question-answering`. All the names of the tasks is shown in `scandeval --help`.
+  on all Danish question-answering datasets, we call
+  `scandeval -m <model_id> -l da -t question-answering`. All the names of the tasks is
+  shown in `scandeval --help`.
 - Renamed the `--no-ignore-duplicates` to `--force` (shorthand: `-f`), which _forces_
   the evaluation, meaning that it evaluates the model even if it has previously been
   evaluated.
@@ -2586,18 +2644,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Error when encoding a batch of size 1 with OpenAI models.
 - Error when benchmarking OpenAI models on MacOS due to the `tiktoken.Encoding` object
   not being picklable.
-- Fixed an issue with OOM errors when changing from benchmarking one generative model
-  to another.
+- Fixed an issue with OOM errors when changing from benchmarking one generative model to
+  another.
 - Now allows loading tokenisers that require remote code, if `--trust-remote-code` has
   been set.
 - Fixed an issue where the `max_sequence_length` parameter in the Hugging Face model
-  configuration wasn't used to determine the `max_model_len` parameter in the
-  `vllm.LLM` initialisation, causing some models not being loaded in vLLM.
+  configuration wasn't used to determine the `max_model_len` parameter in the `vllm.LLM`
+  initialisation, causing some models not being loaded in vLLM.
 - An error occured if a tokenizer had no defined BOS token, which happens for some
   generative models. It is now set to be equal to the EOS token in that case.
 - Fixed error related to the extraction of predicted labels in sequence classification
-  tasks for generative models, which unfairly evaluated generative models that require
-  a prefix space on the labels (which are most of them currently).
+  tasks for generative models, which unfairly evaluated generative models that require a
+  prefix space on the labels (which are most of them currently).
 
 ### Removed
 
@@ -2609,8 +2667,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - Using model revisions did not work with vLLM models - this has now been fixed. These
-  revisions are specified using the '@' operator in the model ID, e.g., `scandeval -m
-  gpt2@main`.
+  revisions are specified using the '@' operator in the model ID, e.g.,
+  `scandeval -m gpt2@main`.
 
 ## [v9.3.1] - 2024-01-31
 
@@ -2636,16 +2694,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   handles class imbalance better.
 - Number of generated tokens for sequence classification tasks has been changed back to
   3 (from 1). This makes no difference to open source models, as we only use the
-  logprobs from the first token anyway, but it _does_ make a difference to closed
-  source models where the logprobs are not available (like OpenAI's chat models), as
-  we're instead calculating word edit distance to the labels.
+  logprobs from the first token anyway, but it _does_ make a difference to closed source
+  models where the logprobs are not available (like OpenAI's chat models), as we're
+  instead calculating word edit distance to the labels.
 
 ### Fixed
 
 - Prevents FP16 overflow by using -1e3 instead of -1e9 for ~0% probability logprobs
   during generation with vLLM.
-- Avoids excessive disk usage by not caching processed datasets to disk, as we are
-  never using the cached versions anyway.
+- Avoids excessive disk usage by not caching processed datasets to disk, as we are never
+  using the cached versions anyway.
 - We now only strip the prompts if the model's tokenizer includes a prefix space when
   tokenizing the labels.
 - When testing a model's maximum sequence length, we put dummy inputs into them. This
@@ -2724,9 +2782,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 - Now only stores the top-10 log probabilities of generated tokens when the generation
-  length is less than 8 tokens. Also now keeps separate caches for each (model,
-  dataset) combination, where it previously had a single cache for each model. Both of
-  these help reduce the memory usage of the model output cache.
+  length is less than 8 tokens. Also now keeps separate caches for each (model, dataset)
+  combination, where it previously had a single cache for each model. Both of these help
+  reduce the memory usage of the model output cache.
 - Optimised cache saving/loading a bit, making the waiting time in between iterations
   slightly shorter.
 - Removes the model output cache for a (model, dataset) combination when the
@@ -2751,14 +2809,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now caches the completions of open source generative models, which effectively makes
   benchmarking of these ~33% faster. We cannot store all logits for storage reasons (it
   quickly gets >100GB in that case), so we instead store the top-100 logits for each
-  generated token, but only if the generated sequence is shorter than 50 tokens. We
-  thus assume that (a) these are the only logits needed, and (b) that the generations
-  don't change. We argue that (a) is the case since we only use the logits in
-  classification tasks, in which case we only use the first token anyway. Further,
-  since we're using a temperature of 0 anyway, the generations will be as close to
-  deterministic as possible (up to small rounding fluctuations of logits, which is
-  negligible). This is a breaking change, since it is not compatible with the previous
-  way we cached OpenAI model outputs.
+  generated token, but only if the generated sequence is shorter than 50 tokens. We thus
+  assume that (a) these are the only logits needed, and (b) that the generations don't
+  change. We argue that (a) is the case since we only use the logits in classification
+  tasks, in which case we only use the first token anyway. Further, since we're using a
+  temperature of 0 anyway, the generations will be as close to deterministic as possible
+  (up to small rounding fluctuations of logits, which is negligible). This is a breaking
+  change, since it is not compatible with the previous way we cached OpenAI model
+  outputs.
 - Added a new `--clear-model-cache` flag, which removes the cached models after
   finishing the benchmarking of each model, to save disk space. This doesn't remove the
   cached model outputs or datasets.
@@ -2767,23 +2825,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - `dansk`, a Danish NER dataset, which replaces the previous `dane` dataset.
   - `norquad`, a Norwegian question answering dataset, which replaces the previous
     `scandiqa-no` dataset.
-  - Danish, Swedish, German and Dutch versions of the MMLU, ARC and HellaSwag
-    datasets, testing knowledge and common sense reasoning of generative models.
-    These have been machine translated by the University of Oregon using
-    GPT-3.5-turbo. Machine translation is not adequate, of course, so see this as a
-    first version of these kinds of evaluations, to get some benchmarks going asap.
+  - Danish, Swedish, German and Dutch versions of the MMLU, ARC and HellaSwag datasets,
+    testing knowledge and common sense reasoning of generative models. These have been
+    machine translated by the University of Oregon using GPT-3.5-turbo. Machine
+    translation is not adequate, of course, so see this as a first version of these
+    kinds of evaluations, to get some benchmarks going asap.
   - `squad-nl`, a Dutch extract question answering dataset, which is a machine
-    translated version of SQuAD-v2. As with the datasets mentioned above, this is
-    meant as a first version of a Dutch QA dataset, until we have a better one
-    available.
+    translated version of SQuAD-v2. As with the datasets mentioned above, this is meant
+    as a first version of a Dutch QA dataset, until we have a better one available.
 - Added `--only-validation-split` flag, which only benchmarks the model on the
   validation split, which is 5-10x smaller than the test split (depending on the
   dataset). This is especially useful with paid models like OpenAI models. The value of
-  this flag is stored in the benchmark results, so this will be visible on
-  leaderboards.
+  this flag is stored in the benchmark results, so this will be visible on leaderboards.
 - Now uses vLLM as the underlying engine for few-shot evaluating generative models,
-  which drastically improves the evaluation speed, as well as requiring less GPU
-  memory.
+  which drastically improves the evaluation speed, as well as requiring less GPU memory.
 
 ### Changed
 
@@ -2815,13 +2870,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - When sampling few-shot examples for question answering tasks we previously sampled
   among examples with context length less than 1024 characters, to keep the prompt
   short. This is too small for some datasets, so now we dynamically set this threshold
-  based on the dataset itself, starting from 512 and doubling until we have at least
-  the number of desired few-shot examples to choose from.
+  based on the dataset itself, starting from 512 and doubling until we have at least the
+  number of desired few-shot examples to choose from.
 - Now only sets `torch_dtype` is CUDA is available, as otherwise errors are caused.
 - Previously text generation in a batch would be stopped if any of the samples in the
-  batch reached the stopping criteria, causing a lot of incomplete completions. Now
-  the model continues to generate text until the entire batch is complete, and the
-  excess generation is removed afterwards.
+  batch reached the stopping criteria, causing a lot of incomplete completions. Now the
+  model continues to generate text until the entire batch is complete, and the excess
+  generation is removed afterwards.
 - When benchmarking encoder models on QA tasks the contexts are split up if they exceed
   the model's context length. The stride value used caused errors in rare cases where
   the model's maximum context length was really small (128). This has been fixed now.
@@ -2829,9 +2884,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   otherwise. This previously caused some issues when loading certain models.
 - Fixed bug where some encoder models did not work properly when loaded in with FP16
   mixed precision due to overflow. We now load in models with BF16 as these have a
-  larger range, but fall back to FP16 if BF16 is not available. If both lead to
-  overflow then we attempt again with full FP32, and lastly throw an informative error
-  and block evaluation if the overflow persists.
+  larger range, but fall back to FP16 if BF16 is not available. If both lead to overflow
+  then we attempt again with full FP32, and lastly throw an informative error and block
+  evaluation if the overflow persists.
 - When few-shot evaluating models on NER tasks, we are now more lenient towards the
   generated model output. Instead of taking the output as-is, we are now extracting the
   first dictionary (enclosed in curly brackets), as well as replacing all single
@@ -2868,10 +2923,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed bug with question answering benchmarking when the answer was a proper subset of
   the first token in the context, causing errors when benchmarking some models.
 - Some models have been stored in mixed precision as well as containing an
-  implementation of layer normalisation which is incompatible with such mixed
-  precision. When loading models we now only load in mixed precision if `torch_dtype`
-  has been specified in the Hugging Face model configuration (as with the Mistral
-  model, for instance).
+  implementation of layer normalisation which is incompatible with such mixed precision.
+  When loading models we now only load in mixed precision if `torch_dtype` has been
+  specified in the Hugging Face model configuration (as with the Mistral model, for
+  instance).
 - When sampling examples to use in few-shot prompts in a sequence classification, we
   previously required that the samples are stratified with respect to the labels. This
   caused an issue if the dataset did not contain all labels, so now we only stratify
@@ -2893,13 +2948,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - `no-sammendrag`, a Norwegian summarization dataset based on news articles.
   - `rrn`, an Icelandic summarization dataset based on news articles.
   - `mlsum`, a German summarization dataset based on news articles.
-  - `wiki-lingua-nl`, a Dutch summarization dataset based on WikiHow articles.
-  These are all of the task `summarization`, meaning that they can also all be run
-  using `scandeval --dataset-task summarization --model-id <model_id>`.
+  - `wiki-lingua-nl`, a Dutch summarization dataset based on WikiHow articles. These are
+    all of the task `summarization`, meaning that they can also all be run using
+    `scandeval --dataset-task summarization --model-id <model_id>`.
 - A `--use-flash-attention` flag has been added, which enables Flash Attention 2.0,
   which is required by some models, such as Mistral-based ones. If `flash-attn` has not
-  been installed then an informative error message will be raised. Thanks to
-  @peter-sk for this contribution! :tada:
+  been installed then an informative error message will be raised. Thanks to @peter-sk
+  for this contribution! :tada:
 
 ### Changed
 
@@ -2909,8 +2964,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- A bug was removed which caused some overlap between the dataset splits of the
-  ScandiQA datasets.
+- A bug was removed which caused some overlap between the dataset splits of the ScandiQA
+  datasets.
 - Now allows loading in models in the data type that they were trained in, which
   previously caused errors if they weren't trained in float32.
 
@@ -2919,20 +2974,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Support for few-shot evaluation of decoder models, both from the Hugging Face Hub and
-  OpenAI models. This currently happens automatically when specifying a generative
-  model from the Hugging Face Hub, and with all OpenAI models.
-- Now stores model caches in separate directories, enabling parallel evaluations.
-  Thanks to @KennethEnevoldsen for this
-  contribution! :tada:
+  OpenAI models. This currently happens automatically when specifying a generative model
+  from the Hugging Face Hub, and with all OpenAI models.
+- Now stores model caches in separate directories, enabling parallel evaluations. Thanks
+  to @KennethEnevoldsen for this contribution! :tada:
 - Added `--device` argument to the CLI, which can be used to overwrite the automatic
   detection of device (CPU, CUDA GPU, MPS GPU, TPU) to use.
-- Added `--trust-remote-code/--no-trust-remote-code` argument to the CLI, as some
-  models require this flag to be loaded. It defaults to `False` for security reasons,
-  however.
+- Added `--trust-remote-code/--no-trust-remote-code` argument to the CLI, as some models
+  require this flag to be loaded. It defaults to `False` for security reasons, however.
 - Added `--load-in-4bit/--no-load-in-4bit` argument to the CLI, which can be used to
-  overwrite the automatic 4bit loading of models. By default only generative models
-  will be loaded in 4bit, and only if a CUDA GPU is available, as this is required by
-  the underlying `bitsandbytes` package.
+  overwrite the automatic 4bit loading of models. By default only generative models will
+  be loaded in 4bit, and only if a CUDA GPU is available, as this is required by the
+  underlying `bitsandbytes` package.
 - Now manually adjusts the maximum sequence length of a model to ensure that the
   reported maximum length is correct.
 
@@ -2970,8 +3023,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- The feature names of the NER datasets have been changed, so the code have been
-  updated to reflect this.
+- The feature names of the NER datasets have been changed, so the code have been updated
+  to reflect this.
 
 ## [v7.1.0] - 2023-05-15
 
@@ -2999,16 +3052,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now added support for benchmarking local models in the Hugging Face format (i.e.,
   saved with the `save_pretrained` method). This automatically detects the framework
   based on the file extension, but can also be set using the new `--model-framework`
-  argument. Thanks to @peter-sk for implementing this!
-  :tada:
+  argument. Thanks to @peter-sk for implementing this! :tada:
 
 ### Fixed
 
 - Now handles word-token alignment properly with SentencePiece tokenisers, which caused
   some models not being able to be benchmarked on token classification tasks.
 - Now handles UNK tokens during word-token alignment, where it locates the word that is
-  being tokenised into the UNK token, extracting the original value of the UNK token
-  and replacing the token by that value.
+  being tokenised into the UNK token, extracting the original value of the UNK token and
+  replacing the token by that value.
 
 ## [v6.2.4] - 2023-03-10
 
@@ -3028,10 +3080,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Ensure that the `max_position_embeddings` fix from v6.2.2 only occurs if the
-  tokenizer has a padding token, as this is used to set the `model_max_length`.
-- If a model only has a JAX model but also has tags on the Hugging Face Hub from
-  another framework, then re-try the evaluation with `from_flax` set to `True`.
+- Ensure that the `max_position_embeddings` fix from v6.2.2 only occurs if the tokenizer
+  has a padding token, as this is used to set the `model_max_length`.
+- If a model only has a JAX model but also has tags on the Hugging Face Hub from another
+  framework, then re-try the evaluation with `from_flax` set to `True`.
 
 ## [v6.2.2] - 2023-02-25
 
@@ -3097,14 +3149,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Added support for decoder models such as the GPT-series.
-- Added new Swedish sentiment classification dataset, SweReC, which is not
-  aspect-based, contrary to the previous ABSAbank-Imm dataset. This dataset is a
-  three-way classification task into the classical `positive`, `neutral` and `negative`
-  classes, thereby establishing uniformity between the sentiment classification
-  datasets in the different languages. The dataset comes from reviews from both
-  se.trustpilot.com and reco.se, and has been created by Kristoffer Svensson as part of
-  his Bachelor thesis "Sentiment Analysis With Convolutional Neural Networks:
-  Classifying sentiment in Swedish reviews".
+- Added new Swedish sentiment classification dataset, SweReC, which is not aspect-based,
+  contrary to the previous ABSAbank-Imm dataset. This dataset is a three-way
+  classification task into the classical `positive`, `neutral` and `negative` classes,
+  thereby establishing uniformity between the sentiment classification datasets in the
+  different languages. The dataset comes from reviews from both se.trustpilot.com and
+  reco.se, and has been created by Kristoffer Svensson as part of his Bachelor thesis
+  "Sentiment Analysis With Convolutional Neural Networks: Classifying sentiment in
+  Swedish reviews".
 - Added historic BERT models from `dbmdz` as part of the default multilingual list.
 - Added the `--batch-size` argument, which can be used to manually select a batch size.
   Must be among 1, 2, 4, 8, 16 and 32.
@@ -3123,8 +3175,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Now ensures that tokenizers, model configurations and metrics are cached to the
   ScandEval cache, rather than the default Hugging Face cache.
 - Previously, if a model's context length was greater than 1,000 it would be reduced to
-  512, since an unset context length results in a very large `model_max_length` value
-  of the tokenizer. This conflicted with longformer-style models whose context length
+  512, since an unset context length results in a very large `model_max_length` value of
+  the tokenizer. This conflicted with longformer-style models whose context length
   _actually_ was greater than 1,000, so now this upper bound has been increased to
   100,000.
 - Now includes `sacremoses` as a dependency, as this is required by some tokenizers.
@@ -3151,10 +3203,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Evaluation results are now saved in a JSONL file instead of a JSON file, and results
   are appended onto the file after every evaluation.
 - You can now specify your Hugging Face authentication token in the `use_auth_token`
-  argument of `Benchmarker` rather than manually logging in with `huggingface-cli
-  login`. In the CLI an authentication token can also be applied directly using the new
-  `--auth-token` argument. If an authentication is provided in this way in the CLI,
-  then there is no need to add the `--use-auth-token` flag.
+  argument of `Benchmarker` rather than manually logging in with
+  `huggingface-cli login`. In the CLI an authentication token can also be applied
+  directly using the new `--auth-token` argument. If an authentication is provided in
+  this way in the CLI, then there is no need to add the `--use-auth-token` flag.
 - The "random" models have now been renamed to "fresh", to emphasise that they are not
   random, but instead randomly initialized.
 - The fresh models are now task independent, meaning that `fresh-xlmr-base` will now
@@ -3188,8 +3240,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - Now garbage collects properly, where previously (from v4 onwards) the `model` and
-  `model_dict` were not removed from memory after each run, potentially causing a
-  memory leak.
+  `model_dict` were not removed from memory after each run, potentially causing a memory
+  leak.
 
 ### Added
 
@@ -3290,46 +3342,46 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- During finetuning, the i'th model will only be evaluated on the i'th
-  bootstrapped dataset. This ensures that there will always be 10 scores, no
-  matter if we're finetuning or purely evaluating, which means that the
-  confidence intervals will be more comparable.
+- During finetuning, the i'th model will only be evaluated on the i'th bootstrapped
+  dataset. This ensures that there will always be 10 scores, no matter if we're
+  finetuning or purely evaluating, which means that the confidence intervals will be
+  more comparable.
 
 ### Fixed
 
-- Now sets `seed` in `TrainingArguments` rather than setting it explicitly in
-  PyTorch. This has the added bonus of ensuring that the `DataLoader`s used
-  during training also uses this seed, ensuring better reproducibility.
-- Initialises model parameters with (fixed) different seeds during every
-  iteration, to ensure variability and reproducibility.
+- Now sets `seed` in `TrainingArguments` rather than setting it explicitly in PyTorch.
+  This has the added bonus of ensuring that the `DataLoader`s used during training also
+  uses this seed, ensuring better reproducibility.
+- Initialises model parameters with (fixed) different seeds during every iteration, to
+  ensure variability and reproducibility.
 - Explicitly uses the PyTorch implementation of `AdamW` now, rather than the
   (deprecated) `transformers` implementation.
-- Fixed an error when a tokenizer has `max_model_input_sizes` set, but it being
-  empty. In this case, the default truncation length is set to 512.
+- Fixed an error when a tokenizer has `max_model_input_sizes` set, but it being empty.
+  In this case, the default truncation length is set to 512.
 
 ## [v2.3.2] - 2022-02-11
 
 ### Fixed
 
-- Fixed a bug where a model's framework and pipeline tag were
-  indistinguishable, as they are both using the same `tag-white` tag now.
+- Fixed a bug where a model's framework and pipeline tag were indistinguishable, as they
+  are both using the same `tag-white` tag now.
 
 ## [v2.3.1] - 2022-02-11
 
 ### Fixed
 
 - Changed the `tag-red`, which referred to the HTML class containing the model
-  framework, to `tag-white`. This caused models to not be benchmarkable, as
-  their framework could not be determined.
+  framework, to `tag-white`. This caused models to not be benchmarkable, as their
+  framework could not be determined.
 
 ## [v2.3.0] - 2022-01-20
 
 ### Added
 
-- Specific branches/commits/tags can now be benchmarked, using the `@`
-  delimiter. For instance, `scandeval -m model_id@commit_hash` will benchmark
-  the model with model ID `model_id`, stored at commit with hash `commit_hash`.
-  Thanks to @versae for contributing! :tada:
+- Specific branches/commits/tags can now be benchmarked, using the `@` delimiter. For
+  instance, `scandeval -m model_id@commit_hash` will benchmark the model with model ID
+  `model_id`, stored at commit with hash `commit_hash`. Thanks to @versae for
+  contributing! :tada:
 
 ## [v2.2.0] - 2022-01-18
 
@@ -3354,8 +3406,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Now removing all empty documents from datasets, as well as catching
-  `KeyError` when trying to remove empty documents from dataset.
+- Now removing all empty documents from datasets, as well as catching `KeyError` when
+  trying to remove empty documents from dataset.
 
 ## [v1.5.8] - 2021-12-13
 
@@ -3367,30 +3419,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Now catching _all_ `CUDA error` exceptions and treating them as running out
-  of memory. No harm done if this is not the case, however, as the script will
-  simply decrease the batch size until it reaches 1, and if CUDA errors persist
-  then it will skip that benchmark.
+- Now catching _all_ `CUDA error` exceptions and treating them as running out of memory.
+  No harm done if this is not the case, however, as the script will simply decrease the
+  batch size until it reaches 1, and if CUDA errors persist then it will skip that
+  benchmark.
 
 ## [v1.5.6] - 2021-12-10
 
 ### Fixed
 
-- When benchmarking a token classification dataset with a model whose tokenizer
-  does not have a fast variant yet, this raised an error as the `word_ids`
-  method of `BatchEncoding` objects only works when the tokenizer is fast. In
-  that case these word IDs are now computed manually. This can currently handle
-  WordPiece and SentencePiece prefixes (i.e., `##` and `▁`), and will raise an
-  error if the manual alignment of words and tokens fail.
-- Catch the CUDA error `CUDA error: CUBLAS_STATUS_ALLOC_FAILED`, which in this
-  case is due to OOM.
+- When benchmarking a token classification dataset with a model whose tokenizer does not
+  have a fast variant yet, this raised an error as the `word_ids` method of
+  `BatchEncoding` objects only works when the tokenizer is fast. In that case these word
+  IDs are now computed manually. This can currently handle WordPiece and SentencePiece
+  prefixes (i.e., `##` and `▁`), and will raise an error if the manual alignment of
+  words and tokens fail.
+- Catch the CUDA error `CUDA error: CUBLAS_STATUS_ALLOC_FAILED`, which in this case is
+  due to OOM.
 
 ## [v1.5.5] - 2021-12-08
 
 ### Fixed
 
-- Deal with CUDA OOM errors when they occur on a replica, when multiple cores
-  are used.
+- Deal with CUDA OOM errors when they occur on a replica, when multiple cores are used.
 
 ## [v1.5.4] - 2021-12-08
 
@@ -3402,17 +3453,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Only try to to merge the `id2label` and `label2id` conversions if the model
-  is finetuned. This caused some errors when a model was not finetuned but
-  somehow still had conversion dictionaries.
+- Only try to to merge the `id2label` and `label2id` conversions if the model is
+  finetuned. This caused some errors when a model was not finetuned but somehow still
+  had conversion dictionaries.
 
 ## [v1.5.2] - 2021-12-08
 
 ### Fixed
 
-- Deal with models with tasks `feature-extraction` or `sentence-similarity` as
-  if they were `fill-mask`, meaning assume that they are merely pretrained
-  models, rather than finetuned.
+- Deal with models with tasks `feature-extraction` or `sentence-similarity` as if they
+  were `fill-mask`, meaning assume that they are merely pretrained models, rather than
+  finetuned.
 
 ## [v1.5.1] - 2021-11-27
 
@@ -3424,31 +3475,29 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Added progress bar description when evaluating models without finetuning them
-  first.
+- Added progress bar description when evaluating models without finetuning them first.
 - Lowered the package requirements to the earliest possible versions.
 
 ### Removed
 
-- Removed support for TensorFlow and Jax models, due to them not working
-  properly anyway. They might be included at a later point, properly.
+- Removed support for TensorFlow and Jax models, due to them not working properly
+  anyway. They might be included at a later point, properly.
 
 ## [v1.4.0] - 2021-11-25
 
 ### Changed
 
 - Now also outputting aggregated metrics in the resulting
-  `scandeval_benchmark_results.json` file. This `json` file now has keys
-  `raw_metrics` and `total`, with `raw_metrics` containing the previous (raw)
-  scores, and the value of the new `total` key has aggregated scores (means and
-  standard errors).
+  `scandeval_benchmark_results.json` file. This `json` file now has keys `raw_metrics`
+  and `total`, with `raw_metrics` containing the previous (raw) scores, and the value of
+  the new `total` key has aggregated scores (means and standard errors).
 
 ## [v1.3.8] - 2021-11-25
 
 ### Changed
 
-- All training/evaluation progress bars are now removed when they are finished,
-  and the training progress bar has no total anymore, as it was misleading.
+- All training/evaluation progress bars are now removed when they are finished, and the
+  training progress bar has no total anymore, as it was misleading.
 
 ## [v1.3.7] - 2021-11-25
 
@@ -3460,9 +3509,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Now only updating the list of benchmarks in the `Benchmark` during
-  initialisation, and also logs it. This should make subsequent calls to the
-  `benchmark` method faster.
+- Now only updating the list of benchmarks in the `Benchmark` during initialisation, and
+  also logs it. This should make subsequent calls to the `benchmark` method faster.
 
 ### Fixed
 
@@ -3472,15 +3520,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Set the number of warmup steps to be the intended one training set pass,
-  where previously it was effectively 8x that amount, due to gradient
-  accumulation.
+- Set the number of warmup steps to be the intended one training set pass, where
+  previously it was effectively 8x that amount, due to gradient accumulation.
 - Added the NER label synonyms `OBJORG=ORG`, `LOCPRS=LOC`, `LOCORG=LOC` and
   `ORGPRS=ORG`.
-- Explicitly added `numpy` to the `install_requires` list. This is normally not
-  a problem, as it's a requirement for other required packages, but this
-  depends on the order in which the requirements are installed. This avoids
-  such errors caused by misordering the requirements.
+- Explicitly added `numpy` to the `install_requires` list. This is normally not a
+  problem, as it's a requirement for other required packages, but this depends on the
+  order in which the requirements are installed. This avoids such errors caused by
+  misordering the requirements.
 
 ## [v1.3.4] - 2021-11-11
 
@@ -3492,17 +3539,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- When a finetuned model has labels which are synonyms of each other, they are
-  now properly treated as synonyms, where previously this caused the model to
-  have misaligned `id2label` and `label2id` conversion dictionaries.
+- When a finetuned model has labels which are synonyms of each other, they are now
+  properly treated as synonyms, where previously this caused the model to have
+  misaligned `id2label` and `label2id` conversion dictionaries.
 
 ## [v1.3.2] - 2021-11-11
 
 ### Fixed
 
 - Added the NER label synonyms `GPE_LOC=LOC`, `GPE_ORG=ORG`, `LOC/ORG=LOC`,
-  `ORG/PRS=ORG`, `OBJ/ORG=ORG`, as Norwegian and Swedish models tend to use
-  these.
+  `ORG/PRS=ORG`, `OBJ/ORG=ORG`, as Norwegian and Swedish models tend to use these.
 
 ## [v1.3.1] - 2021-11-11
 
@@ -3514,28 +3560,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added label synonyms for NER benchmarking, which will enforce a more fair
-  comparison of finetuned NER models, if the models have been trained on
-  datasets with different labelling (e.g., `Person` instead of `PER`).
+- Added label synonyms for NER benchmarking, which will enforce a more fair comparison
+  of finetuned NER models, if the models have been trained on datasets with different
+  labelling (e.g., `Person` instead of `PER`).
 
 ## [v1.2.1] - 2021-11-11
 
 ### Removed
 
-- Properly removed the Icelandic WikiANN-IS data files. It was removed from the
-  package, but the underlying files were still lying in the repository.
+- Properly removed the Icelandic WikiANN-IS data files. It was removed from the package,
+  but the underlying files were still lying in the repository.
 
 ## [v1.2.0] - 2021-10-15
 
 ### Added
 
-- Added the Icelandic NER dataset MIM-GOLD-NER. This can now be loaded as
-  `mim-gold-ner` in the `Benchmark` class and through the CLI.
+- Added the Icelandic NER dataset MIM-GOLD-NER. This can now be loaded as `mim-gold-ner`
+  in the `Benchmark` class and through the CLI.
 
 ### Removed
 
-- Removed the Icelandic WikiANN-IS dataset, as this has now been replaced by
-  the MIM-GOLD-NER dataset.
+- Removed the Icelandic WikiANN-IS dataset, as this has now been replaced by the
+  MIM-GOLD-NER dataset.
 
 ## [v1.1.3] - 2021-10-04
 
@@ -3553,54 +3599,51 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Reduce validation batch size if CUDA runs out of memory, rather than only
-  reducing training batch size.
+- Reduce validation batch size if CUDA runs out of memory, rather than only reducing
+  training batch size.
 
 ## [v1.1.0] - 2021-09-13
 
 ### Added
 
-- Added Icelandic and Faroese translations of the Norwegian `NoReC` sentiment
-  analysis dataset. These can be loaded as `norec-is` and `norec-fo`,
-  respectively.
+- Added Icelandic and Faroese translations of the Norwegian `NoReC` sentiment analysis
+  dataset. These can be loaded as `norec-is` and `norec-fo`, respectively.
 
 ### Changed
 
-- When loading datasets with `load_dataset`, the result is now four dataframes,
-  rather than dictionaries. As the data can be accessed in the same way as with
-  dictionaries, this maintains backwards compatibility.
-- If a finetuned NER model has been trained on NER tags not present amongst the
-  ones in the dataset, then these are either converted to `MISC` tags (if these
-  are present in the dataset) and otherwise `O` tags. This will make the
-  benchmarking of finetuned diverse NER models more fair.
+- When loading datasets with `load_dataset`, the result is now four dataframes, rather
+  than dictionaries. As the data can be accessed in the same way as with dictionaries,
+  this maintains backwards compatibility.
+- If a finetuned NER model has been trained on NER tags not present amongst the ones in
+  the dataset, then these are either converted to `MISC` tags (if these are present in
+  the dataset) and otherwise `O` tags. This will make the benchmarking of finetuned
+  diverse NER models more fair.
 
 ### Fixed
 
-- There was an error when a SpaCy model was benchmarked on a dataset that it
-  was not trained on. It now raises an appropriate `InvalidBenchmark`
-  exception, and will be skipped in the CLI and with the `Benchmark` class.
+- There was an error when a SpaCy model was benchmarked on a dataset that it was not
+  trained on. It now raises an appropriate `InvalidBenchmark` exception, and will be
+  skipped in the CLI and with the `Benchmark` class.
 
 ## [v1.0.2] - 2021-09-09
 
 ### Fixed
 
-- Replaced abbreviations with spaces, such as "o s v" in the SDT corpus, with
-  their proper version "o.s.v.".
+- Replaced abbreviations with spaces, such as "o s v" in the SDT corpus, with their
+  proper version "o.s.v.".
 
 ## [v1.0.1] - 2021-09-09
 
 ### Fixed
 
-- The URLs for the `wikiann-is` and `wikiann-fo` were wrong and have been
-  corrected.
+- The URLs for the `wikiann-is` and `wikiann-fo` were wrong and have been corrected.
 
 ## [v1.0.0] - 2021-09-09
 
 ### Added
 
-- Added the Icelandic and Faroese WikiANN datasets, for NER evaluation. They
-  can be loaded as `wikiann-is` and `wikiann-fo` in the CLI and via the
-  `Benchmark` class.
+- Added the Icelandic and Faroese WikiANN datasets, for NER evaluation. They can be
+  loaded as `wikiann-is` and `wikiann-fo` in the CLI and via the `Benchmark` class.
 - Added the Icelandic and Faroese parts of the Universal Dependencies datasets,
   containing POS and dependency parsing tags. They can be loaded as `idt-pos`,
   `idt-dep`, `fdt-pos` and `fdt-dep`, respectively.
@@ -3609,98 +3652,94 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added the Dataset for Linguistic Acceptability Judgments (DaLaJ) dataset,
-  which is here used as a binary classification dataset, in which sentences
-  have to be classified as correct Swedish or not. It can be loaded as `dalaj`
-  in the CLI and via the `Benchmark` class.
-- Added the ABSAbank-Imm dataset, which is an aspect-based sentiment analysis
-  dataset in Swedish, namely, the sentiment towards immigration. The original
-  dataset featured a floating point score between 0 and 5, which has been
-  reduced to a classifical three-way classification (`negative`, `neutral` and
-  `positive`). It can be loaded as `absabank-imm` in the CLI and via the
+- Added the Dataset for Linguistic Acceptability Judgments (DaLaJ) dataset, which is
+  here used as a binary classification dataset, in which sentences have to be classified
+  as correct Swedish or not. It can be loaded as `dalaj` in the CLI and via the
   `Benchmark` class.
-- Added the POS and dependency parsing parts of the Swedish Dependency Treebank
-  (SDT). They can be loaded as `sdt-pos` and `sdt-dep` in the CLI and via the
-  `Benchmark` class.
-- Added the Stockholm-Umeå corpus 3.0 (SUC 3.0), a Swedish NER dataset. It can
-  be loaded as `suc3` in the CLI and via the `Benchmark` class.
-- Added abstract `NerBenchmark`, `PosBenchmark` and `DepBenchmark` classes, to
-  ensure uniformity.
+- Added the ABSAbank-Imm dataset, which is an aspect-based sentiment analysis dataset in
+  Swedish, namely, the sentiment towards immigration. The original dataset featured a
+  floating point score between 0 and 5, which has been reduced to a classifical
+  three-way classification (`negative`, `neutral` and `positive`). It can be loaded as
+  `absabank-imm` in the CLI and via the `Benchmark` class.
+- Added the POS and dependency parsing parts of the Swedish Dependency Treebank (SDT).
+  They can be loaded as `sdt-pos` and `sdt-dep` in the CLI and via the `Benchmark`
+  class.
+- Added the Stockholm-Umeå corpus 3.0 (SUC 3.0), a Swedish NER dataset. It can be loaded
+  as `suc3` in the CLI and via the `Benchmark` class.
+- Added abstract `NerBenchmark`, `PosBenchmark` and `DepBenchmark` classes, to ensure
+  uniformity.
 
 ### Changed
 
-- Uniformised all the NER datasets. They now all only have the NER tags `PER`,
-  `LOC`, `ORG` and `MISC`.
-- Uniformised all the dependency parsing datasets. They now all only have the
-  main dependency parsing tags, without the subtags (so `acl:cleft` has been
-  changed to `acl`, for instance).
-- Changed the columns in all text classification datasets to `text` and
-  `label`, to make it more uniform.
+- Uniformised all the NER datasets. They now all only have the NER tags `PER`, `LOC`,
+  `ORG` and `MISC`.
+- Uniformised all the dependency parsing datasets. They now all only have the main
+  dependency parsing tags, without the subtags (so `acl:cleft` has been changed to
+  `acl`, for instance).
+- Changed the columns in all text classification datasets to `text` and `label`, to make
+  it more uniform.
 
 ## [v0.16.0] - 2021-09-07
 
 ### Fixed
 
-- Upped the number index tokens for dependency parsing from 100 to 512. This
-  will need to be done better in the future, but is a fix for now.
+- Upped the number index tokens for dependency parsing from 100 to 512. This will need
+  to be done better in the future, but is a fix for now.
 
 ### Added
 
-- Added the random models `random-roberta-sequence-clf` and
-  `random-roberta-token-clf` to the default list of model IDs when benchmarking
-  all models.
+- Added the random models `random-roberta-sequence-clf` and `random-roberta-token-clf`
+  to the default list of model IDs when benchmarking all models.
 
 ## [v0.15.1] - 2021-09-03
 
 ### Fixed
 
-- The list of dependency tags in the `ndt-nb-dep` and `ndt-nn-dep` were wrong.
-  They have now been changed to all the tags occurring in the training sets.
-- The `europarl_sent` data folder has now been renamed to `europarl`, so that
-  it can be loaded correctly with `load_dataset`.
+- The list of dependency tags in the `ndt-nb-dep` and `ndt-nn-dep` were wrong. They have
+  now been changed to all the tags occurring in the training sets.
+- The `europarl_sent` data folder has now been renamed to `europarl`, so that it can be
+  loaded correctly with `load_dataset`.
 
 ## [v0.15.0] - 2021-09-02
 
 ### Added
 
-- Added the Bokmål and Nynorsk POS and DEP parts of the Norwegian Dependency
-  Treebank dataset (NDT). They can be loaded as `ndt-nb-pos`, `ndt-nn-pos`,
-  `ndt-nb-dep` and `ndt-nn-dep`, respectively, from the CLI and the `Benchmark`
-  class.
+- Added the Bokmål and Nynorsk POS and DEP parts of the Norwegian Dependency Treebank
+  dataset (NDT). They can be loaded as `ndt-nb-pos`, `ndt-nn-pos`, `ndt-nb-dep` and
+  `ndt-nn-dep`, respectively, from the CLI and the `Benchmark` class.
 
 ### Removed
 
-- Removed the `EuroparlSubj` and `TwitterSubj` datasets, as they were too easy
-  and did not really differentiate models.
+- Removed the `EuroparlSubj` and `TwitterSubj` datasets, as they were too easy and did
+  not really differentiate models.
 - Removed the abstract `SentimentClassificationBenchmark` and
-  `BinaryClassificationBenchmark`, to simplify the classes. There is now only
-  one `TextClassificationBenchmark`, which always evaluates with macro-F1.
+  `BinaryClassificationBenchmark`, to simplify the classes. There is now only one
+  `TextClassificationBenchmark`, which always evaluates with macro-F1.
 
 ### Changed
 
-- Changed the name of `europarl-sent` to `europarl`, as `europarl-subj` now
-  does not exist anymore.
+- Changed the name of `europarl-sent` to `europarl`, as `europarl-subj` now does not
+  exist anymore.
 - Changed the `nordial` dataset to the original 4-way classification dataset.
 
 ## [v0.14.1] - 2021-09-02
 
 ### Fixed
 
-- Remove duplicate model IDs when calling the CLI or `Benchmark` class without
-  any specified model IDs.
+- Remove duplicate model IDs when calling the CLI or `Benchmark` class without any
+  specified model IDs.
 
 ## [v0.14.0] - 2021-08-31
 
 ### Added
 
-- Added the Bokmål and Nynorsk parts of the NorNE dataset, for named entity
-  recognition. They can be loaded with the `norne-nb` and `norne-nn` names.
+- Added the Bokmål and Nynorsk parts of the NorNE dataset, for named entity recognition.
+  They can be loaded with the `norne-nb` and `norne-nn` names.
 - There is now a `load_dataset` function, which can load any dataset, using the
-  dataset's name (same name as in the CLI). For instance,
-  `load_dataset('angry-tweets')` loads the `AngryTweets` dataset. This can be
-  imported directly from the package: `from scandeval import load_dataset`. The
-  individual dataset loading functions can still be imported as before; e.g.,
-  `from scandeval.datasets import load_angry_tweets`.
+  dataset's name (same name as in the CLI). For instance, `load_dataset('angry-tweets')`
+  loads the `AngryTweets` dataset. This can be imported directly from the package:
+  `from scandeval import load_dataset`. The individual dataset loading functions can
+  still be imported as before; e.g., `from scandeval.datasets import load_angry_tweets`.
 
 ### Changed
 
@@ -3712,83 +3751,78 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added the Norwegian Review Corpus (NoReC), a sentiment classification dataset
-  in Norwegian.
-- Added the Bokmål/Nynorsk part of the Norwegian Dialect dataset (NorDial), a
-  binary classification dataset in Norwegian.
+- Added the Norwegian Review Corpus (NoReC), a sentiment classification dataset in
+  Norwegian.
+- Added the Bokmål/Nynorsk part of the Norwegian Dialect dataset (NorDial), a binary
+  classification dataset in Norwegian.
 
 ### Changed
 
-- Changed the early stopping patience to `2 + 1000 // len(train)` from `2 + 250
-  // len(train)`, to allow more patience (and thus, more stability), for
+- Changed the early stopping patience to `2 + 1000 // len(train)` from
+  `2 + 250 // len(train)`, to allow more patience (and thus, more stability), for
   smaller datasets.
 
 ## [v0.12.0] - 2021-08-26
 
 ### Changed
 
-- Merged the `lcc1` and `lcc2` datasets into one `lcc` dataset, which is
-  reasonable as they have been annotated by the same person. The `lcc2` dataset
-  was too small to give reasonable benchmarking results.
+- Merged the `lcc1` and `lcc2` datasets into one `lcc` dataset, which is reasonable as
+  they have been annotated by the same person. The `lcc2` dataset was too small to give
+  reasonable benchmarking results.
 - Renamed the `europarl2` dataset to `europarl_sent`
 
 ### Removed
 
-- Removed the `europarl1` dataset, as it was too small to give reliable
-  benchmarking results. This dataset could not simply be added to the
-  `europarl2` dataset, as with the new `lcc` dataset, as the annotaters are not
-  the same.
+- Removed the `europarl1` dataset, as it was too small to give reliable benchmarking
+  results. This dataset could not simply be added to the `europarl2` dataset, as with
+  the new `lcc` dataset, as the annotaters are not the same.
 
 ### Fixed
 
-- If errors occur during benchmarking, then garbage collect before skipping to
-  the next benchmark, to avoid memory issues.
+- If errors occur during benchmarking, then garbage collect before skipping to the next
+  benchmark, to avoid memory issues.
 
 ## [v0.11.2] - 2021-08-25
 
 ### Fixed
 
-- Issue with `model_max_length` in tokenizer meant that models with an ill-set
-  value of `max_position_embeddings` could not be benchmarked. Now, if
-  `model_max_length` is not set then the minimal value of the sizes in
-  `max_model_input_sizes` will be used (which is usually 512).
+- Issue with `model_max_length` in tokenizer meant that models with an ill-set value of
+  `max_position_embeddings` could not be benchmarked. Now, if `model_max_length` is not
+  set then the minimal value of the sizes in `max_model_input_sizes` will be used (which
+  is usually 512).
 
 ### Changed
 
-- Disabling CUDNN benchmark when using the `pytorch` framework, to enforce
-  better reproducibility.
+- Disabling CUDNN benchmark when using the `pytorch` framework, to enforce better
+  reproducibility.
 
 ## [v0.11.1] - 2021-08-24
 
 ### Changed
 
-- Rather than bootstrapping the training dataset and using the results to
-  compute an estimator of the standard deviation, the same training dataset is
-  trained on all ten times, and the mean of these along with a confidence
-  interval is outputted.
+- Rather than bootstrapping the training dataset and using the results to compute an
+  estimator of the standard deviation, the same training dataset is trained on all ten
+  times, and the mean of these along with a confidence interval is outputted.
 
 ### Fixed
 
-- Updated the model metadata fetching to the new HTML structure of the
-  HuggingFace Hub.
-- A random seed is now set for all libraries, via the `transformers.set_seed`
-  function.
-- Always update the list of all the benchmarks when calling the
-  `Benchmark.benchmark` method, to allow for possibility of setting new
-  benchmark parameters after initialisation.
+- Updated the model metadata fetching to the new HTML structure of the HuggingFace Hub.
+- A random seed is now set for all libraries, via the `transformers.set_seed` function.
+- Always update the list of all the benchmarks when calling the `Benchmark.benchmark`
+  method, to allow for possibility of setting new benchmark parameters after
+  initialisation.
 
 ## [v0.11.0] - 2021-08-23
 
 ### Added
 
-- The subjective/objective part of the `TwitterSent` and `Europarl2` datasets
-  have now been added as binary classification tasks, called `TwitterSubj` and
-  `EuroparlSubj`, respectively. These can now be benchmarked with the
-  `Benchmark` class and the CLI using the `twitter-subj` and `europarl-subj`
-  names, respectively.
+- The subjective/objective part of the `TwitterSent` and `Europarl2` datasets have now
+  been added as binary classification tasks, called `TwitterSubj` and `EuroparlSubj`,
+  respectively. These can now be benchmarked with the `Benchmark` class and the CLI
+  using the `twitter-subj` and `europarl-subj` names, respectively.
 - Added an abstract `BinaryClassificationBenchmark`, to streamline the binary
-  classification benchmark datasets, which now includes the `DKHate`,
-  `TwitterSubj` and `EuroparlSubj` datasets.
+  classification benchmark datasets, which now includes the `DKHate`, `TwitterSubj` and
+  `EuroparlSubj` datasets.
 
 ## [v0.10.1] - 2021-08-20
 
@@ -3800,102 +3834,95 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Properly filters by languages now via the `language` argument in the CLI and
-  the `Benchmark` class. As HuggingFace Hub does not have a keyword for
-  language, a search for language also means that any other non-language tag
-  with that name also shows up in the results. These are now manually removed.
-  This means it takes a few more seconds to compile the model list, but it will
-  at least be accurate.
-- In case `model_max_length` has not been set in a model configuration, it
-  defaults to the value of `max_position_embeddings`. This fixes a problem with
-  some models not being able to be trained on datasets whose texts were too
-  long.
-- Now handles the case where a non-classification model, such as a seq-to-seq
-  model, are being benchmarked on a classification dataset.
+- Properly filters by languages now via the `language` argument in the CLI and the
+  `Benchmark` class. As HuggingFace Hub does not have a keyword for language, a search
+  for language also means that any other non-language tag with that name also shows up
+  in the results. These are now manually removed. This means it takes a few more seconds
+  to compile the model list, but it will at least be accurate.
+- In case `model_max_length` has not been set in a model configuration, it defaults to
+  the value of `max_position_embeddings`. This fixes a problem with some models not
+  being able to be trained on datasets whose texts were too long.
+- Now handles the case where a non-classification model, such as a seq-to-seq model, are
+  being benchmarked on a classification dataset.
 
 ### Added
 
-- All the benchmark classes and `Benchmark` now has a `benchmark` method, which
-  does the same as the `__call__` method. This is primarily so that it shows up
-  in the Sphinx documentation.
-- Added the default `LABEL_0` and `LABEL_1` label synonyms for `NOT` and `OFF`
-  in the `DKHate` benchmark.
-- Added the possibility of benchmarking randomly initialised RoBERTa models,
-  using the model IDs `random-roberta-sequence-clf` and
-  `random-roberta-token-clf`.
+- All the benchmark classes and `Benchmark` now has a `benchmark` method, which does the
+  same as the `__call__` method. This is primarily so that it shows up in the Sphinx
+  documentation.
+- Added the default `LABEL_0` and `LABEL_1` label synonyms for `NOT` and `OFF` in the
+  `DKHate` benchmark.
+- Added the possibility of benchmarking randomly initialised RoBERTa models, using the
+  model IDs `random-roberta-sequence-clf` and `random-roberta-token-clf`.
 
 ## [v0.9.0] - 2021-08-19
 
 ### Added
 
-- Added the separate `nb` (Norwegian Bokmål) and `nn` (Norwegian Nynorsk)
-  language tags, on top of the general `no` (Norwegian).
+- Added the separate `nb` (Norwegian Bokmål) and `nn` (Norwegian Nynorsk) language tags,
+  on top of the general `no` (Norwegian).
 - Added more multilingual models.
 
 ### Fixed
 
-- SpaCy models was evaluated wrongly on the `dane-no-misc` dataset, as their
-  `MISC` predictions was not replaced with `O` tags.
-- When evaluating models finetuned for token classification on a text
-  classification task, a `ValueError` was raised, rather than an
-  `InvalidBenchmark` exception.
-- If none of the model's labels are among the dataset's labels, and are not
-  even synonyms of them, then raise an `InvalidBenchmark`. This prevents things
-  like evaluating a finetuned sentiment model on a NER task.
-- When `evaluate_train` was `True`, this previously evaluated the test set
-  instead.
+- SpaCy models was evaluated wrongly on the `dane-no-misc` dataset, as their `MISC`
+  predictions was not replaced with `O` tags.
+- When evaluating models finetuned for token classification on a text classification
+  task, a `ValueError` was raised, rather than an `InvalidBenchmark` exception.
+- If none of the model's labels are among the dataset's labels, and are not even
+  synonyms of them, then raise an `InvalidBenchmark`. This prevents things like
+  evaluating a finetuned sentiment model on a NER task.
+- When `evaluate_train` was `True`, this previously evaluated the test set instead.
 
 ### Changed
 
-- Changed `Benchmark` API. Now the constructor and the `__call__` method have
-  the same arguments, except the `model_id` and `dataset` in `__call__`, where
-  the constructor sets the default values and the `__call__` method can change
-  these to specific cases.
-- Changed the benchmarking order. Now benchmarks all datasets for a model,
-  before moving on to the next model
+- Changed `Benchmark` API. Now the constructor and the `__call__` method have the same
+  arguments, except the `model_id` and `dataset` in `__call__`, where the constructor
+  sets the default values and the `__call__` method can change these to specific cases.
+- Changed the benchmarking order. Now benchmarks all datasets for a model, before moving
+  on to the next model
 - Renamed the `multilabel` argument to the more descriptive `two_labels`.
 - Updated docstrings to be more accurate.
-- Early stopping patience is now set to `2 + 250 // len(train)`, so that
-  smaller datasets can enjoy a bit more patience, but if the dataset contains
-  at least 250 samples then it will remain at the current 2 patience.
+- Early stopping patience is now set to `2 + 250 // len(train)`, so that smaller
+  datasets can enjoy a bit more patience, but if the dataset contains at least 250
+  samples then it will remain at the current 2 patience.
 
 ### Removed
 
-- Removed `learning_rate`, `batch_size`, `warmup_steps` and `num_finetunings`
-  arguments from the benchmarks. These are now fixed to 2e-5, 32, 25% of the
-  training dataset and 10, respectively. Note that the batch size will still
-  automatically decrease if the GPU runs out of memory.
+- Removed `learning_rate`, `batch_size`, `warmup_steps` and `num_finetunings` arguments
+  from the benchmarks. These are now fixed to 2e-5, 32, 25% of the training dataset and
+  10, respectively. Note that the batch size will still automatically decrease if the
+  GPU runs out of memory.
 
 ## [v0.8.0] - 2021-08-18
 
 ### Changed
 
-- Models are now being trained for much longer, but with an early stopping
-  callback with patience 2. This will enable a more uniform comparison between
-  models that require a different number of finetuning epochs.
+- Models are now being trained for much longer, but with an early stopping callback with
+  patience 2. This will enable a more uniform comparison between models that require a
+  different number of finetuning epochs.
 
 ### Fixed
 
-- There was a bug when evaluating a finetuned PyTorch model on a sequence
-  classification task, if the model had only been trained on a proper subset of
-  the labels present in the dataset.
+- There was a bug when evaluating a finetuned PyTorch model on a sequence classification
+  task, if the model had only been trained on a proper subset of the labels present in
+  the dataset.
 
 ### Removed
 
-- All individual benchmarks have been removed from `__init__.py`. They can
-  still be imported using their individual modules, for instance
-  `from scandeval.dane import DaneBenchmark`, but the idea is to use the
-  general `Benchmark` class instead.
+- All individual benchmarks have been removed from `__init__.py`. They can still be
+  imported using their individual modules, for instance
+  `from scandeval.dane import DaneBenchmark`, but the idea is to use the general
+  `Benchmark` class instead.
 
 ## [v0.7.0] - 2021-08-17
 
 ### Changed
 
-- Always ensure that a model can deal with the labels in the dataset when
-  finetuning. If the model has not been trained on the label, then this will
-  result in the model always getting that label wrong. For instance, this is
-  the case for finetuned NER models not having been trained on MISC tags, if
-  they are being evaluated on the DaNE dataset.
+- Always ensure that a model can deal with the labels in the dataset when finetuning. If
+  the model has not been trained on the label, then this will result in the model always
+  getting that label wrong. For instance, this is the case for finetuned NER models not
+  having been trained on MISC tags, if they are being evaluated on the DaNE dataset.
 
 ### Fixed
 
@@ -3906,10 +3933,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- When finetuning models, 10% of the training data is used to evaluate the
-  models, which is used to choose the best performing model across all the
-  epochs trained. This will allow for a more fair comparison, as some models
-  degrade over time, while other models need a longer time to train.
+- When finetuning models, 10% of the training data is used to evaluate the models, which
+  is used to choose the best performing model across all the epochs trained. This will
+  allow for a more fair comparison, as some models degrade over time, while other models
+  need a longer time to train.
 
 ### Changed
 
@@ -3918,8 +3945,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- Garbage collects when downsizing batch size, to not keep all the previous
-  models in memory.
+- Garbage collects when downsizing batch size, to not keep all the previous models in
+  memory.
 - Typos in logging.
 
 ## [v0.5.2] - 2021-08-13
@@ -3932,85 +3959,83 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- The bootstrapping of the datasets is now done properly. Previously the
-  bootstrapped datasets were not converted to HuggingFace Dataset objects.
+- The bootstrapping of the datasets is now done properly. Previously the bootstrapped
+  datasets were not converted to HuggingFace Dataset objects.
 
 ## [v0.5.0] - 2021-08-12
 
 ### Added
 
-- It is possible to only evaluate on the test sets, to save some time. This can
-  be done in the `Benchmark` class using the `evaluate_train` argument, and in
-  the CLI with the `--evaluate_train` flag.
-- Added `progress_bar` argument to `Benchmark` to control whether progress bars
-  should be shown, and added the `no_progress_bar` flag to the CLI for the same
-  reason.
+- It is possible to only evaluate on the test sets, to save some time. This can be done
+  in the `Benchmark` class using the `evaluate_train` argument, and in the CLI with the
+  `--evaluate_train` flag.
+- Added `progress_bar` argument to `Benchmark` to control whether progress bars should
+  be shown, and added the `no_progress_bar` flag to the CLI for the same reason.
 
 ### Changed
 
-- Updated `epochs` and `warmup_steps` of all the datasets to something more
-  reasonable, enabling better comparisons of the finetuned models.
-- Changed calculation of confidence intervals, which is now based on
-  bootstrapping rather than the analytic approach. It will now evaluate ten
-  times on the test set and compute a bootstrap estimate of the standard error,
-  which is uses to compute an interval around the score on the entire test set.
+- Updated `epochs` and `warmup_steps` of all the datasets to something more reasonable,
+  enabling better comparisons of the finetuned models.
+- Changed calculation of confidence intervals, which is now based on bootstrapping
+  rather than the analytic approach. It will now evaluate ten times on the test set and
+  compute a bootstrap estimate of the standard error, which is uses to compute an
+  interval around the score on the entire test set.
 
 ## [v0.4.3] - 2021-08-12
 
 ### Fixed
 
-- RuntimeErrors occuring during training will now raise an `InvalidBenchmark`
-  exception, which means that the CLI and the `Benchmark` class will skip it.
-  This is for instance caused when `max_length` has not been specified in the
-  model config, meaning that the tokeniser does not know how much to truncate.
+- RuntimeErrors occuring during training will now raise an `InvalidBenchmark` exception,
+  which means that the CLI and the `Benchmark` class will skip it. This is for instance
+  caused when `max_length` has not been specified in the model config, meaning that the
+  tokeniser does not know how much to truncate.
 
 ## [v0.4.2] - 2021-08-12
 
 ### Fixed
 
-- Now catching the error where tokenisation is not possible, due to the model
-  having been trained on a different task than what is present in the dataset.
-  E.g., if a generator model is trained on a classification task.
+- Now catching the error where tokenisation is not possible, due to the model having
+  been trained on a different task than what is present in the dataset. E.g., if a
+  generator model is trained on a classification task.
 
 ## [v0.4.1] - 2021-08-12
 
 ### Fixed
 
-- Now catching the error when the model's config does not align with the model
-  class. When using the CLI or `Benchmark`, these will be skipped.
+- Now catching the error when the model's config does not align with the model class.
+  When using the CLI or `Benchmark`, these will be skipped.
 
 ## [v0.4.0] - 2021-08-11
 
 ### Added
 
-- Added confidence intervals for finetuned models, where there is a 95%
-  likelihood that the true score would belong to the interval, given infinite
-  data from the same distribution. In the case of "raw" pretrained models, this
-  radius is added onto the existing interval, so that both the uncertainty in
-  model initialisation as well as sample size of the validation dataset affects
-  the size of the interval.
-- Added garbage collection after each benchmark, which will (hopefully) prevent
-  memory leaking when benchmarking several models.
+- Added confidence intervals for finetuned models, where there is a 95% likelihood that
+  the true score would belong to the interval, given infinite data from the same
+  distribution. In the case of "raw" pretrained models, this radius is added onto the
+  existing interval, so that both the uncertainty in model initialisation as well as
+  sample size of the validation dataset affects the size of the interval.
+- Added garbage collection after each benchmark, which will (hopefully) prevent memory
+  leaking when benchmarking several models.
 
 ### Changed
 
 - New logo, including the Faroe Islands!
-- Allow the possibility to include all languages and/or tasks in the CLI and
-  the `Benchmark` class.
-- Added Icelandic and Faroese to default list of languages in CLI and the
+- Allow the possibility to include all languages and/or tasks in the CLI and the
   `Benchmark` class.
-- The default value for `task` is now all tasks, which also includes models
-  that haven't been assigned any task on the HuggingFace Hub;
-- If a model cannot be trained without running out of CUDA memory, even with a
-  batch size of 1, then the model will be skipped in `Benchmark` and the CLI.
+- Added Icelandic and Faroese to default list of languages in CLI and the `Benchmark`
+  class.
+- The default value for `task` is now all tasks, which also includes models that haven't
+  been assigned any task on the HuggingFace Hub;
+- If a model cannot be trained without running out of CUDA memory, even with a batch
+  size of 1, then the model will be skipped in `Benchmark` and the CLI.
 
 ### Fixed
 
-- New model is initialised if CUDA runs out of memory, to ensure that we are
-  now continuing to train the previous model.
+- New model is initialised if CUDA runs out of memory, to ensure that we are now
+  continuing to train the previous model.
 - Dependency parsing now implemented properly as two-label classification, with
-  associated UAS and LAS metric computations. Works for pretrained SpaCy models
-  as well as finetuning general language models.
+  associated UAS and LAS metric computations. Works for pretrained SpaCy models as well
+  as finetuning general language models.
 
 ## [v0.3.1] - 2021-08-10
 
@@ -4033,26 +4058,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Added the part-of-speech tagging task from the Danish Dependency Treebank.
-  Can be loaded with `load_ddt_pos` and used in `Benchmark` as `ddt-pos`.
-- Added the dependency parsing task from the Danish Dependency Treebank.
-  Can be loaded with `load_ddt_ddt` and used in `Benchmark` as `ddt-dep`.
+- Added the part-of-speech tagging task from the Danish Dependency Treebank. Can be
+  loaded with `load_ddt_pos` and used in `Benchmark` as `ddt-pos`.
+- Added the dependency parsing task from the Danish Dependency Treebank. Can be loaded
+  with `load_ddt_ddt` and used in `Benchmark` as `ddt-dep`.
 - Documentation section and link to `README`
 - The `Benchmark` class and the CLI now accepts a `batch_size` argument
 
 ### Changed
 
-- `Benchmark` arguments `languages`, `tasks`, `model_ids` and `datasets` have
-  been renamed to `language`, `task`, `model_id` and `dataset`, to keep it
-  consistent with the CLI.
-- When loading datasets, these will now be four dictionaries instead of lists,
-  to allow for distinguishing features and labels.
+- `Benchmark` arguments `languages`, `tasks`, `model_ids` and `datasets` have been
+  renamed to `language`, `task`, `model_id` and `dataset`, to keep it consistent with
+  the CLI.
+- When loading datasets, these will now be four dictionaries instead of lists, to allow
+  for distinguishing features and labels.
 - `batch_size` arguments can now only be among 1, 2, 4, 8, 16 and 32, and the
   corresponding gradient accumulation will be set to 32, 16, 8, 4, 2 and 1,
-  respectively. This is to ensure that all finetuning is done using the same
-  effective batch size, to ensure fair comparisons.
-- Batch sizes are automatically halved if the GPU runs out of memory, with
-  gradient accumulation correspondingly doubles.
+  respectively. This is to ensure that all finetuning is done using the same effective
+  batch size, to ensure fair comparisons.
+- Batch sizes are automatically halved if the GPU runs out of memory, with gradient
+  accumulation correspondingly doubles.
 - Evaluation of `SpaCy` models on token classification tasks are more accurate.
 
 ### Fixed
@@ -4064,5 +4089,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - First beta release
-- Features Danish sentiment, hate speech detection and named entity
-  recognition datasets for benchmarking
+- Features Danish sentiment, hate speech detection and named entity recognition datasets
+  for benchmarking

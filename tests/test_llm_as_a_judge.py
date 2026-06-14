@@ -84,7 +84,7 @@ def simple_metric(simple_response_format: type[BaseModel]) -> LLMAsAJudgeMetric:
         judge_kwargs=dict(temperature=0.5),
         user_prompt="Score: {prediction}",
         response_format=simple_response_format,
-        scoring_fn=scoring_fn,
+        scoring_fn=scoring_fn,  # ty: ignore[invalid-argument-type]
     )
 
 
@@ -106,7 +106,7 @@ class TestLLMAsAJudgeMetricInit:
             judge_kwargs=dict(temperature=0.5),
             user_prompt="Test: {prediction}",
             response_format=simple_response_format,
-            scoring_fn=scoring_fn,
+            scoring_fn=scoring_fn,  # ty: ignore[invalid-argument-type]
         )
 
         assert metric.name == "test"
@@ -123,7 +123,8 @@ class TestLLMAsAJudgeMetricInit:
         """Test initialization with batch_scoring_fn instead of scoring_fn."""
 
         def batch_scoring_fn(
-            outputs: list[simple_response_format], dataset: MagicMock | None = None
+            outputs: list[simple_response_format],  # ty: ignore[invalid-type-form]
+            dataset: MagicMock | None = None,
         ) -> float:
             return sum(o.value for o in outputs) / len(outputs)
 
@@ -134,7 +135,7 @@ class TestLLMAsAJudgeMetricInit:
             judge_kwargs=dict(),
             user_prompt="Test: {prediction}",
             response_format=simple_response_format,
-            batch_scoring_fn=batch_scoring_fn,
+            batch_scoring_fn=batch_scoring_fn,  # ty: ignore[invalid-argument-type]
         )
 
         assert metric.batch_scoring_fn is batch_scoring_fn
@@ -154,7 +155,7 @@ class TestLLMAsAJudgeMetricInit:
             judge_kwargs=dict(),
             user_prompt="Test: {prediction}",
             response_format=simple_response_format,
-            scoring_fn=scoring_fn,
+            scoring_fn=scoring_fn,  # ty: ignore[invalid-argument-type]
             system_prompt="You are a helpful assistant.",
         )
 
@@ -178,7 +179,7 @@ class TestLLMAsAJudgeMetricInit:
             judge_kwargs=dict(),
             user_prompt="Test: {prediction} | Condition: {condition}",
             response_format=simple_response_format,
-            scoring_fn=scoring_fn,
+            scoring_fn=scoring_fn,  # ty: ignore[invalid-argument-type]
             condition_formatting_fn=format_condition,
         )
 
@@ -436,13 +437,13 @@ class TestLLMAsAJudgeBatchScoringFn:
             judge_kwargs=dict(),
             user_prompt="Test: {prediction}",
             response_format=simple_response_format,
-            scoring_fn=scoring_fn,
+            scoring_fn=scoring_fn,  # ty: ignore[invalid-argument-type]
         )
 
         # Create mock outputs
         outputs = [MagicMock(value=10), MagicMock(value=20), MagicMock(value=30)]
 
-        result = metric.batch_scoring_fn(outputs=outputs, dataset=None)
+        result = metric.batch_scoring_fn(outputs=outputs, dataset=None)  # ty: ignore[invalid-argument-type]
 
         assert result == 20.0  # (10 + 20 + 30) / 3
 
@@ -455,7 +456,8 @@ class TestLLMAsAJudgeBatchScoringFn:
             return output.value
 
         def batch_scoring_fn(
-            outputs: list[simple_response_format], dataset: MagicMock | None = None
+            outputs: list[simple_response_format],  # ty: ignore[invalid-type-form]
+            dataset: MagicMock | None = None,
         ) -> float:
             return 0.0
 
@@ -467,8 +469,8 @@ class TestLLMAsAJudgeBatchScoringFn:
                 judge_kwargs=dict(),
                 user_prompt="Test: {prediction}",
                 response_format=simple_response_format,
-                scoring_fn=scoring_fn,
-                batch_scoring_fn=batch_scoring_fn,
+                scoring_fn=scoring_fn,  # ty: ignore[invalid-argument-type]
+                batch_scoring_fn=batch_scoring_fn,  # ty: ignore[invalid-argument-type]
             )
 
         assert "Both" in str(exc_info.value) and "are provided" in str(exc_info.value)
@@ -516,7 +518,7 @@ class TestCreateModelGradedFactMetric:
         def custom_scoring_fn(output: MagicMock) -> float:
             return 2.0 if output.correct else 0.0
 
-        metric = create_model_graded_fact_metric(scoring_fn=custom_scoring_fn)
+        metric = create_model_graded_fact_metric(scoring_fn=custom_scoring_fn)  # ty: ignore[invalid-argument-type]
 
         # Verify the custom scoring function is used by testing the behavior
         CorrectModel = create_model("CorrectModel", correct=(bool, ...))

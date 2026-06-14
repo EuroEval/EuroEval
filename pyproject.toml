@@ -1,6 +1,6 @@
 [project]
 name = "EuroEval"
-version = "17.2.0.dev"
+version = "17.4.0.dev"
 description = "The robust European language model benchmark."
 readme = "README.md"
 authors = [
@@ -55,9 +55,8 @@ generative = [
     "vllm-metal; platform_system == 'Darwin'",
     # vLLM setup for Linux (assuming CUDA is available here)
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm[flashinfer]>=0.14.1; platform_system == 'Linux'",
+    "vllm>=0.22.0; platform_system == 'Linux'",
     "ray>=2.53.0; platform_system == 'Linux'",
-    "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
 ]
 all = [
     "timm>=1.0.19",
@@ -66,9 +65,14 @@ all = [
     "vllm-metal; platform_system == 'Darwin'",
     # vLLM setup for Linux (assuming CUDA is available here)
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
-    "vllm[flashinfer]>=0.14.1; platform_system == 'Linux'",
+    "vllm>=0.22.0; platform_system == 'Linux'",
     "ray>=2.53.0; platform_system == 'Linux'",
-    "fbgemm-gpu>=1.0.0; platform_system == 'Linux'",
+]
+leaderboards = [
+    "anthropic>=0.49.0",
+    "openai>=1.66.3",
+    "scipy>=1.14.1",
+    "tqdm>=4.66.0",
 ]
 
 [dependency-groups]
@@ -81,10 +85,6 @@ dev = [
     "nbstripout>=0.7.1",
     "coverage>=5.5",
     "lxml>=5.1.0",
-    "mkdocs-material>=9.5.45",
-    "mkdocs-include-markdown-plugin>=7.0.1",
-    "mkdocs-include-dir-to-nav>=1.2.0",
-    "mkapi>=3.0.22",
     "pip>=24.3.1",
     "setuptools>=75.6.0",
     "cffi>=1.17.1",
@@ -104,20 +104,20 @@ dev = [
     "debugpy>=1.8.13",
     "pytest-socket>=0.7.0",
     "pytest-depends>=1.0.1",
-    "pyrefly>=0.43.1",
+    "ty>=0.0.40",
     "tqdm-stubs>=0.2.1",
     "pre-commit>=4.5.1",
 ]
 
 [tool.uv.sources]
 # PyPi releases seem to be lagging behind, so we use git sources directly
-vllm-metal = { git = "https://github.com/vllm-project/vllm-metal.git", tag = "v0.1.0-20260404-164341", marker = "platform_system == 'Darwin'" }
+vllm-metal = { git = "https://github.com/vllm-project/vllm-metal.git", tag = "v0.2.0-20260531-071330", marker = "platform_system == 'Darwin'" }
 # vLLM has no official wheels for macos arm64 and flashinfer is a default dep from 0.12.0 (which seems to only be x86_64 + cuda)
-vllm = { git = "https://github.com/vllm-project/vllm.git", tag = "v0.18.1", marker = "platform_system == 'Darwin'" }
+vllm = { git = "https://github.com/vllm-project/vllm.git", tag = "v0.22.0", marker = "platform_system == 'Darwin'" }
 
 [tool.uv]
 override-dependencies = [
-  "transformers[mistral-common]>=5.5.0",
+  "transformers[mistral-common]>=5.10.1",
 ]
 environments = [
   # Only support arm64 macos (dont try to resolve darwin + x86_64 or any other platforms)
@@ -206,12 +206,12 @@ split-on-trailing-comma = false
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.pyrefly.errors]
-missing-import = false
-missing-attribute = false
+[tool.ty.rules]
+unresolved-import = "ignore"
+unresolved-attribute = "ignore"
 # Pandas type stub issues - these are false positives due to incomplete type stubs
-unsupported-operation = false
-no-matching-overload = false
+unsupported-operator = "ignore"
+no-matching-overload = "ignore"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
@@ -239,6 +239,7 @@ testpaths = [
 pythonpath = [
     "src",
     "src/scripts",
+    "src/scripts/dataset_creation",
 ]
 
 [build-system]

@@ -8,6 +8,7 @@ Hugging Face Hub repositories.
 import dataclasses
 import logging
 from pathlib import Path
+from typing import cast
 
 import yaml
 from huggingface_hub import HfApi
@@ -229,10 +230,14 @@ def load_dataset_config_from_yaml(
     if kwargs is None:
         return None
 
+    kwargs.setdefault("test_split", "test")
+    kwargs.setdefault("bootstrap_samples", True)
+    kwargs.setdefault("unofficial", False)
+    kwargs.setdefault("input_column", "text")
     return DatasetConfig(
         task=task_obj,
         languages=language_objs,
-        **kwargs,  # pyrefly: ignore[bad-argument-type]
+        **kwargs,  # ty: ignore[invalid-argument-type]
     )
 
 
@@ -254,22 +259,23 @@ def promote_field_spec_fields(raw: dict[str, object]) -> None:
     if not isinstance(tasks_raw, list) or not tasks_raw:
         return
 
-    first_task = tasks_raw[0]
+    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[0])
     if not isinstance(first_task, dict):
         return
 
     field_spec = first_task.get("field_spec")
     if isinstance(field_spec, dict):
-        if "input" in field_spec and "input_column" not in raw:
-            raw["input_column"] = field_spec["input"]
+        _fs: dict[str, object] = cast(dict[str, object], field_spec)
+        if "input" in _fs and "input_column" not in raw:
+            raw["input_column"] = _fs["input"]
 
-        if "target" in field_spec and "target_column" not in raw:
-            target = field_spec["target"]
+        if "target" in _fs and "target_column" not in raw:
+            target = _fs["target"]
             if isinstance(target, str) and not target.startswith("literal:"):
                 raw["target_column"] = target
 
-        if "choices" in field_spec and "choices_column" not in raw:
-            raw["choices_column"] = field_spec["choices"]
+        if "choices" in _fs and "choices_column" not in raw:
+            raw["choices_column"] = _fs["choices"]
 
     split_val = first_task.get("split")
     if isinstance(split_val, str) and split_val and "test_split" not in raw:
@@ -347,30 +353,34 @@ def infer_task_from_inspect_ai(
     tasks_raw = raw.get("tasks")
     if not isinstance(tasks_raw, list) or not tasks_raw:
         return None
-    first_task = tasks_raw[0]
+    first_task: dict[str, object] = cast(dict[str, object], tasks_raw[0])
     if not isinstance(first_task, dict):
         return None
 
     solvers = first_task.get("solvers")
     if isinstance(solvers, list):
         for solver in solvers:
-            if isinstance(solver, dict) and solver.get("name") == "multiple_choice":
-                return task_map.get("multiple-choice")
+            if isinstance(solver, dict):
+                _s: dict[str, object] = cast(dict[str, object], solver)
+                if _s.get("name") == "multiple_choice":
+                    return task_map.get("multiple-choice")
 
     scorers = first_task.get("scorers")
     if isinstance(scorers, list):
         for scorer in scorers:
-            if isinstance(scorer, dict) and scorer.get("name") == "model_graded_fact":
-                judge_id: str | None = None
-                args = scorer.get("args")
-                if isinstance(args, dict):
-                    model_val = args.get("model")
-                    if isinstance(model_val, str) and model_val:
-                        judge_id = model_val
-                if judge_id is not None:
-                    metric = create_model_graded_fact_metric(judge_id=judge_id)
-                    return dataclasses.replace(OPEN_ENDED_QA, metrics=[metric])
-                return OPEN_ENDED_QA
+            if isinstance(scorer, dict):
+                _sc: dict[str, object] = cast(dict[str, object], scorer)
+                if _sc.get("name") == "model_graded_fact":
+                    judge_id: str | None = None
+                    args = _sc.get("args") or {}
+                    if isinstance(args, dict):
+                        model_val = args.get("model")  # ty: ignore[invalid-argument-type]
+                        if isinstance(model_val, str) and model_val:
+                            judge_id = model_val
+                    if judge_id is not None:
+                        metric = create_model_graded_fact_metric(judge_id=judge_id)
+                        return dataclasses.replace(OPEN_ENDED_QA, metrics=[metric])
+                    return OPEN_ENDED_QA
 
     field_spec = first_task.get("field_spec")
     if isinstance(field_spec, dict) and "choices" in field_spec:
@@ -438,9 +448,10 @@ def parse_languages(
     return language_objs
 
 
-def build_kwargs(
-    raw: dict[str, object], yaml_path: Path
-) -> dict[str, str | int | list[str] | dict[str, str]] | None:
+DatasetKwargs = dict[str, str | int | bool | list[str] | dict[str, str]]
+
+
+def build_kwargs(raw: dict[str, object], yaml_path: Path) -> DatasetKwargs | None:
     """Build keyword arguments for `DatasetConfig` from YAML fields.
 
     Reads the following optional fields from `raw` and maps them to the
@@ -463,7 +474,7 @@ def build_kwargs(
         A dictionary suitable for unpacking into `DatasetConfig(...)`, or None
             if any field fails validation.
     """
-    kwargs: dict[str, str | int | list[str] | dict[str, str]] = {}
+    kwargs: DatasetKwargs = {}
 
     for field_name in (
         "prompt_prefix",
