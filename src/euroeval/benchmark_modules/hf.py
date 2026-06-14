@@ -109,32 +109,21 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         benchmark_config: "BenchmarkConfig",
         log_metadata: bool = True,
     ) -> None:
-        """Initialise the model.
-
-        Args:
-            model_config:
-                The model configuration.
-            dataset_config:
-                The dataset configuration.
-            benchmark_config:
-                The benchmark configuration.
-            log_metadata:
-                Whether to log the model metadata.
-
-        Raises:
-            InvalidBenchmark:
-                If Cloze Formulation (CF) evaluation is requested. CF is only
-                supported by the vLLM backend.
-        """
+        """Initialise the model."""
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        if benchmark_config.scoring_method == ScoringMethod.CF:
-            raise InvalidBenchmark(
-                "Cloze Formulation (CF) evaluation is not supported by the "
-                "Hugging Face encoder backend. CF is currently only supported by "
-                "the vLLM backend."
+        if (
+            benchmark_config.scoring_method == ScoringMethod.CF
+            and dataset_config.task.task_group
+            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        ):
+            log_once(
+                "Cloze Formulation (CF) scoring is not supported by the Hugging Face "
+                "encoder backend. Multiple-Choice Formulation (MCF) will be used "
+                "instead. CF is currently only supported by the vLLM backend.",
+                level=logging.DEBUG,
             )
 
         # This is already set when calling `super().__init__`, but we need it to get

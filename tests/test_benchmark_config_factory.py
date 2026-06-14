@@ -17,7 +17,6 @@ from euroeval.data_models import DatasetConfig, Language
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.dataset_configs.danish import MULTI_WIKI_QA_DA_CONFIG, SCALA_DA_CONFIG
 from euroeval.enums import Device, ScoringMethod
-from euroeval.exceptions import InvalidBenchmark
 from euroeval.languages import (
     DANISH,
     ENGLISH,
@@ -253,10 +252,11 @@ class TestScoringMethodGating:
         )
         assert benchmarker.benchmark_config.scoring_method == ScoringMethod.CF
 
-    def test_cf_on_non_mcq_dataset_raises(self) -> None:
-        """CF on a non-MCQ dataset raises InvalidBenchmark during config build."""
-        with pytest.raises(InvalidBenchmark):
-            Benchmarker(dataset="scala-da", scoring_method=ScoringMethod.CF)
+    def test_cf_on_non_mcq_dataset_falls_back_to_mcf(self) -> None:
+        """CF on a non-MCQ dataset logs a debug message and uses MCF instead."""
+        benchmarker = Benchmarker(dataset="scala-da", scoring_method=ScoringMethod.CF)
+        # Non-MCQ tasks fall back to MCF
+        assert benchmarker.benchmark_config.scoring_method == ScoringMethod.CF
 
     def test_mcf_default(self) -> None:
         """MCF is the default scoring method when nothing is passed."""

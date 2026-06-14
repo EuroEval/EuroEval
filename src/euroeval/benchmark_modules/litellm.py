@@ -351,12 +351,17 @@ class LiteLLMModel(BenchmarkModule):
                 Cloze Formulation (CF) evaluation is requested (not supported by the
                 LiteLLM backend).
         """
-        if self.benchmark_config.scoring_method == ScoringMethod.CF:
-            raise InvalidBenchmark(
-                "Cloze Formulation (CF) evaluation is not supported by the LiteLLM "
-                "backend, as per-token logprobs for forced completions are not "
-                "reliably exposed across API providers. CF is currently only "
-                "supported by the vLLM backend."
+        if (
+            self.benchmark_config.scoring_method == ScoringMethod.CF
+            and self.dataset_config.task.task_group
+            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        ):
+            log_once(
+                "Cloze Formulation (CF) scoring is not supported by the LiteLLM "
+                "backend (per-token logprobs for forced completions are not reliably "
+                "exposed across API providers). Multiple-Choice Formulation (MCF) will "
+                "be used instead. CF is currently only supported by the vLLM backend.",
+                level=logging.DEBUG,
             )
 
         model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str]

@@ -13,9 +13,8 @@ from .closest_match import get_closest_match
 from .data_models import BenchmarkConfig, BenchmarkConfigParams, DatasetConfig, Task
 from .dataset_configs import get_all_dataset_configs
 from .enums import Device, ScoringMethod, TaskGroup
-from .exceptions import InvalidBenchmark
 from .languages import get_all_languages, get_correct_language_codes
-from .logging_utils import log
+from .logging_utils import log, log_once
 
 if importlib.util.find_spec("vllm") is not None:
     pass
@@ -35,11 +34,6 @@ def build_benchmark_config(
 
     Returns:
         The benchmark configuration.
-
-    Raises:
-        InvalidBenchmark:
-            If Cloze Formulation evaluation is requested but the configured
-            datasets are not multiple-choice tasks with logprob support.
     """
     language_codes = get_correct_language_codes(
         language_codes=benchmark_config_params.language
@@ -63,17 +57,12 @@ def build_benchmark_config(
     if benchmark_config_params.scoring_method == ScoringMethod.CF:
         for ds in dataset_configs:
             if ds.task.task_group != TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                raise InvalidBenchmark(
-                    "Cloze Formulation (CF) evaluation is only supported for "
-                    "multiple-choice tasks, but the task "
-                    f"{ds.task.name!r} of dataset {ds.name!r} is "
-                    f"{ds.task.task_group}."
-                )
-            if not ds.task.uses_logprobs:
-                raise InvalidBenchmark(
-                    "Cloze Formulation (CF) evaluation requires a task with "
-                    f"`uses_logprobs=True`, but the task {ds.task.name!r} of "
-                    f"dataset {ds.name!r} does not use logprobs."
+                log_once(
+                    f"Cloze Formulation (CF) scoring is only supported for "
+                    f"multiple-choice tasks. Dataset {ds.name!r} uses task group "
+                    f"{ds.task.task_group.value!r}, so Multiple-Choice Formulation "
+                    "(MCF) scoring will be used instead.",
+                    level=logging.DEBUG,
                 )
 
     return BenchmarkConfig(
