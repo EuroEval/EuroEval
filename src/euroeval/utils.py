@@ -55,26 +55,35 @@ def resolve_model_path(download_dir: str) -> str:
 
     # Get snapshot directories (commit hashes), excluding .locks and model_files
     snapshot_dirs = [
-        d
-        for d in model_path.iterdir()
-        if d.is_dir() and d.name not in (".locks", "model_files")
+        snapshot_dir
+        for snapshot_dir in model_path.iterdir()
+        if snapshot_dir.is_dir() and snapshot_dir.name not in (".locks", "model_files")
     ]
 
     # Prefer actual commit snapshots over model_files symlinks
     if snapshot_dirs:
         # Use the most recent commit snapshot (by modification time)
-        model_path = max(snapshot_dirs, key=lambda d: d.stat().st_mtime)
+        model_path = max(
+            snapshot_dirs, key=lambda snapshot_dir: snapshot_dir.stat().st_mtime
+        )
     elif (model_path / "model_files").exists():
         model_path = model_path / "model_files"
 
     # Get all files in the selected snapshot directory
-    found_files = [f for f in model_path.rglob("*") if f.is_file()]
+    found_files = [
+        found_file for found_file in model_path.rglob("*") if found_file.is_file()
+    ]
     if not found_files:
         raise InvalidModel(f"No model files found at {model_path}")
 
     # Check that found_files contains at least one of the required files
     found_required_file = next(
-        (f for f in found_files if f.name in LOCAL_MODELS_REQUIRED_FILES), None
+        (
+            found_file
+            for found_file in found_files
+            if found_file.name in LOCAL_MODELS_REQUIRED_FILES
+        ),
+        None,
     )
     if found_required_file is None:
         raise InvalidModel(
