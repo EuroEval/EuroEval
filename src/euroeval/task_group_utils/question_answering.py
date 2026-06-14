@@ -10,6 +10,7 @@ from transformers.tokenization_utils_base import (
     TruncationStrategy,
 )
 from transformers.trainer import Trainer
+from transformers.trainer_utils import EvalPrediction
 
 from ..exceptions import InvalidBenchmark
 from ..tokenisation_utils import get_special_token_metadata
@@ -23,7 +24,6 @@ if t.TYPE_CHECKING:
     from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import BatchEncoding
     from transformers.trainer_callback import TrainerCallback
-    from transformers.trainer_utils import EvalPrediction
     from transformers.training_args import TrainingArguments
 
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
