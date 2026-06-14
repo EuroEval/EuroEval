@@ -46,8 +46,7 @@ def merge_input_and_choices(
         choices = example[choices_column]
     cleaned_choices = [choice.replace("\n", " ").strip() for choice in choices]
     options = "\n".join(
-        f"{letter}. {choice}"
-        for letter, choice in zip("abcdefghijklmnopqrstuvwxyz", cleaned_choices)
+        f"{letter}. {choice}" for letter, choice in zip(CHOICE_LETTERS, cleaned_choices)
     )
     example["text"] = f"{input_text}\n{choices_label}:\n{options}"
     example["bare_input"] = input_text
