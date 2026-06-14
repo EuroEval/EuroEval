@@ -437,50 +437,12 @@ class VLLMModel(HuggingFaceEncoderModel):
             and task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         )
         if cf_active:
-
-            def _ensure_cf_columns(example: dict) -> dict:
-                if "raw_choices" in example and "bare_input" in example:
-                    return {
-                        "bare_input": example["bare_input"],
-                        "raw_choices": example["raw_choices"],
-                    }
-                bare_input, raw_choices = cloze.parse_mcq_text(example["text"])
-                return {"bare_input": bare_input, "raw_choices": raw_choices}
-
-            few_shot_examples = [
-                {**ex, **_ensure_cf_columns(ex)} for ex in few_shot_examples
-            ]
-            few_shot_rendered = [
-                cloze.render_cf_few_shot(
-                    bare_input=ex["bare_input"],
-                    answer_text=cloze.letter_to_choice_text(
-                        letter=str(ex["label"]), raw_choices=ex["raw_choices"]
-                    ),
-                    prompt_template=self.dataset_config.prompt_template,
-                )
-                for ex in few_shot_examples
-            ]
-
-            dataset["test"] = dataset["test"].map(
-                _ensure_cf_columns, load_from_cache_file=False, keep_in_memory=True
+            return cloze.prepare_cf_dataset(
+                dataset=dataset,
+                few_shot_examples=few_shot_examples,
+                prompt_template=self.dataset_config.prompt_template,
+                prompt_prefix=self.dataset_config.prompt_prefix,
             )
-
-            prompt_template = self.dataset_config.prompt_template
-            prompt_prefix = self.dataset_config.prompt_prefix
-
-            def _build_cf_prompt(example: dict) -> dict:
-                text = cloze.build_cf_prompt(
-                    bare_input=example["bare_input"],
-                    few_shot_rendered=few_shot_rendered,
-                    prompt_template=prompt_template,
-                    prompt_prefix=prompt_prefix,
-                )
-                return {"text": text, "prompt": text}
-
-            dataset["test"] = dataset["test"].map(
-                _build_cf_prompt, load_from_cache_file=False, keep_in_memory=True
-            )
-            return dataset
 
         dataset["test"] = dataset["test"].map(
             partial(
@@ -1036,131 +998,21 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             A ``GenerativeModelOutput`` with empty ``sequences`` and a populated
             ``cf_scores`` matrix of shape ``(batch_size, num_choices)``.
-
-        Raises:
-            InvalidBenchmark:
-                If ``raw_choices`` is missing from the input batch.
         """
-        if "raw_choices" not in inputs:
-            raise InvalidBenchmark(
-                "Cloze Formulation evaluation requires a `raw_choices` column, "
-                "which was not found in the batch."
-            )
-        prompts: c.Sequence[str] = inputs["text"]
-        raw_choices: c.Sequence[c.Sequence[str]] = inputs["raw_choices"]
-
-        per_token_logprobs = self.score_completions(
-            prompts=prompts, completions=raw_choices
+        return cloze.generate_cf(
+            model=self._model,  # ty: ignore[invalid-argument-type]
+            tokeniser=self._tokeniser,
+            inputs=inputs,
+            sampling_params=self._get_cf_sampling_params(),
         )
 
-        cf_scores: list[list[float]] = [
-            [
-                cloze.normalize_cf_score(token_logprobs=token_lps, answer_text=answer)
-                for token_lps, answer in zip(sample_lps, sample_choices)
-            ]
-            for sample_lps, sample_choices in zip(per_token_logprobs, raw_choices)
-        ]
-
-        return GenerativeModelOutput(sequences=[""] * len(prompts), cf_scores=cf_scores)
-
-    def score_completions(
-        self, prompts: c.Sequence[str], completions: c.Sequence[c.Sequence[str]]
-    ) -> c.Sequence[c.Sequence[c.Sequence[float]]]:
-        """Score each (prompt, candidate) pair with vLLM's ``prompt_logprobs``.
-
-        Args:
-            prompts:
-                One bare-question prompt per sample. The candidate strings are
-                appended directly to the prompt before scoring; the prompt is
-                expected to end with whatever separator the template uses
-                (e.g. ``"Antwoord: "``).
-            completions:
-                Per-sample list of candidate continuation strings.
+    def _get_cf_sampling_params(self) -> "SamplingParams":
+        """Create sampling parameters for CF scoring.
 
         Returns:
-            Per-sample, per-candidate, per-token logprobs.
-
-        Raises:
-            InvalidBenchmark:
-                If the candidate is empty after tokenisation, i.e. the full
-                tokenised sequence has no tokens beyond the prompt prefix.
+            Sampling parameters with max_tokens=1, prompt_logprobs=1, temperature=0.0.
         """
-        tok = self._tokeniser
-        flat_prompts: list[str] = []
-        spans: list[list[tuple[int, int]]] = []
-        for prompt, candidates in zip(prompts, completions):
-            prompt_ids = list(tok(prompt, add_special_tokens=False).input_ids)
-            group: list[tuple[int, int]] = []
-            for candidate in candidates:
-                if not candidate:
-                    raise InvalidBenchmark(
-                        "Candidate is empty after tokenisation: cannot score an "
-                        f"empty continuation. Prompt: {prompt!r}, candidate: "
-                        f"{candidate!r}."
-                    )
-                full = prompt + candidate
-                full_ids = list(tok(full, add_special_tokens=False).input_ids)
-                # An empty candidate (or one whose tokens are entirely absorbed at
-                # the prompt seam) has nothing to score.
-                if len(full_ids) <= len(prompt_ids) and (
-                    full_ids == prompt_ids[: len(full_ids)]
-                ):
-                    raise InvalidBenchmark(
-                        "Candidate is empty after tokenisation: cannot score an "
-                        f"empty continuation. Prompt: {prompt!r}, candidate: "
-                        f"{candidate!r}."
-                    )
-                # The prompt's final token often merges with the first candidate
-                # token at tokeniser seams (e.g. SentencePiece "_Foo" vs "Foo").
-                # Find the longest prefix of the prompt's token sequence that
-                # also prefixes the full sequence, then treat the remaining
-                # tokens as the continuation. At least one continuation token
-                # is required.
-                prefix_len = len(prompt_ids)
-                while prefix_len > 0 and (
-                    prefix_len >= len(full_ids)
-                    or full_ids[:prefix_len] != prompt_ids[:prefix_len]
-                ):
-                    prefix_len -= 1
-                if prefix_len >= len(full_ids):
-                    raise InvalidBenchmark(
-                        "Candidate is empty after tokenisation: cannot score an "
-                        f"empty continuation. Prompt: {prompt!r}, candidate: "
-                        f"{candidate!r}."
-                    )
-                flat_prompts.append(full)
-                group.append((prefix_len, len(full_ids)))
-            spans.append(group)
-
-        sampling_params = SamplingParams(
-            max_tokens=1, prompt_logprobs=1, temperature=0.0
-        )
-        raw_outputs = self._model.generate(  # ty: ignore[call-non-callable]
-            prompts=flat_prompts,
-            sampling_params=sampling_params,
-            use_tqdm=False,
-            lora_request=self.buffer.get("lora_request"),
-        )
-
-        out: list[list[list[float]]] = []
-        cursor = 0
-        for group in spans:
-            per_sample: list[list[float]] = []
-            for prompt_len, full_len in group:
-                prompt_logprobs = raw_outputs[cursor].prompt_logprobs or []
-                token_lps: list[float] = []
-                for pos in range(prompt_len, full_len):
-                    entry = prompt_logprobs[pos]
-                    if not entry:
-                        token_lps.append(0.0)
-                        continue
-                    # ``prompt_logprobs=1`` returns exactly the logprob for the
-                    # actual token at this position (keyed by token id).
-                    token_lps.append(float(next(iter(entry.values())).logprob))
-                per_sample.append(token_lps)
-                cursor += 1
-            out.append(per_sample)
-        return out
+        return SamplingParams(max_tokens=1, prompt_logprobs=1, temperature=0.0)
 
     @classmethod
     def model_exists(
