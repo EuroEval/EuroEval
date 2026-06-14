@@ -519,7 +519,14 @@ class VLLMModel(HuggingFaceEncoderModel):
             and self.dataset_config.task.task_group
             == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         ):
-            return self._generate_cf(inputs=inputs)
+            return cloze.generate_cf(
+                model=self._model,  # ty: ignore[invalid-argument-type]
+                tokeniser=self._tokeniser,
+                inputs=inputs,
+                sampling_params=SamplingParams(
+                    max_tokens=1, prompt_logprobs=1, temperature=0.0
+                ),
+            )
 
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
@@ -981,38 +988,29 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         return output
 
-    def _generate_cf(self, inputs: dict) -> "GenerativeModelOutput":
-        """Score each candidate answer with the Cloze Formulation.
-
-        For each sample, builds one vLLM prompt per (prompt, candidate) pair,
-        extracts the per-token logprobs of the candidate continuation, applies
-        the configured length normalization, and returns one normalized score
-        per candidate.
+    def score_completions(
+        self, prompts: c.Sequence[str], completions: c.Sequence[c.Sequence[str]]
+    ) -> c.Sequence[c.Sequence[c.Sequence[float]]]:
+        """Score each (prompt, candidate) pair with vLLM's prompt_logprobs.
 
         Args:
-            inputs:
-                The input batch containing ``"text"`` (bare-question prompts as
-                produced by ``apply_prompt`` in CF mode) and ``"raw_choices"``
-                (a list of candidate strings per sample).
+            prompts:
+                One bare-question prompt per sample.
+            completions:
+                Per-sample list of candidate continuation strings.
 
         Returns:
-            A ``GenerativeModelOutput`` with empty ``sequences`` and a populated
-            ``cf_scores`` matrix of shape ``(batch_size, num_choices)``.
+            Per-sample, per-candidate, per-token logprobs.
         """
-        return cloze.generate_cf(
+        return cloze.score_completions(
             model=self._model,  # ty: ignore[invalid-argument-type]
             tokeniser=self._tokeniser,
-            inputs=inputs,
-            sampling_params=self._get_cf_sampling_params(),
+            prompts=prompts,
+            completions=completions,
+            sampling_params=SamplingParams(
+                max_tokens=1, prompt_logprobs=1, temperature=0.0
+            ),
         )
-
-    def _get_cf_sampling_params(self) -> "SamplingParams":
-        """Create sampling parameters for CF scoring.
-
-        Returns:
-            Sampling parameters with max_tokens=1, prompt_logprobs=1, temperature=0.0.
-        """
-        return SamplingParams(max_tokens=1, prompt_logprobs=1, temperature=0.0)
 
     @classmethod
     def model_exists(
