@@ -100,7 +100,7 @@ class PipelineMetric(Metric):
                 The directory where the pipeline will be downloaded to.
 
         Returns:
-            The PipelineMetric object itself.
+            The metric object itself.
         """
         pipeline_cache_dir = Path(cache_dir) / "pipelines"
         pipeline_cache_dir.mkdir(parents=True, exist_ok=True)
