@@ -311,10 +311,7 @@ class Benchmarker:
         if not Path(model_config.model_id).exists():
             # Check if model is already cached before downloading
             cache_path = Path(model_config.model_cache_dir)
-            has_cached = (
-                cache_path.exists()
-                and any(cache_path.rglob("*.safetensors"))
-            )
+            has_cached = cache_path.exists() and any(cache_path.rglob("*.safetensors"))
             if has_cached:
                 log_once(
                     f"Model {model_config.model_id!r} is already cached, skipping "
@@ -323,7 +320,8 @@ class Benchmarker:
                 )
             else:
                 log_once(
-                    f"Downloading model {model_config.model_id!r}...", level=logging.INFO
+                    f"Downloading model {model_config.model_id!r}...",
+                    level=logging.INFO,
                 )
                 snapshot_download(
                     repo_id=model_config.model_id,

@@ -25,6 +25,7 @@ from huggingface_hub.hf_api import ModelInfo as HfApiModelInfo
 from peft import PeftConfig
 from requests.exceptions import RequestException
 from torch import nn
+from transformers import PretrainedConfig
 from transformers.data.data_collator import (
     DataCollatorForTokenClassification,
     DataCollatorWithPadding,
@@ -1136,7 +1137,6 @@ def load_hf_model_config(
                     f"The error was {e!r}. Returning minimal config.",
                     level=logging.WARNING,
                 )
-                from transformers import PretrainedConfig
                 return PretrainedConfig()
             raise InvalidModel(
                 f"Couldn't load model config for {model_id!r}. The error was "

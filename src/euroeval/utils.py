@@ -55,17 +55,18 @@ def resolve_model_path(download_dir: str) -> str:
 
     # Get snapshot directories (commit hashes), excluding .locks and model_files
     snapshot_dirs = [
-        d for d in model_path.iterdir()
+        d
+        for d in model_path.iterdir()
         if d.is_dir() and d.name not in (".locks", "model_files")
     ]
-    
+
     # Prefer actual commit snapshots over model_files symlinks
     if snapshot_dirs:
         # Use the most recent commit snapshot (by modification time)
         model_path = max(snapshot_dirs, key=lambda d: d.stat().st_mtime)
     elif (model_path / "model_files").exists():
         model_path = model_path / "model_files"
-    
+
     # Get all files in the selected snapshot directory
     found_files = [f for f in model_path.rglob("*") if f.is_file()]
     if not found_files:
