@@ -704,8 +704,9 @@ class Benchmarker:
 
         if benchmark_config.scoring_method == ScoringMethod.CF:
             log_once(
-                "Cloze Formulation (CF) scoring is active. Results will differ from "
-                "default Multiple-Choice Formulation (MCF) runs.",
+                "Cloze Formulation (CF) scoring is active on multiple-choice tasks. "
+                "Results will differ from default Multiple-Choice Formulation (MCF) "
+                "runs.",
                 level=logging.INFO,
             )
 
