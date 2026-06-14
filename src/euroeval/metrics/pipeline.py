@@ -92,6 +92,21 @@ class PipelineMetric(Metric):
         self.pipeline: "Pipeline | None" = None
         self.preprocessing_fn = preprocessing_fn
 
+    def download(self, cache_dir: str) -> "PipelineMetric":
+        """Initiates the download of the pipeline if needed.
+
+        Args:
+            cache_dir:
+                The directory where the pipeline will be downloaded to.
+
+        Returns:
+            The metric object itself.
+        """
+        pipeline_cache_dir = Path(cache_dir) / "pipelines"
+        pipeline_cache_dir.mkdir(parents=True, exist_ok=True)
+        self.pipeline = self._download_pipeline(cache_dir=pipeline_cache_dir.as_posix())
+        return self
+
     def __call__(
         self,
         predictions: c.Sequence,
@@ -119,9 +134,7 @@ class PipelineMetric(Metric):
             The calculated metric score, or None if the score should be ignored.
         """
         if self.pipeline is None:
-            self.pipeline = self._download_pipeline(
-                cache_dir=benchmark_config.cache_dir
-            )
+            self.download(cache_dir=benchmark_config.cache_dir)
         if self.preprocessing_fn is not None:
             predictions = self.preprocessing_fn(
                 predictions=predictions, dataset=dataset
