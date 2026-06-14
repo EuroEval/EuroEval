@@ -27,7 +27,7 @@ def build_cf_prompt(
     r"""Assemble the final CF prompt that the model will score candidates against.
 
     The prompt ends with whatever trailing marker the template renders for an
-    empty ``{label}`` (typically ``"Antwoord: "`` or ``"Answer: "``), so that
+    empty `{label}` (typically `"Antwoord: "` or `"Answer: "`), so that
     candidate texts can be appended directly for scoring.
 
     Args:
@@ -35,12 +35,12 @@ def build_cf_prompt(
             The bare question text (no enumerated choices).
         few_shot_rendered:
             Pre-rendered few-shot sections, each of the form
-            ``"Vraag: <q>\nAntwoord: <full-answer-text>"``.
+            `"Vraag: <q>\nAntwoord: <full-answer-text>"`.
         prompt_template:
-            The dataset's few-shot prompt template with ``{text}`` and ``{label}``
+            The dataset's few-shot prompt template with `{text}` and `{label}`
             placeholders.
         prompt_prefix:
-            The dataset's prompt prefix (may be empty). ``{labels_str}``, if
+            The dataset's prompt prefix (may be empty). `{labels_str}`, if
             present, is substituted with an empty string because CF does not
             enumerate the label letters.
 
@@ -84,7 +84,7 @@ def render_cf_few_shot(bare_input: str, answer_text: str, prompt_template: str) 
 def parse_mcq_text(text: str) -> tuple[str, list[str]]:
     """Recover the bare question and choice texts from a formatted MCQ prompt.
 
-    EuroEval-prepared MCQ datasets store ``text`` as a single string of the form::
+    EuroEval-prepared MCQ datasets store `text` as a single string of the form::
 
         <passage/question>
         Choices:
@@ -92,23 +92,23 @@ def parse_mcq_text(text: str) -> tuple[str, list[str]]:
         b. <option b>
         ...
 
-    Called as a fallback when ``bare_input`` and ``raw_choices`` are not already
+    Called as a fallback when `bare_input` and `raw_choices` are not already
     present in the dataset example (e.g. datasets cached before CF support was
     added). Freshly loaded datasets have these columns pre-computed during
     preprocessing, so this regex-based parsing is not the hot path.
 
     Args:
         text:
-            The formatted MCQ text as stored in the dataset's ``"text"`` column.
+            The formatted MCQ text as stored in the dataset's `"text"` column.
 
     Returns:
-        A pair ``(bare_input, raw_choices)`` where ``bare_input`` is everything
+        A pair `(bare_input, raw_choices)` where `bare_input` is everything
         before the enumerated choices (typically the passage and question) and
-        ``raw_choices`` are the option texts with the letter prefix stripped.
+        `raw_choices` are the option texts with the letter prefix stripped.
 
     Raises:
         InvalidBenchmark:
-            If no enumerated choices can be located in ``text``.
+            If no enumerated choices can be located in `text`.
     """
     sections = text.split("\n")
     candidate_choice_idxs = [
@@ -179,16 +179,16 @@ def extract_labels_from_cf(
     """Pick the highest-scoring choice letter for each sample.
 
     The signature mirrors
-    :func:`euroeval.task_group_utils.sequence_classification.extract_labels_from_generation`
-    so that the backend's :pyattr:`extract_labels_from_generation` property can
+    `euroeval.task_group_utils.sequence_classification.extract_labels_from_generation`
+    so that the backend's `extract_labels_from_generation` property can
     drop this in for MCQ samples evaluated with CF.
 
     Args:
         input_batch:
             The input batch (unused, kept for signature parity).
         model_output:
-            The generative model output with ``cf_scores`` populated (shape
-            ``(batch_size, num_choices)``).
+            The generative model output with `cf_scores` populated (shape
+            `(batch_size, num_choices)`).
         dataset_config:
             The dataset configuration (unused, kept for signature parity).
         model_config:
@@ -197,11 +197,11 @@ def extract_labels_from_cf(
             Unused, kept for signature parity with the MCF extractor.
 
     Returns:
-        The predicted letter label (``"a"``, ``"b"``, ...) for each sample.
+        The predicted letter label ("a", "b", ...) for each sample.
 
     Raises:
         InvalidBenchmark:
-            If ``cf_scores`` is missing from ``model_output``.
+            If `cf_scores` is missing from `model_output`.
     """
     del input_batch, dataset_config, model_config, first_label_token_mapping
     if model_output.cf_scores is None:
@@ -217,16 +217,16 @@ def letter_to_choice_text(letter: str, raw_choices: c.Sequence[str]) -> str:
 
     Args:
         letter:
-            A single lowercase letter (``"a"``, ``"b"``, ...).
+            A single lowercase letter ("a", "b", ...).
         raw_choices:
             The ordered list of raw choice strings for the example.
 
     Returns:
-        The raw choice string at the index encoded by ``letter``.
+        The raw choice string at the index encoded by `letter`.
 
     Raises:
         InvalidBenchmark:
-            If the letter does not correspond to a choice in ``raw_choices``.
+            If the letter does not correspond to a choice in `raw_choices`.
     """
     letter = letter.strip().lower()
     idx = CHOICE_LETTERS.find(letter)
