@@ -306,40 +306,32 @@ def get_training_args(
     max_steps = 1 if hasattr(sys, "_called_from_test") else 10_000
     warmup_steps = max(1, max_steps // 100)
 
-    # Build kwargs for TrainingArguments to handle version compatibility
-    training_args_kwargs = {
-        "output_dir": model_config.model_cache_dir,
-        "eval_strategy": IntervalStrategy.STEPS,
-        "logging_strategy": logging_strategy,
-        "save_strategy": IntervalStrategy.STEPS,
-        "eval_steps": 30,
-        "logging_steps": 30,
-        "save_steps": 30,
-        "max_steps": max_steps,
-        "use_cpu": benchmark_config.device == torch.device("cpu"),
-        "report_to": [],
-        "save_total_limit": 1,
-        "per_device_train_batch_size": batch_size,
-        "per_device_eval_batch_size": batch_size,
-        "eval_accumulation_steps": 32,
-        "optim": OptimizerNames.ADAMW_TORCH,
-        "learning_rate": 2e-5,
-        "warmup_steps": warmup_steps,
-        "gradient_accumulation_steps": 32 // batch_size,
-        "load_best_model_at_end": True,
-        "seed": 4242 + iteration_idx,
-        "fp16": dtype == DataType.FP16,
-        "bf16": dtype == DataType.BF16,
-        "disable_tqdm": not benchmark_config.progress_bar,
-        "ddp_find_unused_parameters": False,
-    }
-
-    # Add use_legacy_prediction_loop only if the TrainingArguments class supports it
-    # This attribute was deprecated in transformers 4.30 and removed in later versions
-    if hasattr(TrainingArguments, "use_legacy_prediction_loop"):
-        training_args_kwargs["use_legacy_prediction_loop"] = False
-
-    training_args = TrainingArguments(**training_args_kwargs)  # type: ignore
+    training_args = TrainingArguments(
+        output_dir=model_config.model_cache_dir,
+        eval_strategy=IntervalStrategy.STEPS,
+        logging_strategy=logging_strategy,
+        save_strategy=IntervalStrategy.STEPS,
+        eval_steps=30,
+        logging_steps=30,
+        save_steps=30,
+        max_steps=max_steps,
+        use_cpu=benchmark_config.device == torch.device("cpu"),
+        report_to=[],
+        save_total_limit=1,
+        per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=batch_size,
+        eval_accumulation_steps=32,
+        optim=OptimizerNames.ADAMW_TORCH,
+        learning_rate=2e-5,
+        warmup_steps=warmup_steps,
+        gradient_accumulation_steps=32 // batch_size,
+        load_best_model_at_end=True,
+        seed=4242 + iteration_idx,
+        fp16=dtype == DataType.FP16,
+        bf16=dtype == DataType.BF16,
+        disable_tqdm=not benchmark_config.progress_bar,
+        ddp_find_unused_parameters=False,
+    )
 
     # TEMP: Use only 1 GPU for now for finetuning
     if benchmark_config.device == torch.device("cuda"):
