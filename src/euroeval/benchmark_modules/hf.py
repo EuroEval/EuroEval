@@ -109,7 +109,18 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         benchmark_config: "BenchmarkConfig",
         log_metadata: bool = True,
     ) -> None:
-        """Initialise the model."""
+        """Initialise the model.
+
+        Args:
+            model_config:
+                The model configuration.
+            dataset_config:
+                The dataset configuration.
+            benchmark_config:
+                The benchmark configuration.
+            log_metadata:
+                Whether to log the model metadata.
+        """
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
         )
