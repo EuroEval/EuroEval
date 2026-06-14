@@ -7,12 +7,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Added
-
-- Added `ORTHOGONAL_TASKS` constant to `src/euroeval/constants.py`, defining tasks that
-  don't contribute to the main ranking score and are rendered separately from the
-  task-grouped columns on leaderboards. Currently only includes `"european-values"`.
-
 ### Fixed
 
 - Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
@@ -28,6 +22,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   "errored" instead of "skipped" in the summary
 
 ## [v17.4.0] - 2026-06-12
+
+### Changed
+
+- Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
+  model architectures and tokenisers.
 
 ### Fixed
 
@@ -53,11 +52,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `EMBEDDIA/litlat-bert`) that raised `TypeError: argument 'vocab': 'dict' object cannot
   be converted to 'Sequence'`. The tokenizer loader now falls back to `use_fast=False`
   when this error occurs.
-
-### Changed
-
-- Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
-  model architectures and tokenisers.
 
 ## [v17.3.0] - 2026-05-31
 

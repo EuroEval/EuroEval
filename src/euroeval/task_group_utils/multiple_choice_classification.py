@@ -43,12 +43,7 @@ class MultipleChoiceClassificationTrainer(Trainer):
         """
         eval_dataloader = self.get_eval_dataloader(eval_dataset)  # ty: ignore[invalid-argument-type]
 
-        eval_loop = (
-            self.prediction_loop
-            if self.args.use_legacy_prediction_loop
-            else self.evaluation_loop
-        )
-        output = eval_loop(
+        output = self.evaluation_loop(
             eval_dataloader,
             description="Evaluation",
             prediction_loss_only=None,
