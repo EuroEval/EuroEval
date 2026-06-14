@@ -9,6 +9,7 @@ import numpy as np
 from transformers.trainer import Trainer
 
 from ..exceptions import InvalidBenchmark
+from ..string_utils import CHOICE_LETTERS
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
@@ -138,7 +139,7 @@ def prepare_examples(
     )
     new_examples["label"] = [
         int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])
-        for letter, choice in zip("abcdefghijklmnopqrstuvwxyz", choices)
+        for letter, choice in zip(CHOICE_LETTERS, choices)
     ]
     new_examples["id"] = [hashlib.md5(string=doc.encode()).hexdigest()] * len(choices)
     return new_examples

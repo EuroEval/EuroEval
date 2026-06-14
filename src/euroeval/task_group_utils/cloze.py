@@ -7,12 +7,12 @@ import typing as t
 import numpy as np
 
 from ..exceptions import InvalidBenchmark
+from ..string_utils import CHOICE_LETTERS
 
 if t.TYPE_CHECKING:
     from ..data_models import DatasetConfig, GenerativeModelOutput, ModelConfig
 
 
-_LETTERS = "abcdefghijklmnopqrstuvwxyz"
 _CHOICE_LINE_RE = re.compile(r"^[a-z0-9]+\. ")
 
 
@@ -207,7 +207,7 @@ def extract_labels_from_cf(
             "CF evaluation expected `cf_scores` on the model output, but none was "
             "produced. This is likely a bug."
         )
-    return [_LETTERS[int(np.argmax(row))] for row in model_output.cf_scores]
+    return [CHOICE_LETTERS[int(np.argmax(row))] for row in model_output.cf_scores]
 
 
 def letter_to_choice_text(letter: str, raw_choices: c.Sequence[str]) -> str:
@@ -227,7 +227,7 @@ def letter_to_choice_text(letter: str, raw_choices: c.Sequence[str]) -> str:
             If the letter does not correspond to a choice in ``raw_choices``.
     """
     letter = letter.strip().lower()
-    idx = _LETTERS.find(letter)
+    idx = CHOICE_LETTERS.find(letter)
     if idx == -1 or idx >= len(raw_choices):
         raise InvalidBenchmark(
             f"Could not map label letter {letter!r} to a choice; "

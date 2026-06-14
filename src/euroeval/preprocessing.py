@@ -6,6 +6,7 @@ import typing as t
 
 from .enums import TaskGroup
 from .exceptions import InvalidBenchmark
+from .string_utils import CHOICE_LETTERS
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -191,11 +192,9 @@ def build_preprocessing_func(
                         choices = example[choices_column]
                     label = example[target_column]
                     if label in choices:
-                        example[target_column] = "abcdefghijklmnopqrstuvwxyz"[
-                            choices.index(label)
-                        ]
+                        example[target_column] = CHOICE_LETTERS[choices.index(label)]
                     if isinstance(example[target_column], int):
-                        example[target_column] = "abcdefghijklmnopqrstuvwxyz"[label]
+                        example[target_column] = CHOICE_LETTERS[label]
                     if isinstance(example[target_column], str):
                         example[target_column] = example[target_column].lower()
                     return example

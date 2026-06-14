@@ -11,6 +11,9 @@ import numpy as np
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import log
 
+#: Lowercase letters used for multiple-choice answer labels.
+CHOICE_LETTERS = "abcdefghijklmnopqrstuvwxyz"
+
 if t.TYPE_CHECKING:
     from .data_models import ModelIdComponents
 
@@ -119,7 +122,7 @@ def extract_multiple_choice_labels(
     # In that case scan against the full alphabet so we pick up whatever letters the
     # preprocessing placed in the prompt (a. , b. , c. , …).
     effective_candidates = (
-        candidate_labels if candidate_labels else list("abcdefghijklmnopqrstuvwxyz")
+        candidate_labels if candidate_labels else list(CHOICE_LETTERS)
     )
     sample_candidate_labels: list[str] = list()
     for candidate_label in effective_candidates:
