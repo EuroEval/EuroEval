@@ -11,7 +11,7 @@ import typing as t
 from .types import Tokeniser
 
 
-def _compute_bpc_scores(
+def compute_bpc_scores(
     raw_outputs: c.Sequence[t.Any],
     prompts: c.Sequence[str],
     answer_texts: c.Sequence[str],
