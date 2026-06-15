@@ -141,8 +141,11 @@ def list_all_raw_result_files() -> list[BucketFile]:
     api = HfApi()
     bucket_id = HF_RAW_BUCKET.replace("hf://buckets/", "")
     try:
-        files = api.list_files_in_bucket(bucket_id=bucket_id)
-        return [f for f in files if f.path.endswith(".jsonl")]
+        files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
+        return [
+            f for f in files
+            if isinstance(f, BucketFile) and f.path.endswith(".jsonl")
+        ]
     except Exception as e:
         logger.error(f"Failed to list bucket files: {e}")
         return []
@@ -269,11 +272,6 @@ def scan_bucket_for_results() -> list[str]:
                 logger.debug(f"Skipping invalid JSON line: {e}")
 
     logger.info(f"Found {len(new_results)} new result(s) from bucket scan.")
-
-    if new_results:
-        # Write new results to new_results.jsonl
-        NEW_RESULTS_PATH.write_text("\n".join(new_results) + "\n", encoding="utf-8")
-        logger.info(f"Wrote {len(new_results)} new result(s) to {NEW_RESULTS_PATH}.")
 
     return new_results
 
