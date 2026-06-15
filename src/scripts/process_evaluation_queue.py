@@ -183,16 +183,37 @@ def _model_id_to_filename(model_id: str) -> str:
 def download_results_from_hf() -> int:
     """Download all results from the Hugging Face bucket.
 
+    Only downloads files, never deletes local files. This is a one-way sync
+    from bucket to local cache.
+
     Returns:
         The number of lines loaded.
     """
     global _OLD_RESULT_HASHES
     RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
+    api = HfApi()
+    bucket_id = HF_RAW_BUCKET.replace("hf://buckets/", "")
     try:
-        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RESULTS_CACHE_DIR))
+        # List all files in the bucket
+        bucket_files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
+        # Build download list for .jsonl files not already present
+        files_to_download: list[tuple[str, str]] = []
+        for file_info in bucket_files:
+            if not file_info.path.endswith(".jsonl"):
+                continue
+            local_file = RESULTS_CACHE_DIR / file_info.path
+            # Only download if not already present (additive only)
+            if not local_file.exists():
+                files_to_download.append((file_info.path, str(local_file)))
+
+        if files_to_download:
+            api.download_bucket_files(
+                bucket_id=bucket_id,
+                files=files_to_download,  # ty: ignore
+            )
     except HfHubHTTPError as e:
-        logger.warning(f"Could not sync results from HF bucket: {e}")
+        logger.warning(f"Could not download results from HF bucket: {e}")
         return 0
 
     all_lines: list[str] = []
@@ -666,9 +687,8 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
 def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     """Upload result lines to the HF raw-results bucket.
 
-    Syncs existing results from the bucket, appends new lines for the
-    model, and syncs back. Uses the raw-results bucket as the canonical
-    source.
+    Appends new lines to the model-specific file and uploads only that file.
+    Never deletes existing files or lines from the bucket (additive only).
 
     Args:
         lines:
@@ -700,17 +720,23 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
             for line in new_lines:
                 f.write(line + "\n")
 
-    # Sync entire cache dir to bucket (upload only changed files)
+    # Upload only the model-specific file (additive only, never deletes)
     try:
-        logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
+        logger.info(f"Uploading results to {HF_RAW_BUCKET}...")
         api = HfApi()
-        api.sync_bucket(source=str(RESULTS_CACHE_DIR), dest=HF_RAW_BUCKET + "/")
+        bucket_id = HF_RAW_BUCKET.replace("hf://buckets/", "")
+        api.upload_file(
+            path_or_fileobj=str(model_file),
+            path_in_repo=filename,
+            repo_id=bucket_id,
+            repo_type="bucket",
+        )
         logger.info(
             f"Uploaded {len(new_lines)} new result lines for {model_id!r} to HF bucket."
         )
         return True
     except HfHubHTTPError as e:
-        logger.error(f"Failed to sync to HF bucket: {e}")
+        logger.error(f"Failed to upload to HF bucket: {e}")
         return False
 
 

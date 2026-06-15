@@ -103,12 +103,7 @@ def build_dedup_key(result: dict) -> tuple[str, str, str, str] | None:
         validation_split = result.get("validation_split", False)
         few_shot = result.get("few_shot", False)
 
-        return (
-            model_id,
-            dataset,
-            str(validation_split),
-            str(few_shot),
-        )
+        return (model_id, dataset, str(validation_split), str(few_shot))
     except Exception as e:
         logger.debug("Failed to extract dedup key from result: %s", e)
         return None
@@ -143,8 +138,7 @@ def list_all_raw_result_files() -> list[BucketFile]:
     try:
         files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
         return [
-            f for f in files
-            if isinstance(f, BucketFile) and f.path.endswith(".jsonl")
+            f for f in files if isinstance(f, BucketFile) and f.path.endswith(".jsonl")
         ]
     except Exception as e:
         logger.error(f"Failed to list bucket files: {e}")
@@ -222,13 +216,9 @@ def scan_bucket_for_results() -> list[str]:
 
     try:
         api.download_bucket_files(
-            bucket_id=bucket_id,
-            files=files_spec,
-            raise_on_missing_files=False,
+            bucket_id=bucket_id, files=files_spec, raise_on_missing_files=False
         )
-        logger.info(
-            f"Downloaded {len(files_spec)} file(s) to {RAW_RESULTS_DIR}."
-        )
+        logger.info(f"Downloaded {len(files_spec)} file(s) to {RAW_RESULTS_DIR}.")
     except Exception as e:
         logger.error(f"Failed to download bucket files: {e}")
         return []

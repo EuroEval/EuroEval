@@ -96,7 +96,18 @@ def generate_anchor_tag(model_id: str) -> str | None:
     # Skip URL generation for models without hosted pages
     if model_id_without_extras in KNOWN_MODELS_WITHOUT_URLS:
         return model_id
-    if model_id_without_extras in _load_models_without_urls_cache():
+
+    # Check cached decision (remove or keep without URL)
+    cached_decision = _load_model_url_decision(model_id=model_id_without_extras)
+    if cached_decision is True:
+        # Cached decision: remove this model
+        log_once(
+            f"Removing model {model_id_without_extras} from results (cached decision).",
+            logging_level=logging.INFO,
+        )
+        return None
+    if cached_decision is False:
+        # Cached decision: keep without URL
         return model_id
 
     url = generate_ollama_url(model_id=model_id_without_extras)
@@ -135,6 +146,11 @@ def ask_user_to_remove_model(model_id: str) -> bool:
     Returns:
         True if the user wants to remove the model from the results, False otherwise.
     """
+    # Check persistent cache first
+    cached_decision = _load_model_url_decision(model_id=model_id)
+    if cached_decision is not None:
+        return cached_decision
+
     while True:
         user_input = input(
             f"Could not find a URL for model {model_id}. Do you want to remove it from "
@@ -143,36 +159,63 @@ def ask_user_to_remove_model(model_id: str) -> bool:
         if user_input not in ["y", "n"]:
             print("Invalid input. Please enter 'y' or 'n'.")
             continue
-        keep = user_input == "n"
-        if keep:
-            _remember_model_without_url(model_id=model_id)
-        return user_input == "y"
+        remove = user_input == "y"
+        _remember_model_url_decision(model_id=model_id, remove=remove)
+        return remove
 
 
 @cache
-def _load_models_without_urls_cache() -> frozenset[str]:
-    """Load model IDs the user has previously opted to keep without a URL.
+def _load_model_url_decisions() -> dict[str, bool]:
+    """Load cached model URL decisions (remove or keep).
 
     Returns:
-        The set of cached model IDs, or an empty frozenset if the cache file
-        does not exist.
+        A dict mapping model IDs to whether they should be removed (True)
+        or kept without a URL (False). Returns an empty dict if the cache
+        file does not exist.
     """
     if not MODELS_WITHOUT_URLS_CACHE.exists():
-        return frozenset()
+        return {}
     with MODELS_WITHOUT_URLS_CACHE.open("r") as f:
-        data = safe_load(f) or []
-    return frozenset(data)
+        data = safe_load(f) or {}
+    # Backwards compatibility: old format was a list of model IDs to keep
+    if isinstance(data, list):
+        return {model_id: False for model_id in data}
+    return data
 
 
-def _remember_model_without_url(model_id: str) -> None:
-    """Persist a model ID to the no-URL cache so we don't prompt again."""
-    cached = set(_load_models_without_urls_cache())
-    if model_id in cached:
+def _load_model_url_decision(model_id: str) -> bool | None:
+    """Load a cached decision for a specific model.
+
+    Args:
+        model_id:
+            The model ID to look up.
+
+    Returns:
+        True if the model should be removed, False if it should be kept
+        without a URL, or None if no cached decision exists.
+    """
+    decisions = _load_model_url_decisions()
+    return decisions.get(model_id)
+
+
+def _remember_model_url_decision(model_id: str, remove: bool) -> None:
+    """Persist a model URL decision to the cache.
+
+    Args:
+        model_id:
+            The model ID.
+        remove:
+            True if the model should be removed, False if it should be
+            kept without a URL.
+    """
+    decisions = _load_model_url_decisions()
+    if model_id in decisions:
         return
-    cached.add(model_id)
+    decisions[model_id] = remove
     with MODELS_WITHOUT_URLS_CACHE.open("w") as f:
-        safe_dump(sorted(cached), f)
-    _load_models_without_urls_cache.cache_clear()
+        safe_dump(dict(sorted(decisions.items())), f)
+    _load_model_url_decisions.cache_clear()
+    generate_anchor_tag.cache_clear()
 
 
 def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
