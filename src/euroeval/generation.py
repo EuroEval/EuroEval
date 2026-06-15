@@ -297,23 +297,10 @@ def generate_single_iteration(
         )
         ground_truth = []
 
-    # `all_preds` and `ground_truth` are ordered as the non-cached examples followed
-    # by the cached examples (see `split_dataset_into_cached_and_non_cached` above),
-    # which differs from the original order of `dataset` whenever the dataset was
-    # split (i.e. when bootstrapping, where duplicate samples are moved to the cached
-    # part). Metrics that rely on a positional correspondence between dataset rows and
-    # predictions - notably the hallucination detector, which scores each predicted
-    # answer against the context in the *same* row - would otherwise receive
-    # mismatched (context, prediction) pairs. Re-order the dataset the same way so the
-    # rows line up with the predictions and labels.
-    if len(cached_dataset) > 0:
-        eval_dataset = concatenate_datasets([non_cached_dataset, cached_dataset])
-    else:
-        eval_dataset = non_cached_dataset
 
     metrics_scores = model.compute_metrics(
         model_outputs_and_labels=(all_preds, ground_truth),
-        dataset=eval_dataset,
+        dataset=dataset,
         benchmark_config=benchmark_config,
     )
     itr_scores: "IterationScores" = {

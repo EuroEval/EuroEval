@@ -30,9 +30,11 @@ def detect_hallucinations(
     Args:
         dataset:
             Hallucination dataset, generated with e.g. lettuce. Each example must
-            provide a ``"context"`` field containing the full RAG prompt.
-        predictions: Iterable of prediction objects, each containing a
-            ``"prediction_text"`` field with the model's answer text.
+            provide an ``"id"`` field and a ``"context"`` field containing the full
+            RAG prompt.
+        predictions: Iterable of prediction objects, each containing an ``"id"``
+            field matching a dataset example and a ``"prediction_text"`` field with
+            the model's answer text.
         model:
             Path to hallucination detection model.
         device:
@@ -54,13 +56,19 @@ def detect_hallucinations(
     tokenizer = transformer_detector.tokenizer
     max_length = transformer_detector.max_length
 
-    predicted_texts = [p["prediction_text"] for p in predictions]
+    # Map each example's id to its context, so predictions can be aligned by id
+    # rather than by position. Predictions may be reordered or duplicated relative to
+    # the dataset due to caching and bootstrapping, so a positional zip is unsafe.
+    id_to_context = dict(zip(dataset["id"], dataset["context"]))
 
     hallucinated_tokens = 0
     total_tokens = 0
     skipped_samples = 0
 
-    for prompt, predicted_text in zip(dataset["context"], predicted_texts):
+    for prediction in predictions:
+        prompt = id_to_context[prediction["id"]]
+        predicted_text = prediction["prediction_text"]
+
         if _answer_too_long(
             # TODO: Check if it is necessary to check if samples are too long.
             answer=predicted_text, tokenizer=tokenizer, max_length=max_length
