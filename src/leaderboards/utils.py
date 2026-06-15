@@ -11,6 +11,36 @@ from scipy import stats
 
 logger = logging.getLogger(__name__)
 
+# Regex for stripping HTML anchor tags from model IDs like
+# `<a href='...'>org/model</a>`
+_ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
+# Strips trailing ``(zero-shot)``, ``(val)``, ``(zero-shot, val)`` etc.
+# annotations that `extract_model_ids_from_record` appends to variants.
+_VARIANT_SUFFIX_RE = re.compile(
+    r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$"
+)
+
+
+def plain_model_id(model_id: str) -> str:
+    """Strip the HTML anchor and variant-suffix from a result-record model id.
+
+    Records label few-shot vs zero-shot and test vs validation by appending
+    ``(zero-shot)`` / ``(val)`` / ``(zero-shot, val)`` to the model id.
+    For the core-model list we collapse all those variants down to the
+    canonical ``org/repo`` slug — we don't want to list the same model
+    several times.
+
+    Args:
+        model_id:
+            The (possibly anchored, possibly variant-suffixed) identifier.
+
+    Returns:
+        The canonical ``org/repo`` slug.
+    """
+    m = _ANCHOR_RE.search(model_id)
+    inner = m.group("inner").strip() if m else model_id
+    return _VARIANT_SUFFIX_RE.sub("", inner)
+
 
 def convert_to_float(value: str | float) -> float | str:
     """Convert a value to float if possible.

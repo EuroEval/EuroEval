@@ -45,7 +45,7 @@ from huggingface_hub.errors import HfHubHTTPError
 from huggingface_hub.hf_api import RepositoryNotFoundError
 
 from .result_loading import load_processed_results
-from .result_processing import extract_model_metadata, group_results_by_model
+from .result_processing import extract_model_metadata
 from .score_computation import compute_ranks
 from .task_metadata import (
     languages_with_official_datasets,
@@ -154,7 +154,7 @@ _ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
 _VARIANT_SUFFIX_RE = re.compile(r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$")
 
 
-def _plain_model_id(model_id: str) -> str:
+def plain_model_id(model_id: str) -> str:
     """Strip the HTML anchor and variant-suffix from a result-record model id.
 
     Records label few-shot vs zero-shot and test vs validation by appending
@@ -187,7 +187,7 @@ def _classify_model(model_id: str, metadata: dict) -> ModelType:
     Returns:
         One of the `ModelType` literals.
     """
-    plain = _plain_model_id(model_id).split("#")[0]
+    plain = plain_model_id(model_id).split("#")[0]
     if any(p.fullmatch(plain) for p in API_MODEL_PATTERNS):
         return ModelType.API
     generative_type = metadata.get("generative_type")
@@ -410,7 +410,7 @@ def eu_models(model_ids: c.Iterable[str], eu_patterns: list[str]) -> set[str]:
     eu_model_ids = {
         model_id
         for model_id in model_ids
-        if any(p.search(_plain_model_id(model_id).split("#")[0]) for p in compiled)
+        if any(p.search(plain_model_id(model_id).split("#")[0]) for p in compiled)
     }
     logger.info(f"Fetched {len(eu_model_ids)} EU models.")
     return eu_model_ids
@@ -761,6 +761,8 @@ def build_core_model_list(
         for dataset in task_datasets
     }
 
+    from .result_processing import group_results_by_model
+
     results = [r for r in load_processed_results() if r["dataset"] in datasets]
     model_results = group_results_by_model(results=results)
     model_results = drop_val_duplicates(model_results=model_results)
@@ -792,7 +794,7 @@ def build_core_model_list(
     # for the plain id are the union/best of its variants.
     by_plain: dict[str, list[str]] = defaultdict(list)
     for anchored_id in model_results:
-        by_plain[_plain_model_id(anchored_id)].append(anchored_id)
+        by_plain[plain_model_id(anchored_id)].append(anchored_id)
 
     eu_set = eu_models(model_ids=by_plain.keys(), eu_patterns=eu_patterns)
     osai_ranked = osai_top_models(limit=osai_limit, overrides=osai_overrides)
