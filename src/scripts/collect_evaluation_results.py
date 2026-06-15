@@ -106,16 +106,32 @@ def main() -> None:
         logger.info(f"#{number}: found {len(lines)} result line(s).")
         harvested.append((number, lines))
 
-    if not harvested:
-        logger.info("Nothing to merge.")
-        return
+    # Load any manually added results from new_results.jsonl
+    manual_lines: list[str] = []
+    if NEW_RESULTS_PATH.exists():
+        manual_lines = [
+            line
+            for line in NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        if manual_lines:
+            logger.info(f"Found {len(manual_lines)} manually added result line(s).")
 
+    # Combine harvested results with manual results
     all_lines: list[str] = []
     for _, lines in harvested:
         all_lines.extend(lines)
+    all_lines.extend(manual_lines)
+
+    if not all_lines:
+        logger.info("Nothing to merge.")
+        return
 
     NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
-    logger.info(f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH}.")
+    logger.info(
+        f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
+        f"({len(all_lines) - len(manual_lines)} harvested, {len(manual_lines)} manual)."
+    )
 
     # Upload results to HF bucket BEFORE regenerating leaderboards
     # (leaderboard regeneration consumes/deletes new_results.jsonl)
