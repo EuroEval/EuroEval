@@ -195,7 +195,9 @@ def _compute_bpc_scores(
                             answer_logprobs.append(float(lp))
 
         if answer_logprobs:
-            # Convert from natural log to log₂ and negate to get positive bits
+            # Convert from natural log to log₂ and negate to get positive bits.
+            # vLLM logprobs are negative (log of probability < 1), so -sum(negative)
+            # yields positive BPC. E.g. logprob=-0.693 (ln(0.5)) → BPC=1.0 bits/char.
             total_logprob = -sum(lp / math.log(2) for lp in answer_logprobs)
             bpc = total_logprob / max(1, len(answer))
         else:
