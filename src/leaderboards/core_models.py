@@ -45,7 +45,11 @@ from huggingface_hub.errors import HfHubHTTPError
 from huggingface_hub.hf_api import RepositoryNotFoundError
 
 from .result_loading import load_processed_results
-from .result_processing import extract_model_metadata
+from .result_processing import (
+    extract_model_metadata,
+    get_dataset,
+    group_results_by_model,
+)
 from .score_computation import compute_ranks
 from .task_metadata import (
     languages_with_official_datasets,
@@ -761,9 +765,7 @@ def build_core_model_list(
         for dataset in task_datasets
     }
 
-    from .result_processing import group_results_by_model
-
-    results = [r for r in load_processed_results() if r["dataset"] in datasets]
+    results = [r for r in load_processed_results() if get_dataset(r) in datasets]
     model_results = group_results_by_model(results=results)
     model_results = drop_val_duplicates(model_results=model_results)
     ranks = compute_ranks(

@@ -22,7 +22,9 @@ project with `vercel build --prod` and deploys it with `vercel deploy --prebuilt
 
 ### Leaderboard Generation
 
-Python package with config in `pyproject.toml` (same as evaluation framework) and source code in `src/leaderboards`. Leaderboards are CSVs and the evaluation queue is handled via Github issues.
+Python package with config in `pyproject.toml` (same as evaluation framework)
+and source code in `src/leaderboards`. Leaderboards are CSVs and the evaluation
+queue is handled via Github issues.
 
 ### Data Flow and Storage
 
@@ -54,6 +56,7 @@ Evaluation results flow through four storage layers:
 **Sync direction:** HF buckets → local `results/` → `results.tar.gz` → backup snapshots
 
 The `src/scripts/collect_evaluation_results.py` script orchestrates this flow:
+
 - Downloads new results from HF buckets
 - Deduplicates against existing results in `results.tar.gz`
 - Rebuilds `results.tar.gz` from the merged results

@@ -16,9 +16,7 @@ logger = logging.getLogger(__name__)
 _ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
 # Strips trailing ``(zero-shot)``, ``(val)``, ``(zero-shot, val)`` etc.
 # annotations that `extract_model_ids_from_record` appends to variants.
-_VARIANT_SUFFIX_RE = re.compile(
-    r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$"
-)
+_VARIANT_SUFFIX_RE = re.compile(r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$")
 
 
 def plain_model_id(model_id: str) -> str:
@@ -88,6 +86,20 @@ def significantly_better(
     return test_result.pvalue < 0.05
 
 
+def get_model_name(record: dict) -> str:
+    """Get model name from record, supporting both EEE and old formats.
+
+    Args:
+        record: A result record in either EEE or old EuroEval format.
+
+    Returns:
+        The model name.
+    """
+    if "model_info" in record and "name" in record["model_info"]:
+        return record["model_info"]["name"]
+    return record.get("model", "unknown")
+
+
 def extract_model_ids_from_record(record: dict) -> list[str]:
     """Extract the model ID candidates from a record.
 
@@ -98,7 +110,7 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     Returns:
         The model ID candidates.
     """
-    model_id = record["model"]
+    model_id = get_model_name(record)
     all_model_notes: list[list[str]] = [[]]
 
     match record.get("few_shot", True):
@@ -132,7 +144,7 @@ def get_record_hash(record: dict) -> str:
     Returns:
         A hash value for the record.
     """
-    model = record["model"]
+    model = get_model_name(record)
     dataset = record["dataset"]
     validation_split = (
         int(record_validation_split)

@@ -832,10 +832,11 @@ class BenchmarkConfigParams(pydantic.BaseModel):
 def _convert_old_raw_results_format(config: dict[str, object]) -> None:
     """Convert old raw_results format in-place.
 
-    Handles legacy formats:
-    - raw = [{"mcc": 0.5, "accuracy": 0.6}] (flat list)
-    - raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]} (nested dict)
-    and flattens to raw = {"mcc": 0.5, "accuracy": 0.6} or {"test_mcc": 0.5, ...}.
+    Handles legacy nested dict format:
+    - raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]}
+    and converts to flat list: raw = [{"test_mcc": 0.5, "test_accuracy": 0.6}].
+
+    List format raw = [{"mcc": 0.5, "accuracy": 0.6}] is preserved as-is for EEE format.
     """
     if "results" not in config:
         return
@@ -843,31 +844,29 @@ def _convert_old_raw_results_format(config: dict[str, object]) -> None:
     if "raw" not in results:
         return
     raw = results["raw"]
-    flattened_raw: dict[str, float] = {}
+
+    # Preserve list format - it's what EEE format needs
     if isinstance(raw, list):
-        # Flat list format: [{"mcc": 0.5, "accuracy": 0.6}]
-        for item in raw:
-            if not isinstance(item, dict):
-                continue
-            for metric, value in item.items():
-                if isinstance(value, (int, float)) and isinstance(metric, str):
-                    if metric not in flattened_raw:
-                        flattened_raw[metric] = float(value)
-    elif isinstance(raw, dict):
-        # Nested dict format: {"test": [{"mcc": 0.5}]}
+        return
+
+    # Convert nested dict format: {"test": [...]} to flat list [{...}]
+    if isinstance(raw, dict):
+        raw_list: list[dict[str, float]] = []
         for split_name, split_data in raw.items():
             if not isinstance(split_data, list) or not split_data:
                 continue
-            for item in split_data:
+            for i, item in enumerate(split_data):
                 if not isinstance(item, dict):
                     continue
+                while len(raw_list) <= i:
+                    raw_list.append({})
                 for metric, value in item.items():
                     if isinstance(value, (int, float)):
                         key = f"{split_name}_{metric}"
-                        if key not in flattened_raw:
-                            flattened_raw[key] = float(value)
-    if flattened_raw:
-        results["raw"] = flattened_raw
+                        if key not in raw_list[i]:
+                            raw_list[i][key] = float(value)
+        if raw_list:
+            results["raw"] = raw_list
 
 
 class BenchmarkResult(pydantic.BaseModel):

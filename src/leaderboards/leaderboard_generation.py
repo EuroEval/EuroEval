@@ -17,7 +17,11 @@ from euroeval.constants import ORTHOGONAL_TASKS
 from .link_generation import generate_task_link
 from .paths import OUTPUT_DIR
 from .result_loading import load_processed_results
-from .result_processing import extract_model_metadata, group_results_by_model
+from .result_processing import (
+    extract_model_metadata,
+    get_dataset,
+    group_results_by_model,
+)
 from .score_computation import compute_ranks_bootstrap, compute_standard_ranks_bootstrap
 from .task_metadata import official_datasets_for_language, task_category
 from .utils import convert_to_float, drop_val_duplicates
@@ -98,7 +102,7 @@ def generate_leaderboard(
 
     # Load results and set them up for the leaderboard
     results = load_processed_results()
-    results = [record for record in results if record["dataset"] in datasets]
+    results = [record for record in results if get_dataset(record) in datasets]
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
         group_results_by_model(results=results)
     )
@@ -146,7 +150,8 @@ def generate_leaderboard(
         if leaderboard_path.exists():
             old_df = pd.read_csv(leaderboard_path, header=0, skiprows=1)
             old_df.columns = [
-                re.sub(r"<a href=.*?>(.*?)</a>", r"\1", col) for col in old_df.columns
+                re.sub(r"<a href=['\"].*?['\"]>(.*?)</a>", r"\1", col)
+                for col in old_df.columns
             ]
             if any(col not in old_df.columns for col in comparison_columns):
                 new_records = df.Model.tolist()
@@ -193,7 +198,8 @@ def generate_leaderboard(
 
         # Remove anchor tags from model names
         new_records = [
-            re.sub(r"<a href=.*?>(.*?)</a>", r"\1", model) for model in new_records
+            re.sub(r"<a href=['\"].*?['\"]>(.*?)</a>", r"\1", model)
+            for model in new_records
         ]
 
         if new_records or force:
@@ -512,9 +518,18 @@ def generate_dataframe(
                 or key.replace("_version", "") in category_to_datasets[category]
             }
 
+            # Create anchor tag if model_url is available
+            model_url = metadata.get("model_url")
+            if model_url:
+                display_model = f"<a href='{model_url}'>{model_id}</a>"
+            else:
+                display_model = model_id
+
             # Add all the model values to the data dictionary
             model_values = (
-                dict(model=model_id, rank=rank, mean_rank_score=mean_rank_score_str)
+                dict(
+                    model=display_model, rank=rank, mean_rank_score=mean_rank_score_str
+                )
                 | default_orthogonal_values
                 | default_dataset_values
                 | orthogonal_task_scores

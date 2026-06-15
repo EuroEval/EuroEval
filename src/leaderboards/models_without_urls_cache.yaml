@@ -1,2 +1,10 @@
-- danish-foundation-models/encoder-medium-v1
-- qwen3.5-397b
+LumiOpen/Viking-33B1000B: true
+alexandrainst/Meta-Llama-3.1-8B-dialog-k2-da: true
+alexandrainst/Meta-Llama-3.1-8B-laerebogen: true
+alexandrainst/Meta-Llama-3.1-8B-laerebogen-and-dialog-k2-da: true
+alexandrainst/Meta-Llama-3.1-8B-laerebogen-and-filtered-dialog-k2-da: true
+alexandrainst/Meta-Llama-3.1-8B-laerebogen-two-epochs: true
+danish-foundation-models/Meta-Llama-3.1-8B-laerebogen: true
+danish-foundation-models/encoder-medium-v1: false
+qwen3.5-397b: false
+test_model: true

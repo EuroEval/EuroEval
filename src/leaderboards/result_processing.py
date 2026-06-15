@@ -6,6 +6,7 @@ import io
 import json
 import logging
 import re
+import statistics
 import tarfile
 import typing as t
 import warnings
@@ -18,13 +19,132 @@ from huggingface_hub.hf_api import RepositoryNotFoundError
 from tqdm.auto import tqdm
 
 from .cache import Cache
-from .link_generation import generate_anchor_tag
+from .link_generation import generate_anchor_tag, generate_model_url
 from .paths import PROCESSED_RESULTS_DIR, RESULTS_PATH
 from .result_loading import load_raw_results
 from .task_metadata import task_metric_names
-from .utils import extract_model_ids_from_record, get_record_hash, log_once, plain_model_id
+from .utils import (
+    extract_model_ids_from_record,
+    get_record_hash,
+    log_once,
+    plain_model_id,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def get_model_name(record: dict) -> str:
+    """Get model name from record, supporting both EEE and old formats.
+
+    Args:
+        record: A result record in either EEE or old EuroEval format.
+
+    Returns:
+        The model name.
+    """
+    if "model_info" in record and "name" in record["model_info"]:
+        return record["model_info"]["name"]
+    return record.get("model", "unknown")
+
+
+def get_dataset(record: dict) -> str | None:
+    """Get dataset name from record, supporting both EEE and old formats.
+
+    Args:
+        record: A result record in either EEE or old EuroEval format.
+
+    Returns:
+        The dataset name, or None if not found.
+    """
+    # EEE format: in eval_library.additional_details or evaluation_results
+    if "eval_library" in record:
+        additional = record.get("eval_library", {}).get("additional_details", {})
+        if "dataset" in additional:
+            return additional["dataset"]
+        # Also check evaluation_results
+        eval_results = record.get("evaluation_results", [])
+        if eval_results and isinstance(eval_results, list):
+            source_data = eval_results[0].get("source_data", {})
+            if "dataset_name" in source_data:
+                return source_data["dataset_name"]
+    # Old format: top-level dataset field
+    return record.get("dataset")
+
+
+def get_task(record: dict) -> str | None:
+    """Get task name from record, supporting both EEE and old formats.
+
+    Args:
+        record: A result record in either EEE or old EuroEval format.
+
+    Returns:
+        The task name, or None if not found.
+    """
+    # EEE format: in eval_library.additional_details
+    if "eval_library" in record:
+        additional = record.get("eval_library", {}).get("additional_details", {})
+        if "task" in additional:
+            return additional["task"]
+    # Old format: top-level task field
+    return record.get("task")
+
+
+def get_raw_results(record: dict) -> list[dict] | dict | None:
+    """Get raw results from record, supporting both EEE and old formats.
+
+    Args:
+        record: A result record in either EEE or old EuroEval format.
+
+    Returns:
+        The raw results (list of dicts for EEE, dict or list for old format).
+    """
+    # EEE format: JSON string in eval_library.additional_details.raw_results
+    if "eval_library" in record:
+        additional = record.get("eval_library", {}).get("additional_details", {})
+        raw_str = additional.get("raw_results")
+        if raw_str and isinstance(raw_str, str):
+            try:
+                return json.loads(raw_str)
+            except json.JSONDecodeError:
+                return None
+        if raw_str and isinstance(raw_str, list):
+            return raw_str
+    # Old format: record["results"]["raw"]
+    results = record.get("results", {})
+    if isinstance(results, dict):
+        return results.get("raw")
+    return None
+
+
+def get_total_scores(record: dict) -> dict[str, float] | None:
+    """Get total scores from record, supporting both EEE and old formats.
+
+    Args:
+        record: A result record in either EEE or old EuroEval format.
+
+    Returns:
+        Dict mapping score names to values, or None if not found.
+    """
+    # EEE format: aggregate from evaluation_results
+    if "eval_library" in record and "evaluation_results" in record:
+        scores = {}
+        eval_results = record.get("evaluation_results", [])
+        if isinstance(eval_results, list):
+            for er in eval_results:
+                if isinstance(er, dict):
+                    name = er.get("evaluation_name", "")
+                    score_details = er.get("score_details", {})
+                    if isinstance(score_details, dict):
+                        score = score_details.get("score")
+                        if score is not None and isinstance(name, str) and name:
+                            # Convert "test_mcc" -> {"test_mcc": 95.0}
+                            scores[name] = float(score)
+        return scores if scores else None
+    # Old format: record["results"]["total"]
+    results = record.get("results", {})
+    if isinstance(results, dict):
+        return results.get("total")
+    return None
 
 
 def process_results(
@@ -131,11 +251,11 @@ def process_results(
     ]
 
     # Remove records for models with few records
-    counter = Counter([record["model"] for record in processed_records])
+    counter = Counter([get_model_name(record) for record in processed_records])
     processed_records = [
         record
         for record in processed_records
-        if counter[record["model"]] >= min_number_of_model_records
+        if counter[get_model_name(record)] >= min_number_of_model_records
     ]
 
     num_invalid_records = num_raw_records - num_duplicates - len(processed_records)
@@ -236,6 +356,9 @@ def add_missing_entries(
         trained_from_scratch_patterns=trained_from_scratch_patterns,
         cache=cache,
     )
+    # Add model_url field
+    model_name = get_model_name(record=record)
+    record["model_url"] = generate_model_url(model_id=model_name)
     return record
 
 
@@ -259,14 +382,30 @@ def fix_metadata(record: dict[str, t.Any], cache: Cache) -> dict[str, t.Any] | N
     if record["task"] == "european-values":
         record["validation_split"] = None
         record["few_shot"] = None
-    if record["model"] in cache.anchor_tag:
-        record["model"] = cache.anchor_tag[record["model"]]
+
+    # Handle anchor tag assignment - need to modify the record in place
+    model_name = get_model_name(record)
+    if model_name in cache.anchor_tag:
+        new_model_name = cache.anchor_tag[model_name]
     else:
-        anchor_tag = generate_anchor_tag(model_id=record["model"])
+        anchor_tag = generate_anchor_tag(model_id=model_name)
         if anchor_tag is None:
             return None
-        cache.anchor_tag[record["model"]] = anchor_tag
-        record["model"] = anchor_tag
+        cache.anchor_tag[model_name] = anchor_tag
+        new_model_name = anchor_tag
+
+    # Update the record with the anchor tag
+    if "model_info" in record:
+        record["model_info"]["name"] = new_model_name
+        # Extract URL from anchor tag and store it
+        url_match = re.search(r"<a href='([^']+)'>", new_model_name)
+        if url_match:
+            record["model_info"]["additional_details"]["url"] = url_match.group(1)
+        elif "url" not in record["model_info"].get("additional_details", {}):
+            record["model_info"]["additional_details"]["url"] = None
+    else:
+        record["model"] = new_model_name
+
     return record
 
 
@@ -283,9 +422,9 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
         The generative type of the model.
     """
     # If model ID is anchor tag, extract the actual model ID
-    model_id = record["model"]
-    if record["model"].startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", record["model"])
+    model_id = get_model_name(record)
+    if get_model_name(record).startswith("<a href="):
+        model_id_match = re.search(r">(.+?)<", get_model_name(record))
         if model_id_match:
             model_id = model_id_match.group(1)
 
@@ -363,9 +502,9 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
         Whether the model is commercially licensed.
     """
     # If model ID is anchor tag, extract the actual model ID
-    model_id = record["model"]
-    if record["model"].startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", record["model"])
+    model_id = get_model_name(record)
+    if get_model_name(record).startswith("<a href="):
+        model_id_match = re.search(r">(.+?)<", get_model_name(record))
         if model_id_match:
             model_id = model_id_match.group(1)
 
@@ -410,9 +549,9 @@ def is_trained_from_scratch(
         True if the model was trained from scratch.
     """
     # If model ID is anchor tag, extract the actual model ID
-    model_id = record["model"]
-    if record["model"].startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", record["model"])
+    model_id = get_model_name(record)
+    if get_model_name(record).startswith("<a href="):
+        model_id_match = re.search(r">(.+?)<", get_model_name(record))
         if model_id_match:
             model_id = model_id_match.group(1)
 
@@ -480,9 +619,9 @@ def is_merge(record: dict, cache: Cache) -> bool:
         Whether the model is a merged model.
     """
     # If model ID is anchor tag, extract the actual model ID
-    model_id = record["model"]
-    if record["model"].startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", record["model"])
+    model_id = get_model_name(record)
+    if get_model_name(record).startswith("<a href="):
+        model_id_match = re.search(r">(.+?)<", get_model_name(record))
         if model_id_match:
             model_id = model_id_match.group(1)
 
@@ -530,9 +669,9 @@ def is_open(record: dict, cache: Cache) -> bool:
         Whether the model is open (open-weight). Closed models return False.
     """
     # If model ID is anchor tag, extract the actual model ID
-    model_id = record["model"]
-    if record["model"].startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", record["model"])
+    model_id = get_model_name(record)
+    if get_model_name(record).startswith("<a href="):
+        model_id_match = re.search(r">(.+?)<", get_model_name(record))
         if model_id_match:
             model_id = model_id_match.group(1)
 
@@ -597,9 +736,9 @@ def record_is_valid(
         True if the record is valid, False otherwise.
     """
     # Remove anchors from model ID, for logging purposes
-    inner_anchor_match = re.search(pattern=r">(.+?)<", string=record["model"])
+    inner_anchor_match = re.search(pattern=r">(.+?)<", string=get_model_name(record))
     inner_model_id = (
-        inner_anchor_match.group(1) if inner_anchor_match else record["model"]
+        inner_anchor_match.group(1) if inner_anchor_match else get_model_name(record)
     )
 
     # Remove records with disallowed EuroEval versions
@@ -646,35 +785,79 @@ def group_results_by_model(
     )
     for record in results:
         model_ids = extract_model_ids_from_record(record=record)
-        dataset: str = record["dataset"]
+        dataset = get_dataset(record)
+        if not dataset:
+            continue
 
-        primary, secondary = task_metric_names(record["task"])
+        task = get_task(record)
+        if not task:
+            continue
+        primary, secondary = task_metric_names(task)
         metrics = [primary] + ([secondary] if secondary is not None else [])
-        for metric_type, metric in zip(("primary", "secondary"), metrics):
-            # Get the metrics for the dataset
-            if "test" in record["results"]["raw"]:
-                raw_scores = [
-                    result_dict.get(f"test_{metric}", result_dict.get(metric, -1))
-                    for result_dict in record["results"]["raw"]["test"]
-                ]
-            else:
-                raw_scores = [
-                    result_dict.get(f"test_{metric}", result_dict.get(metric, -1))
-                    for result_dict in record["results"]["raw"]
-                ]
 
-            # Get the aggregated scores for the dataset
-            try:
-                total_score: float = record["results"]["total"][f"test_{metric}"]
-                std_err: float = record["results"]["total"][f"test_{metric}_se"]
-            except KeyError:
+        for metric_type, metric in zip(("primary", "secondary"), metrics):
+            # Get raw results - supports both EEE and old format
+            raw_results = get_raw_results(record)
+            if raw_results is None:
+                continue
+
+            # Extract raw scores for this metric
+            raw_scores: list[float] = []
+            if isinstance(raw_results, dict) and "test" in raw_results:
+                # Old format with test split
+                for result_dict in raw_results["test"]:
+                    score = result_dict.get(
+                        f"test_{metric}", result_dict.get(metric, -1)
+                    )
+                    if score >= 0:
+                        raw_scores.append(score)
+            elif isinstance(raw_results, list):
+                # EEE format or old format flat list
+                for result_dict in raw_results:
+                    if isinstance(result_dict, dict):
+                        score = result_dict.get(
+                            f"test_{metric}", result_dict.get(metric, -1)
+                        )
+                        if score >= 0:
+                            raw_scores.append(score)
+
+            if not raw_scores:
+                continue
+
+            # Get total scores - supports both EEE and old format
+            total_scores = get_total_scores(record)
+            if total_scores is None:
+                continue
+
+            # EEE format uses keys like "test_mcc", old format also uses "test_mcc"
+            total_score_key = f"test_{metric}"
+            std_err_key = f"test_{metric}_se"
+
+            # Try to get total score and std err
+            total_score_val = total_scores.get(total_score_key)
+            if total_score_val is None:
+                # EEE format might not have "test_" prefix
+                total_score_val = total_scores.get(metric)
+
+            if total_score_val is None:
                 log_once(
-                    f"Could not find {metric_type} metric for {dataset!r} in "
-                    f"{record['model']!r} (test_{metric}). Only found "
-                    f"{list(record['results']['total'].keys())}.",
+                    f"Could not find {metric_type} metric for {dataset!r} "
+                    f"in {get_model_name(record)!r} ({total_score_key}). Only found "
+                    f"{list(total_scores.keys())}.",
                     logging_level=logging.WARNING,
                 )
                 continue
+
+            total_score: float = float(total_score_val)
+
+            # Get std_err from old format, or compute from raw_scores for EEE
+            std_err: float = total_scores.get(std_err_key, 0.0)
+            if std_err == 0.0 and len(raw_scores) > 1:
+                # Compute std_err from raw scores (EEE format doesn't have it directly)
+                try:
+                    std_err = statistics.stdev(raw_scores) / (len(raw_scores) ** 0.5)
+                except statistics.StatisticsError:
+                    std_err = 0.0
 
             # Sometimes the raw scores are normalised to [0, 1], so we need to scale
             # them back to [0, 100]
@@ -705,39 +888,70 @@ def extract_model_metadata(
     metadata_dict: dict[str, dict[str, t.Any]] = defaultdict(dict)
     for record in results:
         model_ids = extract_model_ids_from_record(record=record)
-        num_params = (
-            record["num_model_parameters"]
-            if record["num_model_parameters"] >= 0
-            else float("nan")
-        )
-        vocab_size = (
-            record["vocabulary_size"]
-            if record["vocabulary_size"] >= 0
-            else float("nan")
-        )
-        context = (
-            record["max_sequence_length"]
-            if record["max_sequence_length"] >= 0
-            else float("nan")
-        )
+
+        # Support both EEE format (nested in model_info.additional_details) and old
+        # format (top-level)
+        if "model_info" in record:
+            # EEE format
+            additional = record.get("model_info", {}).get("additional_details", {})
+            num_params_raw = additional.get("num_model_parameters", "-1")
+            vocab_size_raw = additional.get("vocabulary_size", "-1")
+            context_raw = additional.get("max_sequence_length", "-1")
+            merge_raw = additional.get("merge", "false")
+            generative_type = additional.get("generative_type", None)
+        else:
+            # Old format
+            num_params_raw = record.get("num_model_parameters", -1)
+            vocab_size_raw = record.get("vocabulary_size", -1)
+            context_raw = record.get("max_sequence_length", -1)
+            merge_raw = record.get("merge", False)
+            generative_type = record.get("generative_type", None)
+
+        # Convert to appropriate types
+        def _to_float_or_nan(val: str | float | int | None) -> float:
+            if isinstance(val, (int, float)):
+                return val if val >= 0 else float("nan")
+            if isinstance(val, str):
+                try:
+                    num = float(val)
+                    return num if num >= 0 else float("nan")
+                except ValueError:
+                    return float("nan")
+            return float("nan")
+
+        def _to_bool(val: str | bool | None) -> bool:
+            if isinstance(val, bool):
+                return val
+            if isinstance(val, str):
+                return val.lower() == "true"
+            return False
+
+        num_params = _to_float_or_nan(num_params_raw)
+        vocab_size = _to_float_or_nan(vocab_size_raw)
+        context = _to_float_or_nan(context_raw)
+        merge = _to_bool(merge_raw)
+
         for model_id in model_ids:
             metadata_dict[model_id].update(
                 dict(
                     parameters=num_params,
                     vocabulary_size=vocab_size,
                     context=context,
-                    generative_type=record.get("generative_type", None),
+                    generative_type=generative_type,
                     commercial=record.get("commercially_licensed", False),
-                    merge=record.get("merge", False),
+                    merge=merge,
                     open=record.get("open", None),
                     trained_from_scratch=record.get("trained_from_scratch", None),
+                    model_url=record.get("model_url", None),
                 )
             )
 
         # Version column. The frontend hides these and doesn't sort by them,
         # so the plain version string is sufficient.
         version = record.get("euroeval_version", "<9.2.0")
-        metadata_dict[model_id][f"{record['dataset']}_version"] = version
+        dataset = get_dataset(record)
+        if dataset:
+            metadata_dict[model_id][f"{dataset}_version"] = version
 
     logger.info("Extracted model metadata.")
     return metadata_dict

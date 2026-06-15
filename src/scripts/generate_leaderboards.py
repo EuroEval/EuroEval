@@ -159,6 +159,7 @@ def main(
     # the maintainer's radar without forcing a slow re-process each time.
     if not skip_core_models_check:
         _maybe_refresh_core_models()
+
     # Monolingual leaderboards are derived directly from the lib: one per
     # language that has at least one official leaderboard dataset.
     for language in languages_with_official_datasets():

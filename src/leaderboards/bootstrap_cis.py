@@ -132,7 +132,7 @@ def bootstrap_rank_scores(
             # Find best model and compute pooled SD
             scores.sort(key=lambda x: x[1], reverse=True)
             best_mean = scores[0][1]
-            all_raw = [r for _, _, _, r in scores]
+            all_raw = [score for _, _, _, r in scores for score in r]
             pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
             dataset_stats[ds] = (best_mean, pooled_sd)  # ty: ignore[invalid-assignment]
 

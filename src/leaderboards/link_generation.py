@@ -72,6 +72,39 @@ def generate_task_link(id: int, label: str) -> str:
     )
 
 
+def generate_model_url(model_id: str) -> str | None:
+    """Generate a URL for a model.
+
+    Args:
+        model_id:
+            The model ID.
+
+    Returns:
+        The URL for the model, or None if no URL can be generated.
+    """
+    model_id_without_extras = model_id.split("@")[0].split("#")[0]
+
+    # Skip URL generation for models without hosted pages
+    if model_id_without_extras in KNOWN_MODELS_WITHOUT_URLS:
+        return None
+
+    url = generate_ollama_url(model_id=model_id_without_extras)
+    if url is None:
+        url = generate_hf_hub_url(model_id=model_id_without_extras)
+    if url is None:
+        url = generate_openai_url(model_id=model_id_without_extras)
+    if url is None:
+        url = generate_anthropic_url(model_id=model_id_without_extras)
+    if url is None:
+        url = generate_google_url(model_id=model_id_without_extras)
+    if url is None:
+        url = generate_xai_url(model_id=model_id_without_extras)
+    if url is None:
+        url = generate_ordbogen_url(model_id=model_id_without_extras)
+
+    return url
+
+
 @cache
 def generate_anchor_tag(model_id: str) -> str | None:
     """Generate an anchor tag for a model.
@@ -110,19 +143,7 @@ def generate_anchor_tag(model_id: str) -> str | None:
         # Cached decision: keep without URL
         return model_id
 
-    url = generate_ollama_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_hf_hub_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_openai_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_anthropic_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_google_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_xai_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_ordbogen_url(model_id=model_id_without_extras)
+    url = generate_model_url(model_id=model_id_without_extras)
     if url is None:
         remove_model = ask_user_to_remove_model(model_id=model_id_without_extras)
         if remove_model:

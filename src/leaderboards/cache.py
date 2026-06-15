@@ -102,14 +102,31 @@ class Cache:
         # Populate a cache from the old records
         cache = cls()
         for record in tqdm(old_records, desc="Building caches"):
-            model_id: str = record["model"]
-            if (match := re.search(r">(.+?)<", record["model"])) is not None:
+            # Support both EEE format (model_info.name) and old format (model)
+            if "model_info" in record and "name" in record["model_info"]:
+                model_name = record["model_info"]["name"]
+            else:
+                model_name = record["model"]
+
+            model_id: str = model_name
+            if (match := re.search(r">(.+?)<", model_name)) is not None:
                 model_id = match.group(1)
             model_id = split_model_id(model_id=model_id).model_id
-            if "generative_type" in record:
-                cache.generative_type[model_id] = record["generative_type"]
-            if "merge" in record:
-                cache.merge[model_id] = record["merge"]
+
+            # EEE format: metadata in additional_details
+            if "model_info" in record and "additional_details" in record["model_info"]:
+                additional = record["model_info"]["additional_details"]
+                if "generative_type" in additional:
+                    cache.generative_type[model_id] = additional["generative_type"]
+                if "merge" in additional:
+                    cache.merge[model_id] = additional["merge"] == "true"
+            # Old format: metadata at top level
+            else:
+                if "generative_type" in record:
+                    cache.generative_type[model_id] = record["generative_type"]
+                if "merge" in record:
+                    cache.merge[model_id] = record["merge"]
+
             if "commercially_licensed" in record:
                 cache.commercially_licensed[model_id] = record["commercially_licensed"]
             if "open" in record:
@@ -119,12 +136,12 @@ class Cache:
                 cache.open[model_id] = value
             if "trained_from_scratch" in record:
                 cache.trained_from_scratch[model_id] = record["trained_from_scratch"]
-            if record["model"].startswith("<a href="):
-                inner_model_id_match = re.search(r">(.+?)<", record["model"])
+            if model_name.startswith("<a href="):
+                inner_model_id_match = re.search(r">(.+?)<", model_name)
                 if inner_model_id_match:
                     inner_model_id = inner_model_id_match.group(1)
                     inner_model_id = re.sub(r" *\(.*?\)", "", inner_model_id)
-                    cache.anchor_tag[inner_model_id] = record["model"]
+                    cache.anchor_tag[inner_model_id] = model_name
 
         return cache
 
@@ -169,14 +186,32 @@ class Cache:
         # Populate a cache from the records
         cache = cls()
         for record in tqdm(all_records, desc="Building caches from processed dir"):
-            model_id: str = record["model"]
-            if (match := re.search(r">(.+?)<", record["model"])) is not None:
+            # Support both EEE format (model_info.name) and old format (model)
+            if "model_info" in record and "name" in record["model_info"]:
+                model_name = record["model_info"]["name"]
+            else:
+                model_name = record["model"]
+
+            model_id: str = model_name
+            if (match := re.search(r">(.+?)<", model_name)) is not None:
                 model_id = match.group(1)
             model_id = split_model_id(model_id=model_id).model_id
-            if "generative_type" in record:
-                cache.generative_type[model_id] = record["generative_type"]
-            if "merge" in record:
-                cache.merge[model_id] = record["merge"]
+
+            # EEE format: metadata is in additional_details
+            if "model_info" in record and "additional_details" in record["model_info"]:
+                additional = record["model_info"]["additional_details"]
+                if "generative_type" in additional:
+                    cache.generative_type[model_id] = additional["generative_type"]
+                if "merge" in additional:
+                    cache.merge[model_id] = additional["merge"] == "true"
+            # Old format: metadata at top level
+            else:
+                if "generative_type" in record:
+                    cache.generative_type[model_id] = record["generative_type"]
+                if "merge" in record:
+                    cache.merge[model_id] = record["merge"]
+
+            # Check for additional fields from EEE or old format
             if "commercially_licensed" in record:
                 cache.commercially_licensed[model_id] = record["commercially_licensed"]
             if "open" in record:
@@ -186,11 +221,11 @@ class Cache:
                 cache.open[model_id] = value
             if "trained_from_scratch" in record:
                 cache.trained_from_scratch[model_id] = record["trained_from_scratch"]
-            if record["model"].startswith("<a href="):
-                inner_model_id_match = re.search(r">(.+?)<", record["model"])
+            if model_name.startswith("<a href="):
+                inner_model_id_match = re.search(r">(.+?)<", model_name)
                 if inner_model_id_match:
                     inner_model_id = inner_model_id_match.group(1)
                     inner_model_id = re.sub(r" *\(.*?\)", "", inner_model_id)
-                    cache.anchor_tag[inner_model_id] = record["model"]
+                    cache.anchor_tag[inner_model_id] = model_name
 
         return cache
