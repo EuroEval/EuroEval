@@ -95,7 +95,7 @@ def compute_bpc_scores(
     return bpc_scores
 
 
-def _extract_answer_texts(inputs: dict, dataset_config: DatasetConfig) -> list[str]:
+def extract_answer_texts(inputs: dict, dataset_config: DatasetConfig) -> list[str]:
     """Extract ground truth answer texts from inputs based on task group.
 
     Used by BPC scoring to determine which text spans to evaluate against
@@ -244,7 +244,7 @@ def compute_bpc_scores_for_vllm_outputs(
         BPC scores if prompt_logprobs are available, None otherwise.
     """
     # Extract answer texts based on task type
-    answer_texts = _extract_answer_texts(inputs=inputs, dataset_config=dataset_config)
+    answer_texts = extract_answer_texts(inputs=inputs, dataset_config=dataset_config)
 
     # Check if prompt_logprobs are available
     has_logprobs = all(
