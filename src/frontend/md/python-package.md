@@ -69,8 +69,8 @@ euroeval --model <model-id> --use-bits-per-character
 ```
 
 BPC computes the information content of the ground-truth answer. For multiple-choice
-tasks, this uses a cloze formulation with question + full answer text (not choice
-letters). BPC is only supported by the vLLM backend. See
+tasks, this treats the benchmark like text-to-text: bare question → full answer text.
+BPC is only supported by the vLLM backend. See
 [Evaluation Methodology](/methodology) for details.
 
 Run `euroeval --help` for the complete flag list.

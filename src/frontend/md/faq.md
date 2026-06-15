@@ -38,8 +38,8 @@ their score distributions overlap in this sense.
 BPC computes the information content (in bits) of the ground-truth answer conditioned
 on the question, normalized by character length. Lower BPC = better.
 
-For multiple-choice tasks, BPC uses a cloze formulation: the model sees a bare question
-(with answer marker) and few-shot examples with full answer text (not choice letters).
+For multiple-choice tasks, BPC treats the benchmark like text-to-text: the model sees
+a bare question (no choice options listed) and generates the full answer text.
 We compute `sum(log P(answer_tokens | prompt))` for the correct answer.
 
 For other tasks, BPC scores the ground-truth answer directly.

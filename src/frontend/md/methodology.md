@@ -42,11 +42,10 @@ For base decoder models, EuroEval supports bits-per-character (BPC) scoring via 
 `--use-bits-per-character`/`-bpc` flag. This computes the information content of the
 ground-truth answer conditioned on the question.
 
-For multiple-choice tasks, BPC uses a **cloze formulation**: the model sees a
-bare-question prompt (with answer marker like `"Antwoord: "`) and few-shot examples with
-full answer text (not choice letters). We compute `sum(log P(answer_tokens | prompt))`
-and normalize by character length, matching the approach used by Llama and the EleutherAI
-LM Evaluation Harness.
+For multiple-choice tasks, BPC treats the benchmark like text-to-text: the model sees
+a bare-question prompt (no choice options listed) and generates the full answer text.
+We compute `sum(log P(answer_tokens | prompt))` and normalize by character length,
+matching the approach used by Llama and the EleutherAI LM Evaluation Harness.
 
 For other task types, BPC scores the ground-truth answer directly. BPC is only supported
 by the vLLM backend with base decoder models; instruction-tuned models raise an error.
