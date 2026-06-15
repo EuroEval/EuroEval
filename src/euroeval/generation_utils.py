@@ -537,19 +537,17 @@ def apply_prompt(
         bpc_prompts: list[str] = []
         match dataset_config.task.task_group:
             case TaskGroup.SEQUENCE_CLASSIFICATION:
-                for new_prompt, _ in new_sections:
-                    for label in examples["label"]:
-                        answer = dataset_config.labels[label]
-                        bpc_prompts.append(new_prompt + " " + answer)
-                        break
+                for i, (new_prompt, _) in enumerate(new_sections):
+                    label = examples["label"][i]
+                    answer = dataset_config.labels[label]
+                    bpc_prompts.append(new_prompt + " " + answer)
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 if "raw_choices" in examples:
                     for i, (new_prompt, _) in enumerate(new_sections):
                         label = examples["label"][i]
                         raw_choice = examples["raw_choices"][i]
                         answer = letter_to_choice_text(
-                            letter=str(label).strip().lower(),
-                            raw_choices=raw_choice,
+                            letter=str(label).strip().lower(), raw_choices=raw_choice
                         )
                         bpc_prompts.append(new_prompt + " " + answer)
                 else:
@@ -605,16 +603,14 @@ def apply_prompt(
                                         current_entity, []
                                     ).append(" ".join(current_tokens))
                                 current_entity = (
-                                    tag_str[2:]
-                                    if tag_str.startswith("i-")
-                                    else tag_str
+                                    tag_str[2:] if tag_str.startswith("i-") else tag_str
                                 )
                                 current_tokens = [token]
 
                         if current_entity is not None:
-                            tagged_entities.setdefault(
-                                current_entity, []
-                            ).append(" ".join(current_tokens))
+                            tagged_entities.setdefault(current_entity, []).append(
+                                " ".join(current_tokens)
+                            )
 
                         answer = str(tagged_entities)
                         bpc_prompts.append(new_prompt + " " + answer)
