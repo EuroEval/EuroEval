@@ -63,16 +63,9 @@ def generate(
         model_cache_dir = Path.cwd()
     else:
         model_cache_dir = Path(model_config.model_cache_dir)
-    # Namespace the cache by BPC flag for MCQ tasks so different formulations do not
-    # collide (e.g. BPC vs MCF). MCF runs use the legacy unsuffixed cache path for
-    # backward compatibility. Non-MCQ tasks always use MCF-like scoring, so no suffix
-    # needed.
-    cache_suffix = (
-        "-bpc"
-        if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-        and benchmark_config.use_bits_per_character
-        else ""
-    )
+    # Namespace the cache by BPC flag so different scoring methods do not collide.
+    # MCF runs use the legacy unsuffixed cache path for backward compatibility.
+    cache_suffix = "-bpc" if benchmark_config.use_bits_per_character else ""
     if hasattr(sys, "_called_from_test"):
         cache_name = f"{dataset_config.name}{cache_suffix}-model-outputs-test.json"
         (model_cache_dir / cache_name).unlink(missing_ok=True)

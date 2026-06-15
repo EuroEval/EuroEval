@@ -785,23 +785,11 @@ class BenchmarkConfig:
         return list({dataset_config.task for dataset_config in self.datasets})
 
     def __post_init__(self) -> None:
-        """Post-initialisation checks.
-
-        Raises:
-            InvalidBenchmark:
-                If bits-per-character scoring is requested but the model is not a
-                base decoder.
-        """
+        """Post-initialisation checks."""
         # Set dummy API key if it has not been set and we're benchmarking a model on an
         # inference API
         if self.api_key is None and self.api_base is not None:
             self.api_key = "dummy"
-        # BPC only supported for base decoder models
-        if self.use_bits_per_character and self.generative_type != GenerativeType.BASE:
-            raise InvalidBenchmark(
-                "Bits-per-character scoring is only supported for base decoder models, "
-                f"not {self.generative_type} models."
-            )
 
 
 class BenchmarkConfigParams(pydantic.BaseModel):

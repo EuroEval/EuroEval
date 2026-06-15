@@ -348,7 +348,7 @@ class LiteLLMModel(BenchmarkModule):
             InvalidBenchmark:
                 If the inputs do not contain either 'messages' or 'text' keys.
             InvalidModel:
-                If Cloze Formulation (CF) evaluation is requested (not supported by the
+                If bits-per-character (BPC) scoring is requested (not supported by the
                 LiteLLM backend).
         """
         if self.benchmark_config.use_bits_per_character:

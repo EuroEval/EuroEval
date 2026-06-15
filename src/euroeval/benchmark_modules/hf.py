@@ -122,7 +122,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
 
         Raises:
             InvalidModel:
-                If Cloze Formulation (CF) scoring is requested. CF is only
+                If bits-per-character (BPC) scoring is requested. BPC is only
                 supported by the vLLM backend.
         """
         raise_if_wrong_params(

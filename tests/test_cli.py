@@ -30,6 +30,7 @@ def test_cli_param_names(cli_params: dict[str, ParamType]) -> None:
         "attention_backend",
         "requires_safetensors",
         "generative_type",
+        "custom_datasets_file",
         "use_bits_per_character",
         "download_only",
         "debug",

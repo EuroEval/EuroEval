@@ -225,6 +225,16 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "https://github.com/EuroEval/EuroEval/issues/new."
             )
 
+        # BPC only supported for base decoder models
+        if (
+            self.benchmark_config.use_bits_per_character
+            and generative_type != GenerativeType.BASE
+        ):
+            raise InvalidModel(
+                "Bits-per-character (BPC) scoring is only supported for base decoder "
+                f"models, not {generative_type.value} models."
+            )
+
         with no_terminal_output(disable=benchmark_config.verbose):
             model = load_model(
                 model_config=model_config,
@@ -427,9 +437,9 @@ class VLLMModel(HuggingFaceEncoderModel):
         else:
             few_shot_examples = list()
 
-        # For Cloze Formulation on MCQ tasks, build prompts directly instead of
-        # going through ``apply_prompt``: we want bare-question prompts ending
-        # with the answer marker (e.g. ``"Antwoord: "``) and few-shot examples
+        # For bits-per-character (BPC) scoring on MCQ tasks, build prompts directly
+        # instead of going through ``apply_prompt``: we want bare-question prompts
+        # ending with the answer marker (e.g. ``"Antwoord: "``) and few-shot examples
         # whose ``{label}`` slot is the full answer text, not the gold letter.
         cf_active = (
             self.benchmark_config.use_bits_per_character
