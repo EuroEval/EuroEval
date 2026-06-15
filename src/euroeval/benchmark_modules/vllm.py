@@ -129,6 +129,7 @@ def _compute_bpc_scores(
     raw_outputs: c.Sequence[t.Any],
     prompts: c.Sequence[str],
     answer_texts: c.Sequence[str],
+    answer_start_indices: c.Sequence[int],
     tokeniser: Tokeniser,
 ) -> c.Sequence[float]:
     """Compute bits-per-character scores from prompt_logprobs.
@@ -144,6 +145,7 @@ def _compute_bpc_scores(
         raw_outputs: Raw outputs from vLLM model.generate() with prompt_logprobs.
         prompts: The full prompts (prompt + answer text).
         answer_texts: Ground truth answer texts that were appended to prompts.
+        answer_start_indices: Pre-computed token indices where answers start in prompts.
         tokeniser: Tokeniser for tokenising prompts and answers.
 
     Returns:
@@ -151,7 +153,9 @@ def _compute_bpc_scores(
     """
     bpc_scores: list[float] = []
 
-    for raw_output, prompt, answer in zip(raw_outputs, prompts, answer_texts):
+    for raw_output, prompt, answer, answer_start_idx in zip(
+        raw_outputs, prompts, answer_texts, answer_start_indices
+    ):
         prompt_logprobs = raw_output.prompt_logprobs
 
         if prompt_logprobs is None:
@@ -160,19 +164,6 @@ def _compute_bpc_scores(
 
         # Tokenise the full prompt (including answer) to get all tokens
         full_tokens = tokeniser.encode(prompt, add_special_tokens=False)
-
-        # Find where the answer starts by tokenising the prompt without answer
-        # We need to find the token index where the answer portion begins
-        if answer and prompt.endswith(answer):
-            prompt_only = prompt[: -len(answer)]
-        else:
-            prompt_only = ""
-        if prompt_only:
-            prompt_only_tokens = tokeniser.encode(prompt_only, add_special_tokens=False)
-            answer_start_idx = len(prompt_only_tokens)
-        else:
-            # Edge case: no prompt-only part, answer starts at token 0
-            answer_start_idx = 0
 
         # The answer tokens are from answer_start_idx to end
         # prompt_logprobs[0] is None (no logprob for first token)
@@ -1168,6 +1159,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                     raw_outputs=raw_outputs,
                     prompts=inputs["bpc_prompt"],
                     answer_texts=answer_texts,
+                    answer_start_indices=inputs["bpc_answer_start"],
                     tokeniser=self._tokeniser,
                 )
                 output.bpc_scores = bpc_scores

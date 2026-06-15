@@ -533,14 +533,24 @@ def apply_prompt(
 
     # Create bpc_prompt column for BPC scoring when requested
     # bpc_prompt = prompt + answer text (for scoring with prompt_logprobs)
+    # Also track bpc_answer_start: token index where answer begins in bpc_prompt
     if use_bits_per_character:
+        assert tokeniser is not None, (
+            "tokeniser must be provided when use_bits_per_character=True"
+        )
         bpc_prompts: list[str] = []
+        bpc_answer_starts: list[int] = []
         match dataset_config.task.task_group:
             case TaskGroup.SEQUENCE_CLASSIFICATION:
                 for i, (new_prompt, _) in enumerate(new_sections):
                     label = examples["label"][i]
                     answer = dataset_config.labels[label]
                     bpc_prompts.append(new_prompt + " " + answer)
+                    # Tokenise prompt without answer to get answer start index
+                    prompt_tokens = tokeniser.encode(
+                        new_prompt, add_special_tokens=False
+                    )
+                    bpc_answer_starts.append(len(prompt_tokens))
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 if "raw_choices" in examples:
                     for i, (new_prompt, _) in enumerate(new_sections):
@@ -550,23 +560,38 @@ def apply_prompt(
                             letter=str(label).strip().lower(), raw_choices=raw_choice
                         )
                         bpc_prompts.append(new_prompt + " " + answer)
+                        prompt_tokens = tokeniser.encode(
+                            new_prompt, add_special_tokens=False
+                        )
+                        bpc_answer_starts.append(len(prompt_tokens))
                 else:
                     bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+                    bpc_answer_starts = [0] * len(new_sections)
             case TaskGroup.TEXT_TO_TEXT:
                 if "target_text" in examples:
                     for i, (new_prompt, _) in enumerate(new_sections):
                         target = examples["target_text"][i]
                         bpc_prompts.append(new_prompt + " " + target)
+                        prompt_tokens = tokeniser.encode(
+                            new_prompt, add_special_tokens=False
+                        )
+                        bpc_answer_starts.append(len(prompt_tokens))
                 else:
                     bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+                    bpc_answer_starts = [0] * len(new_sections)
             case TaskGroup.QUESTION_ANSWERING:
                 if "answers" in examples:
                     for i, (new_prompt, _) in enumerate(new_sections):
                         answer_dct = examples["answers"][i]
                         answer = answer_dct["answers"]["text"][0]
                         bpc_prompts.append(new_prompt + " " + answer)
+                        prompt_tokens = tokeniser.encode(
+                            new_prompt, add_special_tokens=False
+                        )
+                        bpc_answer_starts.append(len(prompt_tokens))
                 else:
                     bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+                    bpc_answer_starts = [0] * len(new_sections)
             case TaskGroup.TOKEN_CLASSIFICATION:
                 if "tokens" in examples and "labels" in examples:
                     for i, (new_prompt, _) in enumerate(new_sections):
@@ -614,12 +639,19 @@ def apply_prompt(
 
                         answer = str(tagged_entities)
                         bpc_prompts.append(new_prompt + " " + answer)
+                        prompt_tokens = tokeniser.encode(
+                            new_prompt, add_special_tokens=False
+                        )
+                        bpc_answer_starts.append(len(prompt_tokens))
                 else:
                     bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+                    bpc_answer_starts = [0] * len(new_sections)
             case _:
                 bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+                bpc_answer_starts = [0] * len(new_sections)
 
         examples["bpc_prompt"] = bpc_prompts
+        examples["bpc_answer_start"] = bpc_answer_starts
 
     return examples
 
