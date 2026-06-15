@@ -7,7 +7,7 @@ import click
 from .benchmarker import Benchmarker
 from .constants import ATTENTION_BACKENDS
 from .data_models import DatasetConfig
-from .enums import Device, GenerativeType, ScoringMethod
+from .enums import Device, GenerativeType
 from .languages import get_all_languages
 
 
@@ -194,14 +194,14 @@ from .languages import get_all_languages
     "not specified, the type will be inferred automatically.",
 )
 @click.option(
-    "--scoring-method",
-    type=click.Choice(["mcf", "cf"]),
-    default="mcf",
+    "--use-bits-per-character",
+    "-bpc",
+    is_flag=True,
+    default=False,
     show_default=True,
-    help="Formulation used for multiple-choice evaluation. 'mcf' (default) compares "
-    "first-token logprobs of the label letters; 'cf' scores each full answer text as "
-    "a cloze continuation. CF is only valid for multiple-choice tasks and is "
-    "currently only supported by the vLLM backend.",
+    help="Compute bits-per-character (BPC) on the ground-truth answer using cloze "
+    "formulation. Few-shot examples and targets use question + answer format (not "
+    "multiple-choice). Only supported for base decoder models with vLLM backend.",
 )
 @click.option(
     "--custom-datasets-file",
@@ -265,7 +265,7 @@ def benchmark(
     attention_backend: str,
     requires_safetensors: bool,
     generative_type: str | None,
-    scoring_method: str,
+    use_bits_per_character: bool,
     custom_datasets_file: Path,
     download_only: bool,
     debug: bool,
@@ -298,7 +298,7 @@ def benchmark(
         generative_type=GenerativeType[generative_type.upper()]
         if generative_type
         else None,
-        scoring_method=ScoringMethod[scoring_method.upper()],
+        use_bits_per_character=use_bits_per_character,
         custom_datasets_file=custom_datasets_file,
         debug=debug,
         run_with_cli=True,

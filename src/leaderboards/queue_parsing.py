@@ -162,7 +162,7 @@ def result_lines_for_model(lines: list[str], model_id: str) -> list[str]:
         except (TypeError, ValueError, json.JSONDecodeError):
             continue
         # Only MCF runs count towards leaderboard completion
-        is_mcf = getattr(parsed, "scoring_method", "mcf") == "mcf"
+        is_mcf = not getattr(parsed, "bits_per_character", False)
         if parsed.model == model_id and is_mcf:
             out.append(line)
     return out

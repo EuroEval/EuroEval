@@ -54,7 +54,6 @@ from ..enums import (
     GenerativeType,
     InferenceBackend,
     ModelType,
-    ScoringMethod,
     TaskGroup,
 )
 from ..exceptions import (
@@ -352,11 +351,11 @@ class LiteLLMModel(BenchmarkModule):
                 If Cloze Formulation (CF) evaluation is requested (not supported by the
                 LiteLLM backend).
         """
-        if self.benchmark_config.scoring_method == ScoringMethod.CF:
+        if self.benchmark_config.use_bits_per_character:
             raise InvalidModel(
-                "Cloze Formulation (CF) scoring is not supported by the LiteLLM "
+                "Bits-per-character (BPC) scoring is not supported by the LiteLLM "
                 "backend (per-token logprobs for forced completions are not reliably "
-                "exposed across API providers). CF is currently only supported by the "
+                "exposed across API providers). BPC is currently only supported by the "
                 "vLLM backend."
             )
 

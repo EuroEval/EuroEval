@@ -7,7 +7,6 @@ from litellm.types.utils import Choices
 
 from euroeval.benchmark_modules.litellm import LiteLLMModel
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
-from euroeval.enums import ScoringMethod
 from euroeval.exceptions import InvalidModel
 
 
@@ -19,31 +18,31 @@ class TestCFGating:
     rather than silently degrading. The guard sits at the top of `generate`.
     """
 
-    def _make_model(self, scoring_method: ScoringMethod) -> LiteLLMModel:
+    def _make_model(self, use_bits_per_character: bool) -> LiteLLMModel:
         """Build a minimally-initialised LiteLLMModel.
 
         Args:
-            scoring_method: Which scoring formulation to flag on the config.
+            use_bits_per_character: Whether to use BPC scoring to flag on the config.
 
         Returns:
             A `LiteLLMModel` with only `benchmark_config` set; only `generate`
             should be called on it.
         """
         bc = MagicMock()
-        bc.scoring_method = scoring_method
+        bc.use_bits_per_character = use_bits_per_character
         model = object.__new__(LiteLLMModel)
         model.benchmark_config = bc
         return model
 
-    def test_generate_raises_on_cf(self) -> None:
-        """`LiteLLMModel.generate` raises immediately when CF is requested."""
-        model = self._make_model(scoring_method=ScoringMethod.CF)
-        with pytest.raises(InvalidModel, match="Cloze Formulation"):
+    def test_generate_raises_on_bpc(self) -> None:
+        """`LiteLLMModel.generate` raises immediately when BPC is requested."""
+        model = self._make_model(use_bits_per_character=True)
+        with pytest.raises(InvalidModel, match="Bits-per-character"):
             model.generate(inputs={"text": ["prompt"]})
 
     def test_generate_error_message_points_to_vllm(self) -> None:
         """The rejection message tells the user vLLM is the supported backend."""
-        model = self._make_model(scoring_method=ScoringMethod.CF)
+        model = self._make_model(use_bits_per_character=True)
         with pytest.raises(InvalidModel, match="vLLM backend"):
             model.generate(inputs={"text": ["prompt"]})
 

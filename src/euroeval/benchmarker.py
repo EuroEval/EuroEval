@@ -19,7 +19,7 @@ from .benchmark_config_factory import build_benchmark_config
 from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS, ORTHOGONAL_TASKS
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
-from .enums import Device, GenerativeType, InferenceBackend, ModelType, ScoringMethod
+from .enums import Device, GenerativeType, InferenceBackend, ModelType
 from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
@@ -81,7 +81,7 @@ class Benchmarker:
         ]
         | None = None,
         generative_type: GenerativeType | None = None,
-        scoring_method: ScoringMethod = ScoringMethod.MCF,
+        use_bits_per_character: bool = False,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
         run_with_cli: bool = False,
@@ -158,11 +158,10 @@ class Benchmarker:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to None.
-            scoring_method:
-                Which formulation to use for multiple-choice evaluation. ``MCF``
-                (default) compares first-token logprobs of the label letters; ``CF``
-                scores each answer text as a continuation (cloze formulation).
-                Defaults to ``ScoringMethod.MCF``.
+            use_bits_per_character:
+                Whether to compute bits-per-character (BPC) on the ground-truth answer.
+                Uses cloze formulation with question + answer format (not multiple-
+                choice). Only supported for base decoder models. Defaults to False.
             custom_datasets_file:
                 Path to a Python file defining custom datasets. Defaults to
                 'custom_datasets.py'.
@@ -229,7 +228,7 @@ class Benchmarker:
             gpu_memory_utilization=gpu_memory_utilization,
             attention_backend=attention_backend,
             generative_type=generative_type,
-            scoring_method=scoring_method,
+            use_bits_per_character=use_bits_per_character,
             custom_datasets_file=Path(custom_datasets_file),
             verbose=verbose,
             force=force,
@@ -388,7 +387,7 @@ class Benchmarker:
         download_only: bool | None = None,
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
-        scoring_method: ScoringMethod | None = None,
+        use_bits_per_character: bool | None = None,
         attention_backend: t.Literal[
             *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
@@ -484,12 +483,11 @@ class Benchmarker:
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to the value specified when initialising
                 the benchmarker.
-            scoring_method:
-                Which formulation to use for multiple-choice evaluation. ``MCF``
-                compares first-token logprobs of the label letters; ``CF`` scores each
-                answer text as a continuation (cloze formulation). Defaults to the value
+            use_bits_per_character:
+                Whether to compute bits-per-character (BPC) on the ground-truth answer.
+                Uses cloze formulation with question + answer format (not multiple-
+                choice). Only supported for base decoder models. Defaults to the value
                 specified when initialising the benchmarker.
-                initialising the benchmarker.
             attention_backend:
                 The attention backend to use for vLLM. Only relevant if the model is
                 generative. Defaults to the value specified when initialising the
@@ -654,10 +652,10 @@ class Benchmarker:
                 if generative_type is not None
                 else self.benchmark_config_default_params.generative_type
             ),
-            scoring_method=(
-                scoring_method
-                if scoring_method is not None
-                else self.benchmark_config_default_params.scoring_method
+            use_bits_per_character=(
+                use_bits_per_character
+                if use_bits_per_character is not None
+                else self.benchmark_config_default_params.use_bits_per_character
             ),
             attention_backend=(
                 attention_backend
@@ -702,11 +700,11 @@ class Benchmarker:
 
         adjust_logging_level(verbose=benchmark_config.verbose)
 
-        if benchmark_config.scoring_method == ScoringMethod.CF:
+        if benchmark_config.use_bits_per_character:
             log_once(
-                "Cloze Formulation (CF) scoring is active on multiple-choice tasks. "
+                "Bits-per-character (BPC) scoring is active on multiple-choice tasks. "
                 "Results will differ from default Multiple-Choice Formulation (MCF) "
-                "runs.",
+                "runs. BPC is only supported for base decoder models.",
                 level=logging.INFO,
             )
 
@@ -1138,7 +1136,7 @@ class Benchmarker:
                         if dataset_config.val_split is None
                         else not benchmark_config.evaluate_test_split
                     ),
-                    scoring_method=benchmark_config.scoring_method.value,
+                    use_bits_per_character=benchmark_config.use_bits_per_character,
                     vllm_version=(
                         get_package_version("vllm")
                         if model_config.inference_backend == InferenceBackend.VLLM

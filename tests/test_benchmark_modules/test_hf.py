@@ -14,7 +14,6 @@ from euroeval.benchmark_modules.hf import (
     get_model_repo_info,
 )
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
-from euroeval.enums import ScoringMethod
 from euroeval.exceptions import InvalidModel
 
 
@@ -103,23 +102,21 @@ class TestCFGating:
     clear error before any model loading happens.
     """
 
-    def test_init_raises_invalid_model_on_cf(
+    def test_init_raises_invalid_model_on_bpc(
         self,
         model_config: ModelConfig,
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Constructing the HF encoder with `scoring_method=CF` raises early."""
-        cf_config = dataclasses.replace(
-            benchmark_config, scoring_method=ScoringMethod.CF
-        )
-        # Patch out the param-allow-list check so the CF guard is what fires.
+        """Constructing the HF encoder with `use_bits_per_character=True` raises."""
+        bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
+        # Patch out the param-allow-list check so the BPC guard is what fires.
         with patch("euroeval.benchmark_modules.hf.raise_if_wrong_params"):
-            with pytest.raises(InvalidModel, match="Cloze Formulation"):
+            with pytest.raises(InvalidModel, match="Bits-per-character"):
                 HuggingFaceEncoderModel(
                     model_config=model_config,
                     dataset_config=dataset_config,
-                    benchmark_config=cf_config,
+                    benchmark_config=bpc_config,
                     log_metadata=False,
                 )
 
@@ -129,15 +126,13 @@ class TestCFGating:
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """The CF rejection message names vLLM as the supported alternative."""
-        cf_config = dataclasses.replace(
-            benchmark_config, scoring_method=ScoringMethod.CF
-        )
+        """The BPC rejection message names vLLM as the supported alternative."""
+        bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
         with patch("euroeval.benchmark_modules.hf.raise_if_wrong_params"):
             with pytest.raises(InvalidModel, match="vLLM backend"):
                 HuggingFaceEncoderModel(
                     model_config=model_config,
                     dataset_config=dataset_config,
-                    benchmark_config=cf_config,
+                    benchmark_config=bpc_config,
                     log_metadata=False,
                 )

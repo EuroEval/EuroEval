@@ -16,7 +16,7 @@ from euroeval.benchmark_config_factory import (
 from euroeval.data_models import DatasetConfig, Language
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.dataset_configs.danish import MULTI_WIKI_QA_DA_CONFIG, SCALA_DA_CONFIG
-from euroeval.enums import Device, ScoringMethod
+from euroeval.enums import Device
 from euroeval.languages import (
     DANISH,
     ENGLISH,
@@ -242,26 +242,24 @@ def test_prepare_dataset_configs_invalid_dataset() -> None:
     assert exc_info.value.code == 1
 
 
-class TestScoringMethodGating:
-    """Tests for the CF scoring-method gating inside `build_benchmark_config`."""
+class TestBitsPerCharacterGating:
+    """Tests for the BPC scoring-method gating inside `build_benchmark_config`."""
 
-    def test_cf_on_mcq_dataset_passes(self) -> None:
-        """CF on a multiple-choice dataset builds a config without raising."""
-        benchmarker = Benchmarker(
-            dataset="belebele-nl", scoring_method=ScoringMethod.CF
-        )
-        assert benchmarker.benchmark_config.scoring_method == ScoringMethod.CF
+    def test_bpc_on_mcq_dataset_passes(self) -> None:
+        """BPC on a multiple-choice dataset builds a config without raising."""
+        benchmarker = Benchmarker(dataset="belebele-nl", use_bits_per_character=True)
+        assert benchmarker.benchmark_config.use_bits_per_character is True
 
-    def test_cf_on_non_mcq_dataset_falls_back_to_mcf(self) -> None:
-        """CF on a non-MCQ dataset logs a debug message and uses MCF instead."""
-        benchmarker = Benchmarker(dataset="scala-da", scoring_method=ScoringMethod.CF)
-        # Non-MCQ tasks fall back to MCF
-        assert benchmarker.benchmark_config.scoring_method == ScoringMethod.CF
+    def test_bpc_on_non_mcq_dataset_logs_debug(self) -> None:
+        """BPC on a non-MCQ dataset logs a debug message."""
+        benchmarker = Benchmarker(dataset="scala-da", use_bits_per_character=True)
+        # Non-MCQ tasks still set the flag but log a debug message
+        assert benchmarker.benchmark_config.use_bits_per_character is True
 
     def test_mcf_default(self) -> None:
-        """MCF is the default scoring method when nothing is passed."""
+        """MCF is the default when use_bits_per_character is not set."""
         benchmarker = Benchmarker(dataset="belebele-nl")
-        assert benchmarker.benchmark_config.scoring_method == ScoringMethod.MCF
+        assert benchmarker.benchmark_config.use_bits_per_character is False
 
 
 @pytest.mark.parametrize(

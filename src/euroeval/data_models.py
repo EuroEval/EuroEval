@@ -21,7 +21,7 @@ from .constants import (
     MAX_NUMBER_OF_LOGGING_LANGUAGES,
 )
 from .eee_utils import benchmark_result_from_eee_dict, benchmark_result_to_eee_dict
-from .enums import Device, GenerativeType, ModelType, ScoringMethod, TaskGroup
+from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
 from .languages import (
     ENGLISH,
@@ -738,10 +738,11 @@ class BenchmarkConfig:
         vocabulary_size:
             Override for the vocabulary size of the model. If None, the value will be
             inferred automatically from the model.
-        scoring_method:
-            Which formulation to use for multiple-choice evaluation. ``MCF`` (default)
-            compares first-token logprobs of the label letters; ``CF`` scores each
-            answer text as a continuation (cloze formulation).
+        use_bits_per_character:
+            Whether to compute bits-per-character (BPC) on the ground-truth answer
+            rather than MCF accuracy. When True, the model is evaluated in a cloze
+            formulation where few-shot examples and the target use question + answer
+            format (not multiple-choice). Only supported for base decoder models.
     """
 
     datasets: c.Sequence[DatasetConfig]
@@ -776,7 +777,7 @@ class BenchmarkConfig:
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
-    scoring_method: ScoringMethod = ScoringMethod.MCF
+    use_bits_per_character: bool = False
 
     @property
     def tasks(self) -> c.Sequence[Task]:
@@ -784,11 +785,23 @@ class BenchmarkConfig:
         return list({dataset_config.task for dataset_config in self.datasets})
 
     def __post_init__(self) -> None:
-        """Post-initialisation checks."""
+        """Post-initialisation checks.
+
+        Raises:
+            InvalidBenchmark:
+                If bits-per-character scoring is requested but the model is not a
+                base decoder.
+        """
         # Set dummy API key if it has not been set and we're benchmarking a model on an
         # inference API
         if self.api_key is None and self.api_base is not None:
             self.api_key = "dummy"
+        # BPC only supported for base decoder models
+        if self.use_bits_per_character and self.generative_type != GenerativeType.BASE:
+            raise InvalidBenchmark(
+                "Bits-per-character scoring is only supported for base decoder models, "
+                f"not {self.generative_type} models."
+            )
 
 
 class BenchmarkConfigParams(pydantic.BaseModel):
@@ -832,7 +845,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
-    scoring_method: ScoringMethod = ScoringMethod.MCF
+    use_bits_per_character: bool = False
 
 
 class BenchmarkResult(pydantic.BaseModel):
@@ -851,7 +864,7 @@ class BenchmarkResult(pydantic.BaseModel):
     generative_type: str | None
     few_shot: bool | None
     validation_split: bool | None
-    scoring_method: str | None = None
+    use_bits_per_character: bool | None = None
     euroeval_version: str | None = get_package_version("euroeval")
     transformers_version: str | None = get_package_version("transformers")
     torch_version: str | None = get_package_version("torch")
@@ -895,8 +908,8 @@ class BenchmarkResult(pydantic.BaseModel):
             config["few_shot"] = zero_shot_matches is None
         if "validation_split" not in config:
             config["validation_split"] = val_matches is not None
-        if "scoring_method" not in config:
-            config["scoring_method"] = "mcf"
+        if "use_bits_per_character" not in config:
+            config["use_bits_per_character"] = False
 
         # Backwards compatibility
         if "dataset_languages" in config:

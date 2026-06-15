@@ -38,7 +38,6 @@ from ..enums import (
     GenerativeType,
     InferenceBackend,
     ModelType,
-    ScoringMethod,
     TaskGroup,
 )
 from ..exceptions import (
@@ -341,7 +340,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             The function used to extract the labels from the generated output.
         """
         if (
-            self.benchmark_config.scoring_method == ScoringMethod.CF
+            self.benchmark_config.use_bits_per_character
             and self.dataset_config.task.task_group
             == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         ):
@@ -433,7 +432,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         # with the answer marker (e.g. ``"Antwoord: "``) and few-shot examples
         # whose ``{label}`` slot is the full answer text, not the gold letter.
         cf_active = (
-            self.benchmark_config.scoring_method == ScoringMethod.CF
+            self.benchmark_config.use_bits_per_character
             and task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         )
         if cf_active:
@@ -515,7 +514,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 classification task and does not define an output structure.
         """
         if (
-            self.benchmark_config.scoring_method == ScoringMethod.CF
+            self.benchmark_config.use_bits_per_character
             and self.dataset_config.task.task_group
             == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
         ):

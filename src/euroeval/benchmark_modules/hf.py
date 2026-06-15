@@ -52,7 +52,6 @@ from ..enums import (
     GenerativeType,
     InferenceBackend,
     ModelType,
-    ScoringMethod,
     TaskGroup,
 )
 from ..exceptions import (
@@ -130,10 +129,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             model_config=model_config, allowed_params=self.allowed_params
         )
 
-        if benchmark_config.scoring_method == ScoringMethod.CF:
+        if benchmark_config.use_bits_per_character:
             raise InvalidModel(
-                "Cloze Formulation (CF) scoring is not supported by the Hugging Face "
-                "encoder backend. CF is currently only supported by the vLLM backend."
+                "Bits-per-character (BPC) scoring is not supported by the Hugging Face "
+                "encoder backend. BPC is currently only supported by the vLLM backend."
             )
 
         # This is already set when calling `super().__init__`, but we need it to get
