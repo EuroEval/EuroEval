@@ -9,6 +9,9 @@ import logging
 import math
 import typing as t
 
+if t.TYPE_CHECKING:
+    from vllm.outputs import RequestOutput
+
 from .data_models import DatasetConfig
 from .enums import TaskGroup
 from .logging_utils import log_once
@@ -17,7 +20,7 @@ from .types import Tokeniser
 
 
 def compute_bpc_scores(
-    raw_outputs: c.Sequence[t.Any],
+    raw_outputs: c.Sequence["RequestOutput"],
     prompts: c.Sequence[str],
     answer_texts: c.Sequence[str],
     answer_start_indices: c.Sequence[int],
@@ -219,3 +222,49 @@ def _extract_answer_texts(inputs: dict, dataset_config: DatasetConfig) -> list[s
             )
 
     return answer_texts
+
+
+def compute_bpc_scores_for_vllm_outputs(
+    raw_outputs: c.Sequence["RequestOutput"],
+    inputs: dict,
+    dataset_config: "DatasetConfig",
+    tokeniser: Tokeniser,
+) -> list[float] | None:
+    """Compute BPC scores from vLLM outputs.
+
+    High-level wrapper that extracts answer texts and computes BPC scores.
+
+    Args:
+        raw_outputs: Raw outputs from vLLM with prompt_logprobs.
+        inputs: Model inputs containing bpc_prompt and bpc_answer_start.
+        dataset_config: Dataset configuration for task type.
+        tokeniser: Tokeniser for tokenisation.
+
+    Returns:
+        BPC scores if prompt_logprobs are available, None otherwise.
+    """
+    # Extract answer texts based on task type
+    answer_texts = _extract_answer_texts(inputs=inputs, dataset_config=dataset_config)
+
+    # Check if prompt_logprobs are available
+    has_logprobs = all(
+        hasattr(raw_output, "prompt_logprobs")
+        and raw_output.prompt_logprobs is not None
+        for raw_output in raw_outputs
+    )
+
+    if answer_texts and has_logprobs:
+        return compute_bpc_scores(
+            raw_outputs=raw_outputs,
+            prompts=inputs["bpc_prompt"],
+            answer_texts=answer_texts,
+            answer_start_indices=inputs["bpc_answer_start"],
+            tokeniser=tokeniser,
+        )
+    elif answer_texts:
+        log_once(
+            "BPC mode enabled but prompt_logprobs not available. "
+            "Skipping BPC computation.",
+            level=logging.WARNING,
+        )
+    return None

@@ -116,7 +116,7 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
-from ..bpc_scoring import _extract_answer_texts, compute_bpc_scores
+from ..bpc_scoring import compute_bpc_scores_for_vllm_outputs
 
 # Mapping from HuggingFace architecture names that vLLM does not recognise to their
 # vLLM-compatible equivalents.  Transformers 4.57 split Gemma 4 into a multimodal
@@ -970,31 +970,15 @@ class VLLMModel(HuggingFaceEncoderModel):
             # BPC mode: extract scores from prompt_logprobs
             output = GenerativeModelOutput(sequences=completions)
 
-            # Extract label texts for BPC scoring based on task type
-            answer_texts = _extract_answer_texts(
-                inputs=inputs, dataset_config=self.dataset_config
+            # Compute BPC scores using the dedicated bpc_scoring module
+            bpc_scores = compute_bpc_scores_for_vllm_outputs(
+                raw_outputs=raw_outputs,
+                inputs=inputs,
+                dataset_config=self.dataset_config,
+                tokeniser=self._tokeniser,
             )
-
-            if answer_texts and all(
-                hasattr(raw_output, "prompt_logprobs")
-                and raw_output.prompt_logprobs is not None
-                for raw_output in raw_outputs
-            ):
-                # Compute BPC scores using the dedicated bpc_scoring module
-                bpc_scores = compute_bpc_scores(
-                    raw_outputs=raw_outputs,
-                    prompts=inputs["bpc_prompt"],
-                    answer_texts=answer_texts,
-                    answer_start_indices=inputs["bpc_answer_start"],
-                    tokeniser=self._tokeniser,
-                )
+            if bpc_scores is not None:
                 output.bpc_scores = bpc_scores
-            elif answer_texts:
-                log_once(
-                    "BPC mode enabled but prompt_logprobs not available. "
-                    "Skipping BPC computation.",
-                    level=logging.WARNING,
-                )
         else:
             output = GenerativeModelOutput(sequences=completions)
 
