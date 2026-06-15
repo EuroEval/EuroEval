@@ -8,7 +8,8 @@ import pytest
 import torch
 import torch.version
 
-from euroeval.benchmark_modules.vllm import VLLMModel, _compute_bpc_scores, load_model
+from euroeval.benchmark_modules.vllm import VLLMModel, load_model
+from euroeval.bpc_scoring import compute_bpc_scores
 from euroeval.constants import MAX_CONTEXT_LENGTH, REASONING_MAX_TOKENS
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import GenerativeType
@@ -574,7 +575,7 @@ class TestScoreCompletions:
 
 
 class TestComputeBPCFromPromptLogprobs:
-    """Tests for `_compute_bpc_scores` using prompt_logprobs."""
+    """Tests for `compute_bpc_scores` using prompt_logprobs."""
 
     @staticmethod
     def _create_mock_output(
@@ -657,7 +658,7 @@ class TestComputeBPCFromPromptLogprobs:
             [10, 11, 12, 13, 14, 15, 16] if "yes" in text else [10, 11, 12, 13, 14, 15]
         )
 
-        bpc_scores = _compute_bpc_scores(
+        bpc_scores = compute_bpc_scores(
             raw_outputs=[mock_output],
             prompts=[prompt],
             answer_texts=[answer],
@@ -677,7 +678,7 @@ class TestComputeBPCFromPromptLogprobs:
         mock_output.prompt = "test"
         mock_output.prompt_logprobs = None
 
-        bpc_scores = _compute_bpc_scores(
+        bpc_scores = compute_bpc_scores(
             raw_outputs=[mock_output],
             prompts=["test"],
             answer_texts=["answer"],
@@ -725,7 +726,7 @@ class TestComputeBPCFromPromptLogprobs:
             else [1, 5, 6]
         )
 
-        bpc_scores = _compute_bpc_scores(
+        bpc_scores = compute_bpc_scores(
             raw_outputs=[mock_output1, mock_output2],
             prompts=[prompt1, prompt2],
             answer_texts=[answer1, answer2],
