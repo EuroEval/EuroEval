@@ -145,8 +145,8 @@ def test_no_hallucinations_returns_zero(
             predictions=predictions,
             references=[],
             dataset=dataset,
-            dataset_config=dataset_config,  # type: ignore[arg-type]
-            benchmark_config=benchmark_config,  # type: ignore[arg-type]
+            dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+            benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
         )
     assert result == pytest.approx(0.0)
 
@@ -169,8 +169,8 @@ def test_all_hallucinations_returns_one(
             predictions=predictions,
             references=[],
             dataset=dataset,
-            dataset_config=dataset_config,  # type: ignore[arg-type]
-            benchmark_config=benchmark_config,  # type: ignore[arg-type]
+            dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+            benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
         )
     assert result == pytest.approx(1.0)
 
@@ -199,8 +199,8 @@ def test_partial_hallucinations_returns_correct_rate(
             predictions=predictions,
             references=[],
             dataset=dataset,
-            dataset_config=dataset_config,  # type: ignore[arg-type]
-            benchmark_config=benchmark_config,  # type: ignore[arg-type]
+            dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+            benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
         )
     assert result == pytest.approx(0.5)
 
@@ -221,8 +221,8 @@ def test_no_tokens_raises_invalid_benchmark(
                 predictions=predictions,
                 references=[],
                 dataset=dataset,
-                dataset_config=dataset_config,  # type: ignore[arg-type]
-                benchmark_config=benchmark_config,  # type: ignore[arg-type]
+                dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+                benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
             )
 
 
@@ -240,8 +240,8 @@ def test_detector_uses_correct_model_id(
             predictions=[{"prediction_text": "answer"}],
             references=[],
             dataset=dataset,
-            dataset_config=dataset_config,  # type: ignore[arg-type]
-            benchmark_config=benchmark_config,  # type: ignore[arg-type]
+            dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
+            benchmark_config=benchmark_config,  # ty: ignore[invalid-argument-type]
         )
 
     expected_model_id = (

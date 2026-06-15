@@ -6,7 +6,7 @@ import sys
 import typing as t
 from pathlib import Path
 
-from datasets import Dataset, concatenate_datasets
+from datasets import Dataset
 from tqdm.auto import tqdm
 
 from .enums import BatchingPreference, TaskGroup
@@ -296,7 +296,6 @@ def generate_single_iteration(
             level=logging.DEBUG,
         )
         ground_truth = []
-
 
     metrics_scores = model.compute_metrics(
         model_outputs_and_labels=(all_preds, ground_truth),

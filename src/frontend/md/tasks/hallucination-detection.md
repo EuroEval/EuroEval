@@ -13,7 +13,8 @@ The hallucination detection is performed using the
 transformer-based classifier to predict hallucination at the token level. The
 hallucination detection classifiers are trained on the publicly available
 hallucination datasets
-[MultiWikiQA-Synthetic-Hallucinations](https://huggingface.co/datasets/alexandrainst/multi-wiki-qa-synthetic-hallucinations) and [Translated-RAGTruth-Hallucinations](https://huggingface.co/datasets/alexandrainst/ragtruth-translated-hallucinations).
+[MultiWikiQA-Synthetic-Hallucinations](https://huggingface.co/datasets/alexandrainst/multi-wiki-qa-synthetic-hallucinations)
+and [Translated-RAGTruth-Hallucinations](https://huggingface.co/datasets/alexandrainst/ragtruth-translated-hallucinations).
 
 When evaluating generative models, we allow the model to generate 512 tokens on this task.
 
