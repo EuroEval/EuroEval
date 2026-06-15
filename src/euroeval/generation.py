@@ -330,7 +330,7 @@ def generate_single_iteration(
                 "Assigning infinite BPC (worst score).",
                 level=logging.WARNING,
             )
-            return {"bpc": float("inf"), "failed_instances": failed_instances}  # ty: ignore[invalid-return-type]
+            return {"bpc": float("inf"), "failed_instances": failed_instances}
     else:
         metrics_scores = model.compute_metrics(
             model_outputs_and_labels=(all_preds, ground_truth),

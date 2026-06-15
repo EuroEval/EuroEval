@@ -126,10 +126,7 @@ from ..bpc_scoring import compute_bpc_scores
 _ARCHITECTURE_ALIASES: dict[str, str] = {"Gemma4TextForCausalLM": "Gemma4ForCausalLM"}
 
 
-def _extract_answer_texts(
-    inputs: dict,
-    dataset_config: "DatasetConfig",
-) -> list[str]:
+def _extract_answer_texts(inputs: dict, dataset_config: "DatasetConfig") -> list[str]:
     """Extract ground truth answer texts from inputs based on task group.
 
     Used by BPC scoring to determine which text spans to evaluate against
@@ -162,16 +159,13 @@ def _extract_answer_texts(
                 raw_choices = inputs["raw_choices"]
                 answer_texts = [
                     letter_to_choice_text(
-                        letter=str(label).strip().lower(),
-                        raw_choices=raw_choice,
+                        letter=str(label).strip().lower(), raw_choices=raw_choice
                     )
                     for label, raw_choice in zip(labels, raw_choices)
                 ]
 
         case TaskGroup.SEQUENCE_CLASSIFICATION:
-            answer_texts = [
-                dataset_config.labels[label_id] for label_id in labels
-            ]
+            answer_texts = [dataset_config.labels[label_id] for label_id in labels]
 
         case TaskGroup.TEXT_TO_TEXT:
             if "target_text" not in inputs:
@@ -185,9 +179,7 @@ def _extract_answer_texts(
                 answer_texts = inputs["target_text"]
 
         case TaskGroup.QUESTION_ANSWERING:
-            if not all(
-                isinstance(lbl, dict) and "answers" in lbl for lbl in labels
-            ):
+            if not all(isinstance(lbl, dict) and "answers" in lbl for lbl in labels):
                 log_once(
                     "BPC scoring requires structured 'answers' in label "
                     "for QA tasks, but the format is unexpected. Skipping "
@@ -220,31 +212,29 @@ def _extract_answer_texts(
                         tag_str = str(tag).lower()
                         if tag_str == "o":
                             if current_entity is not None:
-                                tagged_entities.setdefault(
-                                    current_entity, []
-                                ).append(" ".join(current_tokens))
+                                tagged_entities.setdefault(current_entity, []).append(
+                                    " ".join(current_tokens)
+                                )
                                 current_entity = None
                                 current_tokens = []
                             continue
 
                         if tag_str.startswith("b-"):
                             if current_entity is not None:
-                                tagged_entities.setdefault(
-                                    current_entity, []
-                                ).append(" ".join(current_tokens))
+                                tagged_entities.setdefault(current_entity, []).append(
+                                    " ".join(current_tokens)
+                                )
                             current_entity = tag_str[2:]
                             current_tokens = [token]
                         elif tag_str.startswith("i-") and current_entity:
                             current_tokens.append(token)
                         else:
                             if current_entity is not None:
-                                tagged_entities.setdefault(
-                                    current_entity, []
-                                ).append(" ".join(current_tokens))
+                                tagged_entities.setdefault(current_entity, []).append(
+                                    " ".join(current_tokens)
+                                )
                             current_entity = (
-                                tag_str[2:]
-                                if tag_str.startswith("i-")
-                                else tag_str
+                                tag_str[2:] if tag_str.startswith("i-") else tag_str
                             )
                             current_tokens = [token]
 
@@ -625,6 +615,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             InvalidTask:
                 If the task requires structured output, but it is not a token
                 classification task and does not define an output structure.
+            ValueError:
+                If ``use_bits_per_character=True`` but the ``bpc_prompt`` column is
+                missing from inputs.
         """
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
@@ -782,21 +775,21 @@ class VLLMModel(HuggingFaceEncoderModel):
                     level=logging.DEBUG,
                 )
 
-        # Determine if we're using BPC scoring
-        use_bpc = (
-            self.benchmark_config.use_bits_per_character and "bpc_prompt" in inputs
-        )
-
         max_tokens: int = (
             REASONING_MAX_TOKENS
             if self.generative_type == GenerativeType.REASONING
             else self.dataset_config.max_generated_tokens
         )
         sampling_params = SamplingParams(
-            max_tokens=0 if use_bpc else max_tokens,
-            prompt_logprobs=MAX_VLLM_LOGPROBS if use_bpc else None,
+            max_tokens=0
+            if self.benchmark_config.use_bits_per_character
+            else max_tokens,
+            prompt_logprobs=MAX_VLLM_LOGPROBS
+            if self.benchmark_config.use_bits_per_character
+            else None,
             logprobs=MAX_VLLM_LOGPROBS
-            if not use_bpc and self.buffer["first_label_token_mapping"]
+            if not self.benchmark_config.use_bits_per_character
+            and self.buffer["first_label_token_mapping"]
             else None,
             temperature=generation_kwargs["temperature"],
             top_p=generation_kwargs["top_p"],
@@ -806,9 +799,16 @@ class VLLMModel(HuggingFaceEncoderModel):
             structured_outputs=structured_outputs,
         )
 
-        # If any of the prompts are empty then we need to replace them with a BOS token
-        # so that the vLLM model can generate from them
-        prompts: c.Sequence[str] = inputs["bpc_prompt" if use_bpc else "text"]
+        # Validate BPC inputs before accessing bpc_prompt
+        if self.benchmark_config.use_bits_per_character:
+            if "bpc_prompt" not in inputs:
+                raise ValueError(
+                    "use_bits_per_character=True but 'bpc_prompt' column is missing "
+                    "from inputs. This indicates a bug in dataset preparation."
+                )
+            prompts: c.Sequence[str] = inputs["bpc_prompt"]
+        else:
+            prompts: c.Sequence[str] = inputs["text"]
         if any(len(prompt.strip()) == 0 for prompt in prompts):
             log("Found empty prompts, replacing with BOS token.", level=logging.DEBUG)
             prompts = [
@@ -835,7 +835,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         max_tokens_per_prompt = min(
             self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH
         )
-        if not use_bpc:
+        if not self.benchmark_config.use_bits_per_character:
             max_tokens_per_prompt -= min(
                 self.dataset_config.max_generated_tokens, max_tokens_per_prompt - 1
             )
@@ -1012,7 +1012,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Parse the raw model outputs. We keep the special tokens for now, as we need
         # them to potentially remove reasoning content and stop tokens
-        if use_bpc:
+        if self.benchmark_config.use_bits_per_character:
             # BPC mode: no generation, just prompt_logprobs
             completions = [""] * len(raw_outputs)
         else:
@@ -1081,7 +1081,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                 )
 
         # Add logprobs scores to the output
-        if self.buffer["first_label_token_mapping"] and not use_bpc:
+        if (
+            self.buffer["first_label_token_mapping"]
+            and not self.benchmark_config.use_bits_per_character
+        ):
             scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] = [
                 [
                     [
@@ -1093,14 +1096,13 @@ class VLLMModel(HuggingFaceEncoderModel):
                 for raw_output in raw_outputs
             ]
             output = GenerativeModelOutput(sequences=completions, scores=scores)
-        elif use_bpc and "bpc_prompt" in inputs:
+        elif self.benchmark_config.use_bits_per_character:
             # BPC mode: extract scores from prompt_logprobs
             output = GenerativeModelOutput(sequences=completions)
 
             # Extract label texts for BPC scoring based on task type
             answer_texts = _extract_answer_texts(
-                inputs=inputs,
-                dataset_config=self.dataset_config,
+                inputs=inputs, dataset_config=self.dataset_config
             )
 
             if answer_texts and all(
