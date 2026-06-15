@@ -12,10 +12,11 @@ from pathlib import Path
 from shutil import rmtree
 from time import sleep
 
+from huggingface_hub import snapshot_download
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
-from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
+from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS, ORTHOGONAL_TASKS
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
 from .enums import Device, GenerativeType, InferenceBackend, ModelType
@@ -29,7 +30,7 @@ from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .string_utils import split_model_id
 from .tasks import SPEED
-from .utils import enforce_reproducibility, internet_connection_available
+from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -306,12 +307,46 @@ class Benchmarker:
         )
         del dataset
 
-        model = load_model(
-            model_config=model_config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-        )
-        del model
+        # Skip download if model is a local path
+        if not Path(model_config.model_id).exists():
+            # Check if model is already cached before downloading
+            cache_path = Path(model_config.model_cache_dir)
+            has_cached = cache_path.exists() and any(cache_path.rglob("*.safetensors"))
+            if has_cached:
+                log_once(
+                    f"Model {model_config.model_id!r} is already cached, skipping "
+                    "download.",
+                    level=logging.DEBUG,
+                )
+            else:
+                log_once(
+                    f"Downloading model {model_config.model_id!r}...",
+                    level=logging.INFO,
+                )
+                snapshot_download(
+                    repo_id=model_config.model_id,
+                    revision=model_config.revision,
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
+
+            # For adapter models, also download the base model
+            if model_config.adapter_base_model_id:
+                base_id = model_config.adapter_base_model_id
+                log_once(
+                    f"Downloading adapter base model {base_id!r}...", level=logging.INFO
+                )
+                snapshot_download(
+                    repo_id=model_config.adapter_base_model_id,
+                    revision="main",
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
+        else:
+            log_once(
+                f"Model {model_config.model_id!r} is a local path, skipping download",
+                level=logging.INFO,
+            )
 
         log_once(
             f"Loading metrics for the '{dataset_config.task.name}' task",
@@ -808,11 +843,13 @@ class Benchmarker:
                             # Add the remaining number of benchmarks for the model to
                             # our benchmark counter, since we're erroring on the rest of
                             # them
-                            num_errored_benchmarks += (
-                                len(dataset_configs)
-                                - dataset_configs.index(dataset_config)
-                                - 1
-                            )
+                            model_dataset_configs = model_config_to_dataset_configs[
+                                model_config
+                            ]
+                            remaining_configs = model_dataset_configs[
+                                model_dataset_configs.index(dataset_config) + 1 :
+                            ]
+                            num_errored_benchmarks += 1 + len(remaining_configs)
                             break
 
                     # Skip the benchmark if the model is not of the correct
@@ -854,17 +891,25 @@ class Benchmarker:
 
                 elif isinstance(benchmark_output_or_err, InvalidBenchmark):
                     log(benchmark_output_or_err.message, level=logging.WARNING)
-                    num_errored_benchmarks += 1
+                    # Orthogonal task failures count as skipped, not errored
+                    if dataset_config.task.name in ORTHOGONAL_TASKS:
+                        num_skipped_benchmarks += 1
+                    else:
+                        num_errored_benchmarks += 1
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
                     log(benchmark_output_or_err.message, level=logging.WARNING)
 
                     # Add the remaining number of benchmarks for the model to our
-                    # benchmark counter, since we're skipping the rest of them
-                    num_errored_benchmarks += (
-                        len(dataset_configs) - dataset_configs.index(dataset_config) - 1
-                    )
+                    # benchmark counter, since we're erroring on the rest of them
+                    model_dataset_configs = model_config_to_dataset_configs[
+                        model_config
+                    ]
+                    remaining_configs = model_dataset_configs[
+                        model_dataset_configs.index(dataset_config) + 1 :
+                    ]
+                    num_errored_benchmarks += 1 + len(remaining_configs)
                     break
 
                 else:

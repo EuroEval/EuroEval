@@ -4,7 +4,6 @@ The queue uses HTML-comment markers in the issue body to track per-issue
 state that needs to survive across runs and be readable by the frontend:
 
 * ``<!-- vm-id: HOST-XXXX -->`` -- which VM currently owns the evaluation.
-* ``<!-- euroeval-results-gist: ID -->`` -- gist holding partial results.
 
 Note: The ``gated`` and ``evaluation-failed`` states are now tracked via
 GitHub labels instead of body markers.
@@ -21,25 +20,36 @@ from .github_api import fetch_issue_body, patch_issue_body, unassign_issue
 logger = logging.getLogger(__name__)
 
 VM_MARKER_RE = re.compile(r"<!--\s*vm-id:\s*([^\s>]+)\s*-->")
-GIST_MARKER_RE = re.compile(r"<!--\s*euroeval-results-gist:\s*([^\s>]+)\s*-->")
 
 
-def set_vm_marker(number: int, vm_id: str) -> None:
+def set_vm_marker(number: int, vm_id: str) -> bool:
     """Stamp the issue body with the ``vm-id`` marker for ``vm_id``.
 
     The issue body is re-fetched so concurrent updates earlier in the same
     ``process_issue`` call (e.g. clearing a gated marker) are not clobbered.
+
+    If another VM's marker is already present, the update is skipped to
+    prevent race conditions where two VMs claim the same issue simultaneously.
 
     Args:
         number:
             The issue number to mark.
         vm_id:
             The VM identifier to record.
+
+    Returns:
+        True if the marker was set successfully; False if another VM already
+        owns the issue (marker belongs to a different vm_id).
     """
     body = fetch_issue_body(number=number)
+    m = VM_MARKER_RE.search(body)
+    if m is not None and m.group(1) != vm_id:
+        # Another VM already owns this issue
+        return False
     cleaned = VM_MARKER_RE.sub("", body).rstrip()
     new_body = f"{cleaned}\n\n<!-- vm-id: {vm_id} -->\n"
     patch_issue_body(number=number, body=new_body)
+    return True
 
 
 def vm_marker_matches(number: int, vm_id: str) -> bool:

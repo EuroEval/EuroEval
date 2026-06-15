@@ -6,6 +6,7 @@ import typing as t
 from copy import deepcopy
 
 import numpy as np
+from transformers.trainer_utils import EvalPrediction
 
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
@@ -16,7 +17,6 @@ if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
     from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import BatchEncoding
-    from transformers.trainer_utils import EvalPrediction
 
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions

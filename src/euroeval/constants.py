@@ -191,3 +191,6 @@ TOOL_CALLING_KEYS = [TOOL_CALLING_FUNCTION_KEY, TOOL_CALLING_ARGUMENTS_KEY]
 
 # Every Eval Ever (EEE) schema version used when serialising benchmark results
 EEE_SCHEMA_VERSION = "0.2.1"
+
+# Tasks that don't contribute to the main rank score and are evaluated separately.
+ORTHOGONAL_TASKS: frozenset[str] = frozenset({"european-values"})
