@@ -317,7 +317,9 @@ def main(force: bool) -> None:
         bucket_scan_results = scan_bucket_for_results()
         if not bucket_scan_results:
             logger.info("No new results found in bucket scan.")
-            return
+            if not force:
+                return
+            logger.info("Forcing leaderboard regeneration despite no new results.")
         logger.info(f"Bucket-scan mode found {len(bucket_scan_results)} new result(s).")
 
     # Load any manually added results from new_results.jsonl
@@ -338,39 +340,42 @@ def main(force: bool) -> None:
     all_lines.extend(bucket_scan_results)
     all_lines.extend(manual_lines)
 
-    if not all_lines:
+    has_new_results = bool(all_lines)
+    if not has_new_results:
         logger.info("Nothing to merge.")
-        return
-
-    NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
-
-    # Log which mode was used
-    if bucket_scan_results:
-        mode_str = f"bucket-scan ({len(bucket_scan_results)}), "
+        if not force:
+            return
+        logger.info("Forcing leaderboard regeneration despite no new results.")
     else:
-        mode_str = ""
-    harvested_count = sum(len(lines) for _, lines in harvested)
-    logger.info(
-        f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
-        f"({mode_str}{harvested_count} harvested, {len(manual_lines)} manual)."
-    )
+        NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
 
-    # Upload results to HF bucket BEFORE regenerating leaderboards
-    # (leaderboard regeneration consumes/deletes new_results.jsonl)
-    if upload_results_to_hf(
-        new_results_path=NEW_RESULTS_PATH, processed_path=RESULTS_PATH
-    ):
-        logger.info("Results uploaded to Hugging Face bucket.")
-    else:
-        logger.error(
-            "Failed to upload results to Hugging Face bucket. "
-            "The local archive (results.tar.gz) has been updated with the new results, "
-            "but the bucket is now out of sync. Please run upload_results_to_hf() "
-            "manually or check your Hugging Face credentials and re-run this script."
+        # Log which mode was used
+        if bucket_scan_results:
+            mode_str = f"bucket-scan ({len(bucket_scan_results)}), "
+        else:
+            mode_str = ""
+        harvested_count = sum(len(lines) for _, lines in harvested)
+        logger.info(
+            f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
+            f"({mode_str}{harvested_count} harvested, {len(manual_lines)} manual)."
         )
-        # Don't abort here -- leaderboards will still be correct because
-        # load_raw_results() appends new_results.jsonl locally before deleting it.
-        # But the bucket needs to be synced on the next successful run.
+
+        # Upload results to HF bucket BEFORE regenerating leaderboards
+        # (leaderboard regeneration consumes/deletes new_results.jsonl)
+        if upload_results_to_hf(
+            new_results_path=NEW_RESULTS_PATH, processed_path=RESULTS_PATH
+        ):
+            logger.info("Results uploaded to Hugging Face bucket.")
+        else:
+            logger.error(
+                "Failed to upload results to Hugging Face bucket. "
+                "The local archive (results.tar.gz) has been updated with the new results, "
+                "but the bucket is now out of sync. Please run upload_results_to_hf() "
+                "manually or check your Hugging Face credentials and re-run this script."
+            )
+            # Don't abort here -- leaderboards will still be correct because
+            # load_raw_results() appends new_results.jsonl locally before deleting it.
+            # But the bucket needs to be synced on the next successful run.
 
     if not regenerate_leaderboards(force=force):
         logger.error(
