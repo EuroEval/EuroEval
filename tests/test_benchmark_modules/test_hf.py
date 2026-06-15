@@ -15,7 +15,7 @@ from euroeval.benchmark_modules.hf import (
 )
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import ScoringMethod
-from euroeval.exceptions import InvalidBenchmark
+from euroeval.exceptions import InvalidModel
 
 
 @pytest.mark.parametrize(
@@ -103,7 +103,7 @@ class TestCFGating:
     clear error before any model loading happens.
     """
 
-    def test_init_raises_invalid_benchmark_on_cf(
+    def test_init_raises_invalid_model_on_cf(
         self,
         model_config: ModelConfig,
         dataset_config: DatasetConfig,
@@ -115,7 +115,7 @@ class TestCFGating:
         )
         # Patch out the param-allow-list check so the CF guard is what fires.
         with patch("euroeval.benchmark_modules.hf.raise_if_wrong_params"):
-            with pytest.raises(InvalidBenchmark, match="Cloze Formulation"):
+            with pytest.raises(InvalidModel, match="Cloze Formulation"):
                 HuggingFaceEncoderModel(
                     model_config=model_config,
                     dataset_config=dataset_config,
@@ -134,7 +134,7 @@ class TestCFGating:
             benchmark_config, scoring_method=ScoringMethod.CF
         )
         with patch("euroeval.benchmark_modules.hf.raise_if_wrong_params"):
-            with pytest.raises(InvalidBenchmark, match="vLLM backend"):
+            with pytest.raises(InvalidModel, match="vLLM backend"):
                 HuggingFaceEncoderModel(
                     model_config=model_config,
                     dataset_config=dataset_config,

@@ -138,6 +138,7 @@ class TestBenchmarkResult:
                     languages=["da"],
                     task="task",
                     results=dict(),
+                    scoring_method="mcf",
                 ),
             ),
             (
@@ -166,6 +167,7 @@ class TestBenchmarkResult:
                     languages=["da"],
                     task="task",
                     results=dict(),
+                    scoring_method="mcf",
                 ),
             ),
             (
@@ -194,6 +196,7 @@ class TestBenchmarkResult:
                     languages=["da"],
                     task="task",
                     results=dict(),
+                    scoring_method="mcf",
                 ),
             ),
             (
@@ -221,6 +224,7 @@ class TestBenchmarkResult:
                     languages=["da"],
                     task="task",
                     results=dict(),
+                    scoring_method="mcf",
                 ),
             ),
         ],

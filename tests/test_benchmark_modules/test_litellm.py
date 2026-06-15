@@ -8,14 +8,14 @@ from litellm.types.utils import Choices
 from euroeval.benchmark_modules.litellm import LiteLLMModel
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import ScoringMethod
-from euroeval.exceptions import InvalidBenchmark
+from euroeval.exceptions import InvalidModel
 
 
 class TestCFGating:
     """Tests that the LiteLLM backend rejects Cloze Formulation evaluation.
 
     Per-token logprobs for forced completions are not reliably exposed across
-    LiteLLM-supported providers, so CF must surface a clear `InvalidBenchmark`
+    LiteLLM-supported providers, so CF must surface a clear `InvalidModel`
     rather than silently degrading. The guard sits at the top of `generate`.
     """
 
@@ -38,13 +38,13 @@ class TestCFGating:
     def test_generate_raises_on_cf(self) -> None:
         """`LiteLLMModel.generate` raises immediately when CF is requested."""
         model = self._make_model(scoring_method=ScoringMethod.CF)
-        with pytest.raises(InvalidBenchmark, match="Cloze Formulation"):
+        with pytest.raises(InvalidModel, match="Cloze Formulation"):
             model.generate(inputs={"text": ["prompt"]})
 
     def test_generate_error_message_points_to_vllm(self) -> None:
         """The rejection message tells the user vLLM is the supported backend."""
         model = self._make_model(scoring_method=ScoringMethod.CF)
-        with pytest.raises(InvalidBenchmark, match="vLLM backend"):
+        with pytest.raises(InvalidModel, match="vLLM backend"):
             model.generate(inputs={"text": ["prompt"]})
 
 

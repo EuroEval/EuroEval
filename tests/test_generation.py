@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from euroeval.enums import ScoringMethod
+from euroeval.enums import ScoringMethod, TaskGroup
 from euroeval.generation import generate
 
 
@@ -14,11 +14,12 @@ def dataset_config_mock() -> MagicMock:
     """A minimal DatasetConfig stand-in with the fields `generate` reads.
 
     Returns:
-        A MagicMock with `name` and `max_generated_tokens` set.
+        A MagicMock with `name`, `max_generated_tokens`, and `task.task_group` set.
     """
     cfg = MagicMock()
     cfg.name = "fake-ds"
     cfg.max_generated_tokens = 1
+    cfg.task.task_group = TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
     return cfg
 
 

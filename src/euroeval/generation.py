@@ -9,7 +9,7 @@ from pathlib import Path
 from datasets import Dataset
 from tqdm.auto import tqdm
 
-from .enums import BatchingPreference, TaskGroup
+from .enums import BatchingPreference, ScoringMethod, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import get_pbar, log, log_once
 from .model_cache import (
@@ -63,12 +63,14 @@ def generate(
         model_cache_dir = Path.cwd()
     else:
         model_cache_dir = Path(model_config.model_cache_dir)
-    # Namespace the cache by scoring method for MCQ tasks so different
-    # formulations do not collide (e.g. CF vs MCF). Non-MCQ tasks always use
-    # MCF-like scoring, so no suffix needed.
+    # Namespace the cache by scoring method for CF on MCQ tasks so different
+    # formulations do not collide (e.g. CF vs MCF). MCF runs use the legacy
+    # unsuffixed cache path for backward compatibility. Non-MCQ tasks always
+    # use MCF-like scoring, so no suffix needed.
     cache_suffix = (
         f"-{benchmark_config.scoring_method.value}"
         if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        and benchmark_config.scoring_method == ScoringMethod.CF
         else ""
     )
     if hasattr(sys, "_called_from_test"):
