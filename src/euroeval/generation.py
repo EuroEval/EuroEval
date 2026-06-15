@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 from .enums import BatchingPreference, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import get_pbar, log, log_once
+from .metrics.bpc import bpc_metric
 from .model_cache import (
     ModelCache,
     load_cached_model_outputs,
@@ -150,6 +151,7 @@ def generate_single_iteration(
         non_cached_dataset = dataset
 
     all_preds: list[str] = list()
+    all_bpc_scores: list[float] = list()
     failed_instances: list["FailedInstance"] = list()
 
     if len(non_cached_dataset) > 0:
@@ -229,6 +231,10 @@ def generate_single_iteration(
             cache.add_to_cache(model_inputs=batch, model_output=model_output)
             all_preds.extend(extracted_labels)
 
+            # Collect BPC scores for BPC evaluation
+            if benchmark_config.use_bits_per_character and model_output.bpc_scores:
+                all_bpc_scores.extend(model_output.bpc_scores)
+
             # If we are debugging then we save the cache often, but since this makes
             # evaluation slower, we do not do this by default
             if benchmark_config.debug:
@@ -264,6 +270,10 @@ def generate_single_iteration(
             else:
                 model_output.predicted_labels = extracted_labels
         all_preds.extend(extracted_labels)
+
+        # Collect BPC scores from cached outputs
+        if benchmark_config.use_bits_per_character and model_output.bpc_scores:
+            all_bpc_scores.extend(model_output.bpc_scores)
 
     if "label" in non_cached_dataset.column_names:
         non_cached_labels = non_cached_dataset["label"]
@@ -303,17 +313,27 @@ def generate_single_iteration(
         )
         ground_truth = []
 
-    metrics_scores = model.compute_metrics(
-        model_outputs_and_labels=(all_preds, ground_truth),
-        dataset=dataset,
-        benchmark_config=benchmark_config,
-    )
-    itr_scores: "IterationScores" = {
-        **metrics_scores,
-        "failed_instances": failed_instances,
-    }
-
-    return itr_scores
+    # For BPC evaluation, only compute BPC metric (ignore accuracy metrics)
+    if benchmark_config.use_bits_per_character:
+        if all_bpc_scores:
+            bpc_score = bpc_metric(
+                predictions=all_bpc_scores,
+                references=[],
+                dataset=dataset,
+                dataset_config=dataset_config,
+                benchmark_config=benchmark_config,
+            )
+            return {"bpc": bpc_score, "failed_instances": failed_instances}  # ty: ignore[invalid-return-type]
+        else:
+            log_once("BPC evaluation requested but no BPC scores were computed.")
+            return {"bpc": 0.0, "failed_instances": failed_instances}  # ty: ignore[invalid-return-type]
+    else:
+        metrics_scores = model.compute_metrics(
+            model_outputs_and_labels=(all_preds, ground_truth),
+            dataset=dataset,
+            benchmark_config=benchmark_config,
+        )
+        return {**metrics_scores, "failed_instances": failed_instances}
 
 
 def debug_log(

@@ -13,7 +13,7 @@ issue_number: 1186
 # When the updater last ran. ISO-8601 date. The `generate_leaderboards`
 # script reads this and prompts the user to refresh the list if it's
 # older than 30 days.
-last_updated: 2026-06-11
+last_updated: 2026-06-15
 
 # Regex list seeded from the labels in issue #1186 (🇪🇺). Each pattern is
 # matched with `re.search` against the model identifier with any `#suffix`
@@ -182,7 +182,7 @@ models:
     type: encoder
     bucket: encoder
     parameters: 13738755
-    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, estonian, faroese, finnish, french, greek, hungarian, italian, latvian, lithuanian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, swedish, ukrainian]
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, estonian, faroese, finnish, french, greek, hungarian, italian, latvian, lithuanian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -262,7 +262,7 @@ models:
     type: encoder
     bucket: encoder
     parameters: 21944195
-    pareto_languages: [swedish]
+    pareto_languages: [danish, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -386,6 +386,14 @@ models:
     eu: false
     osai_rank: null
     api: false
+  - id: sentence-transformers/distilbert-multilingual-nli-stsb-quora-ranking
+    type: encoder
+    bucket: encoder
+    parameters: 134734080
+    pareto_languages: [portuguese]
+    eu: false
+    osai_rank: null
+    api: false
   - id: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
     type: encoder
     bucket: encoder
@@ -398,7 +406,7 @@ models:
     type: encoder
     bucket: encoder
     parameters: 134734080
-    pareto_languages: [portuguese, spanish]
+    pareto_languages: [spanish]
     eu: false
     osai_rank: null
     api: false
@@ -822,7 +830,7 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 751632384
-    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, danish, dutch, english, estonian, faroese, finnish, german, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, polish, romanian, serbian, slovak, slovene, swedish, ukrainian]
+    pareto_languages: [albanian, bosnian, bulgarian, croatian, czech, danish, dutch, english, estonian, faroese, finnish, german, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, polish, romanian, serbian, slovak, slovene, swedish, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -930,30 +938,6 @@ models:
     eu: false
     osai_rank: null
     api: false
-  - id: bineric/NorskGPT-Mistral-7b
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 7241732096
-    pareto_languages: [english]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: BSC-LT/salamandra-2b
-    type: base_decoder
-    bucket: small
-    parameters: 2253490176
-    pareto_languages: []
-    eu: true
-    osai_rank: null
-    api: false
-  - id: BSC-LT/salamandra-2b-instruct
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 2253490176
-    pareto_languages: []
-    eu: true
-    osai_rank: null
-    api: false
   - id: BSC-LT/salamandra-7b
     type: base_decoder
     bucket: small
@@ -982,7 +966,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 3349227520
-    pareto_languages: [bosnian, bulgarian, catalan, czech, danish, estonian, french, hungarian, icelandic, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovene, swedish]
+    pareto_languages: [bosnian, bulgarian, catalan, czech, danish, estonian, french, hungarian, icelandic, lithuanian, norwegian, polish, romanian, slovene, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -1031,6 +1015,22 @@ models:
     bucket: small
     parameters: 2506172416
     pareto_languages: [finnish]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: google/gemma-3-4b-it
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 4300079472
+    pareto_languages: [danish]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: google/gemma-3-4b-pt
+    type: base_decoder
+    bucket: small
+    parameters: 4300079472
+    pareto_languages: [danish]
     eu: false
     osai_rank: null
     api: false
@@ -1106,6 +1106,14 @@ models:
     eu: false
     osai_rank: null
     api: false
+  - id: ibm-granite/granite-3.0-3b-a800m-base
+    type: base_decoder
+    bucket: small
+    parameters: 3374286336
+    pareto_languages: [dutch]
+    eu: false
+    osai_rank: null
+    api: false
   - id: ibm-granite/granite-3.0-3b-a800m-instruct
     type: instruction_tuned_decoder
     bucket: small
@@ -1142,7 +1150,7 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 3402836480
-    pareto_languages: [bulgarian, catalan, czech, english, faroese, french, german, hungarian, italian, latvian, norwegian, polish, romanian, serbian, slovak, ukrainian]
+    pareto_languages: [bulgarian, catalan, czech, english, faroese, french, german, hungarian, italian, latvian, norwegian, polish, romanian, serbian, slovak, slovene, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -1159,6 +1167,14 @@ models:
     bucket: small
     parameters: 2569272320
     pareto_languages: [english, german, spanish]
+    eu: true
+    osai_rank: null
+    api: false
+  - id: LiquidAI/LFM2.5-8B-A1B
+    type: reasoning_decoder
+    bucket: small
+    parameters: 8000000000
+    pareto_languages: []
     eu: true
     osai_rank: null
     api: false
@@ -1182,7 +1198,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 8030261248
-    pareto_languages: [catalan, french, italian, latvian, serbian, slovene]
+    pareto_languages: [bosnian, catalan, croatian, french, italian, latvian, serbian, slovene]
     eu: false
     osai_rank: null
     api: false
@@ -1254,7 +1270,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 8918026240
-    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, english, faroese, french, german, greek, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, ukrainian]
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, english, faroese, french, german, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, ukrainian]
     eu: true
     osai_rank: null
     api: false
@@ -1312,6 +1328,14 @@ models:
     parameters: 4676271104
     pareto_languages: [finnish]
     eu: true
+    osai_rank: null
+    api: false
+  - id: Nexusflow/Starling-LM-7B-beta
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 7241748480
+    pareto_languages: [english]
+    eu: false
     osai_rank: null
     api: false
   - id: nvidia/mistral-nemo-minitron-8b-base
@@ -1678,7 +1702,7 @@ models:
     type: base_decoder
     bucket: medium
     parameters: 13945031680
-    pareto_languages: [bosnian, bulgarian, catalan, croatian, czech, english, french, german, icelandic, italian, lithuanian, polish, portuguese, romanian, serbian, slovene, spanish, ukrainian]
+    pareto_languages: [bosnian, bulgarian, catalan, croatian, czech, english, french, german, icelandic, italian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovene, spanish, ukrainian]
     eu: true
     osai_rank: null
     api: false
@@ -1766,7 +1790,7 @@ models:
     type: reasoning_decoder
     bucket: medium
     parameters: 21511953984
-    pareto_languages: [albanian, croatian, czech, danish, english, estonian, finnish, greek, hungarian, lithuanian, norwegian, polish, serbian, swedish]
+    pareto_languages: [albanian, croatian, czech, danish, english, estonian, finnish, greek, hungarian, lithuanian, norwegian, polish, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -1834,7 +1858,7 @@ models:
     eu: false
     osai_rank: null
     api: false
-  - id: RekaAI/reka-flash-3.1
+  - id: RekaAI/reka-flash-3
     type: reasoning_decoder
     bucket: medium
     parameters: 20905482240
