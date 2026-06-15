@@ -5,6 +5,7 @@ import contextlib
 import importlib.util
 import json
 import logging
+import math
 import re
 import shutil
 import typing as t
@@ -129,18 +130,21 @@ def _compute_bpc_scores(
 ) -> c.Sequence[float]:
     """Compute bits-per-character scores from token logprobs.
 
-    BPC = sum(log P(answer_tokens)) / len(answer_chars). Lower is better.
+    BPC = -sum(log₂(P)) / len(chars). Lower is better. Typical range: 0.5-3.0.
+    Logprobs are in natural log base, so we convert to log₂ and negate to get
+    positive bits per character.
 
     Args:
         logprobs_list: Per-sample, per-token logprobs from generation.
         answer_texts: Ground truth answer texts.
 
     Returns:
-        BPC scores (lower is better).
+        BPC scores (positive floats, lower is better).
     """
     bpc_scores = []
     for token_logprobs, answer in zip(logprobs_list, answer_texts):
-        total_logprob = sum(lp for _, lp in token_logprobs)
+        # Convert from natural log to log₂ and negate to get positive bits
+        total_logprob = -sum(lp / math.log(2) for _, lp in token_logprobs)
         bpc = total_logprob / max(1, len(answer))
         bpc_scores.append(bpc)
     return bpc_scores
