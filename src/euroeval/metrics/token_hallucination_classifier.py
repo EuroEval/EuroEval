@@ -5,6 +5,7 @@ import logging
 import typing as t
 
 from datasets import Dataset
+from huggingface_hub import HfApi
 from lettucedetect import HallucinationDetector
 
 from ..enums import Device
@@ -48,6 +49,12 @@ def detect_hallucinations(
             If there are no tokens found in predicted answers of the
             hallucination detection model.
     """
+    if not HfApi().repo_exists(repo_id=model):
+        raise InvalidBenchmark(
+            f"The hallucination detection model {model!r} does not exist on the "
+            "Hugging Face Hub."
+        )
+
     detector = HallucinationDetector(
         method="transformer", model_path=model, device=device
     )
