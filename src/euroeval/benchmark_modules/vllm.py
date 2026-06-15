@@ -5,7 +5,6 @@ import contextlib
 import importlib.util
 import json
 import logging
-import math
 import re
 import shutil
 import typing as t
@@ -1094,35 +1093,36 @@ class VLLMModel(HuggingFaceEncoderModel):
                 for raw_output in raw_outputs
             ]
             output = GenerativeModelOutput(sequences=completions, scores=scores)
-        elif use_bpc and "bpc_prompt" in inputs:                # BPC mode: extract scores from prompt_logprobs
-                output = GenerativeModelOutput(sequences=completions)
+        elif use_bpc and "bpc_prompt" in inputs:
+            # BPC mode: extract scores from prompt_logprobs
+            output = GenerativeModelOutput(sequences=completions)
 
-                # Extract label texts for BPC scoring based on task type
-                answer_texts = _extract_answer_texts(
-                    inputs=inputs,
-                    dataset_config=self.dataset_config,
+            # Extract label texts for BPC scoring based on task type
+            answer_texts = _extract_answer_texts(
+                inputs=inputs,
+                dataset_config=self.dataset_config,
+            )
+
+            if answer_texts and all(
+                hasattr(raw_output, "prompt_logprobs")
+                and raw_output.prompt_logprobs is not None
+                for raw_output in raw_outputs
+            ):
+                # Compute BPC scores using the dedicated bpc_scoring module
+                bpc_scores = compute_bpc_scores(
+                    raw_outputs=raw_outputs,
+                    prompts=inputs["bpc_prompt"],
+                    answer_texts=answer_texts,
+                    answer_start_indices=inputs["bpc_answer_start"],
+                    tokeniser=self._tokeniser,
                 )
-
-                if answer_texts and all(
-                    hasattr(raw_output, "prompt_logprobs")
-                    and raw_output.prompt_logprobs is not None
-                    for raw_output in raw_outputs
-                ):
-                    # Compute BPC scores using the dedicated bpc_scoring module
-                    bpc_scores = compute_bpc_scores(
-                        raw_outputs=raw_outputs,
-                        prompts=inputs["bpc_prompt"],
-                        answer_texts=answer_texts,
-                        answer_start_indices=inputs["bpc_answer_start"],
-                        tokeniser=self._tokeniser,
-                    )
-                    output.bpc_scores = bpc_scores
-                elif answer_texts:
-                    log_once(
-                        "BPC mode enabled but prompt_logprobs not available. "
-                        "Skipping BPC computation.",
-                        level=logging.WARNING,
-                    )
+                output.bpc_scores = bpc_scores
+            elif answer_texts:
+                log_once(
+                    "BPC mode enabled but prompt_logprobs not available. "
+                    "Skipping BPC computation.",
+                    level=logging.WARNING,
+                )
         else:
             output = GenerativeModelOutput(sequences=completions)
 
