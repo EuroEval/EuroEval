@@ -49,12 +49,17 @@ class ChrF(Metric):
         self.language_detector = language_detector
         self.metric = CHRF(char_order=6, word_order=self.word_order, beta=self.beta)
 
-    def download(self, cache_dir: str) -> "ChrF":
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig | None" = None
+    ) -> "ChrF":
         """Download the language detection model if needed.
 
         Args:
             cache_dir:
                 The directory where the metric will be downloaded to.
+            dataset_config:
+                The dataset configuration. Unused by this metric, but accepted for API
+                consistency with the base ``Metric`` interface. Defaults to None.
 
         Returns:
             The metric object itself.

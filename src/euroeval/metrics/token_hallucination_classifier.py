@@ -5,7 +5,7 @@ import logging
 import typing as t
 
 from datasets import Dataset
-from huggingface_hub import HfApi
+from huggingface_hub import HfApi, snapshot_download
 from lettucedetect import HallucinationDetector
 
 from ..enums import Device
@@ -18,6 +18,23 @@ if t.TYPE_CHECKING:
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
     from ..data_models import BenchmarkConfig, DatasetConfig
+
+
+def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
+    """Build the hallucination detection model ID for a dataset.
+
+    Args:
+        dataset_config:
+            The dataset configuration, whose main language determines the
+            language-specific hallucination detection model.
+
+    Returns:
+        The Hugging Face Hub repository ID of the hallucination detection model.
+    """
+    return (
+        "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
+        f"{dataset_config.main_language.code}"
+    )
 
 
 def detect_hallucinations(
@@ -148,6 +165,29 @@ class TokenHallucinationMetric(Metric):
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.4f}"),
         )
 
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig | None" = None
+    ) -> "TokenHallucinationMetric":
+        """Pre-download the hallucination detection model for the given dataset.
+
+        Args:
+            cache_dir:
+                The directory where the model will be downloaded to.
+            dataset_config:
+                The dataset configuration, whose main language determines the
+                hallucination detection model to download. If None, no download is
+                performed. Defaults to None.
+
+        Returns:
+            The metric object itself.
+        """
+        if dataset_config is None:
+            return self
+
+        model_id = _hallucination_model_id(dataset_config=dataset_config)
+        snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
+        return self
+
     def __call__(
         self,
         predictions: c.Iterable[dict[str, str]],
@@ -182,10 +222,7 @@ class TokenHallucinationMetric(Metric):
         hallucination_rate = detect_hallucinations(
             dataset=dataset,
             predictions=predictions,
-            model=(
-                f"EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
-                f"{dataset_config.main_language.code}"
-            ),
+            model=_hallucination_model_id(dataset_config=dataset_config),
             device=Device(benchmark_config.device.type),
         )
         return hallucination_rate
