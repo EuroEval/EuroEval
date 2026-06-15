@@ -161,7 +161,7 @@ def result_lines_for_model(lines: list[str], model_id: str) -> list[str]:
             parsed = BenchmarkResult.from_dict(config=json.loads(line))
         except (TypeError, ValueError, json.JSONDecodeError):
             continue
-        # Only MCF runs count towards leaderboard completion
+        # Only standard accuracy runs (not BPC) count towards leaderboard completion
         is_mcf = not getattr(parsed, "use_bits_per_character", False)
         if parsed.model == model_id and is_mcf:
             out.append(line)

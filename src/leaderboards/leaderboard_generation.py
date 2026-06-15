@@ -99,7 +99,7 @@ def generate_leaderboard(
     # Load results and set them up for the leaderboard
     results = load_processed_results()
     results = [record for record in results if record["dataset"] in datasets]
-    # Filter out BPC runs - only MCF scores go on leaderboards
+    # Filter out BPC runs - only standard accuracy scores go on leaderboards
     results = [
         record for record in results if not record.get("use_bits_per_character", False)
     ]
