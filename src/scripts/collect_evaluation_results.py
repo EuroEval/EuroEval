@@ -550,10 +550,10 @@ def regenerate_leaderboards() -> bool:
     Returns:
         True if the subprocess exited cleanly, otherwise False.
     """
-    cmd = [sys.executable, "-m", "scripts.generate_leaderboards"]
+    cmd = [sys.executable, "-m", "src.scripts.generate_leaderboards"]
     logger.info(f"Running: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, cwd=REPO_ROOT / "src")
+        subprocess.run(cmd, check=True, cwd=REPO_ROOT)
         return True
     except subprocess.CalledProcessError as e:
         logger.error(f"generate_leaderboards failed (exit {e.returncode}).")
