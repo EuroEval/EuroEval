@@ -9,14 +9,21 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added opt-in Cloze Formulation (CF) scoring for multiple-choice tasks, as an
-  alternative to the default Multiple-Choice Formulation (MCF). Selected via
-  `--scoring-method cf`. Character-length normalization is always applied to CF
-  scores, matching the default used by Llama and the EleutherAI LM Evaluation
-  Harness. Currently supported only by the vLLM backend; the HF encoder and
-  LiteLLM backends raise `InvalidBenchmark` if CF is requested. The selected
-  scoring method is now persisted in `euroeval_benchmark_results.jsonl` so MCF
-  and CF runs can be distinguished. Thanks to @tvosch for the contribution!
+- Added opt-in bits-per-character (BPC) scoring for all tasks, as an alternative
+  to the default Multiple-Choice Formulation (MCF). Selected via
+  `--use-bits-per-character`/`-bpc`. For multiple-choice tasks, BPC uses a cloze
+  formulation with question + full answer text (not choice letters). BPC runs are
+  excluded from official leaderboards. The `use_bits_per_character` flag is
+  persisted in `euroeval_benchmark_results.jsonl` so BPC and MCF runs can be
+  distinguished. Thanks to @tvosch for the contribution!
+
+### Changed
+
+- Replaced `--scoring-method cf|mcf` enum with `--use-bits-per-character`/`-bpc`
+  boolean flag for simpler API.
+- BPC scoring is only supported by the vLLM backend with base decoder models;
+  HF encoder and LiteLLM backends raise `InvalidModel`, and instruction-tuned
+  models raise `InvalidModel` in vLLM.
 
 ## [v17.4.0] - 2026-06-12
 
