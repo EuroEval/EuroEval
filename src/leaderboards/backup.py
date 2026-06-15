@@ -25,6 +25,27 @@ BACKUP_PREFIX = "results_"
 BACKUP_SUFFIX = ".tar.gz"
 
 
+def _is_only_previous_day_backup(backups: list[Path], candidate: Path) -> bool:
+    """Check if `candidate` is the only backup from a previous day.
+
+    Args:
+        backups:
+            List of all backups (newest first).
+        candidate:
+            The backup to check.
+
+    Returns:
+        True if this is the only backup from a previous day, False otherwise.
+    """
+    today = dt.datetime.now().date()
+    previous_day_count = sum(
+        1
+        for backup in backups
+        if dt.datetime.fromtimestamp(backup.stat().st_mtime).date() < today
+    )
+    return previous_day_count == 1
+
+
 def _list_backups() -> list[Path]:
     if not BACKUPS_DIR.exists():
         return []
@@ -116,12 +137,34 @@ def _files_equal(a: Path, b: Path, chunk_size: int = 1 << 20) -> bool:
 
 
 def _prune_backups() -> None:
-    """Delete oldest backups until under BACKUPS_MAX_BYTES and MAX_BACKUPS."""
+    """Delete oldest backups until under BACKUPS_MAX_BYTES and MAX_BACKUPS.
+
+    Always keeps at least one backup from a previous day (if any exist),
+    ensuring it's possible to revert to a prior day's state.
+    """
     backups = _list_backups()
+
+    # Identify the newest backup from a previous day (if any exist).
+    today = dt.datetime.now().date()
+    previous_day_backup: Path | None = None
+    for backup in backups:
+        backup_date = dt.datetime.fromtimestamp(backup.stat().st_mtime).date()
+        if backup_date < today:
+            previous_day_backup = backup
+            break
 
     # Prune by count first (keep at most MAX_BACKUPS)
     while len(backups) > MAX_BACKUPS:
-        oldest = backups.pop()  # Remove from end (oldest)
+        oldest = backups[-1]  # Oldest is at the end
+        # Never delete the previous-day backup if it's the only one from yesterday
+        if oldest is previous_day_backup and _is_only_previous_day_backup(
+            backups, previous_day_backup
+        ):
+            logger.info(
+                f"Skipping prune of {oldest.name} - last backup from previous day"
+            )
+            break
+        backups.pop()
         size = oldest.stat().st_size
         oldest.unlink()
         logger.info(
@@ -134,10 +177,16 @@ def _prune_backups() -> None:
         return
 
     # Walk from oldest forward, deleting until under cap. Always keep the
-    # newest one even if it alone exceeds the cap.
-    for old in reversed(backups[1:]):
+    # newest one and the previous-day backup (if it's the only one from yesterday).
+    for old in list(reversed(backups)):
         if total <= BACKUPS_MAX_BYTES:
             break
+        # Protect the last backup from a previous day
+        if old is previous_day_backup and _is_only_previous_day_backup(
+            backups, previous_day_backup
+        ):
+            logger.info(f"Skipping prune of {old.name} - last backup from previous day")
+            continue
         size = old.stat().st_size
         old.unlink()
         total -= size
