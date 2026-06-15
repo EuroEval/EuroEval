@@ -24,18 +24,40 @@ project with `vercel build --prod` and deploys it with `vercel deploy --prebuilt
 
 Python package with config in `pyproject.toml` (same as evaluation framework) and source code in `src/leaderboards`. Leaderboards are CSVs and the evaluation queue is handled via Github issues.
 
-### Backup Location
+### Data Flow and Storage
 
-The `results.tar.gz` archive (historical record of all benchmark runs, 43+ MB) is stored outside the repo at:
+Evaluation results flow through four storage layers:
 
-- **Default:** `~/pCloud Drive/data/euroeval_backup/results.tar.gz`
-- **Override:** Set `EUROEVAL_RESULTS_BACKUP_DIR` environment variable
+1. **Hugging Face Buckets** (source of truth):
+   - `raw-results`: Per-model JSONL files (one file per model, append-only)
+   - `processed-results`: Processed/aggregated results per model
+   - Synced via `hf sync` command (requires `HF_TOKEN`)
 
-The backup directory (`BACKUPS_DIR`) contains:
-- `results.tar.gz` — the working copy used by the pipeline
-- `results_YYYYMMDD_HHMMSS.tar.gz` — timestamped snapshots kept for recovery
+2. **Local `results/` directory** (working copy):
+   - `results/raw/` — mirrored from raw-results bucket
+   - `results/processed/` — mirrored from processed-results bucket
+   - Git-ignored, synced bidirectionally with HF buckets
 
-Backup rotation keeps at most 10 snapshots or 1 GB total, but always preserves at least one backup from a previous day (if any exist) to enable reverting to yesterday's state.
+3. **`results.tar.gz`** (historical archive):
+   - **Location:** `~/pCloud Drive/data/euroeval_backup/results.tar.gz`
+   - **Override:** Set `EUROEVAL_RESULTS_BACKUP_DIR` environment variable
+   - Contains `results/results.jsonl` (all raw results merged) and `results/results.processed.jsonl`
+   - Rebuilt from `results/raw/*.jsonl` files on each run
+   - 43+ MB, not tracked in git
+
+4. **Backup snapshots** (disaster recovery):
+   - **Directory:** `~/pCloud Drive/data/euroeval_backup/`
+   - Contains timestamped snapshots: `results_YYYYMMDD_HHMMSS.tar.gz`
+   - Rotation: max 10 snapshots or 1 GB total
+   - Always preserves at least one backup from a previous day (if any exist)
+
+**Sync direction:** HF buckets → local `results/` → `results.tar.gz` → backup snapshots
+
+The `src/scripts/collect_evaluation_results.py` script orchestrates this flow:
+- Downloads new results from HF buckets
+- Deduplicates against existing results in `results.tar.gz`
+- Rebuilds `results.tar.gz` from the merged results
+- Creates timestamped backup before overwrite
 
 ### Scripts
 
