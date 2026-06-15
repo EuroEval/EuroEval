@@ -137,10 +137,18 @@ def _compute_bpc_scores(
 
     Args:
         logprobs_list: Per-sample, per-token logprobs from generation.
-        answer_texts: Ground truth answer texts.
+        answer_texts: Ground truth answer texts (for character normalization).
 
     Returns:
         BPC scores (positive floats, lower is better).
+
+    Note:
+        Current implementation scores the generated tokens and normalizes by ground
+        truth length. This works if the model generates text similar to the ground
+        truth, but is not the ideal approach. The proper implementation would append
+        the ground truth answer to the prompt and use prompt_logprobs to score those
+        tokens directly (no free generation), which would be more efficient and
+        accurate. TODO: Implement prompt_logprobs-based scoring.
     """
     bpc_scores = []
     for token_logprobs, answer in zip(logprobs_list, answer_texts):
@@ -1094,7 +1102,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                             level=logging.WARNING,
                         )
 
-                # Compute BPC from logprobs if we have answer texts
+                        # Compute BPC from prompt_logprobs if we have answer texts
+                # Note: This still uses generation logprobs (suboptimal). Proper BPC
+                # scoring should use prompt_logprobs with answer appended to prompt.
+                # TODO: Refactor to use prompt_logprobs-based scoring.
                 if answer_texts:
                     bpc_scores = _compute_bpc_scores(scores, answer_texts)
                     output.bpc_scores = bpc_scores
