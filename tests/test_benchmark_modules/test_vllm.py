@@ -661,6 +661,7 @@ class TestComputeBPCFromPromptLogprobs:
             raw_outputs=[mock_output],
             prompts=[prompt],
             answer_texts=[answer],
+            answer_start_indices=[6],  # 6 tokens before "yes"
             tokeniser=tokeniser,
         )
 
@@ -680,6 +681,7 @@ class TestComputeBPCFromPromptLogprobs:
             raw_outputs=[mock_output],
             prompts=["test"],
             answer_texts=["answer"],
+            answer_start_indices=[0],  # answer starts at token 0
             tokeniser=tokeniser,
         )
 
@@ -727,6 +729,7 @@ class TestComputeBPCFromPromptLogprobs:
             raw_outputs=[mock_output1, mock_output2],
             prompts=[prompt1, prompt2],
             answer_texts=[answer1, answer2],
+            answer_start_indices=[3, 3],  # answer at token 3 for both
             tokeniser=tokeniser,
         )
 
