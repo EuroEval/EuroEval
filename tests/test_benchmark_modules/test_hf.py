@@ -94,45 +94,25 @@ def test_safetensors_check(
         assert (result is not None) == model_exists
 
 
-class TestCFGating:
-    """Tests that the HF encoder backend rejects Cloze Formulation evaluation.
+class TestBPCGating:
+    """Tests that BPC scoring is rejected for non-vLLM backends.
 
-    CF requires per-token logprobs of forced continuations, which the encoder
-    backend does not produce. The guard sits in `__init__` so the user gets a
-    clear error before any model loading happens.
+    BPC validation happens in load_model() before backend initialization.
     """
 
-    def test_init_raises_invalid_model_on_bpc(
+    def test_bpc_rejected_for_hf_encoder(
         self,
         model_config: ModelConfig,
         dataset_config: DatasetConfig,
         benchmark_config: BenchmarkConfig,
     ) -> None:
-        """Constructing the HF encoder with `use_bits_per_character=True` raises."""
-        bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
-        # Patch out the param-allow-list check so the BPC guard is what fires.
-        with patch("euroeval.benchmark_modules.hf.raise_if_wrong_params"):
-            with pytest.raises(InvalidModel, match="Bits-per-character"):
-                HuggingFaceEncoderModel(
-                    model_config=model_config,
-                    dataset_config=dataset_config,
-                    benchmark_config=bpc_config,
-                    log_metadata=False,
-                )
+        """BPC scoring raises InvalidModel for HF encoder backend."""
+        from euroeval.model_loading import load_model
 
-    def test_error_message_points_to_vllm_backend(
-        self,
-        model_config: ModelConfig,
-        dataset_config: DatasetConfig,
-        benchmark_config: BenchmarkConfig,
-    ) -> None:
-        """The BPC rejection message names vLLM as the supported alternative."""
         bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
-        with patch("euroeval.benchmark_modules.hf.raise_if_wrong_params"):
-            with pytest.raises(InvalidModel, match="vLLM backend"):
-                HuggingFaceEncoderModel(
-                    model_config=model_config,
-                    dataset_config=dataset_config,
-                    benchmark_config=bpc_config,
-                    log_metadata=False,
-                )
+        with pytest.raises(InvalidModel, match="vLLM backend"):
+            load_model(
+                model_config=model_config,
+                dataset_config=dataset_config,
+                benchmark_config=bpc_config,
+            )

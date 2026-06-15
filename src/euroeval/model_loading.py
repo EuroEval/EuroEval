@@ -9,9 +9,44 @@ from .benchmark_modules import (
     LiteLLMModel,
     VLLMModel,
 )
-from .enums import InferenceBackend, ModelType
+from .enums import GenerativeType, InferenceBackend, ModelType
 from .exceptions import InvalidModel
 from .logging_utils import log_once
+
+
+def validate_bits_per_character(
+    model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
+) -> None:
+    """Validate that BPC scoring is supported for the given model.
+
+    BPC is only supported with vLLM backend and base decoder models.
+
+    Args:
+        model_config:
+            The model configuration.
+        benchmark_config:
+            The benchmark configuration.
+
+    Raises:
+        InvalidModel:
+            If BPC scoring is requested but not supported.
+    """
+    if not benchmark_config.use_bits_per_character:
+        return
+
+    # Only vLLM + base decoders support BPC
+    if model_config.inference_backend != InferenceBackend.VLLM:
+        raise InvalidModel(
+            f"Bits-per-character (BPC) scoring requires the vLLM backend, but "
+            f"{model_config.inference_backend.value} was specified."
+        )
+
+    if model_config.generative_type != GenerativeType.BASE:
+        raise InvalidModel(
+            f"Bits-per-character (BPC) scoring requires a base decoder model, but "
+            f"{model_config.generative_type.value} was specified."
+        )
+
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -65,6 +100,11 @@ def load_model(
                 f"Cannot load model with model type {model_config.model_type!r} and "
                 f"inference backend {model_config.inference_backend!r}."
             )
+
+    # Validate BPC support before loading
+    validate_bits_per_character(
+        model_config=model_config, benchmark_config=benchmark_config
+    )
 
     model = model_class(
         model_config=model_config,

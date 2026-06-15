@@ -119,21 +119,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 The benchmark configuration.
             log_metadata:
                 Whether to log the model metadata.
-
-        Raises:
-            InvalidModel:
-                If bits-per-character (BPC) scoring is requested. BPC is only
-                supported by the vLLM backend.
         """
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
         )
-
-        if benchmark_config.use_bits_per_character:
-            raise InvalidModel(
-                "Bits-per-character (BPC) scoring is not supported by the Hugging Face "
-                "encoder backend. BPC is currently only supported by the vLLM backend."
-            )
 
         # This is already set when calling `super().__init__`, but we need it to get
         # the correct value from `self.model_max_length`, so we set it here as well.

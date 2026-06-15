@@ -225,16 +225,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 "https://github.com/EuroEval/EuroEval/issues/new."
             )
 
-        # BPC only supported for base decoder models
-        if (
-            self.benchmark_config.use_bits_per_character
-            and generative_type != GenerativeType.BASE
-        ):
-            raise InvalidModel(
-                "Bits-per-character (BPC) scoring is only supported for base decoder "
-                f"models, not {generative_type.value} models."
-            )
-
         with no_terminal_output(disable=benchmark_config.verbose):
             model = load_model(
                 model_config=model_config,

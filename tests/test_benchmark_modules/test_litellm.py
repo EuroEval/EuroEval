@@ -1,5 +1,6 @@
 """Unit tests for the `litellm` module."""
 
+import dataclasses
 from unittest.mock import MagicMock
 
 import pytest
@@ -10,41 +11,28 @@ from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.exceptions import InvalidModel
 
 
-class TestCFGating:
-    """Tests that the LiteLLM backend rejects Cloze Formulation evaluation.
+class TestBPCGating:
+    """Tests that BPC scoring is rejected for LiteLLM backend.
 
-    Per-token logprobs for forced completions are not reliably exposed across
-    LiteLLM-supported providers, so CF must surface a clear `InvalidModel`
-    rather than silently degrading. The guard sits at the top of `generate`.
+    BPC validation happens in load_model() before backend initialization.
     """
 
-    def _make_model(self, use_bits_per_character: bool) -> LiteLLMModel:
-        """Build a minimally-initialised LiteLLMModel.
+    def test_bpc_reJECTED_for_litellm(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """BPC scoring raises InvalidModel for LiteLLM backend."""
+        from euroeval.model_loading import load_model
 
-        Args:
-            use_bits_per_character: Whether to use BPC scoring to flag on the config.
-
-        Returns:
-            A `LiteLLMModel` with only `benchmark_config` set; only `generate`
-            should be called on it.
-        """
-        bc = MagicMock()
-        bc.use_bits_per_character = use_bits_per_character
-        model = object.__new__(LiteLLMModel)
-        model.benchmark_config = bc
-        return model
-
-    def test_generate_raises_on_bpc(self) -> None:
-        """`LiteLLMModel.generate` raises immediately when BPC is requested."""
-        model = self._make_model(use_bits_per_character=True)
-        with pytest.raises(InvalidModel, match="Bits-per-character"):
-            model.generate(inputs={"text": ["prompt"]})
-
-    def test_generate_error_message_points_to_vllm(self) -> None:
-        """The rejection message tells the user vLLM is the supported backend."""
-        model = self._make_model(use_bits_per_character=True)
+        bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
         with pytest.raises(InvalidModel, match="vLLM backend"):
-            model.generate(inputs={"text": ["prompt"]})
+            load_model(
+                model_config=model_config,
+                dataset_config=dataset_config,
+                benchmark_config=bpc_config,
+            )
 
 
 class TestCreateModelOutput:

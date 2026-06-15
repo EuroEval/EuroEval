@@ -347,18 +347,7 @@ class LiteLLMModel(BenchmarkModule):
         Raises:
             InvalidBenchmark:
                 If the inputs do not contain either 'messages' or 'text' keys.
-            InvalidModel:
-                If bits-per-character (BPC) scoring is requested (not supported by the
-                LiteLLM backend).
         """
-        if self.benchmark_config.use_bits_per_character:
-            raise InvalidModel(
-                "Bits-per-character (BPC) scoring is not supported by the LiteLLM "
-                "backend (per-token logprobs for forced completions are not reliably "
-                "exposed across API providers). BPC is currently only supported by the "
-                "vLLM backend."
-            )
-
         model_inputs: c.Sequence[c.Sequence[litellm.AllMessageValues] | str]
         if "messages" in inputs:
             model_inputs = inputs["messages"]
