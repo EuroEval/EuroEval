@@ -1100,12 +1100,17 @@ class SingleGenerativeModelOutput:
         metadata (optional):
             The metadata fields for the sample, including ground truth labels (if
             applicable). Can be None if the metadata is not available. Defaults to None.
+        bpc_score (optional):
+            Bits-per-character score for this generated sequence. Computed as
+            ``sum(log P(answer_tokens)) / len(answer_chars)``. Lower is better.
+            Only populated when ``use_bits_per_character=True``. Defaults to None.
     """
 
     sequence: str
     predicted_label: str | None = None
     scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
     metadata: "HashableDict | None" = None
+    bpc_score: float | None = None
 
 
 @dataclass
