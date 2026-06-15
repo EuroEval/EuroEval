@@ -22,6 +22,7 @@ from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
+    BPC_LOGPROBS,
     CUSTOM_STOP_TOKENS,
     GENERATION_KWARGS,
     GENERATIVE_PIPELINE_TAGS,
@@ -654,7 +655,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             max_tokens=0
             if self.benchmark_config.use_bits_per_character
             else max_tokens,
-            prompt_logprobs=MAX_VLLM_LOGPROBS
+            # BPC mode only needs 1 logprob (actual token), not top-20
+            prompt_logprobs=BPC_LOGPROBS
             if self.benchmark_config.use_bits_per_character
             else None,
             logprobs=MAX_VLLM_LOGPROBS
