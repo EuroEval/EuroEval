@@ -13,16 +13,112 @@ copies the most recent backup into place so the pipeline can run.
 from __future__ import annotations
 
 import datetime as dt
+import json
 import logging
 import shutil
 from pathlib import Path
 
-from .paths import BACKUPS_DIR, BACKUPS_MAX_BYTES, MAX_BACKUPS, RESULTS_PATH
+from .paths import (
+    BACKUPS_DIR,
+    BACKUPS_MAX_BYTES,
+    MAX_BACKUPS,
+    PROCESSED_RESULTS_DIR,
+    RESULTS_PATH,
+)
 
 logger = logging.getLogger(__name__)
 
+# Required metadata fields that must be present in all processed results
+REQUIRED_METADATA_FIELDS = [
+    "commercially_licensed",
+    "open",
+    "trained_from_scratch",
+]
+
 BACKUP_PREFIX = "results_"
 BACKUP_SUFFIX = ".tar.gz"
+
+
+def _validate_processed_results() -> None:
+    """Validate that processed results exist and have required metadata.
+
+    Checks that:
+    1. PROCESSED_RESULTS_DIR exists and contains .jsonl files
+    2. Each .jsonl file has at least one record
+    3. All records have the required metadata fields
+
+    Raises:
+        FileNotFoundError:
+            If PROCESSED_RESULTS_DIR doesn't exist or contains no files.
+        ValueError:
+            If any processed result is missing required metadata fields.
+    """
+    if not PROCESSED_RESULTS_DIR.exists():
+        raise FileNotFoundError(
+            f"Processed results directory not found: {PROCESSED_RESULTS_DIR}. "
+            "Run result_processing.py to process results before backing up."
+        )
+
+    model_files = list(PROCESSED_RESULTS_DIR.glob("*.jsonl"))
+    if not model_files:
+        raise FileNotFoundError(
+            f"No processed result files found in {PROCESSED_RESULTS_DIR}. "
+            "Run result_processing.py to process results before backing up."
+        )
+
+    logger.info(
+        f"Validating {len(model_files):,} processed result files for required "
+        f"metadata fields: {REQUIRED_METADATA_FIELDS}"
+    )
+
+    files_with_issues = 0
+    records_checked = 0
+    records_with_issues = 0
+
+    for model_file in model_files:
+        file_has_issues = False
+        try:
+            with open(model_file, "r", encoding="utf-8") as f:
+                for line_num, line in enumerate(f, 1):
+                    if not line.strip():
+                        continue
+                    records_checked += 1
+                    record = json.loads(line)
+
+                    # Check for required metadata fields
+                    for field in REQUIRED_METADATA_FIELDS:
+                        if field not in record:
+                            model_id = record.get("model", "unknown")
+                            logger.error(
+                                f"Missing '{field}' in {model_file.name}, line "
+                                f"{line_num}, model '{model_id}'"
+                            )
+                            file_has_issues = True
+                            records_with_issues += 1
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in {model_file.name}: {e}")
+            file_has_issues = True
+        except Exception as e:
+            logger.error(f"Failed to read {model_file.name}: {e}")
+            file_has_issues = True
+
+        if file_has_issues:
+            files_with_issues += 1
+
+    if files_with_issues > 0:
+        msg = (
+            f"{files_with_issues} files have missing metadata. Checked "
+            f"{records_checked:,} records, found {records_with_issues:,} with issues. "
+            f"Required: {REQUIRED_METADATA_FIELDS}. Run "
+            f"restore_metadata_from_backup.py to restore."
+        )
+        raise ValueError(msg)
+
+    logger.info(
+        f"✓ Validated {records_checked:,} records from {len(model_files):,} files - "
+        "all have required metadata fields"
+    )
 
 
 def _is_only_previous_day_backup(backups: list[Path], candidate: Path) -> bool:
@@ -87,8 +183,10 @@ def restore_from_backup_if_missing(target: Path = RESULTS_PATH) -> bool:
 def backup_results(source: Path = RESULTS_PATH) -> Path | None:
     """Snapshot `source` into BACKUPS_DIR, then prune oldest if over cap.
 
-    Skips if `source` is byte-identical to the newest existing backup, so
-    repeated runs without changes don't fill the backup directory.
+    Validates that processed results exist and have required metadata fields
+    before creating the backup. Skips if `source` is byte-identical to the
+    newest existing backup, so repeated runs without changes don't fill the
+    backup directory.
 
     Args:
         source:
@@ -96,7 +194,11 @@ def backup_results(source: Path = RESULTS_PATH) -> Path | None:
 
     Returns:
         The Path of the new backup, or None if nothing was written.
+
     """
+    # Validate processed results before backing up
+    _validate_processed_results()
+
     if not source.exists():
         logger.warning(f"Cannot back up {source}: file does not exist.")
         return None
