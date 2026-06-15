@@ -62,15 +62,16 @@ Pin a model revision (branch, tag, or commit) by suffixing `@`:
 euroeval --model <model-id>@<sha>
 ```
 
-For multiple-choice tasks, choose a scoring method:
+For base decoder models, enable bits-per-character (BPC) scoring:
 
 ```bash
-euroeval --model <model-id> --scoring-method cf
+euroeval --model <model-id> --use-bits-per-character
 ```
 
-MCF (default) compares first-token logprobs of label letters; CF scores full answer
-texts as cloze continuations. CF is only valid for multiple-choice tasks and currently
-requires the vLLM backend. See [Evaluation Methodology](/methodology) for details.
+BPC computes the information content of the ground-truth answer. For multiple-choice
+tasks, this uses a cloze formulation with question + full answer text (not choice
+letters). BPC is only supported by the vLLM backend. See
+[Evaluation Methodology](/methodology) for details.
 
 Run `euroeval --help` for the complete flag list.
 

@@ -101,7 +101,7 @@ def generate_leaderboard(
     results = [record for record in results if record["dataset"] in datasets]
     # Filter out BPC runs - only MCF scores go on leaderboards
     results = [
-        record for record in results if not record.get("bits_per_character", False)
+        record for record in results if not record.get("use_bits_per_character", False)
     ]
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
         group_results_by_model(results=results)

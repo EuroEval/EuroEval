@@ -33,21 +33,20 @@ distribution, and report the 95% confidence interval — i.e. roughly 1.96 × st
 error around the mean. Two models are considered statistically tied on a dataset when
 their score distributions overlap in this sense.
 
-## What's the difference between MCF and CF scoring?
+## What is bits-per-character (BPC) scoring?
 
-For multiple-choice tasks, EuroEval supports two scoring formulations:
+BPC computes the information content (in bits) of the ground-truth answer conditioned
+on the question, normalized by character length. Lower BPC = better.
 
-- **MCF (Multiple-Choice Formulation)**: The default. The model sees enumerated choices
-  (`a.`, `b.`, `c.`, …) and we compare first-token logprobs of the label letters. Fast
-  and works with any decoder model.
-- **CF (Cloze Formulation)**: Each answer text is scored as a cloze continuation using
-  `sum(log P(answer_tokens | prompt))`, with character-length normalization. Matches
-  the OLMES protocol and EleutherAI LM Evaluation Harness defaults, but currently only
-  supported by the vLLM backend.
+For multiple-choice tasks, BPC uses a cloze formulation: the model sees a bare question
+(with answer marker) and few-shot examples with full answer text (not choice letters).
+We compute `sum(log P(answer_tokens | prompt))` for the correct answer.
 
-Use `--scoring-method cf` to enable CF on multiple-choice tasks. Official leaderboards
-only display MCF scores for consistency; CF runs are tracked separately in the results
-file but excluded from rankings.
+For other tasks, BPC scores the ground-truth answer directly.
+
+BPC is only supported by the vLLM backend with base decoder models. Use
+`--use-bits-per-character` or `-bpc` to enable. Official leaderboards display standard
+accuracy scores; BPC runs are excluded from rankings.
 
 ## Why do some model names end in `(val)`?
 
