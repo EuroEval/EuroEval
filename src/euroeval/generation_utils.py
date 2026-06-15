@@ -336,7 +336,7 @@ def apply_prompt(
                     create_prompt(
                         text=example["bare_input"].replace("\n", " ").strip(),
                         target_text=letter_to_choice_text(
-                            letter=str(example["label"]),
+                            letter=str(example["label"]).strip().lower(),
                             raw_choices=example["raw_choices"],
                         )
                         .replace("\n", " ")
