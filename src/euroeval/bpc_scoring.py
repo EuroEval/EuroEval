@@ -5,9 +5,14 @@ BPC is a character-level metric where lower scores indicate better performance.
 """
 
 import collections.abc as c
+import logging
 import math
 import typing as t
 
+from .data_models import DatasetConfig
+from .enums import TaskGroup
+from .logging_utils import log_once
+from .task_group_utils.cloze import letter_to_choice_text
 from .types import Tokeniser
 
 
@@ -85,3 +90,132 @@ def compute_bpc_scores(
         bpc_scores.append(bpc)
 
     return bpc_scores
+
+
+def _extract_answer_texts(inputs: dict, dataset_config: DatasetConfig) -> list[str]:
+    """Extract ground truth answer texts from inputs based on task group.
+
+    Used by BPC scoring to determine which text spans to evaluate against
+    prompt_logprobs.
+
+    Args:
+        inputs:
+            Model inputs containing labels and task-specific fields.
+        dataset_config:
+            Configuration for the dataset including labels and task metadata.
+
+    Returns:
+        List of answer texts to score. Empty list if the task type is not
+        supported or required fields are missing.
+    """
+    answer_texts: list[str] = []
+    task_group = dataset_config.task.task_group
+    labels = inputs.get("label", [])
+
+    match task_group:
+        case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+            if "raw_choices" not in inputs:
+                log_once(
+                    "BPC scoring requires 'raw_choices' in inputs for MCQ "
+                    "tasks, but they are not present. Skipping BPC "
+                    "computation.",
+                    level=logging.WARNING,
+                )
+            else:
+                raw_choices = inputs["raw_choices"]
+                answer_texts = [
+                    letter_to_choice_text(
+                        letter=str(label).strip().lower(), raw_choices=raw_choice
+                    )
+                    for label, raw_choice in zip(labels, raw_choices)
+                ]
+
+        case TaskGroup.SEQUENCE_CLASSIFICATION:
+            answer_texts = [dataset_config.labels[label_id] for label_id in labels]
+
+        case TaskGroup.TEXT_TO_TEXT:
+            if "target_text" not in inputs:
+                log_once(
+                    "BPC scoring requires 'target_text' in inputs for "
+                    "text-to-text tasks, but they are not present. "
+                    "Skipping BPC computation.",
+                    level=logging.WARNING,
+                )
+            else:
+                answer_texts = inputs["target_text"]
+
+        case TaskGroup.QUESTION_ANSWERING:
+            if not all(isinstance(lbl, dict) and "answers" in lbl for lbl in labels):
+                log_once(
+                    "BPC scoring requires structured 'answers' in label "
+                    "for QA tasks, but the format is unexpected. Skipping "
+                    "BPC computation.",
+                    level=logging.WARNING,
+                )
+            else:
+                answer_texts = [lbl["answers"]["text"][0] for lbl in labels]
+
+        case TaskGroup.TOKEN_CLASSIFICATION:
+            # Serialize NER tags to text
+            if "tokens" not in inputs or "labels" not in inputs:
+                log_once(
+                    "BPC scoring requires 'tokens' and 'labels' in inputs "
+                    "for token classification tasks, but they are not "
+                    "present. Skipping BPC computation.",
+                    level=logging.WARNING,
+                )
+            else:
+                tokens_list = inputs["tokens"]
+                labels_list = inputs["labels"]
+                answer_texts = []
+                for tokens, example_labels in zip(tokens_list, labels_list):
+                    # Group tokens by BIO tags
+                    tagged_entities: dict[str, list[str]] = {}
+                    current_entity: str | None = None
+                    current_tokens: list[str] = []
+
+                    for token, tag in zip(tokens, example_labels):
+                        tag_str = str(tag).lower()
+                        if tag_str == "o":
+                            if current_entity is not None:
+                                tagged_entities.setdefault(current_entity, []).append(
+                                    " ".join(current_tokens)
+                                )
+                                current_entity = None
+                                current_tokens = []
+                            continue
+
+                        if tag_str.startswith("b-"):
+                            if current_entity is not None:
+                                tagged_entities.setdefault(current_entity, []).append(
+                                    " ".join(current_tokens)
+                                )
+                            current_entity = tag_str[2:]
+                            current_tokens = [token]
+                        elif tag_str.startswith("i-") and current_entity:
+                            current_tokens.append(token)
+                        else:
+                            if current_entity is not None:
+                                tagged_entities.setdefault(current_entity, []).append(
+                                    " ".join(current_tokens)
+                                )
+                            current_entity = (
+                                tag_str[2:] if tag_str.startswith("i-") else tag_str
+                            )
+                            current_tokens = [token]
+
+                    if current_entity is not None:
+                        tagged_entities.setdefault(current_entity, []).append(
+                            " ".join(current_tokens)
+                        )
+
+                    answer_texts.append(str(tagged_entities))
+
+        case _:
+            log_once(
+                f"BPC scoring not implemented for task group {task_group}. "
+                "Skipping BPC computation.",
+                level=logging.WARNING,
+            )
+
+    return answer_texts
