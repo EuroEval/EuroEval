@@ -58,7 +58,6 @@ from ..logging_utils import get_pbar, log, log_once, no_terminal_output
 from ..model_cache import create_model_cache_dir
 from ..string_utils import split_model_id
 from ..task_group_utils import (
-    cloze,
     question_answering,
     sequence_classification,
     text_to_text,
@@ -339,19 +338,6 @@ class VLLMModel(HuggingFaceEncoderModel):
         Returns:
             The function used to extract the labels from the generated output.
         """
-        if (
-            self.benchmark_config.use_bits_per_character
-            and self.dataset_config.task.task_group
-            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-        ):
-            return partial(
-                cloze.extract_labels_from_cf,
-                dataset_config=self.dataset_config,
-                model_config=self.model_config,
-                first_label_token_mapping=self.buffer.get(
-                    "first_label_token_mapping", False
-                ),
-            )
         match self.dataset_config.task.task_group:
             case (
                 TaskGroup.SEQUENCE_CLASSIFICATION
@@ -498,20 +484,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 If the task requires structured output, but it is not a token
                 classification task and does not define an output structure.
         """
-        if (
-            self.benchmark_config.use_bits_per_character
-            and self.dataset_config.task.task_group
-            == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-        ):
-            return cloze.generate_cf(
-                model=self._model,  # ty: ignore[invalid-argument-type]
-                tokeniser=self._tokeniser,
-                inputs=inputs,
-                sampling_params=SamplingParams(
-                    max_tokens=1, prompt_logprobs=1, temperature=0.0
-                ),
-            )
-
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
         if self.generative_type == GenerativeType.BASE:
@@ -971,30 +943,6 @@ class VLLMModel(HuggingFaceEncoderModel):
             output = GenerativeModelOutput(sequences=completions)
 
         return output
-
-    def score_completions(
-        self, prompts: c.Sequence[str], completions: c.Sequence[c.Sequence[str]]
-    ) -> c.Sequence[c.Sequence[c.Sequence[float]]]:
-        """Score each (prompt, candidate) pair with vLLM's prompt_logprobs.
-
-        Args:
-            prompts:
-                One bare-question prompt per sample.
-            completions:
-                Per-sample list of candidate continuation strings.
-
-        Returns:
-            Per-sample, per-candidate, per-token logprobs.
-        """
-        return cloze.score_completions(
-            model=self._model,  # ty: ignore[invalid-argument-type]
-            tokeniser=self._tokeniser,
-            prompts=prompts,
-            completions=completions,
-            sampling_params=SamplingParams(
-                max_tokens=1, prompt_logprobs=1, temperature=0.0
-            ),
-        )
 
     @classmethod
     def model_exists(

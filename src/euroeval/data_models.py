@@ -1064,9 +1064,6 @@ class GenerativeModelOutput:
             A list of dictionaries, one per failed instance, each containing
             ``"sample_index"`` (the index of the sample in the batch) and ``"error"``
             (a short description of why it failed). Defaults to an empty list.
-        cf_scores (optional):
-            Per-choice normalized scores used when evaluating with the Cloze
-            Formulation (CF). Shape ``(batch_size, num_choices)``. Defaults to None.
     """
 
     sequences: c.Sequence[str]
@@ -1074,7 +1071,6 @@ class GenerativeModelOutput:
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
     metadatas: list["HashableDict | None"] = field(default_factory=list)
     failed_instances: list["FailedInstance"] = field(default_factory=list)
-    cf_scores: c.Sequence[c.Sequence[float]] | None = None
 
     def __post_init__(self) -> None:
         """Post-initialisation."""
@@ -1099,16 +1095,12 @@ class SingleGenerativeModelOutput:
         metadata (optional):
             The metadata fields for the sample, including ground truth labels (if
             applicable). Can be None if the metadata is not available. Defaults to None.
-        cf_scores (optional):
-            Per-choice normalized scores when the sample was evaluated with the
-            Cloze Formulation (CF). Defaults to None.
     """
 
     sequence: str
     predicted_label: str | None = None
     scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
     metadata: "HashableDict | None" = None
-    cf_scores: c.Sequence[float] | None = None
 
 
 @dataclass

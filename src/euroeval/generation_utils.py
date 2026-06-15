@@ -14,11 +14,7 @@ from .enums import GenerativeType, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import log_once
 from .string_utils import extract_multiple_choice_labels
-from .task_group_utils.cloze import (
-    build_cf_prompt,
-    letter_to_choice_text,
-    render_cf_few_shot,
-)
+from .task_group_utils.cloze import letter_to_choice_text
 from .tokenisation_utils import apply_chat_template
 
 if t.TYPE_CHECKING:
@@ -333,39 +329,25 @@ def apply_prompt(
 
         case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
             if use_bits_per_character:
-                # BPC scoring: cloze formulation with bare questions + answer text
+                # BPC scoring: treat as text-to-text with bare question → answer
+                # This mirrors reading comprehension: model generates answer text,
+                # BPC = avg negative log-likelihood per character of the answer
                 few_shot_sections = [
-                    (
-                        render_cf_few_shot(
-                            bare_input=example["bare_input"],
-                            answer_text=letter_to_choice_text(
-                                letter=str(example["label"]),
-                                raw_choices=example["raw_choices"],
-                            ),
-                            prompt_template=dataset_config.prompt_template,
-                        ),
-                        "",  # Empty label, already in prompt
+                    create_prompt(
+                        text=example["bare_input"].replace("\n", " ").strip(),
+                        target_text=letter_to_choice_text(
+                            letter=str(example["label"]),
+                            raw_choices=example["raw_choices"],
+                        )
+                        .replace("\n", " ")
+                        .strip(),
                     )
                     for example in few_shot_examples
                 ]
-                prompt_prefix = ""
-                if dataset_config.prompt_prefix:
-                    labels_str = dataset_config.get_labels_str()
-                    prompt_prefix = (
-                        dataset_config.prompt_prefix.format(labels_str=labels_str)
-                        + "\n\n"
-                    )
                 new_sections = [
-                    (
-                        build_cf_prompt(
-                            bare_input=examples["bare_input"][i],
-                            few_shot_rendered=[
-                                prompt for prompt, _ in few_shot_sections
-                            ],
-                            prompt_template=dataset_config.prompt_template,
-                            prompt_prefix=prompt_prefix,
-                        ),
-                        "",
+                    create_prompt(
+                        text=examples["bare_input"][i].replace("\n", " ").strip(),
+                        target_text="",
                     )
                     for i in range(len(examples["text"]))
                 ]
