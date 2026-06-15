@@ -1064,6 +1064,10 @@ class GenerativeModelOutput:
             A list of dictionaries, one per failed instance, each containing
             ``"sample_index"`` (the index of the sample in the batch) and ``"error"``
             (a short description of why it failed). Defaults to an empty list.
+        bpc_scores (optional):
+            Bits-per-character scores for each generated sequence. Computed as
+            ``sum(log P(answer_tokens)) / len(answer_chars)``. Lower is better.
+            Only populated when ``use_bits_per_character=True``. Defaults to None.
     """
 
     sequences: c.Sequence[str]
@@ -1071,6 +1075,7 @@ class GenerativeModelOutput:
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
     metadatas: list["HashableDict | None"] = field(default_factory=list)
     failed_instances: list["FailedInstance"] = field(default_factory=list)
+    bpc_scores: c.Sequence[float] | None = None
 
     def __post_init__(self) -> None:
         """Post-initialisation."""

@@ -56,7 +56,7 @@ from ..generation_utils import (
 from ..languages import get_all_languages
 from ..logging_utils import get_pbar, log, log_once, no_terminal_output
 from ..model_cache import create_model_cache_dir
-from ..string_utils import split_model_id
+from ..string_utils import CHOICE_LETTERS, split_model_id
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
@@ -121,6 +121,29 @@ if t.TYPE_CHECKING:
 # class (Gemma4ForConditionalGeneration) and a text-only class
 # (Gemma4TextForCausalLM).  vLLM only registers the former, so we remap here.
 _ARCHITECTURE_ALIASES: dict[str, str] = {"Gemma4TextForCausalLM": "Gemma4ForCausalLM"}
+
+
+def _compute_bpc_scores(
+    logprobs_list: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]],
+    answer_texts: c.Sequence[str],
+) -> c.Sequence[float]:
+    """Compute bits-per-character scores from token logprobs.
+
+    BPC = sum(log P(answer_tokens)) / len(answer_chars). Lower is better.
+
+    Args:
+        logprobs_list: Per-sample, per-token logprobs from generation.
+        answer_texts: Ground truth answer texts.
+
+    Returns:
+        BPC scores (lower is better).
+    """
+    bpc_scores = []
+    for token_logprobs, answer in zip(logprobs_list, answer_texts):
+        total_logprob = sum(lp for _, lp in token_logprobs)
+        bpc = total_logprob / max(1, len(answer))
+        bpc_scores.append(bpc)
+    return bpc_scores
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -939,6 +962,27 @@ class VLLMModel(HuggingFaceEncoderModel):
                 for raw_output in raw_outputs
             ]
             output = GenerativeModelOutput(sequences=completions, scores=scores)
+
+            # Compute BPC scores if requested
+            if (
+                self.benchmark_config.use_bits_per_character
+                and self.dataset_config.task.task_group
+                == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+                and "label" in inputs
+                and "raw_choices" in inputs
+            ):
+                # Get answer texts from label + raw_choices
+                labels = inputs["label"]
+                raw_choices = inputs["raw_choices"]
+                answer_texts = [
+                    raw_choices[idx]
+                    for label, raw_choice in zip(labels, raw_choices)
+                    for idx in [CHOICE_LETTERS.find(str(label).strip().lower())]
+                ]
+
+                # Compute BPC from logprobs
+                bpc_scores = _compute_bpc_scores(scores, answer_texts)
+                output.bpc_scores = bpc_scores
         else:
             output = GenerativeModelOutput(sequences=completions)
 
