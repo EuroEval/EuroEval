@@ -12,9 +12,9 @@ import torch
 from .closest_match import get_closest_match
 from .data_models import BenchmarkConfig, BenchmarkConfigParams, DatasetConfig, Task
 from .dataset_configs import get_all_dataset_configs
-from .enums import Device, TaskGroup
+from .enums import Device
 from .languages import get_all_languages, get_correct_language_codes
-from .logging_utils import log, log_once
+from .logging_utils import log
 
 if importlib.util.find_spec("vllm") is not None:
     pass
@@ -53,16 +53,6 @@ def build_benchmark_config(
         trust_remote_code=benchmark_config_params.trust_remote_code,
         run_with_cli=benchmark_config_params.run_with_cli,
     )
-
-    if benchmark_config_params.use_bits_per_character:
-        for ds in dataset_configs:
-            if ds.task.task_group != TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                log_once(
-                    f"Dataset {ds.name!r} uses task group "
-                    f"{ds.task.task_group.value!r} — not a multiple-choice task. "
-                    f"BPC scoring has no effect.",
-                    level=logging.DEBUG,
-                )
 
     return BenchmarkConfig(
         datasets=dataset_configs,
