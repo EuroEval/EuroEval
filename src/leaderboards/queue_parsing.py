@@ -162,8 +162,8 @@ def result_lines_for_model(lines: list[str], model_id: str) -> list[str]:
         except (TypeError, ValueError, json.JSONDecodeError):
             continue
         # Only standard accuracy runs (not BPC) count towards leaderboard completion
-        is_mcf = not getattr(parsed, "use_bits_per_character", False)
-        if parsed.model == model_id and is_mcf:
+        is_standard = not getattr(parsed, "use_bits_per_character", False)
+        if parsed.model == model_id and is_standard:
             out.append(line)
     return out
 
