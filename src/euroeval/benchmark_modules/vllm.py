@@ -126,40 +126,6 @@ _ARCHITECTURE_ALIASES: dict[str, str] = {"Gemma4TextForCausalLM": "Gemma4ForCaus
 
 
 def _compute_bpc_scores(
-    logprobs_list: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]],
-    answer_texts: c.Sequence[str],
-) -> c.Sequence[float]:
-    """Compute bits-per-character scores from token logprobs.
-
-    BPC = -sum(log₂(P)) / len(chars). Lower is better. Typical range: 0.5-3.0.
-    Logprobs are in natural log base, so we convert to log₂ and negate to get
-    positive bits per character.
-
-    Args:
-        logprobs_list: Per-sample, per-token logprobs from generation.
-        answer_texts: Ground truth answer texts (for character normalization).
-
-    Returns:
-        BPC scores (positive floats, lower is better).
-
-    Note:
-        Current implementation scores the generated tokens and normalizes by ground
-        truth length. This works if the model generates text similar to the ground
-        truth, but is not the ideal approach. The proper implementation would append
-        the ground truth answer to the prompt and use prompt_logprobs to score those
-        tokens directly (no free generation), which would be more efficient and
-        accurate. TODO: Implement prompt_logprobs-based scoring.
-    """
-    bpc_scores = []
-    for token_logprobs, answer in zip(logprobs_list, answer_texts):
-        # Convert from natural log to log₂ and negate to get positive bits
-        total_logprob = -sum(lp / math.log(2) for _, lp in token_logprobs)
-        bpc = total_logprob / max(1, len(answer))
-        bpc_scores.append(bpc)
-    return bpc_scores
-
-
-def _compute_bpc_scores_from_prompt_logprobs(
     raw_outputs: c.Sequence[t.Any],
     prompts: c.Sequence[str],
     answer_texts: c.Sequence[str],
@@ -183,32 +149,35 @@ def _compute_bpc_scores_from_prompt_logprobs(
     Returns:
         BPC scores (positive floats, lower is better).
     """
-    bpc_scores = []
-    
+    bpc_scores: list[float] = []
+
     for raw_output, prompt, answer in zip(raw_outputs, prompts, answer_texts):
         prompt_logprobs = raw_output.prompt_logprobs
-        
+
         if prompt_logprobs is None:
             bpc_scores.append(0.0)
             continue
-        
+
         # Tokenise the full prompt (including answer) to get all tokens
         full_tokens = tokeniser.encode(prompt, add_special_tokens=False)
-        
+
         # Find where the answer starts by tokenising the prompt without answer
         # We need to find the token index where the answer portion begins
-        prompt_only = prompt[: -len(answer)] if answer and prompt.endswith(answer) else ""
+        if answer and prompt.endswith(answer):
+            prompt_only = prompt[: -len(answer)]
+        else:
+            prompt_only = ""
         if prompt_only:
             prompt_only_tokens = tokeniser.encode(prompt_only, add_special_tokens=False)
             answer_start_idx = len(prompt_only_tokens)
         else:
             # Edge case: no prompt-only part, answer starts at token 0
             answer_start_idx = 0
-        
+
         # The answer tokens are from answer_start_idx to end
         # prompt_logprobs[0] is None (no logprob for first token)
         # prompt_logprobs[i] corresponds to token i in the full sequence
-        answer_logprobs = []
+        answer_logprobs: list[float] = []
         for i in range(answer_start_idx, len(prompt_logprobs)):
             if prompt_logprobs[i] is None:
                 continue
@@ -224,16 +193,16 @@ def _compute_bpc_scores_from_prompt_logprobs(
                             answer_logprobs.append(lp.logprob)
                         else:
                             answer_logprobs.append(float(lp))
-        
+
         if answer_logprobs:
             # Convert from natural log to log₂ and negate to get positive bits
             total_logprob = -sum(lp / math.log(2) for lp in answer_logprobs)
             bpc = total_logprob / max(1, len(answer))
         else:
             bpc = 0.0
-        
+
         bpc_scores.append(bpc)
-    
+
     return bpc_scores
 
 
@@ -756,8 +725,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Determine if we're using BPC scoring
         use_bpc = (
-            self.benchmark_config.use_bits_per_character
-            and "bpc_prompt" in inputs
+            self.benchmark_config.use_bits_per_character and "bpc_prompt" in inputs
         )
 
         max_tokens: int = (
@@ -1049,7 +1017,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             # Sanity check
             if len(completions) != len(prompts):
                 raise InvalidBenchmark(
-                    f"Expected {len(prompts):,} completions, but got {len(completions):,}."
+                    f"Expected {len(prompts):,} completions, but got "
+                    f"{len(completions):,}."
                 )
 
         # Add logprobs scores to the output
@@ -1068,12 +1037,12 @@ class VLLMModel(HuggingFaceEncoderModel):
         elif use_bpc and "bpc_prompt" in inputs:
             # BPC mode: extract scores from prompt_logprobs
             output = GenerativeModelOutput(sequences=completions)
-            
+
             # Compute BPC scores from prompt_logprobs
             answer_texts: list[str] = []
             task_group = self.dataset_config.task.task_group
             labels = inputs.get("label", [])
-            
+
             match task_group:
                 case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                     if "raw_choices" not in inputs:
@@ -1174,9 +1143,9 @@ class VLLMModel(HuggingFaceEncoderModel):
                                     current_tokens = [token]
 
                             if current_entity is not None:
-                                tagged_entities.setdefault(
-                                    current_entity, []
-                                ).append(" ".join(current_tokens))
+                                tagged_entities.setdefault(current_entity, []).append(
+                                    " ".join(current_tokens)
+                                )
 
                             answer_texts.append(str(tagged_entities))
 
@@ -1186,14 +1155,14 @@ class VLLMModel(HuggingFaceEncoderModel):
                         "Skipping BPC computation.",
                         level=logging.WARNING,
                     )
-            
+
             if answer_texts and all(
                 hasattr(raw_output, "prompt_logprobs")
                 and raw_output.prompt_logprobs is not None
                 for raw_output in raw_outputs
             ):
                 # Extract logprobs for answer portion from prompt_logprobs
-                bpc_scores = _compute_bpc_scores_from_prompt_logprobs(
+                bpc_scores = _compute_bpc_scores(
                     raw_outputs=raw_outputs,
                     prompts=inputs["bpc_prompt"],
                     answer_texts=answer_texts,
