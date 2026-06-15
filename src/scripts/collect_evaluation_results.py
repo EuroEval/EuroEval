@@ -110,7 +110,8 @@ def main() -> None:
     manual_lines: list[str] = []
     if NEW_RESULTS_PATH.exists():
         manual_lines = [
-            line for line in NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines()
+            line
+            for line in NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
         if manual_lines:
