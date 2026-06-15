@@ -829,6 +829,47 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     vocabulary_size: int | None
 
 
+def _convert_old_raw_results_format(config: dict[str, object]) -> None:
+    """Convert old raw_results format in-place.
+
+    Handles legacy formats:
+    - raw = [{"mcc": 0.5, "accuracy": 0.6}] (flat list)
+    - raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]} (nested dict)
+    and flattens to raw = {"mcc": 0.5, "accuracy": 0.6} or {"test_mcc": 0.5, ...}.
+    """
+    if "results" not in config:
+        return
+    results = t.cast(dict[str, object], config["results"])
+    if "raw" not in results:
+        return
+    raw = results["raw"]
+    flattened_raw: dict[str, float] = {}
+    if isinstance(raw, list):
+        # Flat list format: [{"mcc": 0.5, "accuracy": 0.6}]
+        for item in raw:
+            if not isinstance(item, dict):
+                continue
+            for metric, value in item.items():
+                if isinstance(value, (int, float)) and isinstance(metric, str):
+                    if metric not in flattened_raw:
+                        flattened_raw[metric] = float(value)
+    elif isinstance(raw, dict):
+        # Nested dict format: {"test": [{"mcc": 0.5}]}
+        for split_name, split_data in raw.items():
+            if not isinstance(split_data, list) or not split_data:
+                continue
+            for item in split_data:
+                if not isinstance(item, dict):
+                    continue
+                for metric, value in item.items():
+                    if isinstance(value, (int, float)):
+                        key = f"{split_name}_{metric}"
+                        if key not in flattened_raw:
+                            flattened_raw[key] = float(value)
+    if flattened_raw:
+        results["raw"] = flattened_raw
+
+
 class BenchmarkResult(pydantic.BaseModel):
     """A benchmark result."""
 
@@ -915,6 +956,11 @@ class BenchmarkResult(pydantic.BaseModel):
             config["max_sequence_length"] = 0
         if "vocabulary_size" not in config:
             config["vocabulary_size"] = 0
+
+        # Backwards compatibility: convert old raw_results format where
+        # raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]} to flattened
+        # raw = {"test_mcc": 0.5, "test_accuracy": 0.6}
+        _convert_old_raw_results_format(config)
 
         return cls(**config)  # ty: ignore[invalid-argument-type]
 
