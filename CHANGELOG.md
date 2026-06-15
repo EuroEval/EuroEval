@@ -24,8 +24,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- Replaced `--scoring-method cf|mcf` enum with `--use-bits-per-character`/`-bpc`
-  boolean flag for simpler API.
 - BPC scoring is only supported by the vLLM backend with base decoder models;
   HF encoder and LiteLLM backends raise `InvalidModel`, and instruction-tuned
   models raise `InvalidModel` in vLLM.
