@@ -57,13 +57,14 @@ from ..generation_utils import (
 from ..languages import get_all_languages
 from ..logging_utils import get_pbar, log, log_once, no_terminal_output
 from ..model_cache import create_model_cache_dir
-from ..string_utils import CHOICE_LETTERS, split_model_id
+from ..string_utils import split_model_id
 from ..task_group_utils import (
     question_answering,
     sequence_classification,
     text_to_text,
     token_classification,
 )
+from ..task_group_utils.cloze import letter_to_choice_text
 from ..tokenisation_utils import (
     apply_chat_template,
     get_bos_token,
@@ -968,25 +969,135 @@ class VLLMModel(HuggingFaceEncoderModel):
             output = GenerativeModelOutput(sequences=completions, scores=scores)
 
             # Compute BPC scores if requested
-            if (
-                self.benchmark_config.use_bits_per_character
-                and self.dataset_config.task.task_group
-                == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-                and "label" in inputs
-                and "raw_choices" in inputs
-            ):
-                # Get answer texts from label + raw_choices
+            if self.benchmark_config.use_bits_per_character and "label" in inputs:
+                # Extract answer texts based on task type
+                task_group = self.dataset_config.task.task_group
                 labels = inputs["label"]
-                raw_choices = inputs["raw_choices"]
-                answer_texts = [
-                    raw_choices[idx]
-                    for label, raw_choice in zip(labels, raw_choices)
-                    for idx in [CHOICE_LETTERS.find(str(label).strip().lower())]
-                ]
+                answer_texts: list[str] = []
 
-                # Compute BPC from logprobs
-                bpc_scores = _compute_bpc_scores(scores, answer_texts)
-                output.bpc_scores = bpc_scores
+                match task_group:
+                    case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+                        if "raw_choices" not in inputs:
+                            log_once(
+                                "BPC scoring requires 'raw_choices' in inputs for MCQ "
+                                "tasks, but they are not present. Skipping BPC "
+                                "computation.",
+                                level=logging.WARNING,
+                            )
+                        else:
+                            raw_choices = inputs["raw_choices"]
+                            answer_texts = [
+                                letter_to_choice_text(
+                                    letter=str(label).strip().lower(),
+                                    raw_choices=raw_choice,
+                                )
+                                for label, raw_choice in zip(labels, raw_choices)
+                            ]
+
+                    case TaskGroup.SEQUENCE_CLASSIFICATION:
+                        answer_texts = [
+                            self.dataset_config.labels[label_id] for label_id in labels
+                        ]
+
+                    case TaskGroup.TEXT_TO_TEXT:
+                        if "target_text" not in inputs:
+                            log_once(
+                                "BPC scoring requires 'target_text' in inputs for "
+                                "text-to-text tasks, but they are not present. "
+                                "Skipping BPC computation.",
+                                level=logging.WARNING,
+                            )
+                        else:
+                            answer_texts = inputs["target_text"]
+
+                    case TaskGroup.QUESTION_ANSWERING:
+                        if not all(
+                            isinstance(lbl, dict) and "answers" in lbl for lbl in labels
+                        ):
+                            log_once(
+                                "BPC scoring requires structured 'answers' in label "
+                                "for QA tasks, but the format is unexpected. Skipping "
+                                "BPC computation.",
+                                level=logging.WARNING,
+                            )
+                        else:
+                            answer_texts = [lbl["answers"]["text"][0] for lbl in labels]
+
+                    case TaskGroup.TOKEN_CLASSIFICATION:
+                        # Serialize NER tags to text
+                        if "tokens" not in inputs or "labels" not in inputs:
+                            log_once(
+                                "BPC scoring requires 'tokens' and 'labels' in inputs "
+                                "for token classification tasks, but they are not "
+                                "present. Skipping BPC computation.",
+                                level=logging.WARNING,
+                            )
+                        else:
+                            tokens_list = inputs["tokens"]
+                            labels_list = inputs["labels"]
+                            answer_texts = []
+                            for tokens, example_labels in zip(tokens_list, labels_list):
+                                # Group tokens by BIO tags
+                                tagged_entities: dict[str, list[str]] = {}
+                                current_entity: str | None = None
+                                current_tokens: list[str] = []
+
+                                for token, tag in zip(tokens, example_labels):
+                                    tag_str = str(tag).lower()
+                                    if tag_str == "o":
+                                        # Save any pending entity
+                                        if current_entity is not None:
+                                            tagged_entities.setdefault(
+                                                current_entity, []
+                                            ).append(" ".join(current_tokens))
+                                            current_entity = None
+                                            current_tokens = []
+                                        continue
+
+                                    # Parse B-/I- prefixes
+                                    if tag_str.startswith("b-"):
+                                        # Save any pending entity
+                                        if current_entity is not None:
+                                            tagged_entities.setdefault(
+                                                current_entity, []
+                                            ).append(" ".join(current_tokens))
+                                        current_entity = tag_str[2:]
+                                        current_tokens = [token]
+                                    elif tag_str.startswith("i-") and current_entity:
+                                        current_tokens.append(token)
+                                    else:
+                                        # Unexpected tag format, treat as B-
+                                        if current_entity is not None:
+                                            tagged_entities.setdefault(
+                                                current_entity, []
+                                            ).append(" ".join(current_tokens))
+                                        current_entity = (
+                                            tag_str[2:]
+                                            if tag_str.startswith("i-")
+                                            else tag_str
+                                        )
+                                        current_tokens = [token]
+
+                                # Save any remaining entity
+                                if current_entity is not None:
+                                    tagged_entities.setdefault(
+                                        current_entity, []
+                                    ).append(" ".join(current_tokens))
+
+                                # Serialize to JSON-like string
+                                answer_texts.append(str(tagged_entities))
+
+                    case _:
+                        log_once(
+                            f"BPC scoring not implemented for task group {task_group}. "
+                            "Skipping BPC computation.",
+                            level=logging.WARNING,
+                        )
+
+                # Compute BPC from logprobs if we have answer texts
+                if answer_texts:
+                    bpc_scores = _compute_bpc_scores(scores, answer_texts)
+                    output.bpc_scores = bpc_scores
         else:
             output = GenerativeModelOutput(sequences=completions)
 
