@@ -9,6 +9,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added `download()` method to `PipelineMetric` class
+  - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
+    Values metric)
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
+    the pipeline
 - Added opt-in bits-per-character (BPC) scoring for all tasks, as an alternative
   to the default Multiple-Choice Formulation (MCF). Selected via
   `--use-bits-per-character`/`-bpc`. For multiple-choice tasks, BPC uses a cloze
@@ -24,6 +29,24 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - BPC scoring is only supported by the vLLM backend with base decoder models;
   HF encoder and LiteLLM backends raise `InvalidModel`, and instruction-tuned
   models raise `InvalidModel` in vLLM.
+
+### Fixed
+
+- Added `download()` method to `PipelineMetric` class
+  - Enables offline mode for metrics that use scikit-learn pipelines (e.g.,
+    European Values metric)
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and
+    caching the pipeline
+- Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
+  - `get_hf_token` now catches `httpx.ConnectError` to gracefully degrade when token
+    validation fails offline
+  - `load_hf_model_config` returns a minimal config when files aren't fully cached
+    instead of raising `InvalidModel`
+  - `snapshot_download` now checks for existing cached weights before downloading,
+    avoiding redundant downloads in `--download-only` mode
+- Fixed `resolve_model_path` to prefer actual commit snapshots over stale `model_files`
+  symlink directories, preventing broken symlink errors when cache has multiple
+  snapshots
 
 ## [v17.4.0] - 2026-06-12
 
