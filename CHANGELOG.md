@@ -14,13 +14,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
     Values metric)
   - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
     the pipeline
-- Added opt-in bits-per-character (BPC) scoring for all tasks, as an alternative
-  to the default Multiple-Choice Formulation (MCF). Selected via
-  `--use-bits-per-character`/`-bpc`. For multiple-choice tasks, BPC uses a cloze
-  formulation with question + full answer text (not choice letters). BPC runs are
-  excluded from official leaderboards. The `use_bits_per_character` flag is
-  persisted in `euroeval_benchmark_results.jsonl` so BPC and MCF runs can be
-  distinguished. Thanks to @tvosch for the contribution!
+- Added `--use-bits-per-character`/`-bpc` flag for base decoder models to enable
+  bits-per-character (BPC) scoring on all tasks. For multiple-choice tasks, this
+  uses a cloze formulation with question + full answer text. BPC runs are excluded
+  from official leaderboards. Thanks to @tvosch for the contribution!
 
 ### Changed
 
