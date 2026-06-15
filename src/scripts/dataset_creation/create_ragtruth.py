@@ -16,7 +16,7 @@ from typing import Any, cast
 
 import httpx
 import tqdm
-from datasets import Dataset
+from datasets import Dataset, DatasetDict
 from dotenv import load_dotenv
 from lettucedetect.datasets.hallucination_dataset import (
     HallucinationData,
@@ -771,8 +771,13 @@ def push_test_subset_to_hub(
     random.shuffle(samples)
 
     def _to_rows(items: list[HallucinationSample]) -> list[dict[str, Any]]:
+        # Preprocess the samples so they are ready for the hallucination
+        # (question-answering) task: the task group expects ``id``, ``context``,
+        # ``question`` and ``answers`` columns, derived here from the RAG ``prompt``
+        # and reference ``answer`` while keeping the original columns intact.
         return [
             {
+                "id": str(index),
                 "prompt": sample.prompt,
                 "answer": sample.answer,
                 "labels": sample.labels,
@@ -780,40 +785,46 @@ def push_test_subset_to_hub(
                 "task_type": sample.task_type,
                 "dataset": sample.dataset,
                 "language": sample.language,
+                "context": sample.prompt,
+                "question": "",
+                "answers": {"text": [sample.answer], "answer_start": [0]},
             }
-            for sample in items
+            for index, sample in enumerate(items)
         ]
 
     test_samples = [s for s in samples if s.split == "test"][:n]
-    if test_samples:
-        dataset = Dataset.from_list(_to_rows(test_samples))
-        dataset.push_to_hub(
-            repo_id=repo_id, config_name=config_name, split="test", private=private
-        )
-        logger.info(
-            "Pushed %d test samples to hub: %s (config=%s)",
-            len(test_samples),
-            repo_id,
-            config_name,
-        )
-    else:
-        logger.warning("No test samples available; skipping test split upload.")
-
     # RAGTruth only ships train/test splits, so carve the validation split from train.
     validation_samples = [s for s in samples if s.split == "train"][:validation_n]
+
+    if not test_samples and not validation_samples:
+        logger.warning("No test or validation samples available; skipping upload.")
+        return
+
+    # Push all splits in a single commit so the entire config is overwritten
+    # atomically. Pushing splits one at a time fails when the existing splits on the
+    # hub use a different (e.g. older) schema, since the new split's features are
+    # validated against the stale ones.
+    splits: dict[str, Dataset] = {}
+    if test_samples:
+        splits["test"] = Dataset.from_list(_to_rows(test_samples))
+    else:
+        logger.warning("No test samples available; skipping test split upload.")
     if validation_samples:
-        dataset = Dataset.from_list(_to_rows(validation_samples))
-        dataset.push_to_hub(
-            repo_id=repo_id, config_name=config_name, split="val", private=private
-        )
+        splits["val"] = Dataset.from_list(_to_rows(validation_samples))
+    else:
+        logger.warning("No validation samples available; skipping val split upload.")
+
+    DatasetDict(splits).push_to_hub(
+        repo_id=repo_id, config_name=config_name, private=private
+    )
+    for split_name, split_dataset in splits.items():
         logger.info(
-            "Pushed %d validation samples to hub: %s (config=%s)",
-            len(validation_samples),
+            "Pushed %d %s samples to hub: %s (config=%s)",
+            len(split_dataset),
+            split_name,
             repo_id,
             config_name,
         )
-    else:
-        logger.warning("No validation samples available; skipping val split upload.")
 
 
 def main(

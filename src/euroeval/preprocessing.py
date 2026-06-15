@@ -236,34 +236,3 @@ def build_preprocessing_func(
         return dataset
 
     return preprocessing_func
-
-
-def ragtruth_preprocessing_func(dataset: "DatasetDict") -> "DatasetDict":
-    """Add question-answering columns to a RAGTruth hallucination dataset.
-
-    The RAGTruth datasets provide a complete RAG ``prompt`` together with a reference
-    ``answer``. The question-answering task group, however, expects ``id``,
-    ``context``, ``question`` and ``answers`` columns, so we derive these here while
-    keeping the original ``prompt`` column intact for the hallucination detector.
-
-    Args:
-        dataset:
-            The raw RAGTruth dataset.
-
-    Returns:
-        The dataset with the question-answering columns added.
-    """
-
-    def add_qa_columns(
-        examples: dict[str, list], indices: list[int]
-    ) -> dict[str, list]:
-        return dict(
-            id=[str(index) for index in indices],
-            context=list(examples["prompt"]),
-            question=["" for _ in indices],
-            answers=[
-                dict(text=[answer], answer_start=[0]) for answer in examples["answer"]
-            ],
-        )
-
-    return dataset.map(add_qa_columns, with_indices=True, batched=True)
