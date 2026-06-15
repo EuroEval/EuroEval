@@ -34,6 +34,7 @@ import tarfile
 import urllib.error
 from pathlib import Path
 
+import click
 from dotenv import load_dotenv
 from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
@@ -266,12 +267,25 @@ def scan_bucket_for_results() -> list[str]:
     return new_results
 
 
-def main() -> None:
+@click.command()
+@click.option(
+    "--force/--no-force",
+    "-f",
+    default=False,
+    show_default=True,
+    help="Always regenerate leaderboards, even if no new results are found.",
+)
+def main(force: bool) -> None:
     """Harvest finished evaluations and regenerate leaderboards.
 
     Only issues with successfully harvested results are closed. Issues
     with the ``results-ready`` label may not yet have their results
     synced to the bucket, so the label alone is not sufficient.
+
+    Args:
+        force (optional):
+            Whether to always regenerate leaderboards, even if no new results
+            are found. Defaults to False.
     """
     logger.info("Fetching open model evaluation request issues...")
     try:
@@ -358,7 +372,7 @@ def main() -> None:
         # load_raw_results() appends new_results.jsonl locally before deleting it.
         # But the bucket needs to be synced on the next successful run.
 
-    if not regenerate_leaderboards():
+    if not regenerate_leaderboards(force=force):
         logger.error(
             "Aborting: not closing issues because leaderboard regeneration failed."
         )
@@ -534,13 +548,20 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
     return True
 
 
-def regenerate_leaderboards() -> bool:
+def regenerate_leaderboards(force: bool = False) -> bool:
     """Run the existing leaderboard-generation script.
+
+    Args:
+        force (optional):
+            Whether to force leaderboard generation even if no updates are found.
+            Defaults to False.
 
     Returns:
         True if the subprocess exited cleanly, otherwise False.
     """
     cmd = [sys.executable, "-m", "src.scripts.generate_leaderboards"]
+    if force:
+        cmd.append("--force")
     logger.info(f"Running: {' '.join(cmd)}")
     try:
         subprocess.run(cmd, check=True, cwd=REPO_ROOT)
