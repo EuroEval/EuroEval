@@ -22,9 +22,20 @@ project with `vercel build --prod` and deploys it with `vercel deploy --prebuilt
 
 ### Leaderboard Generation
 
-Python package with config in `pyproject.toml` (same as evaluation framework) and source
-code in `src/leaderboards`. Leaderboards are CSVs and the evaluation queue is handled
-via Github issues.
+Python package with config in `pyproject.toml` (same as evaluation framework) and source code in `src/leaderboards`. Leaderboards are CSVs and the evaluation queue is handled via Github issues.
+
+### Backup Location
+
+The `results.tar.gz` archive (historical record of all benchmark runs, 43+ MB) is stored outside the repo at:
+
+- **Default:** `~/pCloud Drive/data/euroeval_backup/results.tar.gz`
+- **Override:** Set `EUROEVAL_RESULTS_BACKUP_DIR` environment variable
+
+The backup directory (`BACKUPS_DIR`) contains:
+- `results.tar.gz` — the working copy used by the pipeline
+- `results_YYYYMMDD_HHMMSS.tar.gz` — timestamped snapshots kept for recovery
+
+Backup rotation keeps at most 10 snapshots or 1 GB total, but always preserves at least one backup from a previous day (if any exist) to enable reverting to yesterday's state.
 
 ### Scripts
 
