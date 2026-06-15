@@ -196,7 +196,11 @@ def generate_single_iteration(
             if single_sample_batch:
                 batch = {key: [value] for key, value in batch.items()}
 
-            model_output = model.generate(inputs=batch)
+            # Use score() for BPC, generate() for standard generation
+            if benchmark_config.use_bits_per_character:
+                model_output = model.score(inputs=batch)  # type: ignore[attr-defined]
+            else:
+                model_output = model.generate(inputs=batch)
 
             # Extracted labels are the labels extracted from the generation - these are
             # in the language of the dataset. The predicted labels is the result of

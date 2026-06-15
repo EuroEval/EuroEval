@@ -469,26 +469,29 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         return self
 
-    def generate(self, inputs: dict) -> "GenerativeModelOutput":
-        """Generate outputs from the model.
+    def _run_vllm_core(
+        self, inputs: dict, prompt_key: str, sampling_params: "SamplingParams"
+    ) -> tuple[list[str], list]:
+        """Run vLLM generation with given parameters.
+
+        Shared implementation used by both generate() and score().
 
         Args:
             inputs:
                 A batch of inputs to pass through the model.
+            prompt_key:
+                Key to extract prompts from inputs ("text" or "bpc_prompt").
+            sampling_params:
+                Sampling parameters for vLLM generation.
 
         Returns:
-            The generated model outputs.
+            Tuple of (completions, raw_outputs).
 
         Raises:
             InvalidBenchmark:
-                If the dataset requires logprobs, but we could not get the first token
-                of each label in the dataset.
+                If generation fails or prompts are too long.
             InvalidTask:
-                If the task requires structured output, but it is not a token
-                classification task and does not define an output structure.
-            ValueError:
-                If ``use_bits_per_character=True`` but the ``bpc_prompt`` column is
-                missing from inputs.
+                If structured output is misconfigured.
         """
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
@@ -646,41 +649,8 @@ class VLLMModel(HuggingFaceEncoderModel):
                     level=logging.DEBUG,
                 )
 
-        max_tokens: int = (
-            REASONING_MAX_TOKENS
-            if self.generative_type == GenerativeType.REASONING
-            else self.dataset_config.max_generated_tokens
-        )
-        sampling_params = SamplingParams(
-            max_tokens=0
-            if self.benchmark_config.use_bits_per_character
-            else max_tokens,
-            # BPC mode only needs 1 logprob (actual token), not top-20
-            prompt_logprobs=BPC_LOGPROBS
-            if self.benchmark_config.use_bits_per_character
-            else None,
-            logprobs=MAX_VLLM_LOGPROBS
-            if not self.benchmark_config.use_bits_per_character
-            and self.buffer["first_label_token_mapping"]
-            else None,
-            temperature=generation_kwargs["temperature"],
-            top_p=generation_kwargs["top_p"],
-            top_k=int(generation_kwargs["top_k"]),
-            repetition_penalty=generation_kwargs["repetition_penalty"],
-            stop=[stop_token for stop_token in stop_tokens if stop_token],
-            structured_outputs=structured_outputs,
-        )
-
-        # Validate BPC inputs before accessing bpc_prompt
-        if self.benchmark_config.use_bits_per_character:
-            if "bpc_prompt" not in inputs:
-                raise ValueError(
-                    "use_bits_per_character=True but 'bpc_prompt' column is missing "
-                    "from inputs. This indicates a bug in dataset preparation."
-                )
-            prompts: c.Sequence[str] = inputs["bpc_prompt"]
-        else:
-            prompts: c.Sequence[str] = inputs["text"]
+        # Extract prompts using the provided key
+        prompts: c.Sequence[str] = inputs[prompt_key]
         if any(len(prompt.strip()) == 0 for prompt in prompts):
             log("Found empty prompts, replacing with BOS token.", level=logging.DEBUG)
             prompts = [
@@ -704,10 +674,12 @@ class VLLMModel(HuggingFaceEncoderModel):
             prompts = [prompt.strip() for prompt in prompts]
 
         # Truncate the prompts if needed
+        # For BPC scoring (max_tokens=0), we can use full context
+        # For generation, we need to reserve space for generated tokens
         max_tokens_per_prompt = min(
             self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH
         )
-        if not self.benchmark_config.use_bits_per_character:
+        if sampling_params.max_tokens > 0:
             max_tokens_per_prompt -= min(
                 self.dataset_config.max_generated_tokens, max_tokens_per_prompt - 1
             )
@@ -832,7 +804,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                         truncation=True,
                         max_length=max(
                             min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
-                            - max_tokens
+                            - sampling_params.max_tokens
                             - extra_truncation,
                             0,
                         ),
@@ -884,7 +856,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Parse the raw model outputs. We keep the special tokens for now, as we need
         # them to potentially remove reasoning content and stop tokens
-        if self.benchmark_config.use_bits_per_character:
+        if sampling_params.max_tokens == 0:
             # BPC mode: no generation, just prompt_logprobs
             completions = [""] * len(raw_outputs)
         else:
@@ -952,11 +924,42 @@ class VLLMModel(HuggingFaceEncoderModel):
                     f"{len(completions):,}."
                 )
 
-        # Add logprobs scores to the output
-        if (
-            self.buffer["first_label_token_mapping"]
-            and not self.benchmark_config.use_bits_per_character
-        ):
+        # Return completions and raw outputs for caller to handle scoring
+        return completions, raw_outputs
+
+    def generate(self, inputs: dict) -> "GenerativeModelOutput":
+        """Generate outputs from the model.
+
+        Args:
+            inputs:
+                A batch of inputs to pass through the model.
+
+        Returns:
+            The generated model outputs.
+        """
+        # Compute max_tokens based on model type
+        max_tokens: int = (
+            REASONING_MAX_TOKENS
+            if self.generative_type == GenerativeType.REASONING
+            else self.dataset_config.max_generated_tokens
+        )
+        sampling_params = SamplingParams(
+            max_tokens=max_tokens,
+            prompt_logprobs=None,
+            logprobs=MAX_VLLM_LOGPROBS
+            if self.buffer["first_label_token_mapping"]
+            else None,
+            temperature=GENERATION_KWARGS["temperature"],
+            top_p=GENERATION_KWARGS["top_p"],
+            top_k=int(GENERATION_KWARGS["top_k"]),
+            repetition_penalty=GENERATION_KWARGS["repetition_penalty"],
+            stop=[],  # Set in _run_vllm_core
+            structured_outputs=None,  # Set in _run_vllm_core
+        )
+        completions, raw_outputs = self._run_vllm_core(inputs, "text", sampling_params)
+
+        # Extract logprobs scores if available
+        if self.buffer["first_label_token_mapping"] and sampling_params.logprobs:
             scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] = [
                 [
                     [
@@ -967,23 +970,44 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ]
                 for raw_output in raw_outputs
             ]
-            output = GenerativeModelOutput(sequences=completions, scores=scores)
-        elif self.benchmark_config.use_bits_per_character:
-            # BPC mode: extract scores from prompt_logprobs
-            output = GenerativeModelOutput(sequences=completions)
+            return GenerativeModelOutput(sequences=completions, scores=scores)
+        return GenerativeModelOutput(sequences=completions)
 
-            # Compute BPC scores using the dedicated bpc_scoring module
-            bpc_scores = compute_bpc_scores_for_vllm_outputs(
-                raw_outputs=raw_outputs,
-                inputs=inputs,
-                dataset_config=self.dataset_config,
-                tokeniser=self._tokeniser,
-            )
-            if bpc_scores is not None:
-                output.bpc_scores = bpc_scores
-        else:
-            output = GenerativeModelOutput(sequences=completions)
+    def score(self, inputs: dict) -> "GenerativeModelOutput":
+        """Compute BPC scores from prompt_logprobs.
 
+        Args:
+            inputs:
+                A batch of inputs with bpc_prompt column.
+
+        Returns:
+            Model output with BPC scores.
+        """
+        sampling_params = SamplingParams(
+            max_tokens=0,
+            prompt_logprobs=BPC_LOGPROBS,
+            logprobs=None,
+            temperature=GENERATION_KWARGS["temperature"],
+            top_p=GENERATION_KWARGS["top_p"],
+            top_k=int(GENERATION_KWARGS["top_k"]),
+            repetition_penalty=GENERATION_KWARGS["repetition_penalty"],
+            stop=[],  # Set in _run_vllm_core
+            structured_outputs=None,  # Set in _run_vllm_core
+        )
+        completions, raw_outputs = self._run_vllm_core(
+            inputs, "bpc_prompt", sampling_params
+        )
+
+        # Compute BPC scores
+        bpc_scores = compute_bpc_scores_for_vllm_outputs(
+            raw_outputs=raw_outputs,
+            inputs=inputs,
+            dataset_config=self.dataset_config,
+            tokeniser=self._tokeniser,
+        )
+        output = GenerativeModelOutput(sequences=completions)
+        if bpc_scores is not None:
+            output.bpc_scores = bpc_scores
         return output
 
     @classmethod
