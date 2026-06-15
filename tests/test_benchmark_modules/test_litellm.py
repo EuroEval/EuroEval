@@ -9,6 +9,7 @@ from litellm.types.utils import Choices
 from euroeval.benchmark_modules.litellm import LiteLLMModel
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.exceptions import InvalidModel
+from euroeval.model_loading import load_model
 
 
 class TestBPCGating:
@@ -24,8 +25,6 @@ class TestBPCGating:
         benchmark_config: BenchmarkConfig,
     ) -> None:
         """BPC scoring raises InvalidModel for LiteLLM backend."""
-        from euroeval.model_loading import load_model
-
         bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
         with pytest.raises(InvalidModel, match="vLLM backend"):
             load_model(

@@ -739,10 +739,9 @@ class BenchmarkConfig:
             Override for the vocabulary size of the model. If None, the value will be
             inferred automatically from the model.
         use_bits_per_character:
-            Whether to compute bits-per-character (BPC) on the ground-truth answer
-            rather than MCF accuracy. When True, the model is evaluated in a cloze
-            formulation where few-shot examples and the target use question + answer
-            format (not multiple-choice). Only supported for base decoder models.
+            Whether to compute bits-per-character (BPC) on the ground-truth answer.
+            For multiple-choice tasks, this uses cloze formulation with question +
+            full answer text. Only supported for base decoder models.
     """
 
     datasets: c.Sequence[DatasetConfig]

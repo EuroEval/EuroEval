@@ -427,22 +427,6 @@ class VLLMModel(HuggingFaceEncoderModel):
         else:
             few_shot_examples = list()
 
-        # For bits-per-character (BPC) scoring on MCQ tasks, build prompts directly
-        # instead of going through ``apply_prompt``: we want bare-question prompts
-        # ending with the answer marker (e.g. ``"Antwoord: "``) and few-shot examples
-        # whose ``{label}`` slot is the full answer text, not the gold letter.
-        cf_active = (
-            self.benchmark_config.use_bits_per_character
-            and task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-        )
-        if cf_active:
-            return cloze.prepare_cf_dataset(
-                dataset=dataset,
-                few_shot_examples=few_shot_examples,
-                prompt_template=self.dataset_config.prompt_template,
-                prompt_prefix=self.dataset_config.prompt_prefix,
-            )
-
         dataset["test"] = dataset["test"].map(
             partial(
                 apply_prompt,
@@ -452,6 +436,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 generative_type=self.generative_type,
                 always_populate_text_field=True,
                 tokeniser=self._tokeniser,
+                use_bits_per_character=self.benchmark_config.use_bits_per_character,
             ),
             batched=True,
             load_from_cache_file=False,

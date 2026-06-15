@@ -200,8 +200,8 @@ from .languages import get_all_languages
     default=False,
     show_default=True,
     help="Compute bits-per-character (BPC) on the ground-truth answer using cloze "
-    "formulation. Few-shot examples and targets use question + answer format (not "
-    "multiple-choice). Only supported for base decoder models with vLLM backend.",
+    "formulation. Few-shot examples and targets use question + full answer text. "
+    "Only supported for base decoder models with vLLM backend.",
 )
 @click.option(
     "--custom-datasets-file",

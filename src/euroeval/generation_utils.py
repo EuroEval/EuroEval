@@ -14,6 +14,11 @@ from .enums import GenerativeType, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import log_once
 from .string_utils import extract_multiple_choice_labels
+from .task_group_utils.cloze import (
+    build_cf_prompt,
+    letter_to_choice_text,
+    render_cf_few_shot,
+)
 from .tokenisation_utils import apply_chat_template
 
 if t.TYPE_CHECKING:
@@ -234,6 +239,7 @@ def apply_prompt(
     generative_type: GenerativeType | None,
     always_populate_text_field: bool,
     tokeniser: "PreTrainedTokenizer | None",
+    use_bits_per_character: bool = False,
 ) -> dict[str, t.Any]:
     """Apply prompt template to an example, potentially with few-shot examples.
 
@@ -253,6 +259,10 @@ def apply_prompt(
             the 'messages' field.
         tokeniser:
             The tokeniser to use for the model. If None, the tokeniser is not used.
+        use_bits_per_character:
+            Whether to use bits-per-character (BPC) scoring. For multiple-choice tasks,
+            this builds cloze-style prompts with bare questions and full answer text.
+            Defaults to False.
 
     Returns:
         The example with the few-shot examples applied.
@@ -322,31 +332,70 @@ def apply_prompt(
             ]
 
         case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-            few_shot_sections = [
-                create_prompt(
-                    text=example["text"].replace("\n", " ").strip(),
-                    label=str(example["label"]).replace("\n", " ").strip(),
-                    labels_str=dataset_config.get_labels_str(
-                        labels=extract_multiple_choice_labels(
-                            prompt=example["text"],
-                            candidate_labels=dataset_config.labels,
-                        )
-                    ),
-                )
-                for example in few_shot_examples
-            ]
-            new_sections = [
-                create_prompt(
-                    text=text.replace("\n", " ").strip(),
-                    label="",
-                    labels_str=dataset_config.get_labels_str(
-                        labels=extract_multiple_choice_labels(
-                            prompt=text, candidate_labels=dataset_config.labels
-                        )
-                    ),
-                )
-                for text in examples["text"]
-            ]
+            if use_bits_per_character:
+                # BPC scoring: cloze formulation with bare questions + answer text
+                few_shot_sections = [
+                    (
+                        render_cf_few_shot(
+                            bare_input=example["bare_input"],
+                            answer_text=letter_to_choice_text(
+                                letter=str(example["label"]),
+                                raw_choices=example["raw_choices"],
+                            ),
+                            prompt_template=dataset_config.prompt_template,
+                        ),
+                        "",  # Empty label, already in prompt
+                    )
+                    for example in few_shot_examples
+                ]
+                prompt_prefix = ""
+                if dataset_config.prompt_prefix:
+                    labels_str = dataset_config.get_labels_str()
+                    prompt_prefix = (
+                        dataset_config.prompt_prefix.format(labels_str=labels_str)
+                        + "\n\n"
+                    )
+                new_sections = [
+                    (
+                        build_cf_prompt(
+                            bare_input=examples["bare_input"][i],
+                            few_shot_rendered=[
+                                prompt for prompt, _ in few_shot_sections
+                            ],
+                            prompt_template=dataset_config.prompt_template,
+                            prompt_prefix=prompt_prefix,
+                        ),
+                        "",
+                    )
+                    for i in range(len(examples["text"]))
+                ]
+            else:
+                # Standard scoring: enumerated choices
+                few_shot_sections = [
+                    create_prompt(
+                        text=example["text"].replace("\n", " ").strip(),
+                        label=str(example["label"]).replace("\n", " ").strip(),
+                        labels_str=dataset_config.get_labels_str(
+                            labels=extract_multiple_choice_labels(
+                                prompt=example["text"],
+                                candidate_labels=dataset_config.labels,
+                            )
+                        ),
+                    )
+                    for example in few_shot_examples
+                ]
+                new_sections = [
+                    create_prompt(
+                        text=text.replace("\n", " ").strip(),
+                        label="",
+                        labels_str=dataset_config.get_labels_str(
+                            labels=extract_multiple_choice_labels(
+                                prompt=text, candidate_labels=dataset_config.labels
+                            )
+                        ),
+                    )
+                    for text in examples["text"]
+                ]
 
         case TaskGroup.TEXT_TO_TEXT:
             few_shot_sections = [

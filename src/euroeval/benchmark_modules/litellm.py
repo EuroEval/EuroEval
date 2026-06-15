@@ -1598,6 +1598,7 @@ class LiteLLMModel(BenchmarkModule):
                 generative_type=self.generative_type,
                 always_populate_text_field=False,
                 tokeniser=None,
+                use_bits_per_character=self.benchmark_config.use_bits_per_character,
             ),
             batched=True,
             load_from_cache_file=False,

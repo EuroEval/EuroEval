@@ -8,13 +8,10 @@ import pytest
 import torch
 from huggingface_hub.hf_api import HfApi
 
-from euroeval.benchmark_modules.hf import (
-    HuggingFaceEncoderModel,
-    get_dtype,
-    get_model_repo_info,
-)
+from euroeval.benchmark_modules.hf import get_dtype, get_model_repo_info
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.exceptions import InvalidModel
+from euroeval.model_loading import load_model
 
 
 @pytest.mark.parametrize(
@@ -107,8 +104,6 @@ class TestBPCGating:
         benchmark_config: BenchmarkConfig,
     ) -> None:
         """BPC scoring raises InvalidModel for HF encoder backend."""
-        from euroeval.model_loading import load_model
-
         bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
         with pytest.raises(InvalidModel, match="vLLM backend"):
             load_model(
