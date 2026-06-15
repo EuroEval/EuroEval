@@ -17,21 +17,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added `--use-bits-per-character`/`-bpc` flag for base decoder models to enable
   bits-per-character (BPC) scoring on all tasks. For multiple-choice tasks, this
   uses a cloze formulation with question + full answer text. BPC runs are excluded
-  from official leaderboards. Thanks to @tvosch for the contribution!
-
-### Changed
-
-- BPC scoring is only supported by the vLLM backend with base decoder models;
-  HF encoder and LiteLLM backends raise `InvalidModel`, and instruction-tuned
-  models raise `InvalidModel` in vLLM.
+  from official leaderboards. Only the vLLM backend supports BPC; HF encoder and
+  LiteLLM backends raise `InvalidModel`, as do instruction-tuned models in vLLM.
+  Thanks to @tvosch for the contribution!
 
 ### Fixed
 
-- Added `download()` method to `PipelineMetric` class
-  - Enables offline mode for metrics that use scikit-learn pipelines (e.g.,
-    European Values metric)
-  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and
-    caching the pipeline
 - Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
   - `get_hf_token` now catches `httpx.ConnectError` to gracefully degrade when token
     validation fails offline
