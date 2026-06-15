@@ -29,11 +29,7 @@ from .paths import (
 logger = logging.getLogger(__name__)
 
 # Required metadata fields that must be present in all processed results
-REQUIRED_METADATA_FIELDS = [
-    "commercially_licensed",
-    "open",
-    "trained_from_scratch",
-]
+REQUIRED_METADATA_FIELDS = ["commercially_licensed", "open", "trained_from_scratch"]
 
 BACKUP_PREFIX = "results_"
 BACKUP_SUFFIX = ".tar.gz"

@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 
 from huggingface_hub import HfApi
+
 from leaderboards.paths import PROCESSED_RESULTS_DIR
 
 logger = logging.getLogger(__name__)
@@ -15,11 +16,7 @@ logger = logging.getLogger(__name__)
 BACKUP_PROCESSED_DIR = Path("/tmp/processed_backup/EuroEval/results/processed")
 
 # Fields to restore from backup
-METADATA_FIELDS = [
-    "commercially_licensed",
-    "open",
-    "trained_from_scratch",
-]
+METADATA_FIELDS = ["commercially_licensed", "open", "trained_from_scratch"]
 
 
 def restore_metadata() -> None:
@@ -44,9 +41,7 @@ def restore_metadata() -> None:
                 record = json.loads(first_line)
                 model_id = record.get("model", "unknown")
                 # Extract only the metadata fields we need
-                metadata = {
-                    field: record.get(field) for field in METADATA_FIELDS
-                }
+                metadata = {field: record.get(field) for field in METADATA_FIELDS}
                 backup_metadata[model_id] = metadata
         except Exception as e:
             logger.warning(f"Failed to read {model_file.name}: {e}")
@@ -93,7 +88,7 @@ def restore_metadata() -> None:
             files_updated += 1
 
     logger.info(f"Updated {records_updated:,} records in {files_updated:,} files")
-    logger.info(f"Preserved model_url and other existing fields")
+    logger.info("Preserved model_url and other existing fields")
 
     # Sync back to HF bucket
     try:

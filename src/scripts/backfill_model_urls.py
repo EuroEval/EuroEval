@@ -6,9 +6,9 @@ import io
 import json
 import logging
 import tarfile
-from pathlib import Path
 
 from huggingface_hub import HfApi
+
 from leaderboards.link_generation import generate_model_url
 from leaderboards.paths import PROCESSED_RESULTS_DIR, RESULTS_PATH
 
