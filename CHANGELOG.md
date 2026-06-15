@@ -23,6 +23,16 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Added `download()` method to `PipelineMetric` class
+  - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
+    Values metric)
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and
+      caching the pipeline
+
+- Fixed `BenchmarkResult.from_dict()` failing to parse legacy results from Hugging Face
+  bucket where `results.raw` contained nested dicts (e.g. `{"test": [{"mcc": 0.5}]}`)
+  instead of flattened format (`{"test_mcc": 0.5}`)
+
 - Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
   - `get_hf_token` now catches `httpx.ConnectError` to gracefully degrade when token
     validation fails offline
