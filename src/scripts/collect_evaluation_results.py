@@ -30,13 +30,15 @@ import json
 import logging
 import subprocess
 import sys
+import tarfile
 import urllib.error
 from pathlib import Path
 
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
+from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
+from euroeval.data_models import BenchmarkResult
 from leaderboards.bucket_sync import create_backup
 from leaderboards.github_api import (
     LABEL,
@@ -76,6 +78,206 @@ def _model_id_to_filename(model_id: str) -> str:
     return model_id.replace("/", "_").replace(".", "_") + ".jsonl"
 
 
+def build_dedup_key(result: dict) -> tuple[str, str, str, str] | None:
+    """Build a deduplication key from a result record.
+
+    Key consists of:
+    - model_id: the model identifier
+    - dataset: the dataset name
+    - validation_split: whether eval used validation split
+    - few_shot: whether eval used few-shot prompting
+
+    Args:
+        result:
+            Parsed result dictionary (EEE or old format).
+
+    Returns:
+        Tuple key for deduplication, or None if required fields are missing.
+    """
+    try:
+        model_id = result.get("model")
+        dataset = result.get("dataset")
+        if not model_id or not dataset:
+            return None
+
+        validation_split = result.get("validation_split", False)
+        few_shot = result.get("few_shot", False)
+
+        return (
+            model_id,
+            dataset,
+            str(validation_split),
+            str(few_shot),
+        )
+    except Exception as e:
+        logger.debug("Failed to extract dedup key from result: %s", e)
+        return None
+
+
+def convert_to_old_format(result_dict: dict) -> dict:
+    """Convert an EEE-format result to the old format for backwards compatibility.
+
+    Args:
+        result_dict:
+            Result dictionary in EEE format.
+
+    Returns:
+        Result dictionary in old format.
+    """
+    try:
+        benchmark_result = BenchmarkResult.from_dict(result_dict)
+        return benchmark_result.to_eee_dict()
+    except Exception as e:
+        logger.debug("Failed to convert result to old format: %s", e)
+        return result_dict
+
+
+def list_all_raw_result_files() -> list[BucketFile]:
+    """List all .jsonl files in the raw-results bucket.
+
+    Returns:
+        List of BucketFile objects for .jsonl files.
+    """
+    api = HfApi()
+    bucket_id = HF_RAW_BUCKET.replace("hf://buckets/", "")
+    try:
+        files = api.list_files_in_bucket(bucket_id=bucket_id)
+        return [f for f in files if f.path.endswith(".jsonl")]
+    except Exception as e:
+        logger.error(f"Failed to list bucket files: {e}")
+        return []
+
+
+def load_existing_result_keys() -> set[tuple[str, str, str, str]]:
+    """Load existing results and build a set of dedup keys.
+
+    Loads results.tar.gz from RESULTS_PATH, extracts and parses
+    results/results.jsonl, and builds a set of dedup keys.
+
+    Returns:
+        Set of dedup keys (model_id, dataset, validation_split, few_shot).
+    """
+    existing_keys: set[tuple[str, str, str, str]] = set()
+
+    if not RESULTS_PATH.exists():
+        logger.info("No existing results.tar.gz found.")
+        return existing_keys
+
+    try:
+        with tarfile.open(RESULTS_PATH, "r:gz") as tar:
+            results_member = tar.getmember("results/results.jsonl")
+            results_file = tar.extractfile(results_member)
+            if results_file is None:
+                logger.warning("results/results.jsonl is empty in tar.gz.")
+                return existing_keys
+
+            for line in results_file:
+                line_str = line.decode("utf-8").strip()
+                if not line_str:
+                    continue
+                try:
+                    result = json.loads(line_str)
+                    key = build_dedup_key(result)
+                    if key is not None:
+                        existing_keys.add(key)
+                except json.JSONDecodeError:
+                    logger.debug("Skipping invalid JSON line in existing results.")
+    except Exception as e:
+        logger.warning(f"Failed to load existing results: {e}")
+
+    logger.info(f"Loaded {len(existing_keys)} existing result keys.")
+    return existing_keys
+
+
+def scan_bucket_for_results() -> list[str]:
+    """Scan the raw-results bucket for new results not yet in results.tar.gz.
+
+    Downloads all .jsonl files from the bucket, parses them, and collects
+    results that are not already in the existing results.
+
+    Returns:
+        List of new result JSON strings (empty if none found).
+    """
+    logger.info("Scanning bucket for new results...")
+
+    # Get all .jsonl files from the bucket
+    all_bucket_files = list_all_raw_result_files()
+    if not all_bucket_files:
+        logger.info("No .jsonl files found in bucket.")
+        return []
+
+    logger.info(f"Found {len(all_bucket_files)} .jsonl file(s) in bucket.")
+
+    # Download all files to RAW_RESULTS_DIR
+    api = HfApi()
+    bucket_id = HF_RAW_BUCKET.replace("hf://buckets/", "")
+
+    files_spec: list[tuple[str | BucketFile, str | Path]] = [
+        (bucket_file.path, RAW_RESULTS_DIR / bucket_file.path)
+        for bucket_file in all_bucket_files
+    ]
+
+    try:
+        api.download_bucket_files(
+            bucket_id=bucket_id,
+            files=files_spec,
+            raise_on_missing_files=False,
+        )
+        logger.info(
+            f"Downloaded {len(files_spec)} file(s) to {RAW_RESULTS_DIR}."
+        )
+    except Exception as e:
+        logger.error(f"Failed to download bucket files: {e}")
+        return []
+
+    # Load existing keys for deduplication
+    existing_keys = load_existing_result_keys()
+
+    # Parse all downloaded files and collect new results
+    new_results: list[str] = []
+    seen_keys: set[tuple[str, str, str, str]] = set()
+
+    for bucket_file in all_bucket_files:
+        local_path = RAW_RESULTS_DIR / bucket_file.path
+        if not local_path.exists():
+            logger.warning(f"Downloaded file not found: {local_path}")
+            continue
+
+        for line in local_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+
+            try:
+                result = json.loads(line)
+                key = build_dedup_key(result)
+
+                if key is None:
+                    logger.debug(f"Skipping result with no dedup key: {line[:80]}...")
+                    continue
+
+                if key in existing_keys or key in seen_keys:
+                    logger.debug(f"Skipping duplicate result: {key}")
+                    continue
+
+                # Convert to old format and add to new results
+                converted = convert_to_old_format(result)
+                new_results.append(json.dumps(converted, ensure_ascii=False))
+                seen_keys.add(key)
+
+            except json.JSONDecodeError as e:
+                logger.debug(f"Skipping invalid JSON line: {e}")
+
+    logger.info(f"Found {len(new_results)} new result(s) from bucket scan.")
+
+    if new_results:
+        # Write new results to new_results.jsonl
+        NEW_RESULTS_PATH.write_text("\n".join(new_results) + "\n", encoding="utf-8")
+        logger.info(f"Wrote {len(new_results)} new result(s) to {NEW_RESULTS_PATH}.")
+
+    return new_results
+
+
 def main() -> None:
     """Harvest finished evaluations and regenerate leaderboards.
 
@@ -106,6 +308,16 @@ def main() -> None:
         logger.info(f"#{number}: found {len(lines)} result line(s).")
         harvested.append((number, lines))
 
+    # If no issues found, switch to bucket-scan mode
+    bucket_scan_results: list[str] = []
+    if len(issues) == 0:
+        logger.info("No open issues found; using bucket-scan mode.")
+        bucket_scan_results = scan_bucket_for_results()
+        if not bucket_scan_results:
+            logger.info("No new results found in bucket scan.")
+            return
+        logger.info(f"Bucket-scan mode found {len(bucket_scan_results)} new result(s).")
+
     # Load any manually added results from new_results.jsonl
     manual_lines: list[str] = []
     if NEW_RESULTS_PATH.exists():
@@ -117,10 +329,11 @@ def main() -> None:
         if manual_lines:
             logger.info(f"Found {len(manual_lines)} manually added result line(s).")
 
-    # Combine harvested results with manual results
+    # Combine harvested results, bucket-scan results, and manual results
     all_lines: list[str] = []
     for _, lines in harvested:
         all_lines.extend(lines)
+    all_lines.extend(bucket_scan_results)
     all_lines.extend(manual_lines)
 
     if not all_lines:
@@ -128,9 +341,16 @@ def main() -> None:
         return
 
     NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
+
+    # Log which mode was used
+    if bucket_scan_results:
+        mode_str = f"bucket-scan ({len(bucket_scan_results)}), "
+    else:
+        mode_str = ""
+    harvested_count = sum(len(lines) for _, lines in harvested)
     logger.info(
         f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
-        f"({len(all_lines) - len(manual_lines)} harvested, {len(manual_lines)} manual)."
+        f"({mode_str}{harvested_count} harvested, {len(manual_lines)} manual)."
     )
 
     # Upload results to HF bucket BEFORE regenerating leaderboards
