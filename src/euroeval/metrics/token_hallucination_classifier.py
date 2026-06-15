@@ -56,9 +56,6 @@ def detect_hallucinations(
     tokenizer = transformer_detector.tokenizer
     max_length = transformer_detector.max_length
 
-    # Map each example's id to its context, so predictions can be aligned by id
-    # rather than by position. Predictions may be reordered or duplicated relative to
-    # the dataset due to caching and bootstrapping, so a positional zip is unsafe.
     id_to_context = dict(zip(dataset["id"], dataset["context"]))
 
     hallucinated_tokens = 0
@@ -70,7 +67,6 @@ def detect_hallucinations(
         predicted_text = prediction["prediction_text"]
 
         if _answer_too_long(
-            # TODO: Check if it is necessary to check if samples are too long.
             answer=predicted_text, tokenizer=tokenizer, max_length=max_length
         ):
             skipped_samples += 1
