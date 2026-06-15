@@ -160,9 +160,9 @@ class Benchmarker:
                 the tags of the model. Defaults to None.
             use_bits_per_character:
                 Whether to compute bits-per-character (BPC) on the ground-truth answer.
-                For multiple-choice tasks, this uses cloze formulation with question +
-                full answer text. Only supported for base decoder models. Defaults to
-                False.
+                For multiple-choice tasks, treats benchmark as text-to-text with bare
+                question → full answer text. Only supported for base decoder models.
+                Defaults to False.
             custom_datasets_file:
                 Path to a Python file defining custom datasets. Defaults to
                 'custom_datasets.py'.
@@ -486,9 +486,9 @@ class Benchmarker:
                 the benchmarker.
             use_bits_per_character:
                 Whether to compute bits-per-character (BPC) on the ground-truth answer.
-                For multiple-choice tasks, this uses cloze formulation with question +
-                full answer text. Only supported for base decoder models. Defaults to
-                the value specified when initialising the benchmarker.
+                For multiple-choice tasks, treats benchmark as text-to-text with bare
+                question → full answer text. Only supported for base decoder models.
+                Defaults to the value specified when initialising the benchmarker.
             attention_backend:
                 The attention backend to use for vLLM. Only relevant if the model is
                 generative. Defaults to the value specified when initialising the

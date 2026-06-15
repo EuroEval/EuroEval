@@ -148,22 +148,3 @@ class TaskGroup(AutoStrEnum):
     QUESTION_ANSWERING = auto()
     TEXT_TO_TEXT = auto()
     SPEED = auto()
-
-
-class ScoringMethod(AutoStrEnum):
-    """The formulation used to evaluate multiple-choice questions.
-
-    Attributes:
-        MCF:
-            Multiple Choice Formulation. The model is shown the question along with
-            every enumerated choice (``a.``/``b.``/``c.``/...) and we compare the
-            first-token logprobs of the label letters. This is the current default.
-        CF:
-            Cloze Formulation (OLMES-style). For each answer choice, we score the
-            full answer text as a continuation of a bare-question prompt using
-            ``sum(log P(answer_tokens | prompt))``, and select the highest-scoring
-            choice after length normalization.
-    """
-
-    MCF = auto()
-    CF = auto()

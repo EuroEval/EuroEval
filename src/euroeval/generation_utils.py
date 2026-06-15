@@ -257,7 +257,7 @@ def apply_prompt(
             The tokeniser to use for the model. If None, the tokeniser is not used.
         use_bits_per_character:
             Whether to use bits-per-character (BPC) scoring. For multiple-choice tasks,
-            this builds cloze-style prompts with bare questions and full answer text.
+            treats benchmark as text-to-text with bare question → full answer text.
             Defaults to False.
 
     Returns:

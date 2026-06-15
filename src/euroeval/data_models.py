@@ -740,8 +740,8 @@ class BenchmarkConfig:
             inferred automatically from the model.
         use_bits_per_character:
             Whether to compute bits-per-character (BPC) on the ground-truth answer.
-            For multiple-choice tasks, this uses cloze formulation with question +
-            full answer text. Only supported for base decoder models.
+            For multiple-choice tasks, treats benchmark as text-to-text with bare
+            question → full answer text. Only supported for base decoder models.
     """
 
     datasets: c.Sequence[DatasetConfig]

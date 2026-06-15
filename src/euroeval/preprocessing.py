@@ -36,8 +36,8 @@ def merge_input_and_choices(
     Returns:
         The example with a new ``"text"`` key containing the merged input and formatted
         choices. The original bare input text and raw choice list are also preserved
-        as ``"bare_input"`` and ``"raw_choices"`` to support alternative evaluation
-        modes (e.g. Cloze Formulation) that need them.
+        as ``"bare_input"`` and ``"raw_choices"`` to support BPC scoring that needs
+        bare questions without enumerated choices.
     """
     input_text = example[input_column].replace("\n", " ").strip()
     if isinstance(choices_column, list):

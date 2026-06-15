@@ -199,8 +199,8 @@ from .languages import get_all_languages
     is_flag=True,
     default=False,
     show_default=True,
-    help="Compute bits-per-character (BPC) on the ground-truth answer using cloze "
-    "formulation. Few-shot examples and targets use question + full answer text. "
+    help="Compute bits-per-character (BPC) on the ground-truth answer. For MCQ "
+    "tasks, treats benchmark as text-to-text: bare question → full answer. "
     "Only supported for base decoder models with vLLM backend.",
 )
 @click.option(
