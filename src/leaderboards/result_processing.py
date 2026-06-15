@@ -18,6 +18,7 @@ from huggingface_hub.hf_api import RepositoryNotFoundError
 from tqdm.auto import tqdm
 
 from .cache import Cache
+from .core_models import _plain_model_id
 from .link_generation import generate_anchor_tag
 from .paths import PROCESSED_RESULTS_DIR, RESULTS_PATH
 from .result_loading import load_raw_results
@@ -155,7 +156,9 @@ def process_results(
     processed_by_model: dict[str, list[dict]] = {}
     for record in processed_records:
         model_id = record.get("model", "unknown")
-        filename = model_id.replace("/", "_").replace(".", "_") + ".jsonl"
+        # Strip anchor tags before creating filename to avoid corrupting </a> into <_a>
+        plain_model_id = _plain_model_id(model_id)
+        filename = plain_model_id.replace("/", "_").replace(".", "_") + ".jsonl"
         processed_by_model.setdefault(filename, []).append(record)
 
     # Upload processed results to HF bucket as per-model files
