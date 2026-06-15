@@ -531,6 +531,100 @@ def apply_prompt(
     # Always add the final prompts without few-shot examples, too, for analysis
     examples["prompt"] = [new_prompt for new_prompt, _ in new_sections]
 
+    # Create bpc_prompt column for BPC scoring when requested
+    # bpc_prompt = prompt + answer text (for scoring with prompt_logprobs)
+    if use_bits_per_character:
+        bpc_prompts: list[str] = []
+        match dataset_config.task.task_group:
+            case TaskGroup.SEQUENCE_CLASSIFICATION:
+                for new_prompt, _ in new_sections:
+                    for label in examples["label"]:
+                        answer = dataset_config.labels[label]
+                        bpc_prompts.append(new_prompt + " " + answer)
+                        break
+            case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
+                if "raw_choices" in examples:
+                    for i, (new_prompt, _) in enumerate(new_sections):
+                        label = examples["label"][i]
+                        raw_choice = examples["raw_choices"][i]
+                        answer = letter_to_choice_text(
+                            letter=str(label).strip().lower(),
+                            raw_choices=raw_choice,
+                        )
+                        bpc_prompts.append(new_prompt + " " + answer)
+                else:
+                    bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+            case TaskGroup.TEXT_TO_TEXT:
+                if "target_text" in examples:
+                    for i, (new_prompt, _) in enumerate(new_sections):
+                        target = examples["target_text"][i]
+                        bpc_prompts.append(new_prompt + " " + target)
+                else:
+                    bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+            case TaskGroup.QUESTION_ANSWERING:
+                if "answers" in examples:
+                    for i, (new_prompt, _) in enumerate(new_sections):
+                        answer_dct = examples["answers"][i]
+                        answer = answer_dct["answers"]["text"][0]
+                        bpc_prompts.append(new_prompt + " " + answer)
+                else:
+                    bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+            case TaskGroup.TOKEN_CLASSIFICATION:
+                if "tokens" in examples and "labels" in examples:
+                    for i, (new_prompt, _) in enumerate(new_sections):
+                        tokens = examples["tokens"][i]
+                        example_labels = examples["labels"][i]
+                        # Group tokens by BIO tags
+                        tagged_entities: dict[str, list[str]] = {}
+                        current_entity: str | None = None
+                        current_tokens: list[str] = []
+
+                        for token, tag in zip(tokens, example_labels):
+                            tag_str = str(tag).lower()
+                            if tag_str == "o":
+                                if current_entity is not None:
+                                    tagged_entities.setdefault(
+                                        current_entity, []
+                                    ).append(" ".join(current_tokens))
+                                    current_entity = None
+                                    current_tokens = []
+                                continue
+
+                            if tag_str.startswith("b-"):
+                                if current_entity is not None:
+                                    tagged_entities.setdefault(
+                                        current_entity, []
+                                    ).append(" ".join(current_tokens))
+                                current_entity = tag_str[2:]
+                                current_tokens = [token]
+                            elif tag_str.startswith("i-") and current_entity:
+                                current_tokens.append(token)
+                            else:
+                                if current_entity is not None:
+                                    tagged_entities.setdefault(
+                                        current_entity, []
+                                    ).append(" ".join(current_tokens))
+                                current_entity = (
+                                    tag_str[2:]
+                                    if tag_str.startswith("i-")
+                                    else tag_str
+                                )
+                                current_tokens = [token]
+
+                        if current_entity is not None:
+                            tagged_entities.setdefault(
+                                current_entity, []
+                            ).append(" ".join(current_tokens))
+
+                        answer = str(tagged_entities)
+                        bpc_prompts.append(new_prompt + " " + answer)
+                else:
+                    bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+            case _:
+                bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+
+        examples["bpc_prompt"] = bpc_prompts
+
     return examples
 
 
