@@ -159,7 +159,8 @@ def _compute_bpc_scores(
         prompt_logprobs = raw_output.prompt_logprobs
 
         if prompt_logprobs is None:
-            bpc_scores.append(0.0)
+            # Missing prompt_logprobs = infinite BPC (worst possible score)
+            bpc_scores.append(float("inf"))
             continue
 
         # Tokenise the full prompt (including answer) to get all tokens
@@ -192,7 +193,8 @@ def _compute_bpc_scores(
             total_logprob = -sum(lp / math.log(2) for lp in answer_logprobs)
             bpc = total_logprob / max(1, len(answer))
         else:
-            bpc = 0.0
+            # No answer tokens extracted = infinite BPC (worst possible score)
+            bpc = float("inf")
 
         bpc_scores.append(bpc)
 

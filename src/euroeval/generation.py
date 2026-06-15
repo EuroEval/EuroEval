@@ -325,8 +325,12 @@ def generate_single_iteration(
             )
             return {"bpc": bpc_score, "failed_instances": failed_instances}  # ty: ignore[invalid-return-type]
         else:
-            log_once("BPC evaluation requested but no BPC scores were computed.")
-            return {"bpc": 0.0, "failed_instances": failed_instances}  # ty: ignore[invalid-return-type]
+            log_once(
+                "BPC evaluation requested but no BPC scores were computed. "
+                "Assigning infinite BPC (worst score).",
+                level=logging.WARNING,
+            )
+            return {"bpc": float("inf"), "failed_instances": failed_instances}  # ty: ignore[invalid-return-type]
     else:
         metrics_scores = model.compute_metrics(
             model_outputs_and_labels=(all_preds, ground_truth),

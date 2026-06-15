@@ -669,8 +669,8 @@ class TestComputeBPCFromPromptLogprobs:
         assert len(bpc_scores) == 1
         assert abs(bpc_scores[0] - (1.0 / 3)) < 0.01
 
-    def test_null_prompt_logprobs_returns_zero(self) -> None:
-        """Test that None prompt_logprobs returns 0.0 BPC."""
+    def test_null_prompt_logprobs_returns_inf(self) -> None:
+        """Test that None prompt_logprobs returns infinite BPC (worst score)."""
         tokeniser = MagicMock()
 
         mock_output = MagicMock()
@@ -685,7 +685,7 @@ class TestComputeBPCFromPromptLogprobs:
             tokeniser=tokeniser,
         )
 
-        assert bpc_scores == [0.0]
+        assert bpc_scores == [float("inf")]
 
     def test_multiple_samples(self) -> None:
         """Test BPC computation for multiple samples."""
