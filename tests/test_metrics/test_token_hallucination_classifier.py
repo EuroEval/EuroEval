@@ -14,6 +14,19 @@ from euroeval.metrics.token_hallucination_classifier import (
 )
 
 DETECTOR_PATH = "euroeval.metrics.token_hallucination_classifier.HallucinationDetector"
+HF_API_PATH = "euroeval.metrics.token_hallucination_classifier.HfApi"
+
+
+@pytest.fixture(autouse=True)
+def _mock_hf_api() -> t.Generator[None, None, None]:
+    """Patch ``HfApi`` so the hallucination model is always reported as existing.
+
+    Yields:
+        None.
+    """
+    with patch(HF_API_PATH) as mock_api:
+        mock_api.return_value.repo_exists.return_value = True
+        yield
 
 
 class DummyLanguage:
@@ -81,7 +94,9 @@ def make_dataset() -> t.Callable[[list[str]], Dataset]:
     """
 
     def _make(contexts: list[str]) -> Dataset:
-        return Dataset.from_list([{"context": ctx} for ctx in contexts])
+        return Dataset.from_list(
+            [{"id": idx, "context": ctx} for idx, ctx in enumerate(contexts)]
+        )
 
     return _make
 
@@ -139,7 +154,10 @@ def test_no_hallucinations_returns_zero(
     """Return 0.0 when the detector finds no hallucinated tokens."""
     detector = _make_detector(predict_return=[{"pred": 0}])
     dataset = make_dataset(["ctx1", "ctx2"])
-    predictions = [{"prediction_text": "answer1"}, {"prediction_text": "answer2"}]
+    predictions = [
+        {"id": 0, "prediction_text": "answer1"},
+        {"id": 1, "prediction_text": "answer2"},
+    ]
     with patch(DETECTOR_PATH, return_value=detector):
         result = metric(
             predictions=predictions,
@@ -161,8 +179,8 @@ def test_all_hallucinations_returns_one(
     detector = _make_detector(predict_return=[{"pred": 1}])
     dataset = make_dataset(["ctx1", "ctx2"])
     predictions = [
-        {"prediction_text": "hallucinated1"},
-        {"prediction_text": "hallucinated2"},
+        {"id": 0, "prediction_text": "hallucinated1"},
+        {"id": 1, "prediction_text": "hallucinated2"},
     ]
     with patch(DETECTOR_PATH, return_value=detector):
         result = metric(
@@ -193,7 +211,10 @@ def test_partial_hallucinations_returns_correct_rate(
 
     detector = _make_detector(predict_side_effect=predict_side_effect)
     dataset = make_dataset(["ctx1", "ctx2"])
-    predictions = [{"prediction_text": "hallucinated"}, {"prediction_text": "correct"}]
+    predictions = [
+        {"id": 0, "prediction_text": "hallucinated"},
+        {"id": 1, "prediction_text": "correct"},
+    ]
     with patch(DETECTOR_PATH, return_value=detector):
         result = metric(
             predictions=predictions,
@@ -214,7 +235,7 @@ def test_no_tokens_raises_invalid_benchmark(
     """Raise InvalidBenchmark when no tokens are found in the predictions."""
     detector = _make_detector(predict_return=[])
     dataset = make_dataset(["ctx1"])
-    predictions = [{"prediction_text": "answer"}]
+    predictions = [{"id": 0, "prediction_text": "answer"}]
     with patch(DETECTOR_PATH, return_value=detector):
         with pytest.raises(InvalidBenchmark):
             metric(
@@ -237,7 +258,7 @@ def test_detector_uses_correct_model_id(
     dataset = make_dataset(["ctx1"])
     with patch(DETECTOR_PATH, return_value=detector) as mock_cls:
         metric(
-            predictions=[{"prediction_text": "answer"}],
+            predictions=[{"id": 0, "prediction_text": "answer"}],
             references=[],
             dataset=dataset,
             dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]
