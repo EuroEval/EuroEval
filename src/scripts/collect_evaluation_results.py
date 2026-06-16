@@ -61,7 +61,7 @@ logger = logging.getLogger("collect_evaluation_results")
 REPO_ROOT = Path(__file__).resolve().parents[2]
 NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
 
-# Canonical HF bucket for storing raw results (public read access).
+# Canonical HF bucket for storing evaluation results (public read access).
 HF_RESULTS_BUCKET = "EuroEval/results"
 
 
@@ -109,7 +109,7 @@ def build_dedup_key(result: dict) -> tuple[str, str, str, str] | None:
         return None
 
 
-def list_all_raw_result_files() -> list[BucketFile]:
+def list_all_result_files() -> list[BucketFile]:
     """List all .jsonl files in the EuroEval/results bucket.
 
     Returns:
@@ -180,7 +180,7 @@ def scan_bucket_for_results() -> list[str]:
     logger.info("Scanning bucket for new results...")
 
     # Get all .jsonl files from the bucket
-    all_bucket_files = list_all_raw_result_files()
+    all_bucket_files = list_all_result_files()
     if not all_bucket_files:
         logger.info("No .jsonl files found in bucket.")
         return []
@@ -356,6 +356,7 @@ def main(force: bool) -> None:
             # load_raw_results() appends new_results.jsonl locally before deleting it.
             # But the bucket needs to be synced on the next successful run.
 
+    # Regenerate leaderboards from merged results
     if not regenerate_leaderboards(force=force):
         logger.error(
             "Aborting: not closing issues because leaderboard regeneration failed."
