@@ -805,8 +805,8 @@ def _get_few_shot(record: dict) -> bool:
     """
     # EEE format: eval_library.additional_details.few_shot
     if "eval_library" in record:
-        few_shot = record.get("eval_library", {}).get("additional_details", {}).get(
-            "few_shot"
+        few_shot = (
+            record.get("eval_library", {}).get("additional_details", {}).get("few_shot")
         )
         if few_shot is not None:
             if isinstance(few_shot, bool):
@@ -861,10 +861,13 @@ def record_is_valid(
 
     # Do not allow few-shot evaluation for API models
     few_shot = _get_few_shot(record)
-    if any(
-        re.fullmatch(pattern=pattern, string=inner_model_id)
-        for pattern in api_model_patterns
-    ) and few_shot:
+    if (
+        any(
+            re.fullmatch(pattern=pattern, string=inner_model_id)
+            for pattern in api_model_patterns
+        )
+        and few_shot
+    ):
         return False
 
     # Otherwise, the record is valid
