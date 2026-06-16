@@ -14,6 +14,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
     Values metric)
   - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
     the pipeline
+- Added metadata for GPT-5.5.
 
 ### Fixed
 
@@ -22,11 +23,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
     Values metric)
   - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and
       caching the pipeline
-
 - Fixed `BenchmarkResult.from_dict()` failing to parse legacy results from Hugging Face
   bucket where `results.raw` contained nested dicts (e.g. `{"test": [{"mcc": 0.5}]}`)
   instead of flattened format (`{"test_mcc": 0.5}`)
-
 - Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
   - `get_hf_token` now catches `httpx.ConnectError` to gracefully degrade when token
     validation fails offline
@@ -39,6 +38,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   snapshots
 - Fixed orthogonal benchmark failures (e.g. `european-values`) being counted as
   "errored" instead of "skipped" in the summary
+- Fixed an error with GPT-5.5 regarding it's requirement to use temperature 1.0. The
+  error was due to OpenAI having changed their error messages.
 
 ## [v17.4.0] - 2026-06-12
 

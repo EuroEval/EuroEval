@@ -91,7 +91,7 @@ if t.TYPE_CHECKING:
 
 VOCAB_SIZE_MAPPING = {
     # OpenAI models
-    r"(openai/)?gpt-5\.[234].*": -1,
+    r"(openai/)?gpt-5\..*": -1,
     r"(openai/)?gpt-5-.*": 100_256,
     r"(openai/)?gpt-4-(32k)?(-[0-9]{4})?": 100_256,
     r"(openai/)?gpt-4-[0-9]{4}-preview": 100_256,
@@ -114,8 +114,8 @@ VOCAB_SIZE_MAPPING = {
 
 MODEL_MAX_LENGTH_MAPPING = {
     # OpenAI models
-    r"(openai/)?gpt-5\.4-(mini|nano)-.*": 400_000,
-    r"(openai/)?gpt-5\.4-.*": 1_050_000,
+    r"(openai/)?gpt-5\.4-(mini|nano).*": 400_000,
+    r"(openai/)?gpt-5\.[45].*": 1_050_000,
     r"(openai/)?gpt-5\.2.*": 400_000,
     r"(openai/)?gpt-5-.*": 272_000,
     r"(openai/)?gpt-4(-[0-9]{4})?": 8_191,
@@ -528,6 +528,8 @@ class LiteLLMModel(BenchmarkModule):
         temperature_must_be_one_messages = [
             "`temperature` may only be set to 1",
             "'temperature' does not support 0.0 with this model. Only the default "
+            "(1) value is supported",
+            "'temperature' does not support 0 with this model. Only the default "
             "(1) value is supported",
             "Only temperature=1 is supported",
         ]
