@@ -130,6 +130,9 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"(openai/)?o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
     r"(openai/)?gpt-4\.1.*": 1_047_576,
     # Anthropic models
+    r"(anthropic/)?claude-opus-4-8": 1_000_000,
+    r"(anthropic/)?claude-sonnet-4-6": 1_000_000,
+    r"(anthropic/)?claude-haiku-4-5": 200_000,
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
     r"(anthropic/)?claude-(opus|sonnet|haiku)-[1-9](-[1-9])?-[0-9]{8}": 200_000,
     # Gemini models
@@ -524,6 +527,7 @@ class LiteLLMModel(BenchmarkModule):
             "'temperature' is not supported with this model.",
             "temperature is not supported with this model",
             r"does not support parameters: \[.*'temperature'.*\]",
+            "`temperature` is deprecated for this model.",
         ]
         temperature_must_be_one_messages = [
             "`temperature` may only be set to 1",

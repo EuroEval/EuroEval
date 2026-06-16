@@ -14,7 +14,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
     Values metric)
   - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
     the pipeline
-- Added metadata for GPT-5.5.
+- Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
 - Added the `google-cloud-aiplatform` dependency, as it's required to run
   Gemini-3.1-pro.
 
@@ -42,6 +42,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   "errored" instead of "skipped" in the summary
 - Fixed an error with GPT-5.5 regarding it's requirement to use temperature 1.0. The
   error was due to OpenAI having changed their error messages.
+- Fixed an error with Claude Opus 4.8 as it disallows changing the temperature argument.
+  The error was due to Anthropic having changed their error messages.
 
 ## [v17.4.0] - 2026-06-12
 
