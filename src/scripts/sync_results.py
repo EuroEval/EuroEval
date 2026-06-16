@@ -19,7 +19,11 @@ RESULTS_FILE = Path("euroeval_benchmark_results.jsonl")
 
 
 def main() -> None:
-    """Main entry point."""
+    """Main entry point.
+
+    Syncs results from the Hugging Face bucket, merges them into a single
+    JSONL file, and uploads any new local results back to the bucket.
+    """
     logging.basicConfig(level=logging.INFO)
     sync_bucket()
 
@@ -36,10 +40,8 @@ def merge_results() -> int:
     Deduplicates by (model_id, dataset, validation_split, few_shot) key,
     which uniquely identifies an evaluation configuration.
 
-    Local results are preserved; bucket results fill in gaps.
-
-    Reuses similar logic to _rebuild_results_tar_gz(), but outputs to
-    euroeval_benchmark_results.jsonl instead of results.tar.gz.
+    Existing local results are preserved; new results from the unified
+    results directory are merged in.
 
     Returns:
         Number of unique results written.
