@@ -75,7 +75,7 @@ def _model_id_to_filename(model_id: str) -> str:
     Returns:
         A safe filename with slashes and dots replaced by underscores.
     """
-    return model_id.replace("/", "_").replace(".", "_") + ".jsonl"
+    return model_id.replace("/", "_") + ".jsonl"
 
 
 def build_dedup_key(result: dict) -> tuple[str, str, str, str] | None:

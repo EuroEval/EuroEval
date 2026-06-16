@@ -272,12 +272,16 @@ def process_results(
     ]
 
     # Group processed records by model for bucket upload
+    # Match raw bucket naming convention: replace slashes only, preserve dots
     processed_by_model: dict[str, list[dict]] = {}
     for record in processed_records:
-        model_id = record.get("model", "unknown")
-        # Strip anchor tags before creating filename to avoid corrupting </a> into <_a>
+        # EEE format has model_info.name, old format has model at top level
+        model_id = record.get("model_info", {}).get("name") or record.get(
+            "model", "unknown"
+        )
+        # Strip anchor tags before creating filename
         model_id_str = plain_model_id(model_id)
-        filename = model_id_str.replace("/", "_").replace(".", "_") + ".jsonl"
+        filename = model_id_str.replace("/", "_") + ".jsonl"
         processed_by_model.setdefault(filename, []).append(record)
 
     # Upload processed results to HF bucket as per-model files
@@ -422,11 +426,24 @@ def fix_metadata(record: dict[str, t.Any], cache: Cache) -> dict[str, t.Any] | N
     # Copy the record to avoid modifying the original
     record = deepcopy(record)
 
-    if record["task"] == "question-answering":
-        record["task"] = "reading-comprehension"
-    if record["task"] == "european-values":
-        record["validation_split"] = None
-        record["few_shot"] = None
+    # Get task supporting both EEE and old formats
+    task = get_task(record)
+    if task == "question-answering":
+        # Update in appropriate location based on format
+        if "eval_library" in record:
+            record["eval_library"]["additional_details"]["task"] = (
+                "reading-comprehension"
+            )
+        else:
+            record["task"] = "reading-comprehension"
+    if task == "european-values":
+        # For EEE format, store in eval_library.additional_details
+        if "eval_library" in record:
+            record["eval_library"]["additional_details"]["validation_split"] = None
+            record["eval_library"]["additional_details"]["few_shot"] = None
+        else:
+            record["validation_split"] = None
+            record["few_shot"] = None
 
     # Handle anchor tag assignment - need to modify the record in place
     model_name = get_model_name(record)
@@ -756,6 +773,50 @@ def is_open(record: dict, cache: Cache) -> bool:
     return True
 
 
+def _get_version(record: dict) -> str | None:
+    """Get version from record, supporting both EEE and old formats.
+
+    Args:
+        record:
+            A result record in either EEE or old EuroEval format.
+
+    Returns:
+        The version string with .dev suffix stripped, or None if not found.
+    """
+    # EEE format: eval_library.version
+    if "eval_library" in record:
+        version = record.get("eval_library", {}).get("version")
+        # Strip .dev suffix for comparison
+        if version:
+            return re.sub(r"\.dev\d+", "", version)
+    # Old format: euroeval_version
+    return record.get("euroeval_version")
+
+
+def _get_few_shot(record: dict) -> bool:
+    """Get few_shot value from record, supporting both EEE and old formats.
+
+    Args:
+        record:
+            A result record in either EEE or old EuroEval format.
+
+    Returns:
+        The few_shot boolean value, defaulting to True.
+    """
+    # EEE format: eval_library.additional_details.few_shot
+    if "eval_library" in record:
+        few_shot = record.get("eval_library", {}).get("additional_details", {}).get(
+            "few_shot"
+        )
+        if few_shot is not None:
+            if isinstance(few_shot, bool):
+                return few_shot
+            if isinstance(few_shot, str):
+                return few_shot.lower() == "true"
+    # Old format: top-level few_shot
+    return record.get("few_shot", True)
+
+
 def record_is_valid(
     record: dict,
     min_version: str,
@@ -787,11 +848,8 @@ def record_is_valid(
     )
 
     # Remove records with disallowed EuroEval versions
-    if (
-        "euroeval_version" not in record
-        or record["euroeval_version"] in banned_versions
-        or record["euroeval_version"] < min_version
-    ):
+    version = _get_version(record)
+    if version is None or version in banned_versions or version < min_version:
         return False
 
     # Remove banned models
@@ -802,10 +860,11 @@ def record_is_valid(
         return False
 
     # Do not allow few-shot evaluation for API models
+    few_shot = _get_few_shot(record)
     if any(
         re.fullmatch(pattern=pattern, string=inner_model_id)
         for pattern in api_model_patterns
-    ) and record.get("few_shot", True):
+    ) and few_shot:
         return False
 
     # Otherwise, the record is valid
