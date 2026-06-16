@@ -45,6 +45,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed an error with Claude Opus 4.8 as it disallows changing the temperature argument.
   The error was due to Anthropic having changed their error messages.
 
+### Security
+
+- Raised the minimum `litellm` version to 1.83.7 due to a vulnerability.
+- Raised the minimum `ray` version to 2.55.0 due to a vulnerability.
+
 ## [v17.4.0] - 2026-06-12
 
 ### Changed

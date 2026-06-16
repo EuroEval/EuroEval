@@ -1100,7 +1100,7 @@ requires-dist = [
     { name = "langdetect", specifier = ">=1.0.9" },
     { name = "levenshtein", specifier = ">=0.24.0" },
     { name = "lingua-language-detector", specifier = ">=2.2.0" },
-    { name = "litellm", specifier = ">=1.75.6,!=1.82.7,!=1.82.8" },
+    { name = "litellm", specifier = ">=1.83.7" },
     { name = "mistral-common", extras = ["soundfile"] },
     { name = "more-itertools", specifier = ">=10.5.0" },
     { name = "nltk", specifier = ">=3.9.1" },
@@ -1114,8 +1114,8 @@ requires-dist = [
     { name = "pyinfer", specifier = ">=0.0.3" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "pyyaml", specifier = ">=6.0" },
-    { name = "ray", marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=2.53.0" },
-    { name = "ray", marker = "sys_platform == 'linux' and extra == 'generative'", specifier = ">=2.53.0" },
+    { name = "ray", marker = "sys_platform == 'linux' and extra == 'all'", specifier = ">=2.55.0" },
+    { name = "ray", marker = "sys_platform == 'linux' and extra == 'generative'", specifier = ">=2.55.0" },
     { name = "rouge-score", specifier = ">=0.1.2" },
     { name = "sacrebleu", specifier = ">=2.5.1" },
     { name = "sacremoses", specifier = ">=0.1.1" },
@@ -2420,7 +2420,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.83.0"
+version = "1.89.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
@@ -2437,9 +2437,9 @@ dependencies = [
     { name = "tiktoken", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "tokenizers", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/22/92/6ce9737554994ca8e536e5f4f6a87cc7c4774b656c9eb9add071caf7d54b/litellm-1.83.0.tar.gz", hash = "sha256:860bebc76c4bb27b4cf90b4a77acd66dba25aced37e3db98750de8a1766bfb7a", size = 17333062, upload-time = "2026-03-31T05:08:25.331Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e8/1b/de398e6cef46d4cbc4395c895330f30eab05439bf6d0c5c53b0203661eeb/litellm-1.89.1.tar.gz", hash = "sha256:eb9292f90afe46dcce4bfef6bbeaa54494945813763e1c0917f4e9a1c584c1a4", size = 14071586, upload-time = "2026-06-16T03:12:52.997Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/19/2c/a670cc050fcd6f45c6199eb99e259c73aea92edba8d5c2fc1b3686d36217/litellm-1.83.0-py3-none-any.whl", hash = "sha256:88c536d339248f3987571493015784671ba3f193a328e1ea6780dbebaa2094a8", size = 15610306, upload-time = "2026-03-31T05:08:21.987Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/24/81f03088876a13b628fdbaf746ee746e1dff127d63f339ef72f1a3801c91/litellm-1.89.1-py3-none-any.whl", hash = "sha256:a52a67625d89cb1787ef48c4b3c1ab9c2574ea304f56900bc631844297a13bd4", size = 15484855, upload-time = "2026-06-16T03:12:49.457Z" },
 ]
 
 [[package]]
@@ -4753,7 +4753,7 @@ wheels = [
 
 [[package]]
 name = "ray"
-version = "2.54.1"
+version = "2.55.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click", marker = "sys_platform != 'darwin'" },
@@ -4766,10 +4766,12 @@ dependencies = [
     { name = "requests", marker = "sys_platform != 'darwin'" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/6f/bf1b7a6d4424c19add99eb17398c7522473502193540b679f8b94fbf2d72/ray-2.54.1-cp312-cp312-manylinux2014_aarch64.whl", hash = "sha256:cd452b61ae2e0daf9271f5a554614397429cc2731681bae10fe72316dadc2749", size = 71831684, upload-time = "2026-03-25T22:41:01.356Z" },
-    { url = "https://files.pythonhosted.org/packages/8a/1f/b33d5006823f8c1c8760887cf1190194f4b06de858b3d17e37bd930a6a62/ray-2.54.1-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:4c6f7e23dda62a32f94083141c3f97e9c4246e3ae4ae2bc488bcd8fd0311f54a", size = 72688748, upload-time = "2026-03-25T22:41:07.43Z" },
-    { url = "https://files.pythonhosted.org/packages/c8/5d/fe0e8ac47f6b362c81f391d7f8d2a6858d0bafcc2c37631dc5cc04a16545/ray-2.54.1-cp313-cp313-manylinux2014_aarch64.whl", hash = "sha256:2766f0230806480c38a9a94502087f1d4aea919f38521a28781690613b0290a4", size = 71738623, upload-time = "2026-03-25T22:41:23.898Z" },
-    { url = "https://files.pythonhosted.org/packages/1b/22/48008a626e719baee2012080b960687cc6417b572b363c1c29fe23d119c3/ray-2.54.1-cp313-cp313-manylinux2014_x86_64.whl", hash = "sha256:0c3ae2943176e7b239c78b825a5b2bf4135d90280083a0e19c0a75a5db4d836f", size = 72603355, upload-time = "2026-03-25T22:41:29.802Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/13/0db535102d0256b350ca116d8987588aca1a1f9ebb4638e1e1ff88bbcef8/ray-2.55.1-cp312-cp312-manylinux2014_aarch64.whl", hash = "sha256:26541f69bb55607ef8335baac75b2ed12ff2ce02d56313219b29eda003039221", size = 72910802, upload-time = "2026-04-22T20:10:04.382Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/f8/fffadf3f4285eebd460e4d7f2ed1c0cd641ed89613c3f49eb881ee9fa7e2/ray-2.55.1-cp312-cp312-manylinux2014_x86_64.whl", hash = "sha256:263705f6bab29e7622a94f82da25fd7f9cead76cdf89a07aab28f79cdf8f9d95", size = 73765203, upload-time = "2026-04-22T20:10:10.495Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/13/87deecc090c672e45a0cf6f5eef511de448b93f37ef18fd10eb8e8557a0d/ray-2.55.1-cp313-cp313-manylinux2014_aarch64.whl", hash = "sha256:b415d590e062f248907e0fe42994943f11726b7178fcf4b1cf5546721fb1a5f8", size = 72818676, upload-time = "2026-04-22T20:10:26.705Z" },
+    { url = "https://files.pythonhosted.org/packages/71/d7/fc95d3b8824c62105c64aa1b59c59600b581f608d78a2af753e010936dc9/ray-2.55.1-cp313-cp313-manylinux2014_x86_64.whl", hash = "sha256:1380e043eb57cde69b7e9199c6f2558ceeb8f0fc41c97d1d5e50ea042115f302", size = 73678908, upload-time = "2026-04-22T20:10:32.795Z" },
+    { url = "https://files.pythonhosted.org/packages/94/62/607a8859520ce350861425f11f8e15d66c15ee33e6aac812f9e2889b5df4/ray-2.55.1-cp314-cp314-manylinux2014_aarch64.whl", hash = "sha256:4e618d61e1b14b6fde9a586151f3fd9d435b0b85048b997bcaa7f4a533747b2b", size = 72814044, upload-time = "2026-04-22T20:10:46.985Z" },
+    { url = "https://files.pythonhosted.org/packages/04/5a/0699bef04a72d7dc54462960d07ef7a19cd8b1e09979880aba2b6d13cca2/ray-2.55.1-cp314-cp314-manylinux2014_x86_64.whl", hash = "sha256:156ed3e72ad95b645d2006cd71a8dddbcc89b56bfc00027f6225adf78bd9cb74", size = 73644244, upload-time = "2026-04-22T20:10:52.973Z" },
 ]
 
 [[package]]
