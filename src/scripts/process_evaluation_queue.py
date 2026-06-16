@@ -723,12 +723,8 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     try:
         logger.info(f"Uploading results to {HF_RESULTS_BUCKET}...")
         api = HfApi()
-        bucket_id = HF_RESULTS_BUCKET
-        api.upload_file(
-            path_or_fileobj=str(model_file),
-            path_in_repo=filename,
-            repo_id=bucket_id,
-            repo_type="bucket",
+        api.sync_bucket(
+            source=str(RESULTS_CACHE_DIR), dest=f"hf://buckets/{HF_RESULTS_BUCKET}/"
         )
         logger.info(
             f"Uploaded {len(new_lines)} new result lines for {model_id!r} to HF bucket."
