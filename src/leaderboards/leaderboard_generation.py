@@ -547,8 +547,8 @@ def generate_dataframe(
 
         # Format the ordinal rank column with a "-" sentinel for NaN. The
         # "mean_rank_score" column and any per-language columns are already
-        # formatted as "score +/- margin" strings (or "-") upstream, so keep
-        # those values as-is, replacing anything else with "-".
+        # formatted upstream as a score with a plus-minus margin (or "-"), so
+        # keep those values as-is, replacing anything else with "-".
         df["rank"] = [
             str(int(value))
             if isinstance(value, (int, float)) and math.isfinite(value)

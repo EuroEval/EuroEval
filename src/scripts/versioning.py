@@ -50,7 +50,7 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
 
     # Get current changelog and ensure that it has an [Unreleased] entry
     changelog_path = Path("CHANGELOG.md")
-    changelog = changelog_path.read_text()
+    changelog = changelog_path.read_text(encoding="utf-8")
     if "[Unreleased]" not in changelog:
         raise RuntimeError("No [Unreleased] entry in CHANGELOG.md.")
 
@@ -59,15 +59,15 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     new_changelog = re.sub(
         r"\[Unreleased\].*", f"[Unreleased]\n\n## [v{version}] - {today}", changelog
     )
-    changelog_path.write_text(new_changelog)
+    changelog_path.write_text(new_changelog, encoding="utf-8")
 
     # Update the version in the `pyproject.toml` file
     pyproject_path = Path("pyproject.toml")
-    pyproject = pyproject_path.read_text()
+    pyproject = pyproject_path.read_text(encoding="utf-8")
     pyproject = re.sub(
         r'version = "[^"]+"', f'version = "{version}"', pyproject, count=1
     )
-    pyproject_path.write_text(pyproject)
+    pyproject_path.write_text(pyproject, encoding="utf-8")
 
     # Install newest project. check=True so a failed step aborts before we tag
     # and push a release.
@@ -95,7 +95,8 @@ def get_current_version() -> tuple[int, int, int]:
             If no version can be found in the `pyproject.toml` file.
     """
     version_candidates = re.search(
-        r'(?<=version = ")[^"]+(?=")', Path("pyproject.toml").read_text()
+        r'(?<=version = ")[^"]+(?=")',
+        Path("pyproject.toml").read_text(encoding="utf-8"),
     )
     if version_candidates is None:
         raise RuntimeError("No version found in pyproject.toml.")
