@@ -113,17 +113,30 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     model_id = get_model_name(record)
     all_model_notes: list[list[str]] = [[]]
 
-    match record.get("few_shot", True):
-        case False:
-            all_model_notes = [note + ["zero-shot"] for note in all_model_notes]
-        case None:
-            all_model_notes += [note + ["zero-shot"] for note in all_model_notes]
+    # Build combined variant notes for zero-shot and validation split
+    # Use _get_bool_field to handle both EEE and old formats
+    few_shot = _get_bool_field(record, "few_shot", True)
+    validation_split = _get_bool_field(record, "validation_split", False)
 
-    match record.get("validation_split", False):
-        case True:
-            all_model_notes = [note + ["val"] for note in all_model_notes]
-        case None:
-            all_model_notes += [note + ["val"] for note in all_model_notes]
+    # Determine which notes to add
+    notes_to_add: list[list[str]] = [[]]
+    if few_shot is False:
+        notes_to_add = [["zero-shot"]]
+    elif few_shot is None:
+        notes_to_add = [[], ["zero-shot"]]
+
+    # Expand with validation split variants
+    expanded_notes: list[list[str]] = []
+    for base_note in notes_to_add:
+        if validation_split is True:
+            expanded_notes.append(base_note + ["val"])
+        elif validation_split is None:
+            expanded_notes.append(base_note)
+            expanded_notes.append(base_note + ["val"])
+        else:
+            expanded_notes.append(base_note)
+
+    all_model_notes = expanded_notes
 
     model_id_candidates = [
         f"{re.sub(r'</a>$', '', model_id)} ({', '.join(note)})</a>"
@@ -251,19 +264,27 @@ def drop_val_duplicates(
 ) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
     """Drop validation-split variants when the full test-split variant exists.
 
+    When a model has been evaluated on both the validation and full test split,
+    only show the test-split row if it covers at least as many datasets.
+    Otherwise keep the validation-split version (which may have more data).
+
     Args:
         model_results:
             The grouped model results, keyed by model ID.
 
     Returns:
         The model results with ``(val)``-suffixed entries removed whenever the
-        corresponding full test-split entry is also present.
+        corresponding full test-split entry is also present and covers at least
+        as many datasets.
     """
     filtered: dict[str, dict[str, list[tuple[list[float], float, float]]]] = {}
     for model_id, results in model_results.items():
         equivalent = strip_val_suffix(model_id=model_id)
         if equivalent is not None and equivalent in model_results:
-            continue
+            # Only drop the (val) version if the test-split version has >= datasets
+            equivalent_count = len(model_results[equivalent])
+            if equivalent_count >= len(results):
+                continue
         filtered[model_id] = results
     return filtered
 

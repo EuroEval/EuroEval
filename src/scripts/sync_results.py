@@ -1,6 +1,6 @@
 """Sync benchmark results bidirectionally with the Hugging Face bucket.
 
-Downloads from the raw-results bucket, merges all results into
+Downloads from the unified results bucket, merges all results into
 euroeval_benchmark_results.jsonl, then uploads new local results back
 to the bucket.
 """
@@ -11,7 +11,7 @@ from pathlib import Path
 
 from euroeval.data_models import BenchmarkResult
 from leaderboards.bucket_sync import sync_bucket, upload_results_to_bucket
-from leaderboards.paths import RAW_RESULTS_DIR
+from leaderboards.paths import RESULTS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,11 @@ RESULTS_FILE = Path("euroeval_benchmark_results.jsonl")
 
 
 def main() -> None:
-    """Main entry point."""
+    """Main entry point.
+
+    Syncs results from the Hugging Face bucket, merges them into a single
+    JSONL file, and uploads any new local results back to the bucket.
+    """
     logging.basicConfig(level=logging.INFO)
     sync_bucket()
 
@@ -36,10 +40,8 @@ def merge_results() -> int:
     Deduplicates by (model_id, dataset, validation_split, few_shot) key,
     which uniquely identifies an evaluation configuration.
 
-    Local results are preserved; bucket results fill in gaps.
-
-    Reuses similar logic to _rebuild_results_tar_gz(), but outputs to
-    euroeval_benchmark_results.jsonl instead of results.tar.gz.
+    Existing local results are preserved; new results from the unified
+    results directory are merged in.
 
     Returns:
         Number of unique results written.
@@ -59,11 +61,11 @@ def merge_results() -> int:
                         existing[key] = line.strip()
         logger.info("Found %s existing results", f"{len(existing):,}")
 
-    # Load results from raw bucket
-    if RAW_RESULTS_DIR.exists():
-        logger.info("Loading results from %s...", RAW_RESULTS_DIR)
+    # Load results from unified results directory
+    if RESULTS_DIR.exists():
+        logger.info("Loading results from %s...", RESULTS_DIR)
         bucket_count = 0
-        for jsonl_file in sorted(RAW_RESULTS_DIR.glob("*.jsonl")):
+        for jsonl_file in sorted(RESULTS_DIR.glob("*.jsonl")):
             with jsonl_file.open() as f:
                 for line in f:
                     if line.strip():

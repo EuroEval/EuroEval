@@ -109,9 +109,8 @@ ucloud*_results.jsonl
 .hf-mount/
 *.hf-mount/
 
-# Persistent results directories (HF bucket sync points)
-results/raw/
-results/processed/
+# Results directory (single location for all evaluation results, HF bucket sync point)
+results/
 
 
 # Leaderboard CSVs (regenerated build artifact; bundled by Vite at build time).

@@ -48,7 +48,7 @@ from leaderboards.github_api import (
     comment_on_issue,
     gh_request,
 )
-from leaderboards.paths import RAW_RESULTS_DIR, RESULTS_PATH
+from leaderboards.paths import RESULTS_DIR, RESULTS_PATH
 from leaderboards.queue_parsing import extract_model_id
 
 load_dotenv()
@@ -61,8 +61,8 @@ logger = logging.getLogger("collect_evaluation_results")
 REPO_ROOT = Path(__file__).resolve().parents[2]
 NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
 
-# Canonical HF bucket for storing raw results (public read access).
-HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
+# Canonical HF bucket for storing evaluation results (public read access).
+HF_RESULTS_BUCKET = "EuroEval/results"
 
 
 def _model_id_to_filename(model_id: str) -> str:
@@ -109,14 +109,14 @@ def build_dedup_key(result: dict) -> tuple[str, str, str, str] | None:
         return None
 
 
-def list_all_raw_result_files() -> list[BucketFile]:
-    """List all .jsonl files in the raw-results bucket.
+def list_all_result_files() -> list[BucketFile]:
+    """List all .jsonl files in the EuroEval/results bucket.
 
     Returns:
         List of BucketFile objects for .jsonl files.
     """
     api = HfApi()
-    bucket_id = HF_RAW_BUCKET.replace("hf://buckets/", "")
+    bucket_id = HF_RESULTS_BUCKET
     try:
         files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
         return [
@@ -169,7 +169,7 @@ def load_existing_result_keys() -> set[tuple[str, str, str, str]]:
 
 
 def scan_bucket_for_results() -> list[str]:
-    """Scan the raw-results bucket for new results not yet in results.tar.gz.
+    """Scan the EuroEval/results bucket for new results not yet in results.tar.gz.
 
     Downloads all .jsonl files from the bucket, parses them, and collects
     results that are not already in the existing results.
@@ -180,19 +180,19 @@ def scan_bucket_for_results() -> list[str]:
     logger.info("Scanning bucket for new results...")
 
     # Get all .jsonl files from the bucket
-    all_bucket_files = list_all_raw_result_files()
+    all_bucket_files = list_all_result_files()
     if not all_bucket_files:
         logger.info("No .jsonl files found in bucket.")
         return []
 
     logger.info(f"Found {len(all_bucket_files)} .jsonl file(s) in bucket.")
 
-    # Download all files to RAW_RESULTS_DIR
+    # Download all files to RESULTS_DIR
     api = HfApi()
-    bucket_id = HF_RAW_BUCKET.replace("hf://buckets/", "")
+    bucket_id = HF_RESULTS_BUCKET
 
     files_spec: list[tuple[str | BucketFile, str | Path]] = [
-        (bucket_file.path, RAW_RESULTS_DIR / bucket_file.path)
+        (bucket_file.path, RESULTS_DIR / bucket_file.path)
         for bucket_file in all_bucket_files
     ]
 
@@ -200,7 +200,7 @@ def scan_bucket_for_results() -> list[str]:
         api.download_bucket_files(
             bucket_id=bucket_id, files=files_spec, raise_on_missing_files=False
         )
-        logger.info(f"Downloaded {len(files_spec)} file(s) to {RAW_RESULTS_DIR}.")
+        logger.info(f"Downloaded {len(files_spec)} file(s) to {RESULTS_DIR}.")
     except Exception as e:
         logger.error(f"Failed to download bucket files: {e}")
         return []
@@ -213,7 +213,7 @@ def scan_bucket_for_results() -> list[str]:
     seen_keys: set[tuple[str, str, str, str]] = set()
 
     for bucket_file in all_bucket_files:
-        local_path = RAW_RESULTS_DIR / bucket_file.path
+        local_path = RESULTS_DIR / bucket_file.path
         if not local_path.exists():
             logger.warning(f"Downloaded file not found: {local_path}")
             continue
@@ -342,9 +342,7 @@ def main(force: bool) -> None:
 
         # Upload results to HF bucket BEFORE regenerating leaderboards
         # (leaderboard regeneration consumes/deletes new_results.jsonl)
-        if upload_results_to_hf(
-            new_results_path=NEW_RESULTS_PATH, processed_path=RESULTS_PATH
-        ):
+        if upload_results_to_hf(new_results_path=NEW_RESULTS_PATH):
             logger.info("Results uploaded to Hugging Face bucket.")
         else:
             logger.error(
@@ -358,6 +356,7 @@ def main(force: bool) -> None:
             # load_raw_results() appends new_results.jsonl locally before deleting it.
             # But the bucket needs to be synced on the next successful run.
 
+    # Regenerate leaderboards from merged results
     if not regenerate_leaderboards(force=force):
         logger.error(
             "Aborting: not closing issues because leaderboard regeneration failed."
@@ -435,12 +434,12 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
         return None
 
     filename = _model_id_to_filename(model_id)
-    local_path = RAW_RESULTS_DIR / filename
+    local_path = RESULTS_DIR / filename
 
     try:
         api = HfApi()
         api.download_bucket_files(
-            bucket_id=HF_RAW_BUCKET.replace("hf://buckets/", ""),
+            bucket_id=HF_RESULTS_BUCKET,
             files=[(filename, local_path)],
             raise_on_missing_files=False,
         )
@@ -462,36 +461,34 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
     return lines
 
 
-def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
-    """Upload raw results to Hugging Face bucket.
+def upload_results_to_hf(new_results_path: Path) -> bool:
+    """Upload results to Hugging Face bucket.
 
-    This function splits results into per-model files and syncs to raw-results
-    bucket. Processed results are uploaded separately by result_processing.py as
-    per-model JSONL.
+    This function splits results into per-model files and syncs to the
+    EuroEval/results bucket.
 
     Args:
         new_results_path:
             Path to the newly harvested results.jsonl file.
-        processed_path:
-            Path to the processed results.tar.gz file (kept for backwards compatibility,
-            but not uploaded to bucket - handled by result_processing.py).
 
     Returns:
         True if upload succeeded, False otherwise.
     """
-    RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     try:
-        # Sync existing results from raw-results bucket
-        logger.info(f"Syncing existing results from {HF_RAW_BUCKET}...")
-        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RAW_RESULTS_DIR))
+        # Sync existing results from EuroEval/results bucket
+        logger.info(f"Syncing existing results from {HF_RESULTS_BUCKET}...")
+        HfApi().sync_bucket(
+            source=f"hf://buckets/{HF_RESULTS_BUCKET}/", dest=str(RESULTS_DIR)
+        )
         logger.info("Downloaded existing results from bucket.")
     except HfHubHTTPError as e:
         logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
 
     # Load existing results by model
     existing_by_model: dict[str, set[str]] = {}
-    for model_file in RAW_RESULTS_DIR.glob("*.jsonl"):
+    for model_file in RESULTS_DIR.glob("*.jsonl"):
         lines = {
             line
             for line in model_file.read_text(encoding="utf-8").splitlines()
@@ -510,7 +507,7 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
             data = json.loads(line)
             model_id = data.get("model", "unknown")
             filename = _model_id_to_filename(model_id)
-            model_file = RAW_RESULTS_DIR / filename
+            model_file = RESULTS_DIR / filename
             # Append if not already present
             if line not in existing_by_model.get(filename, set()):
                 with open(model_file, "a", encoding="utf-8") as f:
@@ -518,18 +515,16 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
         except json.JSONDecodeError:
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
 
-    # Sync updated results to raw-results bucket
-    logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
+    # Sync updated results to EuroEval/results bucket
+    logger.info(f"Syncing results to {HF_RESULTS_BUCKET}...")
     try:
-        HfApi().sync_bucket(source=str(RAW_RESULTS_DIR), dest=HF_RAW_BUCKET + "/")
-        logger.info(f"Uploaded results to {HF_RAW_BUCKET}.")
+        HfApi().sync_bucket(
+            source=str(RESULTS_DIR), dest=f"hf://buckets/{HF_RESULTS_BUCKET}/"
+        )
+        logger.info(f"Uploaded results to {HF_RESULTS_BUCKET}.")
     except HfHubHTTPError as e:
         logger.error(f"Failed to sync to bucket: {e}")
         return False
-
-    # Note: Processed results are uploaded by result_processing.py, not here.
-    # That script groups processed records by model and uploads per-model JSONL
-    # files to HF_PROCESSED_BUCKET for consistency with raw-results format.
 
     return True
 

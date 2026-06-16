@@ -159,7 +159,7 @@ def bootstrap_rank_scores(
                 for cat in dataset_to_category.get(ds, set()):
                     all_rank_scores.setdefault(mid, {}).setdefault(cat, {})[ds] = score
 
-        # Now compute overall scores for each model by aggregating up the hierarchy
+        # Now compute scores for each model by aggregating up the hierarchy
         for model_id, model_data in model_results.items():
             for category in categories:
                 # Filter to datasets this model has data for
@@ -173,9 +173,6 @@ def bootstrap_rank_scores(
                         ):
                             model_ds_in_sample[ds] = task
 
-                if not model_ds_in_sample:
-                    continue
-
                 # Get precomputed rank scores for this model
                 model_rank_scores = all_rank_scores.get(model_id, {}).get(category, {})
                 if not model_rank_scores:
@@ -185,13 +182,15 @@ def bootstrap_rank_scores(
                 language_scores, overall = _aggregate_scores_to_categories(
                     model_rank_scores, configs, category, model_ds_in_sample
                 )
-                if overall is not None:
-                    # Store per-language bootstrap samples
+                # Store per-language bootstrap samples even if model doesn't have
+                # complete coverage (no overall score)
+                if language_scores:
                     for lang, lang_score in language_scores.items():
                         bootstrap_scores.setdefault(model_id, {}).setdefault(
                             category, {}
                         ).setdefault(lang, []).append(lang_score)
-                    # Store overall bootstrap samples
+                # Store overall bootstrap samples only if model has complete coverage
+                if overall is not None:
                     bootstrap_scores.setdefault(model_id, {}).setdefault(
                         category, {}
                     ).setdefault("overall", []).append(overall)

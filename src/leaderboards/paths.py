@@ -4,6 +4,10 @@ Centralises the locations of config files, data inputs, and the output
 CSV directory so the rest of the package doesn't depend on the caller's
 cwd. Data-input paths are overridable via environment variables so
 operators can keep large files outside the repo.
+
+Results are stored in a single results/ directory containing per-model
+JSONL files with metadata attached. The merged archive results.tar.gz
+contains only results/results.jsonl with all results unified.
 """
 
 import os
@@ -54,9 +58,8 @@ NEW_RESULTS_PATH: Path = _env_path(
     "EUROEVAL_NEW_RESULTS_PATH", REPO_ROOT / "new_results.jsonl"
 )
 
-# Persistent results directories (HF bucket sync points, git-ignored)
+# Single directory for all per-model JSONL files with metadata attached.
+# Git-ignored, synced with hf://buckets/EuroEval/results/.
 RESULTS_DIR: Path = REPO_ROOT / "results"
-RAW_RESULTS_DIR: Path = RESULTS_DIR / "raw"
-PROCESSED_RESULTS_DIR: Path = RESULTS_DIR / "processed"
 
 # Note: `.euroeval_cache/` is now deprecated for results storage.

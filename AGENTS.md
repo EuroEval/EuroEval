@@ -28,23 +28,22 @@ queue is handled via Github issues.
 
 ### Data Flow and Storage
 
-Evaluation results flow through four storage layers:
+Evaluation results flow through three storage layers:
 
-1. **Hugging Face Buckets** (source of truth):
-   - `raw-results`: Per-model JSONL files (one file per model, append-only)
-   - `processed-results`: Processed/aggregated results per model
+1. **Hugging Face Bucket** (source of truth):
+   - `EuroEval/results`: Single bucket with per-model JSONL files (one file per model, append-only)
+   - All files contain metadata fields (`commercially_licensed`, `open`, `trained_from_scratch`)
    - Synced via `hf sync` command (requires `HF_TOKEN`)
 
 2. **Local `results/` directory** (working copy):
-   - `results/raw/` — mirrored from raw-results bucket
-   - `results/processed/` — mirrored from processed-results bucket
-   - Git-ignored, synced bidirectionally with HF buckets
+   - Contains all per-model JSONL files (unified, not split into raw/processed)
+   - Git-ignored, synced bidirectionally with HF bucket
 
 3. **`results.tar.gz`** (historical archive):
    - **Location:** `~/pCloud Drive/data/euroeval_backup/results.tar.gz`
    - **Override:** Set `EUROEVAL_RESULTS_BACKUP_DIR` environment variable
-   - Contains `results/results.jsonl` (all raw results merged) and `results/results.processed.jsonl`
-   - Rebuilt from `results/raw/*.jsonl` files on each run
+   - Contains single `results/results.jsonl` (all results merged with metadata)
+   - Rebuilt from `results/*.jsonl` files on each run
    - 43+ MB, not tracked in git
 
 4. **Backup snapshots** (disaster recovery):
@@ -53,11 +52,11 @@ Evaluation results flow through four storage layers:
    - Rotation: max 10 snapshots or 1 GB total
    - Always preserves at least one backup from a previous day (if any exist)
 
-**Sync direction:** HF buckets → local `results/` → `results.tar.gz` → backup snapshots
+**Sync direction:** HF bucket → local `results/` → `results.tar.gz` → backup snapshots
 
 The `src/scripts/collect_evaluation_results.py` script orchestrates this flow:
 
-- Downloads new results from HF buckets
+- Downloads new results from HF bucket
 - Deduplicates against existing results in `results.tar.gz`
 - Rebuilds `results.tar.gz` from the merged results
 - Creates timestamped backup before overwrite

@@ -47,29 +47,30 @@ class Cache:
     def from_processed_records(
         cls,
         compressed_results_path: Path | None = None,
-        processed_dir: Path | None = None,
+        results_dir: Path | None = None,
     ) -> "Cache":
         """Create a cache from processed records.
 
         Args:
             compressed_results_path:
-                The path to the compressed processed results file.
-            processed_dir:
-                The path to the directory containing per-model processed JSONL files.
-                If provided, this takes precedence over compressed_results_path.
+                The path to the compressed results file (results.tar.gz).
+            results_dir:
+                The path to the directory containing per-model JSONL files
+                with metadata. If provided, takes precedence over
+                compressed_results_path.
 
         Returns:
             A Cache instance populated with model metadata.
 
         Raises:
             FileNotFoundError:
-                If neither the processed records file nor directory is found.
+                If neither the results file nor directory is found.
             ValueError:
-                If the processed records file contains invalid JSON.
+                If the results file contains invalid JSON.
         """
-        # Prefer processed_dir if provided
-        if processed_dir is not None and processed_dir.exists():
-            return cls.from_processed_dir(processed_dir)
+        # Prefer results_dir if provided
+        if results_dir is not None and results_dir.exists():
+            return cls.from_results_dir(results_dir)
 
         if compressed_results_path is None or not compressed_results_path.exists():
             raise FileNotFoundError(
@@ -78,10 +79,10 @@ class Cache:
 
         # Unpack the tar.gz file in memory and read the JSONL file
         with tarfile.open(compressed_results_path, "r:gz") as tar:
-            results_file = tar.extractfile(member="results/results.processed.jsonl")
+            results_file = tar.extractfile(member="results/results.jsonl")
             if results_file is None:
                 logger.warning(
-                    "Processed results file does not exist. Using an empty cache."
+                    "Results file does not exist in tar.gz. Using an empty cache."
                 )
                 return cls()
             result_lines = results_file.read().decode(encoding="utf-8").splitlines()
@@ -146,12 +147,13 @@ class Cache:
         return cache
 
     @classmethod
-    def from_processed_dir(cls, processed_dir: Path) -> "Cache":
-        """Create a cache from processed records in a directory.
+    def from_results_dir(cls, results_dir: Path) -> "Cache":
+        """Create a cache from records in the results directory.
 
         Args:
-            processed_dir:
-                The path to the directory containing per-model processed JSONL files.
+            results_dir:
+                The path to the directory containing per-model JSONL files
+                with metadata.
 
         Returns:
             A Cache instance populated with model metadata.
@@ -160,16 +162,14 @@ class Cache:
             ValueError:
                 If any JSONL file contains invalid JSON.
             FileNotFoundError:
-                If the processed directory does not exist.
+                If the results directory does not exist.
         """
-        if not processed_dir.exists():
-            raise FileNotFoundError(
-                f"Processed results directory {processed_dir} not found."
-            )
+        if not results_dir.exists():
+            raise FileNotFoundError(f"Results directory {results_dir} not found.")
 
         # Load all JSONL files from the directory
         all_records: list[dict[str, object]] = list()
-        jsonl_files = sorted(processed_dir.glob("*.jsonl"))
+        jsonl_files = sorted(results_dir.glob("*.jsonl"))
 
         for jsonl_file in jsonl_files:
             content = jsonl_file.read_text(encoding="utf-8")
@@ -185,7 +185,7 @@ class Cache:
 
         # Populate a cache from the records
         cache = cls()
-        for record in tqdm(all_records, desc="Building caches from processed dir"):
+        for record in tqdm(all_records, desc="Building caches from results dir"):
             # Support both EEE format (model_info.name) and old format (model)
             if "model_info" in record and "name" in record["model_info"]:
                 model_name = record["model_info"]["name"]
@@ -229,3 +229,6 @@ class Cache:
                     cache.anchor_tag[inner_model_id] = model_name
 
         return cache
+
+    # Alias for backward compatibility
+    from_processed_dir = from_results_dir
