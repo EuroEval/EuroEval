@@ -1,7 +1,7 @@
-"""Sync Hugging Face buckets for EuroEval results.
+"""Sync Hugging Face bucket for EuroEval results.
 
-Uses the `hf sync` CLI to sync raw and processed results buckets
-to local directories. Also provides backup functionality.
+Uses the `hf sync` CLI to sync the results bucket to the local
+results directory. Also provides backup functionality.
 """
 
 import collections.abc as c
@@ -17,14 +17,13 @@ from dotenv import load_dotenv
 from euroeval.data_models import BenchmarkResult
 
 from .backup import backup_results
-from .paths import PROCESSED_RESULTS_DIR, RAW_RESULTS_DIR
+from .paths import RESULTS_DIR
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-HF_RAW_BUCKET = "EuroEval/raw-results"
-HF_PROCESSED_BUCKET = "EuroEval/processed-results"
+HF_RESULTS_BUCKET = "EuroEval/results"
 
 
 def _sanitise_model_id(model_id: str) -> str:
@@ -44,10 +43,10 @@ def _sanitise_model_id(model_id: str) -> str:
 
 
 def sync_bucket() -> None:
-    """Sync both HF buckets (raw and processed) using hf sync.
+    """Sync HF results bucket using hf sync.
 
     Syncs from bucket to local directory using the official hf CLI.
-    Creates local directories if needed.
+    Creates local directory if needed.
 
     HF_TOKEN is loaded from .env by load_dotenv() at module import.
     """
@@ -56,56 +55,33 @@ def sync_bucket() -> None:
         logger.warning("HF_TOKEN not set. Cannot sync from bucket.")
         return
 
-    RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    logger.info("Syncing raw bucket %s → %s...", HF_RAW_BUCKET, RAW_RESULTS_DIR)
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    logger.info("Syncing bucket %s → %s...", HF_RESULTS_BUCKET, RESULTS_DIR)
     result = subprocess.run(
-        ["hf", "sync", f"hf://buckets/{HF_RAW_BUCKET}/", str(RAW_RESULTS_DIR)],
+        ["hf", "sync", f"hf://buckets/{HF_RESULTS_BUCKET}/", str(RESULTS_DIR)],
         capture_output=True,
         text=True,
         check=False,
         env={**os.environ, "HF_TOKEN": hf_token},
     )
     if result.returncode != 0:
-        logger.warning("hf sync failed for raw bucket: %s", result.stderr)
+        logger.warning("hf sync failed: %s", result.stderr)
     else:
-        logger.info("Synced raw bucket: %s", result.stdout.strip())
-
-    PROCESSED_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    logger.info(
-        "Syncing processed bucket %s → %s...",
-        HF_PROCESSED_BUCKET,
-        PROCESSED_RESULTS_DIR,
-    )
-    result = subprocess.run(
-        [
-            "hf",
-            "sync",
-            f"hf://buckets/{HF_PROCESSED_BUCKET}/",
-            str(PROCESSED_RESULTS_DIR),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-        env={**os.environ, "HF_TOKEN": hf_token},
-    )
-    if result.returncode != 0:
-        logger.warning("hf sync failed for processed bucket: %s", result.stderr)
-    else:
-        logger.info("Synced processed bucket: %s", result.stdout.strip())
+        logger.info("Synced bucket: %s", result.stdout.strip())
 
 
 @contextmanager
 def sync_bucket_context() -> c.Generator[Path, None, None]:
     """Context manager for HF bucket sync.
 
-    Syncs buckets on entry, logs completion on exit.
+    Syncs bucket on entry, logs completion on exit.
 
     Yields:
-        Path: Raw results directory (for backwards compatibility)
+        Path: Results directory
     """
-    logger.info("Syncing buckets...")
+    logger.info("Syncing bucket...")
     sync_bucket()
-    yield RAW_RESULTS_DIR
+    yield RESULTS_DIR
     logger.info("Bucket sync complete.")
 
 
@@ -113,14 +89,14 @@ def sync_bucket_context() -> c.Generator[Path, None, None]:
 def sync_bucket_with_backup() -> c.Generator[Path, None, None]:
     """Context manager for HF bucket sync with automatic backup.
 
-    Syncs buckets on entry, creates backup on exit.
+    Syncs bucket on entry, creates backup on exit.
 
     Yields:
-        Path: Raw results directory (for backwards compatibility)
+        Path: Results directory
     """
-    logger.info("Syncing buckets...")
+    logger.info("Syncing bucket...")
     sync_bucket()
-    yield RAW_RESULTS_DIR
+    yield RESULTS_DIR
     backup_path = backup_results()
     if backup_path:
         logger.info("Backup created at %s.", backup_path)
@@ -128,7 +104,7 @@ def sync_bucket_with_backup() -> c.Generator[Path, None, None]:
 
 
 def upload_results_to_bucket(results_file: Path) -> None:
-    """Upload local results to the Hugging Face raw-results bucket.
+    """Upload local results to the Hugging Face results bucket.
 
     Reads the merged results file, splits into per-model JSONL files,
     and syncs to the bucket using hf sync.
@@ -148,7 +124,7 @@ def upload_results_to_bucket(results_file: Path) -> None:
         )
         return
 
-    RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     # Group results by model
     results_by_model: dict[str, list[str]] = {}
@@ -173,18 +149,18 @@ def upload_results_to_bucket(results_file: Path) -> None:
 
     # Write per-model JSONL files
     logger.info(
-        "Writing %s per-model files to %s...", len(results_by_model), RAW_RESULTS_DIR
+        "Writing %s per-model files to %s...", len(results_by_model), RESULTS_DIR
     )
     for model_key, lines in results_by_model.items():
-        model_file = RAW_RESULTS_DIR / f"{model_key}.jsonl"
+        model_file = RESULTS_DIR / f"{model_key}.jsonl"
         with model_file.open("w") as f:
             for line in lines:
                 f.write(line + "\n")
 
     # Sync to bucket
-    logger.info("Syncing local %s → bucket %s...", RAW_RESULTS_DIR, HF_RAW_BUCKET)
+    logger.info("Syncing local %s → bucket %s...", RESULTS_DIR, HF_RESULTS_BUCKET)
     result = subprocess.run(
-        ["hf", "sync", str(RAW_RESULTS_DIR), f"hf://buckets/{HF_RAW_BUCKET}/"],
+        ["hf", "sync", str(RESULTS_DIR), f"hf://buckets/{HF_RESULTS_BUCKET}/"],
         capture_output=True,
         text=True,
         check=False,
