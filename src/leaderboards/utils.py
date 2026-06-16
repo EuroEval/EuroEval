@@ -114,8 +114,9 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     all_model_notes: list[list[str]] = [[]]
 
     # Build combined variant notes for zero-shot and validation split
-    few_shot = record.get("few_shot", True)
-    validation_split = record.get("validation_split", False)
+    # Use _get_bool_field to handle both EEE and old formats
+    few_shot = _get_bool_field(record, "few_shot", True)
+    validation_split = _get_bool_field(record, "validation_split", False)
 
     # Determine which notes to add
     notes_to_add: list[list[str]] = [[]]
