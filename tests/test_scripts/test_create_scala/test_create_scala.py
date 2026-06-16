@@ -5,9 +5,8 @@ from pathlib import Path
 
 import pytest
 from pytest import FixtureRequest
-from scripts.load_ud_pos import load_ud_pos
-
 from scripts.dataset_creation.create_scala import prepare_df
+from scripts.dataset_creation.load_ud_pos import load_ud_pos
 
 
 @pytest.fixture(scope="module")
