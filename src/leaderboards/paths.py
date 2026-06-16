@@ -6,8 +6,8 @@ cwd. Data-input paths are overridable via environment variables so
 operators can keep large files outside the repo.
 
 Results are stored in a single results/ directory containing per-model
-JSONL files (both raw and processed with metadata). The merged archive
-results.tar.gz contains only results/results.jsonl.
+JSONL files with metadata attached. The merged archive results.tar.gz
+contains only results/results.jsonl with all results unified.
 """
 
 import os
