@@ -264,19 +264,27 @@ def drop_val_duplicates(
 ) -> dict[str, dict[str, list[tuple[list[float], float, float]]]]:
     """Drop validation-split variants when the full test-split variant exists.
 
+    When a model has been evaluated on both the validation and full test split,
+    only show the test-split row if it covers at least as many datasets.
+    Otherwise keep the validation-split version (which may have more data).
+
     Args:
         model_results:
             The grouped model results, keyed by model ID.
 
     Returns:
         The model results with ``(val)``-suffixed entries removed whenever the
-        corresponding full test-split entry is also present.
+        corresponding full test-split entry is also present and covers at least
+        as many datasets.
     """
     filtered: dict[str, dict[str, list[tuple[list[float], float, float]]]] = {}
     for model_id, results in model_results.items():
         equivalent = strip_val_suffix(model_id=model_id)
         if equivalent is not None and equivalent in model_results:
-            continue
+            # Only drop the (val) version if the test-split version has >= datasets
+            equivalent_count = len(model_results[equivalent])
+            if equivalent_count >= len(results):
+                continue
         filtered[model_id] = results
     return filtered
 
