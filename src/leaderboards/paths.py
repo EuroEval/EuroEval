@@ -58,8 +58,8 @@ NEW_RESULTS_PATH: Path = _env_path(
     "EUROEVAL_NEW_RESULTS_PATH", REPO_ROOT / "new_results.jsonl"
 )
 
-# Single directory for all per-model JSONL files (both raw and processed
-# with metadata). Git-ignored, synced with HF buckets.
+# Single directory for all per-model JSONL files with metadata attached.
+# Git-ignored, synced with hf://buckets/EuroEval/results/.
 RESULTS_DIR: Path = REPO_ROOT / "results"
 
 # Note: `.euroeval_cache/` is now deprecated for results storage.

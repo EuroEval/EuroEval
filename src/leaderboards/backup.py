@@ -30,7 +30,7 @@ BACKUP_PREFIX = "results_"
 BACKUP_SUFFIX = ".tar.gz"
 
 
-def _validate_processed_results() -> None:
+def _validate_results() -> None:
     """Validate that results exist and have required metadata.
 
     Checks that:
@@ -190,8 +190,8 @@ def backup_results(source: Path = RESULTS_PATH) -> Path | None:
         The Path of the new backup, or None if nothing was written.
 
     """
-    # Validate processed results before backing up
-    _validate_processed_results()
+    # Validate results before backing up
+    _validate_results()
 
     if not source.exists():
         logger.warning(f"Cannot back up {source}: file does not exist.")
