@@ -138,10 +138,12 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
 
     all_model_notes = expanded_notes
 
+    has_anchor = model_id.endswith("</a>")
+    base = re.sub(r"</a>$", "", model_id) if has_anchor else model_id
+    suffix = "</a>" if has_anchor else ""
+
     model_id_candidates = [
-        f"{re.sub(r'</a>$', '', model_id)} ({', '.join(note)})</a>"
-        if note != []
-        else model_id
+        f"{base} ({', '.join(note)}){suffix}" if note != [] else model_id
         for note in all_model_notes
     ]
     return model_id_candidates
