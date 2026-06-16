@@ -23,7 +23,7 @@ from .result_processing import (
     group_results_by_model,
 )
 from .score_computation import compute_ranks_bootstrap, compute_standard_ranks_bootstrap
-from .task_metadata import official_datasets_for_language, task_category
+from .task_metadata import category_includes_task, official_datasets_for_language
 from .utils import convert_to_float, drop_val_duplicates
 
 # Number of bootstrap replicates for both confidence interval estimation of rank scores
@@ -54,10 +54,10 @@ def _format_rank_score(entry: object) -> str:
         return "-"
     margin = (
         (ci_upper - score)
-        if isinstance(ci_upper, (int, float)) and math.isfinite(ci_upper)
+        if isinstance(ci_upper, int | float) and math.isfinite(ci_upper)
         else 0.0
     )
-    return f"{score:.2f} ± {margin:.2f}"
+    return f"{score:.2f} \u00b1 {margin:.2f}"
 
 
 def generate_leaderboard(
@@ -141,7 +141,7 @@ def generate_leaderboard(
         )
 
         # Check if anything got updated
-        new_records: list[str] = list()
+        new_records: list[str] = []
         comparison_columns = [
             col
             for col in df.columns
@@ -157,13 +157,6 @@ def generate_leaderboard(
                 new_records = df.Model.tolist()
             else:
                 for model_id in set(df.Model.tolist() + old_df.Model.tolist()):
-                    old_df_is_missing_columns = any(
-                        col not in old_df.columns for col in comparison_columns
-                    )
-                    if old_df_is_missing_columns:
-                        new_records.append(model_id)
-                        continue
-
                     model_is_new = (
                         model_id in df.Model.values
                         and model_id not in old_df.Model.values
@@ -283,16 +276,12 @@ def create_leaderboard_headers(
             for dataset in datasets:
                 dataset_to_task_info[dataset] = (task, len(datasets))
 
-    orthogonal_tasks = ORTHOGONAL_TASKS
-
-    # Generate column headers
     top_header = []
     second_header = []
     processed_tasks_per_language: dict[str, set[str]] = {}
     seen_version_col = False
     for id_, col in enumerate(df.columns):
-        # Case if the column is an orthogonal task
-        if (task := col.replace(" ", "-").lower()) in orthogonal_tasks:
+        if (task := col.replace(" ", "-").lower()) in ORTHOGONAL_TASKS:
             top_header.append("")
             second_header.append(
                 f'<a href="https://euroeval.com/tasks/{task}">{col}</a>'
@@ -376,38 +365,35 @@ def generate_dataframe(
     """
     if model_results == {}:
         logger.error("No model results found, skipping leaderboard generation.")
-        return list()
+        return []
 
-    # Mapping from category to dataset names. The "generative" leaderboard
-    # includes all tasks; the "all_models" leaderboard is restricted to NLU
-    # tasks so non-generative models can be compared.
-    def _include(category: str, task: str) -> bool:
-        return category == "generative" or task_category(task) == "nlu"
-
+    # The "generative" leaderboard includes all tasks; the "all_models"
+    # leaderboard is restricted to NLU tasks so non-generative models can be
+    # compared.
     category_to_datasets = {
         category: [
             dataset
             for config in leaderboard_configs.values()
             for task, task_datasets in config.items()
             for dataset in task_datasets
-            if _include(category, task)
+            if category_includes_task(category=category, task=task)
         ]
         for category in categories
     }
 
-    # Mapping from orthogonal dataset to orthogonal task
     category_to_orthogonal_datasets = {
         category: {
             dataset: task
             for config in leaderboard_configs.values()
             for task, task_datasets in config.items()
             for dataset in task_datasets
-            if task in ORTHOGONAL_TASKS and _include(category, task)
+            if task in ORTHOGONAL_TASKS
+            and category_includes_task(category=category, task=task)
         }
         for category in categories
     }
 
-    dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = list()
+    dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = []
     for category in categories:
         # Standard (dense) ranks are computed per category over the models
         # eligible for display — i.e. those holding every non-orthogonal
@@ -479,7 +465,7 @@ def generate_dataframe(
             }
 
             # Get individual dataset scores for the model
-            total_results = dict()
+            total_results = {}
             orthogonal_scores = defaultdict(list)  # task -> list of scores
             for dataset in category_to_datasets[category]:
                 if dataset in results:
@@ -561,7 +547,7 @@ def generate_dataframe(
 
         # Format the ordinal rank column with a "-" sentinel for NaN. The
         # "mean_rank_score" column and any per-language columns are already
-        # formatted as "score \u00b1 margin" strings (or "-") upstream \u2014 keep
+        # formatted as "score +/- margin" strings (or "-") upstream, so keep
         # those values as-is, replacing anything else with "-".
         df["rank"] = [
             str(int(value))
@@ -662,7 +648,6 @@ def generate_dataframe(
         )
 
         # Create the simplified leaderboard
-        df_simplified = df.copy()
         df_simplified = df[
             [
                 "rank",

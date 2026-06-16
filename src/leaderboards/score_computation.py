@@ -9,25 +9,12 @@ import numpy as np
 from euroeval.constants import ORTHOGONAL_TASKS
 
 from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
-from .task_metadata import task_category
+from .task_metadata import LEADERBOARD_CATEGORIES, category_includes_task
 
 logger = logging.getLogger(__name__)
 
-
-def _category_includes_task(category: str, task: str) -> bool:
-    """Check whether a task belongs to a leaderboard category.
-
-    Args:
-        category: Leaderboard category name.
-        task: Task slug.
-
-    Returns:
-        True if the task belongs to the category.
-    """
-    return category == "generative" or task_category(task) == "nlu"
-
-
-_CATEGORIES = ("generative", "all_models")
+# z-score for a two-sided 95% confidence interval under a normal approximation.
+_Z_95 = 1.96
 
 
 def compute_dataset_ranks_bootstrap(
@@ -61,13 +48,13 @@ def compute_dataset_ranks_bootstrap(
     )
 
     for _language, config in configs.items():
-        for category in _CATEGORIES:
+        for category in LEADERBOARD_CATEGORIES:
             datasets = [
                 ds
                 for task, task_ds in config.items()
                 for ds in task_ds
                 if task not in ORTHOGONAL_TASKS
-                and _category_includes_task(category, task)
+                and category_includes_task(category, task)
             ]
             for dataset in datasets:
                 model_scores: dict[str, tuple[float, float, list[float]]] = {}
@@ -80,7 +67,7 @@ def compute_dataset_ranks_bootstrap(
                 if not model_scores:
                     continue
 
-                # Sort by mean score descending — best model is first
+                # Sort by mean score descending, so the best model is first.
                 sorted_models = sorted(
                     model_scores.items(), key=lambda x: x[1][0], reverse=True
                 )
@@ -95,7 +82,6 @@ def compute_dataset_ranks_bootstrap(
                     pooled_sd = 1.0
 
                 for mid, (mean_sc, se, raw) in model_scores.items():
-                    # Compute rank scores across bootstrap replicates
                     bootstrap_scores: list[float] = []
                     for _ in range(n_bootstraps):
                         resampled_raw = rng.choice(raw, size=len(raw), replace=True)
@@ -158,12 +144,9 @@ def compute_ranks(
     """
     logger.info("Computing ranks via bootstrap confidence intervals...")
     orthogonal_tasks = ORTHOGONAL_TASKS
-    categories = _CATEGORIES
+    categories = LEADERBOARD_CATEGORIES
 
-    def category_includes_task(category: str, task: str) -> bool:
-        return _category_includes_task(category, task)
-
-    # ── Step 1: Dataset-level ranks (bootstrap CIs) ─────────────────────
+    # Step 1: Dataset-level ranks (bootstrap CIs).
     model_dataset_ranks = compute_dataset_ranks_bootstrap(
         model_results=model_results,
         configs=configs,
@@ -171,7 +154,7 @@ def compute_ranks(
         seed=seed,
     )
 
-    # ── Step 2: Aggregate dataset → task → language → overall ────────────
+    # Step 2: Aggregate dataset -> task -> language -> overall.
     model_task_ranks = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
 
     for model_id in model_dataset_ranks:
@@ -183,7 +166,7 @@ def compute_ranks(
                 for task, task_datasets in config.items():
                     if task in orthogonal_tasks:
                         continue
-                    if not category_includes_task(category, task):
+                    if not category_includes_task(category=category, task=task):
                         continue
 
                     entries = [
@@ -194,13 +177,13 @@ def compute_ranks(
                     if not entries:
                         continue
 
-                    mean_score = np.mean([e["score"] for e in entries]).item()
+                    mean_score = float(np.mean([e["score"] for e in entries]))
                     vars_ = [
-                        ((e["ci_upper"] - e["ci_lower"]) / (2 * 1.96)) ** 2
+                        ((e["ci_upper"] - e["ci_lower"]) / (2 * _Z_95)) ** 2
                         for e in entries
                     ]
                     mean_var = np.sum(vars_) / (len(entries) ** 2)
-                    margin = 1.96 * math.sqrt(mean_var)
+                    margin = _Z_95 * math.sqrt(mean_var)
 
                     model_task_ranks[model_id][category][language][task] = {
                         "score": round(mean_score, 6),
@@ -208,7 +191,7 @@ def compute_ranks(
                         "ci_upper": round(mean_score + margin, 6),
                     }
 
-    # ── Step 3: Aggregate task → language → overall ──────────────────────
+    # Step 3: Aggregate task -> language -> overall.
     final: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
 
     for model_id in model_dataset_ranks:
@@ -224,7 +207,7 @@ def compute_ranks(
                     model_task_ranks[model_id][category][language].get(task)
                     for task in config
                     if task not in orthogonal_tasks
-                    and category_includes_task(category, task)
+                    and category_includes_task(category=category, task=task)
                 ]
                 task_entries = [e for e in task_entries if e is not None]
                 if not task_entries:
@@ -232,11 +215,11 @@ def compute_ranks(
 
                 mean_score = float(np.mean([e["score"] for e in task_entries]))
                 vars_ = [
-                    ((e["ci_upper"] - e["ci_lower"]) / (2 * 1.96)) ** 2
+                    ((e["ci_upper"] - e["ci_lower"]) / (2 * _Z_95)) ** 2
                     for e in task_entries
                 ]
                 mean_var = np.sum(vars_) / (len(task_entries) ** 2)
-                margin = 1.96 * math.sqrt(mean_var)
+                margin = _Z_95 * math.sqrt(mean_var)
 
                 lang_scores[language] = {
                     "score": round(mean_score, 6),
@@ -252,7 +235,7 @@ def compute_ranks(
                     for e in overall_entries
                 ]
                 mean_var = np.sum(vars_) / (len(overall_entries) ** 2)
-                margin = 1.96 * math.sqrt(mean_var)
+                margin = _Z_95 * math.sqrt(mean_var)
 
                 lang_scores["overall"] = {
                     "score": round(mean_score, 6),
@@ -263,113 +246,6 @@ def compute_ranks(
 
     logger.info("Finished computing ranks.")
     return final
-
-
-def _anchor_significantly_better(
-    anchor_overall: dict[str, float], candidate_overall: dict[str, float]
-) -> bool | None:
-    """Test whether the anchor's mean rank score is significantly lower.
-
-    Uses the propagated 95% confidence intervals that are shown in the
-    leaderboard's Rank score column: the anchor is significantly better iff
-    its upper CI lies strictly below the candidate's lower CI (i.e. the two
-    intervals do not overlap). This keeps the tie-detection consistent with
-    what the reader sees — two models share a rank iff their displayed
-    "score ± margin" intervals overlap.
-
-    Args:
-        anchor_overall: Anchor model overall rank summary.
-        candidate_overall: Candidate model overall rank summary.
-
-    Returns:
-        True if the anchor is significantly better, False if not, or None
-        when either side is missing the CI.
-    """
-    a_upper = anchor_overall.get("ci_upper", float("nan"))
-    c_lower = candidate_overall.get("ci_lower", float("nan"))
-    if math.isfinite(a_upper) and math.isfinite(c_lower):
-        return a_upper < c_lower
-    return None
-
-
-def compute_standard_ranks(
-    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    ranks: dict[str, dict[str, dict[str, dict[str, float]]]],
-    category: str,
-) -> dict[str, int]:
-    """Compute ordinal ranks (1, 2, 3…) with ties via non-overlapping CIs.
-
-    Sorts by overall mean rank score ascending (lower = better). Walks down
-    the list; if the candidate's lower CI overlaps the anchor's upper CI it
-    shares the anchor's rank, otherwise it starts a new tie group with rank
-    one higher.
-
-    Using the propagated 95% confidence intervals that are already shown in
-    the Rank score column keeps the ordinal Rank consistent with what the
-    reader sees: two models share a rank iff their displayed "score ±
-    margin" intervals overlap.
-
-    Args:
-        model_results:
-            The model results (used only to gate models on having any data).
-        ranks:
-            The output of `compute_ranks` — overall mean rank score and
-            propagated CIs per model and category.
-        category:
-            Which leaderboard category ("generative" or "all_models") to
-            rank within.
-
-    Returns:
-        model_id -> int rank.
-    """
-    # Collect (model_id, overall_score) for finite-scored models that also
-    # appear in model_results — callers may pre-filter model_results to the
-    # subset eligible for ranking (e.g. those holding every required dataset).
-    scored: list[tuple[str, float]] = []
-    for model_id, cats in ranks.items():
-        if model_id not in model_results:
-            continue
-        if category in cats and "overall" in cats[category]:
-            s = cats[category]["overall"]["score"]
-            if math.isfinite(s):
-                scored.append((model_id, s))
-
-    scored.sort(key=lambda x: x[1])
-
-    if not scored:
-        return {}
-
-    # Dense ranking: ties share a rank, and the next distinct group's rank
-    # is just the previous group's rank + 1 (no gaps).
-    ranks_out: dict[str, int] = {}
-    ranks_out[scored[0][0]] = 1
-    anchor_idx = 0
-    current_rank = 1
-
-    for i in range(1, len(scored)):
-        mid_i = scored[i][0]
-        anchor_id = scored[anchor_idx][0]
-
-        verdict = _anchor_significantly_better(
-            anchor_overall=ranks[anchor_id][category]["overall"],
-            candidate_overall=ranks[mid_i][category]["overall"],
-        )
-        # Treat "no basis for comparison" as a new group, matching the prior
-        # behaviour for non-overlapping evaluation sets.
-        is_new_group = verdict is None or verdict
-        if is_new_group:
-            current_rank += 1
-            ranks_out[mid_i] = current_rank
-            anchor_idx = i
-        else:
-            ranks_out[mid_i] = ranks_out[anchor_id]
-
-    return ranks_out
-
-
-# ---------------------------------------------------------------------------
-# Bootstrap-based rank computation
-# ---------------------------------------------------------------------------
 
 
 def compute_ranks_bootstrap(
@@ -436,7 +312,7 @@ def compute_standard_ranks_bootstrap(
     Returns:
         model_id -> category -> int rank.
     """
-    # Step 1: Compute bootstrap distributions
+    # Step 1: Compute bootstrap distributions.
     bootstrap_scores = bootstrap_rank_scores(
         model_results=model_results,
         configs=configs,
@@ -444,11 +320,10 @@ def compute_standard_ranks_bootstrap(
         seed=seed,
     )
 
-    # Step 2: Compute CIs from bootstrap distributions and sort models
+    # Step 2: Compute CIs from bootstrap distributions and sort models.
     ranks: dict[str, dict[str, int]] = {}
-    categories = ["generative", "all_models"]
 
-    for category in categories:
+    for category in LEADERBOARD_CATEGORIES:
         scored: list[tuple[float, str, float, float]] = []
         for model_id in model_results:
             if (
@@ -467,35 +342,27 @@ def compute_standard_ranks_bootstrap(
         if not scored:
             continue
 
-        # Step 3: Walk down and assign ranks via CI overlap
+        # Step 3: Walk down and assign ranks via CI overlap. Two models share a
+        # rank iff their bootstrap CIs overlap; a strictly higher lower bound
+        # starts a new rank group.
         current_rank = 1
         anchor_idx = 0
         anchor_id = scored[0][1]
+        ranks.setdefault(scored[0][1], {})[category] = 1
 
-        for i in range(len(scored)):
-            mid_i = scored[i][1]
-
-            if i == 0:
-                ranks.setdefault(mid_i, {})[category] = 1
-                continue
-
+        for i in range(1, len(scored)):
+            candidate_id = scored[i][1]
             anchor_ci_upper = scored[anchor_idx][3]
             candidate_ci_lower = scored[i][2]
 
-            # CI overlap: if candidate's lower CI > anchor's upper CI, no overlap
             if candidate_ci_lower > anchor_ci_upper:
-                # No overlap → new rank group
                 current_rank += 1
                 anchor_idx = i
-                anchor_id = mid_i
-                ranks[mid_i] = ranks.setdefault(mid_i, {})
-                ranks[mid_i][category] = current_rank
+                anchor_id = candidate_id
+                ranks.setdefault(candidate_id, {})[category] = current_rank
             else:
-                # Overlap → share anchor's rank
-                ranks[mid_i] = ranks.setdefault(mid_i, {})
-                ranks[mid_i][category] = ranks[anchor_id][category]
+                ranks.setdefault(candidate_id, {})[category] = ranks[anchor_id][
+                    category
+                ]
 
     return ranks
-
-
-# ---------------------------------------------------------------------------

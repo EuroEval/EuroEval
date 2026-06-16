@@ -156,16 +156,16 @@ def _load_hf_cache() -> dict[str, dict]:
     try:
         data = json.loads(HF_CACHE_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return dict()
+        return {}
     if not isinstance(data, dict):
-        return dict()
+        return {}
     now = time.time()
-    fresh: dict[str, dict] = dict()
+    fresh: dict[str, dict] = {}
     for key, value in data.items():
         if not isinstance(value, dict):
             continue
         ts = value.get("timestamp")
-        if not isinstance(ts, (int, float)) or now - ts > HF_CACHE_TTL_SECONDS:
+        if not isinstance(ts, int | float) or now - ts > HF_CACHE_TTL_SECONDS:
             continue
         fresh[key] = value
     return fresh

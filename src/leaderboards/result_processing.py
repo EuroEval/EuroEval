@@ -179,14 +179,13 @@ def process_results(
         compressed_results_path=results_path, results_dir=RESULTS_DIR
     )
 
-    # Load all the raw records
     records = load_raw_results()
     num_raw_records = len(records)
 
-    # Remove duplicates from the raw records
+    # Deduplicate by record hash, keeping the newest EuroEval version per hash.
     all_hash_values = [get_record_hash(record=dct) for dct in records]
     unique_hash_values = sorted(set(all_hash_values))
-    new_records = list()
+    new_records = []
     for unique_hash_value in tqdm(unique_hash_values, desc="Processing records"):
         matches = [
             record
@@ -222,21 +221,13 @@ def process_results(
     if num_duplicates:
         logger.info(f"Removed {num_duplicates:,} duplicates.")
 
-    # Add missing metadata to records. If the metadata cannot be fixed, the record
-    # will be replaced with None, which will be removed later.
+    # Add missing metadata to records. If the metadata cannot be fixed, the
+    # record is replaced with None, which is dropped below.
     fixed_records: list[dict[str, t.Any] | None] = [
         fix_metadata(record=record, cache=cache)
         for record in tqdm(records, desc="Fixing metadata in records")
     ]
 
-    # Remove regular records which has been removed during processing
-    records = [
-        record
-        for record, fixed_record in zip(records, fixed_records)
-        if fixed_record is not None
-    ]
-
-    # Remove invalid evaluation records
     processed_records = [
         record
         for record in fixed_records
@@ -271,30 +262,26 @@ def process_results(
         for record in tqdm(processed_records, desc="Adding missing entries")
     ]
 
-    # Group processed records by model for bucket upload
-    # Naming convention: replace slashes with underscores, preserve dots
+    # Group processed records into one per-model file each, naming files by the
+    # model id with slashes replaced by underscores (dots preserved).
     results_by_model: dict[str, list[dict]] = {}
     for record in processed_records:
-        # EEE format has model_info.name, old format has model at top level
         model_id = record.get("model_info", {}).get("name") or record.get(
             "model", "unknown"
         )
-        # Strip anchor tags before creating filename
         model_id_str = plain_model_id(model_id)
         filename = model_id_str.replace("/", "_") + ".jsonl"
         results_by_model.setdefault(filename, []).append(record)
 
-    # Upload results to HF bucket as per-model files
     hf_results_bucket = "hf://buckets/EuroEval/results"
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     logger.info("Uploading results to HF bucket...")
-    for filename, records in results_by_model.items():
+    for filename, model_records in results_by_model.items():
         file_path = RESULTS_DIR / filename
-        content = "\n".join(json.dumps(record) for record in records) + "\n"
+        content = "\n".join(json.dumps(record) for record in model_records) + "\n"
         file_path.write_text(content, encoding="utf-8")
 
-    # Sync to bucket using the Python API
     try:
         api = HfApi()
         api.sync_bucket(source=str(RESULTS_DIR), dest=hf_results_bucket)
@@ -461,6 +448,51 @@ def fix_metadata(record: dict[str, t.Any], cache: Cache) -> dict[str, t.Any] | N
     return record
 
 
+# Keyword patterns mapping a model id to a generative type, checked in order.
+# A None type marks a non-generative model (e.g. an encoder).
+_GENERATIVE_TYPE_KEYWORDS: list[tuple[list[str], str | None]] = [
+    (["bert", "xlm-r", "encoder"], None),
+    (["-base", "-pt"], "base"),
+    (["-instruct", "-it$", "-chat"], "instruction_tuned"),
+    (["^o[1-9]$", "^o[1-9]-", "deepseek-r1"], "reasoning"),
+]
+
+
+def _model_id_from_record(record: dict) -> str:
+    """Return the model id from a record, unwrapping an HTML anchor tag.
+
+    Args:
+        record:
+            A record from the JSONL file.
+
+    Returns:
+        The model id, with any surrounding anchor tag stripped.
+    """
+    model_id = get_model_name(record)
+    if model_id.startswith("<a href="):
+        model_id_match = re.search(r">(.+?)<", model_id)
+        if model_id_match:
+            return model_id_match.group(1)
+    return model_id
+
+
+def _base_model_id(model_id: str) -> str:
+    """Return the base-model slug (``org/repo-prefix``) for a model id.
+
+    Args:
+        model_id:
+            The full model id (e.g. ``org/repo-instruct``).
+
+    Returns:
+        The base-model slug (e.g. ``org/repo``), or the id unchanged if it
+        has no ``org/repo`` structure.
+    """
+    if "/" not in model_id:
+        return model_id
+    parts = model_id.split("/")
+    return f"{parts[0]}/{parts[1].split('-')[0]}"
+
+
 def get_generative_type(record: dict, cache: Cache) -> str | None:
     """Asks for the generative type of a model.
 
@@ -473,12 +505,7 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
     Returns:
         The generative type of the model.
     """
-    # If model ID is anchor tag, extract the actual model ID
-    model_id = get_model_name(record)
-    if get_model_name(record).startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", get_model_name(record))
-        if model_id_match:
-            model_id = model_id_match.group(1)
+    model_id = _model_id_from_record(record=record)
 
     if "#thinking" in model_id:
         cache.generative_type[model_id] = "reasoning"
@@ -487,42 +514,21 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
         cache.generative_type[model_id] = "instruction_tuned"
         return "instruction_tuned"
 
-    # Remove extras from model ID
+    # Remove revisions and parameters from the model ID.
     model_id = model_id.split("@")[0].split("#")[0]
 
     while True:
         if model_id in cache.generative_type:
             return cache.generative_type[model_id]
 
-        # Pre-fill based on keywords in model name
-        null_keywords = ["bert", "xlm-r", "encoder"]
-        base_keywords = ["-base", "-pt"]
-        instruct_keywords = ["-instruct", "-it$", "-chat"]
-        reasoning_keywords = ["^o[1-9]$", "^o[1-9]-", "deepseek-r1"]
-        if any(
-            re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
-            for keyword in null_keywords
-        ):
-            cache.generative_type[model_id] = None
-            return None
-        if any(
-            re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
-            for keyword in base_keywords
-        ):
-            cache.generative_type[model_id] = "base"
-            return "base"
-        if any(
-            re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
-            for keyword in instruct_keywords
-        ):
-            cache.generative_type[model_id] = "instruction_tuned"
-            return "instruction_tuned"
-        if any(
-            re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
-            for keyword in reasoning_keywords
-        ):
-            cache.generative_type[model_id] = "reasoning"
-            return "reasoning"
+        # Pre-fill the generative type from keyword matches in the model id.
+        for keywords, gen_type in _GENERATIVE_TYPE_KEYWORDS:
+            if any(
+                re.search(pattern=keyword, string=model_id, flags=re.IGNORECASE)
+                for keyword in keywords
+            ):
+                cache.generative_type[model_id] = gen_type
+                return gen_type
 
         msg = f"What is the generative type of {model_id!r}?"
         if "/" in model_id:
@@ -553,15 +559,7 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is commercially licensed.
     """
-    # If model ID is anchor tag, extract the actual model ID
-    model_id = get_model_name(record)
-    if get_model_name(record).startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", get_model_name(record))
-        if model_id_match:
-            model_id = model_id_match.group(1)
-
-    # Remove extras from model ID
-    model_id = model_id.split("@")[0].split("#")[0]
+    model_id = _model_id_from_record(record=record).split("@")[0].split("#")[0]
 
     # Assume that non-generative models are always commercially licensed
     if not record.get("generative", True):
@@ -600,28 +598,12 @@ def is_trained_from_scratch(
     Returns:
         True if the model was trained from scratch.
     """
-    # If model ID is anchor tag, extract the actual model ID
-    model_id = get_model_name(record)
-    if get_model_name(record).startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", get_model_name(record))
-        if model_id_match:
-            model_id = model_id_match.group(1)
+    model_id = _model_id_from_record(record=record).split("@")[0].split("#")[0]
 
-    # Remove extras from model ID
-    model_id = model_id.split("@")[0].split("#")[0]
-
-    # Check cache first
     base_model_cache = {
-        (
-            m.split("/")[0] + "/" + m.split("/")[1].split("-")[0] if "/" in m else m
-        ): value
-        for m, value in cache.trained_from_scratch.items()
+        _base_model_id(m): value for m, value in cache.trained_from_scratch.items()
     }
-    base_model_id = (
-        model_id.split("/")[0] + "/" + model_id.split("/")[1].split("-")[0]
-        if "/" in model_id
-        else model_id
-    )
+    base_model_id = _base_model_id(model_id)
     if base_model_id in base_model_cache:
         value = base_model_cache[base_model_id]
         if model_id not in cache.trained_from_scratch:
@@ -670,17 +652,8 @@ def is_merge(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is a merged model.
     """
-    # If model ID is anchor tag, extract the actual model ID
-    model_id = get_model_name(record)
-    if get_model_name(record).startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", get_model_name(record))
-        if model_id_match:
-            model_id = model_id_match.group(1)
+    model_id = _model_id_from_record(record=record).split("@")[0].split("#")[0]
 
-    # Remove extras from model ID
-    model_id = model_id.split("@")[0].split("#")[0]
-
-    # Return cached value if available
     if model_id in cache.merge:
         return cache.merge[model_id]
 
@@ -720,28 +693,10 @@ def is_open(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is open (open-weight). Closed models return False.
     """
-    # If model ID is anchor tag, extract the actual model ID
-    model_id = get_model_name(record)
-    if get_model_name(record).startswith("<a href="):
-        model_id_match = re.search(r">(.+?)<", get_model_name(record))
-        if model_id_match:
-            model_id = model_id_match.group(1)
+    model_id = _model_id_from_record(record=record).split("@")[0].split("#")[0]
 
-    # Remove revisions and parameters from model ID
-    model_id = model_id.split("@")[0].split("#")[0]
-
-    # Check cache first
-    base_model_cache = {
-        (
-            m.split("/")[0] + "/" + m.split("/")[1].split("-")[0] if "/" in m else m
-        ): value
-        for m, value in cache.open.items()
-    }
-    base_model_id = (
-        model_id.split("/")[0] + "/" + model_id.split("/")[1].split("-")[0]
-        if "/" in model_id
-        else model_id
-    )
+    base_model_cache = {_base_model_id(m): value for m, value in cache.open.items()}
+    base_model_id = _base_model_id(model_id)
     if base_model_id in base_model_cache:
         value = base_model_cache[base_model_id]
         if model_id not in cache.open:
@@ -1014,51 +969,70 @@ def extract_model_metadata(
             trained_from_scratch = record.get("trained_from_scratch", None)
             model_url = record.get("model_url", None)
 
-        # Convert to appropriate types
-        def _to_float_or_nan(val: str | float | int | None) -> float:
-            if isinstance(val, (int, float)):
-                return val if val >= 0 else float("nan")
-            if isinstance(val, str):
-                try:
-                    num = float(val)
-                    return num if num >= 0 else float("nan")
-                except ValueError:
-                    return float("nan")
-            return float("nan")
-
-        def _to_bool(val: str | bool | None) -> bool:
-            if isinstance(val, bool):
-                return val
-            if isinstance(val, str):
-                return val.lower() == "true"
-            return False
-
         num_params = _to_float_or_nan(num_params_raw)
         vocab_size = _to_float_or_nan(vocab_size_raw)
         context = _to_float_or_nan(context_raw)
         merge = _to_bool(merge_raw)
 
+        # The frontend hides version columns and doesn't sort by them, so the
+        # plain version string is sufficient.
+        version = _get_version(record) or "<9.2.0"
+        dataset = get_dataset(record)
+
         for model_id in model_ids:
             metadata_dict[model_id].update(
-                dict(
-                    parameters=num_params,
-                    vocabulary_size=vocab_size,
-                    context=context,
-                    generative_type=generative_type,
-                    commercial=commercially_licensed,
-                    merge=merge,
-                    open=open_weights,
-                    trained_from_scratch=trained_from_scratch,
-                    model_url=model_url,
-                )
+                {
+                    "parameters": num_params,
+                    "vocabulary_size": vocab_size,
+                    "context": context,
+                    "generative_type": generative_type,
+                    "commercial": commercially_licensed,
+                    "merge": merge,
+                    "open": open_weights,
+                    "trained_from_scratch": trained_from_scratch,
+                    "model_url": model_url,
+                }
             )
-
-        # Version column. The frontend hides these and doesn't sort by them,
-        # so the plain version string is sufficient.
-        version = record.get("euroeval_version", "<9.2.0")
-        dataset = get_dataset(record)
-        if dataset:
-            metadata_dict[model_id][f"{dataset}_version"] = version
+            if dataset:
+                metadata_dict[model_id][f"{dataset}_version"] = version
 
     logger.info("Extracted model metadata.")
     return metadata_dict
+
+
+def _to_float_or_nan(val: str | float | int | None) -> float:
+    """Coerce a metadata value to a non-negative float, else NaN.
+
+    Args:
+        val:
+            The raw value, which may be a number, numeric string, or None.
+
+    Returns:
+        The value as a float if it is non-negative, otherwise NaN.
+    """
+    if isinstance(val, int | float):
+        return val if val >= 0 else float("nan")
+    if isinstance(val, str):
+        try:
+            num = float(val)
+            return num if num >= 0 else float("nan")
+        except ValueError:
+            return float("nan")
+    return float("nan")
+
+
+def _to_bool(val: str | bool | None) -> bool:
+    """Coerce a metadata value to a boolean.
+
+    Args:
+        val:
+            The raw value, which may be a bool, "true"/"false" string, or None.
+
+    Returns:
+        The boolean value, defaulting to False.
+    """
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, str):
+        return val.lower() == "true"
+    return False

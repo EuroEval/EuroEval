@@ -5,75 +5,40 @@ from __future__ import annotations
 import io
 import json
 import logging
-import os
 import re
-import subprocess
 import tarfile
 import time
 import typing as t
 from functools import cache
 
 from .backup import backup_results
+from .bucket_sync import sync_bucket
 from .paths import NEW_RESULTS_PATH, RESULTS_DIR, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
 
-HF_RESULTS_BUCKET = "EuroEval/results"
-
-
 def _sync_results_from_bucket() -> None:
-    """Sync HF bucket and rebuild results.tar.gz.
-
-    Syncs the single EuroEval/results bucket to RESULTS_DIR, then rebuilds
-    results.tar.gz from the per-model JSONL files and creates a backup.
-    """
-    _sync_buckets()
-
-
-def _sync_buckets() -> None:
-    """Sync HF bucket via hf sync, rebuild results.tar.gz, and backup.
+    """Sync the HF results bucket, rebuild results.tar.gz, and back it up.
 
     Syncs the single EuroEval/results bucket to RESULTS_DIR, rebuilds
-    results.tar.gz, and creates a backup.
+    results.tar.gz from the per-model JSONL files, and creates a backup.
 
     Raises:
         FileNotFoundError:
             If sync fails and no local files exist.
     """
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    sync_bucket()
 
-    # Sync from bucket
-    logger.info("Syncing results from HF bucket...")
-    hf_token = os.getenv("HF_TOKEN")
-    if hf_token:
-        result = subprocess.run(
-            ["hf", "sync", f"hf://buckets/{HF_RESULTS_BUCKET}/", str(RESULTS_DIR)],
-            capture_output=True,
-            text=True,
-            check=False,
-            env={**os.environ, "HF_TOKEN": hf_token},
-        )
-        if result.returncode != 0:
-            logger.warning("hf sync failed: %s", result.stderr)
-        else:
-            logger.info("Synced bucket: %s", result.stdout.strip())
-    else:
-        logger.warning("HF_TOKEN not set. Cannot sync from bucket.")
-
-    # Verify files exist
     file_count = len(list(RESULTS_DIR.glob("*.jsonl")))
     if file_count == 0:
         raise FileNotFoundError(
             "No results available. Sync failed and no local cache exists."
         )
-
     logger.info(f"Synced {file_count:,} model files to {RESULTS_DIR}.")
 
-    # Rebuild results.tar.gz from mounted files
     _rebuild_results_tar_gz()
 
-    # Create backup
     backup_path = backup_results()
     if backup_path:
         logger.info(f"Backup created at {backup_path}.")
@@ -156,20 +121,18 @@ def load_raw_results() -> list[dict[str, t.Any]]:
     """
     results_path = RESULTS_PATH
 
-    # Sync from HF bucket to ensure we have all results
+    # Always sync first so a newer bucket overrides a stale local archive.
     if not results_path.exists():
         logger.info("results.tar.gz not found, syncing from bucket...")
         _sync_results_from_bucket()
         if not results_path.exists():
             raise FileNotFoundError(f"Results file {results_path} not found.")
     else:
-        # Check if bucket has more results than our local file
         logger.info("Checking for newer results in bucket...")
         _sync_results_from_bucket()
 
     logger.info(f"Loading raw results from {results_path}...")
 
-    # Unpack the tar.gz file in memory and read the JSONL file
     with tarfile.open(results_path, "r:gz") as tar:
         results_file = tar.extractfile(member="results/results.jsonl")
         if results_file is None:
@@ -179,32 +142,28 @@ def load_raw_results() -> list[dict[str, t.Any]]:
         result_lines = results_file.read().decode(encoding="utf-8").splitlines()
         logger.info(f"Loaded {len(result_lines):,} existing results.")
 
-    # If there are new results, add them to the existing results
     new_results_path = NEW_RESULTS_PATH
     if new_results_path.exists():
-        with new_results_path.open() as f:
+        with new_results_path.open(encoding="utf-8") as f:
             new_result_lines = f.read().splitlines()
         result_lines.extend(new_result_lines)
         logger.info(f"Loaded {len(new_result_lines):,} new results.")
         new_results_path.unlink()
 
-    # Parse each line as JSON, skipping empty lines
-    records = list()
+    records: list[dict[str, t.Any]] = []
     for line_idx, line in enumerate(result_lines):
         if not line.strip():
             continue
 
-        # We split on '}{' to handle cases where multiple JSON objects are on the
-        # same line
+        # A single line can hold several concatenated JSON objects, so split on
+        # the `}{` boundary between them before parsing each.
         for record in re.split(pattern=r"(?<=})(?={)", string=line):
             if not record.strip():
                 continue
             try:
-                parsed_record = json.loads(record)
-                # Keep record in original format (EEE or old EuroEval format)
-                records.append(parsed_record)
-            except json.JSONDecodeError:
-                raise ValueError(f"Invalid JSON on line {line_idx:,}: {record}.")
+                records.append(json.loads(record))
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON on line {line_idx:,}: {record}.") from e
 
     return records
 
@@ -220,5 +179,4 @@ def load_processed_results() -> list[dict[str, t.Any]]:
     Returns:
         The processed results (same as raw results).
     """
-    # In the single bucket structure, processed results are the same as raw results
     return load_raw_results()

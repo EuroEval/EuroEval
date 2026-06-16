@@ -39,6 +39,11 @@ LEADERBOARD_TASKS: list[str] = [
     "european-values",
 ]
 
+# The two leaderboard categories that every model is ranked within. The
+# "generative" variant scores all tasks; "all_models" only scores NLU tasks so
+# non-generative models can compete.
+LEADERBOARD_CATEGORIES: tuple[str, str] = ("generative", "all_models")
+
 # TaskGroup -> "nlu"/"nlg". The "all_models" leaderboard variant only
 # scores NLU tasks so non-generative models can compete.
 _NLU_GROUPS: frozenset[TaskGroup] = frozenset(
@@ -54,6 +59,21 @@ def task_category(task_name: str) -> str:
     """Return ``"nlu"`` or ``"nlg"`` for ``task_name``."""
     task = get_all_tasks()[task_name]
     return "nlu" if task.task_group in _NLU_GROUPS else "nlg"
+
+
+def category_includes_task(category: str, task: str) -> bool:
+    """Check whether a task is scored within a leaderboard category.
+
+    Args:
+        category:
+            Leaderboard category name.
+        task:
+            Task slug.
+
+    Returns:
+        True if the task is scored within the category.
+    """
+    return category == "generative" or task_category(task) == "nlu"
 
 
 def task_metric_names(task_name: str) -> tuple[str, str | None]:

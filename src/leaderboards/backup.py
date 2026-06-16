@@ -72,7 +72,7 @@ def _validate_results() -> None:
     for model_file in sampled_files:
         file_has_issues = False
         try:
-            with open(model_file, "r", encoding="utf-8") as f:
+            with model_file.open("r", encoding="utf-8") as f:
                 for line_num, line in enumerate(f, 1):
                     if not line.strip():
                         continue
@@ -110,7 +110,7 @@ def _validate_results() -> None:
         raise ValueError(msg)
 
     logger.info(
-        f"✓ Validated {records_checked:,} records from {len(sampled_files):,} sampled"
+        f"Validated {records_checked:,} records from {len(sampled_files):,} sampled"
         f" files - all have required metadata fields"
     )
 
@@ -213,7 +213,7 @@ def backup_results(source: Path = RESULTS_PATH) -> Path | None:
     backup_path = BACKUPS_DIR / f"{BACKUP_PREFIX}{timestamp}{BACKUP_SUFFIX}"
     shutil.copy2(src=source, dst=backup_path)
     logger.info(
-        f"Snapshotted {source.name} → {backup_path} "
+        f"Snapshotted {source.name} -> {backup_path} "
         f"({backup_path.stat().st_size:,} bytes)"
     )
 

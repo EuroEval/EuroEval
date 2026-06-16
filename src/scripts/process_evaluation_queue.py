@@ -33,13 +33,12 @@ EUROEVAL_VM_ID        Optional identifier for this VM/host, written into a
 from __future__ import annotations
 
 import argparse
-import hashlib
+import datetime as dt
 import logging
 import os
 import sys
 import time
 import urllib.error
-from datetime import datetime
 from functools import cache
 from pathlib import Path
 
@@ -136,9 +135,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("process_evaluation_queue")
 
-# Tracks hashes of result lines downloaded from HF bucket at startup.
-_OLD_RESULT_HASHES: set[str] = set()
-
 
 ASSIGNEE = ""
 VM_ID = os.environ.get("EUROEVAL_VM_ID", "")
@@ -188,7 +184,6 @@ def download_results_from_hf() -> int:
     Returns:
         The number of lines loaded.
     """
-    global _OLD_RESULT_HASHES
     RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     api = HfApi()
@@ -221,7 +216,6 @@ def download_results_from_hf() -> int:
         for line in lines:
             if line.strip():
                 all_lines.append(line)
-                _OLD_RESULT_HASHES.add(hashlib.sha256(line.encode()).hexdigest())
 
     if all_lines:
         RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
@@ -294,13 +288,15 @@ def parse_args() -> None:
         "--thermal-pause-temp",
         type=float,
         default=THERMAL_CONFIG.pause_temp_c,
-        help="GPU temperature (°C) at or above which to pause before the next issue.",
+        help=(
+            "GPU temperature (deg C) at or above which to pause before the next issue."
+        ),
     )
     parser.add_argument(
         "--thermal-resume-temp",
         type=float,
         default=THERMAL_CONFIG.resume_temp_c,
-        help="GPU temperature (°C) the GPU must cool to before resuming.",
+        help="GPU temperature (deg C) the GPU must cool to before resuming.",
     )
     args = parser.parse_args()
     GPU_MEMORY_UTILIZATION = args.gpu_memory_utilization
@@ -398,7 +394,7 @@ def age_sort_value(issue: dict) -> float:
     if not isinstance(created_at, str):
         return float("inf")
     try:
-        parsed = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        parsed = dt.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
     except ValueError:
         return float("inf")
     return parsed.timestamp()
@@ -512,7 +508,7 @@ def process_queue_once() -> None:
                 logger.info(
                     f"#{issue['number']}: skipping -- model {model_id!r} needs "
                     f"~{needed / (1024**3):.1f} GiB of weights "
-                    f"(× {GPU_FIT_OVERHEAD} overhead), which exceeds the local "
+                    f"(x {GPU_FIT_OVERHEAD} overhead), which exceeds the local "
                     f"GPU memory of {gpu_bytes / (1024**3):.1f} GiB. Leaving the "
                     "issue unassigned so a larger machine can pick it up."
                 )
@@ -715,7 +711,7 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     # Append new unique lines to cache file
     new_lines = [line for line in lines if line and line not in existing_lines]
     if new_lines:
-        with open(model_file, "a", encoding="utf-8") as f:
+        with model_file.open("a", encoding="utf-8") as f:
             for line in new_lines:
                 f.write(line + "\n")
 

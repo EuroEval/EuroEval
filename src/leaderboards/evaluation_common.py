@@ -375,7 +375,15 @@ def extract_language_groups(body: str | None) -> list[str]:
 
 
 def result_dataset_language_pairs(lines: c.Iterable[str]) -> set[tuple[str, str]]:
-    """Return dataset/language pairs parsed from benchmark-result JSONL lines."""
+    """Return dataset/language pairs parsed from benchmark-result JSONL lines.
+
+    Args:
+        lines:
+            Benchmark-result JSONL lines to parse.
+
+    Returns:
+        The set of (dataset, language) pairs found in the lines.
+    """
     from euroeval.data_models import BenchmarkResult  # noqa: PLC0415
 
     pairs: set[tuple[str, str]] = set()
@@ -391,7 +399,17 @@ def result_dataset_language_pairs(lines: c.Iterable[str]) -> set[tuple[str, str]
 def missing_official_dataset_language_pairs(
     lines: c.Iterable[str], requested_languages: c.Iterable[str]
 ) -> set[tuple[str, str]]:
-    """Return missing official dataset/language pairs for the requested languages."""
+    """Return missing official dataset/language pairs for the requested languages.
+
+    Args:
+        lines:
+            Benchmark-result JSONL lines that have already been produced.
+        requested_languages:
+            The language codes the leaderboard requested.
+
+    Returns:
+        The set of official (dataset, language) pairs that have no result yet.
+    """
     requested = set(requested_languages)
     expected_pairs = {
         pair for pair in official_dataset_language_pairs() if pair[1] in requested

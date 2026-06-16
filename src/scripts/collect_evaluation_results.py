@@ -6,8 +6,8 @@ been picked up by the compute server), it:
 
 1. Fetches the model's results JSONL from the HF bucket.
 2. Concatenates all results into ``new_results.jsonl`` at the repo root.
-3. Runs ``python -m scripts.generate_leaderboards`` to merge the new
-   results into the leaderboards.
+3. Runs ``generate_leaderboards.py`` to merge the new results into the
+   leaderboards.
 4. Builds the frontend and deploys it to Vercel as a prebuilt artifact
    (so Vercel's CLI never has to upload the >100 MB ``.git`` packfile).
 5. Posts a comment and closes each processed issue.
@@ -510,7 +510,7 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
             model_file = RESULTS_DIR / filename
             # Append if not already present
             if line not in existing_by_model.get(filename, set()):
-                with open(model_file, "a", encoding="utf-8") as f:
+                with model_file.open("a", encoding="utf-8") as f:
                     f.write(line + "\n")
         except json.JSONDecodeError:
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
@@ -540,7 +540,8 @@ def regenerate_leaderboards(force: bool = False) -> bool:
     Returns:
         True if the subprocess exited cleanly, otherwise False.
     """
-    cmd = [sys.executable, "-m", "src.scripts.generate_leaderboards"]
+    script_path = Path(__file__).resolve().parent / "generate_leaderboards.py"
+    cmd = [sys.executable, str(script_path)]
     if force:
         cmd.append("--force")
     logger.info(f"Running: {' '.join(cmd)}")
@@ -645,7 +646,7 @@ def verify_leaderboards() -> bool:
                         logger.error(msg)
                         all_passed = False
 
-                logger.info(f"{csv_file.name}: {len(rows):,} rows ✓")
+                logger.info(f"{csv_file.name}: {len(rows):,} rows OK")
         except Exception as e:
             logger.error(f"{csv_file.name}: Failed to read: {e}")
             all_passed = False

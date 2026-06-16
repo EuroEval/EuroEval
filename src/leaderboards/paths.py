@@ -36,6 +36,17 @@ OUTPUT_DIR: Path = REPO_ROOT / "src" / "frontend" / "csv"
 
 
 def _env_path(name: str, default: Path) -> Path:
+    """Return the path from environment variable ``name``, or ``default``.
+
+    Args:
+        name:
+            The environment variable to read.
+        default:
+            The path to use when the variable is unset or empty.
+
+    Returns:
+        The user-expanded path from the environment, or the default.
+    """
     value = os.environ.get(name)
     return Path(value).expanduser() if value else default
 
@@ -61,5 +72,3 @@ NEW_RESULTS_PATH: Path = _env_path(
 # Single directory for all per-model JSONL files with metadata attached.
 # Git-ignored, synced with hf://buckets/EuroEval/results/.
 RESULTS_DIR: Path = REPO_ROOT / "results"
-
-# Note: `.euroeval_cache/` is now deprecated for results storage.

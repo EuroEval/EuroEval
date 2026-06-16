@@ -207,14 +207,7 @@ def model_has_partial_results(
         True when at least one matching result line exists and at least
         one official pair is still missing; False otherwise.
     """
-    matching: list[str] = []
-    for line in lines:
-        try:
-            parsed = BenchmarkResult.from_dict(config=json.loads(line))
-        except (TypeError, ValueError, json.JSONDecodeError):
-            continue
-        if parsed.model == model_id:
-            matching.append(line)
+    matching = result_lines_for_model(lines=lines, model_id=model_id)
     if not matching:
         return False
     missing = missing_official_dataset_language_pairs(

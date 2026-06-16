@@ -90,8 +90,8 @@ def wait_for_gpu_to_cool(config: ThermalConfig) -> None:
     if temp is None or temp < config.pause_temp_c:
         return
     logger.info(
-        f"GPU at {temp:.0f}°C (>= {config.pause_temp_c:.0f}°C); pausing until "
-        f"it cools below {config.resume_temp_c:.0f}°C."
+        f"GPU at {temp:.0f}C (>= {config.pause_temp_c:.0f}C); pausing until "
+        f"it cools below {config.resume_temp_c:.0f}C."
     )
     while True:
         time.sleep(config.poll_interval_seconds)
@@ -99,7 +99,7 @@ def wait_for_gpu_to_cool(config: ThermalConfig) -> None:
         if temp is None:
             return
         if temp < config.resume_temp_c:
-            logger.info(f"GPU cooled to {temp:.0f}°C; resuming.")
+            logger.info(f"GPU cooled to {temp:.0f}C; resuming.")
             return
 
 

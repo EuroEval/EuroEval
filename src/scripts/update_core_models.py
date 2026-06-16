@@ -43,7 +43,7 @@ from leaderboards.paths import CORE_MODELS_CONFIG
 from leaderboards.task_metadata import languages_with_official_datasets
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s ⋅ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    level=logging.INFO, format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
 logger = logging.getLogger("update_core_models")
 
@@ -390,13 +390,13 @@ def render_diff_comment(diff: IssueDiff) -> str:
         parts.append("No changes since the previous run.")
         return "\n".join(parts)
     if diff.added:
-        parts.append("**Added** (" + str(len(diff.added)) + "):\n")
+        parts.append(f"**Added** ({len(diff.added)}):\n")
         parts.extend(f"- {m}" for m in diff.added)
     if diff.removed:
-        parts.append("\n**Removed** (" + str(len(diff.removed)) + "):\n")
+        parts.append(f"\n**Removed** ({len(diff.removed)}):\n")
         parts.extend(f"- {m}" for m in diff.removed)
     if diff.flag_changes:
-        parts.append("\n**Flag changes** (" + str(len(diff.flag_changes)) + "):\n")
+        parts.append(f"\n**Flag changes** ({len(diff.flag_changes)}):\n")
         for mid, old, new in diff.flag_changes:
             parts.append(f"- {mid}: `{old or '(none)'}` -> `{new or '(none)'}`")
     return "\n".join(parts)
@@ -455,6 +455,7 @@ def _get_issue_body(issue_number: int, token: str) -> str:
         The issue body string (empty if the issue has none).
     """
     issue = _gh_request(path=f"/repos/{REPO}/issues/{issue_number}", token=token)
+    assert isinstance(issue, dict)
     return issue.get("body") or ""
 
 

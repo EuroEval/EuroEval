@@ -19,11 +19,16 @@ We use the splitted version of this dataset created during the GPT-NL project
 (https://huggingface.co/datasets/GPT-NL/DuidelijkeTaal-v1.0-split).
 """
 
+import logging
+
 import pandas as pd
 from datasets import ClassLabel, Dataset, DatasetDict, load_dataset
 from evaluate import load
 from huggingface_hub import HfApi
 from requests import HTTPError
+
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_duidelijke_taal")
 
 
 def main() -> None:
@@ -186,8 +191,10 @@ def filter_dataset(
         ]
 
     df_filtered_dedup = df_filtered.drop_duplicates(subset="text")
-    print(f"Dropped {len(df_filtered) - len(df_filtered_dedup)} duplicate examples.")
-    print(
+    logger.info(
+        f"Dropped {len(df_filtered) - len(df_filtered_dedup)} duplicate examples."
+    )
+    logger.info(
         f"Filtered dataset split contains {len(df_filtered_dedup)} simplification "
         f"pairs."
     )

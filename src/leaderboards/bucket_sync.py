@@ -8,6 +8,7 @@ import collections.abc as c
 import json
 import logging
 import os
+import shutil
 import subprocess
 from contextlib import contextmanager
 from pathlib import Path
@@ -56,7 +57,7 @@ def sync_bucket() -> None:
         return
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    logger.info("Syncing bucket %s → %s...", HF_RESULTS_BUCKET, RESULTS_DIR)
+    logger.info(f"Syncing bucket {HF_RESULTS_BUCKET} -> {RESULTS_DIR}...")
     result = subprocess.run(
         ["hf", "sync", f"hf://buckets/{HF_RESULTS_BUCKET}/", str(RESULTS_DIR)],
         capture_output=True,
@@ -65,9 +66,9 @@ def sync_bucket() -> None:
         env={**os.environ, "HF_TOKEN": hf_token},
     )
     if result.returncode != 0:
-        logger.warning("hf sync failed: %s", result.stderr)
+        logger.warning(f"hf sync failed: {result.stderr}")
     else:
-        logger.info("Synced bucket: %s", result.stdout.strip())
+        logger.info(f"Synced bucket: {result.stdout.strip()}")
 
 
 @contextmanager
@@ -77,7 +78,7 @@ def sync_bucket_context() -> c.Generator[Path, None, None]:
     Syncs bucket on entry, logs completion on exit.
 
     Yields:
-        Path: Results directory
+        The results directory.
     """
     logger.info("Syncing bucket...")
     sync_bucket()
@@ -92,14 +93,14 @@ def sync_bucket_with_backup() -> c.Generator[Path, None, None]:
     Syncs bucket on entry, creates backup on exit.
 
     Yields:
-        Path: Results directory
+        The results directory.
     """
     logger.info("Syncing bucket...")
     sync_bucket()
     yield RESULTS_DIR
     backup_path = backup_results()
     if backup_path:
-        logger.info("Backup created at %s.", backup_path)
+        logger.info(f"Backup created at {backup_path}.")
     logger.info("Bucket sync complete.")
 
 
@@ -120,45 +121,40 @@ def upload_results_to_bucket(results_file: Path) -> None:
 
     if not results_file.exists():
         logger.warning(
-            "Results file %s does not exist. Nothing to upload.", results_file
+            f"Results file {results_file} does not exist. Nothing to upload."
         )
         return
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Group results by model
     results_by_model: dict[str, list[str]] = {}
-    logger.info("Reading results from %s...", results_file)
-    with results_file.open() as f:
+    logger.info(f"Reading results from {results_file}...")
+    with results_file.open(encoding="utf-8") as f:
         for line in f:
             if line.strip():
                 try:
                     rec = json.loads(line)
-                    result = BenchmarkResult.from_dict(rec)
+                    result = BenchmarkResult.from_dict(config=rec)
                     if result.model:
-                        model_key = _sanitise_model_id(result.model)
+                        model_key = _sanitise_model_id(model_id=result.model)
                         if model_key not in results_by_model:
                             results_by_model[model_key] = []
                         results_by_model[model_key].append(line.strip())
                 except Exception as e:
-                    logger.debug("Skipping invalid record during upload: %s", e)
+                    logger.debug(f"Skipping invalid record during upload: {e}")
 
     if not results_by_model:
         logger.warning("No valid results found to upload.")
         return
 
-    # Write per-model JSONL files
-    logger.info(
-        "Writing %s per-model files to %s...", len(results_by_model), RESULTS_DIR
-    )
+    logger.info(f"Writing {len(results_by_model)} per-model files to {RESULTS_DIR}...")
     for model_key, lines in results_by_model.items():
         model_file = RESULTS_DIR / f"{model_key}.jsonl"
-        with model_file.open("w") as f:
+        with model_file.open("w", encoding="utf-8") as f:
             for line in lines:
                 f.write(line + "\n")
 
-    # Sync to bucket
-    logger.info("Syncing local %s → bucket %s...", RESULTS_DIR, HF_RESULTS_BUCKET)
+    logger.info(f"Syncing local {RESULTS_DIR} -> bucket {HF_RESULTS_BUCKET}...")
     result = subprocess.run(
         ["hf", "sync", str(RESULTS_DIR), f"hf://buckets/{HF_RESULTS_BUCKET}/"],
         capture_output=True,
@@ -167,9 +163,9 @@ def upload_results_to_bucket(results_file: Path) -> None:
         env={**os.environ, "HF_TOKEN": hf_token},
     )
     if result.returncode != 0:
-        logger.warning("hf sync upload failed: %s", result.stderr)
+        logger.warning(f"hf sync upload failed: {result.stderr}")
     else:
-        logger.info("Uploaded results to bucket: %s", result.stdout.strip())
+        logger.info(f"Uploaded results to bucket: {result.stdout.strip()}")
 
 
 def is_sync_available() -> bool:
@@ -178,8 +174,7 @@ def is_sync_available() -> bool:
     Returns:
         True if hf binary is on PATH, False otherwise.
     """
-    result = subprocess.run(["which", "hf"], capture_output=True, check=False)
-    return result.returncode == 0
+    return shutil.which("hf") is not None
 
 
 # Alias for backwards compatibility

@@ -144,7 +144,7 @@ def remove_failed_label(number: int) -> None:
 
 
 def add_gated_label(number: int) -> None:
-    """Attach the ``Gated`` label to an issue.
+    """Attach the ``gated`` label to an issue.
 
     Args:
         number:
@@ -158,7 +158,7 @@ def add_gated_label(number: int) -> None:
 
 
 def remove_gated_label(number: int) -> None:
-    """Remove the ``Gated`` label from an issue if present.
+    """Remove the ``gated`` label from an issue if present.
 
     Args:
         number:
@@ -170,7 +170,9 @@ def remove_gated_label(number: int) -> None:
     """
     try:
         gh_request(
-            path=f"/repos/{REPO}/issues/{number}/labels/{GATED_LABEL}", method="DELETE"
+            path=f"/repos/{REPO}/issues/{number}/labels/"
+            + urllib.parse.quote(GATED_LABEL),
+            method="DELETE",
         )
     except urllib.error.HTTPError as e:
         if e.code == 404:

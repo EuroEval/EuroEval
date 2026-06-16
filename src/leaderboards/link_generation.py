@@ -45,11 +45,11 @@ KNOWN_MODELS_WITHOUT_URLS = [
 
 
 @cache
-def generate_task_link(id: int, label: str) -> str:
+def generate_task_link(task_id: int, label: str) -> str:
     """Generate a link to a EuroEval task.
 
     Args:
-        id:
+        task_id:
             A unique task ID.
         label:
             The task ID, in kebab-case.
@@ -66,7 +66,7 @@ def generate_task_link(id: int, label: str) -> str:
         "'"
     )
     return (
-        f"<a id={id} href='https://euroeval.com/tasks/{label}/' {styling}>"
+        f"<a id={task_id} href='https://euroeval.com/tasks/{label}/' {styling}>"
         f"{label.replace('-', ' ').capitalize()}"
         "</a>"
     )
@@ -84,25 +84,24 @@ def generate_model_url(model_id: str) -> str | None:
     """
     model_id_without_extras = model_id.split("@")[0].split("#")[0]
 
-    # Skip URL generation for models without hosted pages
     if model_id_without_extras in KNOWN_MODELS_WITHOUT_URLS:
         return None
 
-    url = generate_ollama_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_hf_hub_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_openai_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_anthropic_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_google_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_xai_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_ordbogen_url(model_id=model_id_without_extras)
+    url_generators = (
+        generate_ollama_url,
+        generate_hf_hub_url,
+        generate_openai_url,
+        generate_anthropic_url,
+        generate_google_url,
+        generate_xai_url,
+        generate_ordbogen_url,
+    )
+    for url_generator in url_generators:
+        url = url_generator(model_id=model_id_without_extras)
+        if url is not None:
+            return url
 
-    return url
+    return None
 
 
 @cache

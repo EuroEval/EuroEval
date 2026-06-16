@@ -8,7 +8,6 @@
 import datetime as dt
 import re
 import subprocess
-import typing as t
 from pathlib import Path
 
 
@@ -70,21 +69,22 @@ def set_new_version(major: int, minor: int, patch: int) -> None:
     )
     pyproject_path.write_text(pyproject)
 
-    # Install newest project
-    subprocess.run(["make", "install"])
+    # Install newest project. check=True so a failed step aborts before we tag
+    # and push a release.
+    subprocess.run(["make", "install"], check=True)
 
     # Add to version control
-    subprocess.run(["git", "add", ".pre-commit-config.yaml"])
-    subprocess.run(["git", "add", "CHANGELOG.md"])
-    subprocess.run(["git", "add", "pyproject.toml"])
-    subprocess.run(["git", "add", "uv.lock"])
-    subprocess.run(["git", "commit", "-m", f"feat: v{version}"])
-    subprocess.run(["git", "tag", f"v{version}"])
-    subprocess.run(["git", "push"])
-    subprocess.run(["git", "push", "--tags"])
+    subprocess.run(["git", "add", ".pre-commit-config.yaml"], check=True)
+    subprocess.run(["git", "add", "CHANGELOG.md"], check=True)
+    subprocess.run(["git", "add", "pyproject.toml"], check=True)
+    subprocess.run(["git", "add", "uv.lock"], check=True)
+    subprocess.run(["git", "commit", "-m", f"feat: v{version}"], check=True)
+    subprocess.run(["git", "tag", f"v{version}"], check=True)
+    subprocess.run(["git", "push"], check=True)
+    subprocess.run(["git", "push", "--tags"], check=True)
 
 
-def get_current_version() -> t.Tuple[int, int, int]:
+def get_current_version() -> tuple[int, int, int]:
     """Fetch the current version of the package.
 
     Returns:
@@ -94,21 +94,15 @@ def get_current_version() -> t.Tuple[int, int, int]:
         RuntimeError:
             If no version can be found in the `pyproject.toml` file.
     """
-    # Get all the version candidates from pyproject.toml
     version_candidates = re.search(
         r'(?<=version = ")[^"]+(?=")', Path("pyproject.toml").read_text()
     )
-
-    # If no version candidates were found, raise an error
     if version_candidates is None:
         raise RuntimeError("No version found in pyproject.toml.")
 
-    # Otherwise, extract the version, split it into major, minor and patch parts and
-    # return these
-    else:
-        version_str = version_candidates.group(0).replace(".dev", "")
-        major, minor, patch = map(int, version_str.split("."))
-        return major, minor, patch
+    version_str = version_candidates.group(0).replace(".dev", "")
+    major, minor, patch = map(int, version_str.split("."))
+    return major, minor, patch
 
 
 if __name__ == "__main__":

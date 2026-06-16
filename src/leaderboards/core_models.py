@@ -55,7 +55,7 @@ from .task_metadata import (
     languages_with_official_datasets,
     official_datasets_for_language,
 )
-from .utils import drop_val_duplicates
+from .utils import drop_val_duplicates, plain_model_id
 
 logger = logging.getLogger(__name__)
 
@@ -150,33 +150,6 @@ class CoreModel:
 # ---------------------------------------------------------------------------
 # Model classification helpers
 # ---------------------------------------------------------------------------
-
-
-_ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
-# Strips trailing ``(zero-shot)``, ``(val)``, ``(zero-shot, val)`` etc.
-# annotations that `extract_model_ids_from_record` appends to variants.
-_VARIANT_SUFFIX_RE = re.compile(r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$")
-
-
-def plain_model_id(model_id: str) -> str:
-    """Strip the HTML anchor and variant-suffix from a result-record model id.
-
-    Records label few-shot vs zero-shot and test vs validation by appending
-    ``(zero-shot)`` / ``(val)`` / ``(zero-shot, val)`` to the model id.
-    For the core-model list we collapse all those variants down to the
-    canonical ``org/repo`` slug — we don't want to list the same model
-    several times.
-
-    Args:
-        model_id:
-            The (possibly anchored, possibly variant-suffixed) identifier.
-
-    Returns:
-        The canonical ``org/repo`` slug.
-    """
-    m = _ANCHOR_RE.search(model_id)
-    inner = m.group("inner").strip() if m else model_id
-    return _VARIANT_SUFFIX_RE.sub("", inner)
 
 
 def _classify_model(model_id: str, metadata: dict) -> ModelType:
@@ -548,7 +521,33 @@ _OSAI_WEIGHTS_BLOCK_RE = re.compile(
 )
 
 
-def _parse_osai_models(bundle: str) -> list[dict[str, t.Any]]:
+class _OsaiEntry(t.TypedDict):
+    """A single parsed OSAI model entry.
+
+    Attributes:
+        name:
+            The model's system name.
+        endmodelname:
+            The end-model name.
+        type:
+            The model type (e.g. ``"text"``).
+        open_count:
+            Number of openness ranking fields marked open.
+        required_open:
+            Whether trainingcode and datasources_basemodel are both open.
+        weight_links:
+            Mapping from each open weights field name to its HF URL.
+    """
+
+    name: str
+    endmodelname: str
+    type: str
+    open_count: int
+    required_open: bool
+    weight_links: dict[str, str]
+
+
+def _parse_osai_models(bundle: str) -> list[_OsaiEntry]:
     """Parse model entries out of an OSAI JS bundle.
 
     Each model entry begins with a `system:{...}` block and is followed by
@@ -562,13 +561,10 @@ def _parse_osai_models(bundle: str) -> list[dict[str, t.Any]]:
             database.
 
     Returns:
-        List of dicts, one per model, with keys: name, endmodelname,
-        type, open_count, required_open (bool — trainingcode and
-        datasources_basemodel both open), weight_links (dict mapping
-        the open weights field name to its HF URL).
+        List of parsed entries, one per model.
     """
     matches = list(_OSAI_SYSTEM_RE.finditer(bundle))
-    entries: list[dict[str, t.Any]] = []
+    entries: list[_OsaiEntry] = []
     for i, m in enumerate(matches):
         start = m.start()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(bundle)
@@ -598,7 +594,7 @@ def _parse_osai_models(bundle: str) -> list[dict[str, t.Any]]:
                 weight_links[field] = link
 
         entries.append(
-            dict(
+            _OsaiEntry(
                 name=m.group("name"),
                 endmodelname=m.group("endmodelname"),
                 type=m.group("type"),
@@ -653,7 +649,7 @@ def osai_top_models(
         List of `(model_id, rank)` pairs in 1-based rank order. Empty
         list if both the scrape and overrides yield nothing.
     """
-    logger.info(f"Fetching top-{limit} the OSAI open models...")
+    logger.info(f"Fetching the top-{limit} OSAI open models...")
 
     bundle = _osai_bundle()
     if bundle is None:
@@ -697,10 +693,6 @@ def osai_top_models(
             ranked.append((model_id, len(ranked) + 1))
             if len(ranked) >= limit:
                 return ranked
-        if not entry["weight_links"]:
-            logger.info(
-                f"OSAI: skipping {entry['endmodelname']!r}: no open weights link."
-            )
     logger.info(f"Fetched {len(ranked)} OSAI models.")
     return ranked
 
@@ -742,7 +734,7 @@ def build_core_model_list(
             Regex patterns for EU-built models (from `core_models.yaml`).
         api_model_ids (optional):
             Hardcoded list of litellm-style API model identifiers from
-            `core_models.yaml::api_models`. Always emitted with the 👾
+            `core_models.yaml::api_models`. Always emitted with the API
             flag and "All languages". Defaults to None.
         osai_overrides (optional):
             Override list used when the OSAI scrape fails. Defaults to None.

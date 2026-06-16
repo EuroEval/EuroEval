@@ -76,7 +76,7 @@ def vm_marker_matches(number: int, vm_id: str) -> bool:
 
 
 def release_issue_if_owned(number: int, vm_id: str, assignee: str) -> bool:
-    """Clear our vm marker and unassign — only if this VM still owns the issue.
+    """Clear our vm marker and unassign, only if this VM still owns the issue.
 
     Two queue processors sharing the same ``GITHUB_TOKEN`` owner cannot be
     distinguished by the issue assignee, so the body's ``vm-id`` marker is

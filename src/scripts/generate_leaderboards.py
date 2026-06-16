@@ -26,7 +26,7 @@ from leaderboards.task_metadata import (
 )
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s ⋅ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    level=logging.INFO, format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
 
 
@@ -40,13 +40,13 @@ load_dotenv()
 # Constants for leaderboard generation
 MINIMUM_VERSION: str = "15.0.0"
 MINIMUM_NUMBER_OF_MODEL_RECORDS: int = 7
+CORE_MODELS_STALE_DAYS: int = 30
 BANNED_VERSIONS: list[str] = ["9.3.0", "10.0.0"]
-BANNED_MODEL_PATTERNS: list[re.Pattern] = [
+BANNED_MODEL_PATTERNS: list[re.Pattern[str]] = [
     re.compile("^meta-llama/Llama-3.1-405B-Instruct$"),  # Temporary ban
     re.compile("^utter-project/EuroVLM-9B-Preview$"),  # Temporary ban
 ]
-OPEN_SOURCE_MODEL_PATTERNS: list[re.Pattern] = []
-TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern] = [
+TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"Qwen/.*"),
     re.compile(r"google/.*"),
     re.compile(r"mistralai/.*"),
@@ -85,7 +85,7 @@ TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern] = [
 @click.option(
     "--categories",
     "-c",
-    default=["generative", "all_models"],
+    default=("generative", "all_models"),
     multiple=True,
     help=(
         "Categories to generate leaderboards for. Defaults to 'generative' and "
@@ -119,7 +119,7 @@ TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern] = [
     ),
 )
 def main(
-    categories: tuple[t.Literal["generative", "all_models"]],
+    categories: tuple[t.Literal["generative", "all_models"], ...],
     force: bool,
     skip_core_models_check: bool,
     skip_results_processing: bool,
@@ -187,10 +187,7 @@ def main(
     try:
         backup_results()
     except OSError as exc:  # pCloud unavailable / disk full / etc.
-        logging.warning(f"Results backup failed: {exc}")
-
-
-CORE_MODELS_STALE_DAYS = 30
+        logger.warning(f"Results backup failed: {exc}")
 
 
 def _maybe_refresh_core_models() -> None:
@@ -207,7 +204,7 @@ def _maybe_refresh_core_models() -> None:
         with CORE_MODELS_CONFIG.open("r") as f:
             config = safe_load(f) or {}
     except OSError as exc:
-        logging.warning(f"Core models config unreadable: {exc}")
+        logger.warning(f"Core models config unreadable: {exc}")
         return
 
     last_updated_raw = config.get("last_updated")
@@ -220,7 +217,7 @@ def _maybe_refresh_core_models() -> None:
             try:
                 last = dt.date.fromisoformat(str(last_updated_raw))
             except ValueError:
-                logging.warning(
+                logger.warning(
                     f"Cannot parse last_updated={last_updated_raw!r}; "
                     "treating as stale."
                 )
@@ -242,7 +239,7 @@ def _maybe_refresh_core_models() -> None:
     try:
         subprocess.run([sys.executable, str(script_path)], check=True)
     except subprocess.CalledProcessError as exc:
-        logging.warning(f"update_core_models failed (exit {exc.returncode}).")
+        logger.warning(f"update_core_models failed (exit {exc.returncode}).")
 
 
 def generate_task_metrics() -> None:
