@@ -1,6 +1,6 @@
 """Sync benchmark results bidirectionally with the Hugging Face bucket.
 
-Downloads from the raw-results bucket, merges all results into
+Downloads from the unified results bucket, merges all results into
 euroeval_benchmark_results.jsonl, then uploads new local results back
 to the bucket.
 """
@@ -11,7 +11,7 @@ from pathlib import Path
 
 from euroeval.data_models import BenchmarkResult
 from leaderboards.bucket_sync import sync_bucket, upload_results_to_bucket
-from leaderboards.paths import RAW_RESULTS_DIR
+from leaderboards.paths import RESULTS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -59,11 +59,11 @@ def merge_results() -> int:
                         existing[key] = line.strip()
         logger.info("Found %s existing results", f"{len(existing):,}")
 
-    # Load results from raw bucket
-    if RAW_RESULTS_DIR.exists():
-        logger.info("Loading results from %s...", RAW_RESULTS_DIR)
+    # Load results from unified results directory
+    if RESULTS_DIR.exists():
+        logger.info("Loading results from %s...", RESULTS_DIR)
         bucket_count = 0
-        for jsonl_file in sorted(RAW_RESULTS_DIR.glob("*.jsonl")):
+        for jsonl_file in sorted(RESULTS_DIR.glob("*.jsonl")):
             with jsonl_file.open() as f:
                 for line in f:
                     if line.strip():
