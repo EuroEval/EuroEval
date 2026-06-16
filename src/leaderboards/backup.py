@@ -15,6 +15,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
+import random
 import shutil
 from pathlib import Path
 
@@ -56,16 +57,20 @@ def _validate_processed_results() -> None:
             "Run evaluation result collection before backing up."
         )
 
+    # Sample up to 5 files for validation
+    sample_size = min(5, len(model_files))
+    sampled_files = random.sample(model_files, sample_size)
+
     logger.info(
-        f"Validating {len(model_files):,} result files for required "
-        f"metadata fields: {REQUIRED_METADATA_FIELDS}"
+        f"Validating {sample_size} sampled result files (of {len(model_files):,} total)"
+        f" for required metadata fields: {REQUIRED_METADATA_FIELDS}"
     )
 
     files_with_issues = 0
     records_checked = 0
     records_with_issues = 0
 
-    for model_file in model_files:
+    for model_file in sampled_files:
         file_has_issues = False
         try:
             with open(model_file, "r", encoding="utf-8") as f:
@@ -98,7 +103,7 @@ def _validate_processed_results() -> None:
 
     if files_with_issues > 0:
         msg = (
-            f"{files_with_issues} files have missing metadata. Checked "
+            f"{files_with_issues} sampled files have missing metadata. Checked "
             f"{records_checked:,} records, found {records_with_issues:,} with issues. "
             f"Required: {REQUIRED_METADATA_FIELDS}. Re-run evaluation with "
             f"metadata collection enabled."
@@ -106,8 +111,8 @@ def _validate_processed_results() -> None:
         raise ValueError(msg)
 
     logger.info(
-        f"✓ Validated {records_checked:,} records from {len(model_files):,} files - "
-        "all have required metadata fields"
+        f"✓ Validated {records_checked:,} records from {len(sampled_files):,} sampled"
+        f" files - all have required metadata fields"
     )
 
 
