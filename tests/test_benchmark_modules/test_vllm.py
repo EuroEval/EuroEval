@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 import torch
 import torch.version
-
 from transformers.models.auto.image_processing_auto import AutoImageProcessor
 
 from euroeval.benchmark_modules.vllm import (
@@ -336,17 +335,23 @@ class TestSkipImageProcessorContext:
 
     def test_suppresses_missing_image_processor_error(self) -> None:
         """Inside the context, from_pretrained returns None instead of raising."""
+
         def _raise_missing(
-            cls: type, pretrained_model_name_or_path: str, *args: object, **kwargs: object
+            cls: type,
+            pretrained_model_name_or_path: str,
+            *args: object,
+            **kwargs: object,
         ) -> object:
             raise OSError(
                 f"Can't load image processor for '{pretrained_model_name_or_path}'. "
                 "If you were trying to load it from 'https://huggingface.co/models', "
-                "make sure you don't have a local directory with the same name."
+                "make sure you don't have a local directory with the same name. "
+                "Otherwise, make sure the path contains a preprocessor_config.json"
+                " file."
             )
 
         real_func = AutoImageProcessor.from_pretrained.__func__
-        AutoImageProcessor.from_pretrained = classmethod(_raise_missing)  # type: ignore[method-assign]
+        AutoImageProcessor.from_pretrained = classmethod(_raise_missing)  # ty: ignore[invalid-assignment]
         try:
             with pytest.raises(OSError, match="Can't load image processor"):
                 AutoImageProcessor.from_pretrained("missing-model")
@@ -359,23 +364,27 @@ class TestSkipImageProcessorContext:
             with pytest.raises(OSError, match="Can't load image processor"):
                 AutoImageProcessor.from_pretrained("missing-model")
         finally:
-            AutoImageProcessor.from_pretrained = classmethod(real_func)  # type: ignore[method-assign]
+            AutoImageProcessor.from_pretrained = classmethod(real_func)  # ty: ignore[invalid-assignment]
 
     def test_unrelated_oserrors_are_not_suppressed(self) -> None:
         """OSErrors unrelated to image processor loading propagate unchanged."""
+
         def _raise_other(
-            cls: type, pretrained_model_name_or_path: str, *args: object, **kwargs: object
+            cls: type,
+            pretrained_model_name_or_path: str,
+            *args: object,
+            **kwargs: object,
         ) -> object:
             raise OSError("Some other file-system error")
 
         real_func = AutoImageProcessor.from_pretrained.__func__
-        AutoImageProcessor.from_pretrained = classmethod(_raise_other)  # type: ignore[method-assign]
+        AutoImageProcessor.from_pretrained = classmethod(_raise_other)  # ty: ignore[invalid-assignment]
         try:
             with _skip_image_processor_context():
                 with pytest.raises(OSError, match="Some other file-system error"):
                     AutoImageProcessor.from_pretrained("any-model")
         finally:
-            AutoImageProcessor.from_pretrained = classmethod(real_func)  # type: ignore[method-assign]
+            AutoImageProcessor.from_pretrained = classmethod(real_func)  # ty: ignore[invalid-assignment]
 
 
 class TestLoadModelImageProcessorRetry:
@@ -389,9 +398,7 @@ class TestLoadModelImageProcessorRetry:
     """
 
     def test_load_model_retries_on_missing_image_processor(
-        self,
-        model_config: ModelConfig,
-        benchmark_config: BenchmarkConfig,
+        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
         """load_model succeeds when LLM() raises the image-processor OSError once."""
         mock_llm_instance = MagicMock()
@@ -410,7 +417,9 @@ class TestLoadModelImageProcessorRetry:
                 raise OSError(
                     "Can't load image processor for 'test-model/4bit'. "
                     "If you were trying to load it from 'https://huggingface.co/models',"
-                    " make sure you don't have a local directory with the same name."
+                    " make sure you don't have a local directory with the same name. "
+                    "Otherwise, make sure the path contains a preprocessor_config.json"
+                    " file."
                 )
             return mock_llm_instance
 
@@ -420,7 +429,11 @@ class TestLoadModelImageProcessorRetry:
                 side_effect=_llm_constructor,
                 create=True,
             ),
-            patch("euroeval.benchmark_modules.vllm.vllm", new=mock_vllm_module, create=True),
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
             patch("euroeval.benchmark_modules.vllm.clear_vllm"),
             patch(
                 "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
@@ -449,9 +462,7 @@ class TestLoadModelImageProcessorRetry:
         assert result is mock_llm_instance
 
     def test_load_model_raises_invalid_model_when_retry_also_fails(
-        self,
-        model_config: ModelConfig,
-        benchmark_config: BenchmarkConfig,
+        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
     ) -> None:
         """load_model raises InvalidModel when both attempts fail."""
         mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
@@ -474,7 +485,11 @@ class TestLoadModelImageProcessorRetry:
                 side_effect=_always_fail,
                 create=True,
             ),
-            patch("euroeval.benchmark_modules.vllm.vllm", new=mock_vllm_module, create=True),
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
             patch("euroeval.benchmark_modules.vllm.clear_vllm"),
             patch(
                 "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",

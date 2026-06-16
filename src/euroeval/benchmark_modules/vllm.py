@@ -137,23 +137,22 @@ def _skip_image_processor_context() -> c.Generator[None, None, None]:
 
     @classmethod  # type: ignore[misc]
     def patched(
-        cls: type,
-        pretrained_model_name_or_path: str,
-        *args: object,
-        **kwargs: object,
+        cls: type, pretrained_model_name_or_path: str, *args: object, **kwargs: object
     ) -> object:
         try:
-            return original_func(cls, pretrained_model_name_or_path, *args, **kwargs)
+            return original_func(cls, pretrained_model_name_or_path, *args, **kwargs)  # ty: ignore[invalid-argument-type]
         except OSError as e:
-            if "Can't load image processor" in str(e):
+            if "Can't load image processor" in str(
+                e
+            ) and "preprocessor_config.json" in str(e):
                 return None
             raise
 
-    AutoImageProcessor.from_pretrained = patched  # type: ignore[method-assign]
+    AutoImageProcessor.from_pretrained = patched  # ty: ignore[invalid-assignment]
     try:
         yield
     finally:
-        AutoImageProcessor.from_pretrained = classmethod(original_func)  # type: ignore[method-assign]
+        AutoImageProcessor.from_pretrained = classmethod(original_func)  # ty: ignore[invalid-assignment]
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -1292,7 +1291,9 @@ def load_model(
     try:
         model = LLM(**llm_kwargs)  # ty: ignore[invalid-argument-type]
     except (RuntimeError, ValueError, OSError) as e:
-        if "Can't load image processor" in str(e):
+        if "Can't load image processor" in str(e) and "preprocessor_config.json" in str(
+            e
+        ):
             log(
                 f"Model {model_id!r} is missing an image processor config. Retrying "
                 "without image processing since EuroEval only does text inference.",
