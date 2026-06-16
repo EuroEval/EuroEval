@@ -18,6 +18,7 @@ from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
 from transformers import PythonBackend, SentencePieceBackend, TokenizersBackend
 from transformers.generation.configuration_utils import GenerationConfig
+from transformers.models.auto.image_processing_auto import AutoImageProcessor
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
@@ -121,6 +122,38 @@ if t.TYPE_CHECKING:
 # class (Gemma4ForConditionalGeneration) and a text-only class
 # (Gemma4TextForCausalLM).  vLLM only registers the former, so we remap here.
 _ARCHITECTURE_ALIASES: dict[str, str] = {"Gemma4TextForCausalLM": "Gemma4ForCausalLM"}
+
+
+@contextlib.contextmanager
+def _skip_image_processor_context() -> c.Generator[None, None, None]:
+    """Suppress missing image processor errors during model loading.
+
+    Some models have multimodal architectures (e.g. Mistral3ForConditionalGeneration)
+    but are released without the preprocessor_config.json that transformers needs to
+    load the image processor.  Since EuroEval only does text inference, we can safely
+    return None for the image processor and let vLLM load the text backbone normally.
+    """
+    original_func = AutoImageProcessor.from_pretrained.__func__
+
+    @classmethod  # type: ignore[misc]
+    def patched(
+        cls: type,
+        pretrained_model_name_or_path: str,
+        *args: object,
+        **kwargs: object,
+    ) -> object:
+        try:
+            return original_func(cls, pretrained_model_name_or_path, *args, **kwargs)
+        except OSError as e:
+            if "Can't load image processor" in str(e):
+                return None
+            raise
+
+    AutoImageProcessor.from_pretrained = patched  # type: ignore[method-assign]
+    try:
+        yield
+    finally:
+        AutoImageProcessor.from_pretrained = classmethod(original_func)  # type: ignore[method-assign]
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -1217,46 +1250,63 @@ def load_model(
         select_backend_and_parallelism()
     )
 
-    try:
-        model_location = (
-            model_id
-            if internet_connection_available() or Path(model_id).is_dir()
-            else resolve_model_path(download_dir=download_dir)
-        )
+    model_location = (
+        model_id
+        if internet_connection_available() or Path(model_id).is_dir()
+        else resolve_model_path(download_dir=download_dir)
+    )
 
-        max_model_len = min(
-            true_max_model_len,
-            MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
-            if generative_type == GenerativeType.REASONING
-            else MAX_CONTEXT_LENGTH,
-        )
-        model = LLM(
-            model=model_location,
-            tokenizer=model_location,
-            gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
-            max_model_len=max_model_len,
-            max_num_batched_tokens=max_model_len,
-            download_dir=download_dir,
-            trust_remote_code=benchmark_config.trust_remote_code,
-            revision=revision,
-            seed=4242,
-            distributed_executor_backend=distributed_executor_backend,
-            tensor_parallel_size=tensor_parallel_size,
-            pipeline_parallel_size=pipeline_parallel_size,
-            disable_custom_all_reduce=True,
-            quantization=quantization,
-            dtype=dtype,  # ty: ignore[invalid-argument-type]
-            enforce_eager=True,
-            # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
-            # so we disable it for now
-            enable_prefix_caching=False,
-            enable_lora=model_config.adapter_base_model_id is not None,
-            max_lora_rank=256,
-            **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
-            **vllm_params,
-        )
+    max_model_len = min(
+        true_max_model_len,
+        MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
+        if generative_type == GenerativeType.REASONING
+        else MAX_CONTEXT_LENGTH,
+    )
+    llm_kwargs: dict[str, object] = dict(
+        model=model_location,
+        tokenizer=model_location,
+        gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
+        max_model_len=max_model_len,
+        max_num_batched_tokens=max_model_len,
+        download_dir=download_dir,
+        trust_remote_code=benchmark_config.trust_remote_code,
+        revision=revision,
+        seed=4242,
+        distributed_executor_backend=distributed_executor_backend,
+        tensor_parallel_size=tensor_parallel_size,
+        pipeline_parallel_size=pipeline_parallel_size,
+        disable_custom_all_reduce=True,
+        quantization=quantization,
+        dtype=dtype,
+        enforce_eager=True,
+        # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
+        # so we disable it for now
+        enable_prefix_caching=False,
+        enable_lora=model_config.adapter_base_model_id is not None,
+        max_lora_rank=256,
+    )
+    if hf_overrides:
+        llm_kwargs["hf_overrides"] = hf_overrides
+    llm_kwargs.update(vllm_params)
+
+    try:
+        model = LLM(**llm_kwargs)  # ty: ignore[invalid-argument-type]
     except (RuntimeError, ValueError, OSError) as e:
-        if "awaiting a review from the repo authors" in str(e):
+        if "Can't load image processor" in str(e):
+            log(
+                f"Model {model_id!r} is missing an image processor config. Retrying "
+                "without image processing since EuroEval only does text inference.",
+                level=logging.DEBUG,
+            )
+            try:
+                with _skip_image_processor_context():
+                    model = LLM(**llm_kwargs)  # ty: ignore[invalid-argument-type]
+            except (RuntimeError, ValueError, OSError) as retry_e:
+                raise InvalidModel(
+                    f"The model {model_id!r} could not be loaded. The error was "
+                    f"{retry_e!r}."
+                ) from retry_e
+        elif "awaiting a review from the repo authors" in str(e):
             raise InvalidModel(
                 f"The model {model_id!r} is awaiting a review from the repository "
                 "authors. Please try again later."
@@ -1293,9 +1343,10 @@ def load_model(
                 f"`FULL_LOG=1 euroeval --model {model_id}`."
             )
             raise InvalidModel(msg) from e
-        raise InvalidModel(
-            f"The model {model_id!r} could not be loaded. The error was {e!r}."
-        ) from e
+        else:
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded. The error was {e!r}."
+            ) from e
 
     model.config = hf_model_config
 
