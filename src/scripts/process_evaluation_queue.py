@@ -147,9 +147,8 @@ RESULTS_PATH = Path("euroeval_benchmark_results.jsonl")
 RESULTS_CACHE_DIR = Path(".euroeval_cache/results")
 LOCK_PATH = Path(os.environ.get("EUROEVAL_QUEUE_LOCK", "/tmp/euroeval_queue.lock"))
 
-# Canonical HF buckets for storing results (public read access).
-HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
-HF_PROCESSED_BUCKET = "hf://buckets/EuroEval/processed-results"
+# Canonical HF bucket for storing results (public read access).
+HF_RESULTS_BUCKET = "EuroEval/results"
 
 # Held for the lifetime of the process so the kernel keeps the queue lock
 # alive; released automatically when the process exits.
@@ -193,7 +192,7 @@ def download_results_from_hf() -> int:
     RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     api = HfApi()
-    bucket_id = HF_RAW_BUCKET.replace("hf://buckets/", "")
+    bucket_id = HF_RESULTS_BUCKET
     try:
         # List all files in the bucket
         bucket_files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
@@ -230,7 +229,7 @@ def download_results_from_hf() -> int:
     num_models = len(list(RESULTS_CACHE_DIR.glob("*.jsonl")))
     logger.info(
         f"Downloaded {len(all_lines):,} result lines from {num_models} model(s) "
-        f"in bucket {HF_RAW_BUCKET!r}."
+        f"in bucket {HF_RESULTS_BUCKET!r}."
     )
     return len(all_lines)
 
@@ -685,7 +684,7 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
 
 
 def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
-    """Upload result lines to the HF raw-results bucket.
+    """Upload result lines to the HF results bucket.
 
     Appends new lines to the model-specific file and uploads only that file.
     Never deletes existing files or lines from the bucket (additive only).
@@ -722,9 +721,9 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
 
     # Upload only the model-specific file (additive only, never deletes)
     try:
-        logger.info(f"Uploading results to {HF_RAW_BUCKET}...")
+        logger.info(f"Uploading results to {HF_RESULTS_BUCKET}...")
         api = HfApi()
-        bucket_id = HF_RAW_BUCKET.replace("hf://buckets/", "")
+        bucket_id = HF_RESULTS_BUCKET
         api.upload_file(
             path_or_fileobj=str(model_file),
             path_in_repo=filename,
@@ -743,7 +742,7 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
 def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None:
     """Run euroeval for all languages, uploading to HF bucket after each.
 
-    Results are uploaded incrementally to the Hugging Face raw-results bucket
+    Results are uploaded incrementally to the Hugging Face results bucket
     after each language completes, enabling crash recovery with minimal loss.
 
     Args:
