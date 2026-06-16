@@ -20,7 +20,7 @@ from tqdm.auto import tqdm
 
 from .cache import Cache
 from .link_generation import generate_anchor_tag, generate_model_url
-from .paths import PROCESSED_RESULTS_DIR, RESULTS_PATH
+from .paths import RESULTS_DIR, RESULTS_PATH
 from .result_loading import load_raw_results
 from .task_metadata import task_metric_names
 from .utils import (
@@ -173,10 +173,10 @@ def process_results(
     """
     results_path = RESULTS_PATH
 
-    # Build the cache from the processed records directory if available,
+    # Build the cache from the results directory if available,
     # otherwise fall back to the compressed results file
     cache = Cache.from_processed_records(
-        compressed_results_path=results_path, processed_dir=PROCESSED_RESULTS_DIR
+        compressed_results_path=results_path, results_dir=RESULTS_DIR
     )
 
     # Load all the raw records
@@ -272,8 +272,8 @@ def process_results(
     ]
 
     # Group processed records by model for bucket upload
-    # Match raw bucket naming convention: replace slashes only, preserve dots
-    processed_by_model: dict[str, list[dict]] = {}
+    # Naming convention: replace slashes with underscores, preserve dots
+    results_by_model: dict[str, list[dict]] = {}
     for record in processed_records:
         # EEE format has model_info.name, old format has model at top level
         model_id = record.get("model_info", {}).get("name") or record.get(
@@ -282,48 +282,38 @@ def process_results(
         # Strip anchor tags before creating filename
         model_id_str = plain_model_id(model_id)
         filename = model_id_str.replace("/", "_") + ".jsonl"
-        processed_by_model.setdefault(filename, []).append(record)
+        results_by_model.setdefault(filename, []).append(record)
 
-    # Upload processed results to HF bucket as per-model files
-    hf_processed_bucket = "hf://buckets/EuroEval/processed-results"
-    PROCESSED_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    # Upload results to HF bucket as per-model files
+    hf_results_bucket = "hf://buckets/EuroEval/results"
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Uploading processed results to HF bucket...")
-    for filename, records in processed_by_model.items():
-        file_path = PROCESSED_RESULTS_DIR / filename
+    logger.info("Uploading results to HF bucket...")
+    for filename, records in results_by_model.items():
+        file_path = RESULTS_DIR / filename
         content = "\n".join(json.dumps(record) for record in records) + "\n"
         file_path.write_text(content, encoding="utf-8")
 
     # Sync to bucket using the Python API
     try:
         api = HfApi()
-        api.sync_bucket(source=str(PROCESSED_RESULTS_DIR), dest=hf_processed_bucket)
+        api.sync_bucket(source=str(RESULTS_DIR), dest=hf_results_bucket)
         logger.info(
-            f"Uploaded {len(processed_by_model):,} model files "
-            f"to {hf_processed_bucket}."
+            f"Uploaded {len(results_by_model):,} model files to {hf_results_bucket}."
         )
     except Exception as e:
-        logger.warning(f"Failed to sync processed results: {e}")
+        logger.warning(f"Failed to sync results: {e}")
 
-    # Store records in the tar.gz archive
+    # Store all records in the tar.gz archive as a single JSONL file
+    # This contains all results (raw + processed with metadata)
     with tarfile.open(results_path, "w:gz") as tar:
-        # Raw records
-        raw_content_bytes = "\n".join(json.dumps(record) for record in records).encode(
-            encoding="utf-8"
-        )
-        raw_tarinfo = tarfile.TarInfo(name="results/results.jsonl")
-        raw_tarinfo.size = len(raw_content_bytes)
-        raw_fileobj = io.BytesIO(raw_content_bytes)
-        tar.addfile(tarinfo=raw_tarinfo, fileobj=raw_fileobj)
-
-        # Processed records
-        processed_content_bytes = "\n".join(
+        all_content_bytes = "\n".join(
             json.dumps(record) for record in processed_records
         ).encode(encoding="utf-8")
-        processed_tarinfo = tarfile.TarInfo(name="results/results.processed.jsonl")
-        processed_tarinfo.size = len(processed_content_bytes)
-        processed_fileobj = io.BytesIO(processed_content_bytes)
-        tar.addfile(tarinfo=processed_tarinfo, fileobj=processed_fileobj)
+        tarinfo = tarfile.TarInfo(name="results/results.jsonl")
+        tarinfo.size = len(all_content_bytes)
+        fileobj = io.BytesIO(all_content_bytes)
+        tar.addfile(tarinfo=tarinfo, fileobj=fileobj)
 
 
 def add_missing_entries(
