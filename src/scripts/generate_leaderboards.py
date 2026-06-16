@@ -1,6 +1,7 @@
 """Generate all leaderboards."""
 
 import datetime as dt
+import json
 import logging
 import re
 import subprocess
@@ -16,23 +17,20 @@ from yaml import safe_load
 from leaderboards.backup import backup_results, restore_from_backup_if_missing
 from leaderboards.core_models import API_MODEL_PATTERNS
 from leaderboards.leaderboard_generation import generate_leaderboard
-from leaderboards.paths import CORE_MODELS_CONFIG, LEADERBOARD_CONFIGS_DIR
+from leaderboards.paths import CORE_MODELS_CONFIG, LEADERBOARD_CONFIGS_DIR, REPO_ROOT
 from leaderboards.result_processing import process_results
-from leaderboards.task_metadata import languages_with_official_datasets
-
-try:
-    # Normal invocation: `python -m scripts.generate_leaderboards`, with
-    # `src/` on `sys.path` so `scripts` resolves as a package.
-    from scripts.generate_task_metrics import main as generate_task_metrics
-except ImportError:
-    # File-path invocation (e.g. `uv run src/scripts/generate_leaderboards.py`)
-    # — `scripts` isn't a package on the path, so import the sibling module
-    # directly.
-    from generate_task_metrics import main as generate_task_metrics
+from leaderboards.task_metadata import (
+    LEADERBOARD_TASKS,
+    languages_with_official_datasets,
+    task_metric_pretty_names,
+)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s ⋅ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
+
+
+logger = logging.getLogger(__name__)
 
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
 
@@ -245,6 +243,23 @@ def _maybe_refresh_core_models() -> None:
         subprocess.run([sys.executable, str(script_path)], check=True)
     except subprocess.CalledProcessError as exc:
         logging.warning(f"update_core_models failed (exit {exc.returncode}).")
+
+
+def generate_task_metrics() -> None:
+    """Generate the task-metrics JSON file."""
+    output_path: Path = (
+        REPO_ROOT / "src" / "frontend" / "generated" / "task-metrics.json"
+    )
+    payload: dict[str, list[str]] = {}
+    for task in LEADERBOARD_TASKS:
+        primary, secondary = task_metric_pretty_names(task)
+        payload[task] = [primary] + ([secondary] if secondary is not None else [])
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open(mode="w") as f:
+        json.dump(payload, f, indent=2, sort_keys=True)
+        f.write("\n")
+    logger.info(f"Wrote {output_path.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":
