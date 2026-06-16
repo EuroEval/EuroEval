@@ -5,17 +5,21 @@ from __future__ import annotations
 import io
 import json
 import logging
+import os
 import re
+import subprocess
 import tarfile
 import time
 import typing as t
 from functools import cache
 
 from .backup import backup_results
-from .bucket_sync import sync_bucket
 from .paths import NEW_RESULTS_PATH, RESULTS_DIR, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
+
+
+HF_RESULTS_BUCKET = "EuroEval/results"
 
 
 def _sync_results_from_bucket() -> None:
@@ -41,7 +45,21 @@ def _sync_buckets() -> None:
 
     # Sync from bucket
     logger.info("Syncing results from HF bucket...")
-    sync_bucket()
+    hf_token = os.getenv("HF_TOKEN")
+    if hf_token:
+        result = subprocess.run(
+            ["hf", "sync", f"hf://buckets/{HF_RESULTS_BUCKET}/", str(RESULTS_DIR)],
+            capture_output=True,
+            text=True,
+            check=False,
+            env={**os.environ, "HF_TOKEN": hf_token},
+        )
+        if result.returncode != 0:
+            logger.warning("hf sync failed: %s", result.stderr)
+        else:
+            logger.info("Synced bucket: %s", result.stdout.strip())
+    else:
+        logger.warning("HF_TOKEN not set. Cannot sync from bucket.")
 
     # Verify files exist
     file_count = len(list(RESULTS_DIR.glob("*.jsonl")))
@@ -203,42 +221,12 @@ def load_raw_results() -> list[dict[str, t.Any]]:
 def load_processed_results() -> list[dict[str, t.Any]]:
     """Load processed results.
 
-    Loads from the unified results archive. No distinction is made
-    between raw and processed results - both load from the same source.
+    In the single bucket structure, processed results are loaded from the same
+    unified source as raw results. No distinction is made between raw and
+    processed loading paths.
 
     Returns:
-        The processed results.
-
-    Raises:
-        FileNotFoundError:
-            If the results file is not found.
+        The processed results (same as raw results).
     """
-    results_path = RESULTS_PATH
-    if not results_path.exists():
-        raise FileNotFoundError("Processed results file not found.")
-
-    logger.info(f"Loading processed results from {results_path}...")
-
-    # Unpack the tar.gz file in memory and read the JSONL file
-    with tarfile.open(results_path, "r:gz") as tar:
-        results_file = tar.extractfile(member="results/results.jsonl")
-        if results_file is None:
-            raise FileNotFoundError(
-                "results/results.jsonl not found in the tar.gz file."
-            )
-        result_lines = results_file.read().decode(encoding="utf-8").splitlines()
-
-    # Parse each line as JSON, skipping empty lines
-    results = list()
-    for line_idx, line in enumerate(result_lines):
-        if not line.strip():
-            continue
-        for record in line.replace("}{", "}\n{").split("\n"):
-            if not record.strip():
-                continue
-            try:
-                results.append(json.loads(record))
-            except json.JSONDecodeError:
-                logger.error(f"Invalid JSON on line {line_idx:,}: {record}.")
-
-    return results
+    # In the single bucket structure, processed results are the same as raw results
+    return load_raw_results()
