@@ -44,7 +44,6 @@ BACKUPS_DIR: Path = _env_path(
     Path.home() / "pCloud Drive" / "data" / "euroeval_backup",
 )
 BACKUPS_MAX_BYTES: int = 1_000_000_000  # ~1 GB total size cap
-MAX_BACKUPS: int = 10  # Keep at most 10 timestamped snapshots
 
 # Historical archive of all benchmark records. Stored in BACKUPS_DIR,
 # not tracked in git (43+ MB compressed).

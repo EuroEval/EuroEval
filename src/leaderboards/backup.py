@@ -18,13 +18,7 @@ import logging
 import shutil
 from pathlib import Path
 
-from .paths import (
-    BACKUPS_DIR,
-    BACKUPS_MAX_BYTES,
-    MAX_BACKUPS,
-    PROCESSED_RESULTS_DIR,
-    RESULTS_PATH,
-)
+from .paths import BACKUPS_DIR, BACKUPS_MAX_BYTES, PROCESSED_RESULTS_DIR, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -235,7 +229,7 @@ def _files_equal(a: Path, b: Path, chunk_size: int = 1 << 20) -> bool:
 
 
 def _prune_backups() -> None:
-    """Delete oldest backups until under BACKUPS_MAX_BYTES and MAX_BACKUPS.
+    """Delete oldest backups until under BACKUPS_MAX_BYTES.
 
     Always keeps at least one backup from a previous day (if any exist),
     ensuring it's possible to revert to a prior day's state.
@@ -251,25 +245,7 @@ def _prune_backups() -> None:
             previous_day_backup = backup
             break
 
-    # Prune by count first (keep at most MAX_BACKUPS)
-    while len(backups) > MAX_BACKUPS:
-        oldest = backups[-1]  # Oldest is at the end
-        # Never delete the previous-day backup if it's the only one from yesterday
-        if oldest is previous_day_backup and _is_only_previous_day_backup(
-            backups, previous_day_backup
-        ):
-            logger.info(
-                f"Skipping prune of {oldest.name} - last backup from previous day"
-            )
-            break
-        backups.pop()
-        size = oldest.stat().st_size
-        oldest.unlink()
-        logger.info(
-            f"Pruned old backup {oldest.name} ({size:,} bytes) - over count limit"
-        )
-
-    # Then prune by size if still over cap
+    # Prune by size if over cap
     total = sum(p.stat().st_size for p in backups)
     if total <= BACKUPS_MAX_BYTES:
         return
