@@ -7,12 +7,17 @@ from unittest.mock import MagicMock, patch
 import pytest
 import torch
 import torch.version
+from transformers.models.auto.image_processing_auto import AutoImageProcessor
 
-from euroeval.benchmark_modules.vllm import VLLMModel, load_model
+from euroeval.benchmark_modules.vllm import (
+    VLLMModel,
+    _skip_image_processor_context,
+    load_model,
+)
 from euroeval.constants import MAX_CONTEXT_LENGTH, REASONING_MAX_TOKENS
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import GenerativeType
-from euroeval.exceptions import NeedsSystemDependency
+from euroeval.exceptions import InvalidModel, NeedsSystemDependency
 
 
 class TestNvccCheck:
@@ -317,3 +322,195 @@ class TestLoadModelMaxModelLen:
         mock_llm_cls.assert_called_once()
         call_kwargs = mock_llm_cls.call_args.kwargs
         assert call_kwargs["max_model_len"] == expected_max_model_len
+
+
+class TestSkipImageProcessorContext:
+    """Tests for _skip_image_processor_context.
+
+    Regression for: models such as IMISLab/Maistros-8B-Instruct-4bit that carry a
+    multimodal architecture (Mistral3ForConditionalGeneration) but are released without
+    a preprocessor_config.json.  vLLM calls AutoImageProcessor.from_pretrained() for
+    such models, which previously raised an unhandled OSError and prevented loading.
+    """
+
+    def test_suppresses_missing_image_processor_error(self) -> None:
+        """Inside the context, from_pretrained returns None instead of raising."""
+
+        def _raise_missing(
+            cls: type,
+            pretrained_model_name_or_path: str,
+            *args: object,
+            **kwargs: object,
+        ) -> object:
+            raise OSError(
+                f"Can't load image processor for '{pretrained_model_name_or_path}'. "
+                "If you were trying to load it from 'https://huggingface.co/models', "
+                "make sure you don't have a local directory with the same name. "
+                "Otherwise, make sure the path contains a preprocessor_config.json"
+                " file."
+            )
+
+        real_func = AutoImageProcessor.from_pretrained.__func__
+        AutoImageProcessor.from_pretrained = classmethod(_raise_missing)  # ty: ignore[invalid-assignment]
+        try:
+            with pytest.raises(OSError, match="Can't load image processor"):
+                AutoImageProcessor.from_pretrained("missing-model")
+
+            with _skip_image_processor_context():
+                result = AutoImageProcessor.from_pretrained("missing-model")
+            assert result is None
+
+            # context exited: original behaviour restored
+            with pytest.raises(OSError, match="Can't load image processor"):
+                AutoImageProcessor.from_pretrained("missing-model")
+        finally:
+            AutoImageProcessor.from_pretrained = classmethod(real_func)  # ty: ignore[invalid-assignment]
+
+    def test_unrelated_oserrors_are_not_suppressed(self) -> None:
+        """OSErrors unrelated to image processor loading propagate unchanged."""
+
+        def _raise_other(
+            cls: type,
+            pretrained_model_name_or_path: str,
+            *args: object,
+            **kwargs: object,
+        ) -> object:
+            raise OSError("Some other file-system error")
+
+        real_func = AutoImageProcessor.from_pretrained.__func__
+        AutoImageProcessor.from_pretrained = classmethod(_raise_other)  # ty: ignore[invalid-assignment]
+        try:
+            with _skip_image_processor_context():
+                with pytest.raises(OSError, match="Some other file-system error"):
+                    AutoImageProcessor.from_pretrained("any-model")
+        finally:
+            AutoImageProcessor.from_pretrained = classmethod(real_func)  # ty: ignore[invalid-assignment]
+
+
+class TestLoadModelImageProcessorRetry:
+    """Tests that load_model retries with _skip_image_processor_context on OSError.
+
+    Regression for: IMISLab/Maistros-8B-Instruct-4bit and similar models where
+    LLM() raises OSError("Can't load image processor ...") because the model repo
+    has no preprocessor_config.json.  Before the fix this propagated as InvalidModel;
+    after the fix load_model retries once inside _skip_image_processor_context and
+    succeeds for text-only inference.
+    """
+
+    def test_load_model_retries_on_missing_image_processor(
+        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """load_model succeeds when LLM() raises the image-processor OSError once."""
+        mock_llm_instance = MagicMock()
+        mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
+        mock_hf_model_config.dtype = torch.float16
+        mock_hf_model_config.architectures = None
+        mock_tokeniser = MagicMock()
+        mock_vllm_module = MagicMock()
+        mock_vllm_module.config = MagicMock(spec=[])
+
+        call_count = [0]
+
+        def _llm_constructor(**kwargs: object) -> object:
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise OSError(
+                    "Can't load image processor for 'test-model/4bit'. "
+                    "If you were trying to load it from 'https://huggingface.co/models',"
+                    " make sure you don't have a local directory with the same name. "
+                    "Otherwise, make sure the path contains a preprocessor_config.json"
+                    " file."
+                )
+            return mock_llm_instance
+
+        with (
+            patch(
+                "euroeval.benchmark_modules.vllm.LLM",
+                side_effect=_llm_constructor,
+                create=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
+            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
+            patch(
+                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
+                return_value=("mp", 1, 1),
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.internet_connection_available",
+                return_value=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
+                return_value={},
+            ),
+        ):
+            result = load_model(
+                model_config=model_config,
+                benchmark_config=benchmark_config,
+                attention_backend=None,
+                generative_type=GenerativeType.INSTRUCTION_TUNED,
+                true_max_model_len=4096,
+                tokeniser=mock_tokeniser,
+                hf_model_config=mock_hf_model_config,
+            )
+
+        assert call_count[0] == 2, "LLM should be called twice: first attempt + retry"
+        assert result is mock_llm_instance
+
+    def test_load_model_raises_invalid_model_when_retry_also_fails(
+        self, model_config: ModelConfig, benchmark_config: BenchmarkConfig
+    ) -> None:
+        """load_model raises InvalidModel when both attempts fail."""
+        mock_hf_model_config = MagicMock(spec=["dtype", "architectures"])
+        mock_hf_model_config.dtype = torch.float16
+        mock_hf_model_config.architectures = None
+        mock_tokeniser = MagicMock()
+        mock_vllm_module = MagicMock()
+        mock_vllm_module.config = MagicMock(spec=[])
+
+        def _always_fail(**kwargs: object) -> object:
+            raise OSError(
+                "Can't load image processor for 'test-model/4bit'. "
+                "If you were trying to load it from 'https://huggingface.co/models',"
+                " make sure you don't have a local directory with the same name."
+            )
+
+        with (
+            patch(
+                "euroeval.benchmark_modules.vllm.LLM",
+                side_effect=_always_fail,
+                create=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.vllm",
+                new=mock_vllm_module,
+                create=True,
+            ),
+            patch("euroeval.benchmark_modules.vllm.clear_vllm"),
+            patch(
+                "euroeval.benchmark_modules.vllm.select_backend_and_parallelism",
+                return_value=("mp", 1, 1),
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.internet_connection_available",
+                return_value=True,
+            ),
+            patch(
+                "euroeval.benchmark_modules.vllm.get_vllm_tokenisation_params",
+                return_value={},
+            ),
+        ):
+            with pytest.raises(InvalidModel):
+                load_model(
+                    model_config=model_config,
+                    benchmark_config=benchmark_config,
+                    attention_backend=None,
+                    generative_type=GenerativeType.INSTRUCTION_TUNED,
+                    true_max_model_len=4096,
+                    tokeniser=mock_tokeniser,
+                    hf_model_config=mock_hf_model_config,
+                )
