@@ -1261,35 +1261,36 @@ def load_model(
         if generative_type == GenerativeType.REASONING
         else MAX_CONTEXT_LENGTH,
     )
-    llm_kwargs: dict[str, object] = dict(
-        model=model_location,
-        tokenizer=model_location,
-        gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
-        max_model_len=max_model_len,
-        max_num_batched_tokens=max_model_len,
-        download_dir=download_dir,
-        trust_remote_code=benchmark_config.trust_remote_code,
-        revision=revision,
-        seed=4242,
-        distributed_executor_backend=distributed_executor_backend,
-        tensor_parallel_size=tensor_parallel_size,
-        pipeline_parallel_size=pipeline_parallel_size,
-        disable_custom_all_reduce=True,
-        quantization=quantization,
-        dtype=dtype,
-        enforce_eager=True,
-        # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
-        # so we disable it for now
-        enable_prefix_caching=False,
-        enable_lora=model_config.adapter_base_model_id is not None,
-        max_lora_rank=256,
-    )
-    if hf_overrides:
-        llm_kwargs["hf_overrides"] = hf_overrides
-    llm_kwargs.update(vllm_params)
+
+    def _create_llm() -> "LLM":
+        return LLM(
+            model=model_location,
+            tokenizer=model_location,
+            gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
+            max_model_len=max_model_len,
+            max_num_batched_tokens=max_model_len,
+            download_dir=download_dir,
+            trust_remote_code=benchmark_config.trust_remote_code,
+            revision=revision,
+            seed=4242,
+            distributed_executor_backend=distributed_executor_backend,
+            tensor_parallel_size=tensor_parallel_size,
+            pipeline_parallel_size=pipeline_parallel_size,
+            disable_custom_all_reduce=True,
+            quantization=quantization,
+            dtype=dtype,  # ty: ignore[invalid-argument-type]
+            enforce_eager=True,
+            # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
+            # so we disable it for now
+            enable_prefix_caching=False,
+            enable_lora=model_config.adapter_base_model_id is not None,
+            max_lora_rank=256,
+            **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
+            **vllm_params,
+        )
 
     try:
-        model = LLM(**llm_kwargs)  # ty: ignore[invalid-argument-type]
+        model = _create_llm()
     except (RuntimeError, ValueError, OSError) as e:
         if "Can't load image processor" in str(e) and "preprocessor_config.json" in str(
             e
@@ -1301,7 +1302,7 @@ def load_model(
             )
             try:
                 with _skip_image_processor_context():
-                    model = LLM(**llm_kwargs)  # ty: ignore[invalid-argument-type]
+                    model = _create_llm()
             except (RuntimeError, ValueError, OSError) as retry_e:
                 raise InvalidModel(
                     f"The model {model_id!r} could not be loaded. The error was "
