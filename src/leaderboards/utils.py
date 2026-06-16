@@ -113,17 +113,29 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     model_id = get_model_name(record)
     all_model_notes: list[list[str]] = [[]]
 
-    match record.get("few_shot", True):
-        case False:
-            all_model_notes = [note + ["zero-shot"] for note in all_model_notes]
-        case None:
-            all_model_notes += [note + ["zero-shot"] for note in all_model_notes]
+    # Build combined variant notes for zero-shot and validation split
+    few_shot = record.get("few_shot", True)
+    validation_split = record.get("validation_split", False)
 
-    match record.get("validation_split", False):
-        case True:
-            all_model_notes = [note + ["val"] for note in all_model_notes]
-        case None:
-            all_model_notes += [note + ["val"] for note in all_model_notes]
+    # Determine which notes to add
+    notes_to_add: list[list[str]] = [[]]
+    if few_shot is False:
+        notes_to_add = [["zero-shot"]]
+    elif few_shot is None:
+        notes_to_add = [[], ["zero-shot"]]
+
+    # Expand with validation split variants
+    expanded_notes: list[list[str]] = []
+    for base_note in notes_to_add:
+        if validation_split is True:
+            expanded_notes.append(base_note + ["val"])
+        elif validation_split is None:
+            expanded_notes.append(base_note)
+            expanded_notes.append(base_note + ["val"])
+        else:
+            expanded_notes.append(base_note)
+
+    all_model_notes = expanded_notes
 
     model_id_candidates = [
         f"{re.sub(r'</a>$', '', model_id)} ({', '.join(note)})</a>"
