@@ -13,7 +13,7 @@ from functools import cache
 
 from .backup import backup_results
 from .bucket_sync import sync_bucket
-from .paths import NEW_RESULTS_PATH, RAW_RESULTS_DIR, RESULTS_PATH
+from .paths import NEW_RESULTS_PATH, RESULTS_DIR, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -21,42 +21,44 @@ logger = logging.getLogger(__name__)
 def _sync_results_from_bucket() -> None:
     """Sync HF bucket and rebuild results.tar.gz.
 
-    After syncing, rebuilds results.tar.gz from the files and creates a backup.
+    Syncs the single EuroEval/results bucket to RESULTS_DIR, then rebuilds
+    results.tar.gz from the per-model JSONL files and creates a backup.
     """
     _sync_buckets()
 
 
 def _sync_buckets() -> None:
-    """Sync HF buckets via hf sync, rebuild results.tar.gz, and backup.
+    """Sync HF bucket via hf sync, rebuild results.tar.gz, and backup.
 
-    After syncing, rebuilds results.tar.gz and backs up.
+    Syncs the single EuroEval/results bucket to RESULTS_DIR, rebuilds
+    results.tar.gz, and creates a backup.
 
     Raises:
         FileNotFoundError:
             If sync fails and no local files exist.
     """
-    RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     # Sync from bucket
     logger.info("Syncing results from HF bucket...")
     sync_bucket()
 
     # Verify files exist
-    file_count = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
+    file_count = len(list(RESULTS_DIR.glob("*.jsonl")))
     if file_count == 0:
         # Check if we have local files from previous run
-        local_file_count = len(list(RAW_RESULTS_DIR.glob("*.jsonl")))
+        local_file_count = len(list(RESULTS_DIR.glob("*.jsonl")))
         if local_file_count > 0:
             logger.info(
                 f"Sync returned 0 files. Using {local_file_count:,} local files "
-                f"from {RAW_RESULTS_DIR}."
+                f"from {RESULTS_DIR}."
             )
         else:
             raise FileNotFoundError(
                 "No results available. Sync failed and no local cache exists."
             )
 
-    logger.info(f"Synced {file_count:,} model files to {RAW_RESULTS_DIR}.")
+    logger.info(f"Synced {file_count:,} model files to {RESULTS_DIR}.")
 
     # Rebuild results.tar.gz from mounted files
     _rebuild_results_tar_gz()
@@ -68,14 +70,17 @@ def _sync_buckets() -> None:
 
 
 def _rebuild_results_tar_gz() -> None:
-    """Rebuild results.tar.gz from mounted files in RAW_RESULTS_DIR.
+    """Rebuild results.tar.gz from per-model JSONL files in RESULTS_DIR.
+
+    Reads all *.jsonl files from RESULTS_DIR and merges them into a single
+    results/results.jsonl inside results.tar.gz.
 
     Skips files that can't be read (NFS lazy-loading quirks).
     Logs progress every 100 files.
     """
-    RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    model_files = sorted(RAW_RESULTS_DIR.glob("*.jsonl"))
+    model_files = sorted(RESULTS_DIR.glob("*.jsonl"))
     n_files = len(model_files)
     logger.info(f"Reading {n_files:,} model files from mount point...")
 
@@ -111,37 +116,33 @@ def _rebuild_results_tar_gz() -> None:
     if not all_lines:
         logger.warning("No results found in mount point. results.tar.gz will be empty.")
 
-    # Build results.tar.gz
+    # Build results.tar.gz with only results.jsonl
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with tarfile.open(RESULTS_PATH, "w:gz") as tar:
-        # Raw records
-        raw_content_bytes = "\n".join(sorted(all_lines)).encode(encoding="utf-8")
-        raw_tarinfo = tarfile.TarInfo(name="results/results.jsonl")
-        raw_tarinfo.size = len(raw_content_bytes)
-        raw_fileobj = io.BytesIO(raw_content_bytes)
-        tar.addfile(tarinfo=raw_tarinfo, fileobj=raw_fileobj)
-
-        # Processed records (empty initially, filled by process_results)
-        processed_content_bytes = b""
-        processed_tarinfo = tarfile.TarInfo(name="results/results.processed.jsonl")
-        processed_tarinfo.size = len(processed_content_bytes)
-        processed_fileobj = io.BytesIO(processed_content_bytes)
-        tar.addfile(tarinfo=processed_tarinfo, fileobj=processed_fileobj)
+        content_bytes = "\n".join(sorted(all_lines)).encode(encoding="utf-8")
+        tarinfo = tarfile.TarInfo(name="results/results.jsonl")
+        tarinfo.size = len(content_bytes)
+        fileobj = io.BytesIO(content_bytes)
+        tar.addfile(tarinfo=tarinfo, fileobj=fileobj)
 
     logger.info(f"Rebuilt {RESULTS_PATH} with {len(all_lines):,} results.")
 
 
 def load_raw_results() -> list[dict[str, t.Any]]:
-    """Load raw results.
+    """Load all results from results.tar.gz.
+
+    Loads all evaluation results from the unified results archive.
+    Results are sourced from the single EuroEval/results bucket.
+    No distinction is made between raw and processed results.
 
     Returns:
-        The raw results.
+        All evaluation results.
 
     Raises:
         FileNotFoundError:
-            If the raw results file is not found.
+            If the results file is not found.
         ValueError:
-            If the raw results file contains invalid JSON.
+            If the results file contains invalid JSON.
     """
     results_path = RESULTS_PATH
 
@@ -202,12 +203,15 @@ def load_raw_results() -> list[dict[str, t.Any]]:
 def load_processed_results() -> list[dict[str, t.Any]]:
     """Load processed results.
 
+    Loads from the unified results archive. No distinction is made
+    between raw and processed results - both load from the same source.
+
     Returns:
         The processed results.
 
     Raises:
         FileNotFoundError:
-            If the processed results file is not found.
+            If the results file is not found.
     """
     results_path = RESULTS_PATH
     if not results_path.exists():
@@ -217,10 +221,10 @@ def load_processed_results() -> list[dict[str, t.Any]]:
 
     # Unpack the tar.gz file in memory and read the JSONL file
     with tarfile.open(results_path, "r:gz") as tar:
-        results_file = tar.extractfile(member="results/results.processed.jsonl")
+        results_file = tar.extractfile(member="results/results.jsonl")
         if results_file is None:
             raise FileNotFoundError(
-                "results/results.processed.jsonl not found in the tar.gz file."
+                "results/results.jsonl not found in the tar.gz file."
             )
         result_lines = results_file.read().decode(encoding="utf-8").splitlines()
 
