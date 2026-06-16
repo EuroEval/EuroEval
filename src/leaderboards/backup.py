@@ -35,8 +35,7 @@ def _validate_processed_results() -> None:
 
     Checks that:
     1. RESULTS_DIR exists and contains .jsonl files
-    2. Sample files are checked for required metadata fields
-    3. All records have the required metadata fields
+    2. Sample files (up to 5) are checked for required metadata fields
 
     Raises:
         FileNotFoundError:

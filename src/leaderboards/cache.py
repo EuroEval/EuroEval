@@ -70,7 +70,7 @@ class Cache:
         """
         # Prefer results_dir if provided
         if results_dir is not None and results_dir.exists():
-            return cls.from_processed_dir(results_dir)
+            return cls.from_results_dir(results_dir)
 
         if compressed_results_path is None or not compressed_results_path.exists():
             raise FileNotFoundError(
@@ -82,7 +82,7 @@ class Cache:
             results_file = tar.extractfile(member="results/results.jsonl")
             if results_file is None:
                 logger.warning(
-                    "Processed results file does not exist. Using an empty cache."
+                    "Results file does not exist in tar.gz. Using an empty cache."
                 )
                 return cls()
             result_lines = results_file.read().decode(encoding="utf-8").splitlines()

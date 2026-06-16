@@ -64,17 +64,9 @@ def _sync_buckets() -> None:
     # Verify files exist
     file_count = len(list(RESULTS_DIR.glob("*.jsonl")))
     if file_count == 0:
-        # Check if we have local files from previous run
-        local_file_count = len(list(RESULTS_DIR.glob("*.jsonl")))
-        if local_file_count > 0:
-            logger.info(
-                f"Sync returned 0 files. Using {local_file_count:,} local files "
-                f"from {RESULTS_DIR}."
-            )
-        else:
-            raise FileNotFoundError(
-                "No results available. Sync failed and no local cache exists."
-            )
+        raise FileNotFoundError(
+            "No results available. Sync failed and no local cache exists."
+        )
 
     logger.info(f"Synced {file_count:,} model files to {RESULTS_DIR}.")
 

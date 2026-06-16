@@ -305,7 +305,7 @@ def process_results(
         logger.warning(f"Failed to sync results: {e}")
 
     # Store all records in the tar.gz archive as a single JSONL file
-    # This contains all results (raw + processed with metadata)
+    # This contains all processed records with metadata
     with tarfile.open(results_path, "w:gz") as tar:
         all_content_bytes = "\n".join(
             json.dumps(record) for record in processed_records
