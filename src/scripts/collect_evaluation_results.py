@@ -39,7 +39,6 @@ from dotenv import load_dotenv
 from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
-from euroeval.data_models import BenchmarkResult
 from leaderboards.bucket_sync import create_backup
 from leaderboards.github_api import (
     LABEL,
@@ -108,24 +107,6 @@ def build_dedup_key(result: dict) -> tuple[str, str, str, str] | None:
     except Exception as e:
         logger.debug("Failed to extract dedup key from result: %s", e)
         return None
-
-
-def convert_to_old_format(result_dict: dict) -> dict:
-    """Convert an EEE-format result to the old format for backwards compatibility.
-
-    Args:
-        result_dict:
-            Result dictionary in EEE format.
-
-    Returns:
-        Result dictionary in old format.
-    """
-    try:
-        benchmark_result = BenchmarkResult.from_dict(result_dict)
-        return benchmark_result.to_eee_dict()
-    except Exception as e:
-        logger.debug("Failed to convert result to old format: %s", e)
-        return result_dict
 
 
 def list_all_raw_result_files() -> list[BucketFile]:
@@ -254,9 +235,8 @@ def scan_bucket_for_results() -> list[str]:
                     logger.debug(f"Skipping duplicate result: {key}")
                     continue
 
-                # Convert to old format and add to new results
-                converted = convert_to_old_format(result)
-                new_results.append(json.dumps(converted, ensure_ascii=False))
+                # Keep result in original format (EEE or old EuroEval format)
+                new_results.append(json.dumps(result, ensure_ascii=False))
                 seen_keys.add(key)
 
             except json.JSONDecodeError as e:

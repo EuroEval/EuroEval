@@ -57,7 +57,6 @@ from leaderboards.evaluation_common import (
     run_euroeval,
 )
 from leaderboards.paths import NEW_RESULTS_PATH, RESULTS_PATH
-from leaderboards.result_loading import convert_to_old_format
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -266,12 +265,9 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
     Reads the merged result corpus the same way the leaderboard pipeline
     does -- ``results.tar.gz`` plus the optional ``new_results.jsonl`` --
     but without the destructive unlink that
-    :func:`leaderboards.result_loading.load_raw_results` performs. Each
-    record is normalised via
-    :func:`leaderboards.result_loading.convert_to_old_format` so Every
-    Eval Ever (EEE) records (with ``model`` / ``dataset`` / ``languages``
-    nested under ``model_info`` and ``eval_library.additional_details``)
-    are flattened to top-level keys.
+    :func:`leaderboards.result_loading.load_raw_results` performs. Supports
+    both EEE format (with nested ``model_info`` and ``eval_library``) and
+    old EuroEval format (flat keys).
 
     Returns:
         Every ``(model_id, dataset, language)`` triple in the merged
@@ -308,18 +304,36 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
                     f"snippet={record_text[:120]!r}."
                 )
                 continue
-            try:
-                record = convert_to_old_format(record=raw_record)
-            except (KeyError, TypeError, ValueError) as e:
-                parse_failures += 1
-                logger.warning(
-                    f"Skipping unnormalisable EEE record on line {line_idx:,}: "
-                    f"{e}; snippet={record_text[:120]!r}."
+
+            # Extract fields from EEE or old format
+            # EEE: model_info.name, eval_library.additional_details.dataset/languages
+            # Old: model, dataset, languages/dataset_languages at top level
+            is_eee = "schema_version" in raw_record
+            if is_eee:
+                model = raw_record.get("model_info", {}).get("name", "")
+                eval_additional = raw_record.get("eval_library", {}).get(
+                    "additional_details", {}
                 )
-                continue
-            model = _strip_anchor(model_id=str(record.get("model", "")))
-            dataset = record.get("dataset")
-            languages = record.get("languages") or record.get("dataset_languages") or []
+                dataset = eval_additional.get("dataset")
+                languages_raw = eval_additional.get("languages", "[]")
+                try:
+                    languages = (
+                        json.loads(languages_raw)
+                        if isinstance(languages_raw, str)
+                        else languages_raw
+                    )
+                except json.JSONDecodeError:
+                    languages = []
+            else:
+                model = raw_record.get("model", "")
+                dataset = raw_record.get("dataset")
+                languages = (
+                    raw_record.get("languages")
+                    or raw_record.get("dataset_languages")
+                    or []
+                )
+
+            model = _strip_anchor(model_id=str(model))
             if not model or not dataset:
                 continue
             for language in languages:

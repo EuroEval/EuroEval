@@ -327,6 +327,10 @@ def add_missing_entries(
 ) -> dict:
     """Adds missing entries to a record.
 
+    For EEE format records (with schema_version), fields are stored in their
+    appropriate nested locations. For old format records, fields are added at
+    top level.
+
     Args:
         record:
             A record from the JSONL file.
@@ -338,27 +342,68 @@ def add_missing_entries(
     Returns:
         The record with missing entries added.
     """
-    if "validation_split" not in record:
-        record["validation_split"] = False
-    if "few_shot" not in record:
-        record["few_shot"] = True
-    if "generative" not in record:
-        record["generative"] = False
-    if "generative_type" not in record:
-        record["generative_type"] = get_generative_type(record=record, cache=cache)
-    record["merge"] = is_merge(record=record, cache=cache)
-    record["commercially_licensed"] = is_commercially_licensed(
-        record=record, cache=cache
-    )
-    record["open"] = is_open(record=record, cache=cache)
-    record["trained_from_scratch"] = is_trained_from_scratch(
-        record=record,
-        trained_from_scratch_patterns=trained_from_scratch_patterns,
-        cache=cache,
-    )
-    # Add model_url field
-    model_name = get_model_name(record=record)
-    record["model_url"] = generate_model_url(model_id=model_name)
+    # Detect EEE format by presence of schema_version
+    is_eee_format = "schema_version" in record
+
+    if is_eee_format:
+        # EEE format: store fields in appropriate nested locations
+        model_info = record.setdefault("model_info", {})
+        model_additional = model_info.setdefault("additional_details", {})
+        eval_lib = record.setdefault("eval_library", {})
+        eval_additional = eval_lib.setdefault("additional_details", {})
+
+        if "validation_split" not in eval_additional:
+            eval_additional["validation_split"] = False
+        if "few_shot" not in eval_additional:
+            eval_additional["few_shot"] = True
+        if "generative" not in model_additional:
+            model_additional["generative"] = False
+        if "generative_type" not in model_additional:
+            model_additional["generative_type"] = get_generative_type(
+                record=record, cache=cache
+            )
+        if "merge" not in model_additional:
+            model_additional["merge"] = is_merge(record=record, cache=cache)
+        # model_url goes in model_info.additional_details
+        model_name = get_model_name(record=record)
+        model_additional["model_url"] = generate_model_url(model_id=model_name)
+        # Top-level fields in EEE format
+        if "commercially_licensed" not in record:
+            record["commercially_licensed"] = is_commercially_licensed(
+                record=record, cache=cache
+            )
+        if "open" not in record:
+            record["open"] = is_open(record=record, cache=cache)
+        if "trained_from_scratch" not in record:
+            record["trained_from_scratch"] = is_trained_from_scratch(
+                record=record,
+                trained_from_scratch_patterns=trained_from_scratch_patterns,
+                cache=cache,
+            )
+    else:
+        # Old format: store all fields at top level
+        if "validation_split" not in record:
+            record["validation_split"] = False
+        if "few_shot" not in record:
+            record["few_shot"] = True
+        if "generative" not in record:
+            record["generative"] = False
+        if "generative_type" not in record:
+            record["generative_type"] = get_generative_type(record=record, cache=cache)
+        record["merge"] = is_merge(record=record, cache=cache)
+        record["commercially_licensed"] = is_commercially_licensed(
+            record=record, cache=cache
+        )
+        record["open"] = is_open(record=record, cache=cache)
+        record["trained_from_scratch"] = is_trained_from_scratch(
+            record=record,
+            trained_from_scratch_patterns=trained_from_scratch_patterns,
+            cache=cache,
+        )
+        # Add model_url field
+        model_name = get_model_name(record=record)
+        record["model_url"] = generate_model_url(model_id=model_name)
+
     return record
 
 
@@ -891,7 +936,8 @@ def extract_model_metadata(
 
         # Support both EEE format (nested in model_info.additional_details) and old
         # format (top-level)
-        if "model_info" in record:
+        is_eee = "schema_version" in record
+        if is_eee:
             # EEE format
             additional = record.get("model_info", {}).get("additional_details", {})
             num_params_raw = additional.get("num_model_parameters", "-1")
@@ -899,6 +945,11 @@ def extract_model_metadata(
             context_raw = additional.get("max_sequence_length", "-1")
             merge_raw = additional.get("merge", "false")
             generative_type = additional.get("generative_type", None)
+            # Top-level fields in EEE format
+            commercially_licensed = record.get("commercially_licensed", False)
+            open_weights = record.get("open", None)
+            trained_from_scratch = record.get("trained_from_scratch", None)
+            model_url = additional.get("model_url", None)
         else:
             # Old format
             num_params_raw = record.get("num_model_parameters", -1)
@@ -906,6 +957,10 @@ def extract_model_metadata(
             context_raw = record.get("max_sequence_length", -1)
             merge_raw = record.get("merge", False)
             generative_type = record.get("generative_type", None)
+            commercially_licensed = record.get("commercially_licensed", False)
+            open_weights = record.get("open", None)
+            trained_from_scratch = record.get("trained_from_scratch", None)
+            model_url = record.get("model_url", None)
 
         # Convert to appropriate types
         def _to_float_or_nan(val: str | float | int | None) -> float:
@@ -938,11 +993,11 @@ def extract_model_metadata(
                     vocabulary_size=vocab_size,
                     context=context,
                     generative_type=generative_type,
-                    commercial=record.get("commercially_licensed", False),
+                    commercial=commercially_licensed,
                     merge=merge,
-                    open=record.get("open", None),
-                    trained_from_scratch=record.get("trained_from_scratch", None),
-                    model_url=record.get("model_url", None),
+                    open=open_weights,
+                    trained_from_scratch=trained_from_scratch,
+                    model_url=model_url,
                 )
             )
 
