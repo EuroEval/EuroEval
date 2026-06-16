@@ -109,7 +109,7 @@ ucloud*_results.jsonl
 .hf-mount/
 *.hf-mount/
 
-# Persistent results directory (HF bucket sync point)
+# Results directory (single location for all evaluation results, HF bucket sync point)
 results/
 
 
