@@ -45,6 +45,7 @@ dependencies = [
     "langdetect>=1.0.9",
     "pyyaml>=6.0",
     "lingua-language-detector>=2.2.0",
+    "google-cloud-aiplatform>=1.157.0",
 ]
 
 [project.optional-dependencies]
