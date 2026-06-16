@@ -18,7 +18,7 @@ import logging
 import shutil
 from pathlib import Path
 
-from .paths import BACKUPS_DIR, BACKUPS_MAX_BYTES, PROCESSED_RESULTS_DIR, RESULTS_PATH
+from .paths import BACKUPS_DIR, BACKUPS_MAX_BYTES, RESULTS_DIR, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -30,34 +30,34 @@ BACKUP_SUFFIX = ".tar.gz"
 
 
 def _validate_processed_results() -> None:
-    """Validate that processed results exist and have required metadata.
+    """Validate that results exist and have required metadata.
 
     Checks that:
-    1. PROCESSED_RESULTS_DIR exists and contains .jsonl files
-    2. Each .jsonl file has at least one record
+    1. RESULTS_DIR exists and contains .jsonl files
+    2. Sample files are checked for required metadata fields
     3. All records have the required metadata fields
 
     Raises:
         FileNotFoundError:
-            If PROCESSED_RESULTS_DIR doesn't exist or contains no files.
+            If RESULTS_DIR doesn't exist or contains no files.
         ValueError:
-            If any processed result is missing required metadata fields.
+            If any result is missing required metadata fields.
     """
-    if not PROCESSED_RESULTS_DIR.exists():
+    if not RESULTS_DIR.exists():
         raise FileNotFoundError(
-            f"Processed results directory not found: {PROCESSED_RESULTS_DIR}. "
-            "Run result_processing.py to process results before backing up."
+            f"Results directory not found: {RESULTS_DIR}. "
+            "Run evaluation result collection before backing up."
         )
 
-    model_files = list(PROCESSED_RESULTS_DIR.glob("*.jsonl"))
+    model_files = list(RESULTS_DIR.glob("*.jsonl"))
     if not model_files:
         raise FileNotFoundError(
-            f"No processed result files found in {PROCESSED_RESULTS_DIR}. "
-            "Run result_processing.py to process results before backing up."
+            f"No result files found in {RESULTS_DIR}. "
+            "Run evaluation result collection before backing up."
         )
 
     logger.info(
-        f"Validating {len(model_files):,} processed result files for required "
+        f"Validating {len(model_files):,} result files for required "
         f"metadata fields: {REQUIRED_METADATA_FIELDS}"
     )
 
@@ -100,8 +100,8 @@ def _validate_processed_results() -> None:
         msg = (
             f"{files_with_issues} files have missing metadata. Checked "
             f"{records_checked:,} records, found {records_with_issues:,} with issues. "
-            f"Required: {REQUIRED_METADATA_FIELDS}. Run "
-            f"restore_metadata_from_backup.py to restore."
+            f"Required: {REQUIRED_METADATA_FIELDS}. Re-run evaluation with "
+            f"metadata collection enabled."
         )
         raise ValueError(msg)
 
@@ -173,7 +173,7 @@ def restore_from_backup_if_missing(target: Path = RESULTS_PATH) -> bool:
 def backup_results(source: Path = RESULTS_PATH) -> Path | None:
     """Snapshot `source` into BACKUPS_DIR, then prune oldest if over cap.
 
-    Validates that processed results exist and have required metadata fields
+    Validates that results exist and have required metadata fields
     before creating the backup. Skips if `source` is byte-identical to the
     newest existing backup, so repeated runs without changes don't fill the
     backup directory.
