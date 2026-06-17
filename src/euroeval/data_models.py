@@ -891,6 +891,10 @@ class BenchmarkResult(pydantic.BaseModel):
     vllm_version: str | None = get_package_version("vllm")
     xgrammar_version: str | None = get_package_version("xgrammar")
     litellm_version: str | None = None
+    # EuroEval-specific metadata fields (preserved through EEE conversion)
+    commercially_licensed: bool | None = None
+    open: bool | None = None
+    trained_from_scratch: bool | None = None
 
     @classmethod
     def from_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
