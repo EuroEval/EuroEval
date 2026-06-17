@@ -118,7 +118,8 @@ def validate_eee_record(record: dict[str, object], context: str = "record") -> N
     if not is_eee_record(record=record):
         raise ValueError(f"{context} is not an EEE-format record.")
 
-    missing = [field for field in REQUIRED_METADATA_FIELDS if field not in record]
+    additional: dict = record.get("model_info", {}).get("additional_details", {})
+    missing = [field for field in REQUIRED_METADATA_FIELDS if field not in additional]
     if missing:
         raise ValueError(
             f"{context} is missing precious metadata field(s): " + ", ".join(missing)
@@ -127,7 +128,7 @@ def validate_eee_record(record: dict[str, object], context: str = "record") -> N
     non_bool = [
         field
         for field in REQUIRED_METADATA_FIELDS
-        if not isinstance(record.get(field), bool)
+        if not isinstance(additional.get(field), bool)
     ]
     if non_bool:
         raise ValueError(
