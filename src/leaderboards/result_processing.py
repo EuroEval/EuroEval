@@ -9,7 +9,6 @@ to the Hugging Face results bucket (one file per model) and to the local
 from __future__ import annotations
 
 import io
-import json
 import logging
 import re
 import tarfile
@@ -22,6 +21,7 @@ from tqdm.auto import tqdm
 
 from .cache import Cache
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR, RESULTS_PATH
+from .eee_validation import dump_jsonl_records, validate_eee_records
 from .model_metadata import add_missing_entries, fix_metadata, record_is_valid
 from .records import get_model_name, get_record_hash, plain_model_id
 from .result_loading import load_raw_results
@@ -62,7 +62,7 @@ def process_results(
         compressed_results_path=results_path, results_dir=RESULTS_DIR
     )
 
-    records = load_raw_results()
+    records = load_raw_results(allow_old_format=True)
     num_raw_records = len(records)
 
     records = _deduplicate_records(records=records)
@@ -110,6 +110,8 @@ def process_results(
         )
         for record in tqdm(processed_records, desc="Adding missing entries")
     ]
+
+    validate_eee_records(records=processed_records, context="processed results")
 
     _upload_per_model_files(processed_records=processed_records)
     _write_results_archive(
@@ -172,6 +174,8 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
         processed_records:
             The processed records to upload.
     """
+    validate_eee_records(records=processed_records, context="per-model upload")
+
     results_by_model: dict[str, list[dict]] = {}
     for record in processed_records:
         model_id = record.get("model_info", {}).get("name") or record.get(
@@ -187,7 +191,7 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
     logger.info("Uploading results to HF bucket...")
     for filename, model_records in results_by_model.items():
         file_path = RESULTS_DIR / filename
-        content = "\n".join(json.dumps(record) for record in model_records) + "\n"
+        content = dump_jsonl_records(records=model_records)
         file_path.write_text(content, encoding="utf-8")
 
     try:
@@ -214,10 +218,9 @@ def _write_results_archive(
         results_path:
             The path of the tar.gz archive to write.
     """
+    content = dump_jsonl_records(records=processed_records)
     with tarfile.open(results_path, "w:gz") as tar:
-        all_content_bytes = "\n".join(
-            json.dumps(record) for record in processed_records
-        ).encode(encoding="utf-8")
+        all_content_bytes = content.encode(encoding="utf-8")
         tarinfo = tarfile.TarInfo(name="results/results.jsonl")
         tarinfo.size = len(all_content_bytes)
         fileobj = io.BytesIO(all_content_bytes)

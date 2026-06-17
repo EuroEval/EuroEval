@@ -56,6 +56,7 @@ from leaderboards.constants import (
     LANGUAGE_GROUP_CODES,
     MODEL_REQUEST_LABEL,
     REPO,
+    RESULTS_DIR,
     RESULTS_READY_LABEL,
     VM_MARKER_RE,
 )
@@ -116,7 +117,7 @@ ASSIGNEE = ""
 VM_ID = os.environ.get("EUROEVAL_VM_ID", "")
 VM_ID_ENV_PATH = Path(os.environ.get("EUROEVAL_DOTENV_PATH", ".env"))
 RESULTS_PATH = Path("euroeval_benchmark_results.jsonl")
-RESULTS_CACHE_DIR = Path(".euroeval_cache/results")
+RESULTS_CACHE_DIR = RESULTS_DIR
 LOCK_PATH = Path(os.environ.get("EUROEVAL_QUEUE_LOCK", "/tmp/euroeval_queue.lock"))
 
 # Canonical HF bucket for storing results (public read access).
