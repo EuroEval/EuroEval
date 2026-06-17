@@ -9,12 +9,10 @@ import numpy as np
 from euroeval.constants import ORTHOGONAL_TASKS
 
 from .bootstrap_cis import bootstrap_confidence_intervals, bootstrap_rank_scores
-from .task_metadata import LEADERBOARD_CATEGORIES, category_includes_task
+from .constants import LEADERBOARD_CATEGORIES, Z_SCORE_95
+from .task_metadata import category_includes_task
 
 logger = logging.getLogger(__name__)
-
-# z-score for a two-sided 95% confidence interval under a normal approximation.
-_Z_95 = 1.96
 
 
 def compute_dataset_ranks_bootstrap(
@@ -57,12 +55,12 @@ def compute_dataset_ranks_bootstrap(
                 and category_includes_task(category, task)
             ]
             for dataset in datasets:
-                model_scores: dict[str, tuple[float, float, list[float]]] = {}
+                model_scores: dict[str, tuple[float, list[float]]] = {}
                 for model_id, results in model_results.items():
                     if dataset in results and results[dataset]:
-                        raw, mean_sc, se = results[dataset][0]
+                        raw, mean_sc, _ = results[dataset][0]
                         if np.isfinite(mean_sc):
-                            model_scores[model_id] = (mean_sc, se, raw)
+                            model_scores[model_id] = (mean_sc, raw)
 
                 if not model_scores:
                     continue
@@ -74,14 +72,14 @@ def compute_dataset_ranks_bootstrap(
                 mean_best = sorted_models[0][1][0]
                 all_raw = [
                     score
-                    for _, _, raw_scores in model_scores.values()
+                    for _, raw_scores in model_scores.values()
                     for score in raw_scores
                 ]
                 pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
                 if pooled_sd <= 0:
                     pooled_sd = 1.0
 
-                for mid, (mean_sc, se, raw) in model_scores.items():
+                for mid, (_, raw) in model_scores.items():
                     bootstrap_scores: list[float] = []
                     for _ in range(n_bootstraps):
                         resampled_raw = rng.choice(raw, size=len(raw), replace=True)
@@ -179,11 +177,11 @@ def compute_ranks(
 
                     mean_score = float(np.mean([e["score"] for e in entries]))
                     vars_ = [
-                        ((e["ci_upper"] - e["ci_lower"]) / (2 * _Z_95)) ** 2
+                        ((e["ci_upper"] - e["ci_lower"]) / (2 * Z_SCORE_95)) ** 2
                         for e in entries
                     ]
                     mean_var = np.sum(vars_) / (len(entries) ** 2)
-                    margin = _Z_95 * math.sqrt(mean_var)
+                    margin = Z_SCORE_95 * math.sqrt(mean_var)
 
                     model_task_ranks[model_id][category][language][task] = {
                         "score": round(mean_score, 6),
@@ -215,11 +213,11 @@ def compute_ranks(
 
                 mean_score = float(np.mean([e["score"] for e in task_entries]))
                 vars_ = [
-                    ((e["ci_upper"] - e["ci_lower"]) / (2 * _Z_95)) ** 2
+                    ((e["ci_upper"] - e["ci_lower"]) / (2 * Z_SCORE_95)) ** 2
                     for e in task_entries
                 ]
                 mean_var = np.sum(vars_) / (len(task_entries) ** 2)
-                margin = _Z_95 * math.sqrt(mean_var)
+                margin = Z_SCORE_95 * math.sqrt(mean_var)
 
                 lang_scores[language] = {
                     "score": round(mean_score, 6),
@@ -231,11 +229,11 @@ def compute_ranks(
             if overall_entries:
                 mean_score = float(np.mean([e["score"] for e in overall_entries]))
                 vars_ = [
-                    ((e["ci_upper"] - e["ci_lower"]) / (2 * 1.96)) ** 2
+                    ((e["ci_upper"] - e["ci_lower"]) / (2 * Z_SCORE_95)) ** 2
                     for e in overall_entries
                 ]
                 mean_var = np.sum(vars_) / (len(overall_entries) ** 2)
-                margin = _Z_95 * math.sqrt(mean_var)
+                margin = Z_SCORE_95 * math.sqrt(mean_var)
 
                 lang_scores["overall"] = {
                     "score": round(mean_score, 6),

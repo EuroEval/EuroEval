@@ -28,34 +28,28 @@ issue and writes the same list back into `core_models.yaml` (alongside
 
 from __future__ import annotations
 
-import collections.abc as c
 import dataclasses
 import enum
 import logging
 import math
-import re
-import typing as t
-import urllib.error
-import urllib.request
 from collections import defaultdict
-from functools import cache
 
-from huggingface_hub import HfApi
-from huggingface_hub.errors import HfHubHTTPError
-from huggingface_hub.hf_api import RepositoryNotFoundError
-
-from .result_loading import load_processed_results
-from .result_processing import (
-    extract_model_metadata,
-    get_dataset,
-    group_results_by_model,
+from .constants import (
+    API_MODEL_PATTERNS,
+    EXCLUDED_MODEL_PATTERNS,
+    GENERATIVE_TYPE_TO_MODEL_TYPE,
+    PARAM_SIZE_BUCKET_ORDER,
 )
+from .model_sources import eu_models, params_from_hf_safetensors, params_from_model_id
+from .osai import osai_top_models
+from .records import drop_val_duplicates, get_dataset, plain_model_id
+from .result_loading import load_raw_results
 from .score_computation import compute_ranks
+from .score_extraction import extract_model_metadata, group_results_by_model
 from .task_metadata import (
     languages_with_official_datasets,
     official_datasets_for_language,
 )
-from .utils import drop_val_duplicates, plain_model_id
 
 logger = logging.getLogger(__name__)
 
@@ -80,34 +74,6 @@ class SizeBucket(enum.StrEnum):
     LARGE = "large"
     XLARGE = "xlarge"
     API = "api"
-
-
-# Matches the labels used by `GenerativeType` in the euroeval lib (snake_case
-# auto-enum). The lib enum has BASE / INSTRUCTION_TUNED / REASONING.
-_GENERATIVE_TYPE_TO_MODEL_TYPE: dict[str, ModelType] = {
-    "base": ModelType.BASE_DECODER,
-    "instruction_tuned": ModelType.INSTRUCTION_TUNED_DECODER,
-    "reasoning": ModelType.REASONING_DECODER,
-}
-
-# Single source of truth for API model identification — also imported by
-# `scripts/generate_leaderboards.py` so the leaderboard pipeline and the
-# core-model updater agree on which ids are API models.
-API_MODEL_PATTERNS: list[re.Pattern] = [
-    re.compile(r"gemini/.*"),
-    re.compile(r"(openai/)?gpt-[456789].*"),
-    re.compile(r"(anthropic/)?claude.*"),
-    re.compile(r"(xai/)?grok.*"),
-]
-
-# Models matching these patterns are excluded from the core-model list
-# entirely. We currently drop `ollama_chat/*` — those are hard to
-# re-evaluate in CI (Ollama-based local serving), so including them in
-# the "must re-run when datasets change" list just creates churn.
-EXCLUDED_MODEL_PATTERNS: list[re.Pattern] = [
-    re.compile(r"^ollama_chat/.*"),
-    re.compile(r"^bigscience/bloom.*"),
-]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -170,81 +136,8 @@ def _classify_model(model_id: str, metadata: dict) -> ModelType:
     generative_type = metadata.get("generative_type")
     if generative_type is None:
         return ModelType.ENCODER
-    return _GENERATIVE_TYPE_TO_MODEL_TYPE.get(generative_type, ModelType.BASE_DECODER)
-
-
-# Match the first ``<N>B`` / ``<N>M`` token in a model id (e.g. ``22B`` in
-# ``EuroLLM-22B-Instruct-2512``, ``270m`` in ``gemma-3-270m``). The lookbehind
-# stops us from picking up tokens like ``A3B`` in ``80B-A3B``; the lookahead
-# excludes things like ``multilingual``.
-_PARAMS_FROM_ID_RE = re.compile(r"(?<![A-Za-z\d])(\d+(?:\.\d+)?)([BbMm])(?![A-Za-z])")
-
-
-@cache
-def _params_from_hf_safetensors(model_id: str) -> float:
-    """Best-effort parameter count from a model's safetensors manifest.
-
-    HF's model-info endpoint exposes a ``safetensors.total`` field for
-    repos that ship safetensors weights; that's a sum across every
-    parameter tensor in the manifest. We use it as a last-resort
-    fallback for models where neither the EuroEval metadata nor the id
-    itself encodes the size (`yulan-team/YuLan-Mini` and friends).
-
-    Network failures, missing repos, and missing safetensors data all
-    degrade to NaN — the caller will then bucket the model as ``xlarge``
-    which is the existing behaviour.
-
-    Args:
-        model_id:
-            HuggingFace ``org/repo`` slug, optionally with an
-            ``@revision`` suffix. Anything that doesn't look like
-            ``a/b`` is skipped without a network call.
-
-    Returns:
-        Total parameter count, or NaN.
-    """
-    repo_id, _, revision = model_id.partition("@")
-    if "/" not in repo_id or repo_id.count("/") > 1:
-        return float("nan")
-    try:
-        info = HfApi().model_info(
-            repo_id=repo_id, revision=revision or None, files_metadata=False
-        )
-    except (RepositoryNotFoundError, HfHubHTTPError, OSError, ValueError) as exc:
-        # 404s for IDs we synthesised locally (renamed repos, transient
-        # variants, etc.) aren't actionable — log at debug level so the
-        # standard run output stays clean.
-        logger.debug(f"HF safetensors lookup failed for {model_id!r}: {exc}")
-        return float("nan")
-    safetensors = getattr(info, "safetensors", None)
-    if safetensors is None:
-        return float("nan")
-    total = getattr(safetensors, "total", None)
-    return float(total) if isinstance(total, int) and total > 0 else float("nan")
-
-
-def _params_from_model_id(model_id: str) -> float:
-    """Best-effort parameter count parsed from a model identifier.
-
-    Some entries (typically ones we haven't evaluated yet, or with broken
-    HF metadata) reach the core-model list with NaN parameters, which
-    would otherwise default them to the ``xlarge`` bucket. When the id
-    itself encodes the size (``EuroLLM-22B``, ``Ministral-3-14B``,
-    ``SmolLM2-135M``, ...), use that as a fallback.
-
-    Args:
-        model_id:
-            HuggingFace-style id, optionally with `org/` prefix.
-
-    Returns:
-        Parameter count, or NaN if no size token is present.
-    """
-    m = _PARAMS_FROM_ID_RE.search(model_id)
-    if not m:
-        return float("nan")
-    value = float(m.group(1))
-    unit = m.group(2).lower()
-    return value * (1_000_000_000 if unit == "b" else 1_000_000)
+    model_type = GENERATIVE_TYPE_TO_MODEL_TYPE.get(generative_type)
+    return ModelType(model_type) if model_type is not None else ModelType.BASE_DECODER
 
 
 def _size_bucket(model_type: ModelType, parameters: float) -> SizeBucket:
@@ -367,356 +260,6 @@ def _pareto_languages_per_model(
 
 
 # ---------------------------------------------------------------------------
-# EU-trained models
-# ---------------------------------------------------------------------------
-
-
-def eu_models(model_ids: c.Iterable[str], eu_patterns: list[str]) -> set[str]:
-    """Return the subset of `model_ids` matched by an EU-org regex.
-
-    Args:
-        model_ids:
-            Candidate model identifiers (HuggingFace-style).
-        eu_patterns:
-            Regex patterns from `core_models.yaml::eu_model_patterns`.
-
-    Returns:
-        Set of model_ids that match at least one pattern.
-    """
-    compiled = [re.compile(p) for p in eu_patterns]
-    eu_model_ids = {
-        model_id
-        for model_id in model_ids
-        if any(p.search(plain_model_id(model_id).split("#")[0]) for p in compiled)
-    }
-    logger.info(f"Fetched {len(eu_model_ids)} EU models.")
-    return eu_model_ids
-
-
-# ---------------------------------------------------------------------------
-# OSAI top-10 truly-open models
-# ---------------------------------------------------------------------------
-
-_OSAI_BASE = "https://osai-index.eu"
-_OSAI_DB_URL = (
-    f"{_OSAI_BASE}/database/"
-    "?type=text&weights_basemodel=1&trainingcode=1&datasources_basemodel=1"
-)
-# Required openness fields (all must be "open"). For weights, see
-# _OSAI_WEIGHT_CRITERIA below — at least one of base/end must be open.
-_OSAI_REQUIRED_OPEN = ("trainingcode", "datasources_basemodel")
-_OSAI_WEIGHT_CRITERIA = ("weights_basemodel", "weights_endmodel")
-# All openness fields we count to rank models. Drawn from the rendered
-# OSAI methodology page. Order doesn't matter; only the count of "open"s.
-_OSAI_RANKING_FIELDS = (
-    "weights_basemodel",
-    "weights_endmodel",
-    "trainingcode",
-    "code",
-    "datasources_basemodel",
-    "datasources_endmodel",
-    "datasheet",
-    "modelcard",
-    "package",
-    "license_basemodel",
-    "license_endmodel",
-    "hardware_architecture",
-    "preprint",
-    "paper",
-)
-
-
-def _fetch(url: str, timeout: float = 20.0) -> str:
-    """Fetch a URL as text.
-
-    Args:
-        url:
-            The URL to fetch.
-        timeout (optional):
-            Socket timeout in seconds. Defaults to 20.0.
-
-    Returns:
-        The response body as text.
-    """
-    req = urllib.request.Request(url, headers={"User-Agent": "EuroEval-CoreModels/1"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8", errors="replace")
-
-
-_OSAI_BUNDLE_MARKER = "system:{name:"
-
-
-def _osai_bundle() -> str | None:
-    """Discover the current Nuxt JS bundle that contains the model database.
-
-    OSAI ships a Nuxt SPA. The model entries are bundled into a single
-    `/_nuxt/*.js` chunk whose filename rotates on every deploy. We
-    enumerate the chunks referenced from the homepage, probe them in
-    largest-first order, and return the first that contains the
-    distinctive `system:{name:` marker that begins each model entry.
-
-    Returns:
-        Raw JS source of the model-data chunk, or None if discovery failed.
-    """
-    try:
-        html = _fetch(_OSAI_BASE)
-    except (urllib.error.URLError, OSError) as exc:
-        logger.warning(f"OSAI: cannot reach homepage: {exc}")
-        return None
-    chunks = re.findall(r'href="(/_nuxt/[^"]+\.js)"', html)
-    if not chunks:
-        logger.warning("OSAI: no /_nuxt/*.js chunks found on homepage.")
-        return None
-    sized: list[tuple[int, str]] = []
-    for chunk in set(chunks):
-        url = _OSAI_BASE + chunk
-        try:
-            req = urllib.request.Request(url, method="HEAD")
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                length = int(resp.headers.get("Content-Length") or 0)
-        except (urllib.error.URLError, OSError, ValueError):
-            continue
-        sized.append((length, url))
-    sized.sort(reverse=True)
-    # Skip the obviously-too-small chunks; the model bundle is hundreds
-    # of KB. Of the remaining candidates, return the first one whose
-    # contents contain the model-entry marker.
-    for length, url in sized:
-        if length < 100_000:
-            break
-        try:
-            body = _fetch(url, timeout=30.0)
-        except (urllib.error.URLError, OSError):
-            continue
-        if _OSAI_BUNDLE_MARKER in body:
-            logger.info(f"OSAI: model data found in {url}")
-            return body
-    logger.warning("OSAI: no chunk contained the model-entry marker.")
-    return None
-
-
-# Matches the start of each model entry in the bundle. Each model is a JS
-# object literal opening with `system:{name:"...",link:"...",type:"...",...,
-# endmodelname:"...",...}`. The openness-criteria fields follow that block.
-_OSAI_SYSTEM_RE = re.compile(
-    r"system:\{"
-    r"name:\"(?P<name>[^\"]+)\","
-    r"link:\"(?P<link>[^\"]*)\","
-    r"type:\"(?P<type>[^\"]+)\","
-    r"performanceclass:\"[^\"]+\","
-    r"basemodelname:\"[^\"]+\","
-    r"endmodelname:\"(?P<endmodelname>[^\"]+)\""
-)
-# Matches one openness criterion declaration: <field>:{class:"<cls>"...
-_OSAI_FIELD_RE = re.compile(r"(\w+):\{class:\"(open|closed|partial)\"")
-# Within an openness block, the link can be a single string or a JSON array
-# of strings. We extract the first HF URL we find (string-form).
-_OSAI_BLOCK_LINK_RE = re.compile(
-    r"link:(?:\"(?P<single>[^\"]*)\"|\[\"(?P<first>[^\"]*)\")"
-)
-# Matches the whole weights_endmodel/basemodel block so we can scan inside
-# it for an HF link.
-_OSAI_WEIGHTS_BLOCK_RE = re.compile(
-    r"(weights_endmodel|weights_basemodel):\{(?P<body>[^}]*)\}"
-)
-
-
-class _OsaiEntry(t.TypedDict):
-    """A single parsed OSAI model entry.
-
-    Attributes:
-        name:
-            The model's system name.
-        endmodelname:
-            The end-model name.
-        type:
-            The model type (e.g. ``"text"``).
-        open_count:
-            Number of openness ranking fields marked open.
-        required_open:
-            Whether trainingcode and datasources_basemodel are both open.
-        weight_links:
-            Mapping from each open weights field name to its HF URL.
-    """
-
-    name: str
-    endmodelname: str
-    type: str
-    open_count: int
-    required_open: bool
-    weight_links: dict[str, str]
-
-
-def _parse_osai_models(bundle: str) -> list[_OsaiEntry]:
-    """Parse model entries out of an OSAI JS bundle.
-
-    Each model entry begins with a `system:{...}` block and is followed by
-    openness-criteria fields. We slice the bundle on `system:{name:` to
-    delimit entries, parse each slice, and stop at the next `system:{`
-    (or end of bundle).
-
-    Args:
-        bundle:
-            Raw JavaScript source of the Nuxt chunk that holds the model
-            database.
-
-    Returns:
-        List of parsed entries, one per model.
-    """
-    matches = list(_OSAI_SYSTEM_RE.finditer(bundle))
-    entries: list[_OsaiEntry] = []
-    for i, m in enumerate(matches):
-        start = m.start()
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(bundle)
-        slice_ = bundle[start:end]
-
-        classes = dict(_OSAI_FIELD_RE.findall(slice_))
-        open_count = sum(
-            1 for field in _OSAI_RANKING_FIELDS if classes.get(field) == "open"
-        )
-        required_open = all(
-            classes.get(field) == "open" for field in _OSAI_REQUIRED_OPEN
-        )
-
-        # Collect an HF URL for each weights field that is open. If both
-        # base and end weights are open we'll emit both downstream so the
-        # eval covers them individually.
-        weight_links: dict[str, str] = {}
-        for block in _OSAI_WEIGHTS_BLOCK_RE.finditer(slice_):
-            field = block.group(1)
-            if classes.get(field) != "open":
-                continue
-            link_match = _OSAI_BLOCK_LINK_RE.search(block.group("body"))
-            if not link_match:
-                continue
-            link = link_match.group("single") or link_match.group("first") or ""
-            if "huggingface.co/" in link:
-                weight_links[field] = link
-
-        entries.append(
-            _OsaiEntry(
-                name=m.group("name"),
-                endmodelname=m.group("endmodelname"),
-                type=m.group("type"),
-                open_count=open_count,
-                required_open=required_open,
-                weight_links=weight_links,
-            )
-        )
-    return entries
-
-
-def _hf_url_to_model_id(url: str) -> str | None:
-    """Convert an HF URL to a `org/repo` model identifier.
-
-    Args:
-        url:
-            A URL like ``https://huggingface.co/org/repo`` (with optional
-            trailing path, blob link, etc.).
-
-    Returns:
-        The ``org/repo`` slug, or None if the URL doesn't match that shape.
-    """
-    m = re.match(r"https://huggingface\.co/([^/]+)/([^/?#]+)", url)
-    if not m:
-        return None
-    org, repo = m.group(1), m.group(2)
-    if org in {"datasets", "spaces", "docs", "blog", "collections"}:
-        return None
-    return f"{org}/{repo}"
-
-
-def osai_top_models(
-    limit: int = 10, overrides: list[str] | None = None
-) -> list[tuple[str, int]]:
-    """Return the top OSAI 'truly open' text models as (model_id, rank) pairs.
-
-    The OSAI index is filtered to text models with open base weights,
-    training code, and data sources. Models are ranked by total open-field
-    count (descending). We scrape the live JS bundle; on any failure (no
-    bundle reachable, regex match yields zero entries, etc.) we return
-    the override list from the YAML config so the pipeline stays
-    deterministic.
-
-    Args:
-        limit (optional):
-            Number of top models to return. Defaults to 10.
-        overrides (optional):
-            Fallback list of `org/repo` model IDs in rank order, used
-            verbatim when the scrape fails. Defaults to None.
-
-    Returns:
-        List of `(model_id, rank)` pairs in 1-based rank order. Empty
-        list if both the scrape and overrides yield nothing.
-    """
-    logger.info(f"Fetching the top-{limit} OSAI open models...")
-
-    bundle = _osai_bundle()
-    if bundle is None:
-        logger.warning("OSAI: bundle not found; using overrides.")
-        return _overrides_to_ranked(overrides, limit)
-
-    entries = _parse_osai_models(bundle)
-    if not entries:
-        logger.warning("OSAI: parsed zero model entries; using overrides.")
-        return _overrides_to_ranked(overrides, limit)
-
-    # A model qualifies if training code and base-model data sources are
-    # open and at least one of base/end-model weights is open. When both
-    # weights are open, both are added to the eval target list — they're
-    # different checkpoints worth scoring independently.
-    qualifying = [
-        e
-        for e in entries
-        if e["type"] == "text" and e["required_open"] and e["weight_links"]
-    ]
-    qualifying.sort(key=lambda e: (-e["open_count"], e["endmodelname"].lower()))
-
-    seen: set[str] = set()
-    ranked: list[tuple[str, int]] = []
-    for entry in qualifying:
-        # Stable ordering: prefer the base-model checkpoint first, then end.
-        for field in _OSAI_WEIGHT_CRITERIA:
-            link = entry["weight_links"].get(field)
-            if not link:
-                continue
-            model_id = _hf_url_to_model_id(link)
-            if model_id is None:
-                logger.info(
-                    f"OSAI: skipping {entry['endmodelname']!r} ({field}): "
-                    f"cannot map {link!r} to org/repo."
-                )
-                continue
-            if model_id in seen:
-                continue
-            seen.add(model_id)
-            ranked.append((model_id, len(ranked) + 1))
-            if len(ranked) >= limit:
-                return ranked
-    logger.info(f"Fetched {len(ranked)} OSAI models.")
-    return ranked
-
-
-def _overrides_to_ranked(
-    overrides: list[str] | None, limit: int
-) -> list[tuple[str, int]]:
-    """Convert a flat override list into ranked tuples.
-
-    Args:
-        overrides:
-            Manually-curated list of model IDs in rank order.
-        limit:
-            Max length of the returned list.
-
-    Returns:
-        `[(model_id, rank), ...]` up to `limit` entries.
-    """
-    if not overrides:
-        return []
-    return [(model_id, rank) for rank, model_id in enumerate(overrides[:limit], 1)]
-
-
-# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -757,7 +300,7 @@ def build_core_model_list(
         for dataset in task_datasets
     }
 
-    results = [r for r in load_processed_results() if get_dataset(r) in datasets]
+    results = [r for r in load_raw_results() if get_dataset(r) in datasets]
     model_results = group_results_by_model(results=results)
     model_results = drop_val_duplicates(model_results=model_results)
     ranks = compute_ranks(
@@ -815,6 +358,7 @@ def build_core_model_list(
         is_api = plain_id in api_set
         if not (pareto_langs or is_eu or osai_rank or is_api):
             continue
+
         # Pick the variant with the most params info / a known type. The
         # base anchored_id (without zero-shot suffix) typically sorts first.
         rep = sorted(variants)[0] if variants else plain_id
@@ -822,11 +366,12 @@ def build_core_model_list(
         model_type = model_types.get(rep) or _classify_model(plain_id, meta)
         parameters = meta.get("parameters", float("nan"))
         if not math.isfinite(parameters):
-            parameters = _params_from_model_id(plain_id)
+            parameters = params_from_model_id(model_id=plain_id)
+
         # API models don't live on HuggingFace, so hitting the HF
         # safetensors endpoint for them just guarantees a 404.
         if not math.isfinite(parameters) and model_type != ModelType.API:
-            parameters = _params_from_hf_safetensors(plain_id.split("#")[0])
+            parameters = params_from_hf_safetensors(model_id=plain_id.split("#")[0])
         bucket = _size_bucket(model_type, parameters)
         core.append(
             CoreModel(
@@ -841,19 +386,10 @@ def build_core_model_list(
             )
         )
 
-    core.sort(key=lambda m: (_BUCKET_ORDER[m.size_bucket], m.model_id.lower()))
+    core.sort(
+        key=lambda m: (PARAM_SIZE_BUCKET_ORDER[m.size_bucket], m.model_id.lower())
+    )
     return core
-
-
-_BUCKET_ORDER: dict[SizeBucket, int] = {
-    SizeBucket.ENCODER: 0,
-    SizeBucket.TINY: 1,
-    SizeBucket.SMALL: 2,
-    SizeBucket.MEDIUM: 3,
-    SizeBucket.LARGE: 4,
-    SizeBucket.XLARGE: 5,
-    SizeBucket.API: 6,
-}
 
 
 __all__ = [

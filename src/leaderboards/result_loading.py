@@ -13,7 +13,7 @@ from functools import cache
 
 from .backup import backup_results
 from .bucket_sync import sync_bucket
-from .paths import NEW_RESULTS_PATH, RESULTS_DIR, RESULTS_PATH
+from .constants import NEW_RESULTS_PATH, RESULTS_DIR, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +103,7 @@ def _rebuild_results_tar_gz() -> None:
     logger.info(f"Rebuilt {RESULTS_PATH} with {len(all_lines):,} results.")
 
 
+@cache
 def load_raw_results() -> list[dict[str, t.Any]]:
     """Load all results from results.tar.gz.
 
@@ -166,17 +167,3 @@ def load_raw_results() -> list[dict[str, t.Any]]:
                 raise ValueError(f"Invalid JSON on line {line_idx:,}: {record}.") from e
 
     return records
-
-
-@cache
-def load_processed_results() -> list[dict[str, t.Any]]:
-    """Load processed results.
-
-    In the single bucket structure, processed results are loaded from the same
-    unified source as raw results. No distinction is made between raw and
-    processed loading paths.
-
-    Returns:
-        The processed results (same as raw results).
-    """
-    return load_raw_results()

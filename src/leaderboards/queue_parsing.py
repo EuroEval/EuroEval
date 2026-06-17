@@ -7,32 +7,18 @@ side-effect-free except :func:`read_jsonl_lines`, which reads from disk.
 
 from __future__ import annotations
 
-import importlib.metadata
 import json
-import re
 from pathlib import Path
 
 from euroeval.data_models import BenchmarkResult
 
+from .constants import (
+    ERRORED_BENCHMARKS_RE,
+    ISSUE_TITLE_PREFIX,
+    MODEL_ID_BODY_RE,
+    SKIPPED_BENCHMARKS_RE,
+)
 from .evaluation_common import missing_official_dataset_language_pairs
-from .github_api import TITLE_PREFIX
-
-# Matches the "Model ID" section in an issue body (the form template renders
-# the model id as the line immediately following a "### Model ID" heading).
-MODEL_ID_BODY_RE = re.compile(r"(?:^|\n)#{1,6}\s*Model ID\s*\n+([^\n]+)")
-
-# euroeval emits a summary line like "errored 3 benchmarks" when individual
-# (dataset, language) combinations fail without crashing the whole run.
-ERRORED_BENCHMARKS_RE = re.compile(r"errored\s+(\d+)\s+benchmarks?", re.IGNORECASE)
-
-# euroeval emits a summary line like "skipped 2 benchmarks" when individual
-# (dataset, language) combinations are deliberately skipped. These are not
-# failures.
-SKIPPED_BENCHMARKS_RE = re.compile(r"skipped\s+(\d+)\s+benchmarks?", re.IGNORECASE)
-
-# Phrase euroeval prints when it cannot load a model because the repo is gated
-# and the subprocess lacks the necessary HF token / accepted access terms.
-GATED_OUTPUT_RE = re.compile(r"is a gated repository", re.IGNORECASE)
 
 
 def extract_model_id(title: str, body: str | None = None) -> str | None:
@@ -59,7 +45,7 @@ def extract_model_id(title: str, body: str | None = None) -> str | None:
             candidate = m.group(1).strip().strip("`*_").strip()
             if candidate and candidate != "<model-name>":
                 return candidate
-    prefix = f"{TITLE_PREFIX} "
+    prefix = f"{ISSUE_TITLE_PREFIX} "
     if not title.startswith(prefix):
         return None
     rest = title[len(prefix) :].strip()
@@ -214,16 +200,3 @@ def model_has_partial_results(
         lines=matching, requested_languages=requested_languages
     )
     return bool(missing)
-
-
-def euroeval_version() -> str:
-    """Return the locally installed EuroEval package version.
-
-    Returns:
-        The dotted version string, or "unknown" if the package metadata
-        is not available.
-    """
-    try:
-        return importlib.metadata.version("euroeval")
-    except importlib.metadata.PackageNotFoundError:
-        return "unknown"

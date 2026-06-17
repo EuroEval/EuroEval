@@ -14,24 +14,13 @@ import pandas as pd
 
 from euroeval.constants import ORTHOGONAL_TASKS
 
+from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR
 from .link_generation import generate_task_link
-from .paths import OUTPUT_DIR
-from .result_loading import load_processed_results
-from .result_processing import (
-    extract_model_metadata,
-    get_dataset,
-    group_results_by_model,
-)
+from .records import convert_to_float, drop_val_duplicates, get_dataset
+from .result_loading import load_raw_results
 from .score_computation import compute_ranks_bootstrap, compute_standard_ranks_bootstrap
+from .score_extraction import extract_model_metadata, group_results_by_model
 from .task_metadata import category_includes_task, official_datasets_for_language
-from .utils import convert_to_float, drop_val_duplicates
-
-# Number of bootstrap replicates for both confidence interval estimation of rank scores
-# and tie-breaking in leaderboard generation. 50 is sufficient because tie-breaking only
-# needs to distinguish models that are statistically tied — the bootstrap test is a
-# one-sided test at α=0.05, and 50 replicates give a reasonable resolution for the
-# rank-difference distribution without unnecessary computation.
-NUM_BOOTSTRAPS = 50
 
 logger = logging.getLogger(__name__)
 
@@ -101,12 +90,13 @@ def generate_leaderboard(
     ]
 
     # Load results and set them up for the leaderboard
-    results = load_processed_results()
+    results = load_raw_results()
     results = [record for record in results if get_dataset(record) in datasets]
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
         group_results_by_model(results=results)
     )
     model_results = drop_val_duplicates(model_results=model_results)
+
     # Use bootstrap-based CIs for the displayed "Rank score ± margin" column.
     # Bootstrap resamples datasets with replacement (stratified by task),
     # recomputes the full hierarchy, and returns percentile CIs.
@@ -409,6 +399,7 @@ def generate_dataframe(
             for mid, r in model_results.items()
             if all(ds in r for ds in required_datasets)
         }
+
         # Bootstrap-based tie detection: walks the sorted list and tests
         # each model against the current anchor using a one-sided bootstrap
         # test (α=0.05). Models that are not significantly better share the
@@ -443,6 +434,7 @@ def generate_dataframe(
                 rank = math.nan
             language_ranks = cat_ranks.copy()
             language_ranks.pop("overall", None)
+
             # Ensure all languages are present (even if missing for this model)
             for lang in leaderboard_configs:
                 if lang not in language_ranks:

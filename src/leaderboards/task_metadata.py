@@ -22,43 +22,24 @@ from functools import cache
 
 from euroeval import dataset_configs as _ds_module
 from euroeval.data_models import DatasetConfig
-from euroeval.enums import TaskGroup
 from euroeval.languages import get_all_languages
 from euroeval.tasks import get_all_tasks
 
-# Tasks displayed on every EuroEval leaderboard, in column order.
-LEADERBOARD_TASKS: list[str] = [
-    "sentiment-classification",
-    "named-entity-recognition",
-    "linguistic-acceptability",
-    "reading-comprehension",
-    "summarization",
-    "knowledge",
-    "common-sense-reasoning",
-    "simplification",
-    "european-values",
-]
-
-# The two leaderboard categories that every model is ranked within. The
-# "generative" variant scores all tasks; "all_models" only scores NLU tasks so
-# non-generative models can compete.
-LEADERBOARD_CATEGORIES: tuple[str, str] = ("generative", "all_models")
-
-# TaskGroup -> "nlu"/"nlg". The "all_models" leaderboard variant only
-# scores NLU tasks so non-generative models can compete.
-_NLU_GROUPS: frozenset[TaskGroup] = frozenset(
-    {
-        TaskGroup.SEQUENCE_CLASSIFICATION,
-        TaskGroup.TOKEN_CLASSIFICATION,
-        TaskGroup.QUESTION_ANSWERING,
-    }
-)
+from .constants import LEADERBOARD_TASKS, NLU_TASK_GROUPS
 
 
 def task_category(task_name: str) -> str:
-    """Return ``"nlu"`` or ``"nlg"`` for ``task_name``."""
+    """Return ``"nlu"`` or ``"nlg"`` for ``task_name``.
+
+    Args:
+        task_name:
+            The task slug to classify.
+
+    Returns:
+        ``"nlu"`` if the task's group is an NLU group, else ``"nlg"``.
+    """
     task = get_all_tasks()[task_name]
-    return "nlu" if task.task_group in _NLU_GROUPS else "nlg"
+    return "nlu" if task.task_group in NLU_TASK_GROUPS else "nlg"
 
 
 def category_includes_task(category: str, task: str) -> bool:
@@ -80,6 +61,14 @@ def task_metric_names(task_name: str) -> tuple[str, str | None]:
     """Return ``(primary, secondary)`` metric slugs for a task.
 
     Secondary is ``None`` for single-metric tasks (e.g. ``european-values``).
+
+    Args:
+        task_name:
+            The task slug whose metrics to look up.
+
+    Returns:
+        The primary metric slug and the secondary slug, or ``None`` when
+        the task has a single metric.
     """
     metrics = get_all_tasks()[task_name].metrics
     primary = metrics[0].name
@@ -88,7 +77,16 @@ def task_metric_names(task_name: str) -> tuple[str, str | None]:
 
 
 def task_metric_pretty_names(task_name: str) -> tuple[str, str | None]:
-    """Return ``(primary, secondary)`` human-readable metric names."""
+    """Return ``(primary, secondary)`` human-readable metric names.
+
+    Args:
+        task_name:
+            The task slug whose metrics to look up.
+
+    Returns:
+        The primary metric's pretty name and the secondary's, or ``None``
+        when the task has a single metric.
+    """
     metrics = get_all_tasks()[task_name].metrics
     primary = metrics[0].pretty_name
     secondary = metrics[1].pretty_name if len(metrics) > 1 else None
@@ -117,6 +115,10 @@ def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
 def language_name_to_codes(name: str) -> set[str]:
     """Resolve a leaderboard yaml language name (e.g. ``"danish"``) to codes.
 
+    Args:
+        name:
+            The language name as written in a leaderboard yaml.
+
     Returns:
         The set of language codes matching the given name.
     """
@@ -130,6 +132,10 @@ def language_name_to_codes(name: str) -> set[str]:
 
 def language_code_to_name(code: str) -> str:
     """Look up the canonical language name for a code (lower-cased).
+
+    Args:
+        code:
+            The language code to look up.
 
     Returns:
         The lower-cased language name.
@@ -172,6 +178,10 @@ def official_datasets_for_language(language_name: str) -> OrderedDict[str, list[
     Tasks appear in `LEADERBOARD_TASKS` order; tasks with no matching dataset
     are omitted. Dataset order within a task follows definition order in
     `euroeval.dataset_configs`.
+
+    Args:
+        language_name:
+            The single-language leaderboard's language name.
 
     Returns:
         Ordered mapping from task name to list of dataset names.

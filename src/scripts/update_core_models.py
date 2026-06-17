@@ -38,8 +38,8 @@ import click
 from dotenv import load_dotenv
 from yaml import safe_load
 
+from leaderboards.constants import CORE_MODELS_CONFIG
 from leaderboards.core_models import CoreModel, build_core_model_list
-from leaderboards.paths import CORE_MODELS_CONFIG
 from leaderboards.task_metadata import languages_with_official_datasets
 
 logging.basicConfig(

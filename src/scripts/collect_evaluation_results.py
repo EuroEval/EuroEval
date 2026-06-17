@@ -39,16 +39,15 @@ from dotenv import load_dotenv
 from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
-from leaderboards.bucket_sync import create_backup
-from leaderboards.github_api import (
-    LABEL,
+from leaderboards.backup import backup_results
+from leaderboards.constants import (
+    MODEL_REQUEST_LABEL,
     REPO,
+    RESULTS_DIR,
+    RESULTS_PATH,
     RESULTS_READY_LABEL,
-    close_issue,
-    comment_on_issue,
-    gh_request,
 )
-from leaderboards.paths import RESULTS_DIR, RESULTS_PATH
+from leaderboards.github_api import close_issue, comment_on_issue, gh_request
 from leaderboards.queue_parsing import extract_model_id
 
 load_dotenv()
@@ -376,7 +375,7 @@ def main(force: bool) -> None:
         sys.exit(1)
 
     # Create backup
-    backup_path = create_backup()
+    backup_path = backup_results()
     if backup_path:
         logger.info(f"Created backup at {backup_path}.")
 
@@ -405,7 +404,7 @@ def list_open_request_issues() -> list[dict]:
         path=f"/repos/{REPO}/issues",
         params={
             "state": "open",
-            "labels": f"{LABEL},{RESULTS_READY_LABEL}",
+            "labels": f"{MODEL_REQUEST_LABEL},{RESULTS_READY_LABEL}",
             "per_page": "100",
         },
     )

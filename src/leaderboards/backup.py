@@ -17,9 +17,10 @@ import json
 import logging
 import random
 import shutil
+import sys
 from pathlib import Path
 
-from .paths import BACKUPS_DIR, BACKUPS_MAX_BYTES, RESULTS_DIR, RESULTS_PATH
+from .constants import BACKUPS_DIR, BACKUPS_MAX_BYTES, RESULTS_DIR, RESULTS_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -115,17 +116,15 @@ def _validate_results() -> None:
     )
 
 
-def _is_only_previous_day_backup(backups: list[Path], candidate: Path) -> bool:
-    """Check if `candidate` is the only backup from a previous day.
+def _is_only_previous_day_backup(backups: list[Path]) -> bool:
+    """Check if there is exactly one backup from a previous day.
 
     Args:
         backups:
             List of all backups (newest first).
-        candidate:
-            The backup to check.
 
     Returns:
-        True if this is the only backup from a previous day, False otherwise.
+        True if exactly one backup is from a previous day, False otherwise.
     """
     today = dt.datetime.now().date()
     previous_day_count = sum(
@@ -189,6 +188,10 @@ def backup_results(source: Path = RESULTS_PATH) -> Path | None:
     Returns:
         The Path of the new backup, or None if nothing was written.
 
+    Raises:
+        OSError:
+            If the backup directory (a pCloud Drive path) is unavailable and
+            stdin is not a TTY, so the operator cannot be prompted to retry.
     """
     # Validate results before backing up
     _validate_results()
@@ -197,6 +200,34 @@ def backup_results(source: Path = RESULTS_PATH) -> Path | None:
         logger.warning(f"Cannot back up {source}: file does not exist.")
         return None
 
+    # The backup directory lives on pCloud Drive, which raises OSError when
+    # pCloud is not running. When attached to a terminal, prompt the operator
+    # to start pCloud and retry; otherwise (CI) let the OSError propagate so
+    # the caller's non-interactive safety net handles it.
+    while True:
+        try:
+            return _write_snapshot(source=source)
+        except OSError as exc:
+            if not sys.stdin.isatty():
+                raise
+            logger.warning(f"Backup failed; pCloud may be unavailable: {exc}")
+            input(
+                f"Could not write the backup to {BACKUPS_DIR}. pCloud appears to "
+                "be unavailable. Start pCloud and press Enter to retry..."
+            )
+
+
+def _write_snapshot(source: Path) -> Path | None:
+    """Snapshot `source` into BACKUPS_DIR, pruning oldest if over cap.
+
+    Args:
+        source:
+            The file to back up.
+
+    Returns:
+        The Path of the new backup, or None if the newest existing backup
+        is already byte-identical to `source`.
+    """
     BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
 
     existing = _list_backups()
@@ -222,6 +253,19 @@ def backup_results(source: Path = RESULTS_PATH) -> Path | None:
 
 
 def _files_equal(a: Path, b: Path, chunk_size: int = 1 << 20) -> bool:
+    """Return whether two files have byte-for-byte identical contents.
+
+    Args:
+        a:
+            The first file to compare.
+        b:
+            The second file to compare.
+        chunk_size (optional):
+            The number of bytes to read per iteration. Defaults to 1 MiB.
+
+    Returns:
+        True when both files contain exactly the same bytes.
+    """
     with a.open(mode="rb") as fa, b.open(mode="rb") as fb:
         while True:
             ca = fa.read(chunk_size)
@@ -259,10 +303,9 @@ def _prune_backups() -> None:
     for old in list(reversed(backups)):
         if total <= BACKUPS_MAX_BYTES:
             break
+
         # Protect the last backup from a previous day
-        if old is previous_day_backup and _is_only_previous_day_backup(
-            backups, previous_day_backup
-        ):
+        if old is previous_day_backup and _is_only_previous_day_backup(backups):
             logger.info(f"Skipping prune of {old.name} - last backup from previous day")
             continue
         size = old.stat().st_size

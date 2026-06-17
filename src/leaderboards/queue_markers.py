@@ -12,14 +12,12 @@ GitHub labels instead of body markers.
 from __future__ import annotations
 
 import logging
-import re
 import urllib.error
 
+from .constants import VM_MARKER_RE
 from .github_api import fetch_issue_body, patch_issue_body, unassign_issue
 
 logger = logging.getLogger(__name__)
-
-VM_MARKER_RE = re.compile(r"<!--\s*vm-id:\s*([^\s>]+)\s*-->")
 
 
 def set_vm_marker(number: int, vm_id: str) -> bool:

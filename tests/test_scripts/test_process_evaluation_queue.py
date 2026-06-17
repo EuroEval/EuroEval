@@ -62,7 +62,7 @@ def test_process_issue_fails_when_official_results_are_missing(
         value=lambda output: 0,
     )
     monkeypatch.setattr(
-        target=process_evaluation_queue, name="euroeval_version", value=lambda: "99.0.0"
+        target=process_evaluation_queue, name="__version__", value="99.0.0"
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,
@@ -186,7 +186,7 @@ def test_process_issue_does_not_special_case_oom_anymore(
         value=lambda output: 0,
     )
     monkeypatch.setattr(
-        target=process_evaluation_queue, name="euroeval_version", value=lambda: "99.0.0"
+        target=process_evaluation_queue, name="__version__", value="99.0.0"
     )
     monkeypatch.setattr(
         target=process_evaluation_queue,

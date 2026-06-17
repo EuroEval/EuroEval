@@ -11,23 +11,15 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import sys
 import time
-from pathlib import Path
 
 from huggingface_hub import HfApi, ModelInfo
 from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 
-logger = logging.getLogger(__name__)
+from .constants import HF_CACHE_PATH, HF_CACHE_TTL_SECONDS
 
-HF_CACHE_PATH = Path(
-    os.environ.get(
-        "EUROEVAL_QUEUE_HF_CACHE",
-        str(Path.home() / ".cache" / "euroeval" / "queue_hf_cache.json"),
-    )
-)
-HF_CACHE_TTL_SECONDS = 6 * 60 * 60
+logger = logging.getLogger(__name__)
 
 
 def cached_model_summary(model_id: str) -> dict | None:
@@ -89,6 +81,7 @@ def cached_model_summary(model_id: str) -> dict | None:
     safetensors = getattr(info, "safetensors", None)
     total = getattr(safetensors, "total", None) if safetensors else None
     param_count = total if isinstance(total, int) and total > 0 else sys.maxsize
+
     # ``info.gated`` is ``False`` for public repos and ``"auto"`` / ``"manual"``
     # for gated ones; coerce to a plain bool.
     gated_repo = bool(getattr(info, "gated", False))
@@ -172,7 +165,12 @@ def _load_hf_cache() -> dict[str, dict]:
 
 
 def _write_hf_cache(cache: dict[str, dict]) -> None:
-    """Persist ``cache`` to :data:`HF_CACHE_PATH` atomically."""
+    """Persist ``cache`` to :data:`HF_CACHE_PATH` atomically.
+
+    Args:
+        cache:
+            The mapping of model id to cache entry to write to disk.
+    """
     try:
         HF_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         tmp = HF_CACHE_PATH.with_suffix(HF_CACHE_PATH.suffix + ".tmp")

@@ -17,16 +17,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from .constants import FAILED_LABEL, GATED_LABEL, REPO, RESULTS_READY_LABEL, USER_AGENT
+
 logger = logging.getLogger(__name__)
-
-REPO = "EuroEval/EuroEval"
-LABEL = "model evaluation request"
-FAILED_LABEL = "evaluation-failed"
-GATED_LABEL = "gated"
-RESULTS_READY_LABEL = "results-ready"
-TITLE_PREFIX = "[MODEL EVALUATION REQUEST]"
-
-USER_AGENT = "euroeval-leaderboards"
 
 
 def list_comments(number: int) -> list[dict[str, t.Any]]:

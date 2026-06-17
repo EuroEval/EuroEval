@@ -11,7 +11,7 @@ from pathlib import Path
 
 from euroeval.data_models import BenchmarkResult
 from leaderboards.bucket_sync import sync_bucket, upload_results_to_bucket
-from leaderboards.paths import RESULTS_DIR
+from leaderboards.constants import RESULTS_DIR
 
 logger = logging.getLogger(__name__)
 

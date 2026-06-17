@@ -19,29 +19,11 @@ from huggingface_hub.errors import (
 from requests.exceptions import RequestException
 from yaml import safe_dump, safe_load
 
-from .paths import MODELS_WITHOUT_URLS_CACHE
-from .utils import log_once
+from euroeval.logging_utils import log_once
+
+from .constants import MODELS_WITHOUT_URLS_CACHE
 
 logger = logging.getLogger(__name__)
-
-
-KNOWN_MODELS_WITHOUT_URLS = [
-    "fresh-electra-small",
-    "fresh-xlm-roberta-base",
-    "skole-gpt-mixtral",
-    "danish-foundation-models/munin-7b-v0.1dev0",
-    "mhenrichsen/danskgpt-chat-v2.1",
-    "syvai/danskgpt-chat-llama3-70b",
-    "syvai/llama3-da-base",
-    "xai/grok-3-beta",
-    "xai/grok-3-mini-beta",
-    "danish-foundation-models/munin-7b-core-pt",
-    "danish-foundation-models/munin-7b-core-pt-2",
-    "danish-foundation-models/munin-7b-core-pt-3",
-    "danish-foundation-models/munin-7b-core-it",
-    "danish-foundation-models/munin-7b-open-pt",
-    "danish-foundation-models/munin-7b-open-it",
-]
 
 
 @cache
@@ -84,7 +66,9 @@ def generate_model_url(model_id: str) -> str | None:
     """
     model_id_without_extras = model_id.split("@")[0].split("#")[0]
 
-    if model_id_without_extras in KNOWN_MODELS_WITHOUT_URLS:
+    # Any model with a cached decision (remove or keep-without-url) never gets
+    # a URL, so the model_url field stays None for these ids.
+    if _load_model_url_decision(model_id=model_id_without_extras) is not None:
         return None
 
     url_generators = (
@@ -125,17 +109,13 @@ def generate_anchor_tag(model_id: str) -> str | None:
 
     model_id_without_extras = model_id.split("@")[0].split("#")[0]
 
-    # Skip URL generation for models without hosted pages
-    if model_id_without_extras in KNOWN_MODELS_WITHOUT_URLS:
-        return model_id
-
     # Check cached decision (remove or keep without URL)
     cached_decision = _load_model_url_decision(model_id=model_id_without_extras)
     if cached_decision is True:
         # Cached decision: remove this model
         log_once(
             f"Removing model {model_id_without_extras} from results (cached decision).",
-            logging_level=logging.INFO,
+            level=logging.INFO,
         )
         return None
     if cached_decision is False:
@@ -148,7 +128,7 @@ def generate_anchor_tag(model_id: str) -> str | None:
         if remove_model:
             log_once(
                 f"Removing model {model_id_without_extras} from results.",
-                logging_level=logging.INFO,
+                level=logging.INFO,
             )
             return None
 
@@ -358,6 +338,7 @@ def generate_anthropic_url(model_id: str) -> str | None:
         Anthropic's naming pattern.
     """
     model_id = model_id.replace("anthropic/", "")
+
     # Match Anthropic model naming patterns:
     # - claude-3-7-sonnet-20250219
     # - claude-sonnet-4-5-20250929

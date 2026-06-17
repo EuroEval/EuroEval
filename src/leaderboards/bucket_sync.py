@@ -18,13 +18,11 @@ from dotenv import load_dotenv
 from euroeval.data_models import BenchmarkResult
 
 from .backup import backup_results
-from .paths import RESULTS_DIR
+from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-
-HF_RESULTS_BUCKET = "EuroEval/results"
 
 
 def _sanitise_model_id(model_id: str) -> str:
@@ -175,7 +173,3 @@ def is_sync_available() -> bool:
         True if hf binary is on PATH, False otherwise.
     """
     return shutil.which("hf") is not None
-
-
-# Alias for backwards compatibility
-create_backup = backup_results

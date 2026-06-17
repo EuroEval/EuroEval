@@ -1,19 +1,10 @@
-"""Utility functions for the project."""
+"""Helpers for parsing result records and model identifiers."""
 
 from __future__ import annotations
 
-import logging
 import re
-from functools import cache
 
-logger = logging.getLogger(__name__)
-
-# Regex for stripping HTML anchor tags from model IDs like
-# `<a href='...'>org/model</a>`
-_ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
-# Strips trailing ``(zero-shot)``, ``(val)``, ``(zero-shot, val)`` etc.
-# annotations that `extract_model_ids_from_record` appends to variants.
-_VARIANT_SUFFIX_RE = re.compile(r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$")
+from .constants import ANCHOR_RE, VARIANT_SUFFIX_RE
 
 
 def plain_model_id(model_id: str) -> str:
@@ -32,9 +23,9 @@ def plain_model_id(model_id: str) -> str:
     Returns:
         The canonical ``org/repo`` slug.
     """
-    match = _ANCHOR_RE.search(model_id)
+    match = ANCHOR_RE.search(model_id)
     inner = match.group("inner").strip() if match else model_id
-    return _VARIANT_SUFFIX_RE.sub("", inner)
+    return VARIANT_SUFFIX_RE.sub("", inner)
 
 
 def convert_to_float(value: str | float) -> float | str:
@@ -80,26 +71,13 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     """
     model_id = get_model_name(record)
 
-    # A None field would be ambiguous, so we emit both variants for it;
     # _get_bool_field normalises both the EEE and old record formats.
     few_shot = _get_bool_field(record, "few_shot", True)
     validation_split = _get_bool_field(record, "validation_split", False)
 
-    notes_to_add: list[list[str]] = [[]]
-    if few_shot is False:
-        notes_to_add = [["zero-shot"]]
-    elif few_shot is None:
-        notes_to_add = [[], ["zero-shot"]]
-
-    all_model_notes: list[list[str]] = []
-    for base_note in notes_to_add:
-        if validation_split is True:
-            all_model_notes.append(base_note + ["val"])
-        elif validation_split is None:
-            all_model_notes.append(base_note)
-            all_model_notes.append(base_note + ["val"])
-        else:
-            all_model_notes.append(base_note)
+    base_note = [] if few_shot else ["zero-shot"]
+    note = base_note + ["val"] if validation_split else base_note
+    all_model_notes: list[list[str]] = [note]
 
     has_anchor = model_id.endswith("</a>")
     base = re.sub(r"</a>$", "", model_id) if has_anchor else model_id
@@ -112,7 +90,7 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     return model_id_candidates
 
 
-def _get_dataset(record: dict) -> str | None:
+def get_dataset(record: dict) -> str | None:
     """Get dataset from record, supporting both EEE and old formats.
 
     Args:
@@ -182,7 +160,7 @@ def get_record_hash(record: dict) -> str:
             If no dataset is found in the record.
     """
     model = get_model_name(record)
-    dataset = _get_dataset(record)
+    dataset = get_dataset(record)
     if dataset is None:
         raise ValueError(f"No dataset found in record: {record}")
     validation_split = _get_bool_field(record, "validation_split", False)
@@ -252,32 +230,3 @@ def drop_val_duplicates(
                 continue
         filtered[model_id] = results
     return filtered
-
-
-@cache
-def log_once(message: str, logging_level: int) -> None:
-    """Log a message only once.
-
-    Args:
-        message:
-            The message to log.
-        logging_level:
-            The logging level to use for the message.
-
-    Raises:
-        ValueError:
-            If the logging level is invalid.
-    """
-    match logging_level:
-        case logging.DEBUG:
-            logger.debug(message)
-        case logging.INFO:
-            logger.info(message)
-        case logging.WARNING:
-            logger.warning(message)
-        case logging.ERROR:
-            logger.error(message)
-        case logging.CRITICAL:
-            logger.critical(message)
-        case _:
-            raise ValueError(f"Invalid logging level: {logging_level}")

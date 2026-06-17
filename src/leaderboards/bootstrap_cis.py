@@ -17,7 +17,8 @@ import numpy as np
 
 from euroeval.constants import ORTHOGONAL_TASKS
 
-from .task_metadata import LEADERBOARD_CATEGORIES, category_includes_task
+from .constants import LEADERBOARD_CATEGORIES
+from .task_metadata import category_includes_task
 
 
 def bootstrap_rank_scores(
@@ -68,7 +69,7 @@ def bootstrap_rank_scores(
     # Stratified resampling needs datasets grouped by task, so build the
     # dataset -> task mapping (and its inverse) once up front.
     dataset_to_task: dict[str, str] = {}
-    for language, config in configs.items():
+    for _language, config in configs.items():
         for task, task_datasets_list in config.items():
             if task in ORTHOGONAL_TASKS:
                 continue
@@ -110,17 +111,17 @@ def bootstrap_rank_scores(
             models_on_ds = dataset_models.get(ds, set())
             if not models_on_ds:
                 continue
-            scores: list[tuple[str, float, float, list[float]]] = []
+            scores: list[tuple[str, float, list[float]]] = []
             for mid in models_on_ds:
                 if mid in model_results and ds in model_datasets[mid]:
-                    raw, mean_sc, se = model_results[mid][ds][0]
+                    raw, mean_sc, _ = model_results[mid][ds][0]
                     if np.isfinite(mean_sc):
-                        scores.append((mid, mean_sc, se, raw))
+                        scores.append((mid, mean_sc, raw))
             if not scores:
                 continue
             scores.sort(key=lambda x: x[1], reverse=True)
             best_mean = scores[0][1]
-            all_raw = [score for _, _, _, r in scores for score in r]
+            all_raw = [score for _, _, r in scores for score in r]
             pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
             dataset_stats[ds] = (best_mean, float(pooled_sd))
 
@@ -135,7 +136,7 @@ def bootstrap_rank_scores(
             for mid in models_on_ds:
                 if mid not in model_results or ds not in model_datasets[mid]:
                     continue
-                raw, mean_sc, se = model_results[mid][ds][0]
+                raw, mean_sc, _ = model_results[mid][ds][0]
                 if not np.isfinite(mean_sc):
                     continue
                 resampled_raw = rng.choice(raw, size=len(raw), replace=True)
@@ -155,6 +156,7 @@ def bootstrap_rank_scores(
                 language_scores, overall = _aggregate_scores_to_categories(
                     dataset_scores=model_rank_scores, configs=configs
                 )
+
                 # Store per-language samples even when the model lacks complete
                 # coverage (and therefore has no overall score).
                 if language_scores:

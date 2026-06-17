@@ -35,56 +35,14 @@ from huggingface_hub.errors import (
     SafetensorsParsingError,
 )
 
+from .constants import DTYPE_BYTES, GPU_FIT_OVERHEAD, LANGUAGE_GROUP_CODES
+
 # Heavy imports (``torch``, ``psutil``, and anything under ``euroeval`` -- which
 # transitively loads ``nltk`` and ``sklearn``) are deferred to the functions
 # that actually need them, so lightweight callers like the results collector
 # don't pay a multi-second import cost they never use.
 
 logger = logging.getLogger(__name__)
-
-_BALTIC = "Baltic languages (Latvian, Lithuanian)"
-_FINNIC = "Finnic languages (Estonian, Finnish)"
-_ROMANCE = "Romance languages (Catalan, French, Italian, Portuguese, Romanian, Spanish)"
-_SCANDI = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)"
-_SLAVIC = (
-    "Slavic languages (Belarusian, Bulgarian, Bosnian, Croatian, Czech, Polish,"
-    " Serbian, Slovak, Slovenian, Ukrainian)"
-)
-_WGERMANIC = "West Germanic languages (Dutch, English, German)"
-
-LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
-    _BALTIC: ["lv", "lt"],
-    _FINNIC: ["et", "fi"],
-    _ROMANCE: ["ca", "fr", "it", "pt", "ro", "es"],
-    _SCANDI: ["da", "fo", "is", "no", "sv"],
-    _SLAVIC: ["be", "bg", "bs", "hr", "cs", "pl", "sr", "sk", "sl", "uk"],
-    _WGERMANIC: ["nl", "en", "de"],
-    "Albanian": ["sq"],
-    "Greek": ["el"],
-    "Hungarian": ["hu"],
-}
-
-DTYPE_BYTES: dict[str, int] = {
-    "F64": 8,
-    "I64": 8,
-    "U64": 8,
-    "F32": 4,
-    "I32": 4,
-    "U32": 4,
-    "F16": 2,
-    "BF16": 2,
-    "I16": 2,
-    "U16": 2,
-    "F8_E4M3": 1,
-    "F8_E5M2": 1,
-    "I8": 1,
-    "U8": 1,
-    "BOOL": 1,
-}
-
-# Multiplier applied to weight bytes to leave room for activations, KV cache,
-# and framework overhead when judging whether a model fits in GPU memory.
-GPU_FIT_OVERHEAD = 1.2
 
 
 def run_euroeval(

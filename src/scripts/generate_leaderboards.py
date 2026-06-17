@@ -15,12 +15,16 @@ from dotenv import load_dotenv
 from yaml import safe_load
 
 from leaderboards.backup import backup_results, restore_from_backup_if_missing
-from leaderboards.core_models import API_MODEL_PATTERNS
+from leaderboards.constants import (
+    API_MODEL_PATTERNS,
+    CORE_MODELS_CONFIG,
+    LEADERBOARD_CONFIGS_DIR,
+    LEADERBOARD_TASKS,
+    REPO_ROOT,
+)
 from leaderboards.leaderboard_generation import generate_leaderboard
-from leaderboards.paths import CORE_MODELS_CONFIG, LEADERBOARD_CONFIGS_DIR, REPO_ROOT
 from leaderboards.result_processing import process_results
 from leaderboards.task_metadata import (
-    LEADERBOARD_TASKS,
     languages_with_official_datasets,
     task_metric_pretty_names,
 )

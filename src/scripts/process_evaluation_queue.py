@@ -46,9 +46,20 @@ from huggingface_hub import HfApi
 from huggingface_hub.errors import HfHubHTTPError
 from yaml import safe_load
 
-from leaderboards.evaluation_common import (
+from euroeval import __version__
+from leaderboards.constants import (
+    CORE_MODELS_CONFIG,
+    FAILED_LABEL,
+    GATED_LABEL,
+    GATED_OUTPUT_RE,
     GPU_FIT_OVERHEAD,
     LANGUAGE_GROUP_CODES,
+    MODEL_REQUEST_LABEL,
+    REPO,
+    RESULTS_READY_LABEL,
+    VM_MARKER_RE,
+)
+from leaderboards.evaluation_common import (
     estimated_model_bytes,
     extract_language_groups,
     gpu_total_memory_bytes,
@@ -56,11 +67,6 @@ from leaderboards.evaluation_common import (
     run_euroeval,
 )
 from leaderboards.github_api import (
-    FAILED_LABEL,
-    GATED_LABEL,
-    LABEL,
-    REPO,
-    RESULTS_READY_LABEL,
     add_failed_label,
     add_gated_label,
     add_results_ready_label,
@@ -71,7 +77,6 @@ from leaderboards.github_api import (
     remove_gated_label,
     unassign_issue,
 )
-from leaderboards.paths import CORE_MODELS_CONFIG
 from leaderboards.queue_env import (
     acquire_single_instance_lock,
     load_dotenv_into_environ,
@@ -81,16 +86,13 @@ from leaderboards.queue_env import (
 )
 from leaderboards.queue_hf_cache import cached_model_summary
 from leaderboards.queue_markers import (
-    VM_MARKER_RE,
     clear_vm_marker,
     release_issue_if_owned,
     set_vm_marker,
     vm_marker_matches,
 )
 from leaderboards.queue_parsing import (
-    GATED_OUTPUT_RE,
     completed_languages,
-    euroeval_version,
     extract_model_id,
     format_dataset_language_pairs,
     num_errored_benchmarks,
@@ -533,7 +535,7 @@ def reclaim_orphaned_issues() -> None:
             path=f"/repos/{REPO}/issues",
             params={
                 "state": "open",
-                "labels": LABEL,
+                "labels": MODEL_REQUEST_LABEL,
                 "per_page": "100",
                 "assignee": ASSIGNEE,
             },
@@ -602,7 +604,7 @@ def list_open_unassigned_issues() -> list[dict]:
         path=f"/repos/{REPO}/issues",
         params={
             "state": "open",
-            "labels": LABEL,
+            "labels": MODEL_REQUEST_LABEL,
             "per_page": "100",
             "assignee": "none",
         },
@@ -872,7 +874,7 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
         return
 
     if failed:
-        version = euroeval_version()
+        version = __version__
         reason = failure_reason or f"failed languages: {', '.join(failed)}"
         tail = failure_output_tail or "(no output captured)"
         if issue_has_matching_error_comment(number=number, reason=reason):
