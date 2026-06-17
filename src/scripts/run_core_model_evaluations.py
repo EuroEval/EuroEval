@@ -49,6 +49,7 @@ from update_core_models import refresh_core_models
 
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
+from leaderboards.constants import NEW_RESULTS_PATH, RESULTS_PATH
 from leaderboards.core_models import CoreModel
 from leaderboards.evaluation_common import (
     gpu_total_memory_bytes,
@@ -56,7 +57,6 @@ from leaderboards.evaluation_common import (
     official_dataset_language_pairs,
     run_euroeval,
 )
-from leaderboards.paths import NEW_RESULTS_PATH, RESULTS_PATH
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"

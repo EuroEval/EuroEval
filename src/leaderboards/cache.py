@@ -77,7 +77,6 @@ class Cache:
                 f"Results file {compressed_results_path} not found."
             )
 
-        # Unpack the tar.gz file in memory and read the JSONL file
         with tarfile.open(compressed_results_path, "r:gz") as tar:
             results_file = tar.extractfile(member="results/results.jsonl")
             if results_file is None:
@@ -87,64 +86,21 @@ class Cache:
                 return cls()
             result_lines = results_file.read().decode(encoding="utf-8").splitlines()
 
-        # Load the processed records
-        old_records: list[dict[str, object]] = list()
+        records: list[dict[str, object]] = []
         for line_idx, line in enumerate(result_lines):
             if not line.strip():
                 continue
-            for line in line.replace("}{", "}\n{").split("\n"):
-                if not line.strip():
+            for sub_line in line.replace("}{", "}\n{").split("\n"):
+                if not sub_line.strip():
                     continue
                 try:
-                    old_records.append(json.loads(line))
-                except json.JSONDecodeError:
-                    raise ValueError(f"Invalid JSON on line {line_idx:,}: {line}.")
+                    records.append(json.loads(sub_line))
+                except json.JSONDecodeError as e:
+                    raise ValueError(
+                        f"Invalid JSON on line {line_idx:,}: {sub_line}."
+                    ) from e
 
-        # Populate a cache from the old records
-        cache = cls()
-        for record in tqdm(old_records, desc="Building caches"):
-            # Support both EEE format (model_info.name) and old format (model)
-            if "model_info" in record and "name" in record["model_info"]:
-                model_name = record["model_info"]["name"]
-            else:
-                model_name = record["model"]
-
-            model_id: str = model_name
-            if (match := re.search(r">(.+?)<", model_name)) is not None:
-                model_id = match.group(1)
-            model_id = split_model_id(model_id=model_id).model_id
-
-            # EEE format: metadata in additional_details
-            if "model_info" in record and "additional_details" in record["model_info"]:
-                additional = record["model_info"]["additional_details"]
-                if "generative_type" in additional:
-                    cache.generative_type[model_id] = additional["generative_type"]
-                if "merge" in additional:
-                    cache.merge[model_id] = additional["merge"] == "true"
-            # Old format: metadata at top level
-            else:
-                if "generative_type" in record:
-                    cache.generative_type[model_id] = record["generative_type"]
-                if "merge" in record:
-                    cache.merge[model_id] = record["merge"]
-
-            if "commercially_licensed" in record:
-                cache.commercially_licensed[model_id] = record["commercially_licensed"]
-            if "open" in record:
-                value = record["open"]
-                if isinstance(value, str):
-                    value = value in {"open-source", "open-weight"}
-                cache.open[model_id] = value
-            if "trained_from_scratch" in record:
-                cache.trained_from_scratch[model_id] = record["trained_from_scratch"]
-            if model_name.startswith("<a href="):
-                inner_model_id_match = re.search(r">(.+?)<", model_name)
-                if inner_model_id_match:
-                    inner_model_id = inner_model_id_match.group(1)
-                    inner_model_id = re.sub(r" *\(.*?\)", "", inner_model_id)
-                    cache.anchor_tag[inner_model_id] = model_name
-
-        return cache
+        return cls._from_records(records=records, desc="Building caches")
 
     @classmethod
     def from_results_dir(cls, results_dir: Path) -> "Cache":
@@ -167,26 +123,42 @@ class Cache:
         if not results_dir.exists():
             raise FileNotFoundError(f"Results directory {results_dir} not found.")
 
-        # Load all JSONL files from the directory
-        all_records: list[dict[str, object]] = list()
+        records: list[dict[str, object]] = []
         jsonl_files = sorted(results_dir.glob("*.jsonl"))
-
         for jsonl_file in jsonl_files:
             content = jsonl_file.read_text(encoding="utf-8")
             for line_idx, line in enumerate(content.splitlines()):
                 if not line.strip():
                     continue
                 try:
-                    all_records.append(json.loads(line))
-                except json.JSONDecodeError:
+                    records.append(json.loads(line))
+                except json.JSONDecodeError as e:
                     raise ValueError(
                         f"Invalid JSON in {jsonl_file.name} line {line_idx:,}: {line}."
-                    )
+                    ) from e
 
-        # Populate a cache from the records
+        return cls._from_records(
+            records=records, desc="Building caches from results dir"
+        )
+
+    @classmethod
+    def _from_records(cls, records: list[dict[str, object]], desc: str) -> "Cache":
+        """Populate a cache from parsed result records.
+
+        Supports both the EEE format (metadata under ``model_info``) and the
+        old EuroEval format (metadata at the top level).
+
+        Args:
+            records:
+                Parsed result records in either EEE or old EuroEval format.
+            desc:
+                Progress-bar description.
+
+        Returns:
+            A Cache instance populated with model metadata.
+        """
         cache = cls()
-        for record in tqdm(all_records, desc="Building caches from results dir"):
-            # Support both EEE format (model_info.name) and old format (model)
+        for record in tqdm(records, desc=desc):
             if "model_info" in record and "name" in record["model_info"]:
                 model_name = record["model_info"]["name"]
             else:
@@ -197,21 +169,18 @@ class Cache:
                 model_id = match.group(1)
             model_id = split_model_id(model_id=model_id).model_id
 
-            # EEE format: metadata is in additional_details
             if "model_info" in record and "additional_details" in record["model_info"]:
                 additional = record["model_info"]["additional_details"]
                 if "generative_type" in additional:
                     cache.generative_type[model_id] = additional["generative_type"]
                 if "merge" in additional:
                     cache.merge[model_id] = additional["merge"] == "true"
-            # Old format: metadata at top level
             else:
                 if "generative_type" in record:
                     cache.generative_type[model_id] = record["generative_type"]
                 if "merge" in record:
                     cache.merge[model_id] = record["merge"]
 
-            # Check for additional fields from EEE or old format
             if "commercially_licensed" in record:
                 cache.commercially_licensed[model_id] = record["commercially_licensed"]
             if "open" in record:
@@ -227,8 +196,4 @@ class Cache:
                     inner_model_id = inner_model_id_match.group(1)
                     inner_model_id = re.sub(r" *\(.*?\)", "", inner_model_id)
                     cache.anchor_tag[inner_model_id] = model_name
-
         return cache
-
-    # Alias for backward compatibility
-    from_processed_dir = from_results_dir

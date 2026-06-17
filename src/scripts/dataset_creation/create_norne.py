@@ -140,6 +140,8 @@ def main() -> None:
                     "val": Dataset.from_pandas(val_df, split=Split.VALIDATION),
                     "test": Dataset.from_pandas(test_df, split=Split.TEST),
                     "full_train": Dataset.from_pandas(
+                        # The ``datasets`` stubs type ``split`` too narrowly;
+                        # arbitrary split names work at runtime.
                         full_train_df,
                         split="full_train",  # ty: ignore[invalid-argument-type]
                     ),

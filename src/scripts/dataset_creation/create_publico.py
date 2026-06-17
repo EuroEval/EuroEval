@@ -15,7 +15,7 @@ import random
 import nltk
 from datasets import Dataset, DatasetDict, load_dataset
 from huggingface_hub.hf_api import HfApi
-from nltk.tokenize import sent_tokenize  # noqa: E402
+from nltk.tokenize import sent_tokenize
 
 nltk.download("punkt")
 

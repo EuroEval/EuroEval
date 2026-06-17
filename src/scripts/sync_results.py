@@ -11,7 +11,7 @@ from pathlib import Path
 
 from euroeval.data_models import BenchmarkResult
 from leaderboards.bucket_sync import sync_bucket, upload_results_to_bucket
-from leaderboards.paths import RESULTS_DIR
+from leaderboards.constants import RESULTS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def main() -> None:
 
     n_results = merge_results()
     if n_results > 0:
-        logger.info("Merged %s unique results into %s", f"{n_results:,}", RESULTS_FILE)
+        logger.info(f"Merged {n_results:,} unique results into {RESULTS_FILE}")
 
     upload_results_to_bucket(RESULTS_FILE)
 
@@ -46,47 +46,44 @@ def merge_results() -> int:
     Returns:
         Number of unique results written.
     """
-    existing: dict[tuple, str] = {}
+    existing: dict[tuple[str, str, str, str], str] = {}
 
-    # Load existing local results
     if RESULTS_FILE.exists():
-        logger.info("Loading existing results from %s...", RESULTS_FILE)
-        with RESULTS_FILE.open() as f:
+        logger.info(f"Loading existing results from {RESULTS_FILE}...")
+        with RESULTS_FILE.open(encoding="utf-8") as f:
             for line in f:
                 if line.strip():
                     rec = json.loads(line)
-                    result = BenchmarkResult.from_dict(rec)
-                    key = _extract_dedup_key(result)
+                    result = BenchmarkResult.from_dict(config=rec)
+                    key = _extract_dedup_key(result=result)
                     if key:
                         existing[key] = line.strip()
-        logger.info("Found %s existing results", f"{len(existing):,}")
+        logger.info(f"Found {len(existing):,} existing results")
 
-    # Load results from unified results directory
     if RESULTS_DIR.exists():
-        logger.info("Loading results from %s...", RESULTS_DIR)
+        logger.info(f"Loading results from {RESULTS_DIR}...")
         bucket_count = 0
         for jsonl_file in sorted(RESULTS_DIR.glob("*.jsonl")):
-            with jsonl_file.open() as f:
+            with jsonl_file.open(encoding="utf-8") as f:
                 for line in f:
                     if line.strip():
                         rec = json.loads(line)
                         try:
-                            result = BenchmarkResult.from_dict(rec)
-                            key = _extract_dedup_key(result)
+                            result = BenchmarkResult.from_dict(config=rec)
+                            key = _extract_dedup_key(result=result)
                             if key:
                                 existing[key] = line.strip()
                                 bucket_count += 1
                         except Exception as e:
-                            logger.debug("Skipping invalid record: %s", e)
-        logger.info("Loaded %s results from bucket", f"{bucket_count:,}")
+                            logger.debug(f"Skipping invalid record: {e}")
+        logger.info(f"Loaded {bucket_count:,} results from bucket")
 
     if not existing:
         logger.warning("No results found to merge")
         return 0
 
-    # Write merged results
     RESULTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with RESULTS_FILE.open("w") as f:
+    with RESULTS_FILE.open("w", encoding="utf-8") as f:
         for line in sorted(existing.values()):
             f.write(line + "\n")
 
@@ -96,31 +93,24 @@ def merge_results() -> int:
 def _extract_dedup_key(result: BenchmarkResult) -> tuple[str, str, str, str] | None:
     """Extract deduplication key from a BenchmarkResult.
 
-    Key consists of:
-    - model_id: the model identifier
-    - dataset: the dataset name
-    - validation_split: whether eval used validation split
-    - few_shot: whether eval used few-shot prompting
+    The key is ``(model_id, dataset, validation_split, few_shot)``, which
+    uniquely identifies an evaluation configuration.
 
     Args:
-        result: Parsed benchmark result.
+        result:
+            Parsed benchmark result.
 
     Returns:
         Tuple key for deduplication, or None if required fields are missing.
     """
-    try:
-        if not result.model or not result.dataset:
-            return None
-
-        return (
-            result.model,
-            result.dataset,
-            str(result.validation_split),
-            str(result.few_shot),
-        )
-    except Exception as e:
-        logger.debug("Failed to extract key from result: %s", e)
+    if not result.model or not result.dataset:
         return None
+    return (
+        result.model,
+        result.dataset,
+        str(result.validation_split),
+        str(result.few_shot),
+    )
 
 
 if __name__ == "__main__":

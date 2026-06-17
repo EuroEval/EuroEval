@@ -17,17 +17,123 @@ import json
 import logging
 import random
 import shutil
+import sys
 from pathlib import Path
 
-from .paths import BACKUPS_DIR, BACKUPS_MAX_BYTES, RESULTS_DIR, RESULTS_PATH
+from .constants import (
+    BACKUPS_DIR,
+    BACKUPS_MAX_BYTES,
+    REQUIRED_METADATA_FIELDS,
+    RESULTS_DIR,
+    RESULTS_PATH,
+)
 
 logger = logging.getLogger(__name__)
 
-# Required metadata fields that must be present in all processed results
-REQUIRED_METADATA_FIELDS = ["commercially_licensed", "open", "trained_from_scratch"]
-
 BACKUP_PREFIX = "results_"
 BACKUP_SUFFIX = ".tar.gz"
+
+
+def restore_from_backup_if_missing(target: Path = RESULTS_PATH) -> bool:
+    """Restore `target` from the newest backup if `target` doesn't exist.
+
+    Args:
+        target:
+            The destination path (defaults to RESULTS_PATH).
+
+    Returns:
+        True if a restore happened, False if `target` already existed or no
+        backup was available.
+    """
+    if target.exists():
+        return False
+    backups = _list_backups()
+    if not backups:
+        return False
+    newest = backups[0]
+    logger.info(f"Restoring {target.name} from backup {newest}")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src=newest, dst=target)
+    return True
+
+
+def backup_results(source: Path = RESULTS_PATH) -> Path | None:
+    """Snapshot `source` into BACKUPS_DIR, then prune oldest if over cap.
+
+    Validates that results exist and have required metadata fields
+    before creating the backup. Skips if `source` is byte-identical to the
+    newest existing backup, so repeated runs without changes don't fill the
+    backup directory.
+
+    Args:
+        source:
+            The file to back up (defaults to RESULTS_PATH).
+
+    Returns:
+        The Path of the new backup, or None if nothing was written.
+
+    Raises:
+        OSError:
+            If the backup directory (a pCloud Drive path) is unavailable and
+            stdin is not a TTY, so the operator cannot be prompted to retry.
+    """
+    # Validate results before backing up
+    _validate_results()
+
+    if not source.exists():
+        logger.warning(f"Cannot back up {source}: file does not exist.")
+        return None
+
+    # The backup directory lives on pCloud Drive, which raises OSError when
+    # pCloud is not running. When attached to a terminal, prompt the operator
+    # to start pCloud and retry; otherwise (CI) let the OSError propagate so
+    # the caller's non-interactive safety net handles it.
+    while True:
+        try:
+            return _write_snapshot(source=source)
+        except OSError as exc:
+            if not sys.stdin.isatty():
+                raise
+            logger.warning(f"Backup failed; pCloud may be unavailable: {exc}")
+            input(
+                f"Could not write the backup to {BACKUPS_DIR}. pCloud appears to "
+                "be unavailable. Start pCloud and press Enter to retry..."
+            )
+
+
+def _write_snapshot(source: Path) -> Path | None:
+    """Snapshot `source` into BACKUPS_DIR, pruning oldest if over cap.
+
+    Args:
+        source:
+            The file to back up.
+
+    Returns:
+        The Path of the new backup, or None if the newest existing backup
+        is already byte-identical to `source`.
+    """
+    BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
+
+    existing = _list_backups()
+    if existing and existing[0].stat().st_size == source.stat().st_size:
+        # Cheap check first; fall back to byte compare if sizes match.
+        if _files_equal(existing[0], source):
+            logger.info(
+                f"Newest backup {existing[0].name} matches current results "
+                f"({source.stat().st_size:,} bytes); skipping snapshot."
+            )
+            return None
+
+    timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = BACKUPS_DIR / f"{BACKUP_PREFIX}{timestamp}{BACKUP_SUFFIX}"
+    shutil.copy2(src=source, dst=backup_path)
+    logger.info(
+        f"Snapshotted {source.name} -> {backup_path} "
+        f"({backup_path.stat().st_size:,} bytes)"
+    )
+
+    _prune_backups()
+    return backup_path
 
 
 def _validate_results() -> None:
@@ -72,7 +178,7 @@ def _validate_results() -> None:
     for model_file in sampled_files:
         file_has_issues = False
         try:
-            with open(model_file, "r", encoding="utf-8") as f:
+            with model_file.open("r", encoding="utf-8") as f:
                 for line_num, line in enumerate(f, 1):
                     if not line.strip():
                         continue
@@ -80,9 +186,14 @@ def _validate_results() -> None:
                     record = json.loads(line)
 
                     # Check for required metadata fields
+                    additional = record.get("model_info", {}).get(
+                        "additional_details", {}
+                    )
                     for field in REQUIRED_METADATA_FIELDS:
-                        if field not in record:
-                            model_id = record.get("model", "unknown")
+                        if field not in additional:
+                            model_id = record.get("model_info", {}).get(
+                                "name", "unknown"
+                            )
                             logger.error(
                                 f"Missing '{field}' in {model_file.name}, line "
                                 f"{line_num}, model '{model_id}'"
@@ -110,118 +221,25 @@ def _validate_results() -> None:
         raise ValueError(msg)
 
     logger.info(
-        f"✓ Validated {records_checked:,} records from {len(sampled_files):,} sampled"
+        f"Validated {records_checked:,} records from {len(sampled_files):,} sampled"
         f" files - all have required metadata fields"
     )
 
 
-def _is_only_previous_day_backup(backups: list[Path], candidate: Path) -> bool:
-    """Check if `candidate` is the only backup from a previous day.
-
-    Args:
-        backups:
-            List of all backups (newest first).
-        candidate:
-            The backup to check.
-
-    Returns:
-        True if this is the only backup from a previous day, False otherwise.
-    """
-    today = dt.datetime.now().date()
-    previous_day_count = sum(
-        1
-        for backup in backups
-        if dt.datetime.fromtimestamp(backup.stat().st_mtime).date() < today
-    )
-    return previous_day_count == 1
-
-
-def _list_backups() -> list[Path]:
-    if not BACKUPS_DIR.exists():
-        return []
-    backups = [
-        p
-        for p in BACKUPS_DIR.iterdir()
-        if p.is_file()
-        and p.name.startswith(BACKUP_PREFIX)
-        and p.name.endswith(BACKUP_SUFFIX)
-    ]
-    # Newest first.
-    backups.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-    return backups
-
-
-def restore_from_backup_if_missing(target: Path = RESULTS_PATH) -> bool:
-    """Restore `target` from the newest backup if `target` doesn't exist.
-
-    Args:
-        target:
-            The destination path (defaults to RESULTS_PATH).
-
-    Returns:
-        True if a restore happened, False if `target` already existed or no
-        backup was available.
-    """
-    if target.exists():
-        return False
-    backups = _list_backups()
-    if not backups:
-        return False
-    newest = backups[0]
-    logger.info(f"Restoring {target.name} from backup {newest}")
-    target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src=newest, dst=target)
-    return True
-
-
-def backup_results(source: Path = RESULTS_PATH) -> Path | None:
-    """Snapshot `source` into BACKUPS_DIR, then prune oldest if over cap.
-
-    Validates that results exist and have required metadata fields
-    before creating the backup. Skips if `source` is byte-identical to the
-    newest existing backup, so repeated runs without changes don't fill the
-    backup directory.
-
-    Args:
-        source:
-            The file to back up (defaults to RESULTS_PATH).
-
-    Returns:
-        The Path of the new backup, or None if nothing was written.
-
-    """
-    # Validate results before backing up
-    _validate_results()
-
-    if not source.exists():
-        logger.warning(f"Cannot back up {source}: file does not exist.")
-        return None
-
-    BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
-
-    existing = _list_backups()
-    if existing and existing[0].stat().st_size == source.stat().st_size:
-        # Cheap check first; fall back to byte compare if sizes match.
-        if _files_equal(existing[0], source):
-            logger.info(
-                f"Newest backup {existing[0].name} matches current results "
-                f"({source.stat().st_size:,} bytes); skipping snapshot."
-            )
-            return None
-
-    timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_path = BACKUPS_DIR / f"{BACKUP_PREFIX}{timestamp}{BACKUP_SUFFIX}"
-    shutil.copy2(src=source, dst=backup_path)
-    logger.info(
-        f"Snapshotted {source.name} → {backup_path} "
-        f"({backup_path.stat().st_size:,} bytes)"
-    )
-
-    _prune_backups()
-    return backup_path
-
-
 def _files_equal(a: Path, b: Path, chunk_size: int = 1 << 20) -> bool:
+    """Return whether two files have byte-for-byte identical contents.
+
+    Args:
+        a:
+            The first file to compare.
+        b:
+            The second file to compare.
+        chunk_size (optional):
+            The number of bytes to read per iteration. Defaults to 1 MiB.
+
+    Returns:
+        True when both files contain exactly the same bytes.
+    """
     with a.open(mode="rb") as fa, b.open(mode="rb") as fb:
         while True:
             ca = fa.read(chunk_size)
@@ -259,13 +277,46 @@ def _prune_backups() -> None:
     for old in list(reversed(backups)):
         if total <= BACKUPS_MAX_BYTES:
             break
+
         # Protect the last backup from a previous day
-        if old is previous_day_backup and _is_only_previous_day_backup(
-            backups, previous_day_backup
-        ):
+        if old is previous_day_backup and _is_only_previous_day_backup(backups):
             logger.info(f"Skipping prune of {old.name} - last backup from previous day")
             continue
         size = old.stat().st_size
         old.unlink()
         total -= size
         logger.info(f"Pruned old backup {old.name} ({size:,} bytes) - over size limit")
+
+
+def _list_backups() -> list[Path]:
+    if not BACKUPS_DIR.exists():
+        return []
+    backups = [
+        p
+        for p in BACKUPS_DIR.iterdir()
+        if p.is_file()
+        and p.name.startswith(BACKUP_PREFIX)
+        and p.name.endswith(BACKUP_SUFFIX)
+    ]
+    # Newest first.
+    backups.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return backups
+
+
+def _is_only_previous_day_backup(backups: list[Path]) -> bool:
+    """Check if there is exactly one backup from a previous day.
+
+    Args:
+        backups:
+            List of all backups (newest first).
+
+    Returns:
+        True if exactly one backup is from a previous day, False otherwise.
+    """
+    today = dt.datetime.now().date()
+    previous_day_count = sum(
+        1
+        for backup in backups
+        if dt.datetime.fromtimestamp(backup.stat().st_mtime).date() < today
+    )
+    return previous_day_count == 1

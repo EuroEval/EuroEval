@@ -165,7 +165,8 @@ def main() -> None:
         test_df = test_df.reset_index(drop=True)
         full_train_df = full_train_df.reset_index(drop=True)
 
-        # Build HuggingFace DatasetDict
+        # Build HuggingFace DatasetDict. The ``datasets`` stubs type the
+        # ``split`` argument too narrowly; arbitrary split names work at runtime.
         dataset = DatasetDict(
             {
                 "train": Dataset.from_pandas(train_df, split=Split.TRAIN),

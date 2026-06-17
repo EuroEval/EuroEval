@@ -14,50 +14,15 @@ import pandas as pd
 
 from euroeval.constants import ORTHOGONAL_TASKS
 
+from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR
 from .link_generation import generate_task_link
-from .paths import OUTPUT_DIR
-from .result_loading import load_processed_results
-from .result_processing import (
-    extract_model_metadata,
-    get_dataset,
-    group_results_by_model,
-)
+from .records import convert_to_float, drop_val_duplicates, get_dataset
+from .result_loading import load_raw_results
 from .score_computation import compute_ranks_bootstrap, compute_standard_ranks_bootstrap
-from .task_metadata import official_datasets_for_language, task_category
-from .utils import convert_to_float, drop_val_duplicates
-
-# Number of bootstrap replicates for both confidence interval estimation of rank scores
-# and tie-breaking in leaderboard generation. 50 is sufficient because tie-breaking only
-# needs to distinguish models that are statistically tied — the bootstrap test is a
-# one-sided test at α=0.05, and 50 replicates give a reasonable resolution for the
-# rank-difference distribution without unnecessary computation.
-NUM_BOOTSTRAPS = 50
+from .score_extraction import extract_model_metadata, group_results_by_model
+from .task_metadata import category_includes_task, official_datasets_for_language
 
 logger = logging.getLogger(__name__)
-
-
-def _format_rank_score(entry: object) -> str:
-    """Render a {"score", "ci_upper", ...} dict as "score ± margin", or "-".
-
-    Args:
-        entry:
-            The dict to format.
-
-    Returns:
-        The formatted string.
-    """
-    if not isinstance(entry, dict):
-        return "-"
-    score = entry.get("score", float("nan"))
-    ci_upper = entry.get("ci_upper", float("nan"))
-    if not (isinstance(score, (int, float)) and math.isfinite(score)):
-        return "-"
-    margin = (
-        (ci_upper - score)
-        if isinstance(ci_upper, (int, float)) and math.isfinite(ci_upper)
-        else 0.0
-    )
-    return f"{score:.2f} ± {margin:.2f}"
 
 
 def generate_leaderboard(
@@ -101,12 +66,13 @@ def generate_leaderboard(
     ]
 
     # Load results and set them up for the leaderboard
-    results = load_processed_results()
+    results = load_raw_results()
     results = [record for record in results if get_dataset(record) in datasets]
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
         group_results_by_model(results=results)
     )
     model_results = drop_val_duplicates(model_results=model_results)
+
     # Use bootstrap-based CIs for the displayed "Rank score ± margin" column.
     # Bootstrap resamples datasets with replacement (stratified by task),
     # recomputes the full hierarchy, and returns percentile CIs.
@@ -141,7 +107,7 @@ def generate_leaderboard(
         )
 
         # Check if anything got updated
-        new_records: list[str] = list()
+        new_records: list[str] = []
         comparison_columns = [
             col
             for col in df.columns
@@ -157,13 +123,6 @@ def generate_leaderboard(
                 new_records = df.Model.tolist()
             else:
                 for model_id in set(df.Model.tolist() + old_df.Model.tolist()):
-                    old_df_is_missing_columns = any(
-                        col not in old_df.columns for col in comparison_columns
-                    )
-                    if old_df_is_missing_columns:
-                        new_records.append(model_id)
-                        continue
-
                     model_is_new = (
                         model_id in df.Model.values
                         and model_id not in old_df.Model.values
@@ -283,16 +242,12 @@ def create_leaderboard_headers(
             for dataset in datasets:
                 dataset_to_task_info[dataset] = (task, len(datasets))
 
-    orthogonal_tasks = ORTHOGONAL_TASKS
-
-    # Generate column headers
     top_header = []
     second_header = []
     processed_tasks_per_language: dict[str, set[str]] = {}
     seen_version_col = False
     for id_, col in enumerate(df.columns):
-        # Case if the column is an orthogonal task
-        if (task := col.replace(" ", "-").lower()) in orthogonal_tasks:
+        if (task := col.replace(" ", "-").lower()) in ORTHOGONAL_TASKS:
             top_header.append("")
             second_header.append(
                 f'<a href="https://euroeval.com/tasks/{task}">{col}</a>'
@@ -376,38 +331,35 @@ def generate_dataframe(
     """
     if model_results == {}:
         logger.error("No model results found, skipping leaderboard generation.")
-        return list()
+        return []
 
-    # Mapping from category to dataset names. The "generative" leaderboard
-    # includes all tasks; the "all_models" leaderboard is restricted to NLU
-    # tasks so non-generative models can be compared.
-    def _include(category: str, task: str) -> bool:
-        return category == "generative" or task_category(task) == "nlu"
-
+    # The "generative" leaderboard includes all tasks; the "all_models"
+    # leaderboard is restricted to NLU tasks so non-generative models can be
+    # compared.
     category_to_datasets = {
         category: [
             dataset
             for config in leaderboard_configs.values()
             for task, task_datasets in config.items()
             for dataset in task_datasets
-            if _include(category, task)
+            if category_includes_task(category=category, task=task)
         ]
         for category in categories
     }
 
-    # Mapping from orthogonal dataset to orthogonal task
     category_to_orthogonal_datasets = {
         category: {
             dataset: task
             for config in leaderboard_configs.values()
             for task, task_datasets in config.items()
             for dataset in task_datasets
-            if task in ORTHOGONAL_TASKS and _include(category, task)
+            if task in ORTHOGONAL_TASKS
+            and category_includes_task(category=category, task=task)
         }
         for category in categories
     }
 
-    dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = list()
+    dfs: list[tuple[pd.DataFrame, pd.DataFrame]] = []
     for category in categories:
         # Standard (dense) ranks are computed per category over the models
         # eligible for display — i.e. those holding every non-orthogonal
@@ -423,6 +375,7 @@ def generate_dataframe(
             for mid, r in model_results.items()
             if all(ds in r for ds in required_datasets)
         }
+
         # Bootstrap-based tie detection: walks the sorted list and tests
         # each model against the current anchor using a one-sided bootstrap
         # test (α=0.05). Models that are not significantly better share the
@@ -457,10 +410,13 @@ def generate_dataframe(
                 rank = math.nan
             language_ranks = cat_ranks.copy()
             language_ranks.pop("overall", None)
-            # Ensure all languages are present (even if missing for this model)
+
+            # Ensure all languages are present (even if missing for this model).
+            # An empty entry renders as "-" via ``_format_rank_score``, matching the
+            # missing-score sentinel while keeping the value type a rank dict.
             for lang in leaderboard_configs:
                 if lang not in language_ranks:
-                    language_ranks[lang] = float("nan")  # ty: ignore[invalid-assignment]
+                    language_ranks[lang] = {}
 
             # Format per-language entries as "score ± margin" strings, matching
             # the overall mean rank score column. Missing entries render as "-".
@@ -479,7 +435,7 @@ def generate_dataframe(
             }
 
             # Get individual dataset scores for the model
-            total_results = dict()
+            total_results = {}
             orthogonal_scores = defaultdict(list)  # task -> list of scores
             for dataset in category_to_datasets[category]:
                 if dataset in results:
@@ -561,8 +517,8 @@ def generate_dataframe(
 
         # Format the ordinal rank column with a "-" sentinel for NaN. The
         # "mean_rank_score" column and any per-language columns are already
-        # formatted as "score \u00b1 margin" strings (or "-") upstream \u2014 keep
-        # those values as-is, replacing anything else with "-".
+        # formatted upstream as a score with a plus-minus margin (or "-"), so
+        # keep those values as-is, replacing anything else with "-".
         df["rank"] = [
             str(int(value))
             if isinstance(value, (int, float)) and math.isfinite(value)
@@ -662,7 +618,6 @@ def generate_dataframe(
         )
 
         # Create the simplified leaderboard
-        df_simplified = df.copy()
         df_simplified = df[
             [
                 "rank",
@@ -712,3 +667,27 @@ def generate_dataframe(
         dfs.append((df, df_simplified))
 
     return dfs
+
+
+def _format_rank_score(entry: object) -> str:
+    """Render a {"score", "ci_upper", ...} dict as "score ± margin", or "-".
+
+    Args:
+        entry:
+            The dict to format.
+
+    Returns:
+        The formatted string.
+    """
+    if not isinstance(entry, dict):
+        return "-"
+    score = entry.get("score", float("nan"))
+    ci_upper = entry.get("ci_upper", float("nan"))
+    if not (isinstance(score, (int, float)) and math.isfinite(score)):
+        return "-"
+    margin = (
+        (ci_upper - score)
+        if isinstance(ci_upper, int | float) and math.isfinite(ci_upper)
+        else 0.0
+    )
+    return f"{score:.2f} \u00b1 {margin:.2f}"

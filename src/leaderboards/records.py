@@ -1,22 +1,10 @@
-"""Utility functions for the project."""
+"""Helpers for parsing result records and model identifiers."""
 
 from __future__ import annotations
 
-import logging
 import re
-import warnings
-from functools import cache
 
-from scipy import stats
-
-logger = logging.getLogger(__name__)
-
-# Regex for stripping HTML anchor tags from model IDs like
-# `<a href='...'>org/model</a>`
-_ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
-# Strips trailing ``(zero-shot)``, ``(val)``, ``(zero-shot, val)`` etc.
-# annotations that `extract_model_ids_from_record` appends to variants.
-_VARIANT_SUFFIX_RE = re.compile(r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$")
+from .constants import ANCHOR_RE, VARIANT_SUFFIX_RE
 
 
 def plain_model_id(model_id: str) -> str:
@@ -35,9 +23,9 @@ def plain_model_id(model_id: str) -> str:
     Returns:
         The canonical ``org/repo`` slug.
     """
-    m = _ANCHOR_RE.search(model_id)
-    inner = m.group("inner").strip() if m else model_id
-    return _VARIANT_SUFFIX_RE.sub("", inner)
+    match = ANCHOR_RE.search(model_id)
+    inner = match.group("inner").strip() if match else model_id
+    return VARIANT_SUFFIX_RE.sub("", inner)
 
 
 def convert_to_float(value: str | float) -> float | str:
@@ -48,49 +36,20 @@ def convert_to_float(value: str | float) -> float | str:
             The value to convert, can be a string or a float.
 
     Returns:
-        The value converted to float if possible, otherwise returns the original value.
+        The value converted to float if possible, otherwise the original value.
     """
     try:
         return float(value)
-    except Exception:
+    except (ValueError, TypeError):
         return value
-
-
-def significantly_better(
-    score_values_1: list[float], score_values_2: list[float]
-) -> float:
-    """Compute one-tailed t-statistic for the difference between two sets of scores.
-
-    Args:
-        score_values_1:
-            The first set of scores.
-        score_values_2:
-            The second set of scores.
-
-    Returns:
-        The t-statistic of the difference between the two sets of scores, where
-        a positive t-statistic indicates that the first set of scores is
-        statistically better than the second set of scores.
-    """
-    assert len(score_values_1) == len(score_values_2), (
-        f"Length of score values must be equal, but got {len(score_values_1)} and "
-        f"{len(score_values_2)}."
-    )
-    if score_values_1 == score_values_2:
-        return 0
-    with warnings.catch_warnings():
-        warnings.filterwarnings(action="ignore", category=RuntimeWarning)
-        test_result = stats.ttest_ind(
-            a=score_values_1, b=score_values_2, alternative="greater", equal_var=False
-        )
-    return test_result.pvalue < 0.05
 
 
 def get_model_name(record: dict) -> str:
     """Get model name from record, supporting both EEE and old formats.
 
     Args:
-        record: A result record in either EEE or old EuroEval format.
+        record:
+            A result record in either EEE or old EuroEval format.
 
     Returns:
         The model name.
@@ -111,32 +70,14 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
         The model ID candidates.
     """
     model_id = get_model_name(record)
-    all_model_notes: list[list[str]] = [[]]
 
-    # Build combined variant notes for zero-shot and validation split
-    # Use _get_bool_field to handle both EEE and old formats
+    # _get_bool_field normalises both the EEE and old record formats.
     few_shot = _get_bool_field(record, "few_shot", True)
     validation_split = _get_bool_field(record, "validation_split", False)
 
-    # Determine which notes to add
-    notes_to_add: list[list[str]] = [[]]
-    if few_shot is False:
-        notes_to_add = [["zero-shot"]]
-    elif few_shot is None:
-        notes_to_add = [[], ["zero-shot"]]
-
-    # Expand with validation split variants
-    expanded_notes: list[list[str]] = []
-    for base_note in notes_to_add:
-        if validation_split is True:
-            expanded_notes.append(base_note + ["val"])
-        elif validation_split is None:
-            expanded_notes.append(base_note)
-            expanded_notes.append(base_note + ["val"])
-        else:
-            expanded_notes.append(base_note)
-
-    all_model_notes = expanded_notes
+    base_note = [] if few_shot else ["zero-shot"]
+    note = base_note + ["val"] if validation_split else base_note
+    all_model_notes: list[list[str]] = [note]
 
     has_anchor = model_id.endswith("</a>")
     base = re.sub(r"</a>$", "", model_id) if has_anchor else model_id
@@ -149,7 +90,7 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     return model_id_candidates
 
 
-def _get_dataset(record: dict) -> str | None:
+def get_dataset(record: dict) -> str | None:
     """Get dataset from record, supporting both EEE and old formats.
 
     Args:
@@ -169,6 +110,38 @@ def _get_dataset(record: dict) -> str | None:
             if "dataset_name" in source_data:
                 return source_data["dataset_name"]
     return record.get("dataset")
+
+
+def get_record_hash(record: dict) -> str:
+    """Returns a hash value for a record.
+
+    Args:
+        record:
+            A record from the JSONL file.
+
+    Returns:
+        A hash value for the record.
+
+    Raises:
+        ValueError:
+            If no dataset is found in the record.
+    """
+    model = get_model_name(record)
+    dataset = get_dataset(record)
+    if dataset is None:
+        raise ValueError(f"No dataset found in record: {record}")
+    validation_split = _get_bool_field(record, "validation_split", False)
+    few_shot = _get_bool_field(record, "few_shot", True)
+    # Check EEE format for generative
+    if "eval_library" in record:
+        additional = record.get("eval_library", {}).get("additional_details", {})
+        generative_val = additional.get("generative", False)
+        if isinstance(generative_val, str):
+            generative_val = generative_val.lower() == "true"
+        generative = int(generative_val)
+    else:
+        generative = int(record.get("generative", False))
+    return f"{model}{dataset}{int(validation_split)}{generative * (int(few_shot) + 1)}"
 
 
 def _get_bool_field(record: dict, field: str, default: bool) -> bool:
@@ -202,38 +175,6 @@ def _get_bool_field(record: dict, field: str, default: bool) -> bool:
         if isinstance(val, str):
             return val.lower() == "true"
     return default
-
-
-def get_record_hash(record: dict) -> str:
-    """Returns a hash value for a record.
-
-    Args:
-        record:
-            A record from the JSONL file.
-
-    Returns:
-        A hash value for the record.
-
-    Raises:
-        ValueError:
-            If no dataset is found in the record.
-    """
-    model = get_model_name(record)
-    dataset = _get_dataset(record)
-    if dataset is None:
-        raise ValueError(f"No dataset found in record: {record}")
-    validation_split = _get_bool_field(record, "validation_split", False)
-    few_shot = _get_bool_field(record, "few_shot", True)
-    # Check EEE format for generative
-    if "eval_library" in record:
-        additional = record.get("eval_library", {}).get("additional_details", {})
-        generative_val = additional.get("generative", False)
-        if isinstance(generative_val, str):
-            generative_val = generative_val.lower() == "true"
-        generative = int(generative_val)
-    else:
-        generative = int(record.get("generative", False))
-    return f"{model}{dataset}{int(validation_split)}{generative * (int(few_shot) + 1)}"
 
 
 def strip_val_suffix(model_id: str) -> str | None:
@@ -289,32 +230,3 @@ def drop_val_duplicates(
                 continue
         filtered[model_id] = results
     return filtered
-
-
-@cache
-def log_once(message: str, logging_level: int) -> None:
-    """Log a message only once.
-
-    Args:
-        message:
-            The message to log.
-        logging_level:
-            The logging level to use for the message.
-
-    Raises:
-        ValueError:
-            If the logging level is invalid.
-    """
-    match logging_level:
-        case logging.DEBUG:
-            logger.debug(message)
-        case logging.INFO:
-            logger.info(message)
-        case logging.WARNING:
-            logger.warning(message)
-        case logging.ERROR:
-            logger.error(message)
-        case logging.CRITICAL:
-            logger.critical(message)
-        case _:
-            raise ValueError(f"Invalid logging level: {logging_level}")
