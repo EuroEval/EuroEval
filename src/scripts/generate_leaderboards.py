@@ -3,7 +3,6 @@
 import datetime as dt
 import json
 import logging
-import re
 import subprocess
 import sys
 import typing as t
@@ -17,10 +16,16 @@ from yaml import safe_load
 from leaderboards.backup import backup_results, restore_from_backup_if_missing
 from leaderboards.constants import (
     API_MODEL_PATTERNS,
+    BANNED_MODEL_PATTERNS,
+    BANNED_VERSIONS,
     CORE_MODELS_CONFIG,
+    CORE_MODELS_STALE_DAYS,
     LEADERBOARD_CONFIGS_DIR,
     LEADERBOARD_TASKS,
+    MINIMUM_NUMBER_OF_MODEL_RECORDS,
+    MINIMUM_VERSION,
     REPO_ROOT,
+    TRAINED_FROM_SCRATCH_PATTERNS,
 )
 from leaderboards.leaderboard_generation import generate_leaderboard
 from leaderboards.result_processing import process_results
@@ -42,47 +47,6 @@ load_dotenv()
 
 
 # Constants for leaderboard generation
-MINIMUM_VERSION: str = "15.0.0"
-MINIMUM_NUMBER_OF_MODEL_RECORDS: int = 7
-CORE_MODELS_STALE_DAYS: int = 30
-BANNED_VERSIONS: list[str] = ["9.3.0", "10.0.0"]
-BANNED_MODEL_PATTERNS: list[re.Pattern[str]] = [
-    re.compile("^meta-llama/Llama-3.1-405B-Instruct$"),  # Temporary ban
-    re.compile("^utter-project/EuroVLM-9B-Preview$"),  # Temporary ban
-]
-TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern[str]] = [
-    re.compile(r"Qwen/.*"),
-    re.compile(r"google/.*"),
-    re.compile(r"mistralai/.*"),
-    re.compile(r"meta-llama/.*"),
-    re.compile(r"facebook/.*"),
-    re.compile(r"FacebookAI/.*"),
-    re.compile(r"zai-org/.*"),
-    re.compile(r"deepseek-ai/.*"),
-    re.compile(r"PleIAs/.*"),
-    re.compile(r"openai/.*"),
-    re.compile(r"nvidia/.*"),
-    re.compile(r"allenai/.*"),
-    re.compile(r"utter-project/.*"),
-    re.compile(r"CohereLabs/.*"),
-    re.compile(r"speakleash/.*"),
-    re.compile(r"yulan-team/.*"),
-    re.compile(r"BSC-LT/.*"),
-    re.compile(r"tencent/.*"),
-    re.compile(r"LiquidAI/.*"),
-    re.compile(r"HuggingFaceTB/.*"),
-    re.compile(r"tiiuae/.*"),
-    re.compile(r"AIDC-AI/.*"),
-    re.compile(r"inclusionAI/.*"),
-    re.compile(r"jhu-clsp/.*"),
-    re.compile(r"vesteinn/(Dansk|Fo|Scandi)BERT.*"),
-    re.compile(r"EuropeanParliament/EUBERT"),
-    re.compile(r"microsoft/.*"),
-    re.compile(r"EuroBERT/.*"),
-    re.compile(r"fresh-.*"),
-    re.compile(r"answerdotai/.*"),
-    re.compile(r".*-scratch"),
-]
 
 
 @click.command()

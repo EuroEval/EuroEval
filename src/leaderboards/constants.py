@@ -406,3 +406,49 @@ DTYPE_BYTES: dict[str, int] = {
 # Multiplier applied to weight bytes to leave room for activations, KV cache,
 # and framework overhead when judging whether a model fits in GPU memory.
 GPU_FIT_OVERHEAD = 1.2
+
+# ---------------------------------------------------------------------------
+# Leaderboard generation
+# ---------------------------------------------------------------------------
+
+MINIMUM_VERSION: str = "15.0.0"
+MINIMUM_NUMBER_OF_MODEL_RECORDS: int = 7
+CORE_MODELS_STALE_DAYS: int = 30
+BANNED_VERSIONS: list[str] = ["9.3.0", "10.0.0"]
+BANNED_MODEL_PATTERNS: list[re.Pattern[str]] = [
+    re.compile("^meta-llama/Llama-3.1-405B-Instruct$"),  # Temporary ban
+    re.compile("^utter-project/EuroVLM-9B-Preview$"),  # Temporary ban
+]
+TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(r"Qwen/.*"),
+    re.compile(r"google/.*"),
+    re.compile(r"mistralai/.*"),
+    re.compile(r"meta-llama/.*"),
+    re.compile(r"facebook/.*"),
+    re.compile(r"FacebookAI/.*"),
+    re.compile(r"zai-org/.*"),
+    re.compile(r"deepseek-ai/.*"),
+    re.compile(r"PleIAs/.*"),
+    re.compile(r"openai/.*"),
+    re.compile(r"nvidia/.*"),
+    re.compile(r"allenai/.*"),
+    re.compile(r"utter-project/.*"),
+    re.compile(r"CohereLabs/.*"),
+    re.compile(r"speakleash/.*"),
+    re.compile(r"yulan-team/.*"),
+    re.compile(r"BSC-LT/.*"),
+    re.compile(r"tencent/.*"),
+    re.compile(r"LiquidAI/.*"),
+    re.compile(r"HuggingFaceTB/.*"),
+    re.compile(r"tiiuae/.*"),
+    re.compile(r"AIDC-AI/.*"),
+    re.compile(r"inclusionAI/.*"),
+    re.compile(r"jhu-clsp/.*"),
+    re.compile(r"vesteinn/(Dansk|Fo|Scandi)BERT.*"),
+    re.compile(r"EuropeanParliament/EUBERT"),
+    re.compile(r"microsoft/.*"),
+    re.compile(r"EuroBERT/.*"),
+    re.compile(r"fresh-.*"),
+    re.compile(r"answerdotai/.*"),
+    re.compile(r".*-scratch"),
+]
