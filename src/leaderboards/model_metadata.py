@@ -73,19 +73,19 @@ def add_missing_entries(
         model_name = get_model_name(record=record)
         model_additional["model_url"] = generate_model_url(model_id=model_name)
 
-        # Top-level fields in EEE format
+        # Top-level precious metadata in EEE format. These values are only
+        # copied from existing result sources/backups via the cache; they must
+        # not be inferred during leaderboard processing.
+        model_id = _model_id_from_record(record=record)
         if "commercially_licensed" not in record:
-            record["commercially_licensed"] = is_commercially_licensed(
-                record=record, cache=cache
-            )
+            if model_id in cache.commercially_licensed:
+                record["commercially_licensed"] = cache.commercially_licensed[model_id]
         if "open" not in record:
-            record["open"] = is_open(record=record, cache=cache)
+            if model_id in cache.open:
+                record["open"] = cache.open[model_id]
         if "trained_from_scratch" not in record:
-            record["trained_from_scratch"] = is_trained_from_scratch(
-                record=record,
-                trained_from_scratch_patterns=trained_from_scratch_patterns,
-                cache=cache,
-            )
+            if model_id in cache.trained_from_scratch:
+                record["trained_from_scratch"] = cache.trained_from_scratch[model_id]
     else:
         # Old format: store all fields at top level
         if "validation_split" not in record:
@@ -97,15 +97,16 @@ def add_missing_entries(
         if "generative_type" not in record:
             record["generative_type"] = get_generative_type(record=record, cache=cache)
         record["merge"] = is_merge(record=record, cache=cache)
-        record["commercially_licensed"] = is_commercially_licensed(
-            record=record, cache=cache
-        )
-        record["open"] = is_open(record=record, cache=cache)
-        record["trained_from_scratch"] = is_trained_from_scratch(
-            record=record,
-            trained_from_scratch_patterns=trained_from_scratch_patterns,
-            cache=cache,
-        )
+        model_id = _model_id_from_record(record=record)
+        if "commercially_licensed" not in record:
+            if model_id in cache.commercially_licensed:
+                record["commercially_licensed"] = cache.commercially_licensed[model_id]
+        if "open" not in record:
+            if model_id in cache.open:
+                record["open"] = cache.open[model_id]
+        if "trained_from_scratch" not in record:
+            if model_id in cache.trained_from_scratch:
+                record["trained_from_scratch"] = cache.trained_from_scratch[model_id]
 
         # Add model_url field
         model_name = get_model_name(record=record)

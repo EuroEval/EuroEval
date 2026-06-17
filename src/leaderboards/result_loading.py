@@ -14,26 +14,40 @@ from functools import cache
 from .backup import backup_results
 from .bucket_sync import sync_bucket
 from .constants import NEW_RESULTS_PATH, RESULTS_DIR, RESULTS_PATH
+from .eee_validation import (
+    build_precious_metadata_cache,
+    dump_jsonl_records,
+    load_records_from_jsonl_files,
+    normalise_record_to_eee,
+    validate_eee_record,
+)
 
 logger = logging.getLogger(__name__)
 
 
 @cache
-def load_raw_results() -> list[dict[str, t.Any]]:
+def load_raw_results(allow_old_format: bool = False) -> list[dict[str, t.Any]]:
     """Load all results from results.tar.gz.
 
     Loads all evaluation results from the unified results archive.
     Results are sourced from the single EuroEval/results bucket.
-    No distinction is made between raw and processed results.
+    No distinction is made between raw and processed results. Leaderboard
+    consumers receive EEE-format records only; old-format records are accepted
+    only when explicitly requested for migration.
+
+    Args:
+        allow_old_format (optional):
+            If True, old EuroEval records are converted to EEE before returning.
+            Defaults to False.
 
     Returns:
-        All evaluation results.
+        All evaluation results in EEE format.
 
     Raises:
         FileNotFoundError:
             If the results file is not found.
         ValueError:
-            If the results file contains invalid JSON.
+            If the results file contains invalid JSON or non-EEE records.
     """
     results_path = RESULTS_PATH
 
@@ -81,7 +95,21 @@ def load_raw_results() -> list[dict[str, t.Any]]:
             except json.JSONDecodeError as e:
                 raise ValueError(f"Invalid JSON on line {line_idx:,}: {record}.") from e
 
-    return records
+    if allow_old_format:
+        metadata_cache = build_precious_metadata_cache(records=records)
+        normalised_records = [
+            normalise_record_to_eee(
+                record=record, precious_metadata_cache=metadata_cache
+            )
+            for record in records
+        ]
+    else:
+        normalised_records = records
+
+    for idx, record in enumerate(normalised_records, start=1):
+        validate_eee_record(record=record, context=f"raw results record {idx:,}")
+
+    return normalised_records
 
 
 def _sync_results_from_bucket() -> None:
@@ -125,6 +153,14 @@ def _rebuild_results_tar_gz() -> None:
     n_files = len(model_files)
     logger.info(f"Reading {n_files:,} model files from mount point...")
 
+    records = load_records_from_jsonl_files(paths=model_files)
+    metadata_cache = build_precious_metadata_cache(records=records)
+    eee_records = [
+        normalise_record_to_eee(record=record, precious_metadata_cache=metadata_cache)
+        for record in records
+    ]
+    content = dump_jsonl_records(records=eee_records)
+
     all_lines: set[str] = set()
     start = time.time()
     unreadable = 0
@@ -157,10 +193,10 @@ def _rebuild_results_tar_gz() -> None:
     if not all_lines:
         logger.warning("No results found in mount point. results.tar.gz will be empty.")
 
-    # Build results.tar.gz with only results.jsonl
+    # Build results.tar.gz with only EEE-format results.jsonl
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with tarfile.open(RESULTS_PATH, "w:gz") as tar:
-        content_bytes = "\n".join(sorted(all_lines)).encode(encoding="utf-8")
+        content_bytes = content.encode(encoding="utf-8")
         tarinfo = tarfile.TarInfo(name="results/results.jsonl")
         tarinfo.size = len(content_bytes)
         fileobj = io.BytesIO(content_bytes)
