@@ -64,6 +64,153 @@ NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
 HF_RESULTS_BUCKET = "EuroEval/results"
 
 
+@click.command()
+@click.option(
+    "--force/--no-force",
+    "-f",
+    default=False,
+    show_default=True,
+    help="Always regenerate leaderboards, even if no new results are found.",
+)
+def main(force: bool) -> None:
+    """Harvest finished evaluations and regenerate leaderboards.
+
+    Only issues with successfully harvested results are closed. Issues
+    with the ``results-ready`` label may not yet have their results
+    synced to the bucket, so the label alone is not sufficient.
+
+    Args:
+        force (optional):
+            Whether to always regenerate leaderboards, even if no new results
+            are found. Defaults to False.
+    """
+    logger.info("Fetching open model evaluation request issues...")
+    try:
+        issues = list_open_request_issues()
+    except urllib.error.HTTPError as e:
+        logger.error(f"Failed to list issues: {e}")
+        sys.exit(1)
+    logger.info(f"Found {len(issues)} open issue(s); scanning for results.")
+
+    # Snapshot the issue numbers BEFORE any bucket operations to avoid
+    # race conditions where new results-ready issues appear mid-run.
+    snapshot_issue_numbers = {issue["number"] for issue in issues}
+    logger.info(f"Snapshot: {len(snapshot_issue_numbers)} issue(s) to process.")
+
+    harvested: list[tuple[int, list[str]]] = []
+    for issue in issues:
+        number = issue["number"]
+        lines = find_results_for_issue(issue=issue)
+        if not lines:
+            logger.info(f"#{number}: no results in bucket yet -- skipping.")
+            continue
+        logger.info(f"#{number}: found {len(lines)} result line(s).")
+        harvested.append((number, lines))
+
+    # If no issues found, switch to bucket-scan mode
+    bucket_scan_results: list[str] = []
+    if len(issues) == 0:
+        logger.info("No open issues found; using bucket-scan mode.")
+        bucket_scan_results = scan_bucket_for_results()
+        if not bucket_scan_results:
+            logger.info("No new results found in bucket scan.")
+            if not force:
+                return
+            logger.info("Forcing leaderboard regeneration despite no new results.")
+        logger.info(f"Bucket-scan mode found {len(bucket_scan_results)} new result(s).")
+
+    # Load any manually added results from new_results.jsonl
+    manual_lines: list[str] = []
+    if NEW_RESULTS_PATH.exists():
+        manual_lines = [
+            line
+            for line in NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        if manual_lines:
+            logger.info(f"Found {len(manual_lines)} manually added result line(s).")
+
+    # Combine harvested results, bucket-scan results, and manual results
+    all_lines: list[str] = []
+    for _, lines in harvested:
+        all_lines.extend(lines)
+    all_lines.extend(bucket_scan_results)
+    all_lines.extend(manual_lines)
+
+    has_new_results = bool(all_lines)
+    if not has_new_results:
+        logger.info("Nothing to merge.")
+        if not force:
+            return
+        logger.info("Forcing leaderboard regeneration despite no new results.")
+    else:
+        NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
+
+        # Log which mode was used
+        if bucket_scan_results:
+            mode_str = f"bucket-scan ({len(bucket_scan_results)}), "
+        else:
+            mode_str = ""
+        harvested_count = sum(len(lines) for _, lines in harvested)
+        logger.info(
+            f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
+            f"({mode_str}{harvested_count} harvested, {len(manual_lines)} manual)."
+        )
+
+        # Upload results to HF bucket BEFORE regenerating leaderboards
+        # (leaderboard regeneration consumes/deletes new_results.jsonl)
+        if upload_results_to_hf(new_results_path=NEW_RESULTS_PATH):
+            logger.info("Results uploaded to Hugging Face bucket.")
+        else:
+            logger.error(
+                "Failed to upload results to Hugging Face bucket. "
+                "The local archive (results.tar.gz) has been updated with the new "
+                "results, but the bucket is now out of sync. Please run "
+                "upload_results_to_hf() manually or check your Hugging Face "
+                "credentials and re-run this script."
+            )
+            # Don't abort here -- leaderboards will still be correct because
+            # load_raw_results() appends new_results.jsonl locally before deleting it.
+            # But the bucket needs to be synced on the next successful run.
+
+    # Regenerate leaderboards from merged results
+    if not regenerate_leaderboards(force=force):
+        logger.error(
+            "Aborting: not closing issues because leaderboard regeneration failed."
+        )
+        sys.exit(1)
+
+    # Sanity check: verify leaderboards look sane before deploying
+    if not verify_leaderboards():
+        logger.error(
+            "Aborting: leaderboard validation failed. "
+            "Check the logs above, fix the issue, and redeploy manually."
+        )
+        sys.exit(1)
+
+    if not deploy_to_vercel():
+        logger.error("Aborting: not closing issues because the Vercel deploy failed.")
+        sys.exit(1)
+
+    # Create backup
+    backup_path = backup_results()
+    if backup_path:
+        logger.info(f"Created backup at {backup_path}.")
+
+    # Close ONLY the issues with successfully harvested results (not all snapshot
+    # issues, as some may have the results-ready label but not yet synced to the
+    # bucket).
+    for number, _ in harvested:
+        try:
+            comment_on_issue(
+                number=number, body="Results now live on the leaderboards!"
+            )
+            close_issue(number=number)
+            logger.info(f"#{number}: closed.")
+        except urllib.error.HTTPError as e:
+            logger.error(f"#{number}: failed to close: {e}")
+
+
 def _model_id_to_filename(model_id: str) -> str:
     """Convert a model ID to a safe filename.
 
@@ -244,153 +391,6 @@ def scan_bucket_for_results() -> list[str]:
     logger.info(f"Found {len(new_results)} new result(s) from bucket scan.")
 
     return new_results
-
-
-@click.command()
-@click.option(
-    "--force/--no-force",
-    "-f",
-    default=False,
-    show_default=True,
-    help="Always regenerate leaderboards, even if no new results are found.",
-)
-def main(force: bool) -> None:
-    """Harvest finished evaluations and regenerate leaderboards.
-
-    Only issues with successfully harvested results are closed. Issues
-    with the ``results-ready`` label may not yet have their results
-    synced to the bucket, so the label alone is not sufficient.
-
-    Args:
-        force (optional):
-            Whether to always regenerate leaderboards, even if no new results
-            are found. Defaults to False.
-    """
-    logger.info("Fetching open model evaluation request issues...")
-    try:
-        issues = list_open_request_issues()
-    except urllib.error.HTTPError as e:
-        logger.error(f"Failed to list issues: {e}")
-        sys.exit(1)
-    logger.info(f"Found {len(issues)} open issue(s); scanning for results.")
-
-    # Snapshot the issue numbers BEFORE any bucket operations to avoid
-    # race conditions where new results-ready issues appear mid-run.
-    snapshot_issue_numbers = {issue["number"] for issue in issues}
-    logger.info(f"Snapshot: {len(snapshot_issue_numbers)} issue(s) to process.")
-
-    harvested: list[tuple[int, list[str]]] = []
-    for issue in issues:
-        number = issue["number"]
-        lines = find_results_for_issue(issue=issue)
-        if not lines:
-            logger.info(f"#{number}: no results in bucket yet -- skipping.")
-            continue
-        logger.info(f"#{number}: found {len(lines)} result line(s).")
-        harvested.append((number, lines))
-
-    # If no issues found, switch to bucket-scan mode
-    bucket_scan_results: list[str] = []
-    if len(issues) == 0:
-        logger.info("No open issues found; using bucket-scan mode.")
-        bucket_scan_results = scan_bucket_for_results()
-        if not bucket_scan_results:
-            logger.info("No new results found in bucket scan.")
-            if not force:
-                return
-            logger.info("Forcing leaderboard regeneration despite no new results.")
-        logger.info(f"Bucket-scan mode found {len(bucket_scan_results)} new result(s).")
-
-    # Load any manually added results from new_results.jsonl
-    manual_lines: list[str] = []
-    if NEW_RESULTS_PATH.exists():
-        manual_lines = [
-            line
-            for line in NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
-        if manual_lines:
-            logger.info(f"Found {len(manual_lines)} manually added result line(s).")
-
-    # Combine harvested results, bucket-scan results, and manual results
-    all_lines: list[str] = []
-    for _, lines in harvested:
-        all_lines.extend(lines)
-    all_lines.extend(bucket_scan_results)
-    all_lines.extend(manual_lines)
-
-    has_new_results = bool(all_lines)
-    if not has_new_results:
-        logger.info("Nothing to merge.")
-        if not force:
-            return
-        logger.info("Forcing leaderboard regeneration despite no new results.")
-    else:
-        NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
-
-        # Log which mode was used
-        if bucket_scan_results:
-            mode_str = f"bucket-scan ({len(bucket_scan_results)}), "
-        else:
-            mode_str = ""
-        harvested_count = sum(len(lines) for _, lines in harvested)
-        logger.info(
-            f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
-            f"({mode_str}{harvested_count} harvested, {len(manual_lines)} manual)."
-        )
-
-        # Upload results to HF bucket BEFORE regenerating leaderboards
-        # (leaderboard regeneration consumes/deletes new_results.jsonl)
-        if upload_results_to_hf(new_results_path=NEW_RESULTS_PATH):
-            logger.info("Results uploaded to Hugging Face bucket.")
-        else:
-            logger.error(
-                "Failed to upload results to Hugging Face bucket. "
-                "The local archive (results.tar.gz) has been updated with the new "
-                "results, but the bucket is now out of sync. Please run "
-                "upload_results_to_hf() manually or check your Hugging Face "
-                "credentials and re-run this script."
-            )
-            # Don't abort here -- leaderboards will still be correct because
-            # load_raw_results() appends new_results.jsonl locally before deleting it.
-            # But the bucket needs to be synced on the next successful run.
-
-    # Regenerate leaderboards from merged results
-    if not regenerate_leaderboards(force=force):
-        logger.error(
-            "Aborting: not closing issues because leaderboard regeneration failed."
-        )
-        sys.exit(1)
-
-    # Sanity check: verify leaderboards look sane before deploying
-    if not verify_leaderboards():
-        logger.error(
-            "Aborting: leaderboard validation failed. "
-            "Check the logs above, fix the issue, and redeploy manually."
-        )
-        sys.exit(1)
-
-    if not deploy_to_vercel():
-        logger.error("Aborting: not closing issues because the Vercel deploy failed.")
-        sys.exit(1)
-
-    # Create backup
-    backup_path = backup_results()
-    if backup_path:
-        logger.info(f"Created backup at {backup_path}.")
-
-    # Close ONLY the issues with successfully harvested results (not all snapshot
-    # issues, as some may have the results-ready label but not yet synced to the
-    # bucket).
-    for number, _ in harvested:
-        try:
-            comment_on_issue(
-                number=number, body="Results now live on the leaderboards!"
-            )
-            close_issue(number=number)
-            logger.info(f"#{number}: closed.")
-        except urllib.error.HTTPError as e:
-            logger.error(f"#{number}: failed to close: {e}")
 
 
 def list_open_request_issues() -> list[dict]:

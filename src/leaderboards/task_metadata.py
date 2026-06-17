@@ -93,25 +93,6 @@ def task_metric_pretty_names(task_name: str) -> tuple[str, str | None]:
     return primary, secondary
 
 
-@cache
-def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
-    """Collect every ``DatasetConfig`` defined in ``euroeval.dataset_configs``.
-
-    Cached because the leaderboard pipeline calls into this module once per
-    language and the set is fixed per process.
-
-    Returns:
-        Every ``DatasetConfig`` found in the lib, in module-discovery order.
-    """
-    configs: list[DatasetConfig] = []
-    for mod_info in pkgutil.iter_modules(_ds_module.__path__):
-        mod = importlib.import_module(f"euroeval.dataset_configs.{mod_info.name}")
-        for value in vars(mod).values():
-            if isinstance(value, DatasetConfig):
-                configs.append(value)
-    return tuple(configs)
-
-
 def language_name_to_codes(name: str) -> set[str]:
     """Resolve a leaderboard yaml language name (e.g. ``"danish"``) to codes.
 
@@ -207,3 +188,22 @@ def official_datasets_for_language(language_name: str) -> OrderedDict[str, list[
     return OrderedDict(
         (task, datasets) for task, datasets in by_task.items() if datasets
     )
+
+
+@cache
+def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
+    """Collect every ``DatasetConfig`` defined in ``euroeval.dataset_configs``.
+
+    Cached because the leaderboard pipeline calls into this module once per
+    language and the set is fixed per process.
+
+    Returns:
+        Every ``DatasetConfig`` found in the lib, in module-discovery order.
+    """
+    configs: list[DatasetConfig] = []
+    for mod_info in pkgutil.iter_modules(_ds_module.__path__):
+        mod = importlib.import_module(f"euroeval.dataset_configs.{mod_info.name}")
+        for value in vars(mod).values():
+            if isinstance(value, DatasetConfig):
+                configs.append(value)
+    return tuple(configs)

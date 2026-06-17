@@ -137,7 +137,10 @@ def filter_dataset(
     Returns:
         pandas.DataFrame: The filtered dataset.
     """
-    # load default model (bert-base-multilingual-cased), which is sufficient as filter
+    # load default model (bert-base-multilingual-cased), which is sufficient as filter.
+    # The ``evaluate`` stubs type ``EvaluationModule.compute`` generically: it does
+    # not advertise the bertscore-specific kwargs and types the result too loosely to
+    # subscript, so the type-checker flags genuine runtime-valid usage.
     bert_score = load("bertscore")
     df["bert"] = bert_score.compute(  # ty: ignore[missing-argument,not-subscriptable]
         references=df["text"].to_list(),

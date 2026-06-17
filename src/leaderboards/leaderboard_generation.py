@@ -25,30 +25,6 @@ from .task_metadata import category_includes_task, official_datasets_for_languag
 logger = logging.getLogger(__name__)
 
 
-def _format_rank_score(entry: object) -> str:
-    """Render a {"score", "ci_upper", ...} dict as "score ± margin", or "-".
-
-    Args:
-        entry:
-            The dict to format.
-
-    Returns:
-        The formatted string.
-    """
-    if not isinstance(entry, dict):
-        return "-"
-    score = entry.get("score", float("nan"))
-    ci_upper = entry.get("ci_upper", float("nan"))
-    if not (isinstance(score, (int, float)) and math.isfinite(score)):
-        return "-"
-    margin = (
-        (ci_upper - score)
-        if isinstance(ci_upper, int | float) and math.isfinite(ci_upper)
-        else 0.0
-    )
-    return f"{score:.2f} \u00b1 {margin:.2f}"
-
-
 def generate_leaderboard(
     leaderboard_name: str,
     language_names: list[str],
@@ -435,10 +411,12 @@ def generate_dataframe(
             language_ranks = cat_ranks.copy()
             language_ranks.pop("overall", None)
 
-            # Ensure all languages are present (even if missing for this model)
+            # Ensure all languages are present (even if missing for this model).
+            # An empty entry renders as "-" via ``_format_rank_score``, matching the
+            # missing-score sentinel while keeping the value type a rank dict.
             for lang in leaderboard_configs:
                 if lang not in language_ranks:
-                    language_ranks[lang] = float("nan")  # ty: ignore[invalid-assignment]
+                    language_ranks[lang] = {}
 
             # Format per-language entries as "score ± margin" strings, matching
             # the overall mean rank score column. Missing entries render as "-".
@@ -689,3 +667,27 @@ def generate_dataframe(
         dfs.append((df, df_simplified))
 
     return dfs
+
+
+def _format_rank_score(entry: object) -> str:
+    """Render a {"score", "ci_upper", ...} dict as "score ± margin", or "-".
+
+    Args:
+        entry:
+            The dict to format.
+
+    Returns:
+        The formatted string.
+    """
+    if not isinstance(entry, dict):
+        return "-"
+    score = entry.get("score", float("nan"))
+    ci_upper = entry.get("ci_upper", float("nan"))
+    if not (isinstance(score, (int, float)) and math.isfinite(score)):
+        return "-"
+    margin = (
+        (ci_upper - score)
+        if isinstance(ci_upper, int | float) and math.isfinite(ci_upper)
+        else 0.0
+    )
+    return f"{score:.2f} \u00b1 {margin:.2f}"

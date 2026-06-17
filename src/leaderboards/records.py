@@ -112,6 +112,38 @@ def get_dataset(record: dict) -> str | None:
     return record.get("dataset")
 
 
+def get_record_hash(record: dict) -> str:
+    """Returns a hash value for a record.
+
+    Args:
+        record:
+            A record from the JSONL file.
+
+    Returns:
+        A hash value for the record.
+
+    Raises:
+        ValueError:
+            If no dataset is found in the record.
+    """
+    model = get_model_name(record)
+    dataset = get_dataset(record)
+    if dataset is None:
+        raise ValueError(f"No dataset found in record: {record}")
+    validation_split = _get_bool_field(record, "validation_split", False)
+    few_shot = _get_bool_field(record, "few_shot", True)
+    # Check EEE format for generative
+    if "eval_library" in record:
+        additional = record.get("eval_library", {}).get("additional_details", {})
+        generative_val = additional.get("generative", False)
+        if isinstance(generative_val, str):
+            generative_val = generative_val.lower() == "true"
+        generative = int(generative_val)
+    else:
+        generative = int(record.get("generative", False))
+    return f"{model}{dataset}{int(validation_split)}{generative * (int(few_shot) + 1)}"
+
+
 def _get_bool_field(record: dict, field: str, default: bool) -> bool:
     """Get a boolean field from record, supporting both EEE and old formats.
 
@@ -143,38 +175,6 @@ def _get_bool_field(record: dict, field: str, default: bool) -> bool:
         if isinstance(val, str):
             return val.lower() == "true"
     return default
-
-
-def get_record_hash(record: dict) -> str:
-    """Returns a hash value for a record.
-
-    Args:
-        record:
-            A record from the JSONL file.
-
-    Returns:
-        A hash value for the record.
-
-    Raises:
-        ValueError:
-            If no dataset is found in the record.
-    """
-    model = get_model_name(record)
-    dataset = get_dataset(record)
-    if dataset is None:
-        raise ValueError(f"No dataset found in record: {record}")
-    validation_split = _get_bool_field(record, "validation_split", False)
-    few_shot = _get_bool_field(record, "few_shot", True)
-    # Check EEE format for generative
-    if "eval_library" in record:
-        additional = record.get("eval_library", {}).get("additional_details", {})
-        generative_val = additional.get("generative", False)
-        if isinstance(generative_val, str):
-            generative_val = generative_val.lower() == "true"
-        generative = int(generative_val)
-    else:
-        generative = int(record.get("generative", False))
-    return f"{model}{dataset}{int(validation_split)}{generative * (int(few_shot) + 1)}"
 
 
 def strip_val_suffix(model_id: str) -> str | None:

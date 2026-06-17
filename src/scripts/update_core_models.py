@@ -121,6 +121,27 @@ ship new flagship models.
 # ---------------------------------------------------------------------------
 
 
+@click.command()
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Print the new issue body and diff but don't touch GitHub or the YAML.",
+)
+def main(dry_run: bool) -> None:
+    """Refresh the core-model list and update issue #1186.
+
+    The result archive is expected to be already processed (i.e. the
+    `processed.jsonl` cache is up-to-date). Run `make leaderboards` first
+    if you've ingested new results.
+
+    Args:
+        dry_run:
+            Print outputs instead of writing them.
+    """
+    refresh_core_models(dry_run=dry_run)
+
+
 def _reasoning_flags(model: CoreModel) -> str:
     """Return the trio of emoji flags explaining why this model was picked.
 
@@ -505,27 +526,6 @@ def _post_issue_comment(issue_number: int, body: str, token: str) -> str:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-
-
-@click.command()
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    default=False,
-    help="Print the new issue body and diff but don't touch GitHub or the YAML.",
-)
-def main(dry_run: bool) -> None:
-    """Refresh the core-model list and update issue #1186.
-
-    The result archive is expected to be already processed (i.e. the
-    `processed.jsonl` cache is up-to-date). Run `make leaderboards` first
-    if you've ingested new results.
-
-    Args:
-        dry_run:
-            Print outputs instead of writing them.
-    """
-    refresh_core_models(dry_run=dry_run)
 
 
 def refresh_core_models(dry_run: bool = False) -> list[CoreModel]:

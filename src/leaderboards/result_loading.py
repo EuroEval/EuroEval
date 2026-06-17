@@ -18,6 +18,72 @@ from .constants import NEW_RESULTS_PATH, RESULTS_DIR, RESULTS_PATH
 logger = logging.getLogger(__name__)
 
 
+@cache
+def load_raw_results() -> list[dict[str, t.Any]]:
+    """Load all results from results.tar.gz.
+
+    Loads all evaluation results from the unified results archive.
+    Results are sourced from the single EuroEval/results bucket.
+    No distinction is made between raw and processed results.
+
+    Returns:
+        All evaluation results.
+
+    Raises:
+        FileNotFoundError:
+            If the results file is not found.
+        ValueError:
+            If the results file contains invalid JSON.
+    """
+    results_path = RESULTS_PATH
+
+    # Always sync first so a newer bucket overrides a stale local archive.
+    if not results_path.exists():
+        logger.info("results.tar.gz not found, syncing from bucket...")
+        _sync_results_from_bucket()
+        if not results_path.exists():
+            raise FileNotFoundError(f"Results file {results_path} not found.")
+    else:
+        logger.info("Checking for newer results in bucket...")
+        _sync_results_from_bucket()
+
+    logger.info(f"Loading raw results from {results_path}...")
+
+    with tarfile.open(results_path, "r:gz") as tar:
+        results_file = tar.extractfile(member="results/results.jsonl")
+        if results_file is None:
+            raise FileNotFoundError(
+                "results/results.jsonl not found in the tar.gz file."
+            )
+        result_lines = results_file.read().decode(encoding="utf-8").splitlines()
+        logger.info(f"Loaded {len(result_lines):,} existing results.")
+
+    new_results_path = NEW_RESULTS_PATH
+    if new_results_path.exists():
+        with new_results_path.open(encoding="utf-8") as f:
+            new_result_lines = f.read().splitlines()
+        result_lines.extend(new_result_lines)
+        logger.info(f"Loaded {len(new_result_lines):,} new results.")
+        new_results_path.unlink()
+
+    records: list[dict[str, t.Any]] = []
+    for line_idx, line in enumerate(result_lines):
+        if not line.strip():
+            continue
+
+        # A single line can hold several concatenated JSON objects, so split on
+        # the `}{` boundary between them before parsing each.
+        for record in re.split(pattern=r"(?<=})(?={)", string=line):
+            if not record.strip():
+                continue
+            try:
+                records.append(json.loads(record))
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON on line {line_idx:,}: {record}.") from e
+
+    return records
+
+
 def _sync_results_from_bucket() -> None:
     """Sync the HF results bucket, rebuild results.tar.gz, and back it up.
 
@@ -101,69 +167,3 @@ def _rebuild_results_tar_gz() -> None:
         tar.addfile(tarinfo=tarinfo, fileobj=fileobj)
 
     logger.info(f"Rebuilt {RESULTS_PATH} with {len(all_lines):,} results.")
-
-
-@cache
-def load_raw_results() -> list[dict[str, t.Any]]:
-    """Load all results from results.tar.gz.
-
-    Loads all evaluation results from the unified results archive.
-    Results are sourced from the single EuroEval/results bucket.
-    No distinction is made between raw and processed results.
-
-    Returns:
-        All evaluation results.
-
-    Raises:
-        FileNotFoundError:
-            If the results file is not found.
-        ValueError:
-            If the results file contains invalid JSON.
-    """
-    results_path = RESULTS_PATH
-
-    # Always sync first so a newer bucket overrides a stale local archive.
-    if not results_path.exists():
-        logger.info("results.tar.gz not found, syncing from bucket...")
-        _sync_results_from_bucket()
-        if not results_path.exists():
-            raise FileNotFoundError(f"Results file {results_path} not found.")
-    else:
-        logger.info("Checking for newer results in bucket...")
-        _sync_results_from_bucket()
-
-    logger.info(f"Loading raw results from {results_path}...")
-
-    with tarfile.open(results_path, "r:gz") as tar:
-        results_file = tar.extractfile(member="results/results.jsonl")
-        if results_file is None:
-            raise FileNotFoundError(
-                "results/results.jsonl not found in the tar.gz file."
-            )
-        result_lines = results_file.read().decode(encoding="utf-8").splitlines()
-        logger.info(f"Loaded {len(result_lines):,} existing results.")
-
-    new_results_path = NEW_RESULTS_PATH
-    if new_results_path.exists():
-        with new_results_path.open(encoding="utf-8") as f:
-            new_result_lines = f.read().splitlines()
-        result_lines.extend(new_result_lines)
-        logger.info(f"Loaded {len(new_result_lines):,} new results.")
-        new_results_path.unlink()
-
-    records: list[dict[str, t.Any]] = []
-    for line_idx, line in enumerate(result_lines):
-        if not line.strip():
-            continue
-
-        # A single line can hold several concatenated JSON objects, so split on
-        # the `}{` boundary between them before parsing each.
-        for record in re.split(pattern=r"(?<=})(?={)", string=line):
-            if not record.strip():
-                continue
-            try:
-                records.append(json.loads(record))
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid JSON on line {line_idx:,}: {record}.") from e
-
-    return records

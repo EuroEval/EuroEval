@@ -15,93 +15,6 @@ from .task_metadata import category_includes_task
 logger = logging.getLogger(__name__)
 
 
-def compute_dataset_ranks_bootstrap(
-    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
-    configs: dict[str, dict[str, list[str]]],
-    n_bootstraps: int,
-    seed: int | None = None,
-) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
-    """Compute per-dataset rank scores with bootstrap confidence intervals.
-
-    For each model-dataset pair, resamples the raw iteration scores with
-    replacement (n_bootstraps times), recomputes the rank score each time,
-    and returns the empirical distribution's median and percentile CIs.
-
-    The best model (highest mean score) is fixed from the observed data;
-    only the candidate model's mean is resampled, keeping the normalisation
-    stable across bootstrap replicates.
-
-    Args:
-        model_results: Model results grouped by model and dataset.
-        configs: Per-language task -> dataset mappings.
-        n_bootstraps: Number of bootstrap replicates.
-        seed: Random seed for reproducibility.
-
-    Returns:
-        model_id -> category -> dataset -> {"score", "ci_lower", "ci_upper"}.
-    """
-    rng = np.random.default_rng(seed)
-    out: dict[str, dict[str, dict[str, dict[str, float]]]] = defaultdict(
-        lambda: defaultdict(dict)
-    )
-
-    for _language, config in configs.items():
-        for category in LEADERBOARD_CATEGORIES:
-            datasets = [
-                ds
-                for task, task_ds in config.items()
-                for ds in task_ds
-                if task not in ORTHOGONAL_TASKS
-                and category_includes_task(category, task)
-            ]
-            for dataset in datasets:
-                model_scores: dict[str, tuple[float, list[float]]] = {}
-                for model_id, results in model_results.items():
-                    if dataset in results and results[dataset]:
-                        raw, mean_sc, _ = results[dataset][0]
-                        if np.isfinite(mean_sc):
-                            model_scores[model_id] = (mean_sc, raw)
-
-                if not model_scores:
-                    continue
-
-                # Sort by mean score descending, so the best model is first.
-                sorted_models = sorted(
-                    model_scores.items(), key=lambda x: x[1][0], reverse=True
-                )
-                mean_best = sorted_models[0][1][0]
-                all_raw = [
-                    score
-                    for _, raw_scores in model_scores.values()
-                    for score in raw_scores
-                ]
-                pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
-                if pooled_sd <= 0:
-                    pooled_sd = 1.0
-
-                for mid, (_, raw) in model_scores.items():
-                    bootstrap_scores: list[float] = []
-                    for _ in range(n_bootstraps):
-                        resampled_raw = rng.choice(raw, size=len(raw), replace=True)
-                        resampled_mean = float(np.mean(resampled_raw))
-                        diff = (mean_best - resampled_mean) / pooled_sd
-                        bootstrap_scores.append(1.0 + diff)  # ty: ignore[invalid-argument-type]
-
-                    if not bootstrap_scores:
-                        continue
-
-                    score = float(np.median(bootstrap_scores))
-                    ci_lower = float(np.percentile(bootstrap_scores, 2.5))
-                    ci_upper = float(np.percentile(bootstrap_scores, 97.5))
-                    out[mid][category][dataset] = {
-                        "score": round(score, 6),
-                        "ci_lower": round(ci_lower, 6),
-                        "ci_upper": round(ci_upper, 6),
-                    }
-
-    return out
-
-
 def compute_ranks(
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
     configs: dict[str, dict[str, list[str]]],
@@ -244,6 +157,93 @@ def compute_ranks(
 
     logger.info("Finished computing ranks.")
     return final
+
+
+def compute_dataset_ranks_bootstrap(
+    model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]],
+    configs: dict[str, dict[str, list[str]]],
+    n_bootstraps: int,
+    seed: int | None = None,
+) -> dict[str, dict[str, dict[str, dict[str, float]]]]:
+    """Compute per-dataset rank scores with bootstrap confidence intervals.
+
+    For each model-dataset pair, resamples the raw iteration scores with
+    replacement (n_bootstraps times), recomputes the rank score each time,
+    and returns the empirical distribution's median and percentile CIs.
+
+    The best model (highest mean score) is fixed from the observed data;
+    only the candidate model's mean is resampled, keeping the normalisation
+    stable across bootstrap replicates.
+
+    Args:
+        model_results: Model results grouped by model and dataset.
+        configs: Per-language task -> dataset mappings.
+        n_bootstraps: Number of bootstrap replicates.
+        seed: Random seed for reproducibility.
+
+    Returns:
+        model_id -> category -> dataset -> {"score", "ci_lower", "ci_upper"}.
+    """
+    rng = np.random.default_rng(seed)
+    out: dict[str, dict[str, dict[str, dict[str, float]]]] = defaultdict(
+        lambda: defaultdict(dict)
+    )
+
+    for _language, config in configs.items():
+        for category in LEADERBOARD_CATEGORIES:
+            datasets = [
+                ds
+                for task, task_ds in config.items()
+                for ds in task_ds
+                if task not in ORTHOGONAL_TASKS
+                and category_includes_task(category, task)
+            ]
+            for dataset in datasets:
+                model_scores: dict[str, tuple[float, list[float]]] = {}
+                for model_id, results in model_results.items():
+                    if dataset in results and results[dataset]:
+                        raw, mean_sc, _ = results[dataset][0]
+                        if np.isfinite(mean_sc):
+                            model_scores[model_id] = (mean_sc, raw)
+
+                if not model_scores:
+                    continue
+
+                # Sort by mean score descending, so the best model is first.
+                sorted_models = sorted(
+                    model_scores.items(), key=lambda x: x[1][0], reverse=True
+                )
+                mean_best = sorted_models[0][1][0]
+                all_raw = [
+                    score
+                    for _, raw_scores in model_scores.values()
+                    for score in raw_scores
+                ]
+                pooled_sd = np.std(all_raw) if len(all_raw) > 1 else 1.0
+                if pooled_sd <= 0:
+                    pooled_sd = 1.0
+
+                for mid, (_, raw) in model_scores.items():
+                    bootstrap_scores: list[float] = []
+                    for _ in range(n_bootstraps):
+                        resampled_raw = rng.choice(raw, size=len(raw), replace=True)
+                        resampled_mean = float(np.mean(resampled_raw))
+                        diff = float((mean_best - resampled_mean) / pooled_sd)
+                        bootstrap_scores.append(1.0 + diff)
+
+                    if not bootstrap_scores:
+                        continue
+
+                    score = float(np.median(bootstrap_scores))
+                    ci_lower = float(np.percentile(bootstrap_scores, 2.5))
+                    ci_upper = float(np.percentile(bootstrap_scores, 97.5))
+                    out[mid][category][dataset] = {
+                        "score": round(score, 6),
+                        "ci_lower": round(ci_lower, 6),
+                        "ci_upper": round(ci_upper, 6),
+                    }
+
+    return out
 
 
 def compute_ranks_bootstrap(

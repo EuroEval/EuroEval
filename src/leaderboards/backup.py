@@ -31,125 +31,6 @@ BACKUP_PREFIX = "results_"
 BACKUP_SUFFIX = ".tar.gz"
 
 
-def _validate_results() -> None:
-    """Validate that results exist and have required metadata.
-
-    Checks that:
-    1. RESULTS_DIR exists and contains .jsonl files
-    2. Sample files (up to 5) are checked for required metadata fields
-
-    Raises:
-        FileNotFoundError:
-            If RESULTS_DIR doesn't exist or contains no files.
-        ValueError:
-            If any result is missing required metadata fields.
-    """
-    if not RESULTS_DIR.exists():
-        raise FileNotFoundError(
-            f"Results directory not found: {RESULTS_DIR}. "
-            "Run evaluation result collection before backing up."
-        )
-
-    model_files = list(RESULTS_DIR.glob("*.jsonl"))
-    if not model_files:
-        raise FileNotFoundError(
-            f"No result files found in {RESULTS_DIR}. "
-            "Run evaluation result collection before backing up."
-        )
-
-    # Sample up to 5 files for validation
-    sample_size = min(5, len(model_files))
-    sampled_files = random.sample(model_files, sample_size)
-
-    logger.info(
-        f"Validating {sample_size} sampled result files (of {len(model_files):,} total)"
-        f" for required metadata fields: {REQUIRED_METADATA_FIELDS}"
-    )
-
-    files_with_issues = 0
-    records_checked = 0
-    records_with_issues = 0
-
-    for model_file in sampled_files:
-        file_has_issues = False
-        try:
-            with model_file.open("r", encoding="utf-8") as f:
-                for line_num, line in enumerate(f, 1):
-                    if not line.strip():
-                        continue
-                    records_checked += 1
-                    record = json.loads(line)
-
-                    # Check for required metadata fields
-                    for field in REQUIRED_METADATA_FIELDS:
-                        if field not in record:
-                            model_id = record.get("model", "unknown")
-                            logger.error(
-                                f"Missing '{field}' in {model_file.name}, line "
-                                f"{line_num}, model '{model_id}'"
-                            )
-                            file_has_issues = True
-                            records_with_issues += 1
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in {model_file.name}: {e}")
-            file_has_issues = True
-        except Exception as e:
-            logger.error(f"Failed to read {model_file.name}: {e}")
-            file_has_issues = True
-
-        if file_has_issues:
-            files_with_issues += 1
-
-    if files_with_issues > 0:
-        msg = (
-            f"{files_with_issues} sampled files have missing metadata. Checked "
-            f"{records_checked:,} records, found {records_with_issues:,} with issues. "
-            f"Required: {REQUIRED_METADATA_FIELDS}. Re-run evaluation with "
-            f"metadata collection enabled."
-        )
-        raise ValueError(msg)
-
-    logger.info(
-        f"Validated {records_checked:,} records from {len(sampled_files):,} sampled"
-        f" files - all have required metadata fields"
-    )
-
-
-def _is_only_previous_day_backup(backups: list[Path]) -> bool:
-    """Check if there is exactly one backup from a previous day.
-
-    Args:
-        backups:
-            List of all backups (newest first).
-
-    Returns:
-        True if exactly one backup is from a previous day, False otherwise.
-    """
-    today = dt.datetime.now().date()
-    previous_day_count = sum(
-        1
-        for backup in backups
-        if dt.datetime.fromtimestamp(backup.stat().st_mtime).date() < today
-    )
-    return previous_day_count == 1
-
-
-def _list_backups() -> list[Path]:
-    if not BACKUPS_DIR.exists():
-        return []
-    backups = [
-        p
-        for p in BACKUPS_DIR.iterdir()
-        if p.is_file()
-        and p.name.startswith(BACKUP_PREFIX)
-        and p.name.endswith(BACKUP_SUFFIX)
-    ]
-    # Newest first.
-    backups.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-    return backups
-
-
 def restore_from_backup_if_missing(target: Path = RESULTS_PATH) -> bool:
     """Restore `target` from the newest backup if `target` doesn't exist.
 
@@ -252,6 +133,91 @@ def _write_snapshot(source: Path) -> Path | None:
     return backup_path
 
 
+def _validate_results() -> None:
+    """Validate that results exist and have required metadata.
+
+    Checks that:
+    1. RESULTS_DIR exists and contains .jsonl files
+    2. Sample files (up to 5) are checked for required metadata fields
+
+    Raises:
+        FileNotFoundError:
+            If RESULTS_DIR doesn't exist or contains no files.
+        ValueError:
+            If any result is missing required metadata fields.
+    """
+    if not RESULTS_DIR.exists():
+        raise FileNotFoundError(
+            f"Results directory not found: {RESULTS_DIR}. "
+            "Run evaluation result collection before backing up."
+        )
+
+    model_files = list(RESULTS_DIR.glob("*.jsonl"))
+    if not model_files:
+        raise FileNotFoundError(
+            f"No result files found in {RESULTS_DIR}. "
+            "Run evaluation result collection before backing up."
+        )
+
+    # Sample up to 5 files for validation
+    sample_size = min(5, len(model_files))
+    sampled_files = random.sample(model_files, sample_size)
+
+    logger.info(
+        f"Validating {sample_size} sampled result files (of {len(model_files):,} total)"
+        f" for required metadata fields: {REQUIRED_METADATA_FIELDS}"
+    )
+
+    files_with_issues = 0
+    records_checked = 0
+    records_with_issues = 0
+
+    for model_file in sampled_files:
+        file_has_issues = False
+        try:
+            with model_file.open("r", encoding="utf-8") as f:
+                for line_num, line in enumerate(f, 1):
+                    if not line.strip():
+                        continue
+                    records_checked += 1
+                    record = json.loads(line)
+
+                    # Check for required metadata fields
+                    for field in REQUIRED_METADATA_FIELDS:
+                        if field not in record:
+                            model_id = record.get("model", "unknown")
+                            logger.error(
+                                f"Missing '{field}' in {model_file.name}, line "
+                                f"{line_num}, model '{model_id}'"
+                            )
+                            file_has_issues = True
+                            records_with_issues += 1
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in {model_file.name}: {e}")
+            file_has_issues = True
+        except Exception as e:
+            logger.error(f"Failed to read {model_file.name}: {e}")
+            file_has_issues = True
+
+        if file_has_issues:
+            files_with_issues += 1
+
+    if files_with_issues > 0:
+        msg = (
+            f"{files_with_issues} sampled files have missing metadata. Checked "
+            f"{records_checked:,} records, found {records_with_issues:,} with issues. "
+            f"Required: {REQUIRED_METADATA_FIELDS}. Re-run evaluation with "
+            f"metadata collection enabled."
+        )
+        raise ValueError(msg)
+
+    logger.info(
+        f"Validated {records_checked:,} records from {len(sampled_files):,} sampled"
+        f" files - all have required metadata fields"
+    )
+
+
 def _files_equal(a: Path, b: Path, chunk_size: int = 1 << 20) -> bool:
     """Return whether two files have byte-for-byte identical contents.
 
@@ -312,3 +278,37 @@ def _prune_backups() -> None:
         old.unlink()
         total -= size
         logger.info(f"Pruned old backup {old.name} ({size:,} bytes) - over size limit")
+
+
+def _list_backups() -> list[Path]:
+    if not BACKUPS_DIR.exists():
+        return []
+    backups = [
+        p
+        for p in BACKUPS_DIR.iterdir()
+        if p.is_file()
+        and p.name.startswith(BACKUP_PREFIX)
+        and p.name.endswith(BACKUP_SUFFIX)
+    ]
+    # Newest first.
+    backups.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return backups
+
+
+def _is_only_previous_day_backup(backups: list[Path]) -> bool:
+    """Check if there is exactly one backup from a previous day.
+
+    Args:
+        backups:
+            List of all backups (newest first).
+
+    Returns:
+        True if exactly one backup is from a previous day, False otherwise.
+    """
+    today = dt.datetime.now().date()
+    previous_day_count = sum(
+        1
+        for backup in backups
+        if dt.datetime.fromtimestamp(backup.stat().st_mtime).date() < today
+    )
+    return previous_day_count == 1

@@ -115,6 +115,7 @@ def read_gpu_temperature_c() -> float | None:
     if not _nvidia_smi_available:
         return None
     try:
+        # Safe: a fixed argument list, no shell and no user-supplied input.
         result = subprocess.run(  # noqa: S603, S607
             [
                 "nvidia-smi",

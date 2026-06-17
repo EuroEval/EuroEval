@@ -42,7 +42,7 @@ import urllib.error
 from functools import cache
 from pathlib import Path
 
-from huggingface_hub import HfApi
+from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 from yaml import safe_load
 
@@ -106,32 +106,6 @@ from leaderboards.queue_runtime import (
     lower_process_priority,
 )
 
-# Param bucket thresholds matching leaderboards (src/leaderboards/core_models.py)
-_BUCKET_THRESHOLDS = [
-    (2_000_000_000, 0),  # tiny
-    (10_000_000_000, 1),  # small
-    (40_000_000_000, 2),  # medium
-    (80_000_000_000, 3),  # large
-    (float("inf"), 4),  # xlarge
-]
-
-
-def _param_bucket(param_count: int) -> int:
-    """Map parameter count to bucket index for queue sorting.
-
-    Args:
-        param_count:
-            Number of parameters in the model.
-
-    Returns:
-        Bucket index (0=tiny, 1=small, 2=medium, 3=large, 4=xlarge).
-    """
-    for threshold, bucket in _BUCKET_THRESHOLDS:
-        if param_count < threshold:
-            return bucket
-    return 4
-
-
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
@@ -164,70 +138,14 @@ GPU_MEMORY_UTILIZATION: float | None = None
 THERMAL_CONFIG: ThermalConfig = ThermalConfig()
 
 
-def _model_id_to_filename(model_id: str) -> str:
-    """Convert a model ID to a safe filename.
-
-    Args:
-        model_id:
-            The model identifier (e.g., "meta-llama/Llama-3-8B").
-
-    Returns:
-        A safe filename with slashes and dots replaced by underscores.
-    """
-    return model_id.replace("/", "_") + ".jsonl"
-
-
-def download_results_from_hf() -> int:
-    """Download all results from the Hugging Face bucket.
-
-    Only downloads files, never deletes local files. This is a one-way sync
-    from bucket to local cache.
-
-    Returns:
-        The number of lines loaded.
-    """
-    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-    api = HfApi()
-    bucket_id = HF_RESULTS_BUCKET
-    try:
-        # List all files in the bucket
-        bucket_files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
-        # Build download list for .jsonl files not already present
-        files_to_download: list[tuple[str, str]] = []
-        for file_info in bucket_files:
-            if not file_info.path.endswith(".jsonl"):
-                continue
-            local_file = RESULTS_CACHE_DIR / file_info.path
-            # Only download if not already present (additive only)
-            if not local_file.exists():
-                files_to_download.append((file_info.path, str(local_file)))
-
-        if files_to_download:
-            api.download_bucket_files(
-                bucket_id=bucket_id,
-                files=files_to_download,  # ty: ignore
-            )
-    except HfHubHTTPError as e:
-        logger.warning(f"Could not download results from HF bucket: {e}")
-        return 0
-
-    all_lines: list[str] = []
-    for model_file in RESULTS_CACHE_DIR.glob("*.jsonl"):
-        lines = model_file.read_text(encoding="utf-8").splitlines()
-        for line in lines:
-            if line.strip():
-                all_lines.append(line)
-
-    if all_lines:
-        RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
-
-    num_models = len(list(RESULTS_CACHE_DIR.glob("*.jsonl")))
-    logger.info(
-        f"Downloaded {len(all_lines):,} result lines from {num_models} model(s) "
-        f"in bucket {HF_RESULTS_BUCKET!r}."
-    )
-    return len(all_lines)
+# Param bucket thresholds matching leaderboards (src/leaderboards/core_models.py)
+_BUCKET_THRESHOLDS = [
+    (2_000_000_000, 0),  # tiny
+    (10_000_000_000, 1),  # small
+    (40_000_000_000, 2),  # medium
+    (80_000_000_000, 3),  # large
+    (float("inf"), 4),  # xlarge
+]
 
 
 def main() -> None:
@@ -262,6 +180,85 @@ def main() -> None:
         logger.info("Interrupted; releasing current issue and exiting.")
         release_current_issue()
         sys.exit(130)
+
+
+def _param_bucket(param_count: int) -> int:
+    """Map parameter count to bucket index for queue sorting.
+
+    Args:
+        param_count:
+            Number of parameters in the model.
+
+    Returns:
+        Bucket index (0=tiny, 1=small, 2=medium, 3=large, 4=xlarge).
+    """
+    for threshold, bucket in _BUCKET_THRESHOLDS:
+        if param_count < threshold:
+            return bucket
+    return 4
+
+
+def _model_id_to_filename(model_id: str) -> str:
+    """Convert a model ID to a safe filename.
+
+    Args:
+        model_id:
+            The model identifier (e.g., "meta-llama/Llama-3-8B").
+
+    Returns:
+        A safe filename with slashes and dots replaced by underscores.
+    """
+    return model_id.replace("/", "_") + ".jsonl"
+
+
+def download_results_from_hf() -> int:
+    """Download all results from the Hugging Face bucket.
+
+    Only downloads files, never deletes local files. This is a one-way sync
+    from bucket to local cache.
+
+    Returns:
+        The number of lines loaded.
+    """
+    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    api = HfApi()
+    bucket_id = HF_RESULTS_BUCKET
+    try:
+        # List all files in the bucket
+        bucket_files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
+        # Build download list for .jsonl files not already present
+        files_to_download: list[tuple[str | BucketFile, str | Path]] = []
+        for file_info in bucket_files:
+            if not file_info.path.endswith(".jsonl"):
+                continue
+            local_file = RESULTS_CACHE_DIR / file_info.path
+            # Only download if not already present (additive only)
+            if not local_file.exists():
+                files_to_download.append((file_info.path, str(local_file)))
+
+        if files_to_download:
+            api.download_bucket_files(bucket_id=bucket_id, files=files_to_download)
+    except HfHubHTTPError as e:
+        logger.warning(f"Could not download results from HF bucket: {e}")
+        return 0
+
+    all_lines: list[str] = []
+    for model_file in RESULTS_CACHE_DIR.glob("*.jsonl"):
+        lines = model_file.read_text(encoding="utf-8").splitlines()
+        for line in lines:
+            if line.strip():
+                all_lines.append(line)
+
+    if all_lines:
+        RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
+
+    num_models = len(list(RESULTS_CACHE_DIR.glob("*.jsonl")))
+    logger.info(
+        f"Downloaded {len(all_lines):,} result lines from {num_models} model(s) "
+        f"in bucket {HF_RESULTS_BUCKET!r}."
+    )
+    return len(all_lines)
 
 
 def parse_args() -> None:
@@ -349,6 +346,8 @@ def ensure_credentials() -> None:
     try:
         HfApi().whoami()
     except Exception as e:  # noqa: BLE001
+        # Any auth/network failure here means we cannot proceed; report it and
+        # exit cleanly rather than crash with a traceback.
         logger.error(
             "Not logged in to Hugging Face. Run `huggingface-cli login` "
             f"(or set HF_TOKEN) and re-run. Underlying error: {e}"
@@ -372,6 +371,8 @@ def release_current_issue() -> None:
         if release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE):
             logger.info(f"#{number}: released on interrupt.")
     except Exception as e:  # noqa: BLE001
+        # Best-effort cleanup from an interrupt handler: never let a release
+        # failure mask the original Ctrl-C or crash the shutdown path.
         logger.warning(f"#{number}: could not release on interrupt: {e}")
 
 
@@ -518,6 +519,8 @@ def process_queue_once() -> None:
         try:
             process_issue(issue=issue, model_id=model_id, groups=groups)
         except Exception as e:  # noqa: BLE001
+            # Top-level per-issue guard: one failing issue must not abort the
+            # whole queue loop, so log it and move on to the next issue.
             logger.exception(f"Error while processing issue #{issue['number']}: {e}")
         cool_down_between_issues(config=THERMAL_CONFIG)
 

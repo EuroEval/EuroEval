@@ -113,30 +113,33 @@ def run_euroeval(
         env.setdefault("HF_TOKEN", token)
         env.setdefault("HUGGINGFACE_API_KEY", token)
 
-    master_fd, slave_fd = pty.openpty()
+    parent_fd, child_fd = pty.openpty()
     try:
+        # Safe: ``cmd`` is a fixed argument list run without a shell; only the
+        # known euroeval CLI flags and operator-controlled model/language ids
+        # are interpolated, never untrusted shell input.
         proc = subprocess.Popen(  # noqa: S603
             cmd,
-            stdin=slave_fd,
-            stdout=slave_fd,
-            stderr=slave_fd,
+            stdin=child_fd,
+            stdout=child_fd,
+            stderr=child_fd,
             close_fds=True,
             env=env,
         )
     except FileNotFoundError:
-        os.close(master_fd)
-        os.close(slave_fd)
+        os.close(parent_fd)
+        os.close(child_fd)
         logger.error("`euroeval` CLI not found on PATH. Is it installed?")
         return 127, "`euroeval` CLI not found on PATH."
-    os.close(slave_fd)
+    os.close(child_fd)
 
     captured: list[bytes] = []
     try:
         while True:
-            ready, _, _ = select.select([master_fd], [], [], 0.1)
+            ready, _, _ = select.select([parent_fd], [], [], 0.1)
             if ready:
                 try:
-                    chunk = os.read(master_fd, 4096)
+                    chunk = os.read(parent_fd, 4096)
                 except OSError:
                     break
                 if not chunk:
@@ -147,7 +150,7 @@ def run_euroeval(
             elif proc.poll() is not None:
                 try:
                     while True:
-                        chunk = os.read(master_fd, 4096)
+                        chunk = os.read(parent_fd, 4096)
                         if not chunk:
                             break
                         sys.stderr.buffer.write(chunk)
@@ -157,7 +160,7 @@ def run_euroeval(
                     pass
                 break
     finally:
-        os.close(master_fd)
+        os.close(parent_fd)
     proc.wait()
     output = b"".join(captured).decode("utf-8", errors="replace")
     return proc.returncode, output
@@ -202,6 +205,7 @@ def estimated_model_bytes(model_id: str) -> int | None:
         The total weight bytes across all tensors, or None when the repo
         is not a safetensors repo or metadata cannot be parsed.
     """
+    # Deferred: see the module-level note on avoiding heavy euroeval import cost.
     from euroeval.string_utils import split_model_id  # noqa: PLC0415
 
     components = split_model_id(model_id=model_id)
@@ -272,6 +276,7 @@ def gpu_total_memory_bytes() -> int | None:
         except ValueError:
             logger.warning(f"Ignoring invalid EUROEVAL_GPU_MEMORY_BYTES={override!r}.")
 
+    # Deferred: see the module-level note on avoiding heavy import cost.
     import psutil  # noqa: PLC0415
     import torch  # noqa: PLC0415
 
@@ -294,6 +299,7 @@ def official_dataset_language_pairs() -> set[tuple[str, str]]:
         The ``(dataset_name, language_code)`` pairs for every official
         (i.e. non-unofficial) dataset in :mod:`euroeval.dataset_configs`.
     """
+    # Deferred: see the module-level note on avoiding heavy euroeval import cost.
     from euroeval.dataset_configs import get_all_dataset_configs  # noqa: PLC0415
 
     all_dataset_configs = get_all_dataset_configs(
@@ -342,6 +348,7 @@ def result_dataset_language_pairs(lines: c.Iterable[str]) -> set[tuple[str, str]
     Returns:
         The set of (dataset, language) pairs found in the lines.
     """
+    # Deferred: see the module-level note on avoiding heavy euroeval import cost.
     from euroeval.data_models import BenchmarkResult  # noqa: PLC0415
 
     pairs: set[tuple[str, str]] = set()

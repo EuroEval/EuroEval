@@ -81,9 +81,14 @@ def prompt_and_persist_env_var(
         )
         sys.exit(1)
     if secret:
-        reader = lambda: getpass.getpass(f"{prompt_text}: ")  # noqa: E731
+
+        def reader() -> str:
+            return getpass.getpass(f"{prompt_text}: ")
     else:
-        reader = lambda: input(f"{prompt_text}: ").strip()  # noqa: E731
+
+        def reader() -> str:
+            return input(f"{prompt_text}: ").strip()
+
     value = ""
     while not value:
         try:

@@ -229,10 +229,12 @@ OSAI_DB_URL = (
     f"{OSAI_BASE}/database/"
     "?type=text&weights_basemodel=1&trainingcode=1&datasources_basemodel=1"
 )
+
 # Required openness fields (all must be "open"). For weights, see
 # OSAI_WEIGHT_CRITERIA below -- at least one of base/end must be open.
 OSAI_REQUIRED_OPEN = ("trainingcode", "datasources_basemodel")
 OSAI_WEIGHT_CRITERIA = ("weights_basemodel", "weights_endmodel")
+
 # All openness fields we count to rank models. Drawn from the rendered
 # OSAI methodology page. Order doesn't matter; only the count of "open"s.
 OSAI_RANKING_FIELDS = (
@@ -252,6 +254,7 @@ OSAI_RANKING_FIELDS = (
     "paper",
 )
 OSAI_BUNDLE_MARKER = "system:{name:"
+
 # Matches the start of each model entry in the bundle. Each model is a JS
 # object literal opening with `system:{name:"...",link:"...",type:"...",...,
 # endmodelname:"...",...}`. The openness-criteria fields follow that block.
@@ -264,13 +267,16 @@ OSAI_SYSTEM_RE = re.compile(
     r"basemodelname:\"[^\"]+\","
     r"endmodelname:\"(?P<endmodelname>[^\"]+)\""
 )
+
 # Matches one openness criterion declaration: <field>:{class:"<cls>"...
 OSAI_FIELD_RE = re.compile(r"(\w+):\{class:\"(open|closed|partial)\"")
+
 # Within an openness block, the link can be a single string or a JSON array
 # of strings. We extract the first HF URL we find (string-form).
 OSAI_BLOCK_LINK_RE = re.compile(
     r"link:(?:\"(?P<single>[^\"]*)\"|\[\"(?P<first>[^\"]*)\")"
 )
+
 # Matches the whole weights_endmodel/basemodel block so we can scan inside
 # it for an HF link.
 OSAI_WEIGHTS_BLOCK_RE = re.compile(
@@ -330,6 +336,7 @@ GATED_OUTPUT_RE = re.compile(r"is a gated repository", re.IGNORECASE)
 # Regex for stripping HTML anchor tags from model IDs like
 # `<a href='...'>org/model</a>`
 ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
+
 # Strips trailing ``(zero-shot)``, ``(val)``, ``(zero-shot, val)`` etc.
 # annotations that `extract_model_ids_from_record` appends to variants.
 VARIANT_SUFFIX_RE = re.compile(r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$")

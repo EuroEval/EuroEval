@@ -114,6 +114,139 @@ class CoreModel:
 
 
 # ---------------------------------------------------------------------------
+# Public entry point
+# ---------------------------------------------------------------------------
+
+
+def build_core_model_list(
+    eu_patterns: list[str],
+    api_model_ids: list[str] | None = None,
+    osai_overrides: list[str] | None = None,
+    osai_limit: int = 10,
+) -> list[CoreModel]:
+    """Build the combined core-model list.
+
+    Args:
+        eu_patterns:
+            Regex patterns for EU-built models (from `core_models.yaml`).
+        api_model_ids (optional):
+            Hardcoded list of litellm-style API model identifiers from
+            `core_models.yaml::api_models`. Always emitted with the API
+            flag and "All languages". Defaults to None.
+        osai_overrides (optional):
+            Override list used when the OSAI scrape fails. Defaults to None.
+        osai_limit (optional):
+            How many OSAI top models to keep. Defaults to 10.
+
+    Returns:
+        Sorted list of `CoreModel` records.
+    """
+    api_set = set(api_model_ids or [])
+    languages = languages_with_official_datasets()
+    configs: dict[str, dict[str, list[str]]] = {
+        language: dict(official_datasets_for_language(language))
+        for language in languages
+    }
+    datasets = {
+        dataset
+        for config in configs.values()
+        for task_datasets in config.values()
+        for dataset in task_datasets
+    }
+
+    results = [r for r in load_raw_results() if get_dataset(r) in datasets]
+    model_results = group_results_by_model(results=results)
+    model_results = drop_val_duplicates(model_results=model_results)
+    ranks = compute_ranks(
+        model_results=model_results, configs=configs, n_bootstraps=1000
+    )
+    metadata = extract_model_metadata(results=results)
+
+    # Restrict per-language ranking to languages that actually appear as
+    # keys in the rank dict (compute_ranks elides single-language scenarios).
+    available_languages: set[str] = set()
+    for per_category in ranks.values():
+        for per_language in per_category.values():
+            available_languages.update(per_language.keys())
+    available_languages.discard("overall")
+    language_list = sorted(available_languages)
+
+    model_types: dict[str, ModelType] = {
+        anchored_id: _classify_model(anchored_id, metadata.get(anchored_id, {}))
+        for anchored_id in model_results
+    }
+
+    pareto = _pareto_languages_per_model(
+        ranks=ranks, metadata=metadata, model_types=model_types, languages=language_list
+    )
+
+    # Collapse anchored variants ("X (zero-shot)", "X (zero-shot, val)", ...)
+    # down to the plain `org/repo` slug. The Pareto languages and metadata
+    # for the plain id are the union/best of its variants.
+    by_plain: dict[str, list[str]] = defaultdict(list)
+    for anchored_id in model_results:
+        by_plain[plain_model_id(anchored_id)].append(anchored_id)
+
+    eu_set = eu_models(model_ids=by_plain.keys(), eu_patterns=eu_patterns)
+    osai_ranked = osai_top_models(limit=osai_limit, overrides=osai_overrides)
+    osai_rank_by_id = {model_id: rank for model_id, rank in osai_ranked}
+
+    # OSAI / EU / API-list may name models we haven't evaluated yet.
+    # Include them as placeholders so the issue surfaces them as TODO
+    # targets.
+    all_plain_ids = set(by_plain) | set(osai_rank_by_id) | eu_set | api_set
+
+    # Drop entire serving-backend families we don't want in the core list.
+    all_plain_ids = {
+        pid
+        for pid in all_plain_ids
+        if not any(p.match(pid.split("#")[0]) for p in EXCLUDED_MODEL_PATTERNS)
+    }
+
+    core: list[CoreModel] = []
+    for plain_id in all_plain_ids:
+        variants = by_plain.get(plain_id, [])
+        pareto_langs = sorted({lang for v in variants for lang in pareto.get(v, [])})
+        is_eu = plain_id in eu_set
+        osai_rank = osai_rank_by_id.get(plain_id)
+        is_api = plain_id in api_set
+        if not (pareto_langs or is_eu or osai_rank or is_api):
+            continue
+
+        # Pick the variant with the most params info / a known type. The
+        # base anchored_id (without zero-shot suffix) typically sorts first.
+        rep = sorted(variants)[0] if variants else plain_id
+        meta = metadata.get(rep, {})
+        model_type = model_types.get(rep) or _classify_model(plain_id, meta)
+        parameters = meta.get("parameters", float("nan"))
+        if not math.isfinite(parameters):
+            parameters = params_from_model_id(model_id=plain_id)
+
+        # API models don't live on HuggingFace, so hitting the HF
+        # safetensors endpoint for them just guarantees a 404.
+        if not math.isfinite(parameters) and model_type != ModelType.API:
+            parameters = params_from_hf_safetensors(model_id=plain_id.split("#")[0])
+        bucket = _size_bucket(model_type, parameters)
+        core.append(
+            CoreModel(
+                model_id=plain_id,
+                model_type=model_type,
+                size_bucket=bucket,
+                parameters=parameters,
+                pareto_languages=tuple(pareto_langs),
+                eu=is_eu,
+                osai_rank=osai_rank,
+                api=is_api,
+            )
+        )
+
+    core.sort(
+        key=lambda m: (PARAM_SIZE_BUCKET_ORDER[m.size_bucket], m.model_id.lower())
+    )
+    return core
+
+
+# ---------------------------------------------------------------------------
 # Model classification helpers
 # ---------------------------------------------------------------------------
 
@@ -257,146 +390,3 @@ def _pareto_languages_per_model(
 
     logger.info("Fetched the Pareto frontier languages for each model.")
     return {model_id: sorted(langs) for model_id, langs in pareto.items()}
-
-
-# ---------------------------------------------------------------------------
-# Public entry point
-# ---------------------------------------------------------------------------
-
-
-def build_core_model_list(
-    eu_patterns: list[str],
-    api_model_ids: list[str] | None = None,
-    osai_overrides: list[str] | None = None,
-    osai_limit: int = 10,
-) -> list[CoreModel]:
-    """Build the combined core-model list.
-
-    Args:
-        eu_patterns:
-            Regex patterns for EU-built models (from `core_models.yaml`).
-        api_model_ids (optional):
-            Hardcoded list of litellm-style API model identifiers from
-            `core_models.yaml::api_models`. Always emitted with the API
-            flag and "All languages". Defaults to None.
-        osai_overrides (optional):
-            Override list used when the OSAI scrape fails. Defaults to None.
-        osai_limit (optional):
-            How many OSAI top models to keep. Defaults to 10.
-
-    Returns:
-        Sorted list of `CoreModel` records.
-    """
-    api_set = set(api_model_ids or [])
-    languages = languages_with_official_datasets()
-    configs: dict[str, dict[str, list[str]]] = {
-        language: dict(official_datasets_for_language(language))
-        for language in languages
-    }
-    datasets = {
-        dataset
-        for config in configs.values()
-        for task_datasets in config.values()
-        for dataset in task_datasets
-    }
-
-    results = [r for r in load_raw_results() if get_dataset(r) in datasets]
-    model_results = group_results_by_model(results=results)
-    model_results = drop_val_duplicates(model_results=model_results)
-    ranks = compute_ranks(
-        model_results=model_results, configs=configs, n_bootstraps=1000
-    )
-    metadata = extract_model_metadata(results=results)
-
-    # Restrict per-language ranking to languages that actually appear as
-    # keys in the rank dict (compute_ranks elides single-language scenarios).
-    available_languages: set[str] = set()
-    for per_category in ranks.values():
-        for per_language in per_category.values():
-            available_languages.update(per_language.keys())
-    available_languages.discard("overall")
-    language_list = sorted(available_languages)
-
-    model_types: dict[str, ModelType] = {
-        anchored_id: _classify_model(anchored_id, metadata.get(anchored_id, {}))
-        for anchored_id in model_results
-    }
-
-    pareto = _pareto_languages_per_model(
-        ranks=ranks, metadata=metadata, model_types=model_types, languages=language_list
-    )
-
-    # Collapse anchored variants ("X (zero-shot)", "X (zero-shot, val)", ...)
-    # down to the plain `org/repo` slug. The Pareto languages and metadata
-    # for the plain id are the union/best of its variants.
-    by_plain: dict[str, list[str]] = defaultdict(list)
-    for anchored_id in model_results:
-        by_plain[plain_model_id(anchored_id)].append(anchored_id)
-
-    eu_set = eu_models(model_ids=by_plain.keys(), eu_patterns=eu_patterns)
-    osai_ranked = osai_top_models(limit=osai_limit, overrides=osai_overrides)
-    osai_rank_by_id = {model_id: rank for model_id, rank in osai_ranked}
-
-    # OSAI / EU / API-list may name models we haven't evaluated yet.
-    # Include them as placeholders so the issue surfaces them as TODO
-    # targets.
-    all_plain_ids = set(by_plain) | set(osai_rank_by_id) | eu_set | api_set
-
-    # Drop entire serving-backend families we don't want in the core list.
-    all_plain_ids = {
-        pid
-        for pid in all_plain_ids
-        if not any(p.match(pid.split("#")[0]) for p in EXCLUDED_MODEL_PATTERNS)
-    }
-
-    core: list[CoreModel] = []
-    for plain_id in all_plain_ids:
-        variants = by_plain.get(plain_id, [])
-        pareto_langs = sorted({lang for v in variants for lang in pareto.get(v, [])})
-        is_eu = plain_id in eu_set
-        osai_rank = osai_rank_by_id.get(plain_id)
-        is_api = plain_id in api_set
-        if not (pareto_langs or is_eu or osai_rank or is_api):
-            continue
-
-        # Pick the variant with the most params info / a known type. The
-        # base anchored_id (without zero-shot suffix) typically sorts first.
-        rep = sorted(variants)[0] if variants else plain_id
-        meta = metadata.get(rep, {})
-        model_type = model_types.get(rep) or _classify_model(plain_id, meta)
-        parameters = meta.get("parameters", float("nan"))
-        if not math.isfinite(parameters):
-            parameters = params_from_model_id(model_id=plain_id)
-
-        # API models don't live on HuggingFace, so hitting the HF
-        # safetensors endpoint for them just guarantees a 404.
-        if not math.isfinite(parameters) and model_type != ModelType.API:
-            parameters = params_from_hf_safetensors(model_id=plain_id.split("#")[0])
-        bucket = _size_bucket(model_type, parameters)
-        core.append(
-            CoreModel(
-                model_id=plain_id,
-                model_type=model_type,
-                size_bucket=bucket,
-                parameters=parameters,
-                pareto_languages=tuple(pareto_langs),
-                eu=is_eu,
-                osai_rank=osai_rank,
-                api=is_api,
-            )
-        )
-
-    core.sort(
-        key=lambda m: (PARAM_SIZE_BUCKET_ORDER[m.size_bucket], m.model_id.lower())
-    )
-    return core
-
-
-__all__ = [
-    "CoreModel",
-    "ModelType",
-    "SizeBucket",
-    "build_core_model_list",
-    "eu_models",
-    "osai_top_models",
-]

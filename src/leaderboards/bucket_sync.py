@@ -25,22 +25,6 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def _sanitise_model_id(model_id: str) -> str:
-    """Convert a model ID to a safe filename.
-
-    Replaces forward slashes with underscores to create valid filenames
-    for the bucket structure.
-
-    Args:
-        model_id:
-            The model identifier (e.g. "meta-llama/Llama-2-7b").
-
-    Returns:
-        Safe filename (e.g. "meta-llama_Llama-2-7b").
-    """
-    return model_id.replace("/", "_")
-
-
 def sync_bucket() -> None:
     """Sync HF results bucket using hf sync.
 
@@ -173,3 +157,19 @@ def is_sync_available() -> bool:
         True if hf binary is on PATH, False otherwise.
     """
     return shutil.which("hf") is not None
+
+
+def _sanitise_model_id(model_id: str) -> str:
+    """Convert a model ID to a safe filename.
+
+    Replaces forward slashes with underscores to create valid filenames
+    for the bucket structure.
+
+    Args:
+        model_id:
+            The model identifier (e.g. "meta-llama/Llama-2-7b").
+
+    Returns:
+        Safe filename (e.g. "meta-llama_Llama-2-7b").
+    """
+    return model_id.replace("/", "_")

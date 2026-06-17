@@ -75,6 +75,8 @@ def cached_model_summary(model_id: str) -> dict | None:
         # Expected for typo-d / since-deleted repos; just drop the candidate.
         return None
     except Exception as e:  # noqa: BLE001
+        # Best-effort network lookup: any other failure (transient HTTP, timeout,
+        # unexpected payload) should just drop the candidate, never crash the run.
         logger.warning(f"HF model lookup failed for {model_id}: {e}")
         return None
 
