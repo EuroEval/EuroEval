@@ -135,12 +135,7 @@ def _rebuild_results_tar_gz() -> None:
     logger.info(f"Reading {n_files:,} model files from mount point...")
 
     records = load_records_from_jsonl_files(paths=model_files)
-    metadata_cache = build_precious_metadata_cache(records=records)
-    eee_records = [
-        normalise_record_to_eee(record=record, precious_metadata_cache=metadata_cache)
-        for record in records
-    ]
-    content = dump_jsonl_records(records=eee_records)
+    content = dump_jsonl_records(records=records)
 
     all_lines: set[str] = set()
     start = time.time()
