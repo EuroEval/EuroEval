@@ -62,7 +62,7 @@ def process_results(
         compressed_results_path=results_path, results_dir=RESULTS_DIR
     )
 
-    records = load_raw_results(allow_old_format=True)
+    records = load_raw_results()
     num_raw_records = len(records)
 
     records = _deduplicate_records(records=records)

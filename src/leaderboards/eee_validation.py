@@ -1,17 +1,14 @@
-"""Validation and migration helpers for leaderboard result records."""
+"""Validation helpers for leaderboard result records."""
 
 from __future__ import annotations
 
 import collections.abc as c
-import copy
 import json
 import logging
 import tarfile
 import typing as t
 from dataclasses import dataclass, field
 from pathlib import Path
-
-from euroeval.data_models import BenchmarkResult
 
 from .records import plain_model_id
 
@@ -102,41 +99,6 @@ def build_precious_metadata_cache(
                 bool, record["trained_from_scratch"]
             )
     return cache
-
-
-def normalise_record_to_eee(
-    record: dict[str, object],
-    precious_metadata_cache: PreciousMetadataCache | None = None,
-) -> dict[str, object]:
-    """Return an EEE-format copy of a result record.
-
-    Old EuroEval records are accepted only as migration input and converted
-    before being returned. The precious metadata fields are copied from the
-    source record or recovered from an existing-record cache; they are never
-    inferred.
-
-    Args:
-        record:
-            Result record to normalise.
-        precious_metadata_cache (optional):
-            Metadata recovered from existing result sources. Defaults to None.
-
-    Returns:
-        An EEE-format result record.
-    """
-    source_record = copy.deepcopy(record)
-    if is_eee_record(record=source_record):
-        eee_record = source_record
-    else:
-        result = BenchmarkResult.from_dict(config=source_record)
-        eee_record = result.to_eee_dict()
-
-    _restore_precious_metadata(
-        target=eee_record,
-        source=record,
-        precious_metadata_cache=precious_metadata_cache,
-    )
-    return eee_record
 
 
 def validate_eee_record(record: dict[str, object], context: str = "record") -> None:
@@ -244,26 +206,6 @@ def dump_jsonl_records(records: list[dict[str, object]]) -> str:
         return ""
     lines = [json.dumps(record, ensure_ascii=False) for record in records]
     return "\n".join(lines) + "\n"
-
-
-def _restore_precious_metadata(
-    target: dict[str, object],
-    source: dict[str, object],
-    precious_metadata_cache: PreciousMetadataCache | None,
-) -> None:
-    model_id = get_record_model_id(record=target) or get_record_model_id(record=source)
-    for field_name in REQUIRED_METADATA_FIELDS:
-        source_value = source.get(field_name)
-        if isinstance(source_value, bool):
-            target[field_name] = source_value
-            continue
-        if model_id is None or precious_metadata_cache is None:
-            continue
-        recovered_value = _cached_metadata_value(
-            cache=precious_metadata_cache, field_name=field_name, model_id=model_id
-        )
-        if recovered_value is not None:
-            target[field_name] = recovered_value
 
 
 def _cached_metadata_value(

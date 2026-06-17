@@ -15,10 +15,8 @@ from .backup import backup_results
 from .bucket_sync import sync_bucket
 from .constants import NEW_RESULTS_PATH, RESULTS_DIR, RESULTS_PATH
 from .eee_validation import (
-    build_precious_metadata_cache,
     dump_jsonl_records,
     load_records_from_jsonl_files,
-    normalise_record_to_eee,
     validate_eee_record,
 )
 
@@ -26,19 +24,13 @@ logger = logging.getLogger(__name__)
 
 
 @cache
-def load_raw_results(allow_old_format: bool = False) -> list[dict[str, t.Any]]:
-    """Load all results from results.tar.gz.
+def load_raw_results() -> list[dict[str, t.Any]]:
+    """Load all EEE-format results from results.tar.gz.
 
-    Loads all evaluation results from the unified results archive.
-    Results are sourced from the single EuroEval/results bucket.
-    No distinction is made between raw and processed results. Leaderboard
-    consumers receive EEE-format records only; old-format records are accepted
-    only when explicitly requested for migration.
-
-    Args:
-        allow_old_format (optional):
-            If True, old EuroEval records are converted to EEE before returning.
-            Defaults to False.
+    Loads all evaluation results from the unified results archive. Results are
+    sourced from the single EuroEval/results bucket. No distinction is made
+    between raw and processed results, and leaderboard consumers receive the
+    EEE records exactly as stored.
 
     Returns:
         All evaluation results in EEE format.
@@ -95,21 +87,10 @@ def load_raw_results(allow_old_format: bool = False) -> list[dict[str, t.Any]]:
             except json.JSONDecodeError as e:
                 raise ValueError(f"Invalid JSON on line {line_idx:,}: {record}.") from e
 
-    if allow_old_format:
-        metadata_cache = build_precious_metadata_cache(records=records)
-        normalised_records = [
-            normalise_record_to_eee(
-                record=record, precious_metadata_cache=metadata_cache
-            )
-            for record in records
-        ]
-    else:
-        normalised_records = records
-
-    for idx, record in enumerate(normalised_records, start=1):
+    for idx, record in enumerate(records, start=1):
         validate_eee_record(record=record, context=f"raw results record {idx:,}")
 
-    return normalised_records
+    return records
 
 
 def _sync_results_from_bucket() -> None:
