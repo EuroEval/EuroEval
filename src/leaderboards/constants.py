@@ -341,6 +341,8 @@ ANCHOR_RE = re.compile(r"<a [^>]*>(?P<inner>[^<]+)</a>")
 # annotations that `extract_model_ids_from_record` appends to variants.
 VARIANT_SUFFIX_RE = re.compile(r"\s*\((?:zero-shot|val)(?:,\s*(?:zero-shot|val))*\)$")
 
+REQUIRED_METADATA_FIELDS = ["commercially_licensed", "open", "trained_from_scratch"]
+
 # ---------------------------------------------------------------------------
 # Language groups
 # ---------------------------------------------------------------------------

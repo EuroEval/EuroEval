@@ -20,12 +20,15 @@ import shutil
 import sys
 from pathlib import Path
 
-from .constants import BACKUPS_DIR, BACKUPS_MAX_BYTES, RESULTS_DIR, RESULTS_PATH
+from .constants import (
+    BACKUPS_DIR,
+    BACKUPS_MAX_BYTES,
+    REQUIRED_METADATA_FIELDS,
+    RESULTS_DIR,
+    RESULTS_PATH,
+)
 
 logger = logging.getLogger(__name__)
-
-# Required metadata fields that must be present in all processed results
-REQUIRED_METADATA_FIELDS = ["commercially_licensed", "open", "trained_from_scratch"]
 
 BACKUP_PREFIX = "results_"
 BACKUP_SUFFIX = ".tar.gz"
@@ -183,9 +186,14 @@ def _validate_results() -> None:
                     record = json.loads(line)
 
                     # Check for required metadata fields
+                    additional = record.get("model_info", {}).get(
+                        "additional_details", {}
+                    )
                     for field in REQUIRED_METADATA_FIELDS:
-                        if field not in record:
-                            model_id = record.get("model", "unknown")
+                        if field not in additional:
+                            model_id = record.get("model_info", {}).get(
+                                "name", "unknown"
+                            )
                             logger.error(
                                 f"Missing '{field}' in {model_file.name}, line "
                                 f"{line_num}, model '{model_id}'"

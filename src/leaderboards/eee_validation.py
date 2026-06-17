@@ -10,12 +10,10 @@ import typing as t
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .constants import REQUIRED_METADATA_FIELDS
 from .records import plain_model_id
 
 logger = logging.getLogger(__name__)
-
-EEE_SCHEMA_FIELD = "schema_version"
-REQUIRED_METADATA_FIELDS = ("commercially_licensed", "open", "trained_from_scratch")
 
 
 @dataclass
@@ -162,7 +160,7 @@ def is_eee_record(record: dict[str, object]) -> bool:
         True if the record has the required EEE top-level structures.
     """
     return (
-        EEE_SCHEMA_FIELD in record
+        "schema_version" in record
         and isinstance(record.get("model_info"), dict)
         and isinstance(record.get("eval_library"), dict)
         and isinstance(record.get("evaluation_results"), list)
