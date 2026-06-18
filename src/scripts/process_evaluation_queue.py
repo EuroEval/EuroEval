@@ -19,8 +19,7 @@ GITHUB_TOKEN          A PAT with ``issues: write`` for the EuroEval repo.
 HF_TOKEN              A Hugging Face token with read access to any gated
                       repos that are expected to be evaluated. Used both
                       for Hub metadata lookups and for downloads inside
-                      the ``euroeval`` subprocess. ``HUGGINGFACE_API_KEY``
-                      is accepted as an alias.
+                      the ``euroeval`` subprocess.
 EUROEVAL_VM_ID        Optional identifier for this VM/host, written into a
                       hidden ``<!-- vm-id: ... -->`` marker on each issue
                       while it is being evaluated. Used to reclaim
@@ -329,8 +328,7 @@ def ensure_credentials() -> None:
             name="HF_TOKEN",
             prompt_text=(
                 "HF_TOKEN is required (a Hugging Face token with read access to gated "
-                "repos you intend to evaluate; HUGGINGFACE_API_KEY is also accepted). "
-                "Enter token"
+                "repos you intend to evaluate). Enter token"
             ),
             secret=True,
         )

@@ -20,7 +20,7 @@ issues that appeared during the run).
 Required env vars
 -----------------
 GITHUB_TOKEN        A PAT with ``issues: write`` for the EuroEval repo.
-HUGGINGFACE_API_KEY A Hugging Face token with write access to upload results.
+HF_TOKEN            A Hugging Face token with write access to upload results.
 """
 
 from __future__ import annotations
