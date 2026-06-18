@@ -303,6 +303,10 @@ HALLU = Task(
     default_max_generated_tokens=512,
     default_labels=[],
     default_allowed_model_types=[ModelType.GENERATIVE],
+    default_allowed_generative_types=[
+        GenerativeType.INSTRUCTION_TUNED,
+        GenerativeType.REASONING,
+    ],
     requires_zero_shot=True,
 )
 
