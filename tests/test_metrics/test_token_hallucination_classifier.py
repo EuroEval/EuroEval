@@ -95,7 +95,7 @@ def make_dataset() -> t.Callable[[list[str]], Dataset]:
 
     def _make(contexts: list[str]) -> Dataset:
         return Dataset.from_list(
-            [{"id": idx, "context": ctx} for idx, ctx in enumerate(contexts)]
+            [{"id": str(idx), "context": ctx} for idx, ctx in enumerate(contexts)]
         )
 
     return _make
@@ -155,8 +155,8 @@ def test_no_hallucinations_returns_zero(
     detector = _make_detector(predict_return=[{"pred": 0}])
     dataset = make_dataset(["ctx1", "ctx2"])
     predictions = [
-        {"id": 0, "prediction_text": "answer1"},
-        {"id": 1, "prediction_text": "answer2"},
+        {"id": "0", "prediction_text": "answer1", "no_answer_probability": 0.0},
+        {"id": "1", "prediction_text": "answer2", "no_answer_probability": 0.0},
     ]
     with patch(DETECTOR_PATH, return_value=detector):
         result = metric(
@@ -179,8 +179,8 @@ def test_all_hallucinations_returns_one(
     detector = _make_detector(predict_return=[{"pred": 1}])
     dataset = make_dataset(["ctx1", "ctx2"])
     predictions = [
-        {"id": 0, "prediction_text": "hallucinated1"},
-        {"id": 1, "prediction_text": "hallucinated2"},
+        {"id": "0", "prediction_text": "hallucinated1", "no_answer_probability": 0.0},
+        {"id": "1", "prediction_text": "hallucinated2", "no_answer_probability": 0.0},
     ]
     with patch(DETECTOR_PATH, return_value=detector):
         result = metric(
@@ -212,8 +212,8 @@ def test_partial_hallucinations_returns_correct_rate(
     detector = _make_detector(predict_side_effect=predict_side_effect)
     dataset = make_dataset(["ctx1", "ctx2"])
     predictions = [
-        {"id": 0, "prediction_text": "hallucinated"},
-        {"id": 1, "prediction_text": "correct"},
+        {"id": "0", "prediction_text": "hallucinated", "no_answer_probability": 0.0},
+        {"id": "1", "prediction_text": "correct", "no_answer_probability": 0.0},
     ]
     with patch(DETECTOR_PATH, return_value=detector):
         result = metric(
@@ -235,7 +235,9 @@ def test_no_tokens_raises_invalid_benchmark(
     """Raise InvalidBenchmark when no tokens are found in the predictions."""
     detector = _make_detector(predict_return=[])
     dataset = make_dataset(["ctx1"])
-    predictions = [{"id": 0, "prediction_text": "answer"}]
+    predictions = [
+        {"id": "0", "prediction_text": "answer", "no_answer_probability": 0.0}
+    ]
     with patch(DETECTOR_PATH, return_value=detector):
         with pytest.raises(InvalidBenchmark):
             metric(
@@ -258,7 +260,9 @@ def test_detector_uses_correct_model_id(
     dataset = make_dataset(["ctx1"])
     with patch(DETECTOR_PATH, return_value=detector) as mock_cls:
         metric(
-            predictions=[{"id": 0, "prediction_text": "answer"}],
+            predictions=[
+                {"id": "0", "prediction_text": "answer", "no_answer_probability": 0.0}
+            ],
             references=[],
             dataset=dataset,
             dataset_config=dataset_config,  # ty: ignore[invalid-argument-type]

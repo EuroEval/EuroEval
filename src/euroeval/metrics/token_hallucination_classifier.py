@@ -39,7 +39,7 @@ def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
 
 def detect_hallucinations(
     dataset: Dataset,
-    predictions: c.Iterable[dict[str, str]],
+    predictions: c.Iterable[dict[str, t.Any]],
     model: str,
     device: Device,
 ) -> float:
@@ -190,7 +190,7 @@ class TokenHallucinationMetric(Metric):
 
     def __call__(
         self,
-        predictions: c.Iterable[dict[str, str]],
+        predictions: c.Iterable[dict[str, t.Any]],
         references: c.Sequence,
         dataset: "Dataset",
         dataset_config: "DatasetConfig",
