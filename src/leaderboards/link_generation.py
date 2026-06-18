@@ -22,6 +22,11 @@ from yaml import safe_dump, safe_load
 from euroeval.string_utils import split_model_id
 
 from .constants import MODELS_WITHOUT_URLS_CACHE
+from .records import plain_model_id
+
+# Matches the href of an anchored model name, e.g.
+# `<a href='https://hf.co/org/repo'>org/repo</a>`.
+_ANCHOR_HREF_RE = re.compile(r"<a [^>]*href=['\"](?P<href>[^'\"]+)['\"]")
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +69,17 @@ def generate_model_url(model_id: str) -> str | None:
     Returns:
         The URL for the model, or None if no URL can be generated.
     """
-    model_id_without_extras = split_model_id(model_id=model_id).model_id
+    # If the id is an anchored name whose href already holds the model URL, use
+    # it directly. This avoids resolving the whole `<a ...>...</a>` string as a
+    # model id (which always fails) and the spurious "remove model?" prompt that
+    # follows.
+    anchor_href_match = _ANCHOR_HREF_RE.search(model_id)
+    if anchor_href_match is not None:
+        return anchor_href_match.group("href")
+
+    # Strip any anchor and variant suffix so the URL generators see the canonical
+    # `org/repo` slug rather than e.g. `org/repo (zero-shot)`.
+    model_id_without_extras = split_model_id(model_id=plain_model_id(model_id)).model_id
 
     # Any model with a cached decision (remove or keep-without-url) never gets
     # a URL, so the model_url field stays None for these ids.
