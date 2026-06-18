@@ -83,10 +83,20 @@ def prompt_and_persist_env_var(
     if secret:
 
         def reader() -> str:
+            """Read the value without echoing it to the terminal.
+
+            Returns:
+                The value entered by the user.
+            """
             return getpass.getpass(f"{prompt_text}: ")
     else:
 
         def reader() -> str:
+            """Read the value from standard input.
+
+            Returns:
+                The value entered by the user.
+            """
             return input(f"{prompt_text}: ").strip()
 
     value = ""

@@ -127,6 +127,23 @@ USER_AGENT = "euroeval-leaderboards"
 HF_RESULTS_BUCKET = "EuroEval/results"
 
 # ---------------------------------------------------------------------------
+# Backup archives
+# ---------------------------------------------------------------------------
+
+# Filename prefix and suffix for the compressed snapshots of RESULTS_DIR
+# written to BACKUPS_DIR (see `backup.py`).
+BACKUP_PREFIX = "results_"
+BACKUP_SUFFIX = ".tar.gz"
+
+# Length of the content-hash slug embedded in each backup filename, used to
+# skip writing a new snapshot when the results haven't changed.
+BACKUP_HASH_LEN = 12
+
+# Directory prefix used for per-model files inside each backup archive,
+# mirroring the layout of RESULTS_DIR.
+BACKUP_ARCHIVE_ROOT = "results"
+
+# ---------------------------------------------------------------------------
 # Tasks & categories
 # ---------------------------------------------------------------------------
 

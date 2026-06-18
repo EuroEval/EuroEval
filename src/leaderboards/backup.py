@@ -23,6 +23,10 @@ import tarfile
 from pathlib import Path
 
 from .constants import (
+    BACKUP_ARCHIVE_ROOT,
+    BACKUP_HASH_LEN,
+    BACKUP_PREFIX,
+    BACKUP_SUFFIX,
     BACKUPS_DIR,
     BACKUPS_MAX_BYTES,
     REQUIRED_METADATA_FIELDS,
@@ -30,15 +34,6 @@ from .constants import (
 )
 
 logger = logging.getLogger(__name__)
-
-BACKUP_PREFIX = "results_"
-BACKUP_SUFFIX = ".tar.gz"
-# Length of the content-hash slug embedded in each backup filename, used to
-# skip writing a new snapshot when the results haven't changed.
-_HASH_LEN = 12
-# Directory prefix used for per-model files inside each backup archive,
-# mirroring the layout of RESULTS_DIR.
-_ARCHIVE_ROOT = "results"
 
 
 def restore_from_backup_if_missing(target: Path = RESULTS_DIR) -> bool:
@@ -133,7 +128,7 @@ def _write_snapshot(source: Path) -> Path | None:
     )
     with tarfile.open(backup_path, "w:gz") as tar:
         for model_file in model_files:
-            tar.add(name=model_file, arcname=f"{_ARCHIVE_ROOT}/{model_file.name}")
+            tar.add(name=model_file, arcname=f"{BACKUP_ARCHIVE_ROOT}/{model_file.name}")
     logger.info(
         f"Snapshotted {len(model_files):,} files from {source} -> {backup_path} "
         f"({backup_path.stat().st_size:,} bytes)"
@@ -151,8 +146,8 @@ def _content_hash(paths: list[Path]) -> str:
             The files to hash, in a stable (sorted) order.
 
     Returns:
-        The first `_HASH_LEN` hex characters of a SHA-256 over each file's
-        name and bytes.
+        The first `BACKUP_HASH_LEN` hex characters of a SHA-256 over each
+        file's name and bytes.
     """
     hasher = hashlib.sha256()
     for path in paths:
@@ -160,7 +155,7 @@ def _content_hash(paths: list[Path]) -> str:
         hasher.update(b"\0")
         hasher.update(path.read_bytes())
         hasher.update(b"\0")
-    return hasher.hexdigest()[:_HASH_LEN]
+    return hasher.hexdigest()[:BACKUP_HASH_LEN]
 
 
 def _backup_hash(backup: Path) -> str | None:
@@ -176,7 +171,7 @@ def _backup_hash(backup: Path) -> str | None:
     """
     stem = backup.name[len(BACKUP_PREFIX) : -len(BACKUP_SUFFIX)]
     candidate = stem.rpartition("_")[2]
-    return candidate if len(candidate) == _HASH_LEN else None
+    return candidate if len(candidate) == BACKUP_HASH_LEN else None
 
 
 def _extract_backup(archive: Path, dest: Path) -> None:
@@ -332,6 +327,13 @@ def _prune_backups() -> None:
 
 
 def _list_backups() -> list[Path]:
+    """List the backup archives in BACKUPS_DIR, newest first.
+
+    Returns:
+        The backup paths matching the ``results_*.tar.gz`` naming, sorted by
+        modification time with the newest first. Empty if BACKUPS_DIR is
+        missing.
+    """
     if not BACKUPS_DIR.exists():
         return []
     backups = [

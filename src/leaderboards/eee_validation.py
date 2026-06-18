@@ -119,6 +119,24 @@ def dump_jsonl_records(records: list[dict[str, object]]) -> str:
 
 
 def _load_jsonl_lines(lines: list[str], source: str) -> list[dict[str, object]]:
+    """Parse JSONL lines into record dictionaries.
+
+    Blank lines are skipped and concatenated objects (``}{``) on a single line
+    are split apart before parsing.
+
+    Args:
+        lines:
+            The raw lines to parse.
+        source:
+            A human-readable label for the input, used in error messages.
+
+    Returns:
+        The parsed records, one dictionary per JSON object.
+
+    Raises:
+        ValueError:
+            If a line contains invalid JSON or a non-object value.
+    """
     records: list[dict[str, object]] = []
     for line_idx, line in enumerate(lines, start=1):
         if not line.strip():
