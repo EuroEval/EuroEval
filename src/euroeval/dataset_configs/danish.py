@@ -116,7 +116,6 @@ RAGTRUTH_DA_CONFIG = DatasetConfig(
     prompt_template="{text}",
     instruction_prompt="{text}",
     train_split=None,
-    val_split=None,
     preprocessing_func=None,
 )
 
