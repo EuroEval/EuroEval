@@ -20,6 +20,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed a single failing iteration aborting an entire evaluation. When a model
+  refuses to answer in a way that produces no valid label (e.g. on the European
+  Values task, which doesn't allow invalid model outputs), that iteration is now
+  skipped and the scores of the remaining successful iterations are reported. The
+  evaluation only fails if every iteration fails.
 - Fixed vLLM benchmarking crashing on models whose context window is too small to
   fit both the prompt and the dataset's full generation budget (e.g. a 2,048-token
   model on IFEval, which reserves 2,048 generation tokens). Previously the prompt
