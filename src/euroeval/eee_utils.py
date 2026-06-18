@@ -211,7 +211,7 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
     eval_library = config.get("eval_library", {})
     evaluation_results: c.Sequence[dict] = config.get("evaluation_results", [])
 
-    model = model_info.get("id", "")
+    model = model_info.get("name", "")
     model_additional = model_info.get("additional_details", {})
     eval_lib_additional = eval_library.get("additional_details", {})
 
