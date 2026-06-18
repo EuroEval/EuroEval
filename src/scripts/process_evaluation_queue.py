@@ -833,13 +833,24 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
             break
 
     # Handle skips for missing official pairs (only if no hard failures).
-    if not failed:
+    if not failed and not pending:
+        # Every requested language was already fully covered by results
+        # downloaded from the bucket, so no evaluation needed to run. This is a
+        # completed evaluation, not an error.
+        logger.info(
+            f"#{number}: all requested language(s) already present in the bucket "
+            f"for {model_id!r}; nothing to evaluate."
+        )
+    elif not failed:
         missing = missing_official_dataset_language_pairs(
             lines=accumulated, requested_languages=pending
         )
-        if missing and (
-            len(accumulated) == len(existing_lines) or len(missing) > total_skipped
-        ):
+        # Pairs missing beyond what euroeval intentionally skipped (e.g. a
+        # dataset whose type the model can't run) are genuine failures. A run
+        # that produces no new lines is not itself a failure -- on a resume
+        # where the bucket already held the results, euroeval re-reports the
+        # same skips and ``total_skipped`` accounts for the missing pairs.
+        if len(missing) > total_skipped:
             failure_reason = (
                 f"missing official dataset-language pair(s): "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
