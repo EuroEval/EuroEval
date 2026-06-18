@@ -23,7 +23,7 @@ from .cache import Cache
 from .constants import GENERATIVE_TYPE_KEYWORDS
 from .link_generation import generate_model_url
 from .record_fields import get_few_shot, get_task, get_version
-from .records import get_model_name
+from .records import get_bool_field, get_model_name
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
     return model_url
 
 
-def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any] | None:
+def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any]:
     """Fixes metadata in a record.
 
     Args:
@@ -115,7 +115,7 @@ def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any] | None:
             A record from the JSONL file.
 
     Returns:
-        The record with fixed metadata, or None if the record should be removed.
+        The record with fixed metadata.
     """
     # Copy the record to avoid modifying the original
     record = deepcopy(record)
@@ -256,7 +256,7 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
     model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
 
     # Assume that non-generative models are always commercially licensed
-    if not record.get("generative", True):
+    if not get_bool_field(record, "generative", True):
         cache.commercially_licensed[model_id] = True
 
     while True:

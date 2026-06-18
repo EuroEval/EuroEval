@@ -63,9 +63,7 @@ def process_results(
     if num_duplicates:
         logger.info(f"Removed {num_duplicates:,} duplicates.")
 
-    # Add missing metadata to records. If the metadata cannot be fixed, the
-    # record is replaced with None, which is dropped below.
-    fixed_records: list[dict[str, t.Any] | None] = [
+    fixed_records = [
         fix_metadata(record=record)
         for record in tqdm(records, desc="Fixing metadata in records")
     ]
@@ -73,8 +71,7 @@ def process_results(
     processed_records = [
         record
         for record in fixed_records
-        if record is not None
-        and record_is_valid(
+        if record_is_valid(
             record=record,
             min_version=min_version,
             banned_versions=banned_versions,
@@ -152,10 +149,7 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
     """
     results_by_model: dict[str, list[dict]] = {}
     for record in processed_records:
-        model_id = record.get("model_info", {}).get("name") or record.get(
-            "model", "unknown"
-        )
-        model_id_str = plain_model_id(model_id)
+        model_id_str = plain_model_id(get_model_name(record))
         filename = model_id_str.replace("/", "_") + ".jsonl"
         results_by_model.setdefault(filename, []).append(record)
 

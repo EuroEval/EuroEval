@@ -396,17 +396,10 @@ def generate_dataframe(
             # Get the mean rank score with CI
             cat_ranks = ranks.get(model_id, {}).get(category, {})
             rank_data = cat_ranks.get("overall", {})
-            rank_score = rank_data.get("score", float("nan"))
-            rank_ci_upper = rank_data.get("ci_upper", float("nan"))
-            if math.isfinite(rank_score) and has_all_datasets:
-                margin = (
-                    (rank_ci_upper - rank_score)
-                    if math.isfinite(rank_ci_upper)
-                    else 0.0
-                )
-                mean_rank_score_str = f"{rank_score:.2f} \u00b1 {margin:.2f}"
-            else:
-                mean_rank_score_str = "-"
+            mean_rank_score_str = (
+                _format_rank_score(rank_data) if has_all_datasets else "-"
+            )
+            if mean_rank_score_str == "-":
                 rank = math.nan
             language_ranks = cat_ranks.copy()
             language_ranks.pop("overall", None)
@@ -501,7 +494,7 @@ def generate_dataframe(
             # Sanity check that all values have the same length
             assert len({len(values) for values in data_dict.values()}) == 1, (
                 f"Length of data_dict values must be equal, but got "
-                f"{dict([(key, len(values)) for key, values in data_dict.items()])}."
+                f"{ {key: len(values) for key, values in data_dict.items()} }."
             )
 
         # Create dataframe and sort by rank (numeric, NaN sinks to the bottom)
@@ -586,13 +579,9 @@ def generate_dataframe(
             )
 
         # Replace Boolean values by ✓ and ✗
-        boolean_columns = ["commercial", "merge", "open"]
+        boolean_columns = ["commercial", "merge", "open", "trained_from_scratch"]
         for col in boolean_columns:
             df[col] = df[col].apply(lambda x: "✓" if x else "✗")
-
-        # Convert trained_from_scratch values to symbols
-        trained_mapping = {True: "✓", False: "✗"}
-        df["trained_from_scratch"] = df["trained_from_scratch"].map(trained_mapping)
 
         # Orthogonal values only makes sense for instruction-tuned and reasoning models,
         # so we set the value to "N/A" for other model types

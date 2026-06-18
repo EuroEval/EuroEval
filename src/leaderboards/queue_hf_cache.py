@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def cached_model_summary(model_id: str) -> dict | None:
-    """Return a ``{param_count, gated, gated_repo, gguf}`` summary for a model id.
+    """Return a ``{param_count, gated, gguf}`` summary for a model id.
 
     Looks up :data:`HF_CACHE_PATH` first and falls back to
     ``HfApi.model_info`` only on cache miss or stale entry. Negative
@@ -41,10 +41,6 @@ def cached_model_summary(model_id: str) -> dict | None:
         - ``gated`` (bool, True when the configured assignee does not have
           read access to a gated repo -- i.e. ``model_info`` raised
           ``GatedRepoError``).
-        - ``gated_repo`` (bool, True when ``model_info`` reports the repo
-          as gated even though we *do* have read access -- the token used
-          by the euroeval subprocess may still lack download permission
-          for this specific repo).
         - ``gguf`` (bool, True when the repo is a GGUF model, which the
           evaluation queue cannot run).
 
@@ -56,7 +52,6 @@ def cached_model_summary(model_id: str) -> dict | None:
         return {
             "param_count": int(entry["param_count"]),
             "gated": False,
-            "gated_repo": bool(entry.get("gated_repo", False)),
             "gguf": bool(entry.get("gguf", False)),
         }
 
@@ -65,12 +60,7 @@ def cached_model_summary(model_id: str) -> dict | None:
     except GatedRepoError:
         # Don't cache: access can be granted at any time, and we want to
         # pick that up on the next run.
-        return {
-            "param_count": sys.maxsize,
-            "gated": True,
-            "gated_repo": True,
-            "gguf": False,
-        }
+        return {"param_count": sys.maxsize, "gated": True, "gguf": False}
     except RepositoryNotFoundError:
         # Expected for typo-d / since-deleted repos; just drop the candidate.
         return None
@@ -84,24 +74,15 @@ def cached_model_summary(model_id: str) -> dict | None:
     total = getattr(safetensors, "total", None) if safetensors else None
     param_count = total if isinstance(total, int) and total > 0 else sys.maxsize
 
-    # ``info.gated`` is ``False`` for public repos and ``"auto"`` / ``"manual"``
-    # for gated ones; coerce to a plain bool.
-    gated_repo = bool(getattr(info, "gated", False))
     gguf = is_gguf_model(info=info)
 
     cache[model_id] = {
         "timestamp": time.time(),
         "param_count": param_count,
-        "gated_repo": gated_repo,
         "gguf": gguf,
     }
     _write_hf_cache(cache=cache)
-    return {
-        "param_count": param_count,
-        "gated": False,
-        "gated_repo": gated_repo,
-        "gguf": gguf,
-    }
+    return {"param_count": param_count, "gated": False, "gguf": gguf}
 
 
 def is_gguf_model(info: ModelInfo) -> bool:
