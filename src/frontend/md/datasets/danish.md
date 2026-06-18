@@ -1983,34 +1983,6 @@ Here are a few examples from the training split:
 }
 ```
 
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Følgende er tekster med tilhørende spørgsmål og svar.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Tekst: {text}
-  Spørgsmål: {question}
-  Svar med maks. 3 ord: {label}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Tekst: {text}
-
-  Besvar følgende spørgsmål om teksten ovenfor med maks. 3 ord.
-
-  Spørgsmål: {question}
-  ```
-
 You can evaluate this dataset directly as follows:
 
 ```bash
