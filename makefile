@@ -1,6 +1,6 @@
 # This ensures that we can call `make <target>` even if `<target>` exists as a file or
 # directory.
-.PHONY: help docs install install-frontend
+.PHONY: help docs install install-frontend install-vercel
 
 # Exports all variables defined in the makefile available to scripts
 .EXPORT_ALL_VARIABLES:
@@ -33,6 +33,7 @@ install: ## Install dependencies
 	@$(MAKE) --quiet install-dependencies
 	@$(MAKE) --quiet setup-environment-variables
 	@$(MAKE) --quiet install-frontend
+	@$(MAKE) --quiet install-vercel
 	@echo "Installed the 'EuroEval' project."
 
 install-rust:
@@ -64,6 +65,12 @@ install-frontend: ## Install frontend dependencies
 	@echo "Installing frontend dependencies..."
 	@npm install
 	@echo "Installed frontend dependencies."
+
+install-vercel:
+	@if [ "$(shell which vercel)" = "" ]; then \
+		npm install -g vercel; \
+		echo "Installed Vercel CLI."; \
+	fi
 
 install-pre-commit:
 	@uv run pre-commit install
