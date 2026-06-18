@@ -7,6 +7,23 @@ import re
 from .constants import ANCHOR_RE, VARIANT_SUFFIX_RE
 
 
+def strip_anchor(model_id: str) -> str:
+    """Strip any surrounding HTML anchor tag from a model id.
+
+    Unlike :func:`plain_model_id`, this preserves any ``(zero-shot)`` / ``(val)``
+    variant suffix — it only unwraps the ``<a href=...>...</a>`` tag.
+
+    Args:
+        model_id:
+            The (possibly anchored) identifier.
+
+    Returns:
+        The identifier with any anchor tag removed.
+    """
+    match = ANCHOR_RE.search(model_id)
+    return match.group("inner").strip() if match else model_id
+
+
 def plain_model_id(model_id: str) -> str:
     """Strip the HTML anchor and variant-suffix from a result-record model id.
 
@@ -23,9 +40,7 @@ def plain_model_id(model_id: str) -> str:
     Returns:
         The canonical ``org/repo`` slug.
     """
-    match = ANCHOR_RE.search(model_id)
-    inner = match.group("inner").strip() if match else model_id
-    return VARIANT_SUFFIX_RE.sub("", inner)
+    return VARIANT_SUFFIX_RE.sub("", strip_anchor(model_id))
 
 
 def convert_to_float(value: str | float) -> float | str:
@@ -67,7 +82,11 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     Returns:
         The model ID candidates.
     """
-    model_id = get_model_name(record)
+    # Strip any anchor tag so that records stored with an already-anchored name
+    # (``<a ...>org/repo</a>``) and records stored with the plain ``org/repo``
+    # name collapse to the same identifier — otherwise the model is split into
+    # two leaderboard rows. The anchor is re-applied at render time.
+    model_id = strip_anchor(get_model_name(record))
 
     few_shot = get_bool_field(record, "few_shot", True)
     validation_split = get_bool_field(record, "validation_split", False)
@@ -78,10 +97,7 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     if not note:
         return [model_id]
 
-    has_anchor = model_id.endswith("</a>")
-    base = model_id[:-4] if has_anchor else model_id
-    suffix = "</a>" if has_anchor else ""
-    return [f"{base} ({', '.join(note)}){suffix}"]
+    return [f"{model_id} ({', '.join(note)})"]
 
 
 def get_dataset(record: dict) -> str | None:
