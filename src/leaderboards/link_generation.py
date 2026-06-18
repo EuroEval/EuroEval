@@ -19,7 +19,6 @@ from huggingface_hub.errors import (
 from requests.exceptions import RequestException
 from yaml import safe_dump, safe_load
 
-from euroeval.logging_utils import log_once
 from euroeval.string_utils import split_model_id
 
 from .constants import MODELS_WITHOUT_URLS_CACHE
@@ -87,53 +86,6 @@ def generate_model_url(model_id: str) -> str | None:
             return url
 
     return None
-
-
-@cache
-def generate_anchor_tag(model_id: str) -> str | None:
-    """Generate an anchor tag for a model.
-
-    Args:
-        model_id:
-            The model ID.
-
-    Returns:
-        The anchor tag for the model, or the model ID if the URL cannot be generated.
-        Can also return None if the model should be removed from the results.
-    """
-    logging.getLogger("httpx").setLevel(logging.CRITICAL)
-    logging.getLogger("huggingface_hub").setLevel(logging.CRITICAL)
-
-    # Skip URL generation for already-annotated models
-    if re.match(r"^<a href='.*'>.*</a>$", model_id):
-        return model_id
-
-    model_id_without_extras = split_model_id(model_id=model_id).model_id
-
-    # Check cached decision (remove or keep without URL)
-    cached_decision = _load_model_url_decision(model_id=model_id_without_extras)
-    if cached_decision is True:
-        # Cached decision: remove this model
-        log_once(
-            f"Removing model {model_id_without_extras} from results (cached decision).",
-            level=logging.INFO,
-        )
-        return None
-    if cached_decision is False:
-        # Cached decision: keep without URL
-        return model_id
-
-    url = generate_model_url(model_id=model_id_without_extras)
-    if url is None:
-        remove_model = ask_user_to_remove_model(model_id=model_id_without_extras)
-        if remove_model:
-            log_once(
-                f"Removing model {model_id_without_extras} from results.",
-                level=logging.INFO,
-            )
-            return None
-
-    return model_id if url is None else f"<a href='{url}'>{model_id}</a>"
 
 
 @cache
@@ -382,7 +334,6 @@ def _remember_model_url_decision(model_id: str, remove: bool) -> None:
     with MODELS_WITHOUT_URLS_CACHE.open("w") as f:
         safe_dump(dict(sorted(decisions.items())), f)
     _load_model_url_decisions.cache_clear()
-    generate_anchor_tag.cache_clear()
 
 
 def _load_model_url_decision(model_id: str) -> bool | None:

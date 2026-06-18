@@ -20,10 +20,10 @@ from huggingface_hub.hf_api import RepositoryNotFoundError
 from euroeval.string_utils import split_model_id
 
 from .cache import Cache
-from .constants import GENERATIVE_TYPE_KEYWORDS
-from .link_generation import generate_model_url
+from .constants import GENERATIVE_TYPE_KEYWORDS, RESULTS_DIR
+from .link_generation import ask_user_to_remove_model, generate_model_url
 from .record_fields import get_few_shot, get_task, get_version
-from .records import get_bool_field, get_model_name
+from .records import get_bool_field, get_model_name, plain_model_id
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +89,11 @@ def add_missing_entries(
 def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
     """Generates a model URL using a cache.
 
+    When no URL can be generated, the operator is asked whether to drop the
+    model from the results. A "keep" decision is cached so the prompt isn't
+    repeated; a "remove" decision deletes the model's result file. Both
+    decisions are persisted by ``ask_user_to_remove_model``.
+
     Args:
         model_id:
             The model ID.
@@ -96,15 +101,33 @@ def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
             The cache.
 
     Returns:
-        The model URL.
+        The model URL, or None if no URL could be generated.
     """
     model_id = split_model_id(model_id=model_id).model_id
     if model_id in cache.model_url and cache.model_url[model_id] is not None:
         return cache.model_url[model_id]
 
     model_url = generate_model_url(model_id=model_id)
+    if model_url is None and ask_user_to_remove_model(model_id=model_id):
+        _remove_model_results(model_id=model_id)
     cache.model_url[model_id] = model_url
     return model_url
+
+
+def _remove_model_results(model_id: str) -> None:
+    """Delete a model's result file from RESULTS_DIR.
+
+    ``RESULTS_DIR`` is the source of truth for the leaderboard, so removing
+    the file drops the model from future builds.
+
+    Args:
+        model_id:
+            The model id whose result file should be removed.
+    """
+    result_file = RESULTS_DIR / f"{plain_model_id(model_id).replace('/', '_')}.jsonl"
+    if result_file.exists():
+        result_file.unlink()
+        logger.info(f"Removed result file {result_file.name} for {model_id}.")
 
 
 def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any]:
