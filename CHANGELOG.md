@@ -20,6 +20,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed `BenchmarkResult.append_to_results` writing records with a leading
+  newline and no trailing newline, which left results files without a final
+  newline and could glue two records onto a single line. Records are now written
+  self-terminated, with a separating newline added first if the existing file
+  doesn't already end in one.
 - Added `download()` method to `PipelineMetric` class
   - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
     Values metric)

@@ -1002,13 +1002,23 @@ class BenchmarkResult(pydantic.BaseModel):
     def append_to_results(self, results_path: Path) -> None:
         """Append the benchmark result to the results file.
 
+        Each record is written self-terminated with a trailing newline. If the
+        file already exists without a trailing newline (e.g. written by an older
+        version), a separating newline is added first so records can't be glued
+        onto the same line.
+
         Args:
             results_path:
                 The path to the results file.
         """
         json_str = json.dumps(self.to_eee_dict(), ensure_ascii=False)
+        needs_sep = (
+            results_path.exists()
+            and results_path.stat().st_size > 0
+            and not results_path.read_bytes().endswith(b"\n")
+        )
         with results_path.open("a") as f:
-            f.write("\n" + json_str)
+            f.write(("\n" if needs_sep else "") + json_str + "\n")
 
 
 @dataclass
