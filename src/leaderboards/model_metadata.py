@@ -33,9 +33,8 @@ def add_missing_entries(
 ) -> dict:
     """Adds missing entries to a record.
 
-    For EEE format records (with schema_version), fields are stored in their
-    appropriate nested locations. For old format records, fields are added at
-    top level.
+    Fields are stored in their appropriate nested locations within the EEE
+    record (``model_info`` and ``eval_library``).
 
     Args:
         record:

@@ -83,14 +83,13 @@ class Cache:
 
     @classmethod
     def _from_records(cls, records: list[dict[str, object]], desc: str) -> "Cache":
-        """Populate a cache from parsed result records.
+        """Populate a cache from parsed EEE result records.
 
-        Supports both the EEE format (metadata under ``model_info``) and the
-        old EuroEval format (metadata at the top level).
+        Metadata is read from ``model_info.additional_details``.
 
         Args:
             records:
-                Parsed result records in either EEE or old EuroEval format.
+                Parsed result records in EEE format.
             desc:
                 Progress-bar description.
 
@@ -99,10 +98,7 @@ class Cache:
         """
         cache = cls()
         for record in tqdm(records, desc=desc):
-            if "model_info" in record and "name" in record["model_info"]:
-                model_name = record["model_info"]["name"]
-            else:
-                model_name = record["model"]
+            model_name = record["model_info"]["name"]
 
             model_id: str = model_name
             if (match := re.search(r">(.+?)<", model_name)) is not None:

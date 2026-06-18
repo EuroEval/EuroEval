@@ -47,6 +47,8 @@ from leaderboards.constants import (
 )
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
 from leaderboards.queue_parsing import extract_model_id
+from leaderboards.record_fields import get_few_shot, get_validation_split
+from leaderboards.records import get_dataset, get_model_name
 
 load_dotenv()
 
@@ -222,7 +224,7 @@ def _model_id_to_filename(model_id: str) -> str:
 
 
 def build_dedup_key(result: dict) -> tuple[str, str, str, str] | None:
-    """Build a deduplication key from a result record.
+    """Build a deduplication key from an EEE result record.
 
     Key consists of:
     - model_id: the model identifier
@@ -232,19 +234,19 @@ def build_dedup_key(result: dict) -> tuple[str, str, str, str] | None:
 
     Args:
         result:
-            Parsed result dictionary (EEE or old format).
+            Parsed result dictionary in EEE format.
 
     Returns:
         Tuple key for deduplication, or None if required fields are missing.
     """
     try:
-        model_id = result.get("model")
-        dataset = result.get("dataset")
-        if not model_id or not dataset:
+        model_id = get_model_name(result)
+        dataset = get_dataset(result)
+        if not model_id or model_id == "unknown" or not dataset:
             return None
 
-        validation_split = result.get("validation_split", False)
-        few_shot = result.get("few_shot", False)
+        validation_split = get_validation_split(result)
+        few_shot = get_few_shot(result)
 
         return (model_id, dataset, str(validation_split), str(few_shot))
     except Exception as e:
@@ -373,7 +375,6 @@ def scan_bucket_for_results() -> list[str]:
                     logger.debug(f"Skipping duplicate result: {key}")
                     continue
 
-                # Keep result in original format (EEE or old EuroEval format)
                 new_results.append(json.dumps(result, ensure_ascii=False))
                 seen_keys.add(key)
 

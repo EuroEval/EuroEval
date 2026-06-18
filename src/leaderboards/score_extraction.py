@@ -51,47 +51,35 @@ def group_results_by_model(
         metrics = [primary] + ([secondary] if secondary is not None else [])
 
         for metric_type, metric in zip(("primary", "secondary"), metrics):
-            # Get raw results - supports both EEE and old format
             raw_results = get_raw_results(record)
             if raw_results is None:
                 continue
 
-            # Extract raw scores for this metric
+            # Raw per-iteration scores are keyed by the bare metric name (e.g.
+            # "mcc"), occasionally with a "test_" prefix.
             raw_scores: list[float] = []
-            if isinstance(raw_results, dict) and "test" in raw_results:
-                # Old format with test split
-                for result_dict in raw_results["test"]:
+            for result_dict in raw_results:
+                if isinstance(result_dict, dict):
                     score = result_dict.get(
                         f"test_{metric}", result_dict.get(metric, -1)
                     )
                     if score >= 0:
                         raw_scores.append(score)
-            elif isinstance(raw_results, list):
-                # EEE format or old format flat list
-                for result_dict in raw_results:
-                    if isinstance(result_dict, dict):
-                        score = result_dict.get(
-                            f"test_{metric}", result_dict.get(metric, -1)
-                        )
-                        if score >= 0:
-                            raw_scores.append(score)
 
             if not raw_scores:
                 continue
 
-            # Get total scores - supports both EEE and old format
             total_scores = get_total_scores(record)
             if total_scores is None:
                 continue
 
-            # EEE format uses keys like "test_mcc", old format also uses "test_mcc"
+            # Total scores are keyed by evaluation name (e.g. "test_mcc"), but
+            # fall back to the bare metric name when the prefix is absent.
             total_score_key = f"test_{metric}"
             std_err_key = f"test_{metric}_se"
 
-            # Try to get total score and std err
             total_score_val = total_scores.get(total_score_key)
             if total_score_val is None:
-                # EEE format might not have "test_" prefix
                 total_score_val = total_scores.get(metric)
 
             if total_score_val is None:
@@ -105,10 +93,9 @@ def group_results_by_model(
 
             total_score: float = float(total_score_val)
 
-            # Get std_err from old format, or compute from raw_scores for EEE
+            # EEE records don't carry a std err, so compute it from raw scores.
             std_err: float = total_scores.get(std_err_key, 0.0)
             if std_err == 0.0 and len(raw_scores) > 1:
-                # Compute std_err from raw scores (EEE format doesn't have it directly)
                 try:
                     std_err = statistics.stdev(raw_scores) / (len(raw_scores) ** 0.5)
                 except statistics.StatisticsError:

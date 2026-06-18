@@ -45,18 +45,16 @@ def convert_to_float(value: str | float) -> float | str:
 
 
 def get_model_name(record: dict) -> str:
-    """Get model name from record, supporting both EEE and old formats.
+    """Get the model name from an EEE record.
 
     Args:
         record:
-            A result record in either EEE or old EuroEval format.
+            A result record in EEE format.
 
     Returns:
-        The model name.
+        The model name, or ``"unknown"`` if absent.
     """
-    if "model_info" in record and "name" in record["model_info"]:
-        return record["model_info"]["name"]
-    return record.get("model", "unknown")
+    return record.get("model_info", {}).get("name", "unknown")
 
 
 def extract_model_ids_from_record(record: dict) -> list[str]:
@@ -71,9 +69,8 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     """
     model_id = get_model_name(record)
 
-    # _get_bool_field normalises both the EEE and old record formats.
-    few_shot = _get_bool_field(record, "few_shot", True)
-    validation_split = _get_bool_field(record, "validation_split", False)
+    few_shot = get_bool_field(record, "few_shot", True)
+    validation_split = get_bool_field(record, "validation_split", False)
 
     base_note = [] if few_shot else ["zero-shot"]
     note = base_note + ["val"] if validation_split else base_note
@@ -91,25 +88,24 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
 
 
 def get_dataset(record: dict) -> str | None:
-    """Get dataset from record, supporting both EEE and old formats.
+    """Get the dataset from an EEE record.
 
     Args:
         record:
-            A result record in either EEE or old EuroEval format.
+            A result record in EEE format.
 
     Returns:
         The dataset name, or None if not found.
     """
-    if "eval_library" in record:
-        additional = record.get("eval_library", {}).get("additional_details", {})
-        if "dataset" in additional:
-            return additional["dataset"]
-        eval_results = record.get("evaluation_results", [])
-        if eval_results and isinstance(eval_results, list):
-            source_data = eval_results[0].get("source_data", {})
-            if "dataset_name" in source_data:
-                return source_data["dataset_name"]
-    return record.get("dataset")
+    additional = record.get("eval_library", {}).get("additional_details", {})
+    if "dataset" in additional:
+        return additional["dataset"]
+    eval_results = record.get("evaluation_results", [])
+    if eval_results and isinstance(eval_results, list):
+        source_data = eval_results[0].get("source_data", {})
+        if "dataset_name" in source_data:
+            return source_data["dataset_name"]
+    return None
 
 
 def get_record_hash(record: dict) -> str:
@@ -130,26 +126,25 @@ def get_record_hash(record: dict) -> str:
     dataset = get_dataset(record)
     if dataset is None:
         raise ValueError(f"No dataset found in record: {record}")
-    validation_split = _get_bool_field(record, "validation_split", False)
-    few_shot = _get_bool_field(record, "few_shot", True)
-    # Check EEE format for generative
-    if "eval_library" in record:
-        additional = record.get("eval_library", {}).get("additional_details", {})
-        generative_val = additional.get("generative", False)
-        if isinstance(generative_val, str):
-            generative_val = generative_val.lower() == "true"
-        generative = int(generative_val)
-    else:
-        generative = int(record.get("generative", False))
+    validation_split = get_bool_field(record, "validation_split", False)
+    few_shot = get_bool_field(record, "few_shot", True)
+    additional = record.get("eval_library", {}).get("additional_details", {})
+    generative_val = additional.get("generative", False)
+    if isinstance(generative_val, str):
+        generative_val = generative_val.lower() == "true"
+    generative = int(generative_val)
     return f"{model}{dataset}{int(validation_split)}{generative * (int(few_shot) + 1)}"
 
 
-def _get_bool_field(record: dict, field: str, default: bool) -> bool:
-    """Get a boolean field from record, supporting both EEE and old formats.
+def get_bool_field(record: dict, field: str, default: bool) -> bool:
+    """Get a boolean field from an EEE record.
+
+    The value lives in ``eval_library.additional_details`` and may be stored as
+    a bool or a ``"true"``/``"false"`` string.
 
     Args:
         record:
-            A result record in either EEE or old EuroEval format.
+            A result record in EEE format.
         field:
             The field name to extract (e.g., "validation_split", "few_shot").
         default:
@@ -158,18 +153,9 @@ def _get_bool_field(record: dict, field: str, default: bool) -> bool:
     Returns:
         The boolean value, or the default if not found.
     """
-    # Check EEE format first: nested in eval_library.additional_details
-    if "eval_library" in record:
-        additional = record.get("eval_library", {}).get("additional_details", {})
-        if field in additional:
-            val = additional[field]
-            if isinstance(val, bool):
-                return val
-            if isinstance(val, str):
-                return val.lower() == "true"
-    # Old format: top-level
-    if field in record:
-        val = record[field]
+    additional = record.get("eval_library", {}).get("additional_details", {})
+    if field in additional:
+        val = additional[field]
         if isinstance(val, bool):
             return val
         if isinstance(val, str):

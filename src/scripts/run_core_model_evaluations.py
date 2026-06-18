@@ -264,9 +264,7 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
     Reads the merged result corpus the same way the leaderboard pipeline
     does -- the per-model files in ``RESULTS_DIR`` plus the optional
     ``new_results.jsonl`` -- but without the destructive unlink that
-    :func:`leaderboards.result_loading.load_raw_results` performs. Supports
-    both EEE format (with nested ``model_info`` and ``eval_library``) and
-    old EuroEval format (flat keys).
+    :func:`leaderboards.result_loading.load_raw_results` performs.
 
     Returns:
         Every ``(model_id, dataset, language)`` triple in the merged
@@ -301,33 +299,21 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
                 )
                 continue
 
-            # Extract fields from EEE or old format
             # EEE: model_info.name, eval_library.additional_details.dataset/languages
-            # Old: model, dataset, languages/dataset_languages at top level
-            is_eee = "schema_version" in raw_record
-            if is_eee:
-                model = raw_record.get("model_info", {}).get("name", "")
-                eval_additional = raw_record.get("eval_library", {}).get(
-                    "additional_details", {}
-                )
-                dataset = eval_additional.get("dataset")
-                languages_raw = eval_additional.get("languages", "[]")
-                try:
-                    languages = (
-                        json.loads(languages_raw)
-                        if isinstance(languages_raw, str)
-                        else languages_raw
-                    )
-                except json.JSONDecodeError:
-                    languages = []
-            else:
-                model = raw_record.get("model", "")
-                dataset = raw_record.get("dataset")
+            model = raw_record.get("model_info", {}).get("name", "")
+            eval_additional = raw_record.get("eval_library", {}).get(
+                "additional_details", {}
+            )
+            dataset = eval_additional.get("dataset")
+            languages_raw = eval_additional.get("languages", "[]")
+            try:
                 languages = (
-                    raw_record.get("languages")
-                    or raw_record.get("dataset_languages")
-                    or []
+                    json.loads(languages_raw)
+                    if isinstance(languages_raw, str)
+                    else languages_raw
                 )
+            except json.JSONDecodeError:
+                languages = []
 
             model = _strip_anchor(model_id=str(model))
             if not model or not dataset:

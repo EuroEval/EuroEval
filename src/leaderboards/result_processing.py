@@ -18,8 +18,9 @@ from tqdm.auto import tqdm
 
 from .cache import Cache
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
-from .eee_validation import dump_jsonl_records, validate_eee_records
+from .eee_validation import dump_jsonl_records
 from .model_metadata import add_missing_entries, fix_metadata, record_is_valid
+from .record_fields import get_version
 from .records import get_model_name, get_record_hash, plain_model_id
 from .result_loading import load_raw_results
 
@@ -103,8 +104,6 @@ def process_results(
         for record in tqdm(processed_records, desc="Adding missing entries")
     ]
 
-    validate_eee_records(records=processed_records, context="processed results")
-
     _upload_per_model_files(processed_records=processed_records)
 
 
@@ -128,19 +127,7 @@ def _deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.An
             if hash_value == unique_hash_value
         ]
         versions = [
-            list(
-                map(
-                    int,
-                    re.sub(
-                        pattern=r"\.dev[0-9]+",
-                        repl="",
-                        string=match.get(
-                            "euroeval_version", match.get("scandeval_version")
-                        )
-                        or "0.0.0",
-                    ).split("."),
-                )
-            )
+            list(map(int, (get_version(record=match) or "0.0.0").split(".")))
             for match in matches
         ]
         newest_version = max(versions)
@@ -163,8 +150,6 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
         processed_records:
             The processed records to upload.
     """
-    validate_eee_records(records=processed_records, context="per-model upload")
-
     results_by_model: dict[str, list[dict]] = {}
     for record in processed_records:
         model_id = record.get("model_info", {}).get("name") or record.get(

@@ -2,26 +2,13 @@
 
 from __future__ import annotations
 
-import collections.abc as c
 import json
 import logging
-import typing as t
-from dataclasses import dataclass, field
 from pathlib import Path
 
 from .constants import REQUIRED_METADATA_FIELDS
-from .records import plain_model_id
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class PreciousMetadataCache:
-    """Precious model metadata recovered from existing result records."""
-
-    commercially_licensed: dict[str, bool] = field(default_factory=dict)
-    open: dict[str, bool] = field(default_factory=dict)
-    trained_from_scratch: dict[str, bool] = field(default_factory=dict)
 
 
 def load_records_from_jsonl_files(paths: list[Path]) -> list[dict[str, object]]:
@@ -43,37 +30,6 @@ def load_records_from_jsonl_files(paths: list[Path]) -> list[dict[str, object]]:
             )
         )
     return records
-
-
-def build_precious_metadata_cache(
-    records: list[dict[str, object]],
-) -> PreciousMetadataCache:
-    """Build a cache from precious metadata already present in records.
-
-    Args:
-        records:
-            Existing result records. Both EEE and old EuroEval migration records
-            may be used as metadata sources.
-
-    Returns:
-        Metadata recovered from the records themselves.
-    """
-    cache = PreciousMetadataCache()
-    for record in records:
-        model_id = get_record_model_id(record=record)
-        if model_id is None:
-            continue
-        if isinstance(record.get("commercially_licensed"), bool):
-            cache.commercially_licensed[model_id] = t.cast(
-                bool, record["commercially_licensed"]
-            )
-        if isinstance(record.get("open"), bool):
-            cache.open[model_id] = t.cast(bool, record["open"])
-        if isinstance(record.get("trained_from_scratch"), bool):
-            cache.trained_from_scratch[model_id] = t.cast(
-                bool, record["trained_from_scratch"]
-            )
-    return cache
 
 
 def validate_eee_record(record: dict[str, object], context: str = "record") -> None:
@@ -144,28 +100,6 @@ def is_eee_record(record: dict[str, object]) -> bool:
     )
 
 
-def get_record_model_id(record: dict[str, object]) -> str | None:
-    """Extract a plain model id from an EEE or old migration record.
-
-    Args:
-        record:
-            Record to inspect.
-
-    Returns:
-        The model id, if present.
-    """
-    model_id: object | None
-    model_info = record.get("model_info")
-    if isinstance(model_info, c.Mapping):
-        typed_model_info = t.cast(c.Mapping[str, object], model_info)
-        model_id = typed_model_info.get("id") or typed_model_info.get("name")
-    else:
-        model_id = record.get("model")
-    if not isinstance(model_id, str) or not model_id:
-        return None
-    return plain_model_id(model_id=model_id)
-
-
 def dump_jsonl_records(records: list[dict[str, object]]) -> str:
     """Serialise EEE records as JSONL.
 
@@ -182,18 +116,6 @@ def dump_jsonl_records(records: list[dict[str, object]]) -> str:
         return ""
     lines = [json.dumps(record, ensure_ascii=False) for record in records]
     return "\n".join(lines) + "\n"
-
-
-def _cached_metadata_value(
-    cache: PreciousMetadataCache, field_name: str, model_id: str
-) -> bool | None:
-    if field_name == "commercially_licensed":
-        return cache.commercially_licensed.get(model_id)
-    if field_name == "open":
-        return cache.open.get(model_id)
-    if field_name == "trained_from_scratch":
-        return cache.trained_from_scratch.get(model_id)
-    return None
 
 
 def _load_jsonl_lines(lines: list[str], source: str) -> list[dict[str, object]]:
