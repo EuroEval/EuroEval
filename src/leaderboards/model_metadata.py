@@ -17,9 +17,11 @@ from huggingface_hub import HfApi
 from huggingface_hub.errors import HFValidationError
 from huggingface_hub.hf_api import RepositoryNotFoundError
 
+from euroeval.string_utils import split_model_id
+
 from .cache import Cache
 from .constants import GENERATIVE_TYPE_KEYWORDS
-from .link_generation import generate_anchor_tag, generate_model_url
+from .link_generation import generate_model_url
 from .record_fields import get_few_shot, get_task, get_version
 from .records import get_model_name
 
@@ -46,83 +48,72 @@ def add_missing_entries(
     Returns:
         The record with missing entries added.
     """
-    # Detect EEE format by presence of schema_version
-    is_eee_format = "schema_version" in record
+    model_info = record.setdefault("model_info", {})
+    model_additional = model_info.setdefault("additional_details", {})
+    eval_lib = record.setdefault("eval_library", {})
+    eval_additional = eval_lib.setdefault("additional_details", {})
 
-    if is_eee_format:
-        # EEE format: store fields in appropriate nested locations
-        model_info = record.setdefault("model_info", {})
-        model_additional = model_info.setdefault("additional_details", {})
-        eval_lib = record.setdefault("eval_library", {})
-        eval_additional = eval_lib.setdefault("additional_details", {})
+    if "validation_split" not in eval_additional:
+        eval_additional["validation_split"] = False
+    if "few_shot" not in eval_additional:
+        eval_additional["few_shot"] = True
+    if "generative" not in model_additional:
+        model_additional["generative"] = False
+    if "generative_type" not in model_additional:
+        model_additional["generative_type"] = get_generative_type(
+            record=record, cache=cache
+        )
+    if "merge" not in model_additional:
+        model_additional["merge"] = is_merge(record=record, cache=cache)
 
-        if "validation_split" not in eval_additional:
-            eval_additional["validation_split"] = False
-        if "few_shot" not in eval_additional:
-            eval_additional["few_shot"] = True
-        if "generative" not in model_additional:
-            model_additional["generative"] = False
-        if "generative_type" not in model_additional:
-            model_additional["generative_type"] = get_generative_type(
-                record=record, cache=cache
-            )
-        if "merge" not in model_additional:
-            model_additional["merge"] = is_merge(record=record, cache=cache)
-
-        # model_url goes in model_info.additional_details
-        model_name = get_model_name(record=record)
-        model_additional["model_url"] = generate_model_url(model_id=model_name)
-
-        # Top-level precious metadata in EEE format. These values are only
-        # copied from existing result sources/backups via the cache; they must
-        # not be inferred during leaderboard processing.
-        model_id = _model_id_from_record(record=record)
-        if "commercially_licensed" not in record:
-            if model_id in cache.commercially_licensed:
-                record["commercially_licensed"] = cache.commercially_licensed[model_id]
-        if "open" not in record:
-            if model_id in cache.open:
-                record["open"] = cache.open[model_id]
-        if "trained_from_scratch" not in record:
-            if model_id in cache.trained_from_scratch:
-                record["trained_from_scratch"] = cache.trained_from_scratch[model_id]
-    else:
-        # Old format: store all fields at top level
-        if "validation_split" not in record:
-            record["validation_split"] = False
-        if "few_shot" not in record:
-            record["few_shot"] = True
-        if "generative" not in record:
-            record["generative"] = False
-        if "generative_type" not in record:
-            record["generative_type"] = get_generative_type(record=record, cache=cache)
-        record["merge"] = is_merge(record=record, cache=cache)
-        model_id = _model_id_from_record(record=record)
-        if "commercially_licensed" not in record:
-            if model_id in cache.commercially_licensed:
-                record["commercially_licensed"] = cache.commercially_licensed[model_id]
-        if "open" not in record:
-            if model_id in cache.open:
-                record["open"] = cache.open[model_id]
-        if "trained_from_scratch" not in record:
-            if model_id in cache.trained_from_scratch:
-                record["trained_from_scratch"] = cache.trained_from_scratch[model_id]
-
-        # Add model_url field
-        model_name = get_model_name(record=record)
-        record["model_url"] = generate_model_url(model_id=model_name)
+    model_name = get_model_name(record=record)
+    if "commercially_licensed" not in model_additional:
+        model_additional["commercially_licensed"] = is_commercially_licensed(
+            record=record, cache=cache
+        )
+    if "open" not in model_additional:
+        model_additional["open"] = is_open(record=record, cache=cache)
+    if "trained_from_scratch" not in model_additional:
+        model_additional["trained_from_scratch"] = is_trained_from_scratch(
+            record=record,
+            trained_from_scratch_patterns=trained_from_scratch_patterns,
+            cache=cache,
+        )
+    if "model_url" not in model_additional or model_additional["model_url"] is None:
+        model_additional["model_url"] = generate_model_url_with_cache(
+            model_id=model_name, cache=cache
+        )
 
     return record
 
 
-def fix_metadata(record: dict[str, t.Any], cache: Cache) -> dict[str, t.Any] | None:
+def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
+    """Generates a model URL using a cache.
+
+    Args:
+        model_id:
+            The model ID.
+        cache:
+            The cache.
+
+    Returns:
+        The model URL.
+    """
+    model_id = split_model_id(model_id=model_id).model_id
+    if model_id in cache.model_url and cache.model_url[model_id] is not None:
+        return cache.model_url[model_id]
+
+    model_url = generate_model_url(model_id=model_id)
+    cache.model_url[model_id] = model_url
+    return model_url
+
+
+def fix_metadata(record: dict[str, t.Any]) -> dict[str, t.Any] | None:
     """Fixes metadata in a record.
 
     Args:
         record:
             A record from the JSONL file.
-        cache:
-            Metadata cache used to fill in missing model fields.
 
     Returns:
         The record with fixed metadata, or None if the record should be removed.
@@ -130,48 +121,12 @@ def fix_metadata(record: dict[str, t.Any], cache: Cache) -> dict[str, t.Any] | N
     # Copy the record to avoid modifying the original
     record = deepcopy(record)
 
-    # Get task supporting both EEE and old formats
     task = get_task(record)
     if task == "question-answering":
-        # Update in appropriate location based on format
-        if "eval_library" in record:
-            record["eval_library"]["additional_details"]["task"] = (
-                "reading-comprehension"
-            )
-        else:
-            record["task"] = "reading-comprehension"
+        record["eval_library"]["additional_details"]["task"] = "reading-comprehension"
     if task == "european-values":
-        # For EEE format, store in eval_library.additional_details
-        if "eval_library" in record:
-            record["eval_library"]["additional_details"]["validation_split"] = None
-            record["eval_library"]["additional_details"]["few_shot"] = None
-        else:
-            record["validation_split"] = None
-            record["few_shot"] = None
-
-    # Handle anchor tag assignment - need to modify the record in place
-    model_name = get_model_name(record)
-    if model_name in cache.anchor_tag:
-        new_model_name = cache.anchor_tag[model_name]
-    else:
-        anchor_tag = generate_anchor_tag(model_id=model_name)
-        if anchor_tag is None:
-            return None
-        cache.anchor_tag[model_name] = anchor_tag
-        new_model_name = anchor_tag
-
-    # Update the record with the anchor tag
-    if "model_info" in record:
-        record["model_info"]["name"] = new_model_name
-
-        # Extract URL from anchor tag and store it
-        url_match = re.search(r"<a href='([^']+)'>", new_model_name)
-        if url_match:
-            record["model_info"]["additional_details"]["url"] = url_match.group(1)
-        elif "url" not in record["model_info"].get("additional_details", {}):
-            record["model_info"]["additional_details"]["url"] = None
-    else:
-        record["model"] = new_model_name
+        record["eval_library"]["additional_details"]["validation_split"] = None
+        record["eval_library"]["additional_details"]["few_shot"] = None
 
     return record
 
@@ -255,7 +210,7 @@ def get_generative_type(record: dict, cache: Cache) -> str | None:
         return "instruction_tuned"
 
     # Remove revisions and parameters from the model ID.
-    model_id = model_id.split("@")[0].split("#")[0]
+    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
 
     while True:
         if model_id in cache.generative_type:
@@ -299,7 +254,7 @@ def is_commercially_licensed(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is commercially licensed.
     """
-    model_id = _model_id_from_record(record=record).split("@")[0].split("#")[0]
+    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
 
     # Assume that non-generative models are always commercially licensed
     if not record.get("generative", True):
@@ -338,7 +293,7 @@ def is_trained_from_scratch(
     Returns:
         True if the model was trained from scratch.
     """
-    model_id = _model_id_from_record(record=record).split("@")[0].split("#")[0]
+    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
 
     base_model_cache = {
         _base_model_id(m): value for m, value in cache.trained_from_scratch.items()
@@ -392,7 +347,7 @@ def is_merge(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is a merged model.
     """
-    model_id = _model_id_from_record(record=record).split("@")[0].split("#")[0]
+    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
 
     if model_id in cache.merge:
         return cache.merge[model_id]
@@ -433,7 +388,7 @@ def is_open(record: dict, cache: Cache) -> bool:
     Returns:
         Whether the model is open (open-weight). Closed models return False.
     """
-    model_id = _model_id_from_record(record=record).split("@")[0].split("#")[0]
+    model_id = split_model_id(model_id=_model_id_from_record(record=record)).model_id
 
     base_model_cache = {_base_model_id(m): value for m, value in cache.open.items()}
     base_model_id = _base_model_id(model_id)

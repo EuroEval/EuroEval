@@ -20,6 +20,7 @@ from requests.exceptions import RequestException
 from yaml import safe_dump, safe_load
 
 from euroeval.logging_utils import log_once
+from euroeval.string_utils import split_model_id
 
 from .constants import MODELS_WITHOUT_URLS_CACHE
 
@@ -64,7 +65,7 @@ def generate_model_url(model_id: str) -> str | None:
     Returns:
         The URL for the model, or None if no URL can be generated.
     """
-    model_id_without_extras = model_id.split("@")[0].split("#")[0]
+    model_id_without_extras = split_model_id(model_id=model_id).model_id
 
     # Any model with a cached decision (remove or keep-without-url) never gets
     # a URL, so the model_url field stays None for these ids.
@@ -107,7 +108,7 @@ def generate_anchor_tag(model_id: str) -> str | None:
     if re.match(r"^<a href='.*'>.*</a>$", model_id):
         return model_id
 
-    model_id_without_extras = model_id.split("@")[0].split("#")[0]
+    model_id_without_extras = split_model_id(model_id=model_id).model_id
 
     # Check cached decision (remove or keep without URL)
     cached_decision = _load_model_url_decision(model_id=model_id_without_extras)

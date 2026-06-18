@@ -138,34 +138,16 @@ def extract_model_metadata(
     for record in results:
         model_ids = extract_model_ids_from_record(record=record)
 
-        # Support both EEE format (nested in model_info.additional_details) and old
-        # format (top-level)
-        is_eee = "schema_version" in record
-        if is_eee:
-            # EEE format
-            additional = record.get("model_info", {}).get("additional_details", {})
-            num_params_raw = additional.get("num_model_parameters", "-1")
-            vocab_size_raw = additional.get("vocabulary_size", "-1")
-            context_raw = additional.get("max_sequence_length", "-1")
-            merge_raw = additional.get("merge", "false")
-            generative_type = additional.get("generative_type", None)
-
-            # Top-level fields in EEE format
-            commercially_licensed = record.get("commercially_licensed", False)
-            open_weights = record.get("open", None)
-            trained_from_scratch = record.get("trained_from_scratch", None)
-            model_url = additional.get("model_url", None)
-        else:
-            # Old format
-            num_params_raw = record.get("num_model_parameters", -1)
-            vocab_size_raw = record.get("vocabulary_size", -1)
-            context_raw = record.get("max_sequence_length", -1)
-            merge_raw = record.get("merge", False)
-            generative_type = record.get("generative_type", None)
-            commercially_licensed = record.get("commercially_licensed", False)
-            open_weights = record.get("open", None)
-            trained_from_scratch = record.get("trained_from_scratch", None)
-            model_url = record.get("model_url", None)
+        additional = record.get("model_info", {}).get("additional_details", {})
+        num_params_raw = additional.get("num_model_parameters", "-1")
+        vocab_size_raw = additional.get("vocabulary_size", "-1")
+        context_raw = additional.get("max_sequence_length", "-1")
+        merge_raw = additional.get("merge", "false")
+        generative_type = additional.get("generative_type", None)
+        commercially_licensed = additional.get("commercially_licensed", False)
+        open_weights = additional.get("open", None)
+        trained_from_scratch = additional.get("trained_from_scratch", None)
+        model_url = additional.get("model_url", None)
 
         num_params = _to_float_or_nan(num_params_raw)
         vocab_size = _to_float_or_nan(vocab_size_raw)

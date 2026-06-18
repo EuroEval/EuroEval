@@ -40,7 +40,6 @@ import logging
 import os
 import re
 import sys
-import tarfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -49,7 +48,7 @@ from update_core_models import refresh_core_models
 
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
-from leaderboards.constants import NEW_RESULTS_PATH, RESULTS_PATH
+from leaderboards.constants import NEW_RESULTS_PATH, RESULTS_DIR
 from leaderboards.core_models import CoreModel
 from leaderboards.evaluation_common import (
     gpu_total_memory_bytes,
@@ -263,8 +262,8 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
     """Return the ``(model_id, dataset, language)`` triples already benchmarked.
 
     Reads the merged result corpus the same way the leaderboard pipeline
-    does -- ``results.tar.gz`` plus the optional ``new_results.jsonl`` --
-    but without the destructive unlink that
+    does -- the per-model files in ``RESULTS_DIR`` plus the optional
+    ``new_results.jsonl`` -- but without the destructive unlink that
     :func:`leaderboards.result_loading.load_raw_results` performs. Supports
     both EEE format (with nested ``model_info`` and ``eval_library``) and
     old EuroEval format (flat keys).
@@ -276,11 +275,8 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
         ``core_models.yaml``.
     """
     lines: list[str] = []
-    if RESULTS_PATH.exists():
-        with tarfile.open(RESULTS_PATH, "r:gz") as tar:
-            member_file = tar.extractfile(member="results/results.jsonl")
-            if member_file is not None:
-                lines.extend(member_file.read().decode(encoding="utf-8").splitlines())
+    for model_file in sorted(RESULTS_DIR.glob("*.jsonl")):
+        lines.extend(model_file.read_text(encoding="utf-8").splitlines())
     if NEW_RESULTS_PATH.exists():
         lines.extend(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
 

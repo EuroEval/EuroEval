@@ -89,26 +89,23 @@ REPO_ROOT: Path = PACKAGE_DIR.parent.parent
 # Generated CSVs are written directly into the frontend bundle.
 OUTPUT_DIR: Path = REPO_ROOT / "src" / "frontend" / "csv"
 
-# Off-repo backup location for snapshots of results.tar.gz.
-# The working copy lives at BACKUPS_DIR/results.tar.gz.
-# Snapshots are timestamped and pruned when exceeding limits.
+# Off-repo backup location for compressed snapshots of the results
+# directory. Snapshots are timestamped and pruned when exceeding limits.
 BACKUPS_DIR: Path = _env_path(
     "EUROEVAL_RESULTS_BACKUP_DIR",
     Path.home() / "pCloud Drive" / "data" / "euroeval_backup",
 )
 BACKUPS_MAX_BYTES: int = 1_000_000_000  # ~1 GB total size cap
 
-# Historical archive of all benchmark records. Stored in BACKUPS_DIR,
-# not tracked in git (43+ MB compressed).
-RESULTS_PATH: Path = BACKUPS_DIR / "results.tar.gz"
-
-# Incremental jsonl of new benchmark records to fold into RESULTS_PATH.
+# Incremental jsonl of new benchmark records to fold into the results
+# directory on the next load.
 NEW_RESULTS_PATH: Path = _env_path(
     "EUROEVAL_NEW_RESULTS_PATH", REPO_ROOT / "new_results.jsonl"
 )
 
-# Single directory for all per-model JSONL files with metadata attached.
-# Git-ignored, synced with hf://buckets/EuroEval/results/.
+# Single directory for all per-model JSONL files with metadata attached; the
+# source of truth for the leaderboard pipeline. Git-ignored, synced with
+# hf://buckets/EuroEval/results/.
 RESULTS_DIR: Path = REPO_ROOT / "results"
 
 # ---------------------------------------------------------------------------

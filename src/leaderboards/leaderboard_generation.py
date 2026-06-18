@@ -510,6 +510,7 @@ def generate_dataframe(
             .sort_values(by="rank", na_position="last")
             .reset_index(drop=True)
         )
+        breakpoint()
 
         rank_cols = ["rank", "mean_rank_score"]
         if len(leaderboard_configs) > 1:

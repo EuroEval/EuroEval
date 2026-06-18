@@ -1,23 +1,25 @@
-"""Off-repo backup rotation for the results.tar.gz archive.
+"""Off-repo backup rotation for the results directory.
 
-`results.tar.gz` is the historical record of every benchmark run and is
-overwritten in place by each successful generation. We don't track it in
-git (43+ MB and grows on every update), so this module snapshots each
-successful run to BACKUPS_DIR with a timestamp suffix and prunes the
-oldest backups whenever the directory exceeds BACKUPS_MAX_BYTES.
+`RESULTS_DIR` holds one JSONL file per model and is the source of truth for
+the leaderboard pipeline. We don't track it in git (tens of MB and growing),
+so this module snapshots each successful run to BACKUPS_DIR as a single
+compressed archive with a timestamp suffix, and prunes the oldest backups
+whenever the directory exceeds BACKUPS_MAX_BYTES.
 
-If `results.tar.gz` is missing at startup, `restore_from_backup_if_missing`
-copies the most recent backup into place so the pipeline can run.
+If `RESULTS_DIR` is missing or empty at startup,
+`restore_from_backup_if_missing` extracts the most recent backup into place so
+the pipeline can run.
 """
 
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import logging
 import random
-import shutil
 import sys
+import tarfile
 from pathlib import Path
 
 from .constants import (
@@ -25,49 +27,53 @@ from .constants import (
     BACKUPS_MAX_BYTES,
     REQUIRED_METADATA_FIELDS,
     RESULTS_DIR,
-    RESULTS_PATH,
 )
 
 logger = logging.getLogger(__name__)
 
 BACKUP_PREFIX = "results_"
 BACKUP_SUFFIX = ".tar.gz"
+# Length of the content-hash slug embedded in each backup filename, used to
+# skip writing a new snapshot when the results haven't changed.
+_HASH_LEN = 12
+# Directory prefix used for per-model files inside each backup archive,
+# mirroring the layout of RESULTS_DIR.
+_ARCHIVE_ROOT = "results"
 
 
-def restore_from_backup_if_missing(target: Path = RESULTS_PATH) -> bool:
-    """Restore `target` from the newest backup if `target` doesn't exist.
+def restore_from_backup_if_missing(target: Path = RESULTS_DIR) -> bool:
+    """Restore `target` from the newest backup if it's missing or empty.
 
     Args:
         target:
-            The destination path (defaults to RESULTS_PATH).
+            The results directory to populate (defaults to RESULTS_DIR).
 
     Returns:
-        True if a restore happened, False if `target` already existed or no
-        backup was available.
+        True if a restore happened, False if `target` already held results or
+        no backup was available.
     """
-    if target.exists():
+    if target.exists() and any(target.glob("*.jsonl")):
         return False
     backups = _list_backups()
     if not backups:
         return False
     newest = backups[0]
-    logger.info(f"Restoring {target.name} from backup {newest}")
-    target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src=newest, dst=target)
+    logger.info(f"Restoring {target} from backup {newest.name}")
+    _extract_backup(archive=newest, dest=target)
     return True
 
 
-def backup_results(source: Path = RESULTS_PATH) -> Path | None:
+def backup_results(source: Path = RESULTS_DIR) -> Path | None:
     """Snapshot `source` into BACKUPS_DIR, then prune oldest if over cap.
 
-    Validates that results exist and have required metadata fields
-    before creating the backup. Skips if `source` is byte-identical to the
+    Validates that results exist and have required metadata fields before
+    creating the backup. Skips if `source`'s contents are unchanged since the
     newest existing backup, so repeated runs without changes don't fill the
     backup directory.
 
     Args:
         source:
-            The file to back up (defaults to RESULTS_PATH).
+            The results directory to back up (defaults to RESULTS_DIR).
 
     Returns:
         The Path of the new backup, or None if nothing was written.
@@ -79,10 +85,6 @@ def backup_results(source: Path = RESULTS_PATH) -> Path | None:
     """
     # Validate results before backing up
     _validate_results()
-
-    if not source.exists():
-        logger.warning(f"Cannot back up {source}: file does not exist.")
-        return None
 
     # The backup directory lives on pCloud Drive, which raises OSError when
     # pCloud is not running. When attached to a terminal, prompt the operator
@@ -106,34 +108,99 @@ def _write_snapshot(source: Path) -> Path | None:
 
     Args:
         source:
-            The file to back up.
+            The results directory to back up.
 
     Returns:
         The Path of the new backup, or None if the newest existing backup
-        is already byte-identical to `source`.
+        already captures identical results.
     """
     BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
 
+    model_files = sorted(source.glob("*.jsonl"))
+    content_hash = _content_hash(paths=model_files)
+
     existing = _list_backups()
-    if existing and existing[0].stat().st_size == source.stat().st_size:
-        # Cheap check first; fall back to byte compare if sizes match.
-        if _files_equal(existing[0], source):
-            logger.info(
-                f"Newest backup {existing[0].name} matches current results "
-                f"({source.stat().st_size:,} bytes); skipping snapshot."
-            )
-            return None
+    if existing and _backup_hash(existing[0]) == content_hash:
+        logger.info(
+            f"Newest backup {existing[0].name} already captures the current "
+            f"results ({content_hash}); skipping snapshot."
+        )
+        return None
 
     timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_path = BACKUPS_DIR / f"{BACKUP_PREFIX}{timestamp}{BACKUP_SUFFIX}"
-    shutil.copy2(src=source, dst=backup_path)
+    backup_path = (
+        BACKUPS_DIR / f"{BACKUP_PREFIX}{timestamp}_{content_hash}{BACKUP_SUFFIX}"
+    )
+    with tarfile.open(backup_path, "w:gz") as tar:
+        for model_file in model_files:
+            tar.add(name=model_file, arcname=f"{_ARCHIVE_ROOT}/{model_file.name}")
     logger.info(
-        f"Snapshotted {source.name} -> {backup_path} "
+        f"Snapshotted {len(model_files):,} files from {source} -> {backup_path} "
         f"({backup_path.stat().st_size:,} bytes)"
     )
 
     _prune_backups()
     return backup_path
+
+
+def _content_hash(paths: list[Path]) -> str:
+    """Return a short stable hash of the given files' names and contents.
+
+    Args:
+        paths:
+            The files to hash, in a stable (sorted) order.
+
+    Returns:
+        The first `_HASH_LEN` hex characters of a SHA-256 over each file's
+        name and bytes.
+    """
+    hasher = hashlib.sha256()
+    for path in paths:
+        hasher.update(path.name.encode("utf-8"))
+        hasher.update(b"\0")
+        hasher.update(path.read_bytes())
+        hasher.update(b"\0")
+    return hasher.hexdigest()[:_HASH_LEN]
+
+
+def _backup_hash(backup: Path) -> str | None:
+    """Extract the content-hash slug from a backup filename.
+
+    Args:
+        backup:
+            A backup path named ``results_<timestamp>_<hash>.tar.gz``.
+
+    Returns:
+        The embedded hash, or None if the name doesn't carry one (e.g. a
+        legacy backup written before content hashing).
+    """
+    stem = backup.name[len(BACKUP_PREFIX) : -len(BACKUP_SUFFIX)]
+    candidate = stem.rpartition("_")[2]
+    return candidate if len(candidate) == _HASH_LEN else None
+
+
+def _extract_backup(archive: Path, dest: Path) -> None:
+    """Extract the per-model JSONL files from `archive` into `dest`.
+
+    Members are flattened to their base name so the archive's internal
+    directory prefix can't write outside `dest`.
+
+    Args:
+        archive:
+            The ``.tar.gz`` backup to read.
+        dest:
+            The directory to populate with the per-model JSONL files.
+    """
+    dest.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(archive, "r:gz") as tar:
+        for member in tar.getmembers():
+            name = Path(member.name).name
+            if not member.isfile() or not name.endswith(".jsonl"):
+                continue
+            extracted = tar.extractfile(member)
+            if extracted is None:
+                continue
+            (dest / name).write_bytes(extracted.read())
 
 
 def _validate_results() -> None:
@@ -224,30 +291,6 @@ def _validate_results() -> None:
         f"Validated {records_checked:,} records from {len(sampled_files):,} sampled"
         f" files - all have required metadata fields"
     )
-
-
-def _files_equal(a: Path, b: Path, chunk_size: int = 1 << 20) -> bool:
-    """Return whether two files have byte-for-byte identical contents.
-
-    Args:
-        a:
-            The first file to compare.
-        b:
-            The second file to compare.
-        chunk_size (optional):
-            The number of bytes to read per iteration. Defaults to 1 MiB.
-
-    Returns:
-        True when both files contain exactly the same bytes.
-    """
-    with a.open(mode="rb") as fa, b.open(mode="rb") as fb:
-        while True:
-            ca = fa.read(chunk_size)
-            cb = fb.read(chunk_size)
-            if ca != cb:
-                return False
-            if not ca:
-                return True
 
 
 def _prune_backups() -> None:

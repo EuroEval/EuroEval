@@ -30,7 +30,6 @@ import json
 import logging
 import subprocess
 import sys
-import tarfile
 import urllib.error
 from pathlib import Path
 
@@ -44,7 +43,6 @@ from leaderboards.constants import (
     MODEL_REQUEST_LABEL,
     REPO,
     RESULTS_DIR,
-    RESULTS_PATH,
     RESULTS_READY_LABEL,
 )
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
@@ -164,10 +162,9 @@ def main(force: bool) -> None:
         else:
             logger.error(
                 "Failed to upload results to Hugging Face bucket. "
-                "The local archive (results.tar.gz) has been updated with the new "
-                "results, but the bucket is now out of sync. Please run "
-                "upload_results_to_hf() manually or check your Hugging Face "
-                "credentials and re-run this script."
+                "The new results are staged locally, but the bucket is now out "
+                "of sync. Please run upload_results_to_hf() manually or check "
+                "your Hugging Face credentials and re-run this script."
             )
             # Don't abort here -- leaderboards will still be correct because
             # load_raw_results() appends new_results.jsonl locally before deleting it.
@@ -276,28 +273,23 @@ def list_all_result_files() -> list[BucketFile]:
 def load_existing_result_keys() -> set[tuple[str, str, str, str]]:
     """Load existing results and build a set of dedup keys.
 
-    Loads results.tar.gz from RESULTS_PATH, extracts and parses
-    results/results.jsonl, and builds a set of dedup keys.
+    Reads every per-model JSONL file in RESULTS_DIR and builds a set of dedup
+    keys.
 
     Returns:
         Set of dedup keys (model_id, dataset, validation_split, few_shot).
     """
     existing_keys: set[tuple[str, str, str, str]] = set()
 
-    if not RESULTS_PATH.exists():
-        logger.info("No existing results.tar.gz found.")
+    model_files = sorted(RESULTS_DIR.glob("*.jsonl"))
+    if not model_files:
+        logger.info("No existing results found in RESULTS_DIR.")
         return existing_keys
 
-    try:
-        with tarfile.open(RESULTS_PATH, "r:gz") as tar:
-            results_member = tar.getmember("results/results.jsonl")
-            results_file = tar.extractfile(results_member)
-            if results_file is None:
-                logger.warning("results/results.jsonl is empty in tar.gz.")
-                return existing_keys
-
-            for line in results_file:
-                line_str = line.decode("utf-8").strip()
+    for model_file in model_files:
+        try:
+            for line in model_file.read_text(encoding="utf-8").splitlines():
+                line_str = line.strip()
                 if not line_str:
                     continue
                 try:
@@ -307,15 +299,15 @@ def load_existing_result_keys() -> set[tuple[str, str, str, str]]:
                         existing_keys.add(key)
                 except json.JSONDecodeError:
                     logger.debug("Skipping invalid JSON line in existing results.")
-    except Exception as e:
-        logger.warning(f"Failed to load existing results: {e}")
+        except OSError as e:
+            logger.warning(f"Failed to read {model_file.name}: {e}")
 
     logger.info(f"Loaded {len(existing_keys)} existing result keys.")
     return existing_keys
 
 
 def scan_bucket_for_results() -> list[str]:
-    """Scan the EuroEval/results bucket for new results not yet in results.tar.gz.
+    """Scan the EuroEval/results bucket for results not yet in RESULTS_DIR.
 
     Downloads all .jsonl files from the bucket, parses them, and collects
     results that are not already in the existing results.

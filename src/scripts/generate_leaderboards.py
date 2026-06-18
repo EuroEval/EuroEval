@@ -81,9 +81,9 @@ load_dotenv()
     is_flag=True,
     default=False,
     help=(
-        "Skip processing evaluation results from JSONL. Assumes results.tar.gz "
-        "already contains processed results. Useful for repeated leaderboard "
-        "generation when results haven't changed."
+        "Skip processing evaluation results from JSONL. Assumes the results "
+        "directory already contains processed results. Useful for repeated "
+        "leaderboard generation when results haven't changed."
     ),
 )
 def main(
@@ -104,10 +104,10 @@ def main(
         skip_core_models_check (optional):
             If True, skip prompting to refresh the core-model list when stale.
         skip_results_processing (optional):
-            If True, skip processing evaluation results from JSONL. Assumes
-            results.tar.gz already contains processed results.
+            If True, skip processing evaluation results from JSONL. Assumes the
+            results directory already contains processed results.
     """
-    # If results.tar.gz isn't here, pull the newest backup into place.
+    # If the results directory isn't populated, restore the newest backup.
     restore_from_backup_if_missing()
 
     if not skip_results_processing:

@@ -1,26 +1,23 @@
-"""Process EuroEval records from a JSONL file into per-model archives.
+"""Process EuroEval records into per-model result files.
 
 This module is the orchestrator: it loads raw records, deduplicates them,
-repairs and validates their metadata, and writes the processed results both
-to the Hugging Face results bucket (one file per model) and to the local
-``results.tar.gz`` archive.
+repairs and validates their metadata, and writes the processed results as one
+JSONL file per model, both locally in RESULTS_DIR and to the Hugging Face
+results bucket.
 """
 
 from __future__ import annotations
 
-import io
 import logging
 import re
-import tarfile
 import typing as t
 from collections import Counter
-from pathlib import Path
 
 from huggingface_hub import HfApi
 from tqdm.auto import tqdm
 
 from .cache import Cache
-from .constants import HF_RESULTS_BUCKET, RESULTS_DIR, RESULTS_PATH
+from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
 from .eee_validation import dump_jsonl_records, validate_eee_records
 from .model_metadata import add_missing_entries, fix_metadata, record_is_valid
 from .records import get_model_name, get_record_hash, plain_model_id
@@ -54,13 +51,8 @@ def process_results(
         trained_from_scratch_patterns:
             A list of regex patterns for trained-from-scratch models.
     """
-    results_path = RESULTS_PATH
-
-    # Build the cache from the results directory if available,
-    # otherwise fall back to the compressed results file
-    cache = Cache.from_processed_records(
-        compressed_results_path=results_path, results_dir=RESULTS_DIR
-    )
+    # Build the metadata cache from the per-model result files.
+    cache = Cache.from_results_dir(RESULTS_DIR)
 
     records = load_raw_results()
     num_raw_records = len(records)
@@ -73,7 +65,7 @@ def process_results(
     # Add missing metadata to records. If the metadata cannot be fixed, the
     # record is replaced with None, which is dropped below.
     fixed_records: list[dict[str, t.Any] | None] = [
-        fix_metadata(record=record, cache=cache)
+        fix_metadata(record=record)
         for record in tqdm(records, desc="Fixing metadata in records")
     ]
 
@@ -114,9 +106,6 @@ def process_results(
     validate_eee_records(records=processed_records, context="processed results")
 
     _upload_per_model_files(processed_records=processed_records)
-    _write_results_archive(
-        processed_records=processed_records, results_path=results_path
-    )
 
 
 def _deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
@@ -202,26 +191,3 @@ def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:
         )
     except Exception as e:
         logger.warning(f"Failed to sync results: {e}")
-
-
-def _write_results_archive(
-    processed_records: list[dict[str, t.Any]], results_path: Path
-) -> None:
-    """Write all processed records to the results.tar.gz archive.
-
-    The archive stores all processed records with metadata as a single JSONL
-    file.
-
-    Args:
-        processed_records:
-            The processed records to archive.
-        results_path:
-            The path of the tar.gz archive to write.
-    """
-    content = dump_jsonl_records(records=processed_records)
-    with tarfile.open(results_path, "w:gz") as tar:
-        all_content_bytes = content.encode(encoding="utf-8")
-        tarinfo = tarfile.TarInfo(name="results/results.jsonl")
-        tarinfo.size = len(all_content_bytes)
-        fileobj = io.BytesIO(all_content_bytes)
-        tar.addfile(tarinfo=tarinfo, fileobj=fileobj)

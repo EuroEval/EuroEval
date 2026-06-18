@@ -5,7 +5,6 @@ from __future__ import annotations
 import collections.abc as c
 import json
 import logging
-import tarfile
 import typing as t
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -44,28 +43,6 @@ def load_records_from_jsonl_files(paths: list[Path]) -> list[dict[str, object]]:
             )
         )
     return records
-
-
-def load_records_from_results_archive(path: Path) -> list[dict[str, object]]:
-    """Load result records from a ``results.tar.gz`` archive.
-
-    Args:
-        path:
-            Archive to read.
-
-    Returns:
-        Parsed records.
-
-    Raises:
-        FileNotFoundError:
-            If the archive or inner JSONL file is missing.
-    """
-    with tarfile.open(path, "r:gz") as tar:
-        results_file = tar.extractfile(member="results/results.jsonl")
-        if results_file is None:
-            raise FileNotFoundError("results/results.jsonl not found in archive.")
-        lines = results_file.read().decode(encoding="utf-8").splitlines()
-    return _load_jsonl_lines(lines=lines, source=str(path))
 
 
 def build_precious_metadata_cache(
