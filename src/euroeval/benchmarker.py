@@ -354,9 +354,7 @@ class Benchmarker:
         )
         for metric_name in dataset_config.task.metrics:
             log_once(f"Loading metric {metric_name.name}", level=logging.DEBUG)
-            metric = metric_name.download(
-                cache_dir=benchmark_config.cache_dir, dataset_config=dataset_config
-            )
+            metric = metric_name.download(cache_dir=benchmark_config.cache_dir)
             del metric
 
     def benchmark(

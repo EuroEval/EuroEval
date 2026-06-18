@@ -77,17 +77,12 @@ class HuggingFaceMetric(Metric):
         )
         self.metric: "EvaluationModule | None" = None
 
-    def download(
-        self, cache_dir: str, dataset_config: "DatasetConfig | None" = None
-    ) -> "HuggingFaceMetric":
+    def download(self, cache_dir: str) -> "HuggingFaceMetric":
         """Initiates the download of the metric if needed.
 
         Args:
             cache_dir:
                 The directory where the metric will be downloaded to.
-            dataset_config:
-                The dataset configuration. Unused by this metric, but accepted for API
-                consistency with the base ``Metric`` interface. Defaults to None.
 
         Returns:
             The metric object itself.

@@ -51,6 +51,7 @@ class DummyBenchmarkConfig:
     """Dummy benchmark config for testing."""
 
     device = DummyDevice()
+    cache_dir = ".euroeval_cache"
 
 
 @pytest.fixture
@@ -273,5 +274,8 @@ def test_detector_uses_correct_model_id(
         "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-da"
     )
     mock_cls.assert_called_once_with(
-        method="transformer", model_path=expected_model_id, device="cpu"
+        method="transformer",
+        model_path=expected_model_id,
+        device="cpu",
+        cache_dir=".euroeval_cache",
     )

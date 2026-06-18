@@ -37,11 +37,39 @@ def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
     )
 
 
+def _hallucination_model_ids() -> set[str]:
+    """Collect the model IDs of every dataset using the hallucination metric.
+
+    This enables pre-downloading all language-specific hallucination detection
+    models up front (e.g. for offline benchmarking), since the per-dataset language
+    is not known inside the metric's ``download`` method.
+
+    Returns:
+        The set of Hugging Face Hub repository IDs of all hallucination detection
+        models referenced by built-in dataset configurations.
+    """
+    # Imported here rather than at module level to avoid a circular import, since
+    # the dataset configurations import this metric module via the task registry.
+    from .. import dataset_configs  # noqa: PLC0415
+    from ..data_models import DatasetConfig  # noqa: PLC0415
+
+    model_ids: set[str] = set()
+    for obj in vars(dataset_configs).values():
+        if not isinstance(obj, DatasetConfig):
+            continue
+        if any(
+            isinstance(metric, TokenHallucinationMetric) for metric in obj.task.metrics
+        ):
+            model_ids.add(_hallucination_model_id(dataset_config=obj))
+    return model_ids
+
+
 def detect_hallucinations(
     dataset: Dataset,
     predictions: c.Iterable[dict[str, t.Any]],
     model: str,
     device: Device,
+    cache_dir: str,
 ) -> float:
     """Load model and detect hallucinations.
 
@@ -57,6 +85,9 @@ def detect_hallucinations(
             Path to hallucination detection model.
         device:
             Device to run on.
+        cache_dir:
+            The directory where the detection model is cached. Loading from the same
+            directory that ``download`` populates is what enables offline runs.
 
     Returns:
         A hallucination rate (hallucinated_tokens/total_tokens).
@@ -73,7 +104,7 @@ def detect_hallucinations(
         )
 
     detector = HallucinationDetector(
-        method="transformer", model_path=model, device=device
+        method="transformer", model_path=model, device=device, cache_dir=cache_dir
     )
 
     transformer_detector = detector.detector
@@ -165,27 +196,31 @@ class TokenHallucinationMetric(Metric):
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.4f}"),
         )
 
-    def download(
-        self, cache_dir: str, dataset_config: "DatasetConfig | None" = None
-    ) -> "TokenHallucinationMetric":
-        """Pre-download the hallucination detection model for the given dataset.
+    def download(self, cache_dir: str) -> "TokenHallucinationMetric":
+        """Pre-download all hallucination detection models.
+
+        The hallucination detection model is language-specific, but the dataset
+        language is not available in this method. To support offline benchmarking
+        (where only ``download`` is run and inference happens later without network
+        access), all hallucination detection models referenced by built-in dataset
+        configurations are fetched.
 
         Args:
             cache_dir:
-                The directory where the model will be downloaded to.
-            dataset_config:
-                The dataset configuration, whose main language determines the
-                hallucination detection model to download. If None, no download is
-                performed. Defaults to None.
+                The directory where the models will be downloaded to.
 
         Returns:
             The metric object itself.
         """
-        if dataset_config is None:
-            return self
-
-        model_id = _hallucination_model_id(dataset_config=dataset_config)
-        snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
+        api = HfApi()
+        for model_id in _hallucination_model_ids():
+            if not api.repo_exists(repo_id=model_id):
+                logger.warning(
+                    f"The hallucination detection model {model_id!r} does not exist "
+                    "on the Hugging Face Hub, skipping download."
+                )
+                continue
+            snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
         return self
 
     def __call__(
@@ -224,6 +259,7 @@ class TokenHallucinationMetric(Metric):
             predictions=predictions,
             model=_hallucination_model_id(dataset_config=dataset_config),
             device=Device(benchmark_config.device.type),
+            cache_dir=benchmark_config.cache_dir,
         )
         return hallucination_rate
 
