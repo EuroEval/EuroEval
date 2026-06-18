@@ -22,23 +22,6 @@ from .constants import FAILED_LABEL, GATED_LABEL, REPO, RESULTS_READY_LABEL, USE
 logger = logging.getLogger(__name__)
 
 
-def list_comments(number: int) -> list[dict[str, t.Any]]:
-    """Return up to 100 comments for the issue with the given number.
-
-    Args:
-        number:
-            The issue number whose comments should be fetched.
-
-    Returns:
-        The list of comment objects returned by the GitHub API.
-    """
-    comments = gh_request(
-        path=f"/repos/{REPO}/issues/{number}/comments", params={"per_page": "100"}
-    )
-    assert isinstance(comments, list)
-    return comments
-
-
 def comment_on_issue(number: int, body: str) -> None:
     """Post a comment on the issue with the given number.
 

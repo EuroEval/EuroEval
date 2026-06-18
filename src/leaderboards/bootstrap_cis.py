@@ -83,8 +83,6 @@ def bootstrap_rank_scores(
     dataset_to_category: dict[str, set[str]] = {}
     for ds, task in dataset_to_task.items():
         cats: set[str] = set()
-        if task in ORTHOGONAL_TASKS:
-            continue
         for category in categories:
             if category_includes_task(category=category, task=task):
                 cats.add(category)

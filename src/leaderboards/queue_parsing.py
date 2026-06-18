@@ -170,33 +170,3 @@ def completed_languages(lines: list[str], requested_languages: list[str]) -> lis
     )
     incomplete = {lang for _, lang in missing}
     return [lang for lang in requested_languages if lang not in incomplete]
-
-
-def model_has_partial_results(
-    lines: list[str], model_id: str, requested_languages: list[str]
-) -> bool:
-    """Return True if ``model_id`` has some but not all expected result lines.
-
-    "Expected" here is the official dataset/language pairs for the
-    requested languages, matching the completeness check used after an
-    evaluation run.
-
-    Args:
-        lines:
-            The current contents of the JSONL results file.
-        model_id:
-            The Hugging Face model id whose existing results we inspect.
-        requested_languages:
-            The flattened language codes selected on the issue.
-
-    Returns:
-        True when at least one matching result line exists and at least
-        one official pair is still missing; False otherwise.
-    """
-    matching = result_lines_for_model(lines=lines, model_id=model_id)
-    if not matching:
-        return False
-    missing = missing_official_dataset_language_pairs(
-        lines=matching, requested_languages=requested_languages
-    )
-    return bool(missing)

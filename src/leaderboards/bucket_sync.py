@@ -4,20 +4,17 @@ Uses the `hf sync` CLI to sync the results bucket to the local
 results directory. Also provides backup functionality.
 """
 
-import collections.abc as c
 import json
 import logging
 import os
-import shutil
 import subprocess
-from contextlib import contextmanager
+from collections import defaultdict
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 from euroeval.data_models import BenchmarkResult
 
-from .backup import backup_results
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
 
 load_dotenv()
@@ -53,39 +50,6 @@ def sync_bucket() -> None:
         logger.info(f"Synced bucket: {result.stdout.strip()}")
 
 
-@contextmanager
-def sync_bucket_context() -> c.Generator[Path, None, None]:
-    """Context manager for HF bucket sync.
-
-    Syncs bucket on entry, logs completion on exit.
-
-    Yields:
-        The results directory.
-    """
-    logger.info("Syncing bucket...")
-    sync_bucket()
-    yield RESULTS_DIR
-    logger.info("Bucket sync complete.")
-
-
-@contextmanager
-def sync_bucket_with_backup() -> c.Generator[Path, None, None]:
-    """Context manager for HF bucket sync with automatic backup.
-
-    Syncs bucket on entry, creates backup on exit.
-
-    Yields:
-        The results directory.
-    """
-    logger.info("Syncing bucket...")
-    sync_bucket()
-    yield RESULTS_DIR
-    backup_path = backup_results()
-    if backup_path:
-        logger.info(f"Backup created at {backup_path}.")
-    logger.info("Bucket sync complete.")
-
-
 def upload_results_to_bucket(results_file: Path) -> None:
     """Upload local results to the Hugging Face results bucket.
 
@@ -109,7 +73,7 @@ def upload_results_to_bucket(results_file: Path) -> None:
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    results_by_model: dict[str, list[str]] = {}
+    results_by_model: dict[str, list[str]] = defaultdict(list)
     logger.info(f"Reading results from {results_file}...")
     with results_file.open(encoding="utf-8") as f:
         for line in f:
@@ -119,8 +83,6 @@ def upload_results_to_bucket(results_file: Path) -> None:
                     result = BenchmarkResult.from_dict(config=rec)
                     if result.model:
                         model_key = _sanitise_model_id(model_id=result.model)
-                        if model_key not in results_by_model:
-                            results_by_model[model_key] = []
                         results_by_model[model_key].append(line.strip())
                 except Exception as e:
                     logger.debug(f"Skipping invalid record during upload: {e}")
@@ -148,15 +110,6 @@ def upload_results_to_bucket(results_file: Path) -> None:
         logger.warning(f"hf sync upload failed: {result.stderr}")
     else:
         logger.info(f"Uploaded results to bucket: {result.stdout.strip()}")
-
-
-def is_sync_available() -> bool:
-    """Check if hf CLI is available for syncing.
-
-    Returns:
-        True if hf binary is on PATH, False otherwise.
-    """
-    return shutil.which("hf") is not None
 
 
 def _sanitise_model_id(model_id: str) -> str:

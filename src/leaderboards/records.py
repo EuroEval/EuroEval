@@ -72,19 +72,16 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     few_shot = get_bool_field(record, "few_shot", True)
     validation_split = get_bool_field(record, "validation_split", False)
 
-    base_note = [] if few_shot else ["zero-shot"]
-    note = base_note + ["val"] if validation_split else base_note
-    all_model_notes: list[list[str]] = [note]
+    note = [] if few_shot else ["zero-shot"]
+    if validation_split:
+        note.append("val")
+    if not note:
+        return [model_id]
 
     has_anchor = model_id.endswith("</a>")
-    base = re.sub(r"</a>$", "", model_id) if has_anchor else model_id
+    base = model_id[:-4] if has_anchor else model_id
     suffix = "</a>" if has_anchor else ""
-
-    model_id_candidates = [
-        f"{base} ({', '.join(note)}){suffix}" if note != [] else model_id
-        for note in all_model_notes
-    ]
-    return model_id_candidates
+    return [f"{base} ({', '.join(note)}){suffix}"]
 
 
 def get_dataset(record: dict) -> str | None:

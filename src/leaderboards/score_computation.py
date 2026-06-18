@@ -345,22 +345,14 @@ def compute_standard_ranks_bootstrap(
         # starts a new rank group.
         current_rank = 1
         anchor_idx = 0
-        anchor_id = scored[0][1]
         ranks.setdefault(scored[0][1], {})[category] = 1
 
         for i in range(1, len(scored)):
-            candidate_id = scored[i][1]
-            anchor_ci_upper = scored[anchor_idx][3]
             candidate_ci_lower = scored[i][2]
-
+            anchor_ci_upper = scored[anchor_idx][3]
             if candidate_ci_lower > anchor_ci_upper:
                 current_rank += 1
                 anchor_idx = i
-                anchor_id = candidate_id
-                ranks.setdefault(candidate_id, {})[category] = current_rank
-            else:
-                ranks.setdefault(candidate_id, {})[category] = ranks[anchor_id][
-                    category
-                ]
+            ranks.setdefault(scored[i][1], {})[category] = current_rank
 
     return ranks

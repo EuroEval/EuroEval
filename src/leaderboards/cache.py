@@ -115,8 +115,7 @@ class Cache:
                     "commercially_licensed"
                 ]
             if "open" in additional:
-                value = additional["open"]
-                cache.open[model_id] = value
+                cache.open[model_id] = additional["open"]
             if "trained_from_scratch" in additional:
                 cache.trained_from_scratch[model_id] = additional[
                     "trained_from_scratch"

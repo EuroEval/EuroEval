@@ -111,19 +111,6 @@ def language_name_to_codes(name: str) -> set[str]:
     }
 
 
-def language_code_to_name(code: str) -> str:
-    """Look up the canonical language name for a code (lower-cased).
-
-    Args:
-        code:
-            The language code to look up.
-
-    Returns:
-        The lower-cased language name.
-    """
-    return get_all_languages()[code].name.lower()
-
-
 def languages_with_official_datasets() -> list[str]:
     """List language names that have at least one official leaderboard dataset.
 
