@@ -14,6 +14,11 @@ from .base import Metric
 
 logger = logging.getLogger(__name__)
 
+# The underlying mmBERT-small detector models support up to 8192 positions, but
+# lettucedetect's ``TransformerDetector`` defaults to a 4096-token budget. Use the
+# model's full capacity so fewer samples are skipped for exceeding the budget.
+DEFAULT_MAX_INPUT_LENGTH = 8192
+
 if t.TYPE_CHECKING:
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
@@ -70,6 +75,7 @@ def detect_hallucinations(
     model: str,
     device: Device,
     cache_dir: str,
+    max_input_length: int = DEFAULT_MAX_INPUT_LENGTH,
 ) -> float:
     """Load model and detect hallucinations.
 
@@ -88,6 +94,9 @@ def detect_hallucinations(
         cache_dir:
             The directory where the detection model is cached. Loading from the same
             directory that ``download`` populates is what enables offline runs.
+        max_input_length:
+            The maximum combined prompt and answer token budget for the detector.
+            Defaults to ``DEFAULT_MAX_INPUT_LENGTH``.
 
     Returns:
         A hallucination rate (hallucinated_tokens/total_tokens).
@@ -108,6 +117,9 @@ def detect_hallucinations(
     )
 
     transformer_detector = detector.detector
+    # ``HallucinationDetector`` does not forward ``max_length`` to the underlying
+    # transformer detector, so override it directly to use the configured budget.
+    transformer_detector.max_length = max_input_length
     tokenizer = transformer_detector.tokenizer
     max_length = transformer_detector.max_length
 
