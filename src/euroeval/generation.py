@@ -111,9 +111,11 @@ def generate(
         scores.append(test_scores)
         clear_memory()
 
-    # If every iteration failed then there is nothing to report, so we raise the first
-    # encountered error to abort the evaluation
-    if not scores:
+    # If every iteration that actually ran failed then there is nothing to report, so
+    # we raise the first encountered error to abort the evaluation. If no iterations
+    # ran at all (e.g. `num_iterations` is zero) there are no errors to raise, and we
+    # simply return the empty list of scores, as before.
+    if not scores and iteration_errors:
         raise iteration_errors[0]
     if iteration_errors:
         log(
