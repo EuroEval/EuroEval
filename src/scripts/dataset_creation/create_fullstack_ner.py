@@ -22,6 +22,7 @@ import pandas as pd
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -121,7 +122,7 @@ def clone_fullstack_repository(repo_name: str = "FullStack") -> Path:
         RuntimeError: If the repository cloning fails.
     """
     if not Path(repo_name).exists():
-        print("Cloning FullStack repository...")
+        logger.info("Cloning FullStack repository...")
         try:
             subprocess.run(
                 [

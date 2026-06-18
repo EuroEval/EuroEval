@@ -77,7 +77,9 @@ frontend:  ## Build and deploy the frontend
 
 leaderboards:  ## Collect finished evaluation results and regenerate leaderboards
 	@uv run python src/scripts/collect_evaluation_results.py
-	@uv run python src/scripts/update_core_models.py
+
+force-leaderboards:
+	@uv run python src/scripts/collect_evaluation_results.py --force
 
 tree:  ## Print directory tree
 	@tree -a --gitignore -I .git .

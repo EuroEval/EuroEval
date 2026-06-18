@@ -11,6 +11,7 @@
 
 """Create the MBBQ-NL dataset with train/val/test split and upload it to the HF Hub."""
 
+import logging
 import textwrap
 import typing as t
 
@@ -19,6 +20,9 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from requests import HTTPError
 from sklearn.model_selection import train_test_split
+
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_mbbq_nl")
 
 
 def main() -> None:
@@ -30,7 +34,7 @@ def main() -> None:
     dataset_id = "Amadeus99/mbbq_nl"
 
     # Download the dataset
-    print(f"Downloading dataset from Hugging Face: {dataset_id}")
+    logger.info(f"Downloading dataset from Hugging Face: {dataset_id}")
     dataset = load_dataset(path=dataset_id, token=True, name="All")
     assert isinstance(dataset, DatasetDict)
 
@@ -93,7 +97,7 @@ def main() -> None:
     new_dataset = new_dataset.select_columns(cols_to_keep)
 
     dataset_id_mbbq = "EuroEval/mbbq-nl"
-    print(f"Uploading {dataset_id_mbbq} to Hugging Face Hub...")
+    logger.info(f"Uploading {dataset_id_mbbq} to Hugging Face Hub...")
     # Remove the dataset from Hugging Face Hub if it already exists
     try:
         api = HfApi()

@@ -33,23 +33,34 @@ EUROEVAL_VM_ID        Optional identifier for this VM/host, written into a
 from __future__ import annotations
 
 import argparse
-import hashlib
+import datetime as dt
 import logging
 import os
 import sys
 import time
 import urllib.error
-from datetime import datetime
 from functools import cache
 from pathlib import Path
 
-from huggingface_hub import HfApi
+from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 from yaml import safe_load
 
-from leaderboards.evaluation_common import (
+from euroeval import __version__
+from leaderboards.constants import (
+    CORE_MODELS_CONFIG,
+    FAILED_LABEL,
+    GATED_LABEL,
+    GATED_OUTPUT_RE,
     GPU_FIT_OVERHEAD,
     LANGUAGE_GROUP_CODES,
+    MODEL_REQUEST_LABEL,
+    REPO,
+    RESULTS_DIR,
+    RESULTS_READY_LABEL,
+    VM_MARKER_RE,
+)
+from leaderboards.evaluation_common import (
     estimated_model_bytes,
     extract_language_groups,
     gpu_total_memory_bytes,
@@ -57,11 +68,6 @@ from leaderboards.evaluation_common import (
     run_euroeval,
 )
 from leaderboards.github_api import (
-    FAILED_LABEL,
-    GATED_LABEL,
-    LABEL,
-    REPO,
-    RESULTS_READY_LABEL,
     add_failed_label,
     add_gated_label,
     add_results_ready_label,
@@ -72,7 +78,6 @@ from leaderboards.github_api import (
     remove_gated_label,
     unassign_issue,
 )
-from leaderboards.paths import CORE_MODELS_CONFIG
 from leaderboards.queue_env import (
     acquire_single_instance_lock,
     load_dotenv_into_environ,
@@ -82,16 +87,13 @@ from leaderboards.queue_env import (
 )
 from leaderboards.queue_hf_cache import cached_model_summary
 from leaderboards.queue_markers import (
-    VM_MARKER_RE,
     clear_vm_marker,
     release_issue_if_owned,
     set_vm_marker,
     vm_marker_matches,
 )
 from leaderboards.queue_parsing import (
-    GATED_OUTPUT_RE,
     completed_languages,
-    euroeval_version,
     extract_model_id,
     format_dataset_language_pairs,
     num_errored_benchmarks,
@@ -105,51 +107,21 @@ from leaderboards.queue_runtime import (
     lower_process_priority,
 )
 
-# Param bucket thresholds matching leaderboards (src/leaderboards/core_models.py)
-_BUCKET_THRESHOLDS = [
-    (2_000_000_000, 0),  # tiny
-    (10_000_000_000, 1),  # small
-    (40_000_000_000, 2),  # medium
-    (80_000_000_000, 3),  # large
-    (float("inf"), 4),  # xlarge
-]
-
-
-def _param_bucket(param_count: int) -> int:
-    """Map parameter count to bucket index for queue sorting.
-
-    Args:
-        param_count:
-            Number of parameters in the model.
-
-    Returns:
-        Bucket index (0=tiny, 1=small, 2=medium, 3=large, 4=xlarge).
-    """
-    for threshold, bucket in _BUCKET_THRESHOLDS:
-        if param_count < threshold:
-            return bucket
-    return 4
-
-
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
 logger = logging.getLogger("process_evaluation_queue")
-
-# Tracks hashes of result lines downloaded from HF bucket at startup.
-_OLD_RESULT_HASHES: set[str] = set()
 
 
 ASSIGNEE = ""
 VM_ID = os.environ.get("EUROEVAL_VM_ID", "")
 VM_ID_ENV_PATH = Path(os.environ.get("EUROEVAL_DOTENV_PATH", ".env"))
 RESULTS_PATH = Path("euroeval_benchmark_results.jsonl")
-RESULTS_CACHE_DIR = Path(".euroeval_cache/results")
+RESULTS_CACHE_DIR = RESULTS_DIR
 LOCK_PATH = Path(os.environ.get("EUROEVAL_QUEUE_LOCK", "/tmp/euroeval_queue.lock"))
 
-# Canonical HF buckets for storing results (public read access).
-HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
-HF_PROCESSED_BUCKET = "hf://buckets/EuroEval/processed-results"
+# Canonical HF bucket for storing results (public read access).
+HF_RESULTS_BUCKET = "EuroEval/results"
 
 # Held for the lifetime of the process so the kernel keeps the queue lock
 # alive; released automatically when the process exits.
@@ -167,51 +139,14 @@ GPU_MEMORY_UTILIZATION: float | None = None
 THERMAL_CONFIG: ThermalConfig = ThermalConfig()
 
 
-def _model_id_to_filename(model_id: str) -> str:
-    """Convert a model ID to a safe filename.
-
-    Args:
-        model_id:
-            The model identifier (e.g., "meta-llama/Llama-3-8B").
-
-    Returns:
-        A safe filename with slashes and dots replaced by underscores.
-    """
-    return model_id.replace("/", "_").replace(".", "_") + ".jsonl"
-
-
-def download_results_from_hf() -> int:
-    """Download all results from the Hugging Face bucket.
-
-    Returns:
-        The number of lines loaded.
-    """
-    global _OLD_RESULT_HASHES
-    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-    try:
-        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RESULTS_CACHE_DIR))
-    except HfHubHTTPError as e:
-        logger.warning(f"Could not sync results from HF bucket: {e}")
-        return 0
-
-    all_lines: list[str] = []
-    for model_file in RESULTS_CACHE_DIR.glob("*.jsonl"):
-        lines = model_file.read_text(encoding="utf-8").splitlines()
-        for line in lines:
-            if line.strip():
-                all_lines.append(line)
-                _OLD_RESULT_HASHES.add(hashlib.sha256(line.encode()).hexdigest())
-
-    if all_lines:
-        RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
-
-    num_models = len(list(RESULTS_CACHE_DIR.glob("*.jsonl")))
-    logger.info(
-        f"Downloaded {len(all_lines):,} result lines from {num_models} model(s) "
-        f"in bucket {HF_RAW_BUCKET!r}."
-    )
-    return len(all_lines)
+# Param bucket thresholds matching leaderboards (src/leaderboards/core_models.py)
+_BUCKET_THRESHOLDS = [
+    (2_000_000_000, 0),  # tiny
+    (10_000_000_000, 1),  # small
+    (40_000_000_000, 2),  # medium
+    (80_000_000_000, 3),  # large
+    (float("inf"), 4),  # xlarge
+]
 
 
 def main() -> None:
@@ -248,6 +183,85 @@ def main() -> None:
         sys.exit(130)
 
 
+def _param_bucket(param_count: int) -> int:
+    """Map parameter count to bucket index for queue sorting.
+
+    Args:
+        param_count:
+            Number of parameters in the model.
+
+    Returns:
+        Bucket index (0=tiny, 1=small, 2=medium, 3=large, 4=xlarge).
+    """
+    for threshold, bucket in _BUCKET_THRESHOLDS:
+        if param_count < threshold:
+            return bucket
+    return 4
+
+
+def _model_id_to_filename(model_id: str) -> str:
+    """Convert a model ID to a safe filename.
+
+    Args:
+        model_id:
+            The model identifier (e.g., "meta-llama/Llama-3-8B").
+
+    Returns:
+        A safe filename with slashes and dots replaced by underscores.
+    """
+    return model_id.replace("/", "_") + ".jsonl"
+
+
+def download_results_from_hf() -> int:
+    """Download all results from the Hugging Face bucket.
+
+    Only downloads files, never deletes local files. This is a one-way sync
+    from bucket to local cache.
+
+    Returns:
+        The number of lines loaded.
+    """
+    RESULTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    api = HfApi()
+    bucket_id = HF_RESULTS_BUCKET
+    try:
+        # List all files in the bucket
+        bucket_files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
+        # Build download list for .jsonl files not already present
+        files_to_download: list[tuple[str | BucketFile, str | Path]] = []
+        for file_info in bucket_files:
+            if not file_info.path.endswith(".jsonl"):
+                continue
+            local_file = RESULTS_CACHE_DIR / file_info.path
+            # Only download if not already present (additive only)
+            if not local_file.exists():
+                files_to_download.append((file_info.path, str(local_file)))
+
+        if files_to_download:
+            api.download_bucket_files(bucket_id=bucket_id, files=files_to_download)
+    except HfHubHTTPError as e:
+        logger.warning(f"Could not download results from HF bucket: {e}")
+        return 0
+
+    all_lines: list[str] = []
+    for model_file in RESULTS_CACHE_DIR.glob("*.jsonl"):
+        lines = model_file.read_text(encoding="utf-8").splitlines()
+        for line in lines:
+            if line.strip():
+                all_lines.append(line)
+
+    if all_lines:
+        RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
+
+    num_models = len(list(RESULTS_CACHE_DIR.glob("*.jsonl")))
+    logger.info(
+        f"Downloaded {len(all_lines):,} result lines from {num_models} model(s) "
+        f"in bucket {HF_RESULTS_BUCKET!r}."
+    )
+    return len(all_lines)
+
+
 def parse_args() -> None:
     """Parse CLI arguments and populate the module-level runtime overrides."""
     global GPU_MEMORY_UTILIZATION
@@ -274,13 +288,15 @@ def parse_args() -> None:
         "--thermal-pause-temp",
         type=float,
         default=THERMAL_CONFIG.pause_temp_c,
-        help="GPU temperature (°C) at or above which to pause before the next issue.",
+        help=(
+            "GPU temperature (deg C) at or above which to pause before the next issue."
+        ),
     )
     parser.add_argument(
         "--thermal-resume-temp",
         type=float,
         default=THERMAL_CONFIG.resume_temp_c,
-        help="GPU temperature (°C) the GPU must cool to before resuming.",
+        help="GPU temperature (deg C) the GPU must cool to before resuming.",
     )
     args = parser.parse_args()
     GPU_MEMORY_UTILIZATION = args.gpu_memory_utilization
@@ -331,6 +347,8 @@ def ensure_credentials() -> None:
     try:
         HfApi().whoami()
     except Exception as e:  # noqa: BLE001
+        # Any auth/network failure here means we cannot proceed; report it and
+        # exit cleanly rather than crash with a traceback.
         logger.error(
             "Not logged in to Hugging Face. Run `huggingface-cli login` "
             f"(or set HF_TOKEN) and re-run. Underlying error: {e}"
@@ -354,6 +372,8 @@ def release_current_issue() -> None:
         if release_issue_if_owned(number=number, vm_id=VM_ID, assignee=ASSIGNEE):
             logger.info(f"#{number}: released on interrupt.")
     except Exception as e:  # noqa: BLE001
+        # Best-effort cleanup from an interrupt handler: never let a release
+        # failure mask the original Ctrl-C or crash the shutdown path.
         logger.warning(f"#{number}: could not release on interrupt: {e}")
 
 
@@ -378,7 +398,7 @@ def age_sort_value(issue: dict) -> float:
     if not isinstance(created_at, str):
         return float("inf")
     try:
-        parsed = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        parsed = dt.datetime.fromisoformat(created_at.replace("Z", "+00:00"))
     except ValueError:
         return float("inf")
     return parsed.timestamp()
@@ -492,7 +512,7 @@ def process_queue_once() -> None:
                 logger.info(
                     f"#{issue['number']}: skipping -- model {model_id!r} needs "
                     f"~{needed / (1024**3):.1f} GiB of weights "
-                    f"(× {GPU_FIT_OVERHEAD} overhead), which exceeds the local "
+                    f"(x {GPU_FIT_OVERHEAD} overhead), which exceeds the local "
                     f"GPU memory of {gpu_bytes / (1024**3):.1f} GiB. Leaving the "
                     "issue unassigned so a larger machine can pick it up."
                 )
@@ -500,6 +520,8 @@ def process_queue_once() -> None:
         try:
             process_issue(issue=issue, model_id=model_id, groups=groups)
         except Exception as e:  # noqa: BLE001
+            # Top-level per-issue guard: one failing issue must not abort the
+            # whole queue loop, so log it and move on to the next issue.
             logger.exception(f"Error while processing issue #{issue['number']}: {e}")
         cool_down_between_issues(config=THERMAL_CONFIG)
 
@@ -517,7 +539,7 @@ def reclaim_orphaned_issues() -> None:
             path=f"/repos/{REPO}/issues",
             params={
                 "state": "open",
-                "labels": LABEL,
+                "labels": MODEL_REQUEST_LABEL,
                 "per_page": "100",
                 "assignee": ASSIGNEE,
             },
@@ -586,7 +608,7 @@ def list_open_unassigned_issues() -> list[dict]:
         path=f"/repos/{REPO}/issues",
         params={
             "state": "open",
-            "labels": LABEL,
+            "labels": MODEL_REQUEST_LABEL,
             "per_page": "100",
             "assignee": "none",
         },
@@ -664,11 +686,10 @@ def process_issue(issue: dict, model_id: str, groups: list[str]) -> None:
 
 
 def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
-    """Upload result lines to the HF raw-results bucket.
+    """Upload result lines to the HF results bucket.
 
-    Syncs existing results from the bucket, appends new lines for the
-    model, and syncs back. Uses the raw-results bucket as the canonical
-    source.
+    Appends new lines to the model-specific file and uploads only that file.
+    Never deletes existing files or lines from the bucket (additive only).
 
     Args:
         lines:
@@ -696,28 +717,30 @@ def upload_results_to_hf_bucket(lines: list[str], model_id: str) -> bool:
     # Append new unique lines to cache file
     new_lines = [line for line in lines if line and line not in existing_lines]
     if new_lines:
-        with open(model_file, "a", encoding="utf-8") as f:
+        with model_file.open("a", encoding="utf-8") as f:
             for line in new_lines:
                 f.write(line + "\n")
 
-    # Sync entire cache dir to bucket (upload only changed files)
+    # Upload only the model-specific file (additive only, never deletes)
     try:
-        logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
+        logger.info(f"Uploading results to {HF_RESULTS_BUCKET}...")
         api = HfApi()
-        api.sync_bucket(source=str(RESULTS_CACHE_DIR), dest=HF_RAW_BUCKET + "/")
+        api.sync_bucket(
+            source=str(RESULTS_CACHE_DIR), dest=f"hf://buckets/{HF_RESULTS_BUCKET}/"
+        )
         logger.info(
             f"Uploaded {len(new_lines)} new result lines for {model_id!r} to HF bucket."
         )
         return True
     except HfHubHTTPError as e:
-        logger.error(f"Failed to sync to HF bucket: {e}")
+        logger.error(f"Failed to upload to HF bucket: {e}")
         return False
 
 
 def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None:
     """Run euroeval for all languages, uploading to HF bucket after each.
 
-    Results are uploaded incrementally to the Hugging Face raw-results bucket
+    Results are uploaded incrementally to the Hugging Face results bucket
     after each language completes, enabling crash recovery with minimal loss.
 
     Args:
@@ -855,7 +878,7 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
         return
 
     if failed:
-        version = euroeval_version()
+        version = __version__
         reason = failure_reason or f"failed languages: {', '.join(failed)}"
         tail = failure_output_tail or "(no output captured)"
         if issue_has_matching_error_comment(number=number, reason=reason):

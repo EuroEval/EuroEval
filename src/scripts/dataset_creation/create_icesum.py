@@ -35,7 +35,8 @@ def main() -> None:
         if name.endswith(".json")
     }
 
-    # Ignore unused variable error since it is being used but in the queries below
+    # This is used only inside the pandas .query() strings below, so the linter cannot
+    # see the use.
     splits = json.loads(json_files["splits.json"].decode("utf-8"))  # noqa: F841
 
     dataset = json.loads(json_files["icesum.json"].decode("utf-8"))

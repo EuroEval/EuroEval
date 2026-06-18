@@ -22,9 +22,44 @@ project with `vercel build --prod` and deploys it with `vercel deploy --prebuilt
 
 ### Leaderboard Generation
 
-Python package with config in `pyproject.toml` (same as evaluation framework) and source
-code in `src/leaderboards`. Leaderboards are CSVs and the evaluation queue is handled
-via Github issues.
+Python package with config in `pyproject.toml` (same as evaluation framework)
+and source code in `src/leaderboards`. Leaderboards are CSVs and the evaluation
+queue is handled via Github issues.
+
+### Data Flow and Storage
+
+Evaluation results flow through three storage layers:
+
+1. **Hugging Face Bucket** (source of truth):
+   - `EuroEval/results`: Single bucket with per-model JSONL files (one file per model, append-only)
+   - All files contain metadata fields (`commercially_licensed`, `open`, `trained_from_scratch`)
+   - Synced via `hf sync` command (requires `HF_TOKEN`)
+
+2. **Local `results/` directory** (working copy):
+   - Contains all per-model JSONL files (unified, not split into raw/processed)
+   - Git-ignored, synced bidirectionally with HF bucket
+
+3. **`results.tar.gz`** (historical archive):
+   - **Location:** `~/pCloud Drive/data/euroeval_backup/results.tar.gz`
+   - **Override:** Set `EUROEVAL_RESULTS_BACKUP_DIR` environment variable
+   - Contains single `results/results.jsonl` (all results merged with metadata)
+   - Rebuilt from `results/*.jsonl` files on each run
+   - 43+ MB, not tracked in git
+
+4. **Backup snapshots** (disaster recovery):
+   - **Directory:** `~/pCloud Drive/data/euroeval_backup/`
+   - Contains timestamped snapshots: `results_YYYYMMDD_HHMMSS.tar.gz`
+   - Rotation: max 10 snapshots or 1 GB total
+   - Always preserves at least one backup from a previous day (if any exist)
+
+**Sync direction:** HF bucket → local `results/` → `results.tar.gz` → backup snapshots
+
+The `src/scripts/collect_evaluation_results.py` script orchestrates this flow:
+
+- Downloads new results from HF bucket
+- Deduplicates against existing results in `results.tar.gz`
+- Rebuilds `results.tar.gz` from the merged results
+- Creates timestamped backup before overwrite
 
 ### Scripts
 

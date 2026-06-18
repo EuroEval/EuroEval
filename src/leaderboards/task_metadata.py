@@ -22,44 +22,53 @@ from functools import cache
 
 from euroeval import dataset_configs as _ds_module
 from euroeval.data_models import DatasetConfig
-from euroeval.enums import TaskGroup
 from euroeval.languages import get_all_languages
 from euroeval.tasks import get_all_tasks
 
-# Tasks displayed on every EuroEval leaderboard, in column order.
-LEADERBOARD_TASKS: list[str] = [
-    "sentiment-classification",
-    "named-entity-recognition",
-    "linguistic-acceptability",
-    "reading-comprehension",
-    "summarization",
-    "knowledge",
-    "common-sense-reasoning",
-    "simplification",
-    "european-values",
-]
-
-# TaskGroup -> "nlu"/"nlg". The "all_models" leaderboard variant only
-# scores NLU tasks so non-generative models can compete.
-_NLU_GROUPS: frozenset[TaskGroup] = frozenset(
-    {
-        TaskGroup.SEQUENCE_CLASSIFICATION,
-        TaskGroup.TOKEN_CLASSIFICATION,
-        TaskGroup.QUESTION_ANSWERING,
-    }
-)
+from .constants import LEADERBOARD_TASKS, NLU_TASK_GROUPS
 
 
 def task_category(task_name: str) -> str:
-    """Return ``"nlu"`` or ``"nlg"`` for ``task_name``."""
+    """Return ``"nlu"`` or ``"nlg"`` for ``task_name``.
+
+    Args:
+        task_name:
+            The task slug to classify.
+
+    Returns:
+        ``"nlu"`` if the task's group is an NLU group, else ``"nlg"``.
+    """
     task = get_all_tasks()[task_name]
-    return "nlu" if task.task_group in _NLU_GROUPS else "nlg"
+    return "nlu" if task.task_group in NLU_TASK_GROUPS else "nlg"
+
+
+def category_includes_task(category: str, task: str) -> bool:
+    """Check whether a task is scored within a leaderboard category.
+
+    Args:
+        category:
+            Leaderboard category name.
+        task:
+            Task slug.
+
+    Returns:
+        True if the task is scored within the category.
+    """
+    return category == "generative" or task_category(task) == "nlu"
 
 
 def task_metric_names(task_name: str) -> tuple[str, str | None]:
     """Return ``(primary, secondary)`` metric slugs for a task.
 
     Secondary is ``None`` for single-metric tasks (e.g. ``european-values``).
+
+    Args:
+        task_name:
+            The task slug whose metrics to look up.
+
+    Returns:
+        The primary metric slug and the secondary slug, or ``None`` when
+        the task has a single metric.
     """
     metrics = get_all_tasks()[task_name].metrics
     primary = metrics[0].name
@@ -68,34 +77,28 @@ def task_metric_names(task_name: str) -> tuple[str, str | None]:
 
 
 def task_metric_pretty_names(task_name: str) -> tuple[str, str | None]:
-    """Return ``(primary, secondary)`` human-readable metric names."""
+    """Return ``(primary, secondary)`` human-readable metric names.
+
+    Args:
+        task_name:
+            The task slug whose metrics to look up.
+
+    Returns:
+        The primary metric's pretty name and the secondary's, or ``None``
+        when the task has a single metric.
+    """
     metrics = get_all_tasks()[task_name].metrics
     primary = metrics[0].pretty_name
     secondary = metrics[1].pretty_name if len(metrics) > 1 else None
     return primary, secondary
 
 
-@cache
-def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
-    """Collect every ``DatasetConfig`` defined in ``euroeval.dataset_configs``.
-
-    Cached because the leaderboard pipeline calls into this module once per
-    language and the set is fixed per process.
-
-    Returns:
-        Every ``DatasetConfig`` found in the lib, in module-discovery order.
-    """
-    configs: list[DatasetConfig] = []
-    for mod_info in pkgutil.iter_modules(_ds_module.__path__):
-        mod = importlib.import_module(f"euroeval.dataset_configs.{mod_info.name}")
-        for value in vars(mod).values():
-            if isinstance(value, DatasetConfig):
-                configs.append(value)
-    return tuple(configs)
-
-
 def language_name_to_codes(name: str) -> set[str]:
     """Resolve a leaderboard yaml language name (e.g. ``"danish"``) to codes.
+
+    Args:
+        name:
+            The language name as written in a leaderboard yaml.
 
     Returns:
         The set of language codes matching the given name.
@@ -106,15 +109,6 @@ def language_name_to_codes(name: str) -> set[str]:
         for lang in get_all_languages().values()
         if lang.name.lower() == target
     }
-
-
-def language_code_to_name(code: str) -> str:
-    """Look up the canonical language name for a code (lower-cased).
-
-    Returns:
-        The lower-cased language name.
-    """
-    return get_all_languages()[code].name.lower()
 
 
 def languages_with_official_datasets() -> list[str]:
@@ -153,6 +147,10 @@ def official_datasets_for_language(language_name: str) -> OrderedDict[str, list[
     are omitted. Dataset order within a task follows definition order in
     `euroeval.dataset_configs`.
 
+    Args:
+        language_name:
+            The single-language leaderboard's language name.
+
     Returns:
         Ordered mapping from task name to list of dataset names.
 
@@ -177,3 +175,22 @@ def official_datasets_for_language(language_name: str) -> OrderedDict[str, list[
     return OrderedDict(
         (task, datasets) for task, datasets in by_task.items() if datasets
     )
+
+
+@cache
+def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
+    """Collect every ``DatasetConfig`` defined in ``euroeval.dataset_configs``.
+
+    Cached because the leaderboard pipeline calls into this module once per
+    language and the set is fixed per process.
+
+    Returns:
+        Every ``DatasetConfig`` found in the lib, in module-discovery order.
+    """
+    configs: list[DatasetConfig] = []
+    for mod_info in pkgutil.iter_modules(_ds_module.__path__):
+        mod = importlib.import_module(f"euroeval.dataset_configs.{mod_info.name}")
+        for value in vars(mod).values():
+            if isinstance(value, DatasetConfig):
+                configs.append(value)
+    return tuple(configs)
