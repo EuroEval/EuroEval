@@ -433,8 +433,7 @@ def generate_dataframe(
             language_ranks_scores = {
                 lang: _format_rank_score(entry)
                 if all(
-                    ds in results
-                    for ds in language_to_required_datasets.get(lang, [])
+                    ds in results for ds in language_to_required_datasets.get(lang, [])
                 )
                 else "-"
                 for lang, entry in language_ranks.items()

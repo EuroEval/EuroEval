@@ -12,12 +12,13 @@ from transformers.models.auto.image_processing_auto import AutoImageProcessor
 from euroeval.benchmark_modules.vllm import (
     VLLMModel,
     _skip_image_processor_context,
+    compute_token_budget,
     load_model,
 )
 from euroeval.constants import MAX_CONTEXT_LENGTH, REASONING_MAX_TOKENS
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import GenerativeType
-from euroeval.exceptions import InvalidModel, NeedsSystemDependency
+from euroeval.exceptions import InvalidBenchmark, InvalidModel, NeedsSystemDependency
 
 
 class TestNvccCheck:
@@ -225,6 +226,49 @@ class TestVLLMPromptTruncation:
 
         assert len(result.sequences) == 1
         assert result.sequences[0] == "generated text"
+
+
+class TestComputeTokenBudget:
+    """Tests for `compute_token_budget`.
+
+    Regression tests for the bug where a model whose context window could not fit
+    both the prompt and the dataset's full generation budget (e.g. a 2,048-token
+    model on IFEval, which reserves 2,048 generation tokens) had its prompt budget
+    collapse to a single token, causing truncation to fail.
+    """
+
+    def test_large_context_keeps_full_generation_budget(self) -> None:
+        """A model with ample context reserves the full generation budget."""
+        generation_budget, max_tokens_per_prompt = compute_token_budget(
+            model_max_length=MAX_CONTEXT_LENGTH, max_generated_tokens=2048
+        )
+        assert generation_budget == 2048
+        assert max_tokens_per_prompt == MAX_CONTEXT_LENGTH - 2048
+
+    def test_small_context_shrinks_generation_budget(self) -> None:
+        """A model whose context equals the generation budget keeps prompt room.
+
+        The generation budget is shrunk to half the context so the prompt is not
+        truncated down to (nearly) nothing.
+        """
+        generation_budget, max_tokens_per_prompt = compute_token_budget(
+            model_max_length=2048, max_generated_tokens=2048
+        )
+        assert generation_budget == 1024
+        assert max_tokens_per_prompt == 1024
+
+    def test_model_max_length_capped_at_max_context_length(self) -> None:
+        """The context length is capped at MAX_CONTEXT_LENGTH."""
+        generation_budget, max_tokens_per_prompt = compute_token_budget(
+            model_max_length=10 * MAX_CONTEXT_LENGTH, max_generated_tokens=2048
+        )
+        assert generation_budget == 2048
+        assert max_tokens_per_prompt == MAX_CONTEXT_LENGTH - 2048
+
+    def test_too_small_context_raises(self) -> None:
+        """A context too small to fit any prompt raises a clear benchmark error."""
+        with pytest.raises(InvalidBenchmark):
+            compute_token_budget(model_max_length=1, max_generated_tokens=2048)
 
 
 class TestLoadModelMaxModelLen:

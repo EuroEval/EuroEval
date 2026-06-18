@@ -25,6 +25,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   Values task, which doesn't allow invalid model outputs), that iteration is now
   skipped and the scores of the remaining successful iterations are reported. The
   evaluation only fails if every iteration fails.
+- Fixed vLLM benchmarking crashing on models whose context window is too small to
+  fit both the prompt and the dataset's full generation budget (e.g. a 2,048-token
+  model on IFEval, which reserves 2,048 generation tokens). Previously the prompt
+  budget collapsed to a single token and truncation raised "Truncation of prompts
+  failed". The generation budget is now shrunk (down to half the context) so the
+  prompt retains room, and zero-shot instruction-tuned prompts that still don't fit
+  are hard-truncated as a last resort instead of failing the benchmark.
 - Fixed `BenchmarkResult.append_to_results` writing records with a leading
   newline and no trailing newline, which left results files without a final
   newline and could glue two records onto a single line. Records are now written
