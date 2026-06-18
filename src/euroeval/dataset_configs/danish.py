@@ -112,11 +112,8 @@ RAGTRUTH_DA_CONFIG = DatasetConfig(
     source="EuroEval/ragtruth-translated-hallucinations-da-mini",
     task=HALLU,
     languages=[DANISH],
-    prompt_prefix="",
-    prompt_template="{text}",
     instruction_prompt="{text}",
     train_split=None,
-    preprocessing_func=None,
 )
 
 # Unofficial datasets ###
