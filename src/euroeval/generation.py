@@ -81,21 +81,47 @@ def generate(
     )
 
     scores: list["IterationScores"] = list()
+    iteration_errors: list["InvalidBenchmark"] = list()
     for idx in get_pbar(
         iterable=range(len(datasets)),
         desc="Benchmarking",
         disable=not benchmark_config.progress_bar,
     ):
-        test_scores = generate_single_iteration(
-            model=model,
-            dataset=datasets[idx]["test"],
-            cache=cache,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-        )
+        # We tolerate individual iterations failing (e.g. the model refusing to answer
+        # in a way that produces no valid label), as long as at least one iteration
+        # succeeds. This way we can still report the scores of the successful
+        # iterations rather than discarding the entire evaluation.
+        try:
+            test_scores = generate_single_iteration(
+                model=model,
+                dataset=datasets[idx]["test"],
+                cache=cache,
+                dataset_config=dataset_config,
+                benchmark_config=benchmark_config,
+            )
+        except InvalidBenchmark as e:
+            log(
+                f"Iteration {idx} failed and will be skipped: {e}",
+                level=logging.WARNING,
+            )
+            iteration_errors.append(e)
+            clear_memory()
+            continue
         log(f"Test scores for iteration {idx}: {test_scores}", level=logging.DEBUG)
         scores.append(test_scores)
         clear_memory()
+
+    # If every iteration failed then there is nothing to report, so we raise the first
+    # encountered error to abort the evaluation
+    if not scores:
+        raise iteration_errors[0]
+    if iteration_errors:
+        log(
+            f"{len(iteration_errors):,} of {len(datasets):,} iterations failed and "
+            f"were skipped; reporting the scores of the {len(scores):,} successful "
+            "iterations.",
+            level=logging.WARNING,
+        )
 
     if not benchmark_config.debug:
         cache.remove()

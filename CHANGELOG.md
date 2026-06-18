@@ -20,6 +20,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed a single failing iteration aborting an entire evaluation. When a model
+  refuses to answer in a way that produces no valid label (e.g. on the European
+  Values task, which doesn't allow invalid model outputs), that iteration is now
+  skipped and the scores of the remaining successful iterations are reported. The
+  evaluation only fails if every iteration fails.
 - Fixed `BenchmarkResult.append_to_results` writing records with a leading
   newline and no trailing newline, which left results files without a final
   newline and could glue two records onto a single line. Records are now written
