@@ -9,8 +9,14 @@ from collections import defaultdict
 
 from euroeval.logging_utils import log_once
 
+from .link_generation import generate_model_url
 from .record_fields import get_raw_results, get_task, get_total_scores, get_version
-from .records import extract_model_ids_from_record, get_dataset, get_model_name
+from .records import (
+    extract_model_ids_from_record,
+    get_dataset,
+    get_model_name,
+    plain_model_id,
+)
 from .task_metadata import task_metric_names
 
 logger = logging.getLogger(__name__)
@@ -147,7 +153,16 @@ def extract_model_metadata(
         commercially_licensed = additional.get("commercially_licensed", False)
         open_weights = additional.get("open", None)
         trained_from_scratch = additional.get("trained_from_scratch", None)
+        # Models below MINIMUM_NUMBER_OF_MODEL_RECORDS are dropped by
+        # `process_results` before `add_missing_entries` runs, so their stored
+        # records never get a `model_url`, yet they still appear in the
+        # leaderboard (which reads raw records without that filter). Generate
+        # the URL on the fly when it's missing so they still get an anchor tag.
         model_url = additional.get("model_url", None)
+        if model_url is None:
+            model_url = generate_model_url(
+                model_id=plain_model_id(get_model_name(record))
+            )
 
         num_params = _to_float_or_nan(num_params_raw)
         vocab_size = _to_float_or_nan(vocab_size_raw)
