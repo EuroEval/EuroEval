@@ -9,7 +9,7 @@ from functools import cache
 from .backup import backup_results
 from .bucket_sync import sync_bucket
 from .constants import NEW_RESULTS_PATH, RESULTS_DIR
-from .eee_validation import validate_eee_record
+from .eee_validation import is_eee_record
 from .records import load_records_from_jsonl_files
 
 logger = logging.getLogger(__name__)
@@ -25,8 +25,18 @@ def load_raw_results() -> list[dict[str, t.Any]]:
     exactly once. No distinction is made between raw and processed results;
     leaderboard consumers receive the EEE records exactly as stored.
 
+    Only the EEE envelope structure is validated here. The "precious" metadata
+    fields (commercially_licensed, open, trained_from_scratch) are intentionally
+    not required at load time: results posted from compute VMs can't supply them,
+    so they're filled in later by the interactive ``add_missing_entries`` step
+    and enforced when the processed records are written back out.
+
     Returns:
         All evaluation results in EEE format.
+
+    Raises:
+        ValueError:
+            If a loaded record is not an EEE-format record.
     """
     _sync_results_from_bucket()
 
@@ -41,7 +51,8 @@ def load_raw_results() -> list[dict[str, t.Any]]:
         NEW_RESULTS_PATH.unlink()
 
     for idx, record in enumerate(records, start=1):
-        validate_eee_record(record=record, context=f"raw results record {idx:,}")
+        if not is_eee_record(record=record):
+            raise ValueError(f"raw results record {idx:,} is not an EEE-format record.")
 
     return records
 
