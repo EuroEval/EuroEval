@@ -38,16 +38,13 @@ import os
 import sys
 import time
 import urllib.error
-from functools import cache
 from pathlib import Path
 
 from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
-from yaml import safe_load
 
 from euroeval import __version__
 from leaderboards.constants import (
-    CORE_MODELS_CONFIG,
     FAILED_LABEL,
     GATED_LABEL,
     GATED_OUTPUT_RE,
@@ -750,7 +747,6 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
             The flattened list of language codes for this evaluation.
     """
     number = issue["number"]
-    is_core = model_id in load_core_model_ids()
 
     # Load existing results from cache for resume support
     existing_lines = result_lines_for_model(
@@ -774,10 +770,13 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
             f"#{number}: running {model_id!r} on {lang} ({i + 1}/{len(pending)})."
         )
         before = set(read_jsonl_lines(path=RESULTS_PATH))
+        # The queue always evaluates on the validation split; the test split
+        # is reserved for the dedicated core-model run in
+        # run_core_model_evaluations.py.
         returncode, output = run_euroeval(
             model_id=model_id,
             languages=[lang],
-            evaluate_test_split=is_core,
+            evaluate_test_split=False,
             clear_model_cache=True,
             gpu_memory_utilization=GPU_MEMORY_UTILIZATION,
         )
@@ -972,34 +971,6 @@ def issue_has_matching_error_comment(number: int, reason: str) -> bool:
     return any(
         isinstance(c, dict) and marker in (c.get("body") or "") for c in comments
     )
-
-
-@cache
-def load_core_model_ids() -> frozenset[str]:
-    """Return the set of model ids listed as core models.
-
-    Core models are evaluated on the test split; every other model is
-    run on the validation split.
-
-    Returns:
-        The set of core model ids defined in ``core_models.yaml``.
-    """
-    try:
-        with CORE_MODELS_CONFIG.open("r", encoding="utf-8") as f:
-            config = safe_load(f)
-    except OSError as e:
-        logger.warning(f"Could not read {CORE_MODELS_CONFIG}: {e}")
-        return frozenset()
-    if not isinstance(config, dict):
-        return frozenset()
-    models = config.get("models") or []
-    ids: set[str] = set()
-    for entry in models:
-        if isinstance(entry, dict):
-            model_id = entry.get("id")
-            if isinstance(model_id, str) and model_id:
-                ids.add(model_id)
-    return frozenset(ids)
 
 
 if __name__ == "__main__":
