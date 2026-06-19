@@ -14,12 +14,13 @@ from .exceptions import InvalidModel
 from .logging_utils import log_once
 
 
-def validate_bits_per_character(
+def validate_bits_per_character_backend(
     model_config: "ModelConfig", benchmark_config: "BenchmarkConfig"
 ) -> None:
-    """Validate that BPC scoring is supported for the given model.
+    """Validate that the model's backend supports BPC scoring.
 
-    BPC is only supported with vLLM backend and base decoder models.
+    BPC is only supported with the vLLM backend. This check uses only the model
+    configuration, so it can run before the (potentially expensive) model load.
 
     Args:
         model_config:
@@ -29,22 +30,50 @@ def validate_bits_per_character(
 
     Raises:
         InvalidModel:
-            If BPC scoring is requested but not supported.
+            If BPC scoring is requested with an unsupported backend.
     """
     if not benchmark_config.use_bits_per_character:
         return
 
-    # Only vLLM + base decoders support BPC
     if model_config.inference_backend != InferenceBackend.VLLM:
         raise InvalidModel(
             f"Bits-per-character (BPC) scoring requires the vLLM backend, but "
             f"{model_config.inference_backend.value} was specified."
         )
 
-    if model_config.generative_type != GenerativeType.BASE:
+
+def validate_bits_per_character_generative_type(
+    model: "BenchmarkModule", benchmark_config: "BenchmarkConfig"
+) -> None:
+    """Validate that the model's generative type supports BPC scoring.
+
+    BPC is only supported for base decoder models. The generative type is derived
+    from the model's tokeniser, so this check can only run after the model has been
+    loaded.
+
+    Args:
+        model:
+            The loaded model.
+        benchmark_config:
+            The benchmark configuration.
+
+    Raises:
+        InvalidModel:
+            If BPC scoring is requested for a non-base model.
+    """
+    if not benchmark_config.use_bits_per_character:
+        return
+
+    if model.generative_type != GenerativeType.BASE:
+        detected = (
+            model.generative_type.value
+            if model.generative_type is not None
+            else "unknown"
+        )
         raise InvalidModel(
             f"Bits-per-character (BPC) scoring requires a base decoder model, but "
-            f"{model_config.generative_type.value} was specified."
+            f"the model {model.model_config.model_id!r} was detected as "
+            f"{detected!r}."
         )
 
 
@@ -101,8 +130,8 @@ def load_model(
                 f"inference backend {model_config.inference_backend!r}."
             )
 
-    # Validate BPC support before loading
-    validate_bits_per_character(
+    # Validate BPC backend support before the (potentially expensive) load
+    validate_bits_per_character_backend(
         model_config=model_config, benchmark_config=benchmark_config
     )
 
@@ -110,6 +139,12 @@ def load_model(
         model_config=model_config,
         dataset_config=dataset_config,
         benchmark_config=benchmark_config,
+    )
+
+    # The generative type is only known once the model's tokeniser is loaded, so this
+    # check must run after instantiation.
+    validate_bits_per_character_generative_type(
+        model=model, benchmark_config=benchmark_config
     )
 
     return model

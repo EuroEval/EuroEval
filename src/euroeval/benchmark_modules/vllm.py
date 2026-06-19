@@ -731,6 +731,14 @@ class VLLMModel(HuggingFaceEncoderModel):
         sampling_params.top_k = int(generation_kwargs["top_k"])
         sampling_params.repetition_penalty = generation_kwargs["repetition_penalty"]
 
+        # Token-level logprobs are only needed for generation tasks that score labels
+        # via logprobs; this depends on `first_label_token_mapping`, which is only
+        # computed above. BPC scoring (which sets `prompt_logprobs`) never uses them.
+        if sampling_params.prompt_logprobs is None:
+            sampling_params.logprobs = (
+                MAX_VLLM_LOGPROBS if self.buffer["first_label_token_mapping"] else None
+            )
+
         # Compute how many tokens to reserve for generation and, correspondingly, how
         # long prompts may be. For models whose context is too small to fit both the
         # prompt and the dataset's full generation budget, the reserved generation
@@ -1075,9 +1083,7 @@ class VLLMModel(HuggingFaceEncoderModel):
         sampling_params = SamplingParams(
             max_tokens=max_tokens,
             prompt_logprobs=None,
-            logprobs=MAX_VLLM_LOGPROBS
-            if self.buffer["first_label_token_mapping"]
-            else None,
+            logprobs=None,  # Set in _run_vllm_core from first_label_token_mapping
             temperature=GENERATION_KWARGS["temperature"],
             top_p=GENERATION_KWARGS["top_p"],
             top_k=int(GENERATION_KWARGS["top_k"]),
@@ -1907,12 +1913,17 @@ def select_backend_and_parallelism() -> tuple[str, int, int]:
 
     Returns:
         Tuple containing:
-        - backend (str): "ray" if multi-node Ray is available, else "mp".
+        - backend (str): "ray" for multi-node Ray, "uni" for a single non-CUDA
+          device (e.g. Apple Metal, CPU), else "mp".
         - tensor_parallel_size (int): Number of GPUs per node.
         - pipeline_parallel_size (int): Number of stages across nodes.
     """
     if not torch.cuda.is_available():
-        return "mp", 1, 1
+        # Non-CUDA backends (e.g. Apple Metal, CPU) only ever expose a single device
+        # here, and their vLLM plugins don't support the multiprocessing executor —
+        # the Metal plugin rejects the worker's "mps" device. Use the in-process
+        # executor instead, which vLLM also selects by default for a single device.
+        return "uni", 1, 1
 
     if not ray.is_initialized():
         try:

@@ -26,6 +26,14 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed vLLM benchmarking crashing on non-CUDA platforms (e.g. Apple Metal). The
+  multiprocessing executor was forced even for a single non-CUDA device, and its
+  worker rejected the `mps` device. Single non-CUDA devices now use vLLM's
+  in-process executor.
+- Fixed an `AttributeError` crash when starting a bits-per-character (BPC) run.
+  The backend/generative-type validation read a non-existent
+  `ModelConfig.generative_type`; the generative-type check now runs after the
+  model is loaded, when the type is known from the tokeniser.
 - Fixed a single failing iteration aborting an entire evaluation. When a model
   refuses to answer in a way that produces no valid label (e.g. on the European
   Values task, which doesn't allow invalid model outputs), that iteration is now
