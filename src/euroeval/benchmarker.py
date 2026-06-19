@@ -563,7 +563,7 @@ class Benchmarker:
         )
         if is_bpc:
             log_once(
-                "Running in bits-per-character (BPC) mode: every dataset will be "
+                "\nRunning in bits-per-character (BPC) mode: every dataset will be "
                 "scored by the bits-per-character of the ground-truth answer (lower is "
                 "better) instead of the usual task metrics.",
                 level=logging.INFO,
