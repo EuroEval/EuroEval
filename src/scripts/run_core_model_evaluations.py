@@ -40,7 +40,6 @@ import logging
 import os
 import re
 import sys
-import tarfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -49,6 +48,7 @@ from update_core_models import refresh_core_models
 
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
+from leaderboards.constants import NEW_RESULTS_PATH, RESULTS_DIR
 from leaderboards.core_models import CoreModel
 from leaderboards.evaluation_common import (
     gpu_total_memory_bytes,
@@ -56,8 +56,6 @@ from leaderboards.evaluation_common import (
     official_dataset_language_pairs,
     run_euroeval,
 )
-from leaderboards.paths import NEW_RESULTS_PATH, RESULTS_PATH
-from leaderboards.result_loading import convert_to_old_format
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -264,14 +262,9 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
     """Return the ``(model_id, dataset, language)`` triples already benchmarked.
 
     Reads the merged result corpus the same way the leaderboard pipeline
-    does -- ``results.tar.gz`` plus the optional ``new_results.jsonl`` --
-    but without the destructive unlink that
-    :func:`leaderboards.result_loading.load_raw_results` performs. Each
-    record is normalised via
-    :func:`leaderboards.result_loading.convert_to_old_format` so Every
-    Eval Ever (EEE) records (with ``model`` / ``dataset`` / ``languages``
-    nested under ``model_info`` and ``eval_library.additional_details``)
-    are flattened to top-level keys.
+    does -- the per-model files in ``RESULTS_DIR`` plus the optional
+    ``new_results.jsonl`` -- but without the destructive unlink that
+    :func:`leaderboards.result_loading.load_raw_results` performs.
 
     Returns:
         Every ``(model_id, dataset, language)`` triple in the merged
@@ -280,11 +273,8 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
         ``core_models.yaml``.
     """
     lines: list[str] = []
-    if RESULTS_PATH.exists():
-        with tarfile.open(RESULTS_PATH, "r:gz") as tar:
-            member_file = tar.extractfile(member="results/results.jsonl")
-            if member_file is not None:
-                lines.extend(member_file.read().decode(encoding="utf-8").splitlines())
+    for model_file in sorted(RESULTS_DIR.glob("*.jsonl")):
+        lines.extend(model_file.read_text(encoding="utf-8").splitlines())
     if NEW_RESULTS_PATH.exists():
         lines.extend(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
 
@@ -308,18 +298,24 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
                     f"snippet={record_text[:120]!r}."
                 )
                 continue
+
+            # EEE: model_info.name, eval_library.additional_details.dataset/languages
+            model = raw_record.get("model_info", {}).get("name", "")
+            eval_additional = raw_record.get("eval_library", {}).get(
+                "additional_details", {}
+            )
+            dataset = eval_additional.get("dataset")
+            languages_raw = eval_additional.get("languages", "[]")
             try:
-                record = convert_to_old_format(record=raw_record)
-            except (KeyError, TypeError, ValueError) as e:
-                parse_failures += 1
-                logger.warning(
-                    f"Skipping unnormalisable EEE record on line {line_idx:,}: "
-                    f"{e}; snippet={record_text[:120]!r}."
+                languages = (
+                    json.loads(languages_raw)
+                    if isinstance(languages_raw, str)
+                    else languages_raw
                 )
-                continue
-            model = _strip_anchor(model_id=str(record.get("model", "")))
-            dataset = record.get("dataset")
-            languages = record.get("languages") or record.get("dataset_languages") or []
+            except json.JSONDecodeError:
+                languages = []
+
+            model = _strip_anchor(model_id=str(model))
             if not model or not dataset:
                 continue
             for language in languages:

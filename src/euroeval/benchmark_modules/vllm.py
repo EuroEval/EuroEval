@@ -18,6 +18,7 @@ from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
 from transformers import PythonBackend, SentencePieceBackend, TokenizersBackend
 from transformers.generation.configuration_utils import GenerationConfig
+from transformers.models.auto.image_processing_auto import AutoImageProcessor
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
@@ -124,6 +125,76 @@ from ..bpc_scoring import compute_bpc_scores_for_vllm_outputs
 # class (Gemma4ForConditionalGeneration) and a text-only class
 # (Gemma4TextForCausalLM).  vLLM only registers the former, so we remap here.
 _ARCHITECTURE_ALIASES: dict[str, str] = {"Gemma4TextForCausalLM": "Gemma4ForCausalLM"}
+
+
+@contextlib.contextmanager
+def _skip_image_processor_context() -> c.Generator[None, None, None]:
+    """Suppress missing image processor errors during model loading.
+
+    Some models have multimodal architectures (e.g. Mistral3ForConditionalGeneration)
+    but are released without the preprocessor_config.json that transformers needs to
+    load the image processor.  Since EuroEval only does text inference, we can safely
+    return None for the image processor and let vLLM load the text backbone normally.
+    """
+    original_func = AutoImageProcessor.from_pretrained.__func__
+
+    @classmethod  # type: ignore[misc]
+    def patched(
+        cls: type, pretrained_model_name_or_path: str, *args: object, **kwargs: object
+    ) -> object:
+        try:
+            return original_func(cls, pretrained_model_name_or_path, *args, **kwargs)  # ty: ignore[invalid-argument-type]
+        except OSError as e:
+            if "Can't load image processor" in str(
+                e
+            ) and "preprocessor_config.json" in str(e):
+                return None
+            raise
+
+    AutoImageProcessor.from_pretrained = patched  # ty: ignore[invalid-assignment]
+    try:
+        yield
+    finally:
+        AutoImageProcessor.from_pretrained = classmethod(original_func)  # ty: ignore[invalid-assignment]
+
+
+def compute_token_budget(
+    model_max_length: int, max_generated_tokens: int
+) -> tuple[int, int]:
+    """Compute the generation and per-prompt token budgets for a model.
+
+    The generation budget cannot exceed the model's context length, and we
+    additionally need to reserve room for the prompt. For models whose context is
+    too small to fit both the prompt and the dataset's full generation budget, we
+    shrink the generation budget (down to half the context) so that the prompt
+    retains room, rather than truncating the prompt down to nothing.
+
+    Args:
+        model_max_length:
+            The maximum context length of the model's tokeniser.
+        max_generated_tokens:
+            The dataset's configured number of tokens to generate.
+
+    Returns:
+        A pair ``(generation_budget, max_tokens_per_prompt)``, being the number of
+        tokens reserved for generation and the resulting maximum number of tokens
+        allowed in a prompt, respectively.
+
+    Raises:
+        InvalidBenchmark:
+            If the model's context length is too small to fit any prompt alongside
+            the generation budget.
+    """
+    max_context_length = min(model_max_length, MAX_CONTEXT_LENGTH)
+    generation_budget = min(max_generated_tokens, max(max_context_length // 2, 1))
+    max_tokens_per_prompt = max_context_length - generation_budget
+    if max_tokens_per_prompt <= 0:
+        raise InvalidBenchmark(
+            f"The model's context length of {max_context_length:,} tokens is too "
+            "small to fit any prompt alongside its generation budget, so it cannot "
+            "be benchmarked on this dataset."
+        )
+    return generation_budget, max_tokens_per_prompt
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -649,6 +720,46 @@ class VLLMModel(HuggingFaceEncoderModel):
                     level=logging.DEBUG,
                 )
 
+        # The sampling parameters are constructed by the caller (`generate()` or
+        # `score()`); here we fill in the stop tokens, structured outputs and any
+        # per-model generation-config overrides that depend on this method's local
+        # state.
+        sampling_params.stop = [stop_token for stop_token in stop_tokens if stop_token]
+        sampling_params.structured_outputs = structured_outputs
+        sampling_params.temperature = generation_kwargs["temperature"]
+        sampling_params.top_p = generation_kwargs["top_p"]
+        sampling_params.top_k = int(generation_kwargs["top_k"])
+        sampling_params.repetition_penalty = generation_kwargs["repetition_penalty"]
+
+        # Compute how many tokens to reserve for generation and, correspondingly, how
+        # long prompts may be. For models whose context is too small to fit both the
+        # prompt and the dataset's full generation budget, the reserved generation
+        # budget is shrunk so the prompt retains room (see `compute_token_budget`). BPC
+        # scoring (max_tokens == 0) performs no generation, so prompts may use the full
+        # context.
+        max_context_length = min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
+        if sampling_params.max_tokens == 0:
+            max_tokens_per_prompt = max_context_length
+        else:
+            generation_budget, max_tokens_per_prompt = compute_token_budget(
+                model_max_length=self._tokeniser.model_max_length,
+                max_generated_tokens=self.dataset_config.max_generated_tokens,
+            )
+            if generation_budget < self.dataset_config.max_generated_tokens:
+                log_once(
+                    f"The model {self.model_config.model_id!r} has a context length of "
+                    f"{max_context_length:,} tokens, which is too small to fit both "
+                    "the prompt and the dataset's full generation budget of "
+                    f"{self.dataset_config.max_generated_tokens:,} tokens. Reserving "
+                    f"{generation_budget:,} tokens for generation when budgeting "
+                    "prompt lengths instead.",
+                    level=logging.WARNING,
+                )
+                # Reasoning models govern their own budget via REASONING_MAX_TOKENS, so
+                # we only shrink the generation budget for non-reasoning models.
+                if self.generative_type != GenerativeType.REASONING:
+                    sampling_params.max_tokens = generation_budget
+
         # Extract prompts using the provided key
         prompts: c.Sequence[str] = inputs[prompt_key]
         if any(len(prompt.strip()) == 0 for prompt in prompts):
@@ -673,16 +784,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             prompts = [prompt.strip() for prompt in prompts]
 
-        # Truncate the prompts if needed
-        # For BPC scoring (max_tokens=0), we can use full context
-        # For generation, we need to reserve space for generated tokens
-        max_tokens_per_prompt = min(
-            self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH
-        )
-        if sampling_params.max_tokens > 0:
-            max_tokens_per_prompt -= min(
-                self.dataset_config.max_generated_tokens, max_tokens_per_prompt - 1
-            )
+        # Truncate the prompts if needed, using the per-prompt token budget computed
+        # above.
         tokenized_prompts = self._tokeniser(
             text=prompts, max_length=max_tokens_per_prompt
         )
@@ -739,9 +842,35 @@ class VLLMModel(HuggingFaceEncoderModel):
                             prompts = new_prompts
                             break
                     else:
-                        raise InvalidBenchmark(
-                            "Truncation of prompts failed, some prompts are still too "
-                            "long."
+                        # Removing few-shot examples was not enough (or there were
+                        # none to remove, as in zero-shot tasks), so hard-truncate the
+                        # prompts as a last resort rather than failing the benchmark.
+                        # We truncate the prompts with *all* few-shot examples removed,
+                        # to avoid keeping partial few-shot context while cutting away
+                        # the actual query.
+                        prompts_without_few_shots = [
+                            end_of_chat_token.join(
+                                prompt_segment[
+                                    2 * self.dataset_config.num_few_shot_examples :
+                                ]
+                            )
+                            for prompt_segment in prompt_segments
+                        ]
+                        log_once(
+                            "Could not fit the prompts for the model "
+                            f"{self.model_config.model_id!r} within "
+                            f"{max_tokens_per_prompt:,} tokens by removing few-shot "
+                            "examples, so hard-truncating them instead.",
+                            level=logging.WARNING,
+                        )
+                        truncated_tokenized_prompts = self._tokeniser(
+                            text=prompts_without_few_shots,
+                            max_length=max_tokens_per_prompt,
+                            truncation=True,
+                        )
+                        prompts = self._tokeniser.batch_decode(
+                            sequences=truncated_tokenized_prompts.input_ids,
+                            skip_special_tokens=True,
                         )
                 case _:
                     raise InvalidBenchmark("The model type is not set!")
@@ -803,7 +932,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                         text=prompts,
                         truncation=True,
                         max_length=max(
-                            min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
+                            max_context_length
                             - sampling_params.max_tokens
                             - extra_truncation,
                             0,
@@ -1284,20 +1413,21 @@ def load_model(
         select_backend_and_parallelism()
     )
 
-    try:
-        model_location = (
-            model_id
-            if internet_connection_available() or Path(model_id).is_dir()
-            else resolve_model_path(download_dir=download_dir)
-        )
+    model_location = (
+        model_id
+        if internet_connection_available() or Path(model_id).is_dir()
+        else resolve_model_path(download_dir=download_dir)
+    )
 
-        max_model_len = min(
-            true_max_model_len,
-            MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
-            if generative_type == GenerativeType.REASONING
-            else MAX_CONTEXT_LENGTH,
-        )
-        model = LLM(
+    max_model_len = min(
+        true_max_model_len,
+        MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
+        if generative_type == GenerativeType.REASONING
+        else MAX_CONTEXT_LENGTH,
+    )
+
+    def _create_llm() -> "LLM":
+        return LLM(
             model=model_location,
             tokenizer=model_location,
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
@@ -1322,8 +1452,27 @@ def load_model(
             **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
             **vllm_params,
         )
+
+    try:
+        model = _create_llm()
     except (RuntimeError, ValueError, OSError) as e:
-        if "awaiting a review from the repo authors" in str(e):
+        if "Can't load image processor" in str(e) and "preprocessor_config.json" in str(
+            e
+        ):
+            log(
+                f"Model {model_id!r} is missing an image processor config. Retrying "
+                "without image processing since EuroEval only does text inference.",
+                level=logging.DEBUG,
+            )
+            try:
+                with _skip_image_processor_context():
+                    model = _create_llm()
+            except (RuntimeError, ValueError, OSError) as retry_e:
+                raise InvalidModel(
+                    f"The model {model_id!r} could not be loaded. The error was "
+                    f"{retry_e!r}."
+                ) from retry_e
+        elif "awaiting a review from the repo authors" in str(e):
             raise InvalidModel(
                 f"The model {model_id!r} is awaiting a review from the repository "
                 "authors. Please try again later."
@@ -1360,9 +1509,10 @@ def load_model(
                 f"`FULL_LOG=1 euroeval --model {model_id}`."
             )
             raise InvalidModel(msg) from e
-        raise InvalidModel(
-            f"The model {model_id!r} could not be loaded. The error was {e!r}."
-        ) from e
+        else:
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded. The error was {e!r}."
+            ) from e
 
     model.config = hf_model_config
 

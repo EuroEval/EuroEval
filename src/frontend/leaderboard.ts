@@ -450,6 +450,40 @@ export const csvKeys: string[] = Object.keys(csvModules).map((k) =>
   k.replace(/^.*\/csv\//, "").replace(/\.csv$/, ""),
 );
 
+// Session flag guarding the stale-chunk reload, so a genuinely missing chunk
+// can't trap the user in a reload loop. Cleared on any successful load so a
+// later deploy can still trigger a fresh reload.
+const STALE_CHUNK_RELOAD_KEY = "euroeval:stale-chunk-reload";
+
+function isChunkLoadError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    error instanceof TypeError ||
+    /loading dynamically imported module/i.test(message) ||
+    /importing a module script failed/i.test(message) ||
+    /failed to fetch/i.test(message) ||
+    /network/i.test(message)
+  );
+}
+
+/**
+ * Recover from a stale hashed chunk left over from a previous deploy by
+ * triggering a one-time full page reload, which fetches a fresh index.html
+ * pointing at the current chunk hashes. Returns true if a reload was started.
+ */
+function reloadForStaleChunk(): boolean {
+  try {
+    if (sessionStorage.getItem(STALE_CHUNK_RELOAD_KEY)) return false;
+    sessionStorage.setItem(STALE_CHUNK_RELOAD_KEY, "1");
+  } catch {
+    // sessionStorage unavailable (e.g. private mode); skip the guard rather
+    // than risk a reload loop.
+    return false;
+  }
+  window.location.reload();
+  return true;
+}
+
 /** Async-load and parse a leaderboard by stem (e.g. `danish_generative`). */
 async function loadWithRetry(
   loadFn: () => Promise<string>,
@@ -459,21 +493,29 @@ async function loadWithRetry(
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return await loadFn();
+      const result = await loadFn();
+      // A successful load means chunks resolve again; reset the reload guard
+      // so a future deploy can recover the same way.
+      try {
+        sessionStorage.removeItem(STALE_CHUNK_RELOAD_KEY);
+      } catch {
+        // ignore
+      }
+      return result;
     } catch (error) {
       lastError = error;
       // Only retry on network-type errors (chunk load failures)
-      const message = error instanceof Error ? error.message : String(error);
-      const isNetworkError =
-        error instanceof TypeError ||
-        /loading dynamically imported module/i.test(message) ||
-        /failed to fetch/i.test(message) ||
-        /network/i.test(message);
-      if (!isNetworkError || attempt === maxRetries) break;
+      if (!isChunkLoadError(error) || attempt === maxRetries) break;
       // Exponential backoff: 100ms, 200ms, 400ms
       const delay = 100 * Math.pow(2, attempt - 1);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
+  }
+  // Retries are exhausted. If this looks like a stale chunk from a previous
+  // deploy, a reload (not another fetch of the dead URL) is the only fix.
+  if (isChunkLoadError(lastError) && reloadForStaleChunk()) {
+    // Keep the promise pending; the page is reloading.
+    return new Promise<string>(() => {});
   }
   const errorMessage =
     lastError instanceof Error ? lastError.message : String(lastError);

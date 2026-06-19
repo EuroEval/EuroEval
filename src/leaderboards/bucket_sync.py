@@ -1,30 +1,112 @@
-"""Sync Hugging Face buckets for EuroEval results.
+"""Sync Hugging Face bucket for EuroEval results.
 
-Uses the `hf sync` CLI to sync raw and processed results buckets
-to local directories. Also provides backup functionality.
+Uses the ``huggingface_hub`` package to sync the results bucket to the local
+results directory. Also provides backup functionality.
 """
 
-import collections.abc as c
 import json
 import logging
 import os
-import subprocess
-from contextlib import contextmanager
+from collections import defaultdict
 from pathlib import Path
 
 from dotenv import load_dotenv
+from huggingface_hub import HfApi
+from huggingface_hub.errors import HfHubHTTPError
 
 from euroeval.data_models import BenchmarkResult
 
-from .backup import backup_results
-from .paths import PROCESSED_RESULTS_DIR, RAW_RESULTS_DIR
+from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-HF_RAW_BUCKET = "EuroEval/raw-results"
-HF_PROCESSED_BUCKET = "EuroEval/processed-results"
+
+def sync_bucket() -> None:
+    """Sync HF results bucket into the local results directory.
+
+    Syncs from bucket to local directory using ``HfApi.sync_bucket``.
+    Creates local directory if needed.
+
+    HF_TOKEN is loaded from .env by load_dotenv() at module import.
+    """
+    hf_token = os.getenv("HF_TOKEN")
+    if not hf_token:
+        logger.warning("HF_TOKEN not set. Cannot sync from bucket.")
+        return
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Syncing bucket {HF_RESULTS_BUCKET} -> {RESULTS_DIR}...")
+    try:
+        HfApi().sync_bucket(
+            source=f"hf://buckets/{HF_RESULTS_BUCKET}/",
+            dest=str(RESULTS_DIR),
+            token=hf_token,
+        )
+        logger.info(f"Synced bucket {HF_RESULTS_BUCKET}.")
+    except HfHubHTTPError as e:
+        logger.warning(f"Bucket sync failed: {e}")
+
+
+def upload_results_to_bucket(results_file: Path) -> None:
+    """Upload local results to the Hugging Face results bucket.
+
+    Reads the merged results file, splits into per-model JSONL files,
+    and syncs to the bucket using hf sync.
+
+    Args:
+        results_file:
+            Path to the merged results file (euroeval_benchmark_results.jsonl).
+    """
+    hf_token = os.getenv("HF_TOKEN")
+    if not hf_token:
+        logger.warning("HF_TOKEN not set. Cannot upload to bucket.")
+        return
+
+    if not results_file.exists():
+        logger.warning(
+            f"Results file {results_file} does not exist. Nothing to upload."
+        )
+        return
+
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    results_by_model: dict[str, list[str]] = defaultdict(list)
+    logger.info(f"Reading results from {results_file}...")
+    with results_file.open(encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                try:
+                    rec = json.loads(line)
+                    result = BenchmarkResult.from_dict(config=rec)
+                    if result.model:
+                        model_key = _sanitise_model_id(model_id=result.model)
+                        results_by_model[model_key].append(line.strip())
+                except Exception as e:
+                    logger.debug(f"Skipping invalid record during upload: {e}")
+
+    if not results_by_model:
+        logger.warning("No valid results found to upload.")
+        return
+
+    logger.info(f"Writing {len(results_by_model)} per-model files to {RESULTS_DIR}...")
+    for model_key, lines in results_by_model.items():
+        model_file = RESULTS_DIR / f"{model_key}.jsonl"
+        with model_file.open("w", encoding="utf-8") as f:
+            for line in lines:
+                f.write(line + "\n")
+
+    logger.info(f"Syncing local {RESULTS_DIR} -> bucket {HF_RESULTS_BUCKET}...")
+    try:
+        HfApi().sync_bucket(
+            source=str(RESULTS_DIR),
+            dest=f"hf://buckets/{HF_RESULTS_BUCKET}/",
+            token=hf_token,
+        )
+        logger.info(f"Uploaded results to bucket {HF_RESULTS_BUCKET}.")
+    except HfHubHTTPError as e:
+        logger.warning(f"Bucket upload failed: {e}")
 
 
 def _sanitise_model_id(model_id: str) -> str:
@@ -41,170 +123,3 @@ def _sanitise_model_id(model_id: str) -> str:
         Safe filename (e.g. "meta-llama_Llama-2-7b").
     """
     return model_id.replace("/", "_")
-
-
-def sync_bucket() -> None:
-    """Sync both HF buckets (raw and processed) using hf sync.
-
-    Syncs from bucket to local directory using the official hf CLI.
-    Creates local directories if needed.
-
-    HF_TOKEN is loaded from .env by load_dotenv() at module import.
-    """
-    hf_token = os.getenv("HF_TOKEN")
-    if not hf_token:
-        logger.warning("HF_TOKEN not set. Cannot sync from bucket.")
-        return
-
-    RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    logger.info("Syncing raw bucket %s → %s...", HF_RAW_BUCKET, RAW_RESULTS_DIR)
-    result = subprocess.run(
-        ["hf", "sync", f"hf://buckets/{HF_RAW_BUCKET}/", str(RAW_RESULTS_DIR)],
-        capture_output=True,
-        text=True,
-        check=False,
-        env={**os.environ, "HF_TOKEN": hf_token},
-    )
-    if result.returncode != 0:
-        logger.warning("hf sync failed for raw bucket: %s", result.stderr)
-    else:
-        logger.info("Synced raw bucket: %s", result.stdout.strip())
-
-    PROCESSED_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    logger.info(
-        "Syncing processed bucket %s → %s...",
-        HF_PROCESSED_BUCKET,
-        PROCESSED_RESULTS_DIR,
-    )
-    result = subprocess.run(
-        [
-            "hf",
-            "sync",
-            f"hf://buckets/{HF_PROCESSED_BUCKET}/",
-            str(PROCESSED_RESULTS_DIR),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-        env={**os.environ, "HF_TOKEN": hf_token},
-    )
-    if result.returncode != 0:
-        logger.warning("hf sync failed for processed bucket: %s", result.stderr)
-    else:
-        logger.info("Synced processed bucket: %s", result.stdout.strip())
-
-
-@contextmanager
-def sync_bucket_context() -> c.Generator[Path, None, None]:
-    """Context manager for HF bucket sync.
-
-    Syncs buckets on entry, logs completion on exit.
-
-    Yields:
-        Path: Raw results directory (for backwards compatibility)
-    """
-    logger.info("Syncing buckets...")
-    sync_bucket()
-    yield RAW_RESULTS_DIR
-    logger.info("Bucket sync complete.")
-
-
-@contextmanager
-def sync_bucket_with_backup() -> c.Generator[Path, None, None]:
-    """Context manager for HF bucket sync with automatic backup.
-
-    Syncs buckets on entry, creates backup on exit.
-
-    Yields:
-        Path: Raw results directory (for backwards compatibility)
-    """
-    logger.info("Syncing buckets...")
-    sync_bucket()
-    yield RAW_RESULTS_DIR
-    backup_path = backup_results()
-    if backup_path:
-        logger.info("Backup created at %s.", backup_path)
-    logger.info("Bucket sync complete.")
-
-
-def upload_results_to_bucket(results_file: Path) -> None:
-    """Upload local results to the Hugging Face raw-results bucket.
-
-    Reads the merged results file, splits into per-model JSONL files,
-    and syncs to the bucket using hf sync.
-
-    Args:
-        results_file:
-            Path to the merged results file (euroeval_benchmark_results.jsonl).
-    """
-    hf_token = os.getenv("HF_TOKEN")
-    if not hf_token:
-        logger.warning("HF_TOKEN not set. Cannot upload to bucket.")
-        return
-
-    if not results_file.exists():
-        logger.warning(
-            "Results file %s does not exist. Nothing to upload.", results_file
-        )
-        return
-
-    RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Group results by model
-    results_by_model: dict[str, list[str]] = {}
-    logger.info("Reading results from %s...", results_file)
-    with results_file.open() as f:
-        for line in f:
-            if line.strip():
-                try:
-                    rec = json.loads(line)
-                    result = BenchmarkResult.from_dict(rec)
-                    if result.model:
-                        model_key = _sanitise_model_id(result.model)
-                        if model_key not in results_by_model:
-                            results_by_model[model_key] = []
-                        results_by_model[model_key].append(line.strip())
-                except Exception as e:
-                    logger.debug("Skipping invalid record during upload: %s", e)
-
-    if not results_by_model:
-        logger.warning("No valid results found to upload.")
-        return
-
-    # Write per-model JSONL files
-    logger.info(
-        "Writing %s per-model files to %s...", len(results_by_model), RAW_RESULTS_DIR
-    )
-    for model_key, lines in results_by_model.items():
-        model_file = RAW_RESULTS_DIR / f"{model_key}.jsonl"
-        with model_file.open("w") as f:
-            for line in lines:
-                f.write(line + "\n")
-
-    # Sync to bucket
-    logger.info("Syncing local %s → bucket %s...", RAW_RESULTS_DIR, HF_RAW_BUCKET)
-    result = subprocess.run(
-        ["hf", "sync", str(RAW_RESULTS_DIR), f"hf://buckets/{HF_RAW_BUCKET}/"],
-        capture_output=True,
-        text=True,
-        check=False,
-        env={**os.environ, "HF_TOKEN": hf_token},
-    )
-    if result.returncode != 0:
-        logger.warning("hf sync upload failed: %s", result.stderr)
-    else:
-        logger.info("Uploaded results to bucket: %s", result.stdout.strip())
-
-
-def is_sync_available() -> bool:
-    """Check if hf CLI is available for syncing.
-
-    Returns:
-        True if hf binary is on PATH, False otherwise.
-    """
-    result = subprocess.run(["which", "hf"], capture_output=True, check=False)
-    return result.returncode == 0
-
-
-# Alias for backwards compatibility
-create_backup = backup_results

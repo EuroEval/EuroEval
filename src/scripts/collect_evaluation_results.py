@@ -6,8 +6,8 @@ been picked up by the compute server), it:
 
 1. Fetches the model's results JSONL from the HF bucket.
 2. Concatenates all results into ``new_results.jsonl`` at the repo root.
-3. Runs ``python -m scripts.generate_leaderboards`` to merge the new
-   results into the leaderboards.
+3. Runs ``generate_leaderboards.py`` to merge the new results into the
+   leaderboards.
 4. Builds the frontend and deploys it to Vercel as a prebuilt artifact
    (so Vercel's CLI never has to upload the >100 MB ``.git`` packfile).
 5. Posts a comment and closes each processed issue.
@@ -20,7 +20,7 @@ issues that appeared during the run).
 Required env vars
 -----------------
 GITHUB_TOKEN        A PAT with ``issues: write`` for the EuroEval repo.
-HUGGINGFACE_API_KEY A Hugging Face token with write access to upload results.
+HF_TOKEN            A Hugging Face token with write access to upload results.
 """
 
 from __future__ import annotations
@@ -28,26 +28,28 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import os
 import subprocess
 import sys
 import urllib.error
 from pathlib import Path
 
+import click
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
+from huggingface_hub import BucketFile, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
-from leaderboards.bucket_sync import create_backup
-from leaderboards.github_api import (
-    LABEL,
+from leaderboards.backup import backup_results
+from leaderboards.constants import (
+    MODEL_REQUEST_LABEL,
     REPO,
+    RESULTS_DIR,
     RESULTS_READY_LABEL,
-    close_issue,
-    comment_on_issue,
-    gh_request,
 )
-from leaderboards.paths import RAW_RESULTS_DIR, RESULTS_PATH
+from leaderboards.github_api import close_issue, comment_on_issue, gh_request
 from leaderboards.queue_parsing import extract_model_id
+from leaderboards.record_fields import get_few_shot, get_validation_split
+from leaderboards.records import get_dataset, get_model_name
 
 load_dotenv()
 
@@ -59,30 +61,32 @@ logger = logging.getLogger("collect_evaluation_results")
 REPO_ROOT = Path(__file__).resolve().parents[2]
 NEW_RESULTS_PATH = REPO_ROOT / "new_results.jsonl"
 
-# Canonical HF bucket for storing raw results (public read access).
-HF_RAW_BUCKET = "hf://buckets/EuroEval/raw-results"
+# Canonical HF bucket for storing evaluation results (public read access).
+HF_RESULTS_BUCKET = "EuroEval/results"
 
 
-def _model_id_to_filename(model_id: str) -> str:
-    """Convert a model ID to a safe filename.
-
-    Args:
-        model_id:
-            The model identifier (e.g., "meta-llama/Llama-3-8B").
-
-    Returns:
-        A safe filename with slashes and dots replaced by underscores.
-    """
-    return model_id.replace("/", "_").replace(".", "_") + ".jsonl"
-
-
-def main() -> None:
+@click.command()
+@click.option(
+    "--force/--no-force",
+    "-f",
+    default=False,
+    show_default=True,
+    help="Always regenerate leaderboards, even if no new results are found.",
+)
+def main(force: bool) -> None:
     """Harvest finished evaluations and regenerate leaderboards.
 
     Only issues with successfully harvested results are closed. Issues
     with the ``results-ready`` label may not yet have their results
     synced to the bucket, so the label alone is not sufficient.
+
+    Args:
+        force (optional):
+            Whether to always regenerate leaderboards, even if no new results
+            are found. Defaults to False.
     """
+    check_required_env_vars()
+
     logger.info("Fetching open model evaluation request issues...")
     try:
         issues = list_open_request_issues()
@@ -106,6 +110,18 @@ def main() -> None:
         logger.info(f"#{number}: found {len(lines)} result line(s).")
         harvested.append((number, lines))
 
+    # If no issues found, switch to bucket-scan mode
+    bucket_scan_results: list[str] = []
+    if len(issues) == 0:
+        logger.info("No open issues found; using bucket-scan mode.")
+        bucket_scan_results = scan_bucket_for_results()
+        if not bucket_scan_results:
+            logger.info("No new results found in bucket scan.")
+            if not force:
+                return
+            logger.info("Forcing leaderboard regeneration despite no new results.")
+        logger.info(f"Bucket-scan mode found {len(bucket_scan_results)} new result(s).")
+
     # Load any manually added results from new_results.jsonl
     manual_lines: list[str] = []
     if NEW_RESULTS_PATH.exists():
@@ -117,40 +133,50 @@ def main() -> None:
         if manual_lines:
             logger.info(f"Found {len(manual_lines)} manually added result line(s).")
 
-    # Combine harvested results with manual results
+    # Combine harvested results, bucket-scan results, and manual results
     all_lines: list[str] = []
     for _, lines in harvested:
         all_lines.extend(lines)
+    all_lines.extend(bucket_scan_results)
     all_lines.extend(manual_lines)
 
-    if not all_lines:
+    has_new_results = bool(all_lines)
+    if not has_new_results:
         logger.info("Nothing to merge.")
-        return
-
-    NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
-    logger.info(
-        f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
-        f"({len(all_lines) - len(manual_lines)} harvested, {len(manual_lines)} manual)."
-    )
-
-    # Upload results to HF bucket BEFORE regenerating leaderboards
-    # (leaderboard regeneration consumes/deletes new_results.jsonl)
-    if upload_results_to_hf(
-        new_results_path=NEW_RESULTS_PATH, processed_path=RESULTS_PATH
-    ):
-        logger.info("Results uploaded to Hugging Face bucket.")
+        if not force:
+            return
+        logger.info("Forcing leaderboard regeneration despite no new results.")
     else:
-        logger.error(
-            "Failed to upload results to Hugging Face bucket. "
-            "The local archive (results.tar.gz) has been updated with the new results, "
-            "but the bucket is now out of sync. Please run upload_results_to_hf() "
-            "manually or check your Hugging Face credentials and re-run this script."
-        )
-        # Don't abort here -- leaderboards will still be correct because
-        # load_raw_results() appends new_results.jsonl locally before deleting it.
-        # But the bucket needs to be synced on the next successful run.
+        NEW_RESULTS_PATH.write_text("\n".join(all_lines) + "\n", encoding="utf-8")
 
-    if not regenerate_leaderboards():
+        # Log which mode was used
+        if bucket_scan_results:
+            mode_str = f"bucket-scan ({len(bucket_scan_results)}), "
+        else:
+            mode_str = ""
+        harvested_count = sum(len(lines) for _, lines in harvested)
+        logger.info(
+            f"Wrote {len(all_lines)} line(s) to {NEW_RESULTS_PATH} "
+            f"({mode_str}{harvested_count} harvested, {len(manual_lines)} manual)."
+        )
+
+        # Upload results to HF bucket BEFORE regenerating leaderboards
+        # (leaderboard regeneration consumes/deletes new_results.jsonl)
+        if upload_results_to_hf(new_results_path=NEW_RESULTS_PATH):
+            logger.info("Results uploaded to Hugging Face bucket.")
+        else:
+            logger.error(
+                "Failed to upload results to Hugging Face bucket. "
+                "The new results are staged locally, but the bucket is now out "
+                "of sync. Please run upload_results_to_hf() manually or check "
+                "your Hugging Face credentials and re-run this script."
+            )
+            # Don't abort here -- leaderboards will still be correct because
+            # load_raw_results() appends new_results.jsonl locally before deleting it.
+            # But the bucket needs to be synced on the next successful run.
+
+    # Regenerate leaderboards from merged results
+    if not regenerate_leaderboards(force=force):
         logger.error(
             "Aborting: not closing issues because leaderboard regeneration failed."
         )
@@ -169,7 +195,7 @@ def main() -> None:
         sys.exit(1)
 
     # Create backup
-    backup_path = create_backup()
+    backup_path = backup_results()
     if backup_path:
         logger.info(f"Created backup at {backup_path}.")
 
@@ -187,6 +213,199 @@ def main() -> None:
             logger.error(f"#{number}: failed to close: {e}")
 
 
+def check_required_env_vars() -> None:
+    """Verify that the required tokens are set, exiting cleanly otherwise.
+
+    ``HUGGINGFACE_API_KEY`` is accepted as an alias for ``HF_TOKEN`` (it is
+    copied over when the ``leaderboards`` package is imported), so only
+    ``HF_TOKEN`` is checked here. A missing ``HF_TOKEN`` would otherwise
+    degrade silently into empty bucket reads and a failed upload.
+    """
+    missing = [var for var in ("GITHUB_TOKEN", "HF_TOKEN") if not os.environ.get(var)]
+    if missing:
+        logger.error(
+            f"Missing required env var(s): {', '.join(missing)}. "
+            "Set them (e.g. in a .env file) and re-run."
+        )
+        sys.exit(1)
+
+
+def _model_id_to_filename(model_id: str) -> str:
+    """Convert a model ID to a safe filename.
+
+    Args:
+        model_id:
+            The model identifier (e.g., "meta-llama/Llama-3-8B").
+
+    Returns:
+        A safe filename with slashes and dots replaced by underscores.
+    """
+    return model_id.replace("/", "_") + ".jsonl"
+
+
+def build_dedup_key(result: dict) -> tuple[str, str, str, str] | None:
+    """Build a deduplication key from an EEE result record.
+
+    Key consists of:
+    - model_id: the model identifier
+    - dataset: the dataset name
+    - validation_split: whether eval used validation split
+    - few_shot: whether eval used few-shot prompting
+
+    Args:
+        result:
+            Parsed result dictionary in EEE format.
+
+    Returns:
+        Tuple key for deduplication, or None if required fields are missing.
+    """
+    try:
+        model_id = get_model_name(result)
+        dataset = get_dataset(result)
+        if not model_id or model_id == "unknown" or not dataset:
+            return None
+
+        validation_split = get_validation_split(result)
+        few_shot = get_few_shot(result)
+
+        return (model_id, dataset, str(validation_split), str(few_shot))
+    except Exception as e:
+        logger.debug("Failed to extract dedup key from result: %s", e)
+        return None
+
+
+def list_all_result_files() -> list[BucketFile]:
+    """List all .jsonl files in the EuroEval/results bucket.
+
+    Returns:
+        List of BucketFile objects for .jsonl files.
+    """
+    api = HfApi()
+    bucket_id = HF_RESULTS_BUCKET
+    try:
+        files = list(api.list_bucket_tree(bucket_id=bucket_id, recursive=True))
+        return [
+            f for f in files if isinstance(f, BucketFile) and f.path.endswith(".jsonl")
+        ]
+    except Exception as e:
+        logger.error(f"Failed to list bucket files: {e}")
+        return []
+
+
+def load_existing_result_keys() -> set[tuple[str, str, str, str]]:
+    """Load existing results and build a set of dedup keys.
+
+    Reads every per-model JSONL file in RESULTS_DIR and builds a set of dedup
+    keys.
+
+    Returns:
+        Set of dedup keys (model_id, dataset, validation_split, few_shot).
+    """
+    existing_keys: set[tuple[str, str, str, str]] = set()
+
+    model_files = sorted(RESULTS_DIR.glob("*.jsonl"))
+    if not model_files:
+        logger.info("No existing results found in RESULTS_DIR.")
+        return existing_keys
+
+    for model_file in model_files:
+        try:
+            for line in model_file.read_text(encoding="utf-8").splitlines():
+                line_str = line.strip()
+                if not line_str:
+                    continue
+                try:
+                    result = json.loads(line_str)
+                    key = build_dedup_key(result)
+                    if key is not None:
+                        existing_keys.add(key)
+                except json.JSONDecodeError:
+                    logger.debug("Skipping invalid JSON line in existing results.")
+        except OSError as e:
+            logger.warning(f"Failed to read {model_file.name}: {e}")
+
+    logger.info(f"Loaded {len(existing_keys)} existing result keys.")
+    return existing_keys
+
+
+def scan_bucket_for_results() -> list[str]:
+    """Scan the EuroEval/results bucket for results not yet in RESULTS_DIR.
+
+    Downloads all .jsonl files from the bucket, parses them, and collects
+    results that are not already in the existing results.
+
+    Returns:
+        List of new result JSON strings (empty if none found).
+    """
+    logger.info("Scanning bucket for new results...")
+
+    # Get all .jsonl files from the bucket
+    all_bucket_files = list_all_result_files()
+    if not all_bucket_files:
+        logger.info("No .jsonl files found in bucket.")
+        return []
+
+    logger.info(f"Found {len(all_bucket_files)} .jsonl file(s) in bucket.")
+
+    # Download all files to RESULTS_DIR
+    api = HfApi()
+    bucket_id = HF_RESULTS_BUCKET
+
+    files_spec: list[tuple[str | BucketFile, str | Path]] = [
+        (bucket_file.path, RESULTS_DIR / bucket_file.path)
+        for bucket_file in all_bucket_files
+    ]
+
+    try:
+        api.download_bucket_files(
+            bucket_id=bucket_id, files=files_spec, raise_on_missing_files=False
+        )
+        logger.info(f"Downloaded {len(files_spec)} file(s) to {RESULTS_DIR}.")
+    except Exception as e:
+        logger.error(f"Failed to download bucket files: {e}")
+        return []
+
+    # Load existing keys for deduplication
+    existing_keys = load_existing_result_keys()
+
+    # Parse all downloaded files and collect new results
+    new_results: list[str] = []
+    seen_keys: set[tuple[str, str, str, str]] = set()
+
+    for bucket_file in all_bucket_files:
+        local_path = RESULTS_DIR / bucket_file.path
+        if not local_path.exists():
+            logger.warning(f"Downloaded file not found: {local_path}")
+            continue
+
+        for line in local_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+
+            try:
+                result = json.loads(line)
+                key = build_dedup_key(result)
+
+                if key is None:
+                    logger.debug(f"Skipping result with no dedup key: {line[:80]}...")
+                    continue
+
+                if key in existing_keys or key in seen_keys:
+                    logger.debug(f"Skipping duplicate result: {key}")
+                    continue
+
+                new_results.append(json.dumps(result, ensure_ascii=False))
+                seen_keys.add(key)
+
+            except json.JSONDecodeError as e:
+                logger.debug(f"Skipping invalid JSON line: {e}")
+
+    logger.info(f"Found {len(new_results)} new result(s) from bucket scan.")
+
+    return new_results
+
+
 def list_open_request_issues() -> list[dict]:
     """Return open model-evaluation-request issues that have results ready.
 
@@ -198,7 +417,7 @@ def list_open_request_issues() -> list[dict]:
         path=f"/repos/{REPO}/issues",
         params={
             "state": "open",
-            "labels": f"{LABEL},{RESULTS_READY_LABEL}",
+            "labels": f"{MODEL_REQUEST_LABEL},{RESULTS_READY_LABEL}",
             "per_page": "100",
         },
     )
@@ -227,12 +446,12 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
         return None
 
     filename = _model_id_to_filename(model_id)
-    local_path = RAW_RESULTS_DIR / filename
+    local_path = RESULTS_DIR / filename
 
     try:
         api = HfApi()
         api.download_bucket_files(
-            bucket_id=HF_RAW_BUCKET.replace("hf://buckets/", ""),
+            bucket_id=HF_RESULTS_BUCKET,
             files=[(filename, local_path)],
             raise_on_missing_files=False,
         )
@@ -254,36 +473,34 @@ def find_results_for_issue(issue: dict) -> list[str] | None:
     return lines
 
 
-def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
-    """Upload raw results to Hugging Face bucket.
+def upload_results_to_hf(new_results_path: Path) -> bool:
+    """Upload results to Hugging Face bucket.
 
-    This function splits results into per-model files and syncs to raw-results
-    bucket. Processed results are uploaded separately by result_processing.py as
-    per-model JSONL.
+    This function splits results into per-model files and syncs to the
+    EuroEval/results bucket.
 
     Args:
         new_results_path:
             Path to the newly harvested results.jsonl file.
-        processed_path:
-            Path to the processed results.tar.gz file (kept for backwards compatibility,
-            but not uploaded to bucket - handled by result_processing.py).
 
     Returns:
         True if upload succeeded, False otherwise.
     """
-    RAW_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     try:
-        # Sync existing results from raw-results bucket
-        logger.info(f"Syncing existing results from {HF_RAW_BUCKET}...")
-        HfApi().sync_bucket(source=HF_RAW_BUCKET + "/", dest=str(RAW_RESULTS_DIR))
+        # Sync existing results from EuroEval/results bucket
+        logger.info(f"Syncing existing results from {HF_RESULTS_BUCKET}...")
+        HfApi().sync_bucket(
+            source=f"hf://buckets/{HF_RESULTS_BUCKET}/", dest=str(RESULTS_DIR)
+        )
         logger.info("Downloaded existing results from bucket.")
     except HfHubHTTPError as e:
         logger.warning(f"Could not sync from bucket: {e}. Starting fresh.")
 
     # Load existing results by model
     existing_by_model: dict[str, set[str]] = {}
-    for model_file in RAW_RESULTS_DIR.glob("*.jsonl"):
+    for model_file in RESULTS_DIR.glob("*.jsonl"):
         lines = {
             line
             for line in model_file.read_text(encoding="utf-8").splitlines()
@@ -302,40 +519,46 @@ def upload_results_to_hf(new_results_path: Path, processed_path: Path) -> bool:
             data = json.loads(line)
             model_id = data.get("model", "unknown")
             filename = _model_id_to_filename(model_id)
-            model_file = RAW_RESULTS_DIR / filename
+            model_file = RESULTS_DIR / filename
             # Append if not already present
             if line not in existing_by_model.get(filename, set()):
-                with open(model_file, "a", encoding="utf-8") as f:
+                with model_file.open("a", encoding="utf-8") as f:
                     f.write(line + "\n")
         except json.JSONDecodeError:
             logger.warning(f"Skipping invalid JSON line: {line[:80]}...")
 
-    # Sync updated results to raw-results bucket
-    logger.info(f"Syncing results to {HF_RAW_BUCKET}...")
+    # Sync updated results to EuroEval/results bucket
+    logger.info(f"Syncing results to {HF_RESULTS_BUCKET}...")
     try:
-        HfApi().sync_bucket(source=str(RAW_RESULTS_DIR), dest=HF_RAW_BUCKET + "/")
-        logger.info(f"Uploaded results to {HF_RAW_BUCKET}.")
+        HfApi().sync_bucket(
+            source=str(RESULTS_DIR), dest=f"hf://buckets/{HF_RESULTS_BUCKET}/"
+        )
+        logger.info(f"Uploaded results to {HF_RESULTS_BUCKET}.")
     except HfHubHTTPError as e:
         logger.error(f"Failed to sync to bucket: {e}")
         return False
 
-    # Note: Processed results are uploaded by result_processing.py, not here.
-    # That script groups processed records by model and uploads per-model JSONL
-    # files to HF_PROCESSED_BUCKET for consistency with raw-results format.
-
     return True
 
 
-def regenerate_leaderboards() -> bool:
+def regenerate_leaderboards(force: bool = False) -> bool:
     """Run the existing leaderboard-generation script.
+
+    Args:
+        force (optional):
+            Whether to force leaderboard generation even if no updates are found.
+            Defaults to False.
 
     Returns:
         True if the subprocess exited cleanly, otherwise False.
     """
-    cmd = [sys.executable, "-m", "scripts.generate_leaderboards"]
+    script_path = Path(__file__).resolve().parent / "generate_leaderboards.py"
+    cmd = [sys.executable, str(script_path)]
+    if force:
+        cmd.append("--force")
     logger.info(f"Running: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, cwd=REPO_ROOT / "src")
+        subprocess.run(cmd, check=True, cwd=REPO_ROOT)
         return True
     except subprocess.CalledProcessError as e:
         logger.error(f"generate_leaderboards failed (exit {e.returncode}).")
@@ -435,7 +658,7 @@ def verify_leaderboards() -> bool:
                         logger.error(msg)
                         all_passed = False
 
-                logger.info(f"{csv_file.name}: {len(rows):,} rows ✓")
+                logger.info(f"{csv_file.name}: {len(rows):,} rows OK")
         except Exception as e:
             logger.error(f"{csv_file.name}: Failed to read: {e}")
             all_passed = False

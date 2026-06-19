@@ -838,29 +838,41 @@ class BenchmarkConfigParams(pydantic.BaseModel):
 def _convert_old_raw_results_format(config: dict[str, object]) -> None:
     """Convert old raw_results format in-place.
 
-    Handles legacy format where raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]}
-    and flattens to raw = {"test_mcc": 0.5, "test_accuracy": 0.6}.
+    Handles legacy nested dict format:
+    - raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]}
+    and converts to flat list: raw = [{"test_mcc": 0.5, "test_accuracy": 0.6}].
+
+    List format raw = [{"mcc": 0.5, "accuracy": 0.6}] is preserved as-is for EEE format.
     """
     if "results" not in config:
         return
     results = t.cast(dict[str, object], config["results"])
     if "raw" not in results:
         return
-    raw = t.cast(dict[str, object], results["raw"])
-    flattened_raw: dict[str, float] = {}
-    for split_name, split_data in raw.items():
-        if not isinstance(split_data, list) or not split_data:
-            continue
-        for item in split_data:
-            if not isinstance(item, dict):
+    raw = results["raw"]
+
+    # Preserve list format - it's what EEE format needs
+    if isinstance(raw, list):
+        return
+
+    # Convert nested dict format: {"test": [...]} to flat list [{...}]
+    if isinstance(raw, dict):
+        raw_list: list[dict[str, float]] = []
+        for split_name, split_data in raw.items():
+            if not isinstance(split_data, list) or not split_data:
                 continue
-            for metric, value in item.items():
-                if isinstance(value, (int, float)):
-                    key = f"{split_name}_{metric}"
-                    if key not in flattened_raw:
-                        flattened_raw[key] = float(value)
-    if flattened_raw:
-        results["raw"] = flattened_raw
+            for i, item in enumerate(split_data):
+                if not isinstance(item, dict):
+                    continue
+                while len(raw_list) <= i:
+                    raw_list.append({})
+                for metric, value in item.items():
+                    if isinstance(value, (int, float)):
+                        key = f"{split_name}_{metric}"
+                        if key not in raw_list[i]:
+                            raw_list[i][key] = float(value)
+        if raw_list:
+            results["raw"] = raw_list
 
 
 class BenchmarkResult(pydantic.BaseModel):
@@ -886,6 +898,10 @@ class BenchmarkResult(pydantic.BaseModel):
     vllm_version: str | None = get_package_version("vllm")
     xgrammar_version: str | None = get_package_version("xgrammar")
     litellm_version: str | None = None
+    # EuroEval-specific metadata fields (preserved through EEE conversion)
+    commercially_licensed: bool | None = None
+    open: bool | None = None
+    trained_from_scratch: bool | None = None
 
     @classmethod
     def from_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
@@ -995,13 +1011,23 @@ class BenchmarkResult(pydantic.BaseModel):
     def append_to_results(self, results_path: Path) -> None:
         """Append the benchmark result to the results file.
 
+        Each record is written self-terminated with a trailing newline. If the
+        file already exists without a trailing newline (e.g. written by an older
+        version), a separating newline is added first so records can't be glued
+        onto the same line.
+
         Args:
             results_path:
                 The path to the results file.
         """
         json_str = json.dumps(self.to_eee_dict(), ensure_ascii=False)
+        needs_sep = (
+            results_path.exists()
+            and results_path.stat().st_size > 0
+            and not results_path.read_bytes().endswith(b"\n")
+        )
         with results_path.open("a") as f:
-            f.write("\n" + json_str)
+            f.write(("\n" if needs_sep else "") + json_str + "\n")
 
 
 @dataclass

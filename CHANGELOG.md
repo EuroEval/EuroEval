@@ -20,19 +20,37 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   from official leaderboards. Only the vLLM backend supports BPC; HF encoder and
   LiteLLM backends raise `InvalidModel`, as do instruction-tuned models in vLLM.
   Thanks to @tvosch for the contribution!
+- Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
+- Added the `google-cloud-aiplatform` dependency, as it's required to run
+  Gemini-3.1-pro.
 
 ### Fixed
 
+- Fixed a single failing iteration aborting an entire evaluation. When a model
+  refuses to answer in a way that produces no valid label (e.g. on the European
+  Values task, which doesn't allow invalid model outputs), that iteration is now
+  skipped and the scores of the remaining successful iterations are reported. The
+  evaluation only fails if every iteration fails.
+- Fixed vLLM benchmarking crashing on models whose context window is too small to
+  fit both the prompt and the dataset's full generation budget (e.g. a 2,048-token
+  model on IFEval, which reserves 2,048 generation tokens). Previously the prompt
+  budget collapsed to a single token and truncation raised "Truncation of prompts
+  failed". The generation budget is now shrunk (down to half the context) so the
+  prompt retains room, and zero-shot instruction-tuned prompts that still don't fit
+  are hard-truncated as a last resort instead of failing the benchmark.
+- Fixed `BenchmarkResult.append_to_results` writing records with a leading
+  newline and no trailing newline, which left results files without a final
+  newline and could glue two records onto a single line. Records are now written
+  self-terminated, with a separating newline added first if the existing file
+  doesn't already end in one.
 - Added `download()` method to `PipelineMetric` class
   - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
     Values metric)
   - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and
       caching the pipeline
-
 - Fixed `BenchmarkResult.from_dict()` failing to parse legacy results from Hugging Face
   bucket where `results.raw` contained nested dicts (e.g. `{"test": [{"mcc": 0.5}]}`)
   instead of flattened format (`{"test_mcc": 0.5}`)
-
 - Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
   - `get_hf_token` now catches `httpx.ConnectError` to gracefully degrade when token
     validation fails offline
@@ -43,6 +61,17 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed `resolve_model_path` to prefer actual commit snapshots over stale `model_files`
   symlink directories, preventing broken symlink errors when cache has multiple
   snapshots
+- Fixed orthogonal benchmark failures (e.g. `european-values`) being counted as
+  "errored" instead of "skipped" in the summary
+- Fixed an error with GPT-5.5 regarding it's requirement to use temperature 1.0. The
+  error was due to OpenAI having changed their error messages.
+- Fixed an error with Claude Opus 4.8 as it disallows changing the temperature argument.
+  The error was due to Anthropic having changed their error messages.
+
+### Security
+
+- Raised the minimum `litellm` version to 1.83.7 due to a vulnerability.
+- Raised the minimum `ray` version to 2.55.0 due to a vulnerability.
 
 ## [v17.4.0] - 2026-06-12
 

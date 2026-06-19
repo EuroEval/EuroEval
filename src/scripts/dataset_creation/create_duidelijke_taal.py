@@ -19,11 +19,16 @@ We use the splitted version of this dataset created during the GPT-NL project
 (https://huggingface.co/datasets/GPT-NL/DuidelijkeTaal-v1.0-split).
 """
 
+import logging
+
 import pandas as pd
 from datasets import ClassLabel, Dataset, DatasetDict, load_dataset
 from evaluate import load
 from huggingface_hub import HfApi
 from requests import HTTPError
+
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_duidelijke_taal")
 
 
 def main() -> None:
@@ -132,7 +137,10 @@ def filter_dataset(
     Returns:
         pandas.DataFrame: The filtered dataset.
     """
-    # load default model (bert-base-multilingual-cased), which is sufficient as filter
+    # load default model (bert-base-multilingual-cased), which is sufficient as filter.
+    # The ``evaluate`` stubs type ``EvaluationModule.compute`` generically: it does
+    # not advertise the bertscore-specific kwargs and types the result too loosely to
+    # subscript, so the type-checker flags genuine runtime-valid usage.
     bert_score = load("bertscore")
     df["bert"] = bert_score.compute(  # ty: ignore[missing-argument,not-subscriptable]
         references=df["text"].to_list(),
@@ -186,8 +194,10 @@ def filter_dataset(
         ]
 
     df_filtered_dedup = df_filtered.drop_duplicates(subset="text")
-    print(f"Dropped {len(df_filtered) - len(df_filtered_dedup)} duplicate examples.")
-    print(
+    logger.info(
+        f"Dropped {len(df_filtered) - len(df_filtered_dedup)} duplicate examples."
+    )
+    logger.info(
         f"Filtered dataset split contains {len(df_filtered_dedup)} simplification "
         f"pairs."
     )

@@ -12,7 +12,7 @@ from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 
 
-def format(row: dict[str, str]) -> dict[str, str]:
+def format_row(row: dict[str, str]) -> dict[str, str]:
     """Format the raw dataset into the columns needed for EuroEval.
 
     Args:
@@ -37,7 +37,7 @@ def main() -> None:
         "https://raw.githubusercontent.com/gijswijnholds/sick_nl/refs/heads/master/data/tasks/sick_nl/SICK_NL.txt",
         sep="\t",
     )
-    processed = raw.map(format, remove_columns=raw.column_names)
+    processed = raw.map(format_row, remove_columns=raw.column_names)
 
     dataset = DatasetDict(
         {

@@ -19,37 +19,24 @@ from huggingface_hub.errors import (
 from requests.exceptions import RequestException
 from yaml import safe_dump, safe_load
 
-from .paths import MODELS_WITHOUT_URLS_CACHE
-from .utils import log_once
+from euroeval.string_utils import split_model_id
+
+from .constants import MODELS_WITHOUT_URLS_CACHE
+from .records import plain_model_id
+
+# Matches the href of an anchored model name, e.g.
+# `<a href='https://hf.co/org/repo'>org/repo</a>`.
+_ANCHOR_HREF_RE = re.compile(r"<a [^>]*href=['\"](?P<href>[^'\"]+)['\"]")
 
 logger = logging.getLogger(__name__)
 
 
-KNOWN_MODELS_WITHOUT_URLS = [
-    "fresh-electra-small",
-    "fresh-xlm-roberta-base",
-    "skole-gpt-mixtral",
-    "danish-foundation-models/munin-7b-v0.1dev0",
-    "mhenrichsen/danskgpt-chat-v2.1",
-    "syvai/danskgpt-chat-llama3-70b",
-    "syvai/llama3-da-base",
-    "xai/grok-3-beta",
-    "xai/grok-3-mini-beta",
-    "danish-foundation-models/munin-7b-core-pt",
-    "danish-foundation-models/munin-7b-core-pt-2",
-    "danish-foundation-models/munin-7b-core-pt-3",
-    "danish-foundation-models/munin-7b-core-it",
-    "danish-foundation-models/munin-7b-open-pt",
-    "danish-foundation-models/munin-7b-open-it",
-]
-
-
 @cache
-def generate_task_link(id: int, label: str) -> str:
+def generate_task_link(task_id: int, label: str) -> str:
     """Generate a link to a EuroEval task.
 
     Args:
-        id:
+        task_id:
             A unique task ID.
         label:
             The task ID, in kebab-case.
@@ -66,62 +53,54 @@ def generate_task_link(id: int, label: str) -> str:
         "'"
     )
     return (
-        f"<a id={id} href='https://euroeval.com/tasks/{label}/' {styling}>"
+        f"<a id={task_id} href='https://euroeval.com/tasks/{label}/' {styling}>"
         f"{label.replace('-', ' ').capitalize()}"
         "</a>"
     )
 
 
-@cache
-def generate_anchor_tag(model_id: str) -> str | None:
-    """Generate an anchor tag for a model.
+def generate_model_url(model_id: str) -> str | None:
+    """Generate a URL for a model.
 
     Args:
         model_id:
             The model ID.
 
     Returns:
-        The anchor tag for the model, or the model ID if the URL cannot be generated.
-        Can also return None if the model should be removed from the results.
+        The URL for the model, or None if no URL can be generated.
     """
-    logging.getLogger("httpx").setLevel(logging.CRITICAL)
-    logging.getLogger("huggingface_hub").setLevel(logging.CRITICAL)
+    # If the id is an anchored name whose href already holds the model URL, use
+    # it directly. This avoids resolving the whole `<a ...>...</a>` string as a
+    # model id (which always fails) and the spurious "remove model?" prompt that
+    # follows.
+    anchor_href_match = _ANCHOR_HREF_RE.search(model_id)
+    if anchor_href_match is not None:
+        return anchor_href_match.group("href")
 
-    # Skip URL generation for already-annotated models
-    if re.match(r"^<a href='.*'>.*</a>$", model_id):
-        return model_id
+    # Strip any anchor and variant suffix so the URL generators see the canonical
+    # `org/repo` slug rather than e.g. `org/repo (zero-shot)`.
+    model_id_without_extras = split_model_id(model_id=plain_model_id(model_id)).model_id
 
-    model_id_without_extras = model_id.split("@")[0].split("#")[0]
+    # Any model with a cached decision (remove or keep-without-url) never gets
+    # a URL, so the model_url field stays None for these ids.
+    if _load_model_url_decision(model_id=model_id_without_extras) is not None:
+        return None
 
-    # Skip URL generation for models without hosted pages
-    if model_id_without_extras in KNOWN_MODELS_WITHOUT_URLS:
-        return model_id
-    if model_id_without_extras in _load_models_without_urls_cache():
-        return model_id
+    url_generators = (
+        generate_ollama_url,
+        generate_hf_hub_url,
+        generate_openai_url,
+        generate_anthropic_url,
+        generate_google_url,
+        generate_xai_url,
+        generate_ordbogen_url,
+    )
+    for url_generator in url_generators:
+        url = url_generator(model_id=model_id_without_extras)
+        if url is not None:
+            return url
 
-    url = generate_ollama_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_hf_hub_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_openai_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_anthropic_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_google_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_xai_url(model_id=model_id_without_extras)
-    if url is None:
-        url = generate_ordbogen_url(model_id=model_id_without_extras)
-    if url is None:
-        remove_model = ask_user_to_remove_model(model_id=model_id_without_extras)
-        if remove_model:
-            log_once(
-                f"Removing model {model_id_without_extras} from results.",
-                logging_level=logging.INFO,
-            )
-            return None
-
-    return model_id if url is None else f"<a href='{url}'>{model_id}</a>"
+    return None
 
 
 @cache
@@ -135,6 +114,11 @@ def ask_user_to_remove_model(model_id: str) -> bool:
     Returns:
         True if the user wants to remove the model from the results, False otherwise.
     """
+    # Check persistent cache first
+    cached_decision = _load_model_url_decision(model_id=model_id)
+    if cached_decision is not None:
+        return cached_decision
+
     while True:
         user_input = input(
             f"Could not find a URL for model {model_id}. Do you want to remove it from "
@@ -143,77 +127,9 @@ def ask_user_to_remove_model(model_id: str) -> bool:
         if user_input not in ["y", "n"]:
             print("Invalid input. Please enter 'y' or 'n'.")
             continue
-        keep = user_input == "n"
-        if keep:
-            _remember_model_without_url(model_id=model_id)
-        return user_input == "y"
-
-
-@cache
-def _load_models_without_urls_cache() -> frozenset[str]:
-    """Load model IDs the user has previously opted to keep without a URL.
-
-    Returns:
-        The set of cached model IDs, or an empty frozenset if the cache file
-        does not exist.
-    """
-    if not MODELS_WITHOUT_URLS_CACHE.exists():
-        return frozenset()
-    with MODELS_WITHOUT_URLS_CACHE.open("r") as f:
-        data = safe_load(f) or []
-    return frozenset(data)
-
-
-def _remember_model_without_url(model_id: str) -> None:
-    """Persist a model ID to the no-URL cache so we don't prompt again."""
-    cached = set(_load_models_without_urls_cache())
-    if model_id in cached:
-        return
-    cached.add(model_id)
-    with MODELS_WITHOUT_URLS_CACHE.open("w") as f:
-        safe_dump(sorted(cached), f)
-    _load_models_without_urls_cache.cache_clear()
-
-
-def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
-    """Check if a model exists on the Hugging Face Hub with retry logic.
-
-    Retries only on connection-related errors (not repository errors).
-
-    Args:
-        model_id:
-            The Hugging Face model ID.
-        hf_api:
-            The Hugging Face API client.
-
-    Raises:
-        RepositoryNotFoundError:
-            If the repository does not exist (not retried).
-        GatedRepoError:
-            If the repository is gated (not retried).
-        HFValidationError:
-            If the model ID is invalid (not retried).
-        httpx.RemoteProtocolError:
-            If the server disconnects without sending a response (retried).
-        ConnectionError:
-            If there is a network connection error (retried).
-    """
-    max_attempts = 3
-    for attempt in range(max_attempts):
-        try:
-            hf_api.model_info(repo_id=model_id)
-            return
-        except (httpx.RemoteProtocolError, ConnectionError) as e:
-            if attempt == max_attempts - 1:
-                raise  # Re-raise on last attempt
-            wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
-            logger.warning(
-                f"Connection error checking {model_id}: {e}. "
-                f"Retrying in {wait_time}s..."
-            )
-            time.sleep(wait_time)
-        except (RepositoryNotFoundError, GatedRepoError, HFValidationError):
-            raise  # Don't retry these errors
+        remove = user_input == "y"
+        _remember_model_url_decision(model_id=model_id, remove=remove)
+        return remove
 
 
 @cache
@@ -295,6 +211,7 @@ def generate_anthropic_url(model_id: str) -> str | None:
         Anthropic's naming pattern.
     """
     model_id = model_id.replace("anthropic/", "")
+
     # Match Anthropic model naming patterns:
     # - claude-3-7-sonnet-20250219
     # - claude-sonnet-4-5-20250929
@@ -372,3 +289,97 @@ def generate_ordbogen_url(model_id: str) -> str | None:
         return None
     model_id = model_id.replace("ordbogen/", "")
     return f"https://www.ordbogen.ai/docs/models/{model_id}"
+
+
+def _check_model_exists_with_retry(model_id: str, hf_api: HfApi) -> None:
+    """Check if a model exists on the Hugging Face Hub with retry logic.
+
+    Retries only on connection-related errors (not repository errors).
+
+    Args:
+        model_id:
+            The Hugging Face model ID.
+        hf_api:
+            The Hugging Face API client.
+
+    Raises:
+        RepositoryNotFoundError:
+            If the repository does not exist (not retried).
+        GatedRepoError:
+            If the repository is gated (not retried).
+        HFValidationError:
+            If the model ID is invalid (not retried).
+        httpx.RemoteProtocolError:
+            If the server disconnects without sending a response (retried).
+        ConnectionError:
+            If there is a network connection error (retried).
+    """
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            hf_api.model_info(repo_id=model_id)
+            return
+        except (httpx.RemoteProtocolError, ConnectionError) as e:
+            if attempt == max_attempts - 1:
+                raise  # Re-raise on last attempt
+            wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
+            logger.warning(
+                f"Connection error checking {model_id}: {e}. "
+                f"Retrying in {wait_time}s..."
+            )
+            time.sleep(wait_time)
+        except (RepositoryNotFoundError, GatedRepoError, HFValidationError):
+            raise  # Don't retry these errors
+
+
+def _remember_model_url_decision(model_id: str, remove: bool) -> None:
+    """Persist a model URL decision to the cache.
+
+    Args:
+        model_id:
+            The model ID.
+        remove:
+            True if the model should be removed, False if it should be
+            kept without a URL.
+    """
+    decisions = _load_model_url_decisions()
+    if model_id in decisions:
+        return
+    decisions[model_id] = remove
+    with MODELS_WITHOUT_URLS_CACHE.open("w") as f:
+        safe_dump(dict(sorted(decisions.items())), f)
+    _load_model_url_decisions.cache_clear()
+
+
+def _load_model_url_decision(model_id: str) -> bool | None:
+    """Load a cached decision for a specific model.
+
+    Args:
+        model_id:
+            The model ID to look up.
+
+    Returns:
+        True if the model should be removed, False if it should be kept
+        without a URL, or None if no cached decision exists.
+    """
+    decisions = _load_model_url_decisions()
+    return decisions.get(model_id)
+
+
+@cache
+def _load_model_url_decisions() -> dict[str, bool]:
+    """Load cached model URL decisions (remove or keep).
+
+    Returns:
+        A dict mapping model IDs to whether they should be removed (True)
+        or kept without a URL (False). Returns an empty dict if the cache
+        file does not exist.
+    """
+    if not MODELS_WITHOUT_URLS_CACHE.exists():
+        return {}
+    with MODELS_WITHOUT_URLS_CACHE.open("r") as f:
+        data = safe_load(f) or {}
+    # Backwards compatibility: old format was a list of model IDs to keep
+    if isinstance(data, list):
+        return {model_id: False for model_id in data}
+    return data

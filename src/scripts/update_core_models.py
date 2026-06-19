@@ -38,12 +38,12 @@ import click
 from dotenv import load_dotenv
 from yaml import safe_load
 
+from leaderboards.constants import CORE_MODELS_CONFIG
 from leaderboards.core_models import CoreModel, build_core_model_list
-from leaderboards.paths import CORE_MODELS_CONFIG
 from leaderboards.task_metadata import languages_with_official_datasets
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s ⋅ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    level=logging.INFO, format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
 logger = logging.getLogger("update_core_models")
 
@@ -119,6 +119,27 @@ ship new flagship models.
 # ---------------------------------------------------------------------------
 # Rendering
 # ---------------------------------------------------------------------------
+
+
+@click.command()
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Print the new issue body and diff but don't touch GitHub or the YAML.",
+)
+def main(dry_run: bool) -> None:
+    """Refresh the core-model list and update issue #1186.
+
+    The result archive is expected to be already processed (i.e. the
+    `processed.jsonl` cache is up-to-date). Run `make leaderboards` first
+    if you've ingested new results.
+
+    Args:
+        dry_run:
+            Print outputs instead of writing them.
+    """
+    refresh_core_models(dry_run=dry_run)
 
 
 def _reasoning_flags(model: CoreModel) -> str:
@@ -390,13 +411,13 @@ def render_diff_comment(diff: IssueDiff) -> str:
         parts.append("No changes since the previous run.")
         return "\n".join(parts)
     if diff.added:
-        parts.append("**Added** (" + str(len(diff.added)) + "):\n")
+        parts.append(f"**Added** ({len(diff.added)}):\n")
         parts.extend(f"- {m}" for m in diff.added)
     if diff.removed:
-        parts.append("\n**Removed** (" + str(len(diff.removed)) + "):\n")
+        parts.append(f"\n**Removed** ({len(diff.removed)}):\n")
         parts.extend(f"- {m}" for m in diff.removed)
     if diff.flag_changes:
-        parts.append("\n**Flag changes** (" + str(len(diff.flag_changes)) + "):\n")
+        parts.append(f"\n**Flag changes** ({len(diff.flag_changes)}):\n")
         for mid, old, new in diff.flag_changes:
             parts.append(f"- {mid}: `{old or '(none)'}` -> `{new or '(none)'}`")
     return "\n".join(parts)
@@ -455,6 +476,7 @@ def _get_issue_body(issue_number: int, token: str) -> str:
         The issue body string (empty if the issue has none).
     """
     issue = _gh_request(path=f"/repos/{REPO}/issues/{issue_number}", token=token)
+    assert isinstance(issue, dict)
     return issue.get("body") or ""
 
 
@@ -504,27 +526,6 @@ def _post_issue_comment(issue_number: int, body: str, token: str) -> str:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-
-
-@click.command()
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    default=False,
-    help="Print the new issue body and diff but don't touch GitHub or the YAML.",
-)
-def main(dry_run: bool) -> None:
-    """Refresh the core-model list and update issue #1186.
-
-    The result archive is expected to be already processed (i.e. the
-    `processed.jsonl` cache is up-to-date). Run `make leaderboards` first
-    if you've ingested new results.
-
-    Args:
-        dry_run:
-            Print outputs instead of writing them.
-    """
-    refresh_core_models(dry_run=dry_run)
 
 
 def refresh_core_models(dry_run: bool = False) -> list[CoreModel]:
