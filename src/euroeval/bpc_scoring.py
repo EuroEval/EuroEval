@@ -134,7 +134,12 @@ def extract_answer_texts(inputs: dict, dataset_config: DatasetConfig) -> list[st
                 ]
 
         case TaskGroup.SEQUENCE_CLASSIFICATION:
-            answer_texts = [dataset_config.labels[label_id] for label_id in labels]
+            # The answer text must match what was appended to `bpc_prompt` during
+            # dataset preparation, which uses the localized prompt label mapping.
+            answer_texts = [
+                dataset_config.prompt_label_mapping.get(label, label)
+                for label in labels
+            ]
 
         case TaskGroup.TEXT_TO_TEXT:
             if "target_text" not in inputs:

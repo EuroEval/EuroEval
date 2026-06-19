@@ -26,23 +26,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed a `VLLMValidationError` (`max_tokens must be at least 1, got 0`) when
-  running bits-per-character (BPC) scoring on newer vLLM versions. BPC scoring only
-  reads `prompt_logprobs` and previously requested zero generated tokens; it now
-  requests a single throwaway token, and the scoring path is keyed off
-  `prompt_logprobs` rather than `max_tokens == 0`.
-- Fixed a `TypeError` crash when preparing sequence-classification datasets for
-  bits-per-character (BPC) scoring. The answer text was looked up by indexing the
-  label list with the label string; it now uses the dataset's prompt label
-  mapping, matching the rest of the prompt-building code.
 - Fixed vLLM benchmarking crashing on non-CUDA platforms (e.g. Apple Metal). The
   multiprocessing executor was forced even for a single non-CUDA device, and its
   worker rejected the `mps` device. Single non-CUDA devices now use vLLM's
   in-process executor.
-- Fixed an `AttributeError` crash when starting a bits-per-character (BPC) run.
-  The backend/generative-type validation read a non-existent
-  `ModelConfig.generative_type`; the generative-type check now runs after the
-  model is loaded, when the type is known from the tokeniser.
 - Fixed a single failing iteration aborting an entire evaluation. When a model
   refuses to answer in a way that produces no valid label (e.g. on the European
   Values task, which doesn't allow invalid model outputs), that iteration is now
