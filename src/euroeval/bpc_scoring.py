@@ -23,10 +23,11 @@ def compute_bpc_scores(
     answer_texts: c.Sequence[str],
     answer_start_indices: c.Sequence[int],
     tokeniser: Tokeniser,
+    answer_char_counts: c.Sequence[int] | None = None,
 ) -> list[float]:
     """Compute bits-per-character scores from prompt_logprobs.
 
-    BPC = -sum(log₂(P)) / len(chars). Lower is better. Typical range: 0.5-3.0.
+    BPC = -sum(log₂(P)) / num_chars. Lower is better. Typical range: 0.5-3.0.
     Logprobs are in natural log base, so we convert to log₂ and negate to get
     positive bits per character.
 
@@ -39,14 +40,30 @@ def compute_bpc_scores(
         answer_texts: Ground truth answer texts that were appended to prompts.
         answer_start_indices: Pre-computed token indices where answers start in prompts.
         tokeniser: Tokeniser for tokenising prompts and answers.
+        answer_char_counts:
+            The number of characters to divide each answer's bits by. Defaults to the
+            length of each answer text when omitted. For token classification (NER) this
+            is the entity-text character count rather than the full serialised-answer
+            length, so the predictable JSON scaffolding does not dominate the score.
 
     Returns:
         BPC scores (positive floats, lower is better).
     """
+    if answer_char_counts is None:
+        answer_char_counts = [len(answer) for answer in answer_texts]
+
     bpc_scores: list[float] = []
 
-    for idx, (raw_output, prompt, answer, answer_start_idx) in enumerate(
-        zip(raw_outputs, prompts, answer_texts, answer_start_indices)
+    for idx, (
+        raw_output,
+        prompt,
+        answer,
+        answer_start_idx,
+        answer_char_count,
+    ) in enumerate(
+        zip(
+            raw_outputs, prompts, answer_texts, answer_start_indices, answer_char_counts
+        )
     ):
         prompt_logprobs = raw_output.prompt_logprobs
         prompt_token_ids = raw_output.prompt_token_ids
@@ -95,7 +112,7 @@ def compute_bpc_scores(
             # vLLM logprobs are negative (log of probability < 1), so -sum(negative)
             # yields positive BPC. E.g. logprob=-0.693 (ln(0.5)) → BPC=1.0 bits/char.
             total_logprob = -sum(lp / math.log(2) for lp in answer_logprobs)
-            bpc = total_logprob / max(1, len(answer))
+            bpc = total_logprob / max(1, answer_char_count)
         else:
             # No answer tokens extracted = infinite BPC (worst possible score)
             bpc = float("inf")
@@ -114,7 +131,8 @@ def compute_bpc_scores(
                 f"{answer_start_idx}/{start_idx}\n"
                 f"  Decoded scored answer span: {scored_text!r}\n"
                 f"  Answer tokens scored: {len(answer_logprobs)}, "
-                f"answer characters: {len(answer)}\n"
+                f"characters divided by: {answer_char_count} "
+                f"(full answer length: {len(answer)})\n"
                 f"  Bits per character: {bpc:.4f}",
                 level=logging.DEBUG,
             )
@@ -135,8 +153,9 @@ def compute_bpc_scores_for_vllm_outputs(
     Args:
         raw_outputs: Raw outputs from vLLM with prompt_logprobs.
         inputs:
-            Model inputs containing the ``bpc_prompt``, ``bpc_answer_start`` and
-            ``bpc_answer_text`` columns produced during dataset preparation.
+            Model inputs containing the ``bpc_prompt``, ``bpc_answer_start``,
+            ``bpc_answer_text`` and ``bpc_answer_char_count`` columns produced during
+            dataset preparation.
         tokeniser: Tokeniser for tokenisation.
 
     Returns:
@@ -181,4 +200,5 @@ def compute_bpc_scores_for_vllm_outputs(
         answer_texts=answer_texts,
         answer_start_indices=inputs["bpc_answer_start"],
         tokeniser=tokeniser,
+        answer_char_counts=inputs.get("bpc_answer_char_count"),
     )

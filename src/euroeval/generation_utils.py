@@ -17,7 +17,10 @@ from .task_group_utils.cloze import (
     letter_to_choice_text,
     parse_bare_question_and_choices,
 )
-from .task_group_utils.token_classification import serialise_ner_tags
+from .task_group_utils.token_classification import (
+    serialise_ner_tags,
+    serialised_ner_content_length,
+)
 from .tokenisation_utils import apply_chat_template, should_prompts_be_stripped
 
 if t.TYPE_CHECKING:
@@ -653,7 +656,23 @@ def apply_prompt(
             examples["bpc_prompt"] = list(full_prompts)
             examples["bpc_answer_start"] = [0] * num_examples
             examples["bpc_answer_text"] = [""] * num_examples
+            examples["bpc_answer_char_count"] = [0] * num_examples
         else:
+            # The number of characters BPC divides the answer's bits by. It is the full
+            # answer length for every task group except token classification (NER),
+            # where the serialised JSON answer is mostly fixed scaffolding; there we use
+            # only the entity-text characters so BPC measures bits per entity character
+            # rather than bits per (largely predictable) boilerplate character. Examples
+            # with no entities have no entity characters, so they fall back to the full
+            # answer length to keep every score a finite, cache-safe positive float.
+            if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+                answer_char_counts = [
+                    serialised_ner_content_length(answer) or len(answer)
+                    for answer in answers
+                ]
+            else:
+                answer_char_counts = [len(answer) for answer in answers]
+
             bpc_prompts: list[str] = []
             bpc_answer_starts: list[int] = []
             for full_prompt, answer in zip(full_prompts, answers):
@@ -663,6 +682,7 @@ def apply_prompt(
             examples["bpc_prompt"] = bpc_prompts
             examples["bpc_answer_start"] = bpc_answer_starts
             examples["bpc_answer_text"] = answers
+            examples["bpc_answer_char_count"] = answer_char_counts
 
     return examples
 

@@ -61,6 +61,29 @@ def serialise_ner_tags(
     return json.dumps(tagged, ensure_ascii=False)
 
 
+def serialised_ner_content_length(serialised_tags: str) -> int:
+    """Count the entity-text characters in a serialised NER answer.
+
+    The serialised answer (see `serialise_ner_tags`) is a JSON object whose every label
+    key is always present, so the bulk of its characters are fixed scaffolding (keys,
+    braces, brackets, commas) that a model predicts near-perfectly after seeing the
+    same format in the few-shot demonstrations. Dividing BPC by the full string length
+    therefore drowns the entity signal in predictable boilerplate. This returns just
+    the number of characters belonging to the tagged entity strings, so BPC can be
+    measured per entity character instead.
+
+    Args:
+        serialised_tags:
+            A serialised NER answer as produced by `serialise_ner_tags`.
+
+    Returns:
+        The total number of characters across all tagged entity strings (0 if the
+        example has no entities).
+    """
+    tagged: dict[str, list[str]] = json.loads(serialised_tags)
+    return sum(len(entity) for entities in tagged.values() for entity in entities)
+
+
 def compute_metrics(
     model_outputs_and_labels: "tuple[Predictions, Labels] | EvalPrediction",
     has_misc_tags: bool,

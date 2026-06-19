@@ -2,7 +2,10 @@
 
 import json
 
-from euroeval.task_group_utils.token_classification import serialise_ner_tags
+from euroeval.task_group_utils.token_classification import (
+    serialise_ner_tags,
+    serialised_ner_content_length,
+)
 
 
 class TestSerialiseNerTags:
@@ -56,3 +59,34 @@ class TestSerialiseNerTags:
             prompt_label_mapping=self.prompt_label_mapping,
         )
         assert json.loads(result) == {"person": [], "place": [], "ingen": []}
+
+
+class TestSerialisedNerContentLength:
+    """Tests for `serialised_ner_content_length`."""
+
+    prompt_label_mapping = {
+        "b-per": "person",
+        "i-per": "person",
+        "b-loc": "place",
+        "o": "ingen",
+    }
+
+    def test_counts_only_entity_characters(self) -> None:
+        """The length sums the entity strings, excluding the JSON scaffolding."""
+        serialised = serialise_ner_tags(
+            tokens=["John", "Doe", "visited", "Paris"],
+            labels=["b-per", "i-per", "o", "b-loc"],
+            prompt_label_mapping=self.prompt_label_mapping,
+        )
+        # "John Doe" (8) + "Paris" (5) = 13, regardless of the much longer JSON string.
+        assert serialised_ner_content_length(serialised) == 13
+        assert len(serialised) > 13
+
+    def test_zero_when_no_entities(self) -> None:
+        """An answer with no tagged entities has zero content characters."""
+        serialised = serialise_ner_tags(
+            tokens=["hello", "world"],
+            labels=["o", "o"],
+            prompt_label_mapping=self.prompt_label_mapping,
+        )
+        assert serialised_ner_content_length(serialised) == 0

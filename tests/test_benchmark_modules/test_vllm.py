@@ -554,6 +554,36 @@ class TestComputeBPCFromPromptLogprobs:
         # Sample 2: BPC = -log2(exp(-1.609)) / 2 = 1.609/ln(2) / 2 ≈ 1.16
         assert abs(bpc_scores[1] - (1.609 / 0.693 / 2)) < 0.01
 
+    def test_answer_char_counts_override_denominator(self) -> None:
+        """An explicit ``answer_char_counts`` is used as the denominator.
+
+        Mirrors NER, where the bits are divided by the entity-text character count
+        rather than the full serialised-answer length.
+        """
+        tokeniser = MagicMock()
+
+        prompt = "Q: Is this true? A: yes"
+        answer = "yes"
+        prompt_logprobs = [None, {2: -0.1}, {3: -0.2}, {4: -0.693}]  # "yes"
+        mock_output = self._create_mock_output(prompt, prompt_logprobs, [1, 2, 3, 4])
+        tokeniser.encode.side_effect = lambda text, add_special_tokens=False: (
+            [1, 2, 3, 4] if "yes" in text else [1, 2, 3]
+        )
+
+        bpc_scores = compute_bpc_scores(
+            raw_outputs=[mock_output],
+            prompts=[prompt],
+            answer_texts=[answer],
+            answer_start_indices=[3],
+            tokeniser=tokeniser,
+            # Divide by 1 character instead of len("yes") == 3.
+            answer_char_counts=[1],
+        )
+
+        # BPC = -log2(exp(-0.693)) / 1 = 1.0 / 1 ≈ 1.0 (3x the len-based 0.333).
+        assert len(bpc_scores) == 1
+        assert abs(bpc_scores[0] - 1.0) < 0.01
+
 
 class TestSkipImageProcessorContext:
     """Tests for _skip_image_processor_context.
