@@ -261,36 +261,41 @@ class Benchmarker:
             ValueError:
                 If there is an error decoding a line in the results file.
         """
-        if self.results_path.exists():
-            benchmark_results: list[BenchmarkResult] = list()
-            with self.results_path.open() as f:
-                for line in f:
-                    if line.strip():
-                        try:
-                            result_dict = json.loads(line.strip())
-                        except json.JSONDecodeError as e:
-                            raise ValueError(
-                                f"Error decoding JSON line: {line.strip()}"
-                            ) from e
-
-                        # Fix for older records
-                        has_old_raw_results = (
-                            "results" in result_dict
-                            and isinstance(result_dict["results"], dict)
-                            and "raw" in result_dict["results"]
-                            and isinstance(result_dict["results"]["raw"], dict)
-                            and "test" in result_dict["results"]["raw"]
-                        )
-                        if has_old_raw_results:
-                            result_dict["results"]["raw"] = result_dict["results"][
-                                "raw"
-                            ]["test"]
-
-                        result = BenchmarkResult.from_dict(result_dict)
-                        benchmark_results.append(result)
-            return benchmark_results
-        else:
+        if not self.results_path.exists():
             return list()
+
+        with self.results_path.open() as f:
+            lines = [line.strip() for line in f if line.strip()]
+
+        # Parsing each line (and the large raw-results blob it contains) can take a
+        # while for big results files, so show a progress bar that clears once done
+        # (`get_pbar` uses `leave=False`) to make clear the run is not hanging.
+        benchmark_results: list[BenchmarkResult] = list()
+        for line in get_pbar(
+            iterable=lines,
+            desc="Loading cached results",
+            disable=not self.benchmark_config.progress_bar,
+        ):
+            try:
+                result_dict = json.loads(line)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Error decoding JSON line: {line}") from e
+
+            # Fix for older records
+            has_old_raw_results = (
+                "results" in result_dict
+                and isinstance(result_dict["results"], dict)
+                and "raw" in result_dict["results"]
+                and isinstance(result_dict["results"]["raw"], dict)
+                and "test" in result_dict["results"]["raw"]
+            )
+            if has_old_raw_results:
+                result_dict["results"]["raw"] = result_dict["results"]["raw"]["test"]
+
+            result = BenchmarkResult.from_dict(result_dict)
+            benchmark_results.append(result)
+
+        return benchmark_results
 
     def _download(
         self,
@@ -738,7 +743,12 @@ class Benchmarker:
         }
 
         # Initialise the current benchmark results with all the ones that we have cached
-        # on disk already (can be none), and remove those datasets from the mapping
+        # on disk already (can be none), and remove those datasets from the mapping.
+        # Read the cached results once: `self.benchmark_results` re-reads and
+        # re-parses the entire results file on every access, and no new results are
+        # written during this partitioning loop, so reading it per-dataset would
+        # needlessly re-parse the whole file once per dataset.
+        existing_benchmark_results = self.benchmark_results
         current_benchmark_results: list[BenchmarkResult] = list()
         for (
             model_config,
@@ -750,7 +760,7 @@ class Benchmarker:
                     model_config=model_config,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,
-                    benchmark_results=self.benchmark_results,
+                    benchmark_results=existing_benchmark_results,
                 )
                 if benchmark_record is not None and not benchmark_config.force:
                     current_benchmark_results.append(benchmark_record)
