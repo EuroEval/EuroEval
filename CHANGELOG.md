@@ -26,6 +26,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed a `VLLMValidationError` (`max_tokens must be at least 1, got 0`) when
+  running bits-per-character (BPC) scoring on newer vLLM versions. BPC scoring only
+  reads `prompt_logprobs` and previously requested zero generated tokens; it now
+  requests a single throwaway token, and the scoring path is keyed off
+  `prompt_logprobs` rather than `max_tokens == 0`.
 - Fixed a `TypeError` crash when preparing sequence-classification datasets for
   bits-per-character (BPC) scoring. The answer text was looked up by indexing the
   label list with the label string; it now uses the dataset's prompt label

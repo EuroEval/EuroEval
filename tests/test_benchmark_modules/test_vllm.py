@@ -216,8 +216,21 @@ class TestVLLMPromptTruncation:
         model._model = MagicMock()
         model._model.generate.return_value = [mock_vllm_output]
 
+        def _make_sampling_params(**kwargs) -> MagicMock:
+            # Mirror the constructor kwargs onto the mock so the code under test reads
+            # back the real values (e.g. `prompt_logprobs=None` selects the generation
+            # path rather than the BPC scoring path).
+            sampling_params = MagicMock()
+            for key, value in kwargs.items():
+                setattr(sampling_params, key, value)
+            return sampling_params
+
         with (
-            patch("euroeval.benchmark_modules.vllm.SamplingParams", create=True),
+            patch(
+                "euroeval.benchmark_modules.vllm.SamplingParams",
+                create=True,
+                side_effect=_make_sampling_params,
+            ),
             patch(
                 "euroeval.benchmark_modules.vllm.get_first_label_token_mapping",
                 return_value={},

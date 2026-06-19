@@ -743,11 +743,11 @@ class VLLMModel(HuggingFaceEncoderModel):
         # long prompts may be. For models whose context is too small to fit both the
         # prompt and the dataset's full generation budget, the reserved generation
         # budget is shrunk so the prompt retains room (see `compute_token_budget`). BPC
-        # scoring (max_tokens == 0) performs no generation, so prompts may use the full
-        # context.
+        # scoring (signalled by `prompt_logprobs`) generates only a single throwaway
+        # token, so prompts may use almost the full context.
         max_context_length = min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
-        if sampling_params.max_tokens == 0:
-            max_tokens_per_prompt = max_context_length
+        if sampling_params.prompt_logprobs is not None:
+            max_tokens_per_prompt = max_context_length - sampling_params.max_tokens
         else:
             generation_budget, max_tokens_per_prompt = compute_token_budget(
                 model_max_length=self._tokeniser.model_max_length,
@@ -993,8 +993,9 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Parse the raw model outputs. We keep the special tokens for now, as we need
         # them to potentially remove reasoning content and stop tokens
-        if sampling_params.max_tokens == 0:
-            # BPC mode: no generation, just prompt_logprobs
+        if sampling_params.prompt_logprobs is not None:
+            # BPC mode: the single generated token is discarded; only prompt_logprobs
+            # are used for scoring.
             completions = [""] * len(raw_outputs)
         else:
             completion_ids: c.Sequence[c.Sequence[int]] = [
@@ -1119,7 +1120,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             Model output with BPC scores.
         """
         sampling_params = SamplingParams(
-            max_tokens=0,
+            # BPC scoring only reads `prompt_logprobs`; no generation is needed, but
+            # vLLM requires `max_tokens >= 1`, so we generate a single throwaway token.
+            max_tokens=1,
             prompt_logprobs=BPC_LOGPROBS,
             logprobs=None,
             temperature=GENERATION_KWARGS["temperature"],
