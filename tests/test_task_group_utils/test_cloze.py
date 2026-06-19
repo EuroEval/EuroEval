@@ -71,3 +71,14 @@ class TestParseBareQuestionAndChoices:
         question, choices = cloze.parse_bare_question_and_choices(text)
         assert question == "Line one.\nLine two?"
         assert choices == ["first", "second"]
+
+    def test_question_line_starting_with_enumerator_is_kept(self) -> None:
+        """A question line that itself starts with ``N.`` is not mistaken for a choice.
+
+        Only the final contiguous block of enumerated lines counts as choices, so an
+        enumerated line earlier in the question is preserved as part of the question.
+        """
+        text = "1. What is true?\nChoices:\na. first\nb. second"
+        question, choices = cloze.parse_bare_question_and_choices(text)
+        assert question == "1. What is true?"
+        assert choices == ["first", "second"]

@@ -6,7 +6,7 @@ import re
 from ..exceptions import InvalidBenchmark
 from ..string_utils import CHOICE_LETTERS
 
-_CHOICE_LINE_REGEX = re.compile(r"^\s*([a-zA-Z])\.\s+(.+?)\s*$")
+_CHOICE_LINE_REGEX = re.compile(r"^\s*([a-zA-Z0-9]+)\.\s+(.+?)\s*$")
 
 
 def letter_to_choice_text(letter: str, raw_choices: c.Sequence[str]) -> str:
@@ -64,22 +64,29 @@ def parse_bare_question_and_choices(text: str) -> tuple[str, list[str]]:
         and ``bare_question`` is the original text unchanged.
     """
     lines = text.split("\n")
-    first_choice_idx: int | None = None
-    choices: list[str] = []
-    for idx, line in enumerate(lines):
-        match = _CHOICE_LINE_REGEX.match(line)
-        if match is None:
-            # Only the contiguous trailing block of enumerated lines counts as choices;
-            # stop once a non-choice line appears after the block has started.
-            if first_choice_idx is not None:
-                break
-            continue
-        if first_choice_idx is None:
-            first_choice_idx = idx
-        choices.append(match.group(2).strip())
-
-    if first_choice_idx is None:
+    candidate_idxs = [
+        idx for idx, line in enumerate(lines) if _CHOICE_LINE_REGEX.match(line)
+    ]
+    if not candidate_idxs:
         return text, []
+
+    # Only the final contiguous block of enumerated lines counts as choices: the
+    # question itself can contain lines that start with e.g. "1." or "a.", so we walk
+    # backwards from the end and stop at the first gap.
+    block_idxs: list[int] = []
+    for idx in reversed(candidate_idxs):
+        if not block_idxs or idx == block_idxs[-1] - 1:
+            block_idxs.append(idx)
+        else:
+            break
+    block_idxs.reverse()
+    first_choice_idx = block_idxs[0]
+
+    choices: list[str] = []
+    for idx in block_idxs:
+        match = _CHOICE_LINE_REGEX.match(lines[idx])
+        assert match is not None  # guaranteed by candidate_idxs construction
+        choices.append(match.group(2).strip())
 
     # Everything before the first option is the question, minus a trailing choices-label
     # line (e.g. "Choices:"), mirroring how the prompt was assembled as
