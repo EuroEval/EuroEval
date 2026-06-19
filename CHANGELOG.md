@@ -26,6 +26,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- vLLM device out-of-memory errors during generation (common on shared-memory
+  devices such as Apple Metal, where the default GPU memory utilization leaves no
+  room for per-step allocations) are now caught and reported with clear guidance to
+  re-run with a lower `--gpu-memory-utilization`, instead of an opaque crash.
 - Fixed vLLM benchmarking crashing or hanging on non-CUDA platforms (e.g. Apple
   Metal). The multiprocessing executor was forced even for a single non-CUDA
   device, and its worker rejected the `mps` device; single non-CUDA devices now use

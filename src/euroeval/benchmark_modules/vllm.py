@@ -894,6 +894,38 @@ class VLLMModel(HuggingFaceEncoderModel):
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
         truncation_attempts = 1
+
+        # Device out-of-memory signatures. On shared-memory devices (e.g. Apple
+        # Metal) these typically surface during generation rather than at load time,
+        # either as a `RuntimeError` or by killing the engine subprocess.
+        out_of_memory_messages = [
+            "out of memory",
+            "outofmemory",
+            "insufficient memory",
+            "command buffer execution failed",
+        ]
+
+        def _raise_if_out_of_memory(error: Exception) -> None:
+            """Raise a clear, actionable error if `error` is a device OOM.
+
+            Args:
+                error:
+                    The exception raised during vLLM generation.
+
+            Raises:
+                InvalidModel:
+                    If `error` is a device out-of-memory error.
+            """
+            if any(message in str(error).lower() for message in out_of_memory_messages):
+                raise InvalidModel(
+                    "vLLM ran out of device memory during generation. On "
+                    "shared-memory devices (e.g. Apple Metal) the default GPU memory "
+                    "utilization is often too high, since the reserved KV cache "
+                    "leaves no room for the per-step allocations. Re-run with a lower "
+                    "value, e.g. `--gpu-memory-utilization 0.3` (or lower). "
+                    f"Underlying error: {str(error)}"
+                ) from error
+
         for _ in range(num_attempts):
             try:
                 # Replace any empty prompts with the BOS token to avoid vLLM
@@ -917,6 +949,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                 )
                 sleep(1)
             except (ValueError, RuntimeError) as e:
+                # A device out-of-memory error is not recoverable by retrying, so
+                # surface clear guidance to lower the GPU memory utilization.
+                _raise_if_out_of_memory(e)
+
                 # Truncate the prompts if they are too long for the model
                 truncate_error_messages = [
                     r"prompt \(length [0-9]+\) is longer than the maximum model length",
@@ -955,6 +991,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                         f"An error occurred during vLLM generation: {str(e)}"
                     ) from e
             except Exception as e:
+                # A device out-of-memory error can also manifest as the engine
+                # subprocess dying, so check for it before the generic handling.
+                _raise_if_out_of_memory(e)
+
                 # The vLLM v1 engine raises `EngineDeadError` when a worker RPC
                 # times out. The engine cannot be reused once dead, so surface a
                 # clean benchmark error instead of an opaque crash.
