@@ -18,7 +18,7 @@ from .task_group_utils.cloze import (
     parse_bare_question_and_choices,
 )
 from .task_group_utils.token_classification import serialise_ner_tags
-from .tokenisation_utils import apply_chat_template
+from .tokenisation_utils import apply_chat_template, should_prompts_be_stripped
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -556,6 +556,46 @@ def apply_prompt(
         assert tokeniser is not None, (
             "tokeniser must be provided when use_bits_per_character=True"
         )
+        bpc_tokeniser = tokeniser
+
+        # Decide, once for this tokeniser, how to join a prompt with its gold answer.
+        # This mirrors the generation path (see `should_prompts_be_stripped`): if the
+        # tokeniser merges a leading space into the following token, the prompt's
+        # trailing whitespace must be stripped and a single space placed before the
+        # answer so the answer's first token carries its natural leading space.
+        # Otherwise the prompt keeps its trailing whitespace (emitted as its own token)
+        # and the answer is appended directly. Either way the prefix tokenises stably,
+        # so its token count is the exact answer-start index.
+        labels_for_spacing = list(dataset_config.prompt_label_mapping.values()) or [
+            "negative",
+            "positive",
+        ]
+        strip_bpc_prompt = should_prompts_be_stripped(
+            labels_to_be_generated=labels_for_spacing, tokeniser=bpc_tokeniser
+        )
+
+        def build_bpc_prompt(new_prompt: str, answer: str) -> tuple[str, int]:
+            """Join a prompt and gold answer, returning the answer-start token index.
+
+            Args:
+                new_prompt:
+                    The prompt for the example, ending with the answer prefix (e.g.
+                    ``"Svar: "``).
+                answer:
+                    The gold answer text to be scored.
+
+            Returns:
+                A pair ``(bpc_prompt, answer_start_token_index)``.
+            """
+            if strip_bpc_prompt:
+                prefix = new_prompt.rstrip()
+                full_prompt = f"{prefix} {answer}"
+            else:
+                prefix = new_prompt
+                full_prompt = f"{prefix}{answer}"
+            answer_start = len(bpc_tokeniser.encode(prefix, add_special_tokens=False))
+            return full_prompt, answer_start
+
         bpc_prompts: list[str] = []
         bpc_answer_starts: list[int] = []
         match dataset_config.task.task_group:
@@ -563,12 +603,9 @@ def apply_prompt(
                 for i, (new_prompt, _) in enumerate(new_sections):
                     label = examples["label"][i]
                     answer = dataset_config.prompt_label_mapping.get(label, label)
-                    bpc_prompts.append(new_prompt + " " + answer)
-                    # Tokenise prompt without answer to get answer start index
-                    prompt_tokens = tokeniser.encode(
-                        new_prompt, add_special_tokens=False
-                    )
-                    bpc_answer_starts.append(len(prompt_tokens))
+                    bpc_prompt, answer_start = build_bpc_prompt(new_prompt, answer)
+                    bpc_prompts.append(bpc_prompt)
+                    bpc_answer_starts.append(answer_start)
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 if "raw_choices" in examples:
                     for i, (new_prompt, _) in enumerate(new_sections):
@@ -577,11 +614,9 @@ def apply_prompt(
                         answer = letter_to_choice_text(
                             letter=str(label).strip().lower(), raw_choices=raw_choice
                         )
-                        bpc_prompts.append(new_prompt + " " + answer)
-                        prompt_tokens = tokeniser.encode(
-                            new_prompt, add_special_tokens=False
-                        )
-                        bpc_answer_starts.append(len(prompt_tokens))
+                        bpc_prompt, answer_start = build_bpc_prompt(new_prompt, answer)
+                        bpc_prompts.append(bpc_prompt)
+                        bpc_answer_starts.append(answer_start)
                 else:
                     bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
                     bpc_answer_starts = [0] * len(new_sections)
@@ -589,11 +624,9 @@ def apply_prompt(
                 if "target_text" in examples:
                     for i, (new_prompt, _) in enumerate(new_sections):
                         target = examples["target_text"][i]
-                        bpc_prompts.append(new_prompt + " " + target)
-                        prompt_tokens = tokeniser.encode(
-                            new_prompt, add_special_tokens=False
-                        )
-                        bpc_answer_starts.append(len(prompt_tokens))
+                        bpc_prompt, answer_start = build_bpc_prompt(new_prompt, target)
+                        bpc_prompts.append(bpc_prompt)
+                        bpc_answer_starts.append(answer_start)
                 else:
                     bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
                     bpc_answer_starts = [0] * len(new_sections)
@@ -602,11 +635,9 @@ def apply_prompt(
                     for i, (new_prompt, _) in enumerate(new_sections):
                         answer_dct = examples["answers"][i]
                         answer = answer_dct["answers"]["text"][0]
-                        bpc_prompts.append(new_prompt + " " + answer)
-                        prompt_tokens = tokeniser.encode(
-                            new_prompt, add_special_tokens=False
-                        )
-                        bpc_answer_starts.append(len(prompt_tokens))
+                        bpc_prompt, answer_start = build_bpc_prompt(new_prompt, answer)
+                        bpc_prompts.append(bpc_prompt)
+                        bpc_answer_starts.append(answer_start)
                 else:
                     bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
                     bpc_answer_starts = [0] * len(new_sections)
@@ -618,11 +649,9 @@ def apply_prompt(
                             labels=examples["labels"][i],
                             prompt_label_mapping=dataset_config.prompt_label_mapping,
                         )
-                        bpc_prompts.append(new_prompt + " " + answer)
-                        prompt_tokens = tokeniser.encode(
-                            new_prompt, add_special_tokens=False
-                        )
-                        bpc_answer_starts.append(len(prompt_tokens))
+                        bpc_prompt, answer_start = build_bpc_prompt(new_prompt, answer)
+                        bpc_prompts.append(bpc_prompt)
+                        bpc_answer_starts.append(answer_start)
                 else:
                     bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
                     bpc_answer_starts = [0] * len(new_sections)
