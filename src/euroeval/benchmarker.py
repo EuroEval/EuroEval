@@ -550,6 +550,22 @@ class Benchmarker:
             level=logging.INFO,
         )
 
+        # Resolve BPC mode up front (it holds for every evaluation in the run) and
+        # announce it once, so it is clear the run is scoring bits-per-character rather
+        # than the usual task metrics.
+        is_bpc = (
+            use_bits_per_character
+            if use_bits_per_character is not None
+            else self.benchmark_config_default_params.use_bits_per_character
+        )
+        if is_bpc:
+            log_once(
+                "Running in bits-per-character (BPC) mode: every dataset will be "
+                "scored by the bits-per-character of the ground-truth answer (lower is "
+                "better) instead of the usual task metrics.",
+                level=logging.INFO,
+            )
+
         if task is not None and dataset is not None:
             raise ValueError("Only one of `task` and `dataset` can be specified.")
 
