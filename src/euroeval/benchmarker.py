@@ -531,6 +531,9 @@ class Benchmarker:
                 If we're offline benchmarking an adapter model, or if model loading
                 failed.
         """
+        if task is not None and dataset is not None:
+            raise ValueError("Only one of `task` and `dataset` can be specified.")
+
         # Determine if verbose mode is active (either from parameter, FULL_LOG env var,
         # or stored config from __init__)
         is_verbose = (
@@ -565,9 +568,6 @@ class Benchmarker:
                 "better) instead of the usual task metrics.",
                 level=logging.INFO,
             )
-
-        if task is not None and dataset is not None:
-            raise ValueError("Only one of `task` and `dataset` can be specified.")
 
         # Get a new updated benchmark configuration, based on any changes to the
         # parameters
