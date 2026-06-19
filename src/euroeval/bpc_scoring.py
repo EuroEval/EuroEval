@@ -12,12 +12,8 @@ import typing as t
 if t.TYPE_CHECKING:
     from vllm.outputs import RequestOutput
 
-from .data_models import DatasetConfig
-from .enums import TaskGroup
 from .exceptions import InvalidModel
 from .logging_utils import log_once
-from .task_group_utils.cloze import letter_to_choice_text
-from .task_group_utils.token_classification import serialise_ner_tags
 from .types import Tokeniser
 
 
@@ -128,120 +124,19 @@ def compute_bpc_scores(
     return bpc_scores
 
 
-def extract_answer_texts(inputs: dict, dataset_config: DatasetConfig) -> list[str]:
-    """Extract ground truth answer texts from inputs based on task group.
-
-    Used by BPC scoring to determine which text spans to evaluate against
-    prompt_logprobs.
-
-    Args:
-        inputs:
-            Model inputs containing labels and task-specific fields.
-        dataset_config:
-            Configuration for the dataset including labels and task metadata.
-
-    Returns:
-        List of answer texts to score. Empty list if the task type is not
-        supported or required fields are missing.
-    """
-    answer_texts: list[str] = []
-    task_group = dataset_config.task.task_group
-    labels = inputs.get("label", [])
-
-    match task_group:
-        case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-            if "raw_choices" not in inputs:
-                log_once(
-                    "BPC scoring requires 'raw_choices' in inputs for MCQ "
-                    "tasks, but they are not present. Skipping BPC "
-                    "computation.",
-                    level=logging.WARNING,
-                )
-            else:
-                raw_choices = inputs["raw_choices"]
-                answer_texts = [
-                    letter_to_choice_text(
-                        letter=str(label).strip().lower(), raw_choices=raw_choice
-                    )
-                    for label, raw_choice in zip(labels, raw_choices)
-                ]
-
-        case TaskGroup.SEQUENCE_CLASSIFICATION:
-            # The answer text must match what was appended to `bpc_prompt` during
-            # dataset preparation, which uses the localized prompt label mapping.
-            answer_texts = [
-                dataset_config.prompt_label_mapping.get(label, label)
-                for label in labels
-            ]
-
-        case TaskGroup.TEXT_TO_TEXT:
-            if "target_text" not in inputs:
-                log_once(
-                    "BPC scoring requires 'target_text' in inputs for "
-                    "text-to-text tasks, but they are not present. "
-                    "Skipping BPC computation.",
-                    level=logging.WARNING,
-                )
-            else:
-                answer_texts = inputs["target_text"]
-
-        case TaskGroup.QUESTION_ANSWERING:
-            if not all(isinstance(lbl, dict) and "answers" in lbl for lbl in labels):
-                log_once(
-                    "BPC scoring requires structured 'answers' in label "
-                    "for QA tasks, but the format is unexpected. Skipping "
-                    "BPC computation.",
-                    level=logging.WARNING,
-                )
-            else:
-                answer_texts = [lbl["answers"]["text"][0] for lbl in labels]
-
-        case TaskGroup.TOKEN_CLASSIFICATION:
-            # Serialise NER tags using the same canonical format as the prompts, so the
-            # gold answer scored by BPC matches what the few-shot examples demonstrate.
-            if "tokens" not in inputs or "labels" not in inputs:
-                log_once(
-                    "BPC scoring requires 'tokens' and 'labels' in inputs "
-                    "for token classification tasks, but they are not "
-                    "present. Skipping BPC computation.",
-                    level=logging.WARNING,
-                )
-            else:
-                answer_texts = [
-                    serialise_ner_tags(
-                        tokens=tokens,
-                        labels=example_labels,
-                        prompt_label_mapping=dataset_config.prompt_label_mapping,
-                    )
-                    for tokens, example_labels in zip(
-                        inputs["tokens"], inputs["labels"]
-                    )
-                ]
-
-        case _:
-            log_once(
-                f"BPC scoring not implemented for task group {task_group}. "
-                "Skipping BPC computation.",
-                level=logging.WARNING,
-            )
-
-    return answer_texts
-
-
 def compute_bpc_scores_for_vllm_outputs(
-    raw_outputs: c.Sequence["RequestOutput"],
-    inputs: dict,
-    dataset_config: "DatasetConfig",
-    tokeniser: Tokeniser,
+    raw_outputs: c.Sequence["RequestOutput"], inputs: dict, tokeniser: Tokeniser
 ) -> list[float] | None:
     """Compute BPC scores from vLLM outputs.
 
-    High-level wrapper that extracts answer texts and computes BPC scores.
+    High-level wrapper that reads the pre-computed gold answer texts and computes BPC
+    scores.
 
     Args:
         raw_outputs: Raw outputs from vLLM with prompt_logprobs.
-        inputs: Model inputs containing bpc_prompt and bpc_answer_start.
-        dataset_config: Dataset configuration for task type.
+        inputs:
+            Model inputs containing the ``bpc_prompt``, ``bpc_answer_start`` and
+            ``bpc_answer_text`` columns produced during dataset preparation.
         tokeniser: Tokeniser for tokenisation.
 
     Returns:
@@ -252,10 +147,12 @@ def compute_bpc_scores_for_vllm_outputs(
             If the active vLLM backend does not return per-token prompt logprobs,
             which are mandatory for BPC scoring (e.g. the Apple Metal plugin).
     """
-    # Extract answer texts based on task type
-    answer_texts = extract_answer_texts(inputs=inputs, dataset_config=dataset_config)
-
-    if not answer_texts:
+    # The gold answer texts are derived once during dataset preparation and carried in
+    # the `bpc_answer_text` column, guaranteeing they match the answers appended to
+    # `bpc_prompt`. An absent column or all-empty texts means the task group has no
+    # scoreable answer, so BPC is skipped.
+    answer_texts = inputs.get("bpc_answer_text")
+    if not answer_texts or all(answer == "" for answer in answer_texts):
         return None
 
     # Per-token prompt logprobs are mandatory for BPC. Some vLLM backends (notably the

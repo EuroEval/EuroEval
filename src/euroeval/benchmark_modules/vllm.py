@@ -1179,10 +1179,7 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Compute BPC scores
         bpc_scores = compute_bpc_scores_for_vllm_outputs(
-            raw_outputs=raw_outputs,
-            inputs=inputs,
-            dataset_config=self.dataset_config,
-            tokeniser=self._tokeniser,
+            raw_outputs=raw_outputs, inputs=inputs, tokeniser=self._tokeniser
         )
         output = GenerativeModelOutput(sequences=completions)
         if bpc_scores is not None:
