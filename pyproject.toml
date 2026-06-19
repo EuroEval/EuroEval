@@ -1,6 +1,6 @@
 [project]
 name = "EuroEval"
-version = "17.3.0.dev"
+version = "17.4.0.dev"
 description = "The robust European language model benchmark."
 readme = "README.md"
 authors = [
@@ -29,7 +29,7 @@ dependencies = [
     "sacremoses>=0.1.1",
     "more-itertools>=10.5.0",
     "tenacity>=9.0.0",
-    "litellm>=1.75.6,!=1.82.7,!=1.82.8",
+    "litellm>=1.83.7",
     "rouge-score>=0.1.2",
     "bert-score>=0.3.13",
     "levenshtein>=0.24.0",
@@ -47,6 +47,7 @@ dependencies = [
     "langdetect>=1.0.9",
     "pyyaml>=6.0",
     "lingua-language-detector>=2.2.0",
+    "google-cloud-aiplatform>=1.157.0",
 ]
 
 [project.optional-dependencies]
@@ -58,7 +59,7 @@ generative = [
     # vLLM setup for Linux (assuming CUDA is available here)
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.22.0; platform_system == 'Linux'",
-    "ray>=2.53.0; platform_system == 'Linux'",
+    "ray>=2.55.0; platform_system == 'Linux'",
 ]
 all = [
     "timm>=1.0.19",
@@ -68,7 +69,7 @@ all = [
     # vLLM setup for Linux (assuming CUDA is available here)
     "bitsandbytes>=0.43.1; platform_system == 'Linux'",
     "vllm>=0.22.0; platform_system == 'Linux'",
-    "ray>=2.53.0; platform_system == 'Linux'",
+    "ray>=2.55.0; platform_system == 'Linux'",
 ]
 leaderboards = [
     "anthropic>=0.49.0",

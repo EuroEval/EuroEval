@@ -390,7 +390,7 @@ const formatIconLabel = (val: string, col: Column): string => {
 const isTypeCol = (col: Column) => col.key.toLowerCase() === "type";
 
 // Primary/secondary metric pretty names per task, generated from
-// `euroeval.tasks` by `src/scripts/generate_task_metrics.py`. The yaml-style
+// `euroeval.tasks` by the `generate_leaderboards` script. The yaml-style
 // keys (e.g. "sentiment-classification") match a slugified task heading.
 const TASK_METRIC_NAMES = taskMetricsRaw as Record<string, string[]>;
 

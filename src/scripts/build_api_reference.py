@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generate the API reference markdown for the EuroEval Python package.
 
 Walks `src/euroeval` recursively, extracts module docstrings plus the public
@@ -6,7 +5,7 @@ classes and functions with their signatures and docstrings, and writes a
 single markdown file at `src/frontend/md/api.md` that the Vue docs site
 renders via the existing markdown pipeline.
 
-Run directly (`python3 src/scripts/build_api_reference.py`) or via the
+Run directly (`uv run src/scripts/build_api_reference.py`) or via the
 sibling Vite plugin, which calls this on dev-server start, on build, and
 whenever a Python source file changes.
 """

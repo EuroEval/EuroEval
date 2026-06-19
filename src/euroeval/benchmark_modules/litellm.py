@@ -92,7 +92,7 @@ if t.TYPE_CHECKING:
 
 VOCAB_SIZE_MAPPING = {
     # OpenAI models
-    r"(openai/)?gpt-5\.[234].*": -1,
+    r"(openai/)?gpt-5\..*": -1,
     r"(openai/)?gpt-5-.*": 100_256,
     r"(openai/)?gpt-4-(32k)?(-[0-9]{4})?": 100_256,
     r"(openai/)?gpt-4-[0-9]{4}-preview": 100_256,
@@ -115,8 +115,8 @@ VOCAB_SIZE_MAPPING = {
 
 MODEL_MAX_LENGTH_MAPPING = {
     # OpenAI models
-    r"(openai/)?gpt-5\.4-(mini|nano)-.*": 400_000,
-    r"(openai/)?gpt-5\.4-.*": 1_050_000,
+    r"(openai/)?gpt-5\.4-(mini|nano).*": 400_000,
+    r"(openai/)?gpt-5\.[45].*": 1_050_000,
     r"(openai/)?gpt-5\.2.*": 400_000,
     r"(openai/)?gpt-5-.*": 272_000,
     r"(openai/)?gpt-4(-[0-9]{4})?": 8_191,
@@ -131,6 +131,9 @@ MODEL_MAX_LENGTH_MAPPING = {
     r"(openai/)?o[2-9](-mini|-preview)?(-[0-9]{4}-[0-9]{2}-[0-9]{2})?": 200_000,
     r"(openai/)?gpt-4\.1.*": 1_047_576,
     # Anthropic models
+    r"(anthropic/)?claude-opus-4-8": 1_000_000,
+    r"(anthropic/)?claude-sonnet-4-6": 1_000_000,
+    r"(anthropic/)?claude-haiku-4-5": 200_000,
     r"(anthropic/)?claude-[1-9](-[1-9])?-(opus|sonnet|haiku)-[0-9]{8}": 200_000,
     r"(anthropic/)?claude-(opus|sonnet|haiku)-[1-9](-[1-9])?-[0-9]{8}": 200_000,
     # Gemini models
@@ -525,10 +528,13 @@ class LiteLLMModel(BenchmarkModule):
             "'temperature' is not supported with this model.",
             "temperature is not supported with this model",
             r"does not support parameters: \[.*'temperature'.*\]",
+            "`temperature` is deprecated for this model.",
         ]
         temperature_must_be_one_messages = [
             "`temperature` may only be set to 1",
             "'temperature' does not support 0.0 with this model. Only the default "
+            "(1) value is supported",
+            "'temperature' does not support 0 with this model. Only the default "
             "(1) value is supported",
             "Only temperature=1 is supported",
         ]

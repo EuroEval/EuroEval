@@ -85,7 +85,9 @@ def main() -> None:
     val_df = val_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
 
-    # Collect datasets in a dataset dictionary
+    # Collect datasets in a dataset dictionary. The ``datasets`` stubs type the
+    # ``DatasetDict(**splits)`` keyword arguments too narrowly, hence the false
+    # positive.
     dataset_dict = DatasetDict(  # ty: ignore[invalid-argument-type]
         train=Dataset.from_pandas(train_df, split=Split.TRAIN),
         val=Dataset.from_pandas(val_df, split=Split.VALIDATION),

@@ -7,10 +7,16 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [Unreleased]
-
 ### Added
 
+- Added `download()` method to `PipelineMetric` class
+  - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
+    Values metric)
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
+    the pipeline
+- Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
+- Added the `google-cloud-aiplatform` dependency, as it's required to run
+  Gemini-3.1-pro.
 - Added the Danish zebra puzzle dataset
   [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
   is given by 128 / 1,024 samples for train / test, respectively. It is marked as
@@ -18,9 +24,50 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Added `download()` method to `PipelineMetric` class
+  - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
+    Values metric)
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and
+      caching the pipeline
+- Fixed `BenchmarkResult.from_dict()` failing to parse legacy results from Hugging Face
+  bucket where `results.raw` contained nested dicts (e.g. `{"test": [{"mcc": 0.5}]}`)
+  instead of flattened format (`{"test_mcc": 0.5}`)
+- Fixed offline benchmarking on air-gapped systems (e.g. supercomputers):
+  - `get_hf_token` now catches `httpx.ConnectError` to gracefully degrade when token
+    validation fails offline
+  - `load_hf_model_config` returns a minimal config when files aren't fully cached
+    instead of raising `InvalidModel`
+  - `snapshot_download` now checks for existing cached weights before downloading,
+    avoiding redundant downloads in `--download-only` mode
+- Fixed `resolve_model_path` to prefer actual commit snapshots over stale `model_files`
+  symlink directories, preventing broken symlink errors when cache has multiple
+  snapshots
+- Fixed orthogonal benchmark failures (e.g. `european-values`) being counted as
+  "errored" instead of "skipped" in the summary
+- Fixed an error with GPT-5.5 regarding it's requirement to use temperature 1.0. The
+  error was due to OpenAI having changed their error messages.
+- Fixed an error with Claude Opus 4.8 as it disallows changing the temperature argument.
+  The error was due to Anthropic having changed their error messages.
+
+### Security
+
+- Raised the minimum `litellm` version to 1.83.7 due to a vulnerability.
+- Raised the minimum `ray` version to 2.55.0 due to a vulnerability.
+
+## [v17.4.0] - 2026-06-12
+
+### Changed
+
+- Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
+  model architectures and tokenisers.
+
+>>>>>>> main
+
+### Fixed
+
 - Fixed a bug where evaluating on AngryTweets sentiment classification raised
-  `Sequences and scores must have the same length` when the model returned no choices for
-  some samples. The `_create_model_output` method now appends an empty score list
+  `Sequences and scores must have the same length` when the model returned no choices
+  for some samples. The `_create_model_output` method now appends an empty score list
   alongside the empty sequence to keep both lists in sync.
 - Fixed deprecation warnings from `transformers` v5.2+:
   - Replaced deprecated `warmup_ratio` with dynamic `warmup_steps` calculation (1% of
@@ -34,17 +81,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   a JSON-encoded string (e.g. `'"bg"'` instead of `["bg"]`). This occurred when mixing
   EEE format results with legacy format results.
 - Fixed model loading failures (e.g., shape mismatches, CUDA errors) incorrectly being
-  counted as "skipped" benchmarks instead of "errored". The queue processor now correctly
-  detects these as failures and applies the `evaluation-failed` label to GitHub issues.
+  counted as "skipped" benchmarks instead of "errored". The queue processor now
+  correctly detects these as failures and applies the `evaluation-failed` label to
+  GitHub issues.
 - Fixed tokenizer loading failures for XLM-RoBERTa variant models (e.g.
-  `EMBEDDIA/litlat-bert`) that raised `TypeError: argument 'vocab': 'dict' object cannot
-  be converted to 'Sequence'`. The tokenizer loader now falls back to `use_fast=False`
-  when this error occurs.
-
-### Changed
-
-- Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
-  model architectures and tokenisers.
+  `EMBEDDIA/litlat-bert`) that raised
+  `TypeError: argument 'vocab': 'dict' object cannot be converted to 'Sequence'`. The
+  tokenizer loader now falls back to `use_fast=False` when this error occurs.
 
 - Added the "Dutch Proverbs" dataset. The dataset consists of brief scenarios and two
   possible proverbs for the LLM to select from. The dataset was created manually and

@@ -817,6 +817,46 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     vocabulary_size: int | None
 
 
+def _convert_old_raw_results_format(config: dict[str, object]) -> None:
+    """Convert old raw_results format in-place.
+
+    Handles legacy nested dict format:
+    - raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]}
+    and converts to flat list: raw = [{"test_mcc": 0.5, "test_accuracy": 0.6}].
+
+    List format raw = [{"mcc": 0.5, "accuracy": 0.6}] is preserved as-is for EEE format.
+    """
+    if "results" not in config:
+        return
+    results = t.cast(dict[str, object], config["results"])
+    if "raw" not in results:
+        return
+    raw = results["raw"]
+
+    # Preserve list format - it's what EEE format needs
+    if isinstance(raw, list):
+        return
+
+    # Convert nested dict format: {"test": [...]} to flat list [{...}]
+    if isinstance(raw, dict):
+        raw_list: list[dict[str, float]] = []
+        for split_name, split_data in raw.items():
+            if not isinstance(split_data, list) or not split_data:
+                continue
+            for i, item in enumerate(split_data):
+                if not isinstance(item, dict):
+                    continue
+                while len(raw_list) <= i:
+                    raw_list.append({})
+                for metric, value in item.items():
+                    if isinstance(value, (int, float)):
+                        key = f"{split_name}_{metric}"
+                        if key not in raw_list[i]:
+                            raw_list[i][key] = float(value)
+        if raw_list:
+            results["raw"] = raw_list
+
+
 class BenchmarkResult(pydantic.BaseModel):
     """A benchmark result."""
 
@@ -839,6 +879,10 @@ class BenchmarkResult(pydantic.BaseModel):
     vllm_version: str | None = get_package_version("vllm")
     xgrammar_version: str | None = get_package_version("xgrammar")
     litellm_version: str | None = None
+    # EuroEval-specific metadata fields (preserved through EEE conversion)
+    commercially_licensed: bool | None = None
+    open: bool | None = None
+    trained_from_scratch: bool | None = None
 
     @classmethod
     def from_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
@@ -904,7 +948,12 @@ class BenchmarkResult(pydantic.BaseModel):
         if "vocabulary_size" not in config:
             config["vocabulary_size"] = 0
 
-        return cls(**config)
+        # Backwards compatibility: convert old raw_results format where
+        # raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]} to flattened
+        # raw = {"test_mcc": 0.5, "test_accuracy": 0.6}
+        _convert_old_raw_results_format(config)
+
+        return cls(**config)  # ty: ignore[invalid-argument-type]
 
     @classmethod
     def from_eee_dict(cls, config: dict[str, object]) -> "BenchmarkResult":

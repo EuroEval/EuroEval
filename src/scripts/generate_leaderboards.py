@@ -1,8 +1,8 @@
 """Generate all leaderboards."""
 
 import datetime as dt
+import json
 import logging
-import re
 import subprocess
 import sys
 import typing as t
@@ -14,25 +14,32 @@ from dotenv import load_dotenv
 from yaml import safe_load
 
 from leaderboards.backup import backup_results, restore_from_backup_if_missing
-from leaderboards.core_models import API_MODEL_PATTERNS
+from leaderboards.constants import (
+    API_MODEL_PATTERNS,
+    BANNED_MODEL_PATTERNS,
+    BANNED_VERSIONS,
+    CORE_MODELS_CONFIG,
+    CORE_MODELS_STALE_DAYS,
+    LEADERBOARD_CONFIGS_DIR,
+    LEADERBOARD_TASKS,
+    MINIMUM_NUMBER_OF_MODEL_RECORDS,
+    MINIMUM_VERSION,
+    REPO_ROOT,
+    TRAINED_FROM_SCRATCH_PATTERNS,
+)
 from leaderboards.leaderboard_generation import generate_leaderboard
-from leaderboards.paths import CORE_MODELS_CONFIG, LEADERBOARD_CONFIGS_DIR
 from leaderboards.result_processing import process_results
-from leaderboards.task_metadata import languages_with_official_datasets
-
-try:
-    # Normal invocation: `python -m scripts.generate_leaderboards`, with
-    # `src/` on `sys.path` so `scripts` resolves as a package.
-    from scripts.generate_task_metrics import main as generate_task_metrics
-except ImportError:
-    # File-path invocation (e.g. `uv run src/scripts/generate_leaderboards.py`)
-    # — `scripts` isn't a package on the path, so import the sibling module
-    # directly.
-    from generate_task_metrics import main as generate_task_metrics
+from leaderboards.task_metadata import (
+    languages_with_official_datasets,
+    task_metric_pretty_names,
+)
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s ⋅ %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    level=logging.INFO, format="%(asctime)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
 )
+
+
+logger = logging.getLogger(__name__)
 
 warnings.simplefilter(action="ignore", category=RuntimeWarning)
 
@@ -40,54 +47,13 @@ load_dotenv()
 
 
 # Constants for leaderboard generation
-MINIMUM_VERSION: str = "15.0.0"
-MINIMUM_NUMBER_OF_MODEL_RECORDS: int = 7
-BANNED_VERSIONS: list[str] = ["9.3.0", "10.0.0"]
-BANNED_MODEL_PATTERNS: list[re.Pattern] = [
-    re.compile("^meta-llama/Llama-3.1-405B-Instruct$"),  # Temporary ban
-    re.compile("^utter-project/EuroVLM-9B-Preview$"),  # Temporary ban
-]
-OPEN_SOURCE_MODEL_PATTERNS: list[re.Pattern] = []
-TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern] = [
-    re.compile(r"Qwen/.*"),
-    re.compile(r"google/.*"),
-    re.compile(r"mistralai/.*"),
-    re.compile(r"meta-llama/.*"),
-    re.compile(r"facebook/.*"),
-    re.compile(r"FacebookAI/.*"),
-    re.compile(r"zai-org/.*"),
-    re.compile(r"deepseek-ai/.*"),
-    re.compile(r"PleIAs/.*"),
-    re.compile(r"openai/.*"),
-    re.compile(r"nvidia/.*"),
-    re.compile(r"allenai/.*"),
-    re.compile(r"utter-project/.*"),
-    re.compile(r"CohereLabs/.*"),
-    re.compile(r"speakleash/.*"),
-    re.compile(r"yulan-team/.*"),
-    re.compile(r"BSC-LT/.*"),
-    re.compile(r"tencent/.*"),
-    re.compile(r"LiquidAI/.*"),
-    re.compile(r"HuggingFaceTB/.*"),
-    re.compile(r"tiiuae/.*"),
-    re.compile(r"AIDC-AI/.*"),
-    re.compile(r"inclusionAI/.*"),
-    re.compile(r"jhu-clsp/.*"),
-    re.compile(r"vesteinn/(Dansk|Fo|Scandi)BERT.*"),
-    re.compile(r"EuropeanParliament/EUBERT"),
-    re.compile(r"microsoft/.*"),
-    re.compile(r"EuroBERT/.*"),
-    re.compile(r"fresh-.*"),
-    re.compile(r"answerdotai/.*"),
-    re.compile(r".*-scratch"),
-]
 
 
 @click.command()
 @click.option(
     "--categories",
     "-c",
-    default=["generative", "all_models"],
+    default=("generative", "all_models"),
     multiple=True,
     help=(
         "Categories to generate leaderboards for. Defaults to 'generative' and "
@@ -115,13 +81,13 @@ TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern] = [
     is_flag=True,
     default=False,
     help=(
-        "Skip processing evaluation results from JSONL. Assumes results.tar.gz "
-        "already contains processed results. Useful for repeated leaderboard "
-        "generation when results haven't changed."
+        "Skip processing evaluation results from JSONL. Assumes the results "
+        "directory already contains processed results. Useful for repeated "
+        "leaderboard generation when results haven't changed."
     ),
 )
 def main(
-    categories: tuple[t.Literal["generative", "all_models"]],
+    categories: tuple[t.Literal["generative", "all_models"], ...],
     force: bool,
     skip_core_models_check: bool,
     skip_results_processing: bool,
@@ -138,10 +104,10 @@ def main(
         skip_core_models_check (optional):
             If True, skip prompting to refresh the core-model list when stale.
         skip_results_processing (optional):
-            If True, skip processing evaluation results from JSONL. Assumes
-            results.tar.gz already contains processed results.
+            If True, skip processing evaluation results from JSONL. Assumes the
+            results directory already contains processed results.
     """
-    # If results.tar.gz isn't here, pull the newest backup into place.
+    # If the results directory isn't populated, restore the newest backup.
     restore_from_backup_if_missing()
 
     if not skip_results_processing:
@@ -159,6 +125,7 @@ def main(
     # the maintainer's radar without forcing a slow re-process each time.
     if not skip_core_models_check:
         _maybe_refresh_core_models()
+
     # Monolingual leaderboards are derived directly from the lib: one per
     # language that has at least one official leaderboard dataset.
     for language in languages_with_official_datasets():
@@ -188,10 +155,7 @@ def main(
     try:
         backup_results()
     except OSError as exc:  # pCloud unavailable / disk full / etc.
-        logging.warning(f"Results backup failed: {exc}")
-
-
-CORE_MODELS_STALE_DAYS = 30
+        logger.warning(f"Results backup failed: {exc}")
 
 
 def _maybe_refresh_core_models() -> None:
@@ -208,7 +172,7 @@ def _maybe_refresh_core_models() -> None:
         with CORE_MODELS_CONFIG.open("r") as f:
             config = safe_load(f) or {}
     except OSError as exc:
-        logging.warning(f"Core models config unreadable: {exc}")
+        logger.warning(f"Core models config unreadable: {exc}")
         return
 
     last_updated_raw = config.get("last_updated")
@@ -221,7 +185,7 @@ def _maybe_refresh_core_models() -> None:
             try:
                 last = dt.date.fromisoformat(str(last_updated_raw))
             except ValueError:
-                logging.warning(
+                logger.warning(
                     f"Cannot parse last_updated={last_updated_raw!r}; "
                     "treating as stale."
                 )
@@ -243,7 +207,24 @@ def _maybe_refresh_core_models() -> None:
     try:
         subprocess.run([sys.executable, str(script_path)], check=True)
     except subprocess.CalledProcessError as exc:
-        logging.warning(f"update_core_models failed (exit {exc.returncode}).")
+        logger.warning(f"update_core_models failed (exit {exc.returncode}).")
+
+
+def generate_task_metrics() -> None:
+    """Generate the task-metrics JSON file."""
+    output_path: Path = (
+        REPO_ROOT / "src" / "frontend" / "generated" / "task-metrics.json"
+    )
+    payload: dict[str, list[str]] = {}
+    for task in LEADERBOARD_TASKS:
+        primary, secondary = task_metric_pretty_names(task)
+        payload[task] = [primary] + ([secondary] if secondary is not None else [])
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open(mode="w") as f:
+        json.dump(payload, f, indent=2, sort_keys=True)
+        f.write("\n")
+    logger.info(f"Wrote {output_path.relative_to(REPO_ROOT)}")
 
 
 if __name__ == "__main__":

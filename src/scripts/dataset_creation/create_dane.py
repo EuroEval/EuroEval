@@ -93,7 +93,10 @@ def main() -> None:
     full_train_df = df_filtered.loc[~df_filtered.index.isin(test_df.index)]
     train_df = full_train_df.sample(n=1024, random_state=4242)
 
-    # Collect datasets in a dataset dictionary
+    # Collect datasets in a dataset dictionary. The ``datasets`` stubs declare
+    # ``DatasetDict(**splits)`` and ``Dataset.from_pandas(..., split=...)`` too
+    # narrowly (they accept arbitrary split keys/names at runtime), so the
+    # checker reports false positives here.
     dataset = DatasetDict(  # ty: ignore[invalid-argument-type]
         train=Dataset.from_pandas(train_df, split=Split.TRAIN),
         val=Dataset.from_pandas(val_df, split=Split.VALIDATION),

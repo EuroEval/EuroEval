@@ -81,9 +81,24 @@ def prompt_and_persist_env_var(
         )
         sys.exit(1)
     if secret:
-        reader = lambda: getpass.getpass(f"{prompt_text}: ")  # noqa: E731
+
+        def reader() -> str:
+            """Read the value without echoing it to the terminal.
+
+            Returns:
+                The value entered by the user.
+            """
+            return getpass.getpass(f"{prompt_text}: ")
     else:
-        reader = lambda: input(f"{prompt_text}: ").strip()  # noqa: E731
+
+        def reader() -> str:
+            """Read the value from standard input.
+
+            Returns:
+                The value entered by the user.
+            """
+            return input(f"{prompt_text}: ").strip()
+
     value = ""
     while not value:
         try:
@@ -137,8 +152,11 @@ def resolve_vm_id(env_path: Path) -> str:
     Resolution order:
 
     1. ``EUROEVAL_VM_ID=...`` line in ``env_path``.
-    2. Newly generated ``<hostname>-<8-char-uuid>``, appended to
+    2. Newly generated ``<hostname>-<8-char-uuid>-<pid>``, appended to
        ``env_path`` so subsequent runs reuse the same id.
+
+    The PID suffix ensures uniqueness even when multiple queue processors
+    run on the same machine (e.g., during development or accidental dual-launch).
 
     Failures to persist a freshly generated id are logged and the in-memory
     id is still returned.
@@ -165,7 +183,7 @@ def resolve_vm_id(env_path: Path) -> str:
         except OSError as e:
             logger.warning(f"Could not read {env_path}: {e}")
 
-    generated = f"{socket.gethostname()}-{uuid.uuid4().hex[:8]}"
+    generated = f"{socket.gethostname()}-{uuid.uuid4().hex[:8]}-{os.getpid()}"
     try:
         existing = ""
         if env_path.is_file():
@@ -233,11 +251,14 @@ def acquire_single_instance_lock(lock_path: Path) -> int:
             f"different path if you need to run a second instance."
         )
         sys.exit(1)
+
     # Truncate the lock file first so stale bytes from a longer old PID are
     # removed before writing the current PID.
     os.ftruncate(fd, 0)
     os.write(fd, f"{os.getpid()}\n".encode())
+
     # Flush file contents to disk so other processes can reliably read the PID
     # associated with the lock holder.
     os.fsync(fd)
+
     return fd

@@ -47,7 +47,7 @@ def main() -> None:
         dataset = dataset.shuffle(4242)
 
     # format the questions for the benchmark
-    dataset = dataset.map(format, remove_columns=dataset["train"].column_names)
+    dataset = dataset.map(format_row, remove_columns=dataset["train"].column_names)
     # remove the dataset from Hugging Face Hub if it already exists
     try:
         api = HfApi()
@@ -58,7 +58,7 @@ def main() -> None:
     dataset.push_to_hub(dataset_id_euroeval, private=True)
 
 
-def format(row: dict[str, t.Any]) -> dict[str, str]:
+def format_row(row: dict[str, t.Any]) -> dict[str, str]:
     """Format the dataset rows into promptable questions.
 
     There are two different types of questions in the dataset: cause and effect.

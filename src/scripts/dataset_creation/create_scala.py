@@ -16,7 +16,10 @@ import re
 import warnings
 
 import pandas as pd
-from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa
+
+# These constants are used only inside pandas .query() strings, so the linter
+# cannot see the use.
+from constants import MAX_NUM_CHARS_IN_DOCUMENT, MIN_NUM_CHARS_IN_DOCUMENT  # noqa: F401
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
@@ -461,7 +464,9 @@ def prepare_df(df: pd.DataFrame, split: str) -> Dataset:
     # Shuffle the dataframe
     df = df.sample(frac=1.0, random_state=4242).reset_index(drop=True)
 
-    # Convert the dataframe to a Hugging Face Dataset and return it
+    # Convert the dataframe to a Hugging Face Dataset and return it. The
+    # ``datasets`` stubs type the ``split`` argument too narrowly; arbitrary
+    # split names are accepted at runtime, hence the false positive.
     return Dataset.from_pandas(df, split=split)  # ty: ignore[invalid-argument-type]
 
 
