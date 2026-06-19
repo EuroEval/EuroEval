@@ -356,13 +356,16 @@ def apply_prompt(
 
         case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
             if use_bits_per_character:
-                # BPC scoring: treat as text-to-text with bare question → answer
-                # This mirrors reading comprehension: model generates answer text,
-                # BPC = avg negative log-likelihood per character of the answer
+                # BPC (cloze) scoring: present the bare question and score the full
+                # answer text, which is appended when building `bpc_prompt` below. This
+                # mirrors the sequence-classification BPC path: few-shot examples show
+                # the complete question → answer, while the sections to be scored leave
+                # the answer empty. The answer fills the template's `{label}` slot (the
+                # MCQ template has no `{target_text}` placeholder).
                 few_shot_sections = [
                     create_prompt(
                         text=example["bare_input"].replace("\n", " ").strip(),
-                        target_text=letter_to_choice_text(
+                        label=letter_to_choice_text(
                             letter=str(example["label"]).strip().lower(),
                             raw_choices=example["raw_choices"],
                         )
@@ -374,7 +377,7 @@ def apply_prompt(
                 new_sections = [
                     create_prompt(
                         text=examples["bare_input"][i].replace("\n", " ").strip(),
-                        target_text="",
+                        label="",
                     )
                     for i in range(len(examples["text"]))
                 ]
