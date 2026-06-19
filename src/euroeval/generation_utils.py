@@ -2,7 +2,6 @@
 
 import collections.abc as c
 import itertools as it
-import json
 import logging
 import random
 import re
@@ -18,6 +17,7 @@ from .task_group_utils.cloze import (
     letter_to_choice_text,
     parse_bare_question_and_choices,
 )
+from .task_group_utils.token_classification import serialise_ner_tags
 from .tokenisation_utils import apply_chat_template
 
 if t.TYPE_CHECKING:
@@ -425,26 +425,14 @@ def apply_prompt(
         case TaskGroup.TOKEN_CLASSIFICATION:
             labels_str = dataset_config.get_labels_str()
 
-            def create_label(example: dict) -> str:
-                prompt_labels = dataset_config.prompt_label_mapping.values()
-                labels: dict[str, list[str]] = {
-                    prompt_label: list() for prompt_label in prompt_labels
-                }
-                for token, label in zip(example["tokens"], example["labels"]):
-                    label = str(label).lower()
-                    if label == "o":
-                        continue
-                    prompt_label = dataset_config.prompt_label_mapping[label]
-                    if label.startswith("b-"):
-                        labels[prompt_label].append(token)
-                    elif label.startswith("i-"):
-                        labels[prompt_label][-1] += " " + token
-                return json.dumps(labels, ensure_ascii=False)
-
             few_shot_sections = [
                 create_prompt(
                     text=" ".join(example["tokens"]).replace("\n", " ").strip(),
-                    label=create_label(example=example),
+                    label=serialise_ner_tags(
+                        tokens=example["tokens"],
+                        labels=example["labels"],
+                        prompt_label_mapping=dataset_config.prompt_label_mapping,
+                    ),
                     labels_str=labels_str,
                 )
                 for example in few_shot_examples
@@ -625,49 +613,11 @@ def apply_prompt(
             case TaskGroup.TOKEN_CLASSIFICATION:
                 if "tokens" in examples and "labels" in examples:
                     for i, (new_prompt, _) in enumerate(new_sections):
-                        tokens = examples["tokens"][i]
-                        example_labels = examples["labels"][i]
-                        # Group tokens by BIO tags
-                        tagged_entities: dict[str, list[str]] = {}
-                        current_entity: str | None = None
-                        current_tokens: list[str] = []
-
-                        for token, tag in zip(tokens, example_labels):
-                            tag_str = str(tag).lower()
-                            if tag_str == "o":
-                                if current_entity is not None:
-                                    tagged_entities.setdefault(
-                                        current_entity, []
-                                    ).append(" ".join(current_tokens))
-                                    current_entity = None
-                                    current_tokens = []
-                                continue
-
-                            if tag_str.startswith("b-"):
-                                if current_entity is not None:
-                                    tagged_entities.setdefault(
-                                        current_entity, []
-                                    ).append(" ".join(current_tokens))
-                                current_entity = tag_str[2:]
-                                current_tokens = [token]
-                            elif tag_str.startswith("i-") and current_entity:
-                                current_tokens.append(token)
-                            else:
-                                if current_entity is not None:
-                                    tagged_entities.setdefault(
-                                        current_entity, []
-                                    ).append(" ".join(current_tokens))
-                                current_entity = (
-                                    tag_str[2:] if tag_str.startswith("i-") else tag_str
-                                )
-                                current_tokens = [token]
-
-                        if current_entity is not None:
-                            tagged_entities.setdefault(current_entity, []).append(
-                                " ".join(current_tokens)
-                            )
-
-                        answer = str(tagged_entities)
+                        answer = serialise_ner_tags(
+                            tokens=examples["tokens"][i],
+                            labels=examples["labels"][i],
+                            prompt_label_mapping=dataset_config.prompt_label_mapping,
+                        )
                         bpc_prompts.append(new_prompt + " " + answer)
                         prompt_tokens = tokeniser.encode(
                             new_prompt, add_special_tokens=False

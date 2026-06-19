@@ -17,6 +17,7 @@ from .enums import TaskGroup
 from .exceptions import InvalidModel
 from .logging_utils import log_once
 from .task_group_utils.cloze import letter_to_choice_text
+from .task_group_utils.token_classification import serialise_ner_tags
 from .types import Tokeniser
 
 
@@ -48,8 +49,8 @@ def compute_bpc_scores(
     """
     bpc_scores: list[float] = []
 
-    for raw_output, prompt, answer, answer_start_idx in zip(
-        raw_outputs, prompts, answer_texts, answer_start_indices
+    for idx, (raw_output, prompt, answer, answer_start_idx) in enumerate(
+        zip(raw_outputs, prompts, answer_texts, answer_start_indices)
     ):
         prompt_logprobs = raw_output.prompt_logprobs
         prompt_token_ids = raw_output.prompt_token_ids
@@ -102,6 +103,25 @@ def compute_bpc_scores(
         else:
             # No answer tokens extracted = infinite BPC (worst possible score)
             bpc = float("inf")
+
+        # Log the first scored example so the cloze formulation can be eyeballed: the
+        # prompt should end with the bare question and the appended answer text, and the
+        # answer span should cover exactly that answer.
+        if idx == 0:
+            scored_token_ids = full_tokens[start_idx:]
+            scored_text = tokeniser.decode(scored_token_ids)
+            log_once(
+                "BPC (cloze) scoring of the first example:\n"
+                f"  Full scored prompt: {prompt!r}\n"
+                f"  Gold answer text: {answer!r}\n"
+                f"  Answer start token index (pre/post special-token shift): "
+                f"{answer_start_idx}/{start_idx}\n"
+                f"  Decoded scored answer span: {scored_text!r}\n"
+                f"  Answer tokens scored: {len(answer_logprobs)}, "
+                f"answer characters: {len(answer)}\n"
+                f"  Bits per character: {bpc:.4f}",
+                level=logging.DEBUG,
+            )
 
         bpc_scores.append(bpc)
 
@@ -177,7 +197,8 @@ def extract_answer_texts(inputs: dict, dataset_config: DatasetConfig) -> list[st
                 answer_texts = [lbl["answers"]["text"][0] for lbl in labels]
 
         case TaskGroup.TOKEN_CLASSIFICATION:
-            # Serialize NER tags to text
+            # Serialise NER tags using the same canonical format as the prompts, so the
+            # gold answer scored by BPC matches what the few-shot examples demonstrate.
             if "tokens" not in inputs or "labels" not in inputs:
                 log_once(
                     "BPC scoring requires 'tokens' and 'labels' in inputs "
@@ -186,51 +207,16 @@ def extract_answer_texts(inputs: dict, dataset_config: DatasetConfig) -> list[st
                     level=logging.WARNING,
                 )
             else:
-                tokens_list = inputs["tokens"]
-                labels_list = inputs["labels"]
-                answer_texts = []
-                for tokens, example_labels in zip(tokens_list, labels_list):
-                    # Group tokens by BIO tags
-                    tagged_entities: dict[str, list[str]] = {}
-                    current_entity: str | None = None
-                    current_tokens: list[str] = []
-
-                    for token, tag in zip(tokens, example_labels):
-                        tag_str = str(tag).lower()
-                        if tag_str == "o":
-                            if current_entity is not None:
-                                tagged_entities.setdefault(current_entity, []).append(
-                                    " ".join(current_tokens)
-                                )
-                                current_entity = None
-                                current_tokens = []
-                            continue
-
-                        if tag_str.startswith("b-"):
-                            if current_entity is not None:
-                                tagged_entities.setdefault(current_entity, []).append(
-                                    " ".join(current_tokens)
-                                )
-                            current_entity = tag_str[2:]
-                            current_tokens = [token]
-                        elif tag_str.startswith("i-") and current_entity:
-                            current_tokens.append(token)
-                        else:
-                            if current_entity is not None:
-                                tagged_entities.setdefault(current_entity, []).append(
-                                    " ".join(current_tokens)
-                                )
-                            current_entity = (
-                                tag_str[2:] if tag_str.startswith("i-") else tag_str
-                            )
-                            current_tokens = [token]
-
-                    if current_entity is not None:
-                        tagged_entities.setdefault(current_entity, []).append(
-                            " ".join(current_tokens)
-                        )
-
-                    answer_texts.append(str(tagged_entities))
+                answer_texts = [
+                    serialise_ner_tags(
+                        tokens=tokens,
+                        labels=example_labels,
+                        prompt_label_mapping=dataset_config.prompt_label_mapping,
+                    )
+                    for tokens, example_labels in zip(
+                        inputs["tokens"], inputs["labels"]
+                    )
+                ]
 
         case _:
             log_once(

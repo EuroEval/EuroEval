@@ -1,6 +1,7 @@
 """Utility functions related to the token-classification task group."""
 
 import collections.abc as c
+import json
 import logging
 import typing as t
 from copy import deepcopy
@@ -20,6 +21,44 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
+
+
+def serialise_ner_tags(
+    tokens: c.Sequence[str],
+    labels: c.Sequence[str | int],
+    prompt_label_mapping: dict[str, str],
+) -> str:
+    """Serialise NER token tags into the JSON answer string used as the gold answer.
+
+    This is the canonical serialisation for token-classification answers: it is used
+    both to construct the few-shot demonstration answers and the gold answer that BPC
+    scoring measures, so the two never diverge.
+
+    Args:
+        tokens:
+            The tokens of the example.
+        labels:
+            The BIO tags aligned with `tokens` (e.g. ``"b-per"``, ``"i-per"``, ``"o"``).
+        prompt_label_mapping:
+            Mapping from lower-cased BIO tag to the localised prompt label.
+
+    Returns:
+        A JSON object string mapping each localised prompt label to the list of tagged
+        entity strings, with every label type present (empty lists included).
+    """
+    tagged: dict[str, list[str]] = {
+        prompt_label: list() for prompt_label in prompt_label_mapping.values()
+    }
+    for token, label in zip(tokens, labels):
+        label_str = str(label).lower()
+        if label_str == "o" or label_str not in prompt_label_mapping:
+            continue
+        prompt_label = prompt_label_mapping[label_str]
+        if label_str.startswith("b-"):
+            tagged[prompt_label].append(token)
+        elif label_str.startswith("i-") and tagged[prompt_label]:
+            tagged[prompt_label][-1] += " " + token
+    return json.dumps(tagged, ensure_ascii=False)
 
 
 def compute_metrics(
