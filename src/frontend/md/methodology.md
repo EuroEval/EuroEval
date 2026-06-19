@@ -40,7 +40,10 @@ generate the correct output.
 
 For base decoder models, EuroEval supports bits-per-character (BPC) scoring via the
 `--use-bits-per-character`/`-bpc` flag. This computes the information content of the
-ground-truth answer conditioned on the question.
+ground-truth answer conditioned on the question. This can be useful to evaluate training
+checkpoints of the models since it gives more granular information, as they typically
+struggle with more complex tasks like multiple-choice classification early in the
+training process, or if they're small.
 
 For multiple-choice tasks, BPC treats the benchmark like text-to-text: the model sees
 a bare-question prompt (no choice options listed) and generates the full answer text.
