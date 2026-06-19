@@ -5,6 +5,7 @@ import contextlib
 import importlib.util
 import json
 import logging
+import os
 import re
 import shutil
 import typing as t
@@ -1926,6 +1927,12 @@ def select_backend_and_parallelism() -> tuple[str, int, int]:
         # here, and their vLLM plugins don't support the multiprocessing executor —
         # the Metal plugin rejects the worker's "mps" device. Use the in-process
         # executor instead, which vLLM also selects by default for a single device.
+        #
+        # vLLM still initialises a gloo process group to talk to its engine-core
+        # subprocess, rendezvousing on the host's primary IP. On macOS that address is
+        # often unreachable from the host itself, so the rendezvous hangs indefinitely.
+        # Pin it to loopback (without clobbering an explicit user setting).
+        os.environ.setdefault("VLLM_HOST_IP", "127.0.0.1")
         return "uni", 1, 1
 
     if not ray.is_initialized():

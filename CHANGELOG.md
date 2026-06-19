@@ -26,10 +26,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed vLLM benchmarking crashing on non-CUDA platforms (e.g. Apple Metal). The
-  multiprocessing executor was forced even for a single non-CUDA device, and its
-  worker rejected the `mps` device. Single non-CUDA devices now use vLLM's
-  in-process executor.
+- Fixed vLLM benchmarking crashing or hanging on non-CUDA platforms (e.g. Apple
+  Metal). The multiprocessing executor was forced even for a single non-CUDA
+  device, and its worker rejected the `mps` device; single non-CUDA devices now use
+  vLLM's in-process executor. Additionally, vLLM's engine-core gloo rendezvous
+  defaulted to the host's primary IP, which is often unreachable from the host on
+  macOS and hung indefinitely, so `VLLM_HOST_IP` is now pinned to loopback for these
+  devices (unless explicitly set).
 - Fixed a single failing iteration aborting an entire evaluation. When a model
   refuses to answer in a way that produces no valid label (e.g. on the European
   Values task, which doesn't allow invalid model outputs), that iteration is now
