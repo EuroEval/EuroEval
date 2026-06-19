@@ -20,7 +20,7 @@ issues that appeared during the run).
 Required env vars
 -----------------
 GITHUB_TOKEN        A PAT with ``issues: write`` for the EuroEval repo.
-HUGGINGFACE_API_KEY A Hugging Face token with write access to upload results.
+HF_TOKEN            A Hugging Face token with write access to upload results.
 """
 
 from __future__ import annotations
@@ -28,6 +28,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import os
 import subprocess
 import sys
 import urllib.error
@@ -84,6 +85,8 @@ def main(force: bool) -> None:
             Whether to always regenerate leaderboards, even if no new results
             are found. Defaults to False.
     """
+    check_required_env_vars()
+
     logger.info("Fetching open model evaluation request issues...")
     try:
         issues = list_open_request_issues()
@@ -208,6 +211,23 @@ def main(force: bool) -> None:
             logger.info(f"#{number}: closed.")
         except urllib.error.HTTPError as e:
             logger.error(f"#{number}: failed to close: {e}")
+
+
+def check_required_env_vars() -> None:
+    """Verify that the required tokens are set, exiting cleanly otherwise.
+
+    ``HUGGINGFACE_API_KEY`` is accepted as an alias for ``HF_TOKEN`` (it is
+    copied over when the ``leaderboards`` package is imported), so only
+    ``HF_TOKEN`` is checked here. A missing ``HF_TOKEN`` would otherwise
+    degrade silently into empty bucket reads and a failed upload.
+    """
+    missing = [var for var in ("GITHUB_TOKEN", "HF_TOKEN") if not os.environ.get(var)]
+    if missing:
+        logger.error(
+            f"Missing required env var(s): {', '.join(missing)}. "
+            "Set them (e.g. in a .env file) and re-run."
+        )
+        sys.exit(1)
 
 
 def _model_id_to_filename(model_id: str) -> str:

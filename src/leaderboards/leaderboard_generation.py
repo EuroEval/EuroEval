@@ -376,6 +376,21 @@ def generate_dataframe(
             if all(ds in r for ds in required_datasets)
         }
 
+        # Per-language required (non-orthogonal) datasets for this category. A
+        # model only earns a per-language score if it holds every one of that
+        # language's datasets, mirroring the eligibility rule used for the
+        # standalone single-language leaderboards.
+        language_to_required_datasets = {
+            language: [
+                dataset
+                for task, task_datasets in config.items()
+                for dataset in task_datasets
+                if category_includes_task(category=category, task=task)
+                and task not in ORTHOGONAL_TASKS
+            ]
+            for language, config in leaderboard_configs.items()
+        }
+
         # Bootstrap-based tie detection: walks the sorted list and tests
         # each model against the current anchor using a one-sided bootstrap
         # test (α=0.05). Models that are not significantly better share the
@@ -412,9 +427,15 @@ def generate_dataframe(
                     language_ranks[lang] = {}
 
             # Format per-language entries as "score ± margin" strings, matching
-            # the overall mean rank score column. Missing entries render as "-".
+            # the overall mean rank score column. A language only gets a score
+            # if the model holds every one of that language's datasets;
+            # otherwise it renders as "-", just like the missing-score sentinel.
             language_ranks_scores = {
                 lang: _format_rank_score(entry)
+                if all(
+                    ds in results for ds in language_to_required_datasets.get(lang, [])
+                )
+                else "-"
                 for lang, entry in language_ranks.items()
             }
 

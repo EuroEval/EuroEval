@@ -1,10 +1,89 @@
-"""Helpers for parsing result records and model identifiers."""
+"""Helpers for loading and parsing result records and model identifiers."""
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 
 from .constants import ANCHOR_RE, VARIANT_SUFFIX_RE
+
+
+def load_records_from_jsonl_files(paths: list[Path]) -> list[dict[str, object]]:
+    """Load JSONL result records from files.
+
+    Args:
+        paths:
+            JSONL files to read.
+
+    Returns:
+        Parsed records.
+    """
+    records: list[dict[str, object]] = []
+    for path in paths:
+        records.extend(
+            _load_jsonl_lines(
+                lines=path.read_text(encoding="utf-8").splitlines(), source=str(path)
+            )
+        )
+    return records
+
+
+def _load_jsonl_lines(lines: list[str], source: str) -> list[dict[str, object]]:
+    """Parse JSONL lines into record dictionaries.
+
+    Blank lines are skipped and concatenated objects (``}{``) on a single line
+    are split apart before parsing.
+
+    Args:
+        lines:
+            The raw lines to parse.
+        source:
+            A human-readable label for the input, used in error messages.
+
+    Returns:
+        The parsed records, one dictionary per JSON object.
+
+    Raises:
+        ValueError:
+            If a line contains invalid JSON or a non-object value.
+    """
+    records: list[dict[str, object]] = []
+    for line_idx, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        for sub_line in line.replace("}{", "}\n{").splitlines():
+            if not sub_line.strip():
+                continue
+            try:
+                value = json.loads(sub_line)
+            except json.JSONDecodeError as exc:
+                raise ValueError(
+                    f"Invalid JSON in {source} line {line_idx:,}: {sub_line}."
+                ) from exc
+            if not isinstance(value, dict):
+                raise ValueError(
+                    f"Invalid result in {source} line {line_idx:,}: expected object."
+                )
+            records.append(value)
+    return records
+
+
+def strip_anchor(model_id: str) -> str:
+    """Strip any surrounding HTML anchor tag from a model id.
+
+    Unlike :func:`plain_model_id`, this preserves any ``(zero-shot)`` / ``(val)``
+    variant suffix — it only unwraps the ``<a href=...>...</a>`` tag.
+
+    Args:
+        model_id:
+            The (possibly anchored) identifier.
+
+    Returns:
+        The identifier with any anchor tag removed.
+    """
+    match = ANCHOR_RE.search(model_id)
+    return match.group("inner").strip() if match else model_id
 
 
 def plain_model_id(model_id: str) -> str:
@@ -23,9 +102,7 @@ def plain_model_id(model_id: str) -> str:
     Returns:
         The canonical ``org/repo`` slug.
     """
-    match = ANCHOR_RE.search(model_id)
-    inner = match.group("inner").strip() if match else model_id
-    return VARIANT_SUFFIX_RE.sub("", inner)
+    return VARIANT_SUFFIX_RE.sub("", strip_anchor(model_id))
 
 
 def convert_to_float(value: str | float) -> float | str:
@@ -67,7 +144,11 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     Returns:
         The model ID candidates.
     """
-    model_id = get_model_name(record)
+    # Strip any anchor tag so that records stored with an already-anchored name
+    # (``<a ...>org/repo</a>``) and records stored with the plain ``org/repo``
+    # name collapse to the same identifier — otherwise the model is split into
+    # two leaderboard rows. The anchor is re-applied at render time.
+    model_id = strip_anchor(get_model_name(record))
 
     few_shot = get_bool_field(record, "few_shot", True)
     validation_split = get_bool_field(record, "validation_split", False)
@@ -78,10 +159,7 @@ def extract_model_ids_from_record(record: dict) -> list[str]:
     if not note:
         return [model_id]
 
-    has_anchor = model_id.endswith("</a>")
-    base = model_id[:-4] if has_anchor else model_id
-    suffix = "</a>" if has_anchor else ""
-    return [f"{base} ({', '.join(note)}){suffix}"]
+    return [f"{model_id} ({', '.join(note)})"]
 
 
 def get_dataset(record: dict) -> str | None:

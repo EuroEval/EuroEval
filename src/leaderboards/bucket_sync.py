@@ -1,17 +1,18 @@
 """Sync Hugging Face bucket for EuroEval results.
 
-Uses the `hf sync` CLI to sync the results bucket to the local
+Uses the ``huggingface_hub`` package to sync the results bucket to the local
 results directory. Also provides backup functionality.
 """
 
 import json
 import logging
 import os
-import subprocess
 from collections import defaultdict
 from pathlib import Path
 
 from dotenv import load_dotenv
+from huggingface_hub import HfApi
+from huggingface_hub.errors import HfHubHTTPError
 
 from euroeval.data_models import BenchmarkResult
 
@@ -23,9 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 def sync_bucket() -> None:
-    """Sync HF results bucket using hf sync.
+    """Sync HF results bucket into the local results directory.
 
-    Syncs from bucket to local directory using the official hf CLI.
+    Syncs from bucket to local directory using ``HfApi.sync_bucket``.
     Creates local directory if needed.
 
     HF_TOKEN is loaded from .env by load_dotenv() at module import.
@@ -37,17 +38,15 @@ def sync_bucket() -> None:
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     logger.info(f"Syncing bucket {HF_RESULTS_BUCKET} -> {RESULTS_DIR}...")
-    result = subprocess.run(
-        ["hf", "sync", f"hf://buckets/{HF_RESULTS_BUCKET}/", str(RESULTS_DIR)],
-        capture_output=True,
-        text=True,
-        check=False,
-        env={**os.environ, "HF_TOKEN": hf_token},
-    )
-    if result.returncode != 0:
-        logger.warning(f"hf sync failed: {result.stderr}")
-    else:
-        logger.info(f"Synced bucket: {result.stdout.strip()}")
+    try:
+        HfApi().sync_bucket(
+            source=f"hf://buckets/{HF_RESULTS_BUCKET}/",
+            dest=str(RESULTS_DIR),
+            token=hf_token,
+        )
+        logger.info(f"Synced bucket {HF_RESULTS_BUCKET}.")
+    except HfHubHTTPError as e:
+        logger.warning(f"Bucket sync failed: {e}")
 
 
 def upload_results_to_bucket(results_file: Path) -> None:
@@ -99,17 +98,15 @@ def upload_results_to_bucket(results_file: Path) -> None:
                 f.write(line + "\n")
 
     logger.info(f"Syncing local {RESULTS_DIR} -> bucket {HF_RESULTS_BUCKET}...")
-    result = subprocess.run(
-        ["hf", "sync", str(RESULTS_DIR), f"hf://buckets/{HF_RESULTS_BUCKET}/"],
-        capture_output=True,
-        text=True,
-        check=False,
-        env={**os.environ, "HF_TOKEN": hf_token},
-    )
-    if result.returncode != 0:
-        logger.warning(f"hf sync upload failed: {result.stderr}")
-    else:
-        logger.info(f"Uploaded results to bucket: {result.stdout.strip()}")
+    try:
+        HfApi().sync_bucket(
+            source=str(RESULTS_DIR),
+            dest=f"hf://buckets/{HF_RESULTS_BUCKET}/",
+            token=hf_token,
+        )
+        logger.info(f"Uploaded results to bucket {HF_RESULTS_BUCKET}.")
+    except HfHubHTTPError as e:
+        logger.warning(f"Bucket upload failed: {e}")
 
 
 def _sanitise_model_id(model_id: str) -> str:

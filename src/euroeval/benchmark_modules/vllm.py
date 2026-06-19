@@ -155,6 +155,45 @@ def _skip_image_processor_context() -> c.Generator[None, None, None]:
         AutoImageProcessor.from_pretrained = classmethod(original_func)  # ty: ignore[invalid-assignment]
 
 
+def compute_token_budget(
+    model_max_length: int, max_generated_tokens: int
+) -> tuple[int, int]:
+    """Compute the generation and per-prompt token budgets for a model.
+
+    The generation budget cannot exceed the model's context length, and we
+    additionally need to reserve room for the prompt. For models whose context is
+    too small to fit both the prompt and the dataset's full generation budget, we
+    shrink the generation budget (down to half the context) so that the prompt
+    retains room, rather than truncating the prompt down to nothing.
+
+    Args:
+        model_max_length:
+            The maximum context length of the model's tokeniser.
+        max_generated_tokens:
+            The dataset's configured number of tokens to generate.
+
+    Returns:
+        A pair ``(generation_budget, max_tokens_per_prompt)``, being the number of
+        tokens reserved for generation and the resulting maximum number of tokens
+        allowed in a prompt, respectively.
+
+    Raises:
+        InvalidBenchmark:
+            If the model's context length is too small to fit any prompt alongside
+            the generation budget.
+    """
+    max_context_length = min(model_max_length, MAX_CONTEXT_LENGTH)
+    generation_budget = min(max_generated_tokens, max(max_context_length // 2, 1))
+    max_tokens_per_prompt = max_context_length - generation_budget
+    if max_tokens_per_prompt <= 0:
+        raise InvalidBenchmark(
+            f"The model's context length of {max_context_length:,} tokens is too "
+            "small to fit any prompt alongside its generation budget, so it cannot "
+            "be benchmarked on this dataset."
+        )
+    return generation_budget, max_tokens_per_prompt
+
+
 class VLLMModel(HuggingFaceEncoderModel):
     """A generative model using the vLLM inference framework."""
 
@@ -673,10 +712,31 @@ class VLLMModel(HuggingFaceEncoderModel):
                     level=logging.DEBUG,
                 )
 
+        # Compute how many tokens to reserve for generation and, correspondingly,
+        # how long prompts may be. For models whose context is too small to fit both
+        # the prompt and the dataset's full generation budget, the reserved
+        # generation budget is shrunk so the prompt retains room (see
+        # `compute_token_budget`).
+        max_context_length = min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
+        generation_budget, max_tokens_per_prompt = compute_token_budget(
+            model_max_length=self._tokeniser.model_max_length,
+            max_generated_tokens=self.dataset_config.max_generated_tokens,
+        )
+        if generation_budget < self.dataset_config.max_generated_tokens:
+            log_once(
+                f"The model {self.model_config.model_id!r} has a context length of "
+                f"{max_context_length:,} tokens, which is too small to fit both the "
+                "prompt and the dataset's full generation budget of "
+                f"{self.dataset_config.max_generated_tokens:,} tokens. Reserving "
+                f"{generation_budget:,} tokens for generation when budgeting prompt "
+                "lengths instead.",
+                level=logging.WARNING,
+            )
+
         max_tokens: int = (
             REASONING_MAX_TOKENS
             if self.generative_type == GenerativeType.REASONING
-            else self.dataset_config.max_generated_tokens
+            else generation_budget
         )
         sampling_params = SamplingParams(
             max_tokens=max_tokens,
@@ -716,13 +776,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             prompts = [prompt.strip() for prompt in prompts]
 
-        # Truncate the prompts if needed
-        max_tokens_per_prompt = min(
-            self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH
-        )
-        max_tokens_per_prompt -= min(
-            self.dataset_config.max_generated_tokens, max_tokens_per_prompt - 1
-        )
+        # Truncate the prompts if needed, using the per-prompt token budget computed
+        # above.
         tokenized_prompts = self._tokeniser(
             text=prompts, max_length=max_tokens_per_prompt
         )
@@ -779,9 +834,35 @@ class VLLMModel(HuggingFaceEncoderModel):
                             prompts = new_prompts
                             break
                     else:
-                        raise InvalidBenchmark(
-                            "Truncation of prompts failed, some prompts are still too "
-                            "long."
+                        # Removing few-shot examples was not enough (or there were
+                        # none to remove, as in zero-shot tasks), so hard-truncate the
+                        # prompts as a last resort rather than failing the benchmark.
+                        # We truncate the prompts with *all* few-shot examples removed,
+                        # to avoid keeping partial few-shot context while cutting away
+                        # the actual query.
+                        prompts_without_few_shots = [
+                            end_of_chat_token.join(
+                                prompt_segment[
+                                    2 * self.dataset_config.num_few_shot_examples :
+                                ]
+                            )
+                            for prompt_segment in prompt_segments
+                        ]
+                        log_once(
+                            "Could not fit the prompts for the model "
+                            f"{self.model_config.model_id!r} within "
+                            f"{max_tokens_per_prompt:,} tokens by removing few-shot "
+                            "examples, so hard-truncating them instead.",
+                            level=logging.WARNING,
+                        )
+                        truncated_tokenized_prompts = self._tokeniser(
+                            text=prompts_without_few_shots,
+                            max_length=max_tokens_per_prompt,
+                            truncation=True,
+                        )
+                        prompts = self._tokeniser.batch_decode(
+                            sequences=truncated_tokenized_prompts.input_ids,
+                            skip_special_tokens=True,
                         )
                 case _:
                     raise InvalidBenchmark("The model type is not set!")
@@ -843,10 +924,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                         text=prompts,
                         truncation=True,
                         max_length=max(
-                            min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
-                            - max_tokens
-                            - extra_truncation,
-                            0,
+                            max_context_length - max_tokens - extra_truncation, 0
                         ),
                     )
                     prompts = self._tokeniser.batch_decode(

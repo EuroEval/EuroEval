@@ -211,7 +211,7 @@ def estimated_model_bytes(model_id: str) -> int | None:
     components = split_model_id(model_id=model_id)
     repo = components.model_id
     revision = components.revision
-    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
+    token = os.environ.get("HF_TOKEN")
     try:
         meta = get_safetensors_metadata(repo_id=repo, revision=revision, token=token)
     except (
@@ -389,8 +389,4 @@ def resolve_hf_token() -> str | None:
     Returns:
         The token string, or None if neither env nor cache yields one.
     """
-    return (
-        os.environ.get("HF_TOKEN")
-        or os.environ.get("HUGGINGFACE_API_KEY")
-        or get_token()
-    )
+    return os.environ.get("HF_TOKEN") or get_token()

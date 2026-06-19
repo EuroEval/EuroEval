@@ -302,12 +302,11 @@ OSAI_WEIGHTS_BLOCK_RE = re.compile(
 # ---------------------------------------------------------------------------
 
 # Number of bootstrap replicates for both confidence interval estimation of rank
-# scores and tie-breaking in leaderboard generation. 50 is sufficient because
-# tie-breaking only needs to distinguish models that are statistically tied --
-# the bootstrap test is a one-sided test at alpha=0.05, and 50 replicates give a
-# reasonable resolution for the rank-difference distribution without unnecessary
-# computation.
-NUM_BOOTSTRAPS = 50
+# scores and tie-breaking in leaderboard generation. 100 gives a reasonable
+# resolution for the rank-difference distribution -- tie-breaking only needs to
+# distinguish models that are statistically tied via a one-sided test at
+# alpha=0.05 -- without unnecessary computation.
+NUM_BOOTSTRAPS = 100
 
 # z-score for a two-sided 95% confidence interval under a normal approximation.
 Z_SCORE_95 = 1.96
