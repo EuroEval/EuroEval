@@ -1,11 +1,37 @@
 """Unit tests for the `litellm` module."""
 
+import dataclasses
 from unittest.mock import MagicMock
 
+import pytest
 from litellm.types.utils import Choices
 
 from euroeval.benchmark_modules.litellm import LiteLLMModel
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
+from euroeval.exceptions import InvalidModel
+from euroeval.model_loading import load_model
+
+
+class TestBPCGating:
+    """Tests that BPC scoring is rejected for LiteLLM backend.
+
+    BPC validation happens in load_model() before backend initialization.
+    """
+
+    def test_bpc_reJECTED_for_litellm(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """BPC scoring raises InvalidModel for LiteLLM backend."""
+        bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
+        with pytest.raises(InvalidModel, match="vLLM backend"):
+            load_model(
+                model_config=model_config,
+                dataset_config=dataset_config,
+                benchmark_config=bpc_config,
+            )
 
 
 class TestCreateModelOutput:

@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 from .enums import BatchingPreference, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import get_pbar, log, log_once
+from .metrics.bpc import bpc_metric
 from .model_cache import (
     ModelCache,
     load_cached_model_outputs,
@@ -63,13 +64,19 @@ def generate(
         model_cache_dir = Path.cwd()
     else:
         model_cache_dir = Path(model_config.model_cache_dir)
+    # Namespace the cache by BPC flag so different scoring methods do not collide.
+    # MCF runs use the legacy unsuffixed cache path for backward compatibility.
+    cache_suffix = "-bpc" if benchmark_config.use_bits_per_character else ""
     if hasattr(sys, "_called_from_test"):
-        cache_name = f"{dataset_config.name}-model-outputs-test.json"
+        cache_name = f"{dataset_config.name}{cache_suffix}-model-outputs-test.json"
         (model_cache_dir / cache_name).unlink(missing_ok=True)
     elif benchmark_config.debug:
-        cache_name = f"{model_config.model_id}-{dataset_config.name}-model-outputs.json"
+        cache_name = (
+            f"{model_config.model_id}-{dataset_config.name}{cache_suffix}"
+            "-model-outputs.json"
+        )
     else:
-        cache_name = f"{dataset_config.name}-model-outputs.json"
+        cache_name = f"{dataset_config.name}{cache_suffix}-model-outputs.json"
 
     cache = ModelCache(
         model_cache_dir=model_cache_dir,
@@ -172,6 +179,7 @@ def generate_single_iteration(
         non_cached_dataset = dataset
 
     all_preds: list[str] = list()
+    all_bpc_scores: list[float] = list()
     failed_instances: list["FailedInstance"] = list()
 
     if len(non_cached_dataset) > 0:
@@ -216,29 +224,41 @@ def generate_single_iteration(
             if single_sample_batch:
                 batch = {key: [value] for key, value in batch.items()}
 
-            model_output = model.generate(inputs=batch)
-
-            # Extracted labels are the labels extracted from the generation - these are
-            # in the language of the dataset. The predicted labels is the result of
-            # mapping the extracted labels to the original labels in the dataset (which
-            # are typically English).
-            extracted_labels = model.extract_labels_from_generation(
-                input_batch=batch, model_output=model_output
-            )
-            failed_instances += model_output.failed_instances
-            if pred2extracted := dataset_config.prompt_label_mapping:
-                extracted_to_predicted = {
-                    extracted: predicted
-                    for predicted, extracted in pred2extracted.items()
-                }
-                model_output.predicted_labels = [
-                    extracted_to_predicted.get(label, label).lower()
-                    if isinstance(label, str)
-                    else [extracted_to_predicted.get(lbl, lbl).lower() for lbl in label]
-                    for label in extracted_labels
-                ]
+            # Use score() for BPC, generate() for standard generation
+            if benchmark_config.use_bits_per_character:
+                model_output = model.score(inputs=batch)  # type: ignore[attr-defined]
             else:
-                model_output.predicted_labels = extracted_labels
+                model_output = model.generate(inputs=batch)
+
+            # In BPC mode we score via prompt_logprobs only, so the accuracy
+            # label-extraction pipeline (and its metrics) is skipped entirely.
+            if not benchmark_config.use_bits_per_character:
+                # Extracted labels are the labels extracted from the generation - these
+                # are in the language of the dataset. The predicted labels is the result
+                # of mapping the extracted labels to the original labels in the dataset
+                # (which are typically English).
+                extracted_labels = model.extract_labels_from_generation(
+                    input_batch=batch, model_output=model_output
+                )
+                if pred2extracted := dataset_config.prompt_label_mapping:
+                    extracted_to_predicted = {
+                        extracted: predicted
+                        for predicted, extracted in pred2extracted.items()
+                    }
+                    model_output.predicted_labels = [
+                        extracted_to_predicted.get(label, label).lower()
+                        if isinstance(label, str)
+                        else [
+                            extracted_to_predicted.get(lbl, lbl).lower()
+                            for lbl in label
+                        ]
+                        for label in extracted_labels
+                    ]
+                else:
+                    model_output.predicted_labels = extracted_labels
+                all_preds.extend(extracted_labels)
+
+            failed_instances += model_output.failed_instances
 
             # Extended logging if we are running in debug mode
             if benchmark_config.debug:
@@ -249,7 +269,10 @@ def generate_single_iteration(
                 )
 
             cache.add_to_cache(model_inputs=batch, model_output=model_output)
-            all_preds.extend(extracted_labels)
+
+            # Collect BPC scores for BPC evaluation
+            if benchmark_config.use_bits_per_character and model_output.bpc_scores:
+                all_bpc_scores.extend(model_output.bpc_scores)
 
             # If we are debugging then we save the cache often, but since this makes
             # evaluation slower, we do not do this by default
@@ -267,25 +290,35 @@ def generate_single_iteration(
         model_output = load_cached_model_outputs(
             cached_dataset=cached_dataset, cache=cache
         )
-        extracted_labels = model.extract_labels_from_generation(
-            input_batch=cached_dataset[:], model_output=model_output
-        )
+        # As above, the accuracy label-extraction pipeline is skipped in BPC mode.
+        if not benchmark_config.use_bits_per_character:
+            extracted_labels = model.extract_labels_from_generation(
+                input_batch=cached_dataset[:], model_output=model_output
+            )
+            if model_output.predicted_labels is None:
+                if pred2extracted := dataset_config.prompt_label_mapping:
+                    extracted_to_predicted = {
+                        extracted: predicted
+                        for predicted, extracted in pred2extracted.items()
+                    }
+                    model_output.predicted_labels = [
+                        extracted_to_predicted.get(label, label).lower()
+                        if isinstance(label, str)
+                        else [
+                            extracted_to_predicted.get(lbl, lbl).lower()
+                            for lbl in label
+                        ]
+                        for label in extracted_labels
+                    ]
+                else:
+                    model_output.predicted_labels = extracted_labels
+            all_preds.extend(extracted_labels)
+
         failed_instances += model_output.failed_instances
-        if model_output.predicted_labels is None:
-            if pred2extracted := dataset_config.prompt_label_mapping:
-                extracted_to_predicted = {
-                    extracted: predicted
-                    for predicted, extracted in pred2extracted.items()
-                }
-                model_output.predicted_labels = [
-                    extracted_to_predicted.get(label, label).lower()
-                    if isinstance(label, str)
-                    else [extracted_to_predicted.get(lbl, lbl).lower() for lbl in label]
-                    for label in extracted_labels
-                ]
-            else:
-                model_output.predicted_labels = extracted_labels
-        all_preds.extend(extracted_labels)
+
+        # Collect BPC scores from cached outputs
+        if benchmark_config.use_bits_per_character and model_output.bpc_scores:
+            all_bpc_scores.extend(model_output.bpc_scores)
 
     if "label" in non_cached_dataset.column_names:
         non_cached_labels = non_cached_dataset["label"]
@@ -325,17 +358,33 @@ def generate_single_iteration(
         )
         ground_truth = []
 
-    metrics_scores = model.compute_metrics(
-        model_outputs_and_labels=(all_preds, ground_truth),
-        dataset=dataset,
-        benchmark_config=benchmark_config,
-    )
-    itr_scores: "IterationScores" = {
-        **metrics_scores,
-        "failed_instances": failed_instances,
-    }
-
-    return itr_scores
+    # For BPC evaluation, only compute BPC metric (ignore accuracy metrics)
+    if benchmark_config.use_bits_per_character:
+        if all_bpc_scores:
+            bpc_score = bpc_metric(
+                predictions=all_bpc_scores,
+                references=[],
+                dataset=dataset,
+                dataset_config=dataset_config,
+                benchmark_config=benchmark_config,
+            )
+            # Key the score under the metric's name so it aggregates correctly in
+            # `log_scores`/`aggregate_scores`.
+            return {bpc_metric.name: bpc_score, "failed_instances": failed_instances}  # ty: ignore[invalid-return-type]
+        else:
+            log_once(
+                "BPC evaluation requested but no BPC scores were computed. "
+                "Assigning infinite BPC (worst score).",
+                level=logging.WARNING,
+            )
+            return {bpc_metric.name: float("inf"), "failed_instances": failed_instances}
+    else:
+        metrics_scores = model.compute_metrics(
+            model_outputs_and_labels=(all_preds, ground_truth),
+            dataset=dataset,
+            benchmark_config=benchmark_config,
+        )
+        return {**metrics_scores, "failed_instances": failed_instances}
 
 
 def debug_log(

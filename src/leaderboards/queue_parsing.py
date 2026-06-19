@@ -147,7 +147,9 @@ def result_lines_for_model(lines: list[str], model_id: str) -> list[str]:
             parsed = BenchmarkResult.from_dict(config=json.loads(line))
         except (TypeError, ValueError, json.JSONDecodeError):
             continue
-        if parsed.model == model_id:
+        # Only standard accuracy runs (not BPC) count towards leaderboard completion
+        is_standard = not getattr(parsed, "use_bits_per_character", False)
+        if parsed.model == model_id and is_standard:
             out.append(line)
     return out
 

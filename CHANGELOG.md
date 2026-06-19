@@ -9,34 +9,44 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added `download()` method to `PipelineMetric` class
-  - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
-    Values metric)
-  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
-    the pipeline
+- Added `--use-bits-per-character`/`-bpc` flag for base decoder models to enable
+  bits-per-character (BPC) scoring on all tasks. For multiple-choice tasks, this uses a
+  cloze formulation with question + full answer text. BPC runs are excluded from
+  official leaderboards. Only the vLLM backend supports BPC; HF encoder and LiteLLM
+  backends raise `InvalidModel`, as do instruction-tuned models in vLLM. Thanks to
+  @tvosch for the contribution!
 - Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
 - Added the `google-cloud-aiplatform` dependency, as it's required to run
   Gemini-3.1-pro.
 
 ### Fixed
 
-- Fixed a single failing iteration aborting an entire evaluation. When a model
-  refuses to answer in a way that produces no valid label (e.g. on the European
-  Values task, which doesn't allow invalid model outputs), that iteration is now
-  skipped and the scores of the remaining successful iterations are reported. The
-  evaluation only fails if every iteration fails.
-- Fixed vLLM benchmarking crashing on models whose context window is too small to
-  fit both the prompt and the dataset's full generation budget (e.g. a 2,048-token
-  model on IFEval, which reserves 2,048 generation tokens). Previously the prompt
-  budget collapsed to a single token and truncation raised "Truncation of prompts
-  failed". The generation budget is now shrunk (down to half the context) so the
-  prompt retains room, and zero-shot instruction-tuned prompts that still don't fit
-  are hard-truncated as a last resort instead of failing the benchmark.
-- Fixed `BenchmarkResult.append_to_results` writing records with a leading
-  newline and no trailing newline, which left results files without a final
-  newline and could glue two records onto a single line. Records are now written
-  self-terminated, with a separating newline added first if the existing file
-  doesn't already end in one.
+- vLLM device out-of-memory errors during generation (common on shared-memory devices
+  such as Apple Metal, where the default GPU memory utilization leaves no room for
+  per-step allocations) are now caught and reported with clear guidance to re-run with a
+  lower `--gpu-memory-utilization`, instead of an opaque crash.
+- Fixed vLLM benchmarking crashing or hanging on non-CUDA platforms (e.g. Apple Metal).
+  The multiprocessing executor was forced even for a single non-CUDA device, and its
+  worker rejected the `mps` device; single non-CUDA devices now use vLLM's in-process
+  executor. Additionally, vLLM's engine-core gloo rendezvous defaulted to the host's
+  primary IP, which is often unreachable from the host on macOS and hung indefinitely,
+  so `VLLM_HOST_IP` is now pinned to loopback for these devices (unless explicitly set).
+- Fixed a single failing iteration aborting an entire evaluation. When a model refuses
+  to answer in a way that produces no valid label (e.g. on the European Values task,
+  which doesn't allow invalid model outputs), that iteration is now skipped and the
+  scores of the remaining successful iterations are reported. The evaluation only fails
+  if every iteration fails.
+- Fixed vLLM benchmarking crashing on models whose context window is too small to fit
+  both the prompt and the dataset's full generation budget (e.g. a 2,048-token model on
+  IFEval, which reserves 2,048 generation tokens). Previously the prompt budget
+  collapsed to a single token and truncation raised "Truncation of prompts failed". The
+  generation budget is now shrunk (down to half the context) so the prompt retains room,
+  and zero-shot instruction-tuned prompts that still don't fit are hard-truncated as a
+  last resort instead of failing the benchmark.
+- Fixed `BenchmarkResult.append_to_results` writing records with a leading newline and
+  no trailing newline, which left results files without a final newline and could glue
+  two records onto a single line. Records are now written self-terminated, with a
+  separating newline added first if the existing file doesn't already end in one.
 - Added `download()` method to `PipelineMetric` class
   - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
     Values metric)
@@ -117,22 +127,33 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Running with `HF_HUB_OFFLINE=1` no longer crashes when loading a local custom dataset
-  whose id happens to look like a Hub repo. The Hub existence check now treats an
-  offline-mode error as "not reachable, so not present" and lets the caller fall back to
-  the local config. This was contributed by @Touzen ✨
-- Added an architecture alias remapping `Gemma4TextForCausalLM` to `Gemma4ForCausalLM`
-  so that text-only Gemma 4 fine-tunes can be loaded with vLLM versions that only
-  register the multimodal class. This was contributed by @lardinator ✨
-- Raised the default vLLM worker RPC timeouts (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and
-  `VLLM_ENGINE_ITERATION_TIMEOUT_S`) from 300s to 1800s so that large models on slow
-  hardware no longer crash mid-evaluation with
-  `EngineDeadError: RPC call to sample_tokens timed out`. The engine-dead case is also
-  now caught and reported as an `InvalidBenchmark` error instead of an opaque crash.
-- Fixed a bug where `load_custom_datasets_module` would attempt to load a module spec
-  from the current working directory when an empty path was passed as the custom
-  datasets file, emitting a spurious "Could not load the spec for the custom datasets
-  file" error. It now requires the path to point at an actual file.
+- Running with `HF_HUB_OFFLINE=1` no longer crashes when loading a local custom
+  dataset whose id happens to look like a Hub repo. The Hub existence check
+  now treats an offline-mode error as "not reachable, so not present" and
+  lets the caller fall back to the local config. Thanks to
+  [@Touzen](https://github.com/Touzen) for the contribution!
+- Added an architecture alias remapping `Gemma4TextForCausalLM` to
+  `Gemma4ForCausalLM` so that text-only Gemma 4 fine-tunes can be loaded with
+  vLLM versions that only register the multimodal class. Thanks to
+  [@lardiator](https://github.com/lardiator) for the contribution!
+- Raised the default vLLM worker RPC timeouts
+  (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and `VLLM_ENGINE_ITERATION_TIMEOUT_S`)
+  from 300s to 1800s so that large models on slow hardware no longer crash
+  mid-evaluation with `EngineDeadError: RPC call to sample_tokens timed out`.
+  The engine-dead case is also now caught and reported as an `InvalidBenchmark`
+  error instead of an opaque crash.
+- Fixed a bug where `load_custom_datasets_module` would attempt to load a module
+  spec from the current working directory when an empty path was passed as the
+  custom datasets file, emitting a spurious "Could not load the spec for the
+  custom datasets file" error. It now requires the path to point at an actual
+  file.
+
+### Added
+
+- Added a benchmark for the purpose of testing the knowledge of Dutch proverbs.
+  The dataset consists of brief scenarios and two possible proverbs for
+  the Large Language Model to select from.
+  The dataset was created manually and reviewed by native Dutch speakers.
 
 ## [v17.2.0] - 2026-04-17
 

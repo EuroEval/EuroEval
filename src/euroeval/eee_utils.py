@@ -159,6 +159,9 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         "validation_split": str(result.validation_split).lower()
         if result.validation_split is not None
         else None,
+        "use_bits_per_character": str(result.use_bits_per_character).lower()
+        if result.use_bits_per_character is not None
+        else None,
         "transformers_version": result.transformers_version or None,
         "torch_version": result.torch_version or None,
         "vllm_version": result.vllm_version or None,
@@ -283,6 +286,9 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
         few_shot=parse_optional_bool(eval_lib_additional.get("few_shot")),
         validation_split=parse_optional_bool(
             eval_lib_additional.get("validation_split")
+        ),
+        use_bits_per_character=parse_optional_bool(
+            eval_lib_additional.get("use_bits_per_character")
         ),
         euroeval_version=parse_optional_str(
             None

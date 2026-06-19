@@ -33,6 +33,21 @@ distribution, and report the 95% confidence interval — i.e. roughly 1.96 × st
 error around the mean. Two models are considered statistically tied on a dataset when
 their score distributions overlap in this sense.
 
+## What is bits-per-character (BPC) scoring?
+
+BPC computes the information content (in bits) of the ground-truth answer conditioned
+on the question, normalized by character length. Lower BPC = better.
+
+For multiple-choice tasks, BPC treats the benchmark like text-to-text: the model sees
+a bare question (no choice options listed) and generates the full answer text.
+We compute `sum(log P(answer_tokens | prompt))` for the correct answer.
+
+For other tasks, BPC scores the ground-truth answer directly.
+
+BPC is only supported by the vLLM backend with base decoder models. Use
+`--use-bits-per-character` or `-bpc` to enable. Official leaderboards display standard
+accuracy scores; BPC runs are excluded from rankings.
+
 ## Why do some model names end in `(val)`?
 
 The `(val)` suffix marks models that have only been evaluated on the validation splits

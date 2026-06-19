@@ -15,6 +15,7 @@ from euroeval.benchmark_modules.vllm import (
     compute_token_budget,
     load_model,
 )
+from euroeval.bpc_scoring import compute_bpc_scores
 from euroeval.constants import MAX_CONTEXT_LENGTH, REASONING_MAX_TOKENS
 from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
 from euroeval.enums import GenerativeType
@@ -215,8 +216,21 @@ class TestVLLMPromptTruncation:
         model._model = MagicMock()
         model._model.generate.return_value = [mock_vllm_output]
 
+        def _make_sampling_params(**kwargs) -> MagicMock:
+            # Mirror the constructor kwargs onto the mock so the code under test reads
+            # back the real values (e.g. `prompt_logprobs=None` selects the generation
+            # path rather than the BPC scoring path).
+            sampling_params = MagicMock()
+            for key, value in kwargs.items():
+                setattr(sampling_params, key, value)
+            return sampling_params
+
         with (
-            patch("euroeval.benchmark_modules.vllm.SamplingParams", create=True),
+            patch(
+                "euroeval.benchmark_modules.vllm.SamplingParams",
+                create=True,
+                side_effect=_make_sampling_params,
+            ),
             patch(
                 "euroeval.benchmark_modules.vllm.get_first_label_token_mapping",
                 return_value={},
@@ -366,6 +380,247 @@ class TestLoadModelMaxModelLen:
         mock_llm_cls.assert_called_once()
         call_kwargs = mock_llm_cls.call_args.kwargs
         assert call_kwargs["max_model_len"] == expected_max_model_len
+
+
+class TestComputeBPCFromPromptLogprobs:
+    """Tests for `compute_bpc_scores` using prompt_logprobs."""
+
+    @staticmethod
+    def _create_mock_output(
+        prompt: str,
+        prompt_logprobs: list[dict[int, float] | None],
+        prompt_token_ids: list[int],
+    ) -> MagicMock:
+        """Create a mock vLLM output with prompt_logprobs.
+
+        Args:
+            prompt: The prompt text.
+            prompt_logprobs: List of logprob dicts (or None) per token position.
+            prompt_token_ids: The token ids vLLM scored, aligned with prompt_logprobs.
+
+        Returns:
+            A MagicMock with prompt, prompt_logprobs and prompt_token_ids attributes.
+        """
+        output = MagicMock()
+        output.prompt = prompt
+        output.prompt_logprobs = prompt_logprobs
+        output.prompt_token_ids = prompt_token_ids
+        return output
+
+    @staticmethod
+    def _lp(value: float) -> float:
+        """Return a logprob value (natural log).
+
+        Args:
+            value: The log probability value.
+
+        Returns:
+            The same value (for compatibility with dict-based logprobs).
+        """
+        return value
+
+    def test_basic_bpc_computation(self) -> None:
+        """Test basic BPC computation with simple prompt_logprobs.
+
+        Given a prompt where we know the answer portion and logprobs,
+        verify the BPC score is computed correctly.
+        """
+        # Mock tokeniser
+        tokeniser = MagicMock()
+        tokeniser.encode.side_effect = (
+            lambda text, add_special_tokens=False: (
+                [
+                    10,  # "Hello"
+                    11,  # " world"
+                    12,  # "!"
+                    13,  # " The"
+                    14,  # " answer"
+                    15,  # " is"
+                    16,  # " yes"
+                ][0 : len(text.split())]
+                if text
+                else []
+            )
+        )
+
+        # Simulate prompt: "Hello world! The answer is yes"
+        # Answer: "yes" (last token)
+        # Suppose logprob for "yes" (token 16) is -0.693 (log(0.5))
+        prompt = "Hello world! The answer is yes"
+        answer = "yes"
+
+        # Create mock prompt_logprobs (one per token, first is None)
+        # Positions: [None, {11: lp}, {12: lp}, {13: lp}, {14: lp}, {15: lp}, {16: lp}]
+        prompt_logprobs = [
+            None,
+            {11: -0.1},
+            {12: -0.2},
+            {13: -0.3},
+            {14: -0.4},
+            {15: -0.5},
+            {16: -0.693},  # log(0.5) ≈ -0.693
+        ]
+
+        mock_output = self._create_mock_output(
+            prompt, prompt_logprobs, [10, 11, 12, 13, 14, 15, 16]
+        )
+
+        # Tokeniser should return 7 tokens for full prompt
+        tokeniser.encode.return_value = [10, 11, 12, 13, 14, 15, 16]
+        # For prompt without answer ("Hello world! The answer is ")
+        tokeniser.encode.side_effect = lambda text, add_special_tokens=False: (
+            [10, 11, 12, 13, 14, 15, 16] if "yes" in text else [10, 11, 12, 13, 14, 15]
+        )
+
+        bpc_scores = compute_bpc_scores(
+            raw_outputs=[mock_output],
+            prompts=[prompt],
+            answer_texts=[answer],
+            answer_start_indices=[6],  # 6 tokens before "yes"
+            tokeniser=tokeniser,
+        )
+
+        # BPC = -log2(0.5) / len("yes") = 1.0 / 3 ≈ 0.333
+        assert len(bpc_scores) == 1
+        assert abs(bpc_scores[0] - (1.0 / 3)) < 0.01
+
+    def test_null_prompt_logprobs_returns_inf(self) -> None:
+        """Test that None prompt_logprobs returns infinite BPC (worst score)."""
+        tokeniser = MagicMock()
+
+        mock_output = MagicMock()
+        mock_output.prompt = "test"
+        mock_output.prompt_logprobs = None
+
+        bpc_scores = compute_bpc_scores(
+            raw_outputs=[mock_output],
+            prompts=["test"],
+            answer_texts=["answer"],
+            answer_start_indices=[0],  # answer starts at token 0
+            tokeniser=tokeniser,
+        )
+
+        assert bpc_scores == [float("inf")]
+
+    def test_multiple_samples(self) -> None:
+        """Test BPC computation for multiple samples."""
+        tokeniser = MagicMock()
+
+        # Sample 1: answer "yes" with logprob -0.693 (log(0.5))
+        prompt1 = "Q: Is this true? A: yes"
+        answer1 = "yes"
+        prompt_logprobs1 = [
+            None,
+            {2: -0.1},
+            {3: -0.2},
+            {4: -0.693},  # "yes"
+        ]
+
+        # Sample 2: answer "no" with logprob -1.609 (log(0.2))
+        prompt2 = "Q: Is this true? A: no"
+        answer2 = "no"
+        prompt_logprobs2 = [
+            None,
+            {5: -0.3},
+            {6: -0.4},
+            {7: -1.609},  # "no"
+        ]
+
+        mock_output1 = self._create_mock_output(prompt1, prompt_logprobs1, [1, 2, 3, 4])
+        mock_output2 = self._create_mock_output(prompt2, prompt_logprobs2, [1, 5, 6, 7])
+
+        # Setup tokeniser
+        tokeniser.encode.side_effect = lambda text, add_special_tokens=False: (
+            [1, 2, 3, 4]
+            if "yes" in text
+            else [1, 5, 6, 7]
+            if "no" in text
+            else [1, 2, 3]
+            if answer1 in text
+            else [1, 5, 6]
+        )
+
+        bpc_scores = compute_bpc_scores(
+            raw_outputs=[mock_output1, mock_output2],
+            prompts=[prompt1, prompt2],
+            answer_texts=[answer1, answer2],
+            answer_start_indices=[3, 3],  # answer at token 3 for both
+            tokeniser=tokeniser,
+        )
+
+        assert len(bpc_scores) == 2
+        # Sample 1: BPC = -log2(exp(-0.693)) / 3 = 0.693/ln(2) / 3 ≈ 0.333
+        assert abs(bpc_scores[0] - (0.693 / 0.693 / 3)) < 0.01
+        # Sample 2: BPC = -log2(exp(-1.609)) / 2 = 1.609/ln(2) / 2 ≈ 1.16
+        assert abs(bpc_scores[1] - (1.609 / 0.693 / 2)) < 0.01
+
+    def test_answer_char_counts_override_denominator(self) -> None:
+        """An explicit ``answer_char_counts`` is used as the denominator.
+
+        Mirrors NER, where the bits are divided by the entity-text character count
+        rather than the full serialised-answer length.
+        """
+        tokeniser = MagicMock()
+
+        prompt = "Q: Is this true? A: yes"
+        answer = "yes"
+        prompt_logprobs = [None, {2: -0.1}, {3: -0.2}, {4: -0.693}]  # "yes"
+        mock_output = self._create_mock_output(prompt, prompt_logprobs, [1, 2, 3, 4])
+        tokeniser.encode.side_effect = lambda text, add_special_tokens=False: (
+            [1, 2, 3, 4] if "yes" in text else [1, 2, 3]
+        )
+
+        bpc_scores = compute_bpc_scores(
+            raw_outputs=[mock_output],
+            prompts=[prompt],
+            answer_texts=[answer],
+            answer_start_indices=[3],
+            tokeniser=tokeniser,
+            # Divide by 1 character instead of len("yes") == 3.
+            answer_char_counts=[1],
+        )
+
+        # BPC = -log2(exp(-0.693)) / 1 = 1.0 / 1 ≈ 1.0 (3x the len-based 0.333).
+        assert len(bpc_scores) == 1
+        assert abs(bpc_scores[0] - 1.0) < 0.01
+
+    def test_left_truncated_prefix_still_aligns_answer(self) -> None:
+        """The answer is found by counting back from the end of the scored tokens.
+
+        Simulates a prompt whose prefix was left-truncated to fit the context window:
+        the full prompt is 6 tokens (answer_start_idx=5), but vLLM only scored the last
+        3 tokens with the answer preserved at the end. Anchoring from the front would
+        index past the truncated sequence and collapse to infinity; anchoring from the
+        back recovers the answer regardless.
+        """
+        tokeniser = MagicMock()
+        # The full (untruncated) prompt encodes to 6 tokens; the answer is the last one.
+        tokeniser.encode.side_effect = lambda text, add_special_tokens=False: [
+            10,
+            11,
+            12,
+            13,
+            14,
+            16,
+        ]
+
+        prompt = "A B C D E yes"
+        answer = "yes"
+        # vLLM scored only the last 3 tokens (prefix truncated from the left).
+        prompt_logprobs = [None, {14: -0.2}, {16: -0.693}]  # log(0.5) ≈ -0.693
+        mock_output = self._create_mock_output(prompt, prompt_logprobs, [13, 14, 16])
+
+        bpc_scores = compute_bpc_scores(
+            raw_outputs=[mock_output],
+            prompts=[prompt],
+            answer_texts=[answer],
+            answer_start_indices=[5],  # would overflow the 3-token scored sequence
+            tokeniser=tokeniser,
+        )
+
+        # BPC = -log2(0.5) / len("yes") = 1.0 / 3 ≈ 0.333 (finite, not inf).
+        assert len(bpc_scores) == 1
+        assert abs(bpc_scores[0] - (1.0 / 3)) < 0.01
 
 
 class TestSkipImageProcessorContext:

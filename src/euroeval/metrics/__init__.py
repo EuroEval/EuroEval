@@ -1,6 +1,7 @@
 """All the metrics used in EuroEval."""
 
 from .bias import *  # noqa: F403
+from .bpc import *  # noqa: F403
 from .huggingface import *  # noqa: F403
 from .ifeval import *  # noqa: F403
 from .language_detection import *  # noqa: F403

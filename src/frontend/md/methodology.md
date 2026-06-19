@@ -36,6 +36,34 @@ differently depending on whether the model is instruction tuned or not, as the
 instruction tuned models require a different prompt structure to ensure that they
 generate the correct output.
 
+### Bits-per-Character Scoring
+
+For base decoder models, EuroEval supports bits-per-character (BPC) scoring via the
+`--use-bits-per-character`/`-bpc` flag. This computes the information content of the
+ground-truth answer conditioned on the question. This can be useful to evaluate training
+checkpoints of the models since it gives more granular information, as they typically
+struggle with more complex tasks like multiple-choice classification early in the
+training process, or if they're small.
+
+For multiple-choice tasks, BPC treats the benchmark like text-to-text: the model sees
+a bare-question prompt (no choice options listed) and generates the full answer text.
+We compute `sum(log P(answer_tokens | prompt))` and normalize by character length,
+matching the approach used by Llama and the EleutherAI LM Evaluation Harness.
+
+For other task types, BPC scores the ground-truth answer directly. The one exception is
+named entity recognition (and token classification more broadly), where the answer is a
+serialised JSON dictionary (see below): since most of that string is fixed scaffolding
+(the bracket, brace and key characters) that a model predicts near-perfectly after the
+few-shot examples, we normalise only by the number of characters in the tagged entities
+themselves rather than the full serialised string, so the score reflects how well the
+model predicts the entities rather than the JSON format.
+
+BPC is only supported by the vLLM backend with base decoder models; instruction-tuned
+models raise an error. BPC runs are excluded from official leaderboards, which only
+display standard accuracy scores for consistency.
+
+### Prompt Structure
+
 For the base (i.e., non-instruction tuned) models, we use the following prompt
 structure:
 

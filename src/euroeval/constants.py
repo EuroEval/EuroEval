@@ -40,6 +40,7 @@ LOCAL_MODELS_REQUIRED_FILES = ["config.json", "adapter_config.json"]
 # The number of top log probabilities to return for generative models. For several APIs
 # this is the maximum number of log probabilities that can be returned
 MAX_VLLM_LOGPROBS = 20
+BPC_LOGPROBS = 1  # Only need logprob of actual token for BPC scoring
 MAX_LITELLM_LOGPROBS = 8
 
 # We make sure to remove these metric attributes after each iteration, to avoid memory

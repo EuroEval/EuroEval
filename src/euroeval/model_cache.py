@@ -111,11 +111,13 @@ class ModelCache:
             sequence = value_dict.pop("sequence", None)
             predicted_label = value_dict.pop("predicted_label", None)
             scores = value_dict.pop("scores", None)
+            bpc_score = value_dict.pop("bpc_score", None)
             cache[key] = SingleGenerativeModelOutput(
                 sequence=sequence,
                 predicted_label=predicted_label,
                 scores=scores,
                 metadata=HashableDict(value_dict),
+                bpc_score=bpc_score,
             )
 
         self.cache = cache
@@ -285,6 +287,12 @@ class ModelCache:
                 else:
                     single_metadata = None
 
+                bpc_score = (
+                    model_output.bpc_scores[sample_idx]
+                    if model_output.bpc_scores is not None
+                    else None
+                )
+
                 self[model_input] = SingleGenerativeModelOutput(
                     sequence=model_output.sequences[sample_idx],
                     predicted_label=(
@@ -294,6 +302,7 @@ class ModelCache:
                     ),
                     scores=scores,
                     metadata=single_metadata,
+                    bpc_score=bpc_score,
                 )
 
 
@@ -360,11 +369,27 @@ def load_cached_model_outputs(
 
     cached_sequences = [model_output.sequence for model_output in cached_model_outputs]
 
-    if cached_model_outputs[0].scores is None:
+    cached_bpc_scores = [
+        model_output.bpc_score
+        for model_output in cached_model_outputs
+        if model_output.bpc_score is not None
+    ]
+    bpc_scores: list[float] | None = (
+        cached_bpc_scores
+        if len(cached_bpc_scores) == len(cached_model_outputs)
+        else None
+    )
+
+    if cached_model_outputs[0].scores is None and bpc_scores is None:
         return GenerativeModelOutput(sequences=cached_sequences)
 
+    if bpc_scores is not None and cached_model_outputs[0].scores is None:
+        return GenerativeModelOutput(sequences=cached_sequences, bpc_scores=bpc_scores)
+
     cached_scores = [model_output.scores or [] for model_output in cached_model_outputs]
-    return GenerativeModelOutput(sequences=cached_sequences, scores=cached_scores)
+    return GenerativeModelOutput(
+        sequences=cached_sequences, scores=cached_scores, bpc_scores=bpc_scores
+    )
 
 
 def create_model_cache_dir(cache_dir: str, model_id: str) -> str:

@@ -24,6 +24,7 @@ from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
 from .logging_utils import adjust_logging_level, get_pbar, log, log_once
+from .metrics.bpc import bpc_metric
 from .model_config import get_model_config
 from .model_loading import load_model
 from .scores import log_scores
@@ -81,6 +82,7 @@ class Benchmarker:
         ]
         | None = None,
         generative_type: GenerativeType | None = None,
+        use_bits_per_character: bool = False,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
         run_with_cli: bool = False,
@@ -157,6 +159,11 @@ class Benchmarker:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to None.
+            use_bits_per_character:
+                Whether to compute bits-per-character (BPC) on the ground-truth answer.
+                For multiple-choice tasks, treats benchmark as text-to-text with bare
+                question → full answer text. Only supported for base decoder models.
+                Defaults to False.
             custom_datasets_file:
                 Path to a Python file defining custom datasets. Defaults to
                 'custom_datasets.py'.
@@ -223,6 +230,7 @@ class Benchmarker:
             gpu_memory_utilization=gpu_memory_utilization,
             attention_backend=attention_backend,
             generative_type=generative_type,
+            use_bits_per_character=use_bits_per_character,
             custom_datasets_file=Path(custom_datasets_file),
             verbose=verbose,
             force=force,
@@ -253,36 +261,41 @@ class Benchmarker:
             ValueError:
                 If there is an error decoding a line in the results file.
         """
-        if self.results_path.exists():
-            benchmark_results: list[BenchmarkResult] = list()
-            with self.results_path.open() as f:
-                for line in f:
-                    if line.strip():
-                        try:
-                            result_dict = json.loads(line.strip())
-                        except json.JSONDecodeError as e:
-                            raise ValueError(
-                                f"Error decoding JSON line: {line.strip()}"
-                            ) from e
-
-                        # Fix for older records
-                        has_old_raw_results = (
-                            "results" in result_dict
-                            and isinstance(result_dict["results"], dict)
-                            and "raw" in result_dict["results"]
-                            and isinstance(result_dict["results"]["raw"], dict)
-                            and "test" in result_dict["results"]["raw"]
-                        )
-                        if has_old_raw_results:
-                            result_dict["results"]["raw"] = result_dict["results"][
-                                "raw"
-                            ]["test"]
-
-                        result = BenchmarkResult.from_dict(result_dict)
-                        benchmark_results.append(result)
-            return benchmark_results
-        else:
+        if not self.results_path.exists():
             return list()
+
+        with self.results_path.open() as f:
+            lines = [line.strip() for line in f if line.strip()]
+
+        # Parsing each line (and the large raw-results blob it contains) can take a
+        # while for big results files, so show a progress bar that clears once done
+        # (`get_pbar` uses `leave=False`) to make clear the run is not hanging.
+        benchmark_results: list[BenchmarkResult] = list()
+        for line in get_pbar(
+            iterable=lines,
+            desc="Loading cached results",
+            disable=not self.benchmark_config.progress_bar,
+        ):
+            try:
+                result_dict = json.loads(line)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Error decoding JSON line: {line}") from e
+
+            # Fix for older records
+            has_old_raw_results = (
+                "results" in result_dict
+                and isinstance(result_dict["results"], dict)
+                and "raw" in result_dict["results"]
+                and isinstance(result_dict["results"]["raw"], dict)
+                and "test" in result_dict["results"]["raw"]
+            )
+            if has_old_raw_results:
+                result_dict["results"]["raw"] = result_dict["results"]["raw"]["test"]
+
+            result = BenchmarkResult.from_dict(result_dict)
+            benchmark_results.append(result)
+
+        return benchmark_results
 
     def _download(
         self,
@@ -381,6 +394,7 @@ class Benchmarker:
         download_only: bool | None = None,
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
+        use_bits_per_character: bool | None = None,
         attention_backend: t.Literal[
             *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
@@ -476,6 +490,11 @@ class Benchmarker:
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to the value specified when initialising
                 the benchmarker.
+            use_bits_per_character:
+                Whether to compute bits-per-character (BPC) on the ground-truth answer.
+                For multiple-choice tasks, treats benchmark as text-to-text with bare
+                question → full answer text. Only supported for base decoder models.
+                Defaults to the value specified when initialising the benchmarker.
             attention_backend:
                 The attention backend to use for vLLM. Only relevant if the model is
                 generative. Defaults to the value specified when initialising the
@@ -512,6 +531,9 @@ class Benchmarker:
                 If we're offline benchmarking an adapter model, or if model loading
                 failed.
         """
+        if task is not None and dataset is not None:
+            raise ValueError("Only one of `task` and `dataset` can be specified.")
+
         # Determine if verbose mode is active (either from parameter, FULL_LOG env var,
         # or stored config from __init__)
         is_verbose = (
@@ -531,8 +553,21 @@ class Benchmarker:
             level=logging.INFO,
         )
 
-        if task is not None and dataset is not None:
-            raise ValueError("Only one of `task` and `dataset` can be specified.")
+        # Resolve BPC mode up front (it holds for every evaluation in the run) and
+        # announce it once, so it is clear the run is scoring bits-per-character rather
+        # than the usual task metrics.
+        is_bpc = (
+            use_bits_per_character
+            if use_bits_per_character is not None
+            else self.benchmark_config_default_params.use_bits_per_character
+        )
+        if is_bpc:
+            log_once(
+                "    ↳ Running in bits-per-character (BPC) mode: every dataset will be "
+                "scored by the bits-per-character of the ground-truth answer (lower is "
+                "better) instead of the usual task metrics.",
+                level=logging.INFO,
+            )
 
         # Get a new updated benchmark configuration, based on any changes to the
         # parameters
@@ -640,6 +675,11 @@ class Benchmarker:
                 if generative_type is not None
                 else self.benchmark_config_default_params.generative_type
             ),
+            use_bits_per_character=(
+                use_bits_per_character
+                if use_bits_per_character is not None
+                else self.benchmark_config_default_params.use_bits_per_character
+            ),
             attention_backend=(
                 attention_backend
                 if attention_backend is not None
@@ -719,7 +759,12 @@ class Benchmarker:
         }
 
         # Initialise the current benchmark results with all the ones that we have cached
-        # on disk already (can be none), and remove those datasets from the mapping
+        # on disk already (can be none), and remove those datasets from the mapping.
+        # Read the cached results once: `self.benchmark_results` re-reads and
+        # re-parses the entire results file on every access, and no new results are
+        # written during this partitioning loop, so reading it per-dataset would
+        # needlessly re-parse the whole file once per dataset.
+        existing_benchmark_results = self.benchmark_results
         current_benchmark_results: list[BenchmarkResult] = list()
         for (
             model_config,
@@ -731,7 +776,7 @@ class Benchmarker:
                     model_config=model_config,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,
-                    benchmark_results=self.benchmark_results,
+                    benchmark_results=existing_benchmark_results,
                 )
                 if benchmark_record is not None and not benchmark_config.force:
                     current_benchmark_results.append(benchmark_record)
@@ -1072,7 +1117,11 @@ class Benchmarker:
 
                 results = log_scores(
                     dataset_name=dataset_config.logging_string,
-                    metrics=dataset_config.task.metrics,
+                    metrics=(
+                        [bpc_metric]
+                        if benchmark_config.use_bits_per_character
+                        else dataset_config.task.metrics
+                    ),
                     scores=scores,
                     model_id=model_config.model_id,
                     model_revision=model_config.revision,
@@ -1111,6 +1160,7 @@ class Benchmarker:
                         if dataset_config.val_split is None
                         else not benchmark_config.evaluate_test_split
                     ),
+                    use_bits_per_character=benchmark_config.use_bits_per_character,
                     vllm_version=(
                         get_package_version("vllm")
                         if model_config.inference_backend == InferenceBackend.VLLM
