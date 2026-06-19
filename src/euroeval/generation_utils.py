@@ -544,7 +544,7 @@ def apply_prompt(
             case TaskGroup.SEQUENCE_CLASSIFICATION:
                 for i, (new_prompt, _) in enumerate(new_sections):
                     label = examples["label"][i]
-                    answer = dataset_config.labels[label]
+                    answer = dataset_config.prompt_label_mapping.get(label, label)
                     bpc_prompts.append(new_prompt + " " + answer)
                     # Tokenise prompt without answer to get answer start index
                     prompt_tokens = tokeniser.encode(

@@ -26,6 +26,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed a `TypeError` crash when preparing sequence-classification datasets for
+  bits-per-character (BPC) scoring. The answer text was looked up by indexing the
+  label list with the label string; it now uses the dataset's prompt label
+  mapping, matching the rest of the prompt-building code.
 - Fixed vLLM benchmarking crashing on non-CUDA platforms (e.g. Apple Metal). The
   multiprocessing executor was forced even for a single non-CUDA device, and its
   worker rejected the `mps` device. Single non-CUDA devices now use vLLM's
