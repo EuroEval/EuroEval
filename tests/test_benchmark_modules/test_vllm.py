@@ -387,20 +387,24 @@ class TestComputeBPCFromPromptLogprobs:
 
     @staticmethod
     def _create_mock_output(
-        prompt: str, prompt_logprobs: list[dict[int, float] | None]
+        prompt: str,
+        prompt_logprobs: list[dict[int, float] | None],
+        prompt_token_ids: list[int],
     ) -> MagicMock:
         """Create a mock vLLM output with prompt_logprobs.
 
         Args:
             prompt: The prompt text.
             prompt_logprobs: List of logprob dicts (or None) per token position.
+            prompt_token_ids: The token ids vLLM scored, aligned with prompt_logprobs.
 
         Returns:
-            A MagicMock with prompt and prompt_logprobs attributes.
+            A MagicMock with prompt, prompt_logprobs and prompt_token_ids attributes.
         """
         output = MagicMock()
         output.prompt = prompt
         output.prompt_logprobs = prompt_logprobs
+        output.prompt_token_ids = prompt_token_ids
         return output
 
     @staticmethod
@@ -457,7 +461,9 @@ class TestComputeBPCFromPromptLogprobs:
             {16: -0.693},  # log(0.5) ≈ -0.693
         ]
 
-        mock_output = self._create_mock_output(prompt, prompt_logprobs)
+        mock_output = self._create_mock_output(
+            prompt, prompt_logprobs, [10, 11, 12, 13, 14, 15, 16]
+        )
 
         # Tokeniser should return 7 tokens for full prompt
         tokeniser.encode.return_value = [10, 11, 12, 13, 14, 15, 16]
@@ -520,8 +526,8 @@ class TestComputeBPCFromPromptLogprobs:
             {7: -1.609},  # "no"
         ]
 
-        mock_output1 = self._create_mock_output(prompt1, prompt_logprobs1)
-        mock_output2 = self._create_mock_output(prompt2, prompt_logprobs2)
+        mock_output1 = self._create_mock_output(prompt1, prompt_logprobs1, [1, 2, 3, 4])
+        mock_output2 = self._create_mock_output(prompt2, prompt_logprobs2, [1, 5, 6, 7])
 
         # Setup tokeniser
         tokeniser.encode.side_effect = lambda text, add_special_tokens=False: (

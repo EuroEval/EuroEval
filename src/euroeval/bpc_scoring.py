@@ -51,20 +51,32 @@ def compute_bpc_scores(
         raw_outputs, prompts, answer_texts, answer_start_indices
     ):
         prompt_logprobs = raw_output.prompt_logprobs
+        prompt_token_ids = raw_output.prompt_token_ids
 
-        if prompt_logprobs is None:
-            # Missing prompt_logprobs = infinite BPC (worst possible score)
+        if prompt_logprobs is None or prompt_token_ids is None:
+            # Missing prompt_logprobs/token ids = infinite BPC (worst possible score)
             bpc_scores.append(float("inf"))
             continue
 
-        # Tokenise the full prompt (including answer) to get all tokens
-        full_tokens = tokeniser.encode(prompt, add_special_tokens=False)
+        # Align with the exact tokens vLLM scored: prompt_logprobs[i] corresponds to
+        # prompt_token_ids[i]. Re-encoding the prompt ourselves can disagree with vLLM
+        # (which prepends special tokens such as BOS for many decoder models), which
+        # would misalign the answer span so that no answer logprobs are extracted and
+        # every score collapses to infinity.
+        full_tokens = list(prompt_token_ids)
 
-        # The answer tokens are from answer_start_idx to end
-        # prompt_logprobs[0] is None (no logprob for first token)
-        # prompt_logprobs[i] corresponds to token i in the full sequence
+        # The precomputed answer-start index was derived from a tokenisation without
+        # special tokens; shift it by however many leading special tokens vLLM added so
+        # it indexes correctly into full_tokens / prompt_logprobs.
+        plain_prompt_length = len(tokeniser.encode(prompt, add_special_tokens=False))
+        special_token_offset = max(0, len(full_tokens) - plain_prompt_length)
+        start_idx = answer_start_idx + special_token_offset
+
+        # The answer tokens run from start_idx to the end.
+        # prompt_logprobs[0] is None (no logprob for the first token), and
+        # prompt_logprobs[i] corresponds to token i in the full sequence.
         answer_logprobs: list[float] = []
-        for i in range(answer_start_idx, len(prompt_logprobs)):
+        for i in range(start_idx, len(prompt_logprobs)):
             if prompt_logprobs[i] is None:
                 continue
             logprob_dict = prompt_logprobs[i]

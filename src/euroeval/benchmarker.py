@@ -24,6 +24,7 @@ from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
 from .logging_utils import adjust_logging_level, get_pbar, log, log_once
+from .metrics.bpc import bpc_metric
 from .model_config import get_model_config
 from .model_loading import load_model
 from .scores import log_scores
@@ -1090,7 +1091,11 @@ class Benchmarker:
 
                 results = log_scores(
                     dataset_name=dataset_config.logging_string,
-                    metrics=dataset_config.task.metrics,
+                    metrics=(
+                        [bpc_metric]
+                        if benchmark_config.use_bits_per_character
+                        else dataset_config.task.metrics
+                    ),
                     scores=scores,
                     model_id=model_config.model_id,
                     model_revision=model_config.revision,
