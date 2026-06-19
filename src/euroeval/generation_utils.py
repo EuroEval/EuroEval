@@ -14,7 +14,10 @@ from .enums import GenerativeType, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import log_once
 from .string_utils import extract_multiple_choice_labels
-from .task_group_utils.cloze import letter_to_choice_text
+from .task_group_utils.cloze import (
+    letter_to_choice_text,
+    parse_bare_question_and_choices,
+)
 from .tokenisation_utils import apply_chat_template
 
 if t.TYPE_CHECKING:
@@ -306,6 +309,30 @@ def apply_prompt(
         else:
             kwargs[label_key] = label
             return dataset_config.prompt_template.format(**kwargs), ""
+
+    # Multiple-choice datasets currently expose only a pre-formatted `text` column, so
+    # when BPC (cloze) scoring is requested we recover the bare question and the choice
+    # texts it needs and attach them to both the batch and the few-shot examples.
+    if (
+        use_bits_per_character
+        and dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        and "raw_choices" not in examples
+    ):
+        bare_inputs: list[str] = []
+        raw_choices_list: list[list[str]] = []
+        for text in examples["text"]:
+            bare_input, raw_choices = parse_bare_question_and_choices(text)
+            bare_inputs.append(bare_input)
+            raw_choices_list.append(raw_choices)
+        examples["bare_input"] = bare_inputs
+        examples["raw_choices"] = raw_choices_list
+        for fs_example in few_shot_examples:
+            if "raw_choices" not in fs_example:
+                fs_bare, fs_choices = parse_bare_question_and_choices(
+                    fs_example["text"]
+                )
+                fs_example["bare_input"] = fs_bare
+                fs_example["raw_choices"] = fs_choices
 
     match dataset_config.task.task_group:
         case TaskGroup.SEQUENCE_CLASSIFICATION:
