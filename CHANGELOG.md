@@ -7,6 +7,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v17.5.0] - 2026-06-19
+
 ### Added
 
 - Added `--use-bits-per-character`/`-bpc` flag for base decoder models to enable
