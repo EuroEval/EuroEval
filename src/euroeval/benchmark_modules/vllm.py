@@ -809,9 +809,22 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             match self.generative_type:
                 case GenerativeType.BASE:
-                    truncated_tokenized_prompts = self._tokeniser(
-                        text=prompts, max_length=max_tokens_per_prompt, truncation=True
-                    )
+                    # For BPC scoring (signalled by `prompt_logprobs`) the gold answer
+                    # is appended to the end of the prompt, so truncate from the left —
+                    # dropping leading prompt prefix / few-shot context — to keep the
+                    # answer intact. Default right-truncation would silently cut the
+                    # answer off, leaving no answer tokens to score (infinite BPC).
+                    original_truncation_side = self._tokeniser.truncation_side
+                    if sampling_params.prompt_logprobs is not None:
+                        self._tokeniser.truncation_side = "left"
+                    try:
+                        truncated_tokenized_prompts = self._tokeniser(
+                            text=prompts,
+                            max_length=max_tokens_per_prompt,
+                            truncation=True,
+                        )
+                    finally:
+                        self._tokeniser.truncation_side = original_truncation_side
                     prompts = self._tokeniser.batch_decode(
                         sequences=truncated_tokenized_prompts.input_ids,
                         skip_special_tokens=True,

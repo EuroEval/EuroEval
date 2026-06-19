@@ -80,12 +80,16 @@ def compute_bpc_scores(
         # every score collapses to infinity.
         full_tokens = list(prompt_token_ids)
 
-        # The precomputed answer-start index was derived from a tokenisation without
-        # special tokens; shift it by however many leading special tokens vLLM added so
-        # it indexes correctly into full_tokens / prompt_logprobs.
+        # The gold answer is always the suffix of the prompt, so anchor the answer span
+        # from the END of the tokens vLLM actually scored. Counting back by the number
+        # of answer tokens is invariant both to leading special tokens that vLLM
+        # prepends (e.g. BOS) and to any left-truncation of the prompt prefix when the
+        # prompt exceeds the context window: both shift the absolute answer-start index
+        # but never the number of trailing answer tokens. (Anchoring from the front
+        # instead would misalign to infinity whenever the prefix length changed.)
         plain_prompt_length = len(tokeniser.encode(prompt, add_special_tokens=False))
-        special_token_offset = max(0, len(full_tokens) - plain_prompt_length)
-        start_idx = answer_start_idx + special_token_offset
+        answer_token_count = max(0, plain_prompt_length - answer_start_idx)
+        start_idx = max(0, len(full_tokens) - answer_token_count)
 
         # The answer tokens run from start_idx to the end.
         # prompt_logprobs[0] is None (no logprob for the first token), and
@@ -127,7 +131,7 @@ def compute_bpc_scores(
                 "BPC (cloze) scoring of the first example:\n"
                 f"  Full scored prompt: {prompt!r}\n"
                 f"  Gold answer text: {answer!r}\n"
-                f"  Answer start token index (pre/post special-token shift): "
+                f"  Answer start token index (prefix length / in scored sequence): "
                 f"{answer_start_idx}/{start_idx}\n"
                 f"  Decoded scored answer span: {scored_text!r}\n"
                 f"  Answer tokens scored: {len(answer_logprobs)}, "

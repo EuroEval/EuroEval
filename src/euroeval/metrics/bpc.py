@@ -1,8 +1,11 @@
 """Bits-per-character metric for EuroEval."""
 
 import collections.abc as c
+import logging
+import math
 import typing as t
 
+from ..logging_utils import log
 from .base import Metric
 
 __all__ = ["BitsPerCharacterMetric", "bpc_metric"]
@@ -52,13 +55,26 @@ class BitsPerCharacterMetric(Metric):
                 The benchmark configuration (not used).
 
         Returns:
-            The average BPC score, or None if predictions is empty.
+            The average BPC score, or None if there are no finite scores to average.
         """
         if not predictions:
             return None
 
+        # Exclude non-finite scores (e.g. an example whose answer could not be located
+        # in the scored tokens yields an infinite BPC) so a single bad example cannot
+        # drag the whole dataset's mean to infinity.
         bpc_scores = [float(score) for score in predictions]
-        return sum(bpc_scores) / len(bpc_scores)
+        finite_scores = [score for score in bpc_scores if math.isfinite(score)]
+        num_dropped = len(bpc_scores) - len(finite_scores)
+        if num_dropped > 0:
+            log(
+                f"Dropped {num_dropped} of {len(bpc_scores)} non-finite "
+                "bits-per-character score(s) before averaging.",
+                level=logging.WARNING,
+            )
+        if not finite_scores:
+            return None
+        return sum(finite_scores) / len(finite_scores)
 
 
 bpc_metric = BitsPerCharacterMetric()

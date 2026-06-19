@@ -584,6 +584,44 @@ class TestComputeBPCFromPromptLogprobs:
         assert len(bpc_scores) == 1
         assert abs(bpc_scores[0] - 1.0) < 0.01
 
+    def test_left_truncated_prefix_still_aligns_answer(self) -> None:
+        """The answer is found by counting back from the end of the scored tokens.
+
+        Simulates a prompt whose prefix was left-truncated to fit the context window:
+        the full prompt is 6 tokens (answer_start_idx=5), but vLLM only scored the last
+        3 tokens with the answer preserved at the end. Anchoring from the front would
+        index past the truncated sequence and collapse to infinity; anchoring from the
+        back recovers the answer regardless.
+        """
+        tokeniser = MagicMock()
+        # The full (untruncated) prompt encodes to 6 tokens; the answer is the last one.
+        tokeniser.encode.side_effect = lambda text, add_special_tokens=False: [
+            10,
+            11,
+            12,
+            13,
+            14,
+            16,
+        ]
+
+        prompt = "A B C D E yes"
+        answer = "yes"
+        # vLLM scored only the last 3 tokens (prefix truncated from the left).
+        prompt_logprobs = [None, {14: -0.2}, {16: -0.693}]  # log(0.5) ≈ -0.693
+        mock_output = self._create_mock_output(prompt, prompt_logprobs, [13, 14, 16])
+
+        bpc_scores = compute_bpc_scores(
+            raw_outputs=[mock_output],
+            prompts=[prompt],
+            answer_texts=[answer],
+            answer_start_indices=[5],  # would overflow the 3-token scored sequence
+            tokeniser=tokeniser,
+        )
+
+        # BPC = -log2(0.5) / len("yes") = 1.0 / 3 ≈ 0.333 (finite, not inf).
+        assert len(bpc_scores) == 1
+        assert abs(bpc_scores[0] - (1.0 / 3)) < 0.01
+
 
 class TestSkipImageProcessorContext:
     """Tests for _skip_image_processor_context.
