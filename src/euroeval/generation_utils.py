@@ -574,12 +574,13 @@ def apply_prompt(
             labels_to_be_generated=labels_for_spacing, tokeniser=bpc_tokeniser
         )
 
-        def build_bpc_prompt(new_prompt: str, answer: str) -> tuple[str, int]:
+        def build_bpc_prompt(prompt: str, answer: str) -> tuple[str, int]:
             """Join a prompt and gold answer, returning the answer-start token index.
 
             Args:
-                new_prompt:
-                    The prompt for the example, ending with the answer prefix (e.g.
+                prompt:
+                    The full prompt for the example (including any prompt prefix and
+                    few-shot examples), ending with the answer prefix (e.g.
                     ``"Svar: "``).
                 answer:
                     The gold answer text to be scored.
@@ -588,75 +589,89 @@ def apply_prompt(
                 A pair ``(bpc_prompt, answer_start_token_index)``.
             """
             if strip_bpc_prompt:
-                prefix = new_prompt.rstrip()
+                prefix = prompt.rstrip()
                 full_prompt = f"{prefix} {answer}"
             else:
-                prefix = new_prompt
+                prefix = prompt
                 full_prompt = f"{prefix}{answer}"
             answer_start = len(bpc_tokeniser.encode(prefix, add_special_tokens=False))
             return full_prompt, answer_start
 
+        # Score the answer against the same full prompt the model is conditioned on
+        # during generation (prompt prefix + few-shot examples + question), which is
+        # already assembled in `examples["text"]`. Few-shot context is automatically
+        # absent here when zero-shot evaluation is requested, since `few_shot_examples`
+        # is then empty.
+        full_prompts: list[str] = [str(text) for text in examples["text"]]
         bpc_prompts: list[str] = []
         bpc_answer_starts: list[int] = []
         match dataset_config.task.task_group:
             case TaskGroup.SEQUENCE_CLASSIFICATION:
-                for i, (new_prompt, _) in enumerate(new_sections):
+                for i in range(len(new_sections)):
                     label = examples["label"][i]
                     answer = dataset_config.prompt_label_mapping.get(label, label)
-                    bpc_prompt, answer_start = build_bpc_prompt(new_prompt, answer)
+                    bpc_prompt, answer_start = build_bpc_prompt(full_prompts[i], answer)
                     bpc_prompts.append(bpc_prompt)
                     bpc_answer_starts.append(answer_start)
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
                 if "raw_choices" in examples:
-                    for i, (new_prompt, _) in enumerate(new_sections):
+                    for i in range(len(new_sections)):
                         label = examples["label"][i]
                         raw_choice = examples["raw_choices"][i]
                         answer = letter_to_choice_text(
                             letter=str(label).strip().lower(), raw_choices=raw_choice
                         )
-                        bpc_prompt, answer_start = build_bpc_prompt(new_prompt, answer)
+                        bpc_prompt, answer_start = build_bpc_prompt(
+                            full_prompts[i], answer
+                        )
                         bpc_prompts.append(bpc_prompt)
                         bpc_answer_starts.append(answer_start)
                 else:
-                    bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+                    bpc_prompts = list(full_prompts)
                     bpc_answer_starts = [0] * len(new_sections)
             case TaskGroup.TEXT_TO_TEXT:
                 if "target_text" in examples:
-                    for i, (new_prompt, _) in enumerate(new_sections):
+                    for i in range(len(new_sections)):
                         target = examples["target_text"][i]
-                        bpc_prompt, answer_start = build_bpc_prompt(new_prompt, target)
+                        bpc_prompt, answer_start = build_bpc_prompt(
+                            full_prompts[i], target
+                        )
                         bpc_prompts.append(bpc_prompt)
                         bpc_answer_starts.append(answer_start)
                 else:
-                    bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+                    bpc_prompts = list(full_prompts)
                     bpc_answer_starts = [0] * len(new_sections)
             case TaskGroup.QUESTION_ANSWERING:
                 if "answers" in examples:
-                    for i, (new_prompt, _) in enumerate(new_sections):
+                    for i in range(len(new_sections)):
                         answer_dct = examples["answers"][i]
                         answer = answer_dct["answers"]["text"][0]
-                        bpc_prompt, answer_start = build_bpc_prompt(new_prompt, answer)
+                        bpc_prompt, answer_start = build_bpc_prompt(
+                            full_prompts[i], answer
+                        )
                         bpc_prompts.append(bpc_prompt)
                         bpc_answer_starts.append(answer_start)
                 else:
-                    bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+                    bpc_prompts = list(full_prompts)
                     bpc_answer_starts = [0] * len(new_sections)
             case TaskGroup.TOKEN_CLASSIFICATION:
                 if "tokens" in examples and "labels" in examples:
-                    for i, (new_prompt, _) in enumerate(new_sections):
+                    for i in range(len(new_sections)):
                         answer = serialise_ner_tags(
                             tokens=examples["tokens"][i],
                             labels=examples["labels"][i],
                             prompt_label_mapping=dataset_config.prompt_label_mapping,
                         )
-                        bpc_prompt, answer_start = build_bpc_prompt(new_prompt, answer)
+                        bpc_prompt, answer_start = build_bpc_prompt(
+                            full_prompts[i], answer
+                        )
                         bpc_prompts.append(bpc_prompt)
                         bpc_answer_starts.append(answer_start)
                 else:
-                    bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+                    bpc_prompts = list(full_prompts)
                     bpc_answer_starts = [0] * len(new_sections)
             case _:
-                bpc_prompts = [new_prompt for new_prompt, _ in new_sections]
+                bpc_prompts = list(full_prompts)
                 bpc_answer_starts = [0] * len(new_sections)
 
         examples["bpc_prompt"] = bpc_prompts
