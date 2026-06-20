@@ -401,12 +401,23 @@ const cellTitle = (
   cell: { text: string },
   col: Column,
   ci: number,
+  row: Row,
 ): string | undefined => {
   if (ci === 0) return cell.text;
   if (isTypeCol(col)) return TYPE_EMOJI_TOOLTIPS[cell.text];
   if (col.kind === "score" && /±/.test(cell.text)) {
+    const parts: string[] = [];
     const metrics = TASK_METRIC_NAMES[taskSlug(col.taskTitle)];
-    if (metrics && metrics.length >= 2) return `${metrics[0]} / ${metrics[1]}`;
+    if (metrics && metrics.length >= 2) parts.push(`${metrics[0]} / ${metrics[1]}`);
+    const failed = row.failures?.[col.key];
+    if (typeof failed === "number") {
+      parts.push(
+        failed === 0
+          ? "No failed answers"
+          : `${failed.toLocaleString()} unparseable answer${failed === 1 ? "" : "s"} (scored as failures)`,
+      );
+    }
+    return parts.length ? parts.join(" · ") : undefined;
   }
   return undefined;
 };
@@ -620,7 +631,7 @@ const reportBadEval = (modelId: string) => {
                       ? scoreHeatmapStyle(cell, table.columns[ci])
                       : undefined
               "
-              :title="cellTitle(cell, table.columns[ci], ci)"
+              :title="cellTitle(cell, table.columns[ci], ci, row)"
             >
               <button
                 v-if="isModelCol(table.columns[ci])"

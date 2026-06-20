@@ -73,6 +73,37 @@ def get_total_scores(record: dict) -> dict[str, float] | None:
     return scores if scores else None
 
 
+def get_num_failed_instances(record: dict) -> int | None:
+    """Get the number of failed instances from an EEE record.
+
+    The count is stored per evaluation result at
+    ``score_details.details.num_failed_instances`` and is identical across the
+    primary/secondary metric entries of a dataset, so the first parseable value
+    is returned.
+
+    Args:
+        record:
+            A result record in EEE format.
+
+    Returns:
+        The number of failed instances, or None if not found or unparseable.
+    """
+    eval_results = record.get("evaluation_results", [])
+    if not isinstance(eval_results, list):
+        return None
+    for er in eval_results:
+        if not isinstance(er, dict):
+            continue
+        details = er.get("score_details", {}).get("details", {})
+        if not isinstance(details, dict) or "num_failed_instances" not in details:
+            continue
+        try:
+            return int(float(details["num_failed_instances"]))
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
 def get_version(record: dict) -> str | None:
     """Get the EuroEval version from an EEE record.
 

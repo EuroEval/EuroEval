@@ -15,6 +15,7 @@ export type CellKind =
   | "icon"
   | "score"
   | "version"
+  | "failures"
   | "text";
 
 export interface ParsedCell {
@@ -44,6 +45,9 @@ export interface Column {
 
 export interface Row {
   cells: ParsedCell[];
+  /** Per-dataset failure counts, keyed by the score column's key. Sourced from
+   *  the hidden `<dataset>_failures` companion columns. */
+  failures?: Record<string, number>;
 }
 
 export interface LeaderboardTable {
@@ -152,6 +156,7 @@ const ICON_COLS = new Set([
 ]);
 
 const VERSION_SUFFIX = /version$/i;
+const FAILURES_SUFFIX = /_failures$/i;
 
 const parseNumberSafe = (s: string): number | null => {
   if (s === "?" || s === "" || s === "-" || s === "??") return null;
@@ -299,6 +304,7 @@ function escapeAttr(s: string): string {
 function inferKind(title: string, sampleValues: string[]): CellKind {
   const t = title.toLowerCase();
   if (t === "model") return "model";
+  if (FAILURES_SUFFIX.test(t)) return "failures";
   if (VERSION_SUFFIX.test(t)) return "version";
   if (ICON_COLS.has(t)) return "icon";
   if (NUMERIC_COLS.has(t)) return "number";
@@ -379,23 +385,37 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
     };
   });
 
-  // Hide trailing version columns from the visible table — they're a lot of
-  // noise and the user can still filter the rank column.
+  // Hide the per-dataset companion columns (versions and failure counts) from
+  // the visible table — they're a lot of noise. Failure counts are surfaced in
+  // the score-cell tooltips instead (see `failuresCols` below).
   const visibleColIndexes = columns
     .map((c, i) => ({ c, i }))
-    .filter(({ c }) => c.kind !== "version")
+    .filter(({ c }) => c.kind !== "version" && c.kind !== "failures")
     .map(({ i }) => i);
 
   const visibleColumns = visibleColIndexes.map((i) => columns[i]);
 
+  // Map each hidden failures column to the score column it annotates (e.g.
+  // "conll_nl_failures" → "conll_nl"), so its value can be attached per row.
+  const failuresCols = columns
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => c.kind === "failures")
+    .map(({ c, i }) => ({ i, baseKey: c.key.replace(FAILURES_SUFFIX, "") }));
+
   // Parse cells. Column order follows the CSV (ground truth).
   const parsedRows: Row[] = dataRows
     .filter((r) => r.length > 1 && stripTags(r[0]).trim() !== "")
-    .map((r) => ({
-      cells: visibleColIndexes.map((i) =>
+    .map((r) => {
+      const cells = visibleColIndexes.map((i) =>
         parseCell(r[i] ?? "", columns[i].kind),
-      ),
-    }));
+      );
+      let failures: Record<string, number> | undefined;
+      for (const { i, baseKey } of failuresCols) {
+        const n = parseNumberSafe(stripTags(splitDisplaySort(r[i] ?? "").display));
+        if (n !== null) (failures ??= {})[baseKey] = n;
+      }
+      return failures ? { cells, failures } : { cells };
+    });
 
   // Augment columns with min/max + distinct values.
   for (let c = 0; c < visibleColumns.length; c++) {

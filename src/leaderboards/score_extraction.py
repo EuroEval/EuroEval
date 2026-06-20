@@ -10,7 +10,13 @@ from collections import defaultdict
 from euroeval.logging_utils import log_once
 
 from .link_generation import generate_model_url
-from .record_fields import get_raw_results, get_task, get_total_scores, get_version
+from .record_fields import (
+    get_num_failed_instances,
+    get_raw_results,
+    get_task,
+    get_total_scores,
+    get_version,
+)
 from .records import (
     extract_model_ids_from_record,
     get_dataset,
@@ -160,6 +166,7 @@ def extract_model_metadata(
         # plain version string is sufficient.
         version = get_version(record) or "<9.2.0"
         dataset = get_dataset(record)
+        num_failed = get_num_failed_instances(record)
 
         for model_id in model_ids:
             metadata_dict[model_id].update(
@@ -177,6 +184,8 @@ def extract_model_metadata(
             )
             if dataset:
                 metadata_dict[model_id][f"{dataset}_version"] = version
+                if num_failed is not None:
+                    metadata_dict[model_id][f"{dataset}_failures"] = num_failed
 
     logger.info("Extracted model metadata.")
     return metadata_dict
