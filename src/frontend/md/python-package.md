@@ -323,8 +323,8 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
     df = pd.DataFrame(data.values()).set_index("index").sort_index()
     ```
 
-    See [Analysing the results of generative models](#analysing-the-results-of-generative-models)
-    for the full schema and for parsing per-iteration failure lists.
+    See [Detailed model outputs](#detailed-model-outputs) for the full schema and
+    [Failed instances](#failed-instances) for parsing per-iteration failure lists.
 
 ??? example "Read existing results back into Python"
 
@@ -344,8 +344,7 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
         ]
     ```
 
-<details class="md-admonition md-admonition-note" id="benchmarking-custom-datasets">
-<summary class="md-admonition-title">Benchmarking custom datasets</summary>
+## Benchmarking custom datasets
 
 If you want to benchmark models on your own custom dataset, this is also possible.
 First, you need to set up your dataset to be compatible with EuroEval. This means
@@ -358,8 +357,8 @@ expects these standard column names:
 - **Free-form text generation**: `text` and `target_text`
 
 If your dataset uses different column names, you can specify the mapping via
-`input_column`, `target_column`, and `choices_column` in `DatasetConfig` (see the
-**Custom column names** subsection below) — no need to rename your columns
+`input_column`, `target_column`, and `choices_column` in `DatasetConfig` (see
+[Custom column names](#custom-column-names) below) — no need to rename your columns
 beforehand.
 
 Text and multiple-choice classification tasks are by far the most common. Then you can
@@ -590,7 +589,7 @@ euroeval --dataset EuroEval/test_dataset --model <model-id> --trust-remote-code
 
 ///
 
-<h4 id="custom-column-names">Custom column names</h4>
+### Custom column names
 
 If your dataset uses column names that differ from EuroEval's expected names, you can
 specify a column mapping directly in `DatasetConfig` using the `input_column`,
@@ -696,7 +695,7 @@ your own bespoke dataset:
 
 These can all be imported from `euroeval.tasks` module.
 
-<h4 id="creating-your-own-custom-task">Creating your own custom task</h4>
+### Creating your own custom task
 
 You are of course also free to define your own task from scratch, which allows you to
 customise the prompts used when evaluating generative models, for instance. When
@@ -1034,10 +1033,7 @@ With any of these custom tasks you can then benchmark your dataset by running
 euroeval --dataset <dataset-name> --model <model-id>
 ```
 
-</details>
-
-<details class="md-admonition md-admonition-note" id="output-format-every-eval-ever-eee">
-<summary class="md-admonition-title">Output format: Every Eval Ever (EEE)</summary>
+## Output format: Every Eval Ever (EEE)
 
 Each entry written to `euroeval_benchmark_results.jsonl` conforms to the
 [Every Eval Ever (EEE) JSON schema v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json),
@@ -1140,12 +1136,9 @@ with open("euroeval_benchmark_results.jsonl") as f:
             result = BenchmarkResult.from_dict(json.loads(line))
 ```
 
-</details>
+## Analysing the results of generative models
 
-<details class="md-admonition md-admonition-note" id="analysing-the-results-of-generative-models">
-<summary class="md-admonition-title">Analysing the results of generative models</summary>
-
-<h4 id="failed-instances">Failed instances</h4>
+### Failed instances
 
 When evaluating a generative model, some samples may fail silently — for example when
 the model's output cannot be parsed as JSON (for NER tasks), or when no valid label can
@@ -1220,7 +1213,7 @@ with open("euroeval_benchmark_results.jsonl") as f:
                     )
 ```
 
-<h4 id="detailed-model-outputs">Detailed model outputs</h4>
+### Detailed model outputs
 
 If you're evaluating a generative model and want to be able to analyse the model results
 more in-depth, you can run your evaluation with the `--debug` flag (or `debug=True` if
@@ -1351,5 +1344,3 @@ these few-shot examples in the `messages` column.
       (...)
     }
     ```
-
-</details>
