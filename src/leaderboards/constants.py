@@ -83,6 +83,12 @@ CORE_MODELS_CONFIG: Path = PACKAGE_DIR / "core_models.yaml"
 # results despite no URL being found, so we don't re-prompt every run.
 MODELS_WITHOUT_URLS_CACHE: Path = PACKAGE_DIR / "models_without_urls_cache.yaml"
 
+# Persistent cache of per-dataset split sizes (keyed by Hugging Face source),
+# used to turn raw failure counts into proportions on the leaderboard. Split
+# sizes effectively never change; if a dataset is ever resized, delete its
+# entry from this file to force a refetch (see `split_sizes.py`).
+DATASET_SPLIT_SIZES_CACHE: Path = PACKAGE_DIR / "dataset_split_sizes.json"
+
 # Repository root (assumes the package lives at <repo>/src/leaderboards/).
 REPO_ROOT: Path = PACKAGE_DIR.parent.parent
 

@@ -33,6 +33,39 @@ if t.TYPE_CHECKING:
     from .types import FailedInstance, IterationScores
 
 
+def _labels_match(predicted: object, gold: object) -> bool:
+    """Check whether a predicted label (or label sequence) matches the gold one.
+
+    The comparison is case-insensitive, and for token-classification label
+    sequences it is an exact element-wise match. For sequence classification this
+    mirrors the task metric exactly. For token classification the metric is
+    span-based F1 rather than element-wise equality, but failed instances there
+    only arise when JSON parsing fails entirely (so the prediction defaults to all
+    "o"); exact-match then correctly treats an all-"o" prediction against an
+    all-"o" gold as not a failure, which is the intended behaviour.
+
+    Args:
+        predicted:
+            The model's predicted label, or its list of per-token labels.
+        gold:
+            The gold label, or its list of per-token labels.
+
+    Returns:
+        Whether the prediction matches the gold label.
+    """
+    if isinstance(predicted, str) and isinstance(gold, str):
+        return predicted.lower() == gold.lower()
+    if isinstance(predicted, list) and isinstance(gold, list):
+        predicted_norm = [
+            label.lower() if isinstance(label, str) else label for label in predicted
+        ]
+        gold_norm = [
+            label.lower() if isinstance(label, str) else label for label in gold
+        ]
+        return predicted_norm == gold_norm
+    return predicted == gold
+
+
 def generate(
     model: "BenchmarkModule",
     datasets: c.Sequence["DatasetDict"],
@@ -179,6 +212,7 @@ def generate_single_iteration(
         non_cached_dataset = dataset
 
     all_preds: list[str] = list()
+    all_predicted_labels: list[object] = list()
     all_bpc_scores: list[float] = list()
     failed_instances: list["FailedInstance"] = list()
 
@@ -256,7 +290,14 @@ def generate_single_iteration(
                     ]
                 else:
                     model_output.predicted_labels = extracted_labels
+                # Re-key the batch-local failed-instance indices to global indices
+                # (into `all_preds`/`ground_truth`) so we can later check, per
+                # failed sample, whether the fallback label was actually wrong.
+                offset = len(all_preds)
+                for failed_instance in model_output.failed_instances:
+                    failed_instance["sample_index"] += offset
                 all_preds.extend(extracted_labels)
+                all_predicted_labels.extend(model_output.predicted_labels or [])
 
             failed_instances += model_output.failed_instances
 
@@ -312,7 +353,11 @@ def generate_single_iteration(
                     ]
                 else:
                     model_output.predicted_labels = extracted_labels
+            offset = len(all_preds)
+            for failed_instance in model_output.failed_instances:
+                failed_instance["sample_index"] += offset
             all_preds.extend(extracted_labels)
+            all_predicted_labels.extend(model_output.predicted_labels or [])
 
         failed_instances += model_output.failed_instances
 
@@ -379,6 +424,17 @@ def generate_single_iteration(
             )
             return {bpc_metric.name: float("inf"), "failed_instances": failed_instances}
     else:
+        # A sample is only a genuine scoring failure if the fallback label that
+        # was assigned (after no clean label could be parsed) is *also* wrong.
+        # Fallbacks that happen to land on the correct label are not failures, so
+        # we drop them here to keep `num_failed_instances` meaningful.
+        failed_instances = [
+            failed_instance
+            for failed_instance in failed_instances
+            if (idx := failed_instance["sample_index"]) < len(ground_truth)
+            and idx < len(all_predicted_labels)
+            and not _labels_match(all_predicted_labels[idx], ground_truth[idx])
+        ]
         metrics_scores = model.compute_metrics(
             model_outputs_and_labels=(all_preds, ground_truth),
             dataset=dataset,

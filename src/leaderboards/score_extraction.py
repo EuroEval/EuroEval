@@ -10,14 +10,22 @@ from collections import defaultdict
 from euroeval.logging_utils import log_once
 
 from .link_generation import generate_model_url
-from .record_fields import get_raw_results, get_task, get_total_scores, get_version
+from .record_fields import (
+    get_num_failed_instances,
+    get_raw_results,
+    get_task,
+    get_total_scores,
+    get_validation_split,
+    get_version,
+)
 from .records import (
     extract_model_ids_from_record,
     get_dataset,
     get_model_name,
     plain_model_id,
 )
-from .task_metadata import task_metric_names
+from .split_sizes import get_split_sizes
+from .task_metadata import dataset_sources, task_metric_names
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +168,7 @@ def extract_model_metadata(
         # plain version string is sufficient.
         version = get_version(record) or "<9.2.0"
         dataset = get_dataset(record)
+        num_failed = get_num_failed_instances(record)
 
         for model_id in model_ids:
             metadata_dict[model_id].update(
@@ -177,9 +186,77 @@ def extract_model_metadata(
             )
             if dataset:
                 metadata_dict[model_id][f"{dataset}_version"] = version
+                # Failure counts are only meaningful for versions after 17.5.0,
+                # which count genuine scoring failures rather than every label
+                # parsed via the closest-candidate fallback.
+                if num_failed is not None and _failure_counts_are_reliable(version):
+                    metadata_dict[model_id][f"{dataset}_failures"] = num_failed
+                    scored = _scored_count(record=record, dataset=dataset)
+                    if scored is not None:
+                        metadata_dict[model_id][f"{dataset}_scored"] = scored
 
     logger.info("Extracted model metadata.")
     return metadata_dict
+
+
+# Up to and including this version, failure counts included samples that were merely
+# parsed via the closest-candidate fallback (even when the fallback was correct), so
+# they overstate failures. Only releases strictly after 17.5.0 count genuinely-wrong
+# fallbacks, so the gate below is strictly-greater.
+_FAILURE_COUNT_MIN_VERSION = (17, 5, 0)
+
+
+def _failure_counts_are_reliable(version: str | None) -> bool:
+    """Whether a record's EuroEval version reports genuine failure counts.
+
+    Args:
+        version:
+            The EuroEval version string (e.g. ``"17.5.0"``), or None.
+
+    Returns:
+        True if the version is strictly greater than 17.5.0. Releases after 17.5.0
+        are the first whose ``num_failed_instances`` counts only genuinely-wrong
+        fallbacks; 17.5.0 and earlier overcount, so they are excluded.
+    """
+    if not version:
+        return False
+    try:
+        parsed = tuple(int(part) for part in version.split(".")[:3])
+    except ValueError:
+        return False
+    return parsed > _FAILURE_COUNT_MIN_VERSION
+
+
+def _scored_count(record: dict[str, t.Any], dataset: str) -> int | None:
+    """Compute the total number of scored samples for a (model, dataset) eval.
+
+    Failure counts are summed across the bootstrap iterations, so the matching
+    denominator is ``num_iterations * split_size``, where the split is the
+    validation split for validation-split runs and the test split otherwise.
+
+    Args:
+        record:
+            A result record in EEE format.
+        dataset:
+            The dataset name (e.g. ``"conll-nl"``).
+
+    Returns:
+        The total number of scored samples, or None if it cannot be determined.
+    """
+    raw_results = get_raw_results(record)
+    if not raw_results:
+        return None
+    source = dataset_sources().get(dataset)
+    if source is None:
+        return None
+    sizes = get_split_sizes(source)
+    if not sizes:
+        return None
+    split = "val" if get_validation_split(record) else "test"
+    size = sizes.get(split)
+    if size is None:
+        return None
+    return len(raw_results) * size
 
 
 def _to_float_or_nan(val: str | float | int | None) -> float:
