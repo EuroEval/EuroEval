@@ -30,10 +30,9 @@ the model, rather than just the performance on a single test set, which can be n
 
 ## Prompt Structure
 
-To evaluate generative models on the NLU tasks, we rephrase each task as a text-to-text
-task. We set up the prompts differently depending on whether the model is instruction
-tuned or not, as the instruction tuned models require a different prompt structure to
-ensure that they generate the correct output.
+We set up the prompts differently depending on whether the model is instruction tuned or
+not, as the instruction tuned models require a different prompt structure to ensure that
+they generate the correct output.
 
 For the base (i.e., non-instruction tuned) models, we use the following prompt
 structure:
@@ -65,21 +64,24 @@ Here we would use the model's chat template to set up the `USER` and `ASSISTANT`
 of the prompt. See all the specific prompts used for each dataset in the [dataset
 configs module](/src/euroeval/dataset_configs/#euroeval.dataset_configs).
 
-For the sentiment classification task, we simply have the models generate translations
-of the three labels (positive, negative and neutral). For the linguistic acceptability
-task, also a text classification task, we use the translations of "yes" and "no" as the
-two labels, corresponding to whether the document is grammatically correct or not. For
-the extractive question answering task, we have the model output the answer directly.
-For this task we found that changing the label prefix from "Answer" to "Answer in max 3
-words" resulted in a drastic improvement, due to many of the answers of instruction
-tuned models starting with unnecessary text akin to "The answer is". Lastly, for the
-named entity recognition task, we require the output to be a JSON dictionary, with keys
-being the translated named entity tags, and values being lists of named entities of that
-category. To ensure that we are not biasing the evaluation toward models knowing the
-JSON format, we employ structured generation using the
-[XGrammar](https://github.com/mlc-ai/xgrammar) package, which modifies the logits
-outputted by the model to ensure that the output is always a valid JSON dictionary in
-the aforementioned format.
+A few tasks need task-specific handling on top of this template:
+
+- **Sentiment classification:** the models generate translations of the three labels
+  (positive, negative and neutral).
+- **Linguistic acceptability:** also a text classification task, where we use the
+  translations of "yes" and "no" as the two labels, corresponding to whether the document
+  is grammatically correct or not.
+- **Extractive question answering:** the model outputs the answer directly. We found that
+  changing the label prefix from "Answer" to "Answer in max 3 words" gave a drastic
+  improvement, as many instruction-tuned answers otherwise start with unnecessary text
+  like "The answer is".
+- **Named entity recognition:** the output must be a JSON dictionary whose keys are the
+  translated named entity tags and whose values are lists of the named entities in each
+  category. To avoid biasing the evaluation toward models that happen to know the JSON
+  format, we use structured generation via the
+  [XGrammar](https://github.com/mlc-ai/xgrammar) package, which constrains the model's
+  logits so that the output is always a valid JSON dictionary in the aforementioned
+  format.
 
 ## Score Aggregation
 
