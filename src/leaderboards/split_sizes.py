@@ -46,6 +46,8 @@ def get_split_sizes(source: str) -> dict[str, int] | None:
     Args:
         source:
             The Hugging Face dataset id (e.g. ``"EuroEval/conll-nl-mini"``).
+            A ``"repo::config"`` form is supported, matching how datasets are
+            loaded in ``euroeval.data_loading``.
 
     Returns:
         A mapping of split name (e.g. ``"test"``) to the number of examples, or
@@ -55,7 +57,8 @@ def get_split_sizes(source: str) -> dict[str, int] | None:
         return _CACHE[source]
 
     try:
-        builder = load_dataset_builder(source)
+        path, _, config = source.partition("::")
+        builder = load_dataset_builder(path, name=config or None)
         sizes = {name: info.num_examples for name, info in builder.info.splits.items()}
     except Exception as e:  # noqa: BLE001 - the Hub can fail in many ways
         logger.warning(f"Could not fetch split sizes for {source!r}: {e}")

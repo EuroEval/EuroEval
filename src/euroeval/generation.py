@@ -37,9 +37,12 @@ def _labels_match(predicted: object, gold: object) -> bool:
     """Check whether a predicted label (or label sequence) matches the gold one.
 
     The comparison is case-insensitive, and for token-classification label
-    sequences it is an exact element-wise match. This mirrors how the task
-    metrics compare predictions to references, so a "match" here means the
-    sample was scored correctly.
+    sequences it is an exact element-wise match. For sequence classification this
+    mirrors the task metric exactly. For token classification the metric is
+    span-based F1 rather than element-wise equality, but failed instances there
+    only arise when JSON parsing fails entirely (so the prediction defaults to all
+    "o"); exact-match then correctly treats an all-"o" prediction against an
+    all-"o" gold as not a failure, which is the intended behaviour.
 
     Args:
         predicted:

@@ -199,9 +199,10 @@ def extract_model_metadata(
     return metadata_dict
 
 
-# Failure counts before this version included samples that were merely parsed via
-# the closest-candidate fallback (even when the fallback was correct), so they
-# overstate failures and are not surfaced on the leaderboard.
+# Up to and including this version, failure counts included samples that were merely
+# parsed via the closest-candidate fallback (even when the fallback was correct), so
+# they overstate failures. Only releases strictly after 17.5.0 count genuinely-wrong
+# fallbacks, so the gate below is strictly-greater.
 _FAILURE_COUNT_MIN_VERSION = (17, 5, 0)
 
 
@@ -213,8 +214,9 @@ def _failure_counts_are_reliable(version: str | None) -> bool:
             The EuroEval version string (e.g. ``"17.5.0"``), or None.
 
     Returns:
-        True if the version is strictly greater than 17.5.0, the first version
-        whose ``num_failed_instances`` counts only genuinely-wrong fallbacks.
+        True if the version is strictly greater than 17.5.0. Releases after 17.5.0
+        are the first whose ``num_failed_instances`` counts only genuinely-wrong
+        fallbacks; 17.5.0 and earlier overcount, so they are excluded.
     """
     if not version:
         return False
