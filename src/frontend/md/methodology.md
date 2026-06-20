@@ -17,6 +17,26 @@ This page describes the evaluation procedure shared across all tasks. The exact 
 (or metrics) used for each task, along with task-specific details, is described on the
 individual [task pages](/tasks).
 
+## Dataset Preparation
+
+EuroEval does not evaluate on the full source datasets. Each dataset is re-sampled into
+fixed splits — typically 1,024 training, 256 validation and 1,024 or 2,048 test samples —
+so that the same evaluation can be run affordably across many model-and-dataset
+combinations. The exact original and re-sampled split sizes for each dataset are listed on
+its entry in the [dataset overview pages](/datasets). Because of this re-sampling, a
+EuroEval score is not directly comparable to a score reported on the full original
+dataset.
+
+Before re-sampling, samples are filtered by length to remove degenerate or impractically
+large examples and to help the assembled prompt fit within a model's context window. The
+exact thresholds depend on the field being measured, but as a guide documents are kept to
+roughly 2–5,000 characters, question-answering contexts to 30–5,000 characters,
+questions to 10–150 characters, summarization articles to 30–6,000 characters, and
+multiple-choice instructions to 30–2,000 characters with options up to 1,000 characters.
+Highly repetitive samples (a single token repeated more than 50 times) are also dropped.
+These filters are applied before subsampling, so they shape which samples can end up in
+the EuroEval splits.
+
 ## Model Types
 
 EuroEval evaluates several families of models, and the evaluation strategy depends on
