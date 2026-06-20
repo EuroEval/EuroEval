@@ -947,6 +947,7 @@ select.lb-filter option {
 .fail-flag {
   color: var(--color-danger, #b00020);
   font-weight: 700;
+  font-size: 1.15em;
   margin-left: 1px;
 }
 
