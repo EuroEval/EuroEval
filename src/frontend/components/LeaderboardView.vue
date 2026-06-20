@@ -158,7 +158,7 @@ const downloadCsv = async () => {
     <aside class="lb-note" role="note">
       <span class="lb-note-icon" aria-hidden="true">ℹ️</span>
       <p>
-        Scores use fixed <strong>subsets</strong> — click a dataset for splits; hover a score for failure rates (* = ≥10% failed).
+        Scores use fixed <strong>subsets</strong> — click a dataset for splits; hover a score for failure rates (<span class="fail-flag">*</span> = ≥10% failed).
         <router-link to="/faq#why-do-some-model-names-end-in-val"><code>(val)</code></router-link> = validation split.
       </p>
     </aside>
@@ -316,6 +316,12 @@ const downloadCsv = async () => {
 
 .lb-note strong {
   color: var(--color-text);
+}
+
+.lb-note .fail-flag {
+  color: var(--color-danger, #b00020);
+  font-size: 1.15em;
+  font-weight: 700;
 }
 
 .lb-note code {
