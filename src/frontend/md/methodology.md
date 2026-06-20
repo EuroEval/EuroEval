@@ -13,6 +13,28 @@ the task. It [has been shown](https://doi.org/10.48550/arXiv.2309.05858) that th
 approach corresponds to finetuning in the sense of being equivalent to gradient updates
 on the training data, making the two evaluation methodologies comparable.
 
+## Model Types
+
+EuroEval evaluates several families of models, and the evaluation strategy depends on
+the family:
+
+- **Encoder models** (e.g. BERT-style models) are evaluated by finetuning on the task's
+  training data and scoring the test split (see the encoder section below).
+- **Base decoder models** — completion-only models that are not instruction tuned — are
+  evaluated few-shot with a plain completion prompt. They expose token-level
+  log-probabilities, which EuroEval uses to score the classification tasks.
+- **Instruction-tuned decoder models** are evaluated few-shot using the model's own chat
+  template.
+- **Reasoning decoder models** are treated like instruction-tuned models but are given a
+  large thinking budget; their `<think> … </think>` spans are removed before the answer
+  is scored.
+- **Hosted API models** (OpenAI, Anthropic, Google, xAI, and others) are evaluated
+  through their APIs, where the available features (log-probabilities, structured output)
+  depend on the provider.
+
+The model type is detected automatically from the model's configuration and name, and
+can be overridden with the `--generative-type` flag.
+
 ## Robust Evaluation
 
 For each model and dataset, we evaluate the model as described above 10 times, each time
@@ -27,6 +49,29 @@ divided by the square root of the number of samples.
 The bootstrap theorem means that this mean and associated confidence interval will be
 asymptotically correct, giving us a more reliable estimate of the true performance of
 the model, rather than just the performance on a single test set, which can be noisy.
+
+## Encoder Finetuning
+
+Encoder models are finetuned anew for every bootstrap iteration: EuroEval runs ten
+independent finetunes, one per resampled training set, rather than finetuning once and
+re-scoring it ten times. This keeps the encoder scores on the same footing as the
+bootstrapped few-shot scores of the generative models.
+
+Every finetune uses the same model-agnostic recipe:
+
+- **Optimiser:** AdamW with a learning rate of 2e-5.
+- **Schedule:** up to 10,000 steps with a short warmup and early stopping (a patience of
+  two evaluations) on the validation split, restoring the best checkpoint at the end. In
+  practice early stopping almost always halts training long before the step limit.
+- **Batch size:** an effective batch size of roughly 32, reached through gradient
+  accumulation. The per-device batch size is reduced automatically if the GPU runs out of
+  memory, and mixed precision falls back from bf16/fp16 to fp32 if numerical instability
+  (NaNs) is detected.
+- **Reproducibility:** a fixed seed per iteration (4242 plus the iteration index) with
+  deterministic backend flags set.
+
+The validation split is used only for early stopping; the reported score always comes
+from the test split. Inputs longer than the 8,192-token context limit are truncated.
 
 ## Prompt Structure
 
@@ -82,6 +127,35 @@ A few tasks need task-specific handling on top of this template:
   [XGrammar](https://github.com/mlc-ai/xgrammar) package, which constrains the model's
   logits so that the output is always a valid JSON dictionary in the aforementioned
   format.
+
+## Few-shot Evaluation
+
+Generative models are not finetuned. Instead, each test example is preceded by a small
+number of labelled examples drawn from the (bootstrapped) training split — the few-shot
+examples — laid out using the prompt structure above. The number of few-shot examples is
+task-dependent: for instance, twelve for sentiment and linguistic acceptability, five for
+most multiple-choice tasks, and fewer for long-input tasks such as summarisation.
+
+How the few-shot examples are chosen matters:
+
+- For classification tasks they are **label-stratified** — drawn evenly across the labels
+  so that no single class dominates the context.
+- They are **re-sampled for every bootstrap iteration** (with the seed 4242 plus the
+  iteration index), so the particular choice of few-shot examples contributes to the
+  measured variance rather than being a single lucky or unlucky draw.
+- Over-long examples are filtered out so that the assembled prompt fits the context
+  window.
+
+Generation itself uses a few fixed settings:
+
+- **Greedy decoding** (temperature 0) by default, so the output is deterministic given
+  the prompt.
+- A **per-task cap on the number of generated tokens** — a handful for classification,
+  more for question answering and summarisation. Reasoning models are given a much larger
+  budget (8,192 tokens) for their thinking before the answer.
+- A **hard prompt limit of 8,192 tokens.** When a prompt would exceed it, EuroEval first
+  drops few-shot examples one at a time (for instruction-tuned and reasoning models) and
+  only truncates the text itself as a last resort, so the actual question is preserved.
 
 ## Score Aggregation
 
@@ -185,6 +259,27 @@ well the model predicts the entities rather than the JSON format.
 BPC is only supported by the vLLM backend with base decoder models; instruction-tuned
 models raise an error. BPC runs are excluded from official leaderboards, which only
 display standard accuracy scores for consistency.
+
+## Leaderboards
+
+The public leaderboards add a few rules on top of the per-model evaluation described
+above:
+
+- **Model categories.** Each language has a _generative_ leaderboard, covering every
+  task, and an _all models_ leaderboard restricted to the NLU tasks, so that encoder
+  models can be compared on an equal footing. Models also carry metadata — generative
+  type, open vs. closed weights, commercial-use permission, whether the model is a merge,
+  parameter count and context length — which can be filtered on the site.
+- **One result per model.** When several result records exist for the same model and
+  dataset, EuroEval keeps the one produced by the newest framework version and drops
+  validation-split results whenever a test-split result is available, so no model is
+  counted twice.
+- **Orthogonal tasks.** A few evaluations — currently the European values survey — probe
+  a model's values rather than its capabilities. These are reported in their own columns
+  and are deliberately left out of the rank score.
+- **Inference speed.** EuroEval can also measure inference speed (in GPT-2 tokens per
+  second), but speed is reported separately and kept out of the rank score, which
+  reflects quality only.
 
 ## Papers
 
