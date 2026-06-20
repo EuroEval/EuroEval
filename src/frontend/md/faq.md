@@ -182,6 +182,26 @@ isn't publicly available. For instance, a closed model's parameter count or trai
 data is often undisclosed, in which case we mark the corresponding column as `?`
 rather than guessing.
 
+## Are we using the models' full context length?
+
+Yes, evaluations use the full context needed for all samples. We have ensured that all
+datasets (including few-shot examples) fit within an 8k token limit
+([`MAX_CONTEXT_LENGTH`](https://github.com/EuroEval/EuroEval/blob/main/src/euroeval/constants.py)),
+which is effectively the full context for our benchmarks. This limit is specified
+explicitly because vLLM pre-allocates GPU memory for the maximum configured context,
+even if individual samples never approach it. Without this ceiling, vLLM would attempt
+to reserve memory for 200k+ tokens and raise an OOM error. The superficial 8k
+constraint avoids this while not truncating any samples.
+
+## What reasoning mode is used?
+
+Reasoning token budgets are configuration-dependent. We use an 8k token budget for
+reasoning
+([`REASONING_MAX_TOKENS`](https://github.com/EuroEval/EuroEval/blob/main/src/euroeval/constants.py)).
+Labels like "High", "Medium", or "Low" are arbitrary thresholds that vary across
+implementations and can change over time. Our 8k token setting would roughly correspond
+to something like "high" in typical naming schemes.
+
 ## Not finding the answer that you are looking for?
 
 If don't find the answer that you are looking for feel free to ask your question in the
