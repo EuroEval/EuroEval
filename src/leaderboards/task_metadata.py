@@ -15,8 +15,6 @@ A dataset is included in a leaderboard iff:
 
 from __future__ import annotations
 
-import importlib
-import pkgutil
 from collections import OrderedDict
 from functools import cache
 
@@ -199,16 +197,14 @@ def dataset_sources() -> dict[str, str]:
 def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
     """Collect every ``DatasetConfig`` defined in ``euroeval.dataset_configs``.
 
-    Cached because the leaderboard pipeline calls into this module once per
-    language and the set is fixed per process.
+    All built-in configs are re-exported into the ``euroeval.dataset_configs``
+    namespace, so we read them straight off the module. Cached because the
+    leaderboard pipeline calls into this module once per language and the set is
+    fixed per process.
 
     Returns:
-        Every ``DatasetConfig`` found in the lib, in module-discovery order.
+        Every ``DatasetConfig`` exported by the lib.
     """
-    configs: list[DatasetConfig] = []
-    for mod_info in pkgutil.iter_modules(_ds_module.__path__):
-        mod = importlib.import_module(f"euroeval.dataset_configs.{mod_info.name}")
-        for value in vars(mod).values():
-            if isinstance(value, DatasetConfig):
-                configs.append(value)
-    return tuple(configs)
+    return tuple(
+        value for value in vars(_ds_module).values() if isinstance(value, DatasetConfig)
+    )

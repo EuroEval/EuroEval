@@ -18,6 +18,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   (including multiple-choice) and named-entity-recognition tasks; existing records are
   unchanged (the new semantics only apply to evaluations run from this version onwards).
 
+### Fixed
+
+- The Belarusian datasets (`besls`, `scala-be`, `wikiann-be`, `multi-wiki-qa-be` and
+  `be-wsc`) were not included in evaluations by default, because the `belarusian` module
+  was missing from the `euroeval.dataset_configs` package exports. They are now exported
+  alongside the other languages, so they are picked up like any other built-in dataset.
+
 ## [v17.5.0] - 2026-06-19
 
 ### Added
