@@ -94,13 +94,19 @@ def get_num_failed_instances(record: dict) -> int | None:
     for er in eval_results:
         if not isinstance(er, dict):
             continue
-        details = er.get("score_details", {}).get("details", {})
+        score_details = er.get("score_details", {})
+        if not isinstance(score_details, dict):
+            continue
+        details = score_details.get("details", {})
         if not isinstance(details, dict) or "num_failed_instances" not in details:
             continue
         try:
-            return int(float(details["num_failed_instances"]))
+            count = int(float(details["num_failed_instances"]))
         except (TypeError, ValueError):
             continue
+        if count < 0:
+            continue
+        return count
     return None
 
 
