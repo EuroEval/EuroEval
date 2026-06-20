@@ -28,41 +28,12 @@ The bootstrap theorem means that this mean and associated confidence interval wi
 asymptotically correct, giving us a more reliable estimate of the true performance of
 the model, rather than just the performance on a single test set, which can be noisy.
 
-## Formulating NLU Tasks as Generative Tasks
+## Prompt Structure
 
-In this section we describe how we rephrase the NLU tasks as text-to-text tasks, which
-makes it possible to evaluate generative models on the tasks. We set up the prompts
-differently depending on whether the model is instruction tuned or not, as the
-instruction tuned models require a different prompt structure to ensure that they
-generate the correct output.
-
-### Bits-per-Character Scoring
-
-For base decoder models, EuroEval supports bits-per-character (BPC) scoring via the
-`--use-bits-per-character`/`-bpc` flag. This computes the information content of the
-ground-truth answer conditioned on the question. This can be useful to evaluate training
-checkpoints of the models since it gives more granular information, as they typically
-struggle with more complex tasks like multiple-choice classification early in the
-training process, or if they're small.
-
-For multiple-choice tasks, BPC treats the benchmark like text-to-text: the model sees
-a bare-question prompt (no choice options listed) and generates the full answer text.
-We compute `sum(log P(answer_tokens | prompt))` and normalize by character length,
-matching the approach used by Llama and the EleutherAI LM Evaluation Harness.
-
-For other task types, BPC scores the ground-truth answer directly. The one exception is
-named entity recognition (and token classification more broadly), where the answer is a
-serialised JSON dictionary (see below): since most of that string is fixed scaffolding
-(the bracket, brace and key characters) that a model predicts near-perfectly after the
-few-shot examples, we normalise only by the number of characters in the tagged entities
-themselves rather than the full serialised string, so the score reflects how well the
-model predicts the entities rather than the JSON format.
-
-BPC is only supported by the vLLM backend with base decoder models; instruction-tuned
-models raise an error. BPC runs are excluded from official leaderboards, which only
-display standard accuracy scores for consistency.
-
-### Prompt Structure
+To evaluate generative models on the NLU tasks, we rephrase each task as a text-to-text
+task. We set up the prompts differently depending on whether the model is instruction
+tuned or not, as the instruction tuned models require a different prompt structure to
+ensure that they generate the correct output.
 
 For the base (i.e., non-instruction tuned) models, we use the following prompt
 structure:
@@ -112,48 +83,28 @@ the aforementioned format.
 
 ## Score Aggregation
 
-From the raw scores of the 10 evaluations per dataset, we need to aggregate
-the model scores into a single score. We want an aggregation method that satisfies the
-following criteria:
+Each model is evaluated on many datasets spanning several tasks and languages, and we
+need to combine these into a single comparable score. A good aggregation method should
+satisfy the following criteria:
 
-- **Task Fairness:** Each task should be weighted equally.
-- **Comparison:** If we evaluate models in multiple languages, then it should be
-  possible to meaningfully compare the language scores of these models with each other.
-- **Robustness:** If two models do not have a significantly different score on a
-  dataset, then the aggregated score should reflect this.
-- **Magnitude Preservation:** The magnitude of the difference between the dataset score
-  of two models should be reflected in the aggregated score.
-- **Minimal Change:** Adding a new model should minimally affect the aggregated scores
-  of the other models.
+- **Task Fairness:** every task is weighted equally, regardless of metric range or
+  variance.
+- **Comparison:** scores stay meaningful when comparing models across languages.
+- **Robustness:** models that do not differ significantly end up with similar scores.
+- **Magnitude Preservation:** larger gaps between models survive aggregation.
+- **Minimal Change:** adding a new model barely moves the existing models' scores.
 
-Before we introduce our chosen aggregation method, we will briefly discuss some common
-aggregation methods and how they do not satisfy the criteria.
-
-The **mean score** is the most common aggregation method, which would simply be the mean
-of the 10 scores for each dataset, and then the mean of the dataset scores for each
-task. This method does not satisfy the Task Fairness criterion, as it does not take into
-account that metrics have different ranges and variances. The Comparison criterion is
-also not satisfied, as datasets vary from language to language, with some datasets being
-more difficult than others. It _does_, however, satisfy the Robustness, Magnitude
-Preservation and Minimal Change criteria.
-
-The **mean rank** is another common aggregation method, where we compute the rank of
-each model on each dataset, and then take the mean of the ranks. This method satisfies
-the Task Fairness criterion, as it re-casts the scores into a common comparable
-framework, which therefore weights each task equally. For the same reason, it also
-satisfies the Comparison criterion (it is important here that we evaluate all the models
-on all the languages for this to be satisfied). It does not satisfy the Robustness and
-Magnitude Preservation criteria, by definition of rank. It partially satisfies the
-Minimal Change criterion, since it only affects the scores of the models which are worse
-than the new model.
-
-We thus see that the mean score and mean rank methods satisfy a disjoint set of the
-criteria, but that they together satisfy all the criteria. Based on this observation, we
-introduce the **mean rank score** method, defined as follows.
+The two obvious methods each satisfy only part of this. The **mean score** (averaging the
+raw scores) preserves magnitude and robustness, but fails Task Fairness and Comparison,
+since metrics have different ranges and variances and datasets differ in difficulty from
+language to language. The **mean rank** (averaging each model's per-dataset ranks) fixes
+Task Fairness and Comparison by recasting every dataset onto a common scale, but discards
+magnitude and robustness by construction. They satisfy disjoint halves of the criteria,
+so we combine them into the **mean rank score**.
 
 ### Mean rank score
 
-For each dataset _d_ and model _m_, we assign a _dataset rank score_:
+For each dataset _d_ and model _m_ we assign a _dataset rank score_:
 
 ```text
 rank_score(m, d) = 1 + (best_mean_score(d) - mean_score(m, d)) / pooled_std(d)
@@ -161,93 +112,77 @@ rank_score(m, d) = 1 + (best_mean_score(d) - mean_score(m, d)) / pooled_std(d)
 
 Here `mean_score(m, d)` is model _m_'s mean bootstrap score on dataset _d_,
 `best_mean_score(d)` is the highest such mean across all models on _d_, and
-`pooled_std(d)` is the standard deviation of all bootstrap scores from all models on
-_d_. The best model on each dataset therefore gets a rank score of exactly **1**,
-and every other model gets **1 plus the number of pooled standard deviations it
-sits behind the leader**.
+`pooled_std(d)` is the standard deviation of all bootstrap scores from all models on _d_.
+The best model on a dataset therefore scores exactly **1**, and every other model scores
+**1 plus the number of pooled standard deviations it sits behind the leader**. Dividing
+by `pooled_std(d)` places all datasets on a common scale (Task Fairness, Comparison)
+while preserving the size of the gaps between models (Magnitude Preservation).
 
-We then aggregate by taking **unweighted means at each level of the hierarchy**:
+We then aggregate with **unweighted means up the hierarchy** — dataset rank scores into
+a task rank score, task rank scores into a language rank score, and language rank scores
+into the overall mean rank score (shown in the **Rank score** column). Equal weights at
+every level keep each dataset, task, and language equally important, regardless of how
+many of each there happen to be.
 
-- **Task rank score:** mean of the dataset rank scores for that task.
-- **Language rank score:** mean of the task rank scores for that language.
-- **Overall mean rank score:** mean of the language rank scores.
+### Confidence intervals
 
-Each level weights its children equally — every dataset within a task, every task
-within a language, every language overall. This preserves Task Fairness regardless
-of how many datasets a task happens to have or how many tasks a language happens to
-have.
+The leaderboard reports each overall mean rank score as **score ± margin**, where the
+margin is a 95% confidence interval computed by bootstrap resampling rather than by
+propagating analytical error through the nested means:
 
-#### Confidence intervals
+1. **Resample datasets with replacement**, stratified by task (each task's datasets are
+   resampled independently, preserving the task structure).
+2. **Recompute the full hierarchy** — dataset scores, task means, language means, overall
+   mean — for every model.
+3. **Repeat** 100 times and take the 2.5th and 97.5th percentiles as the interval, with
+   the median as the point estimate.
 
-The dataset rank score inherits a 95% confidence interval directly from the
-bootstrap standard error of the underlying mean score, divided by `pooled_std(d)`.
-Because every aggregation step above is an unweighted mean, variances propagate by
-the standard rule:
-
-```text
-Var(mean(x_1, ..., x_n)) = (Var(x_1) + ... + Var(x_n)) / n^2
-```
-
-The leaderboard reports the overall mean rank score (shown in the **Rank
-score** column) as **score ± margin**, where
-the margin is a 95% confidence interval computed via bootstrap resampling.
-
-#### Bootstrap confidence intervals
-
-Rather than propagating analytical error bounds through the nested mean
-structure, we compute the CIs empirically:
-
-1. **Resample datasets with replacement**, stratified by task (each task's
-datasets are resampled independently, preserving the task structure).
-2. **Recompute the full hierarchy** on the resampled datasets — dataset scores,
-task means, language means, overall mean — for every model.
-3. **Repeat** 100 times and collect the distribution of overall scores.
-4. **Take the 2.5th and 97.5th percentiles** as the 95% CI bounds, with the
-median as the point estimate.
-
-This approach respects the hierarchical structure (dataset → task → language →
-overall) and the correlation between models that share datasets. Because both
-models are evaluated on the same resampled datasets, their bootstrap scores are
-correlated, and the difference distribution correctly accounts for this.
-
-#### Why this works
-
-This metric satisfies **Task Fairness** because we normalise every score by the
-dataset's pooled standard deviation and aggregate with equal weights at every level.
-**Magnitude Preservation** holds because the magnitude of the difference between two
-models' dataset scores survives the linear normalisation and the mean aggregation.
-**Comparison** holds because all models are placed on a common scale (same argument as
-the mean rank method). **Robustness** is satisfied by the bootstrap confidence
-intervals on the overall mean rank score: overlapping intervals make near-ties
-immediately visible, and the dense Rank column described below shares a rank between
-any two models whose intervals overlap. **Minimal Change** is partially satisfied —
-adding a new model can shift `pooled_std(d)` and, if it becomes the new leader on
-some dataset, shift `best_mean_score(d)`. Both effects are local to the affected
-dataset(s) and tend to zero as the number of models grows.
+Because every model is scored on the same resampled datasets, the bootstrap correctly
+accounts for the correlation between models that share datasets, which makes near-ties
+visible (Robustness). Adding a model can only shift `pooled_std(d)` and the per-dataset
+leader locally, so its effect on other models is small and shrinks as more models are
+added (Minimal Change).
 
 ### Rank
 
-Alongside the mean rank score the leaderboard shows an integer **Rank** column,
-which is a _dense_ ordinal ranking computed via bootstrap hypothesis testing.
-After sorting the models by overall mean rank score (lower is better), we walk
-down the list and compare each model to the current tie-group anchor using a
-one-sided bootstrap test (α = 0.05):
+Alongside the mean rank score the leaderboard shows an integer **Rank** column — a
+_dense_ ordinal ranking. After sorting the models by overall mean rank score (lower is
+better), we walk down the list and compare each model to its current tie-group anchor
+using a one-sided bootstrap test (α = 0.05) on the **difference** of their overall scores:
 
-- We compute the bootstrap distribution of the **difference** between the anchor's
-and candidate's overall scores (lower = better).
-- If the p-value ≥ 0.05 (the anchor is not significantly better), the candidate
-joins the anchor's tie group and shares its rank.
-- Otherwise, it starts a new tie group with rank one larger than the previous
-group's.
+- If the anchor is not significantly better (p ≥ 0.05), the candidate joins the anchor's
+  tie group and shares its rank.
+- Otherwise, it starts a new tie group with the next rank.
 
-The result is a contiguous **1, 2, 3, …** sequence in which multiple models can
-share 1st place, 2nd place, and so on — there are never gaps after a tie.
+The result is a contiguous **1, 2, 3, …** sequence in which models can share a rank, with
+no gaps after a tie. Because the test reuses the same resampled datasets for both models,
+it properly accounts for their shared-dataset correlation.
 
-The bootstrap test is statistically proper: it uses the same resampled datasets
-for both models, so the difference distribution correctly accounts for the
-correlation induced by shared datasets. This addresses the limitations of the
-previous approaches — the analytical paired t-test (which ignored the hierarchical
-structure) and the CI-overlap heuristic (which was not a formal test).
+## Bits-per-character Scoring
+
+For base decoder models, EuroEval supports bits-per-character (BPC) scoring via the
+`--use-bits-per-character`/`-bpc` flag. This computes the information content of the
+ground-truth answer conditioned on the question. It is useful for evaluating training
+checkpoints, as it gives a more granular signal than the task metrics: small models and
+early checkpoints typically struggle with complex formats like multiple-choice
+classification, where the standard metrics saturate near chance.
+
+For multiple-choice tasks, BPC treats the benchmark like text-to-text: the model sees a
+bare-question prompt (no choice options listed) and is scored on the full answer text. We
+compute `sum(log P(answer_tokens | prompt))` and normalise by character length, matching
+the approach used by Llama and the EleutherAI LM Evaluation Harness.
+
+For other task types, BPC scores the ground-truth answer directly. The one exception is
+named entity recognition (and token classification more broadly), where the answer is a
+serialised JSON dictionary (as described above): since most of that string is fixed
+scaffolding (the bracket, brace and key characters) that a model predicts near-perfectly
+after the few-shot examples, we normalise only by the number of characters in the tagged
+entities themselves rather than the full serialised string, so the score reflects how
+well the model predicts the entities rather than the JSON format.
+
+BPC is only supported by the vLLM backend with base decoder models; instruction-tuned
+models raise an error. BPC runs are excluded from official leaderboards, which only
+display standard accuracy scores for consistency.
 
 ## Papers
 

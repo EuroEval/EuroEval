@@ -33,24 +33,29 @@ missing dependency.
 
 ## Quickstart
 
+The three interfaces below all do the same thing — only the syntax differs. Pick the
+tab that matches how you want to drive EuroEval; the steps and examples line up
+one-to-one.
+
 /// tab | Command line
+
+Benchmark a model on every compatible dataset:
 
 ```bash
 euroeval --model meta-llama/Llama-3.1-8B-Instruct
 ```
 
-That's it. EuroEval picks every dataset compatible with the model (encoder vs decoder,
-generative or not) across every supported language and writes one line per
-(model, dataset) combination to `euroeval_benchmark_results.jsonl` in the current
-directory.
+EuroEval picks every dataset compatible with the model (encoder vs decoder, generative
+or not) across every supported language and writes one line per (model, dataset)
+combination to `euroeval_benchmark_results.jsonl` in the current directory.
 
-Most runs narrow the scope with `--task` and/or `--language`:
+Narrow the scope with `--task` and/or `--language`:
 
 ```bash
 euroeval --model <model-id> --task sentiment-classification --language da
 ```
 
-Any flag can be repeated to fan out:
+Repeat any flag to fan out across models or languages:
 
 ```bash
 euroeval --model gpt-4o-mini --model claude-sonnet-4-5 --language en --language de
@@ -62,51 +67,84 @@ Pin a model revision (branch, tag, or commit) by suffixing `@`:
 euroeval --model <model-id>@<sha>
 ```
 
-For base decoder models, enable bits-per-character (BPC) scoring:
-
-```bash
-euroeval --model <model-id> --use-bits-per-character
-```
-
-BPC computes the information content of the ground-truth answer. For multiple-choice
-tasks, this treats the benchmark like text-to-text: bare question → full answer text.
-BPC is only supported by the vLLM backend. See
-[Evaluation Methodology](/methodology) for details.
-
 Run `euroeval --help` for the complete flag list.
 
 ///
 /// tab | Python
 
+Benchmark a model on every compatible dataset:
+
 ```python
 from euroeval import Benchmarker
 
 benchmarker = Benchmarker()
-results = benchmarker.benchmark(
-    model="meta-llama/Llama-3.1-8B-Instruct",
-    task="sentiment-classification",
-    language="da",
-)
+results = benchmarker.benchmark(model="meta-llama/Llama-3.1-8B-Instruct")
 ```
 
-Every CLI flag maps to a snake_case keyword argument. Omitting `model` benchmarks every
-matching model on the Hugging Face Hub — for example, every Danish model on the Danish
-sentiment task:
+EuroEval picks every dataset compatible with the model (encoder vs decoder, generative
+or not) across every supported language, writes one line per (model, dataset)
+combination to `euroeval_benchmark_results.jsonl`, and returns the results as a list of
+`BenchmarkResult` objects (see [Output format](#output-format-every-eval-ever-eee) for
+the schema).
+
+Narrow the scope with `task` and/or `language`:
 
 ```python
-benchmarker.benchmark(task="sentiment-classification", language="da")
+benchmarker.benchmark(model="<model-id>", task="sentiment-classification", language="da")
 ```
 
-`benchmark()` returns a list of `BenchmarkResult` objects; see
-[Output format](#output-format-every-eval-ever-eee) for the schema.
+Pass a list to fan out across models or languages:
+
+```python
+benchmarker.benchmark(model=["gpt-4o-mini", "claude-sonnet-4-5"], language=["en", "de"])
+```
+
+Pin a model revision (branch, tag, or commit) by suffixing `@`:
+
+```python
+benchmarker.benchmark(model="<model-id>@<sha>")
+```
+
+Every CLI flag maps to a snake_case keyword argument; browse the
+[full API reference](/api) for the complete list.
 
 ///
 /// tab | Docker
 
+Build the image once, then everything after `euroeval` on the `docker run` line is
+passed through as CLI flags:
+
 ```bash
 wget https://raw.githubusercontent.com/EuroEval/EuroEval/main/Dockerfile
 docker build --pull -t euroeval .
-docker run --rm --gpus 1 euroeval --model <model-id>
+```
+
+Benchmark a model on every compatible dataset:
+
+```bash
+docker run --rm --gpus 1 euroeval --model meta-llama/Llama-3.1-8B-Instruct
+```
+
+EuroEval picks every dataset compatible with the model (encoder vs decoder, generative
+or not) across every supported language and writes one line per (model, dataset)
+combination to `euroeval_benchmark_results.jsonl` in the container's working directory.
+
+Narrow the scope with `--task` and/or `--language`:
+
+```bash
+docker run --rm --gpus 1 euroeval --model <model-id> --task sentiment-classification --language da
+```
+
+Repeat any flag to fan out across models or languages:
+
+```bash
+docker run --rm --gpus 1 euroeval --model gpt-4o-mini --model claude-sonnet-4-5 --language en --language de
+```
+
+Pin a model revision (branch, tag, or commit) by suffixing `@`:
+
+```bash
+docker run --rm --gpus 1 euroeval --model <model-id>@<sha>
 ```
 
 Two prerequisites on the host:
@@ -115,8 +153,6 @@ Two prerequisites on the host:
   is installed and configured for Docker.
 - The CUDA version at the top of the `Dockerfile` matches the one reported by
   `nvidia-smi` on the host.
-
-Everything after `euroeval` on the `docker run` line is passed through as CLI flags.
 
 ///
 
@@ -175,6 +211,26 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
 
     This works for both encoder and decoder checkpoints. If you'd rather serve the model
     through an inference server and benchmark over HTTP, see the previous recipe.
+
+??? example "Score a base decoder with bits-per-character (BPC)"
+
+    For base (completion-only) decoder models, bits-per-character scoring measures the
+    information content of the ground-truth answer instead of exact-match accuracy. It is
+    handy for tracking small models or early training checkpoints that cannot yet follow
+    the multiple-choice format, where standard metrics sit near chance. For
+    multiple-choice tasks BPC treats the benchmark as text-to-text (bare question → full
+    answer text). BPC is only supported by the vLLM backend with base decoders; see
+    [Evaluation Methodology](/methodology) for details.
+
+    ```bash
+    euroeval --model <model-id> --use-bits-per-character
+    ```
+
+    The Python equivalent:
+
+    ```python
+    benchmarker.benchmark(model="<model-id>", use_bits_per_character=True)
+    ```
 
 ??? example "Override missing or incorrect model metadata"
 
@@ -267,8 +323,8 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
     df = pd.DataFrame(data.values()).set_index("index").sort_index()
     ```
 
-    See [Detailed model outputs](#detailed-model-outputs) for the full schema and
-    [Failed instances](#failed-instances) for parsing per-iteration failure lists.
+    See [Analysing the results of generative models](#analysing-the-results-of-generative-models)
+    for the full schema and for parsing per-iteration failure lists.
 
 ??? example "Read existing results back into Python"
 
@@ -288,7 +344,8 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
         ]
     ```
 
-## Benchmarking custom datasets
+<details class="md-admonition md-admonition-note" id="benchmarking-custom-datasets">
+<summary class="md-admonition-title">Benchmarking custom datasets</summary>
 
 If you want to benchmark models on your own custom dataset, this is also possible.
 First, you need to set up your dataset to be compatible with EuroEval. This means
@@ -301,8 +358,8 @@ expects these standard column names:
 - **Free-form text generation**: `text` and `target_text`
 
 If your dataset uses different column names, you can specify the mapping via
-`input_column`, `target_column`, and `choices_column` in `DatasetConfig` (see
-[Custom column names](#custom-column-names) below) — no need to rename your columns
+`input_column`, `target_column`, and `choices_column` in `DatasetConfig` (see the
+**Custom column names** subsection below) — no need to rename your columns
 beforehand.
 
 Text and multiple-choice classification tasks are by far the most common. Then you can
@@ -533,7 +590,7 @@ euroeval --dataset EuroEval/test_dataset --model <model-id> --trust-remote-code
 
 ///
 
-### Custom column names
+<h4 id="custom-column-names">Custom column names</h4>
 
 If your dataset uses column names that differ from EuroEval's expected names, you can
 specify a column mapping directly in `DatasetConfig` using the `input_column`,
@@ -639,7 +696,7 @@ your own bespoke dataset:
 
 These can all be imported from `euroeval.tasks` module.
 
-### Creating your own custom task
+<h4 id="creating-your-own-custom-task">Creating your own custom task</h4>
 
 You are of course also free to define your own task from scratch, which allows you to
 customise the prompts used when evaluating generative models, for instance. When
@@ -977,7 +1034,10 @@ With any of these custom tasks you can then benchmark your dataset by running
 euroeval --dataset <dataset-name> --model <model-id>
 ```
 
-## Output format: Every Eval Ever (EEE)
+</details>
+
+<details class="md-admonition md-admonition-note" id="output-format-every-eval-ever-eee">
+<summary class="md-admonition-title">Output format: Every Eval Ever (EEE)</summary>
 
 Each entry written to `euroeval_benchmark_results.jsonl` conforms to the
 [Every Eval Ever (EEE) JSON schema v0.2.1](https://github.com/evaleval/every_eval_ever/blob/main/eval.schema.json),
@@ -1080,9 +1140,12 @@ with open("euroeval_benchmark_results.jsonl") as f:
             result = BenchmarkResult.from_dict(json.loads(line))
 ```
 
-## Analysing the results of generative models
+</details>
 
-### Failed instances
+<details class="md-admonition md-admonition-note" id="analysing-the-results-of-generative-models">
+<summary class="md-admonition-title">Analysing the results of generative models</summary>
+
+<h4 id="failed-instances">Failed instances</h4>
 
 When evaluating a generative model, some samples may fail silently — for example when
 the model's output cannot be parsed as JSON (for NER tasks), or when no valid label can
@@ -1157,7 +1220,7 @@ with open("euroeval_benchmark_results.jsonl") as f:
                     )
 ```
 
-### Detailed model outputs
+<h4 id="detailed-model-outputs">Detailed model outputs</h4>
 
 If you're evaluating a generative model and want to be able to analyse the model results
 more in-depth, you can run your evaluation with the `--debug` flag (or `debug=True` if
@@ -1288,3 +1351,5 @@ these few-shot examples in the `messages` column.
       (...)
     }
     ```
+
+</details>
