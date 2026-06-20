@@ -397,6 +397,12 @@ const TASK_METRIC_NAMES = taskMetricsRaw as Record<string, string[]>;
 const taskSlug = (title: string): string =>
   title.trim().toLowerCase().replace(/\s+/g, "-");
 
+// Index of the model column, used to label score-cell tooltips with the model
+// id (including any "(val)"/"(zero-shot)" suffix carried in the cell text).
+const modelColIndex = computed(() =>
+  props.table.columns.findIndex(isModelCol),
+);
+
 const cellTitle = (
   cell: { text: string },
   col: Column,
@@ -407,19 +413,52 @@ const cellTitle = (
   if (isTypeCol(col)) return TYPE_EMOJI_TOOLTIPS[cell.text];
   if (col.kind === "score" && /±/.test(cell.text)) {
     const parts: string[] = [];
+    const modelId =
+      modelColIndex.value >= 0
+        ? row.cells[modelColIndex.value]?.text
+        : undefined;
+    if (modelId) parts.push(`Model: ${modelId}`);
+    parts.push(`Dataset: ${col.title}`);
     const metrics = TASK_METRIC_NAMES[taskSlug(col.taskTitle)];
-    if (metrics && metrics.length >= 2) parts.push(`${metrics[0]} / ${metrics[1]}`);
-    const failed = row.failures?.[col.key];
-    if (typeof failed === "number") {
+    if (metrics && metrics.length >= 2) parts.push(`Metrics: ${metrics[0]} / ${metrics[1]}`);
+    const rate = failureRate(row, col);
+    if (rate !== null) {
       parts.push(
-        failed === 0
-          ? "No failed answers"
-          : `${failed.toLocaleString()} unparseable answer${failed === 1 ? "" : "s"} (scored as failures)`,
+        rate === 0
+          ? "Failed samples: none"
+          : `Failed samples: ${formatPercent(rate)} (scored as failures)`,
       );
     }
-    return parts.length ? parts.join(" · ") : undefined;
+    const version = row.versions?.[col.key];
+    if (version) parts.push(`EuroEval version: v${version}`);
+    return parts.length ? parts.join("\n") : undefined;
   }
   return undefined;
+};
+
+// Flag a score cell when at least this fraction of generated answers were
+// unparseable (and therefore scored as failures).
+const FAILURE_FLAG_RATIO = 0.1;
+
+/** The fraction of answers that were unparseable for a score cell, or null. */
+const failureRate = (row: Row, col: Column): number | null => {
+  const failed = row.failures?.[col.key];
+  const total = row.scored?.[col.key];
+  if (typeof failed === "number" && typeof total === "number" && total > 0) {
+    return failed / total;
+  }
+  return null;
+};
+
+const showFailureFlag = (row: Row, col: Column): boolean => {
+  const rate = failureRate(row, col);
+  return rate !== null && rate >= FAILURE_FLAG_RATIO;
+};
+
+const formatPercent = (ratio: number): string => {
+  const pct = ratio * 100;
+  if (pct > 0 && pct < 0.1) return "<0.1%";
+  return `${pct.toFixed(1)}%`;
 };
 
 // --- Header grouping ------------------------------------------------------
@@ -644,6 +683,11 @@ const reportBadEval = (modelId: string) => {
                 ⚠
               </button>
               <span v-html="cellDisplayHtml(cell, table.columns[ci])" />
+              <sup
+                v-if="showFailureFlag(row, table.columns[ci])"
+                class="fail-flag"
+                >*</sup
+              >
             </td>
           </tr>
           <tr v-if="pagedRows.length === 0">
@@ -896,6 +940,14 @@ select.lb-filter option {
 
 .cell-rank {
   font-weight: 500;
+}
+
+/* Marks score cells where a large share of answers were unparseable (and thus
+   scored as failures); the exact share is in the cell's hover tooltip. */
+.fail-flag {
+  color: var(--color-danger, #b00020);
+  font-weight: 700;
+  margin-left: 1px;
 }
 
 .filler-row td {

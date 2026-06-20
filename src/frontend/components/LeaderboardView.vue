@@ -158,7 +158,7 @@ const downloadCsv = async () => {
     <aside class="lb-note" role="note">
       <span class="lb-note-icon" aria-hidden="true">ℹ️</span>
       <p>
-        Scores use fixed <strong>subsets</strong> of each benchmark — click a dataset for splits, hover a score for failure counts.
+        Scores use fixed <strong>subsets</strong> — click a dataset for splits; hover a score for failure rates (* = ≥10% failed).
         <router-link to="/faq#why-do-some-model-names-end-in-val"><code>(val)</code></router-link> = validation split.
       </p>
     </aside>

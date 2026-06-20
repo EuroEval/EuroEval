@@ -178,6 +178,24 @@ def official_datasets_for_language(language_name: str) -> OrderedDict[str, list[
 
 
 @cache
+def dataset_sources() -> dict[str, str]:
+    """Map each dataset name to its Hugging Face source id.
+
+    Datasets whose source is not a plain Hugging Face id string (the rare
+    multi-source form) are omitted.
+
+    Returns:
+        A mapping of dataset name (e.g. ``"conll-nl"``) to its source dataset id
+        (e.g. ``"EuroEval/conll-nl-mini"``).
+    """
+    return {
+        cfg.name: cfg.source
+        for cfg in _iter_all_dataset_configs()
+        if isinstance(cfg.source, str)
+    }
+
+
+@cache
 def _iter_all_dataset_configs() -> tuple[DatasetConfig, ...]:
     """Collect every ``DatasetConfig`` defined in ``euroeval.dataset_configs``.
 

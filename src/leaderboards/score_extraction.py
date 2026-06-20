@@ -15,6 +15,7 @@ from .record_fields import (
     get_raw_results,
     get_task,
     get_total_scores,
+    get_validation_split,
     get_version,
 )
 from .records import (
@@ -23,7 +24,8 @@ from .records import (
     get_model_name,
     plain_model_id,
 )
-from .task_metadata import task_metric_names
+from .split_sizes import get_split_sizes
+from .task_metadata import dataset_sources, task_metric_names
 
 logger = logging.getLogger(__name__)
 
@@ -186,9 +188,44 @@ def extract_model_metadata(
                 metadata_dict[model_id][f"{dataset}_version"] = version
                 if num_failed is not None:
                     metadata_dict[model_id][f"{dataset}_failures"] = num_failed
+                    scored = _scored_count(record=record, dataset=dataset)
+                    if scored is not None:
+                        metadata_dict[model_id][f"{dataset}_scored"] = scored
 
     logger.info("Extracted model metadata.")
     return metadata_dict
+
+
+def _scored_count(record: dict[str, t.Any], dataset: str) -> int | None:
+    """Compute the total number of scored samples for a (model, dataset) eval.
+
+    Failure counts are summed across the bootstrap iterations, so the matching
+    denominator is ``num_iterations * split_size``, where the split is the
+    validation split for validation-split runs and the test split otherwise.
+
+    Args:
+        record:
+            A result record in EEE format.
+        dataset:
+            The dataset name (e.g. ``"conll-nl"``).
+
+    Returns:
+        The total number of scored samples, or None if it cannot be determined.
+    """
+    raw_results = get_raw_results(record)
+    if not raw_results:
+        return None
+    source = dataset_sources().get(dataset)
+    if source is None:
+        return None
+    sizes = get_split_sizes(source)
+    if not sizes:
+        return None
+    split = "val" if get_validation_split(record) else "test"
+    size = sizes.get(split)
+    if size is None:
+        return None
+    return len(raw_results) * size
 
 
 def _to_float_or_nan(val: str | float | int | None) -> float:

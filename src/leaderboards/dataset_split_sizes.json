@@ -1,0 +1,1092 @@
+{
+  "EuroEval/allocine-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/angry-tweets-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/atsiliepimai": {
+    "test": 1028,
+    "train": 512,
+    "val": 256
+  },
+  "EuroEval/bg-ner-bsnlp-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/cinexio-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/cnn-dailymail-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/conll-en-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/conll-es-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/conll-nl-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/copa-lv": {
+    "test": 132,
+    "train": 214,
+    "val": 57
+  },
+  "EuroEval/cross-domain-uk-reviews-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/cs-gec-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/csfd-sentiment-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/csfd-sentiment-sk-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/czech-news-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/dacsa-ca-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/danish-citizen-tests-updated": {
+    "test": 525,
+    "train": 345,
+    "val": 90
+  },
+  "EuroEval/dansk-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/danske-talemaader": {
+    "test": 808,
+    "train": 128,
+    "val": 64
+  },
+  "EuroEval/dbrd-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/duidelijke-taal": {
+    "test": 90,
+    "train": 50,
+    "val": 51
+  },
+  "EuroEval/elner-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/eltec-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/err-news-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/estner-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/estonian-valence": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/european-values-da": {
+    "test": 53
+  },
+  "EuroEval/european-values-de": {
+    "test": 53
+  },
+  "EuroEval/european-values-en": {
+    "test": 53
+  },
+  "EuroEval/european-values-es": {
+    "test": 53
+  },
+  "EuroEval/european-values-et": {
+    "test": 53
+  },
+  "EuroEval/european-values-fi": {
+    "test": 53
+  },
+  "EuroEval/european-values-fr": {
+    "test": 53
+  },
+  "EuroEval/european-values-is": {
+    "test": 53
+  },
+  "EuroEval/european-values-it": {
+    "test": 53
+  },
+  "EuroEval/european-values-nl": {
+    "test": 53
+  },
+  "EuroEval/european-values-no": {
+    "test": 53
+  },
+  "EuroEval/european-values-pl": {
+    "test": 53
+  },
+  "EuroEval/european-values-pt": {
+    "test": 53
+  },
+  "EuroEval/european-values-sv": {
+    "test": 53
+  },
+  "EuroEval/exams-bg-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 94
+  },
+  "EuroEval/fone-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/foqa": {
+    "test": 1024,
+    "train": 848,
+    "val": 128
+  },
+  "EuroEval/fosent": {
+    "test": 279,
+    "train": 72,
+    "val": 40
+  },
+  "EuroEval/fquad-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/fullstack-ner-lv-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/germanquad-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/germeval-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/global-mmlu-el-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/global-mmlu-lite-sq": {
+    "test": 404,
+    "train": 128,
+    "val": 64
+  },
+  "EuroEval/global-mmlu-ro-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/global-mmlu-uk-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/goldenswag-pt-mini": {
+    "test": 2048,
+    "train": 672,
+    "val": 256
+  },
+  "EuroEval/grammar-et": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/greek-sa-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/greek-wikipedia-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/guia-cat-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/harem": {
+    "test": 846,
+    "train": 845,
+    "val": 211
+  },
+  "EuroEval/hellaswag-cs-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/hellaswag-da-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/hellaswag-de-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/hellaswag-es-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/hellaswag-fi-mini": {
+    "test": 1663,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/hellaswag-fr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/hellaswag-it-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/hellaswag-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/hellaswag-nl-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/hellaswag-sv-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/hotter-and-colder-sentiment": {
+    "test": 1607,
+    "train": 1021,
+    "val": 255
+  },
+  "EuroEval/hun-sum-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/husst-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/icelandic-knowledge": {
+    "test": 1024,
+    "train": 842,
+    "val": 128
+  },
+  "EuroEval/idioms-no": {
+    "test": 2048,
+    "train": 928,
+    "val": 256
+  },
+  "EuroEval/ilpost-sum": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/kpwr-ner": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/latvian-twitter-sentiment-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/life-in-the-uk": {
+    "test": 512,
+    "train": 438,
+    "val": 256
+  },
+  "EuroEval/llmzszl-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/lr-sum-bs-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/lr-sum-sq-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/lr-sum-sr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/lr-sum-uk-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/lrytas-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/lsm-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/lt-history": {
+    "test": 463,
+    "train": 64,
+    "val": 32
+  },
+  "EuroEval/mim-gold-ner-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mlqa-es": {
+    "test": 2024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mlsum-es-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mlsum-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-ca-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-de-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-es-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-fr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-hr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-hu-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-it-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-lv-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-nl-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-pt-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-sk-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-sl-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-sr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-sv-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mms-bs-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mms-hr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mms-sq-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mms-sr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-bg-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-bs-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-ca-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-da-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-el-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-et-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-hr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-hu-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-lt-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-lv-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-pt-pt-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-ro-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-sk-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-sl-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-sq-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-sr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-sv-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multi-wiki-qa-uk-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/multinerd-mini-it": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/ner-uk-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/no-sammendrag-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/nor-common-sense-qa": {
+    "test": 851,
+    "train": 128,
+    "val": 64
+  },
+  "EuroEval/nordjylland-news-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/norec-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/norne-nb-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/norne-nn-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/norquad-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/nqii-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/nrk-quiz-qa-mini": {
+    "test": 2048,
+    "train": 635,
+    "val": 256
+  },
+  "EuroEval/orange-sum-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/polemo2-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/poner-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/poquad-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/psc-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/publico-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/ro-sent-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/ronec-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/rrn-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/sb10k-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-bg": {
+    "full_train": 13198,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-ca": {
+    "full_train": 27964,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-da": {
+    "full_train": 5352,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-de": {
+    "full_train": 26026,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-el": {
+    "full_train": 1126,
+    "test": 512,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-en": {
+    "full_train": 16432,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-es": {
+    "full_train": 27648,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-fi": {
+    "full_train": 15930,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-fo": {
+    "full_train": 1148,
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-fr": {
+    "full_train": 28844,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-hr": {
+    "full_train": 12672,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-hu": {
+    "full_train": 1806,
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-is": {
+    "full_train": 4008,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-it": {
+    "full_train": 20732,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-lt": {
+    "full_train": 2806,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-lv": {
+    "full_train": 24804,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-nb": {
+    "full_train": 25908,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-nl": {
+    "full_train": 18110,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-nn": {
+    "full_train": 22768,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-pl": {
+    "full_train": 1674,
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-pt": {
+    "full_train": 5754,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-ro": {
+    "full_train": 14090,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-sk": {
+    "full_train": 9082,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-sl": {
+    "full_train": 20360,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-sq": {
+    "full_train": 128,
+    "test": 210,
+    "train": 128,
+    "val": 64
+  },
+  "EuroEval/scala-sr": {
+    "full_train": 4564,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-sv": {
+    "full_train": 7438,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-uk": {
+    "full_train": 4022,
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scandisent-fi-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/sentiment-headlines-es": {
+    "test": 1024,
+    "train": 861,
+    "val": 256
+  },
+  "EuroEval/sentinews-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/sentipolc16-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/sqad-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/squad-it-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/squad-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/squad-nl-v2-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/ssj500k-ner-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/sst2-pt-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/sst5-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/suc3-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/sumo-ro-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/swedn-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/swerec-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/szeged-ner": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/trivia-et": {
+    "test": 500,
+    "train": 240,
+    "val": 60
+  },
+  "EuroEval/turku-ner-fi-mini": {
+    "test": 1555,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/tydiqa-fi-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/umimeto-qa": {
+    "test": 636,
+    "train": 32,
+    "val": 32
+  },
+  "EuroEval/uner-sk-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/uner-sr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/wiki-lingua-nl-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/wikiann-bs-mini": {
+    "test": 1000,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/wikiann-ca-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/wikiann-hr-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/wikiann-lt-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/wikiann-sq-mini": {
+    "test": 1000,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/winogrande-bg": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-ca": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-el": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-et": {
+    "test": 1767,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/winogrande-hr": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-hu": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-is": {
+    "test": 896,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/winogrande-lt": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-pl": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-ro": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-sk": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-sl": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-sq": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-sr": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-uk": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/xlsum-fi-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  }
+}
