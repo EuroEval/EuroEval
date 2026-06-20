@@ -13,6 +13,10 @@ the task. It [has been shown](https://doi.org/10.48550/arXiv.2309.05858) that th
 approach corresponds to finetuning in the sense of being equivalent to gradient updates
 on the training data, making the two evaluation methodologies comparable.
 
+This page describes the evaluation procedure shared across all tasks. The exact metric
+(or metrics) used for each task, along with task-specific details, is described on the
+individual [task pages](/tasks).
+
 ## Model Types
 
 EuroEval evaluates several families of models, and the evaluation strategy depends on
