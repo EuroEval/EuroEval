@@ -403,6 +403,20 @@ const modelColIndex = computed(() =>
   props.table.columns.findIndex(isModelCol),
 );
 
+/** Build list of dataset titles with failure rates ≥10%. */
+const getHighFailureDatasets = (row: Row): string[] => {
+  const datasets: string[] = [];
+  for (const colIndex of props.table.columns.keys()) {
+    const c = props.table.columns[colIndex];
+    if (c.kind !== "score") continue;
+    const rate = failureRate(row, c);
+    if (rate !== null && rate >= FAILURE_FLAG_RATIO) {
+      datasets.push(c.title);
+    }
+  }
+  return datasets;
+};
+
 const cellTitle = (
   cell: { text: string },
   col: Column,
@@ -411,6 +425,20 @@ const cellTitle = (
 ): string | undefined => {
   if (ci === 0) return cell.text;
   if (isTypeCol(col)) return TYPE_EMOJI_TOOLTIPS[cell.text];
+  // Rank score column shows model ID and datasets with high failure rates.
+  if (isRankScoreCol(col)) {
+    const modelId =
+      modelColIndex.value >= 0
+        ? row.cells[modelColIndex.value]?.text
+        : undefined;
+    if (!modelId) return undefined;
+    const parts: string[] = [ `Model: ${modelIdFromCell(modelId)}` ];
+    const highFailureDatasets = getHighFailureDatasets(row);
+    if (highFailureDatasets.length > 0) {
+      parts.push(`Datasets with ≥10% errors: ${highFailureDatasets.join(", ")}`);
+    }
+    return parts.join("\n");
+  }
   if (col.kind === "score" && /±/.test(cell.text)) {
     const parts: string[] = [];
     const modelId =
@@ -418,18 +446,33 @@ const cellTitle = (
         ? row.cells[modelColIndex.value]?.text
         : undefined;
     if (modelId) parts.push(`Model: ${modelId}`);
-    parts.push(`Dataset: ${col.title}`);
+    // On multilingual leaderboards (heatmapScoreCols), the columns are
+    // per-language aggregates, not individual datasets.
+    const isLanguageCol = props.heatmapScoreCols && col.kind === "score";
+    parts.push(`${isLanguageCol ? "Language" : "Dataset"}: ${col.title}`);
     const metrics = TASK_METRIC_NAMES[taskSlug(col.taskTitle)];
     if (metrics && metrics.length >= 2) parts.push(`Metrics: ${metrics[0]} / ${metrics[1]}`);
+    const version = row.versions?.[col.key];
     const rate = failureRate(row, col);
     if (rate !== null) {
+      // For EuroEval versions up to v17.5.0, the failure count includes
+      // samples where the fallback label was used, even when that fallback
+      // produced the correct answer. Newer versions only count genuine
+      // scoring failures.
+      const versionNum = version ? parseVersion(version) : null;
+      const isOldSemantics =
+        versionNum !== null &&
+        versionNum.major < 18 &&
+        (versionNum.major < 17 || versionNum.minor <= 5);
+      const caveat = isOldSemantics
+        ? " (includes recoverable errors)"
+        : "";
       parts.push(
         rate === 0
           ? "Failed samples: none"
-          : `Failed samples: ${formatPercent(rate)} (scored as failures)`,
+          : `Failed samples: ${formatPercent(rate)} (scored as failures${caveat})`,
       );
     }
-    const version = row.versions?.[col.key];
     if (version) parts.push(`EuroEval version: v${version}`);
     return parts.length ? parts.join("\n") : undefined;
   }
@@ -455,10 +498,35 @@ const showFailureFlag = (row: Row, col: Column): boolean => {
   return rate !== null && rate >= FAILURE_FLAG_RATIO;
 };
 
+/** Check if ANY score column in the row has a failure rate ≥10%. */
+const hasAnyFailureFlag = (row: Row): boolean => {
+  for (const key of Object.keys(row.failures ?? {})) {
+    const rate = failureRate(row, { key } as Column);
+    if (rate !== null && rate >= FAILURE_FLAG_RATIO) {
+      return true;
+    }
+  }
+  return false;
+};
+
 const formatPercent = (ratio: number): string => {
   const pct = ratio * 100;
   if (pct > 0 && pct < 0.1) return "<0.1%";
   return `${pct.toFixed(1)}%`;
+};
+
+interface Version {
+  major: number;
+  minor: number;
+}
+
+const parseVersion = (version: string): Version | null => {
+  const match = /^v?(\d+)\.(\d+)/.exec(version);
+  if (!match) return null;
+  return {
+    major: parseInt(match[1], 10),
+    minor: parseInt(match[2], 10),
+  };
 };
 
 // --- Header grouping ------------------------------------------------------
@@ -684,7 +752,10 @@ const reportBadEval = (modelId: string) => {
               </button>
               <span v-html="cellDisplayHtml(cell, table.columns[ci])" />
               <sup
-                v-if="showFailureFlag(row, table.columns[ci])"
+                v-if="
+                  showFailureFlag(row, table.columns[ci]) ||
+                  (isRankScoreCol(table.columns[ci]) && hasAnyFailureFlag(row))
+                "
                 class="fail-flag"
                 >*</sup
               >
