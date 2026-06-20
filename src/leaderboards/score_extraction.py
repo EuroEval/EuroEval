@@ -186,7 +186,10 @@ def extract_model_metadata(
             )
             if dataset:
                 metadata_dict[model_id][f"{dataset}_version"] = version
-                if num_failed is not None:
+                # Failure counts are only meaningful for versions after 17.5.0,
+                # which count genuine scoring failures rather than every label
+                # parsed via the closest-candidate fallback.
+                if num_failed is not None and _failure_counts_are_reliable(version):
                     metadata_dict[model_id][f"{dataset}_failures"] = num_failed
                     scored = _scored_count(record=record, dataset=dataset)
                     if scored is not None:
@@ -194,6 +197,32 @@ def extract_model_metadata(
 
     logger.info("Extracted model metadata.")
     return metadata_dict
+
+
+# Failure counts before this version included samples that were merely parsed via
+# the closest-candidate fallback (even when the fallback was correct), so they
+# overstate failures and are not surfaced on the leaderboard.
+_FAILURE_COUNT_MIN_VERSION = (17, 5, 0)
+
+
+def _failure_counts_are_reliable(version: str | None) -> bool:
+    """Whether a record's EuroEval version reports genuine failure counts.
+
+    Args:
+        version:
+            The EuroEval version string (e.g. ``"17.5.0"``), or None.
+
+    Returns:
+        True if the version is strictly greater than 17.5.0, the first version
+        whose ``num_failed_instances`` counts only genuinely-wrong fallbacks.
+    """
+    if not version:
+        return False
+    try:
+        parsed = tuple(int(part) for part in version.split(".")[:3])
+    except ValueError:
+        return False
+    return parsed > _FAILURE_COUNT_MIN_VERSION
 
 
 def _scored_count(record: dict[str, t.Any], dataset: str) -> int | None:
