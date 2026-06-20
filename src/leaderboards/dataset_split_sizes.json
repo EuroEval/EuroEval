@@ -9,12 +9,62 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/arc-da-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/arc-de-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/arc-is-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/arc-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/arc-nl-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/arc-no-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/arc-sv-mini": {
+    "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/atsiliepimai": {
     "test": 1028,
     "train": 512,
     "val": 256
   },
+  "EuroEval/belebele-da-mini": {
+    "test": 580,
+    "train": 256,
+    "val": 64
+  },
+  "EuroEval/bfcl-v2": {
+    "test": 2001,
+    "train": 250,
+    "val": 250
+  },
   "EuroEval/bg-ner-bsnlp-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/boolq-pt": {
     "test": 2048,
     "train": 1024,
     "val": 256
@@ -79,10 +129,34 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/dameta": {
+    "test": 723,
+    "train": 64,
+    "val": 128
+  },
+  "EuroEval/dane-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/danish-citizen-tests-updated": {
     "test": 525,
     "train": 345,
     "val": 90
+  },
+  "EuroEval/danish-entailment": {
+    "test": 286,
+    "train": 32
+  },
+  "EuroEval/danish-lexical-inference": {
+    "test": 828,
+    "train": 128,
+    "val": 64
+  },
+  "EuroEval/danish-sentiment-in-context": {
+    "test": 719,
+    "train": 256,
+    "val": 64
   },
   "EuroEval/dansk-mini": {
     "test": 1024,
@@ -93,6 +167,11 @@
     "test": 808,
     "train": 128,
     "val": 64
+  },
+  "EuroEval/danwic": {
+    "test": 916,
+    "train": 1024,
+    "val": 256
   },
   "EuroEval/dbrd-mini": {
     "test": 2048,
@@ -171,6 +250,11 @@
   "EuroEval/european-values-sv": {
     "test": 53
   },
+  "EuroEval/exam-et": {
+    "test": 896,
+    "train": 512,
+    "val": 64
+  },
   "EuroEval/exams-bg-mini": {
     "test": 2048,
     "train": 1024,
@@ -197,6 +281,12 @@
     "val": 256
   },
   "EuroEval/fullstack-ner-lv-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/gerlangmod-da": {
+    "full_train": 2734,
     "test": 2048,
     "train": 1024,
     "val": 256
@@ -229,6 +319,11 @@
   "EuroEval/global-mmlu-uk-mini": {
     "test": 2048,
     "train": 1024,
+    "val": 256
+  },
+  "EuroEval/goldenswag-da-mini": {
+    "test": 2048,
+    "train": 666,
     "val": 256
   },
   "EuroEval/goldenswag-pt-mini": {
@@ -291,6 +386,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/hellaswag-is-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/hellaswag-it-mini": {
     "test": 2048,
     "train": 1024,
@@ -302,6 +402,11 @@
     "val": 256
   },
   "EuroEval/hellaswag-nl-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/hellaswag-no-mini": {
     "test": 2048,
     "train": 1024,
     "val": 256
@@ -336,6 +441,45 @@
     "train": 928,
     "val": 256
   },
+  "EuroEval/ifeval-ca": {
+    "test": 541
+  },
+  "EuroEval/ifeval-da": {
+    "test": 541
+  },
+  "EuroEval/ifeval-de": {
+    "test": 541
+  },
+  "EuroEval/ifeval-el": {
+    "test": 541
+  },
+  "EuroEval/ifeval-en": {
+    "test": 541
+  },
+  "EuroEval/ifeval-es": {
+    "test": 541
+  },
+  "EuroEval/ifeval-et": {
+    "test": 541
+  },
+  "EuroEval/ifeval-fi": {
+    "test": 541
+  },
+  "EuroEval/ifeval-fr": {
+    "test": 235
+  },
+  "EuroEval/ifeval-it": {
+    "test": 541
+  },
+  "EuroEval/ifeval-pt": {
+    "test": 524
+  },
+  "EuroEval/ifeval-sv": {
+    "test": 541
+  },
+  "EuroEval/ifeval-uk": {
+    "test": 541
+  },
   "EuroEval/ilpost-sum": {
     "test": 2048,
     "train": 1024,
@@ -354,6 +498,11 @@
   "EuroEval/life-in-the-uk": {
     "test": 512,
     "train": 438,
+    "val": 256
+  },
+  "EuroEval/lithuanian-emotions-mini": {
+    "test": 2048,
+    "train": 1024,
     "val": 256
   },
   "EuroEval/llmzszl-mini": {
@@ -396,6 +545,10 @@
     "train": 64,
     "val": 32
   },
+  "EuroEval/mbbq-nl": {
+    "test": 2044,
+    "val": 255
+  },
   "EuroEval/mim-gold-ner-mini": {
     "test": 2048,
     "train": 1024,
@@ -417,6 +570,11 @@
     "val": 256
   },
   "EuroEval/mmlu-ca-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-da-mini": {
     "test": 2048,
     "train": 1024,
     "val": 256
@@ -446,6 +604,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/mmlu-is-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/mmlu-it-mini": {
     "test": 2048,
     "train": 1024,
@@ -456,7 +619,17 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/mmlu-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/mmlu-nl-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/mmlu-no-mini": {
     "test": 2048,
     "train": 1024,
     "val": 256
@@ -869,6 +1042,16 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/scandiqa-da-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scandiqa-sv-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/scandisent-fi-mini": {
     "test": 2048,
     "train": 1024,
@@ -994,6 +1177,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/wikiann-fo-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/wikiann-hr-mini": {
     "test": 2048,
     "train": 1024,
@@ -1015,6 +1203,11 @@
     "val": 128
   },
   "EuroEval/winogrande-ca": {
+    "test": 1085,
+    "train": 47,
+    "val": 128
+  },
+  "EuroEval/winogrande-da": {
     "test": 1085,
     "train": 47,
     "val": 128
@@ -1084,7 +1277,18 @@
     "train": 47,
     "val": 128
   },
+  "EuroEval/wmt24pp-en-da": {
+    "test": 768,
+    "train": 64,
+    "val": 128
+  },
   "EuroEval/xlsum-fi-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "giannor/dala": {
+    "full_train": 5352,
     "test": 2048,
     "train": 1024,
     "val": 256

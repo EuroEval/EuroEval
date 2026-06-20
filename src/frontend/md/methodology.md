@@ -20,10 +20,11 @@ individual [task pages](/tasks).
 ## Dataset Preparation
 
 EuroEval does not evaluate on the full source datasets. Each dataset is re-sampled into
-fixed splits — typically 1,024 training, 256 validation and 1,024 or 2,048 test samples —
-so that the same evaluation can be run affordably across many model-and-dataset
-combinations. The exact original and re-sampled split sizes for each dataset are listed on
-its entry in the [dataset overview pages](/datasets). Because of this re-sampling, a
+fixed splits — typically 1,024 training, 256 validation and 1,024 or 2,048 test
+samples — so that the same evaluation can be run affordably across many
+model-and-dataset combinations. The exact original and re-sampled split sizes for each
+dataset are listed on its entry in the [dataset overview pages](/datasets). Because of
+this re-sampling, a
 EuroEval score is not directly comparable to a score reported on the full original
 dataset.
 
@@ -152,6 +153,23 @@ A few tasks need task-specific handling on top of this template:
   logits so that the output is always a valid JSON dictionary in the aforementioned
   format.
 
+## Label Extraction and Scoring Failures
+
+For classification and named-entity-recognition tasks the model produces free text,
+which we map to a label before scoring. We first look for a clean match — an exact or
+prefix match against the candidate labels (or, for NER, a valid JSON dictionary) — and
+only if that fails do we fall back to the closest candidate label by word edit distance.
+This fallback lets a model still be scored when its output is slightly malformed (extra
+words, different casing, reasoning before the answer).
+
+We record a sample as a **failed instance** only when no clean label could be parsed
+*and* the fallback label is also wrong. In other words, the count reflects genuine
+scoring failures, not merely outputs that needed the fallback: a model whose messy
+outputs are nonetheless mapped to the correct label is not penalised, and is not counted
+as failed. On the per-language leaderboards, a dataset score is flagged with a red
+asterisk when at least 10% of its samples were genuine failures, so a high failure rate
+alongside a low score signals that the score is unreliable rather than simply hard-won.
+
 ## Few-shot Evaluation
 
 Generative models are not finetuned. Instead, each test example is preceded by a small
@@ -204,15 +222,15 @@ so we combine them into the **mean rank score**.
 
 ### Mean rank score
 
-For each dataset _d_ and model _m_ we assign a _dataset rank score_:
+For each dataset *d* and model *m* we assign a *dataset rank score*:
 
 ```text
 rank_score(m, d) = 1 + (best_mean_score(d) - mean_score(m, d)) / pooled_std(d)
 ```
 
-Here `mean_score(m, d)` is model _m_'s mean bootstrap score on dataset _d_,
-`best_mean_score(d)` is the highest such mean across all models on _d_, and
-`pooled_std(d)` is the standard deviation of all bootstrap scores from all models on _d_.
+Here `mean_score(m, d)` is model *m*'s mean bootstrap score on dataset *d*,
+`best_mean_score(d)` is the highest such mean across all models on *d*, and
+`pooled_std(d)` is the standard deviation of all bootstrap scores from all models on *d*.
 The best model on a dataset therefore scores exactly **1**, and every other model scores
 **1 plus the number of pooled standard deviations it sits behind the leader**. Dividing
 by `pooled_std(d)` places all datasets on a common scale (Task Fairness, Comparison)
@@ -246,7 +264,7 @@ added (Minimal Change).
 ### Rank
 
 Alongside the mean rank score the leaderboard shows an integer **Rank** column — a
-_dense_ ordinal ranking. After sorting the models by overall mean rank score (lower is
+*dense* ordinal ranking. After sorting the models by overall mean rank score (lower is
 better), we walk down the list and compare each model to its current tie-group anchor
 using a one-sided bootstrap test (α = 0.05) on the **difference** of their overall scores:
 
@@ -289,8 +307,8 @@ display standard accuracy scores for consistency.
 The public leaderboards add a few rules on top of the per-model evaluation described
 above:
 
-- **Model categories.** Each language has a _generative_ leaderboard, covering every
-  task, and an _all models_ leaderboard restricted to the NLU tasks, so that encoder
+- **Model categories.** Each language has a *generative* leaderboard, covering every
+  task, and an *all models* leaderboard restricted to the NLU tasks, so that encoder
   models can be compared on an equal footing. Models also carry metadata — generative
   type, open vs. closed weights, commercial-use permission, whether the model is a merge,
   parameter count and context length — which can be filtered on the site.
