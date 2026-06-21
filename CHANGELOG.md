@@ -24,9 +24,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `be-wsc`) were not included in evaluations by default, because the `belarusian` module
   was missing from the `euroeval.dataset_configs` package exports. They are now exported
   alongside the other languages, so they are picked up like any other built-in dataset.
-- Added `runner_type="generate"` parameter to the vLLM `LLM` constructor to fix the
-  `"LLM.generate() is only supported for generative models"` error when evaluating base
-  generative models such as `norallm/norbloom-7b-scratch`.
 - Fixed vLLM backend failing with "LLM.generate() is only supported for generative models"
   when evaluating base generative models (e.g. `norallm/norbloom-7b-scratch`). The vLLM
   `LLM` constructor now explicitly sets `runner_type="generate"` to enable the generation
