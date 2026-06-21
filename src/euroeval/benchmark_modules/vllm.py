@@ -127,8 +127,6 @@ from ..bpc_scoring import compute_bpc_scores_for_vllm_outputs
 # (Gemma4TextForCausalLM).  vLLM only registers the former, so we remap here.
 _ARCHITECTURE_ALIASES: dict[str, str] = {
     "Gemma4TextForCausalLM": "Gemma4ForCausalLM",
-    # Mistral3 uses a multimodal architecture class but EuroEval only needs text
-    "Mistral3ForConditionalGeneration": "Mistral3ForConditionalGeneration",
 }
 
 
@@ -1525,8 +1523,10 @@ def load_model(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
-            # Disable multimodal inputs for text-only inference
-            limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
+            # Disable multimodal inputs for text-only inference.
+        # Note: Mistral3 uses a multimodal architecture class butEuroEval only needs
+        # text inference, so we disable multimodal initialisation.
+        limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
             **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
             **vllm_params,
         )
@@ -1554,7 +1554,8 @@ def load_model(
                     f"The model {model_id!r} could not be loaded. The error was "
                     f"{retry_e!r}."
                 ) from retry_e
-        # Catch multimodal budget errors for text-only inference on multimodal models
+        # Catch multimodal budget errors for text-only inference on multimodal models.
+        # Note: These patterns may need updating as vLLM evolves its error messages.
         elif any(
             pattern in error_str
             for pattern in [

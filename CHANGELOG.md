@@ -24,6 +24,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `be-wsc`) were not included in evaluations by default, because the `belarusian` module
   was missing from the `euroeval.dataset_configs` package exports. They are now exported
   alongside the other languages, so they are picked up like any other built-in dataset.
+- Fixed vLLM loading of Mistral3 models for text-only inference. Models with multimodal
+  architectures (e.g. `Mistral3ForConditionalGeneration`) that raised multimodal budget
+  errors during initialisation are now automatically retried with multimodal inputs
+  disabled.
 
 ## [v17.5.0] - 2026-06-19
 
