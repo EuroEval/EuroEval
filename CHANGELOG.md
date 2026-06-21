@@ -24,7 +24,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `be-wsc`) were not included in evaluations by default, because the `belarusian` module
   was missing from the `euroeval.dataset_configs` package exports. They are now exported
   alongside the other languages, so they are picked up like any other built-in dataset.
-- Fixed an `AttributeError` when using custom tokenizers with `batch_decode`. The method
+- Fixed an `AttributeError` when using custom tokenisers with `batch_decode`. The method
   now falls back to individual `decode` calls if `batch_decode` is not available. This
   affected models such as `openGPT-X/Teuken-7B-base-v0.6`.
 
