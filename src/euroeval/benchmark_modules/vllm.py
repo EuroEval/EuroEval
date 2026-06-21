@@ -1966,7 +1966,7 @@ def get_vllm_tokenisation_params(
 
 
 def _safe_batch_decode(
-    tokenizer: Tokeniser, sequences: list[list[int]], skip_special_tokens: bool
+    tokeniser: Tokeniser, sequences: list[list[int]], skip_special_tokens: bool
 ) -> list[str]:
     """Safely decode sequences of token IDs using batch_decode or individual decode.
 
@@ -1975,8 +1975,8 @@ def _safe_batch_decode(
     batch_decode), falls back to calling decode for each sequence individually.
 
     Args:
-        tokenizer:
-            The tokenizer to use for decoding.
+        tokeniser:
+            The tokeniser to use for decoding.
         sequences:
             List of token ID sequences to decode.
         skip_special_tokens:
@@ -1986,17 +1986,17 @@ def _safe_batch_decode(
         List of decoded strings.
     """
     try:
-        return tokenizer.batch_decode(
+        return tokeniser.batch_decode(
             sequences, skip_special_tokens=skip_special_tokens
         )
     except AttributeError:
         log_once(
-            "Tokenizer does not support batch_decode, falling back to individual "
+            "Tokeniser does not support batch_decode, falling back to individual "
             "decode calls",
             level=logging.WARNING,
         )
         return [
-            t.cast(str, tokenizer.decode(seq, skip_special_tokens=skip_special_tokens))
+            t.cast(str, tokeniser.decode(seq, skip_special_tokens=skip_special_tokens))
             for seq in sequences
         ]
 
