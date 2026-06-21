@@ -136,6 +136,9 @@ def _skip_image_processor_context() -> c.Generator[None, None, None]:
     but are released without the preprocessor_config.json that transformers needs to
     load the image processor.  Since EuroEval only does text inference, we can safely
     return None for the image processor and let vLLM load the text backbone normally.
+
+    This context manager also sets environment flags to instruct vLLM to skip
+    multimodal initialisation.
     """
     original_func = AutoImageProcessor.from_pretrained.__func__
 
@@ -153,10 +156,19 @@ def _skip_image_processor_context() -> c.Generator[None, None, None]:
             raise
 
     AutoImageProcessor.from_pretrained = patched  # ty: ignore[invalid-assignment]
+
+    # Set environment flags to tell vLLM to skip multimodal initialisation
+    original_mm_limit = os.environ.get("VLLM_LIMIT_MM_PER_PROMPT")
+    os.environ["VLLM_LIMIT_MM_PER_PROMPT"] = "0"
+
     try:
         yield
     finally:
         AutoImageProcessor.from_pretrained = classmethod(original_func)  # ty: ignore[invalid-assignment]
+        if original_mm_limit is not None:
+            os.environ["VLLM_LIMIT_MM_PER_PROMPT"] = original_mm_limit
+        else:
+            os.environ.pop("VLLM_LIMIT_MM_PER_PROMPT", None)
 
 
 def compute_token_budget(
@@ -1512,6 +1524,7 @@ def load_model(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
+            limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
             **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
             **vllm_params,
         )
@@ -1519,9 +1532,13 @@ def load_model(
     try:
         model = _create_llm()
     except (RuntimeError, ValueError, OSError) as e:
-        if "Can't load image processor" in str(e) and "preprocessor_config.json" in str(
-            e
-        ):
+        error_str = str(e)
+        # Catch missing image processor config
+        has_missing_processor = (
+            "Can't load image processor" in error_str
+            and "preprocessor_config.json" in error_str
+        )
+        if has_missing_processor:
             log(
                 f"Model {model_id!r} is missing an image processor config. Retrying "
                 "without image processing since EuroEval only does text inference.",
@@ -1534,6 +1551,31 @@ def load_model(
                 raise InvalidModel(
                     f"The model {model_id!r} could not be loaded. The error was "
                     f"{retry_e!r}."
+                ) from retry_e
+        # Catch multimodal budget errors for text-only inference on multimodal models.
+        # Note: These patterns may need updating as vLLM evolves its error messages.
+        elif any(
+            pattern in error_str
+            for pattern in [
+                "multimodal budget",
+                "MM input",
+                "image input",
+                "vision model",
+            ]
+        ):
+            log(
+                f"Model {model_id!r} triggered multimodal error during initialisation. "
+                "Retrying with multimodal inputs disabled since EuroEval only does "
+                "text inference.",
+                level=logging.DEBUG,
+            )
+            try:
+                with _skip_image_processor_context():
+                    model = _create_llm()
+            except (RuntimeError, ValueError, OSError) as retry_e:
+                raise InvalidModel(
+                    f"The model {model_id!r} could not be loaded in text-only mode. "
+                    f"The error was {retry_e!r}."
                 ) from retry_e
         elif "awaiting a review from the repo authors" in str(e):
             raise InvalidModel(
