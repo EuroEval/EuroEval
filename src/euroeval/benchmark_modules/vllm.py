@@ -1109,9 +1109,7 @@ class VLLMModel(HuggingFaceEncoderModel):
             # Remove all the special tokens from the completions, if any are present
             completion_ids = self._tokeniser(text=completions).input_ids
             completions = _safe_batch_decode(
-                self._tokeniser,
-                completion_ids,
-                skip_special_tokens=True,
+                self._tokeniser, completion_ids, skip_special_tokens=True
             )
 
             # Sanity check
@@ -1968,14 +1966,12 @@ def get_vllm_tokenisation_params(
 
 
 def _safe_batch_decode(
-    tokenizer: Tokeniser,
-    sequences: list[list[int]],
-    skip_special_tokens: bool,
+    tokenizer: Tokeniser, sequences: list[list[int]], skip_special_tokens: bool
 ) -> list[str]:
     """Safely decode sequences of token IDs using batch_decode or individual decode.
 
-    Attempts to use the tokenizer's batch_decode method first. If that fails
-    with an AttributeError (e.g., for custom tokenizers that don't implement
+    Attempts to use the tokeniser's batch_decode method first. If that fails
+    with an AttributeError (e.g., for custom tokenisers that don't implement
     batch_decode), falls back to calling decode for each sequence individually.
 
     Args:
@@ -2000,7 +1996,7 @@ def _safe_batch_decode(
             level=logging.WARNING,
         )
         return [
-            tokenizer.decode(seq, skip_special_tokens=skip_special_tokens)
+            t.cast(str, tokenizer.decode(seq, skip_special_tokens=skip_special_tokens))
             for seq in sequences
         ]
 
