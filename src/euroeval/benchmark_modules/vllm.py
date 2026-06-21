@@ -1524,9 +1524,9 @@ def load_model(
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
             # Disable multimodal inputs for text-only inference.
-        # Note: Mistral3 uses a multimodal architecture class butEuroEval only needs
-        # text inference, so we disable multimodal initialisation.
-        limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
+            # Note: Mistral3 uses a multimodal architecture class but EuroEval only needs
+            # text inference, so we disable multimodal initialisation.
+            limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
             **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
             **vllm_params,
         )
