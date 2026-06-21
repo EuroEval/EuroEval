@@ -3,7 +3,6 @@
 import collections.abc as c
 import contextlib
 import importlib.util
-import inspect
 import json
 import logging
 import os
@@ -1453,14 +1452,8 @@ def load_model(
             backend=attention_backend  # ty: ignore[invalid-argument-type]
         )
 
-    # Check if vLLM supports runner_type parameter (introduced in vLLM ~0.6+)
-    # Required for LLM.generate() to work with generative models
-    try:
-        llm_sig = inspect.signature(vllm.LLM.__init__)
-        if "runner_type" in llm_sig.parameters:
-            vllm_params["runner_type"] = "generate"
-    except (TypeError, ValueError, AttributeError):
-        pass  # Older vLLM or mocked in tests - skip runner_type
+    # runner_type is required for LLM.generate() to work with generative models
+    vllm_params["runner_type"] = "generate"
 
     clear_vllm()
 
