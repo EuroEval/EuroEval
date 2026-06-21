@@ -1455,9 +1455,12 @@ def load_model(
 
     # Check if vLLM supports runner_type parameter (introduced in vLLM ~0.6+)
     # Required for LLM.generate() to work with generative models
-    llm_sig = inspect.signature(vllm.LLM.__init__)
-    if "runner_type" in llm_sig.parameters:
-        vllm_params["runner_type"] = "generate"
+    try:
+        llm_sig = inspect.signature(vllm.LLM.__init__)
+        if "runner_type" in llm_sig.parameters:
+            vllm_params["runner_type"] = "generate"
+    except (TypeError, ValueError, AttributeError):
+        pass  # Older vLLM or mocked in tests - skip runner_type
 
     clear_vllm()
 
