@@ -1521,8 +1521,6 @@ def load_model(
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
-            # Disable multimodal inputs for text-only inference. Some models use
-            # multimodal architectures but EuroEval only needs text inference.
             limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
             **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
             **vllm_params,
