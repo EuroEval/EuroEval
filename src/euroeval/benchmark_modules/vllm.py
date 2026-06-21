@@ -825,8 +825,9 @@ class VLLMModel(HuggingFaceEncoderModel):
                         )
                     finally:
                         self._tokeniser.truncation_side = original_truncation_side
-                    prompts = self._tokeniser.batch_decode(
-                        sequences=truncated_tokenized_prompts.input_ids,
+                    prompts = _safe_batch_decode(
+                        self._tokeniser,
+                        truncated_tokenized_prompts.input_ids,
                         skip_special_tokens=True,
                     )
                 case GenerativeType.INSTRUCTION_TUNED | GenerativeType.REASONING:
@@ -996,8 +997,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                             0,
                         ),
                     )
-                    prompts = self._tokeniser.batch_decode(
-                        sequences=tokenized_prompts.input_ids, skip_special_tokens=True
+                    prompts = _safe_batch_decode(
+                        self._tokeniser,
+                        tokenized_prompts.input_ids,
+                        skip_special_tokens=True,
                     )
                 else:
                     raise InvalidBenchmark(
@@ -1105,8 +1108,10 @@ class VLLMModel(HuggingFaceEncoderModel):
 
             # Remove all the special tokens from the completions, if any are present
             completion_ids = self._tokeniser(text=completions).input_ids
-            completions = self._tokeniser.batch_decode(
-                sequences=completion_ids, skip_special_tokens=True
+            completions = _safe_batch_decode(
+                self._tokeniser,
+                completion_ids,
+                skip_special_tokens=True,
             )
 
             # Sanity check
@@ -1960,6 +1965,44 @@ def get_vllm_tokenisation_params(
         config_format=config_format,
         load_format=load_format,
     )
+
+
+def _safe_batch_decode(
+    tokenizer: Tokeniser,
+    sequences: list[list[int]],
+    skip_special_tokens: bool,
+) -> list[str]:
+    """Safely decode sequences of token IDs using batch_decode or individual decode.
+
+    Attempts to use the tokenizer's batch_decode method first. If that fails
+    with an AttributeError (e.g., for custom tokenizers that don't implement
+    batch_decode), falls back to calling decode for each sequence individually.
+
+    Args:
+        tokenizer:
+            The tokenizer to use for decoding.
+        sequences:
+            List of token ID sequences to decode.
+        skip_special_tokens:
+            Whether to skip special tokens during decoding.
+
+    Returns:
+        List of decoded strings.
+    """
+    try:
+        return tokenizer.batch_decode(
+            sequences, skip_special_tokens=skip_special_tokens
+        )
+    except AttributeError:
+        log_once(
+            "Tokenizer does not support batch_decode, falling back to individual "
+            "decode calls",
+            level=logging.WARNING,
+        )
+        return [
+            tokenizer.decode(seq, skip_special_tokens=skip_special_tokens)
+            for seq in sequences
+        ]
 
 
 def select_backend_and_parallelism() -> tuple[str, int, int]:
