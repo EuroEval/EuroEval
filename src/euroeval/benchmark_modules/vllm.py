@@ -1452,6 +1452,13 @@ def load_model(
             backend=attention_backend  # ty: ignore[invalid-argument-type]
         )
 
+    # Check if vLLM supports runner_type parameter (introduced in vLLM ~0.6+)
+    # Required for LLM.generate() to work with generative models
+    import inspect
+    llm_sig = inspect.signature(vllm.LLM.__init__)
+    if "runner_type" in llm_sig.parameters:
+        vllm_params["runner_type"] = "generate"
+
     clear_vllm()
 
     hf_overrides: dict[str, list[str]] = {}
