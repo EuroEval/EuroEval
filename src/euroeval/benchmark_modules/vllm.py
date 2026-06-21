@@ -3,6 +3,7 @@
 import collections.abc as c
 import contextlib
 import importlib.util
+import inspect
 import json
 import logging
 import os
@@ -12,8 +13,6 @@ import typing as t
 from functools import partial
 from pathlib import Path
 from time import sleep
-
-import inspect
 
 import torch
 import torch.version
