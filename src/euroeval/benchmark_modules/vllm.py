@@ -122,10 +122,11 @@ if t.TYPE_CHECKING:
 from ..bpc_scoring import compute_bpc_scores_for_vllm_outputs
 
 # Mapping from HuggingFace architecture names that vLLM does not recognise to their
-# vLLM-compatible equivalents.  Transformers 4.57 split Gemma 4 into a multimodal
-# class (Gemma4ForConditionalGeneration) and a text-only class
-# (Gemma4TextForCausalLM).  vLLM only registers the former, so we remap here.
-_ARCHITECTURE_ALIASES: dict[str, str] = {"Gemma4TextForCausalLM": "Gemma4ForCausalLM"}
+# vLLM-compatible equivalents
+_ARCHITECTURE_ALIASES: dict[str, str] = {
+    "Gemma4TextForCausalLM": "Gemma4ForCausalLM",
+    "BloomModel": "BloomForCausalLM",
+}
 
 
 @contextlib.contextmanager
@@ -1522,6 +1523,8 @@ def load_model(
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
             limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
+            # runner is required for LLM.generate() to work with generative models
+            runner="generate",
             **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
             **vllm_params,
         )

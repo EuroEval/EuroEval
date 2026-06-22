@@ -541,9 +541,11 @@ class Benchmarker:
             if verbose is not None
             else self.benchmark_config_default_params.verbose
         )
-        # FULL_LOG env var always forces verbose mode
-        if os.getenv("FULL_LOG", "0") == "1":
+
+        # FULL_LOG env var or debug mode always forces verbose mode
+        if os.getenv("FULL_LOG", "0") == "1" or debug:
             is_verbose = True
+
         log_once(
             (
                 "Started EuroEval run."
