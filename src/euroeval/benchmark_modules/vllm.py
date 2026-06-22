@@ -1464,9 +1464,6 @@ def load_model(
             backend=attention_backend  # ty: ignore[invalid-argument-type]
         )
 
-    # runner_type is required for LLM.generate() to work with generative models
-    vllm_params["runner_type"] = "generate"
-
     clear_vllm()
 
     hf_overrides: dict[str, list[str]] = {}
@@ -1525,6 +1522,8 @@ def load_model(
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
             limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
+            # runner_type is required for LLM.generate() to work with generative models
+            runner_type="generate",
             **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
             **vllm_params,
         )
