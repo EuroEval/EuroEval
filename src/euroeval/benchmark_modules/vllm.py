@@ -904,8 +904,9 @@ class VLLMModel(HuggingFaceEncoderModel):
                             max_length=max_tokens_per_prompt,
                             truncation=True,
                         )
-                        prompts = self._tokeniser.batch_decode(
-                            sequences=truncated_tokenized_prompts.input_ids,
+                        prompts = _safe_batch_decode(
+                            self._tokeniser,
+                            truncated_tokenized_prompts.input_ids,
                             skip_special_tokens=True,
                         )
                 case _:
@@ -1071,8 +1072,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             completion_ids: c.Sequence[c.Sequence[int]] = [
                 list(output.outputs[0].token_ids) for output in raw_outputs
             ]
-            completions = self._tokeniser.batch_decode(
-                sequences=[list(completion_id) for completion_id in completion_ids],
+            completions = _safe_batch_decode(
+                self._tokeniser,
+                [list(completion_id) for completion_id in completion_ids],
                 skip_special_tokens=False,
             )
             if (
@@ -1465,7 +1467,7 @@ def load_model(
     # config
     if hasattr(vllm.config, "attention") and attention_backend is not None:
         vllm_params["attention_config"] = AttentionConfig(
-            backend=attention_backend  # ty: ignore[invalid-argument-type]
+            backend=attention_backend
         )
 
     clear_vllm()
@@ -1518,7 +1520,7 @@ def load_model(
             pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
-            dtype=dtype,  # ty: ignore[invalid-argument-type]
+            dtype=dtype,
             enforce_eager=True,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
@@ -1528,7 +1530,7 @@ def load_model(
             limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
             # runner is required for LLM.generate() to work with generative models
             runner="generate",
-            **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
+            **({"hf_overrides": hf_overrides} if hf_overrides else {}),
             **vllm_params,
         )
 
