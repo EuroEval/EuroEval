@@ -23,11 +23,33 @@ LANGUAGES = {
     "et": "tartuNLP/ifeval_et",
     "fi": "LumiOpen/ifeval_mt::fi",
     "fr": "json:https://raw.githubusercontent.com/lightblue-tech/M-IFEval/refs/heads/main/data/fr_input_data.jsonl",
+    "nb": "danish-foundation-models/multi-ifeval::no",
+    "nn": "danish-foundation-models/multi-ifeval::nn",
     "pt": "facebook/Multi-IF?language=Portuguese",
     "sv": "LumiOpen/ifeval_mt::sv",
     "uk": "INSAIT-Institute/ifeval_ukr",
 }
 TARGET_REPO = "EuroEval/ifeval-{language}"
+
+# Constraints that need a language-specific verifier variant in EuroEval. The
+# instruction_id is remapped to the variant in the data, mirroring how the fr:
+# sets carry prefixed ids. Norwegian: the default English sentence tokenizer
+# miscounts Norwegian abbreviations (f.eks., bl.a.), so number_sentences uses the
+# no: variant (Norwegian Punkt model). language:response_language is intentionally
+# left as-is — MultiIFEval drops it for Norwegian since langdetect can't separate
+# nb/nn.
+LANGUAGE_INSTRUCTION_ID_REMAP = {
+    "nb": {
+        "length_constraints:number_sentences": (
+            "no:length_constraints:number_sentences"
+        )
+    },
+    "nn": {
+        "length_constraints:number_sentences": (
+            "no:length_constraints:number_sentences"
+        )
+    },
+}
 
 PROMPT_COLUMN_CANDIDATES = ["prompt", "promptly", "turn_1_prompt"]
 INSTRUCTION_ID_LIST_COLUMN_CANDIDATES = [
@@ -136,6 +158,14 @@ def main() -> None:
             # Ensure that the instruction_id_list is a list of strings
             if isinstance(instruction_id_list, str):
                 instruction_id_list = json.loads(instruction_id_list)
+
+            # Remap instruction_ids to language-specific verifier variants, if any
+            id_remap = LANGUAGE_INSTRUCTION_ID_REMAP.get(language, {})
+            if id_remap:
+                instruction_id_list = [
+                    id_remap.get(instruction_id, instruction_id)
+                    for instruction_id in instruction_id_list
+                ]
 
             # Ensure that kwargs is a list of dicts
             kwargs = row[kwargs_column]
