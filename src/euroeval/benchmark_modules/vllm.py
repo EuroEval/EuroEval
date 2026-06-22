@@ -1466,9 +1466,7 @@ def load_model(
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
     if hasattr(vllm.config, "attention") and attention_backend is not None:
-        vllm_params["attention_config"] = AttentionConfig(
-            backend=attention_backend
-        )
+        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)  # ty: ignore[invalid-argument-type]
 
     clear_vllm()
 
@@ -1520,7 +1518,7 @@ def load_model(
             pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
-            dtype=dtype,
+            dtype=dtype,  # ty: ignore[invalid-argument-type]
             enforce_eager=True,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
@@ -1530,7 +1528,7 @@ def load_model(
             limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
             # runner is required for LLM.generate() to work with generative models
             runner="generate",
-            **({"hf_overrides": hf_overrides} if hf_overrides else {}),
+            **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
             **vllm_params,
         )
 
