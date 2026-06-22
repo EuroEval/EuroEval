@@ -904,8 +904,9 @@ class VLLMModel(HuggingFaceEncoderModel):
                             max_length=max_tokens_per_prompt,
                             truncation=True,
                         )
-                        prompts = self._tokeniser.batch_decode(
-                            sequences=truncated_tokenized_prompts.input_ids,
+                        prompts = _safe_batch_decode(
+                            self._tokeniser,
+                            truncated_tokenized_prompts.input_ids,
                             skip_special_tokens=True,
                         )
                 case _:
@@ -1071,8 +1072,9 @@ class VLLMModel(HuggingFaceEncoderModel):
             completion_ids: c.Sequence[c.Sequence[int]] = [
                 list(output.outputs[0].token_ids) for output in raw_outputs
             ]
-            completions = self._tokeniser.batch_decode(
-                sequences=[list(completion_id) for completion_id in completion_ids],
+            completions = _safe_batch_decode(
+                self._tokeniser,
+                [list(completion_id) for completion_id in completion_ids],
                 skip_special_tokens=False,
             )
             if (
