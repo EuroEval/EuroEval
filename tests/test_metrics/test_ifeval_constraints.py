@@ -12,38 +12,57 @@ def _punkt() -> None:
     nltk.download("punkt_tab", quiet=True)
 
 
-class TestNorwegianNumberSentences:
-    """Tests for the `no:length_constraints:number_sentences` variant.
+class TestNumberSentencesLanguage:
+    """Tests for the ``language`` argument of ``check_number_sentences``.
 
-    The default English sentence tokenizer over-counts Norwegian sentences that
-    contain common abbreviations (e.g. ``f.eks.``, ``bl.a.``), treating them as
-    sentence boundaries. The Norwegian variant uses the Norwegian Punkt model.
+    The default English sentence tokenizer over-counts sentences in languages
+    whose abbreviations it does not know — e.g. Norwegian ``f.eks.`` and
+    ``bl.a.`` are treated as sentence boundaries. The ``language`` argument
+    selects the right Punkt model.
     """
 
-    constraint = "no:length_constraints:number_sentences"
-    # Two real sentences, each containing a Norwegian abbreviation that the
-    # English tokenizer splits on (counting three sentences instead of two).
+    constraint = "length_constraints:number_sentences"
+    # Two real Norwegian sentences, each containing an abbreviation the English
+    # tokenizer splits on (counting three sentences instead of two).
     two_sentences = "Vi bruker mange forkortelser, f.eks. denne. Det er to setninger."
 
-    def test_is_registered(self) -> None:
-        """The Norwegian variant is registered."""
-        assert self.constraint in ALL_CONSTRAINTS
-
-    def test_abbreviation_not_overcounted(self) -> None:
-        """A two-sentence answer satisfies 'less than 3' (English tokenizer fails).
-
-        The English tokenizer counts three sentences here, so the base constraint
-        would wrongly reject this answer; the Norwegian variant counts two.
-        """
+    def test_norwegian_not_overcounted(self) -> None:
+        """With language='norwegian', a two-sentence answer satisfies 'less than 3'."""
         verifier = ALL_CONSTRAINTS[self.constraint]
-        assert verifier(self.two_sentences, num_sentences=3, relation="less than")
+        assert verifier(
+            self.two_sentences,
+            num_sentences=3,
+            relation="less than",
+            language="norwegian",
+        )
 
-    def test_base_constraint_overcounts(self) -> None:
-        """Contrast: the base English constraint over-counts the same answer."""
-        base = ALL_CONSTRAINTS["length_constraints:number_sentences"]
-        assert not base(self.two_sentences, num_sentences=3, relation="less than")
+    def test_english_overcounts(self) -> None:
+        """Contrast: with language='english' the same answer is over-counted."""
+        verifier = ALL_CONSTRAINTS[self.constraint]
+        assert not verifier(
+            self.two_sentences,
+            num_sentences=3,
+            relation="less than",
+            language="english",
+        )
 
     def test_genuine_violation_still_fails(self) -> None:
         """A one-sentence answer does not satisfy 'at least 3'."""
         verifier = ALL_CONSTRAINTS[self.constraint]
-        assert not verifier("Bare én setning.", num_sentences=3, relation="at least")
+        assert not verifier(
+            "Bare én setning.",
+            num_sentences=3,
+            relation="at least",
+            language="norwegian",
+        )
+
+    def test_unknown_language_falls_back(self) -> None:
+        """An unavailable Punkt language falls back to the default tokenizer."""
+        verifier = ALL_CONSTRAINTS[self.constraint]
+        # Should not raise LookupError; counts with the default model instead.
+        assert verifier(
+            "Én setning her.",
+            num_sentences=2,
+            relation="less than",
+            language="some-nonexistent-language",
+        )

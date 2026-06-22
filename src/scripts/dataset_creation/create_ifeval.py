@@ -31,25 +31,16 @@ LANGUAGES = {
 }
 TARGET_REPO = "EuroEval/ifeval-{language}"
 
-# Constraints that need a language-specific verifier variant in EuroEval. The
-# instruction_id is remapped to the variant in the data, mirroring how the fr:
-# sets carry prefixed ids. Norwegian: the default English sentence tokenizer
-# miscounts Norwegian abbreviations (f.eks., bl.a.), so number_sentences uses the
-# no: variant (Norwegian Punkt model). language:response_language is intentionally
-# left as-is — MultiIFEval drops it for Norwegian since langdetect can't separate
-# nb/nn.
-LANGUAGE_INSTRUCTION_ID_REMAP = {
-    "nb": {
-        "length_constraints:number_sentences": (
-            "no:length_constraints:number_sentences"
-        )
-    },
-    "nn": {
-        "length_constraints:number_sentences": (
-            "no:length_constraints:number_sentences"
-        )
-    },
-}
+# The `length_constraints:number_sentences` constraint counts sentences with an
+# NLTK Punkt model, taking the NLTK language name from a `language` kwarg. The
+# default English tokenizer over-counts languages whose abbreviations it does not
+# know (e.g. Norwegian `f.eks.`, `bl.a.`), so we record the NLTK language name per
+# dataset language. Languages without a dedicated entry fall back to English,
+# preserving existing behaviour; languages without an NLTK Punkt model degrade
+# gracefully in the constraint itself.
+NUMBER_SENTENCES_CONSTRAINT = "length_constraints:number_sentences"
+SENTENCE_TOKENIZER_LANGUAGE = {"nb": "norwegian", "nn": "norwegian"}
+DEFAULT_SENTENCE_TOKENIZER_LANGUAGE = "english"
 
 PROMPT_COLUMN_CANDIDATES = ["prompt", "promptly", "turn_1_prompt"]
 INSTRUCTION_ID_LIST_COLUMN_CANDIDATES = [
@@ -159,14 +150,6 @@ def main() -> None:
             if isinstance(instruction_id_list, str):
                 instruction_id_list = json.loads(instruction_id_list)
 
-            # Remap instruction_ids to language-specific verifier variants, if any
-            id_remap = LANGUAGE_INSTRUCTION_ID_REMAP.get(language, {})
-            if id_remap:
-                instruction_id_list = [
-                    id_remap.get(instruction_id, instruction_id)
-                    for instruction_id in instruction_id_list
-                ]
-
             # Ensure that kwargs is a list of dicts
             kwargs = row[kwargs_column]
             if isinstance(kwargs, str):
@@ -175,6 +158,18 @@ def main() -> None:
                 kwargs = [json.loads(kwarg) for kwarg in kwargs]
             if isinstance(kwargs, dict):
                 kwargs = [kwargs] * len(instruction_id_list)
+
+            # Record the NLTK sentence-tokenizer language for number_sentences, so
+            # the constraint counts sentences with the right Punkt model.
+            sentence_language = SENTENCE_TOKENIZER_LANGUAGE.get(
+                language, DEFAULT_SENTENCE_TOKENIZER_LANGUAGE
+            )
+            kwargs = [
+                {**kwarg, "language": sentence_language}
+                if instruction_id == NUMBER_SENTENCES_CONSTRAINT
+                else kwarg
+                for instruction_id, kwarg in zip(instruction_id_list, kwargs)
+            ]
 
             return dict(
                 text=prompt,

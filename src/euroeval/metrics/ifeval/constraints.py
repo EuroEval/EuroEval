@@ -283,75 +283,56 @@ def check_letter_frequency(response: str, **constraint_kwargs) -> bool:
     "length_constraints:number_sentences",
     num_sentences=int,
     relation=t.Literal["less than", "at least"],
+    language=str,
 )
 @register(
     "fr:length_constraints:number_sentences",
     num_sentences=int,
     relation=t.Literal["moins de", "au moins"],
+    language=str,
 )
 @register(
     "es:length_constraints:number_sentences",
     num_sentences=int,
     relation=t.Literal["less than", "at least"],
+    language=str,
 )
 @register(
     "ca:length_constraints:number_sentences",
     num_sentences=int,
     relation=t.Literal["less than", "at least"],
+    language=str,
 )
 def check_number_sentences(response: str, **constraint_kwargs) -> bool:
     """Check number of sentences.
 
-    Args:
-        response:
-            The response string to check.
-        **constraint_kwargs:
-            Keyword arguments containing ``num_sentences`` and ``relation``.
-
-    Returns:
-        True if the sentence count satisfies the relation, False otherwise.
-    """
-    num_sentences: int = constraint_kwargs["num_sentences"]
-    relation: str = constraint_kwargs["relation"]
-
-    actual = len(nltk.tokenize.sent_tokenize(text=response))
-    if relation in {"less than", "moins de"}:
-        return actual < num_sentences
-    return actual >= num_sentences
-
-
-@register(
-    "no:length_constraints:number_sentences",
-    num_sentences=int,
-    relation=t.Literal["less than", "at least"],
-)
-def check_number_sentences_norwegian(response: str, **constraint_kwargs) -> bool:
-    """Check number of sentences using the Norwegian sentence tokenizer.
-
-    The default (English) ``sent_tokenize`` over-counts Norwegian sentences that
-    contain common abbreviations such as ``f.eks.`` and ``bl.a.``, treating them
-    as sentence boundaries. NLTK ships a Norwegian Punkt model; passing
-    ``language="norwegian"`` fixes the count. Falls back to the default model if
-    the Norwegian one is unavailable, so a missing resource degrades gracefully
+    The sentence count uses the NLTK Punkt model for ``language`` (an NLTK
+    language name such as ``"english"`` or ``"norwegian"``). This matters because
+    the default English tokenizer over-counts sentences in languages whose
+    abbreviations it does not know — e.g. Norwegian ``f.eks.`` and ``bl.a.`` are
+    treated as sentence boundaries. Falls back to the default model if the
+    requested one is unavailable, so a missing resource degrades gracefully
     rather than raising ``LookupError`` and aborting the eval.
 
     Args:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``num_sentences`` and ``relation``.
+            Keyword arguments containing ``num_sentences``, ``relation`` and
+            ``language``.
 
     Returns:
         True if the sentence count satisfies the relation, False otherwise.
     """
     num_sentences: int = constraint_kwargs["num_sentences"]
     relation: str = constraint_kwargs["relation"]
+    language: str = constraint_kwargs["language"]
 
     try:
-        actual = len(nltk.tokenize.sent_tokenize(text=response, language="norwegian"))
+        actual = len(nltk.tokenize.sent_tokenize(text=response, language=language))
     except LookupError:
         actual = len(nltk.tokenize.sent_tokenize(text=response))
-    if relation == "less than":
+    if relation in {"less than", "moins de"}:
         return actual < num_sentences
     return actual >= num_sentences
 
