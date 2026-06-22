@@ -26,7 +26,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   alongside the other languages, so they are picked up like any other built-in dataset.
 - Fixed vLLM backend failing with "LLM.generate() is only supported for generative
   models" when evaluating base generative models (e.g. `norallm/norbloom-7b-scratch`).
-  The vLLM `LLM` constructor now explicitly sets `runner_type="generate"` to enable the
+  The vLLM `LLM` constructor now explicitly sets `runner="generate"` to enable the
   generation API for base decoder models.
 - Fixed vLLM loading of Mistral3 models for text-only inference. Models with multimodal
   architectures (e.g. `Mistral3ForConditionalGeneration`) that raised multimodal budget
