@@ -11,6 +11,7 @@ from transformers.models.auto.image_processing_auto import AutoImageProcessor
 
 from euroeval.benchmark_modules.vllm import (
     VLLMModel,
+    _safe_batch_decode,
     _skip_image_processor_context,
     compute_token_budget,
     load_model,
@@ -937,3 +938,41 @@ class TestLoadModelMultimodalBudgetRetry:
                     tokeniser=mock_tokeniser,
                     hf_model_config=mock_hf_model_config,
                 )
+
+
+class TestSafeBatchDecode:
+    """Tests for the `_safe_batch_decode` helper function."""
+
+    def test_batch_decode_success(self) -> None:
+        """Test that batch_decode is used when available."""
+        mock_tokeniser = MagicMock()
+        mock_tokeniser.batch_decode.return_value = ["hello", "world"]
+
+        sequences = [[1, 2, 3], [4, 5, 6]]
+        result = _safe_batch_decode(mock_tokeniser, sequences, skip_special_tokens=True)
+
+        assert result == ["hello", "world"]
+        mock_tokeniser.batch_decode.assert_called_once_with(
+            sequences, skip_special_tokens=True
+        )
+
+    def test_fallback_to_individual_decode(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Test that decode falls back when batch_decode raises AttributeError."""
+        mock_tokeniser = MagicMock()
+        mock_tokeniser.batch_decode.side_effect = AttributeError(
+            "list object has no attribute replace"
+        )
+        mock_tokeniser.decode.side_effect = lambda seq, skip_special_tokens: (
+            f"decoded_{seq}"
+        )
+
+        sequences = [[1, 2, 3], [4, 5, 6]]
+        result = _safe_batch_decode(
+            mock_tokeniser, sequences, skip_special_tokens=False
+        )
+
+        assert result == ["decoded_[1, 2, 3]", "decoded_[4, 5, 6]"]
+        mock_tokeniser.decode.assert_any_call([1, 2, 3], skip_special_tokens=False)
+        mock_tokeniser.decode.assert_any_call([4, 5, 6], skip_special_tokens=False)

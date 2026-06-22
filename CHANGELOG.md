@@ -24,6 +24,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `be-wsc`) were not included in evaluations by default, because the `belarusian` module
   was missing from the `euroeval.dataset_configs` package exports. They are now exported
   alongside the other languages, so they are picked up like any other built-in dataset.
+- Fixed an `AttributeError` when using custom tokenisers with `batch_decode`. The method
+  now falls back to individual `decode` calls if `batch_decode` is not available. This
+  affected models such as `openGPT-X/Teuken-7B-base-v0.6`.
 - Fixed vLLM backend failing with "LLM.generate() is only supported for generative
   models" when evaluating base generative models (e.g. `norallm/norbloom-7b-scratch`).
   The vLLM `LLM` constructor now explicitly sets `runner="generate"` to enable the
