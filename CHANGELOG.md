@@ -9,6 +9,17 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added Norwegian instruction-following datasets `ifeval-nb` (Bokmål) and `ifeval-nn`
+  (Nynorsk), integrating the Norwegian splits of
+  [MultiIFEval](https://huggingface.co/datasets/danish-foundation-models/multi-ifeval)
+  (524 examples each, unofficial, test-only). Added a
+  `length_constraints:number_sentences_with_language` constraint that takes a `language`
+  keyword argument (an NLTK language name such as `"norwegian"`) and counts sentences
+  with the matching NLTK Punkt tokenizer, so abbreviations such as `f.eks.` and `bl.a.`
+  are not miscounted as sentence boundaries; the existing
+  `length_constraints:number_sentences` constraint is unchanged. Following MultiIFEval,
+  the `language:response_language` constraint is left out for Norwegian, as language
+  detection cannot reliably separate Bokmål from Nynorsk.
 - Added `download()` method to `PipelineMetric` class
   - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
     Values metric)

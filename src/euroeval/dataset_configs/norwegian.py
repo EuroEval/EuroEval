@@ -6,6 +6,7 @@ from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
     GED,
+    INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
     LOGIC,
@@ -115,6 +116,28 @@ VALEU_NO_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+IFEVAL_NB_CONFIG = DatasetConfig(
+    name="ifeval-nb",
+    pretty_name="IFEval-nb",
+    source="EuroEval/ifeval-nb",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
+
+IFEVAL_NN_CONFIG = DatasetConfig(
+    name="ifeval-nn",
+    pretty_name="IFEval-nn",
+    source="EuroEval/ifeval-nn",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
 
 NO_COLA_CONFIG = DatasetConfig(
     name="no-cola",

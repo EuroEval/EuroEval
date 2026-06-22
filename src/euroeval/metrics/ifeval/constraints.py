@@ -320,6 +320,42 @@ def check_number_sentences(response: str, **constraint_kwargs) -> bool:
     return actual >= num_sentences
 
 
+@register(
+    "no:length_constraints:number_sentences",
+    num_sentences=int,
+    relation=t.Literal["less than", "at least"],
+)
+def check_number_sentences_norwegian(response: str, **constraint_kwargs) -> bool:
+    """Check number of sentences using the Norwegian sentence tokenizer.
+
+    The default (English) ``sent_tokenize`` over-counts Norwegian sentences that
+    contain common abbreviations such as ``f.eks.`` and ``bl.a.``, treating them
+    as sentence boundaries. NLTK ships a Norwegian Punkt model; passing
+    ``language="norwegian"`` fixes the count. Falls back to the default model if
+    the Norwegian one is unavailable, so a missing resource degrades gracefully
+    rather than raising ``LookupError`` and aborting the eval.
+
+    Args:
+        response:
+            The response string to check.
+        **constraint_kwargs:
+            Keyword arguments containing ``num_sentences`` and ``relation``.
+
+    Returns:
+        True if the sentence count satisfies the relation, False otherwise.
+    """
+    num_sentences: int = constraint_kwargs["num_sentences"]
+    relation: str = constraint_kwargs["relation"]
+
+    try:
+        actual = len(nltk.tokenize.sent_tokenize(text=response, language="norwegian"))
+    except LookupError:
+        actual = len(nltk.tokenize.sent_tokenize(text=response))
+    if relation == "less than":
+        return actual < num_sentences
+    return actual >= num_sentences
+
+
 @register("length_constraints:number_paragraphs", num_paragraphs=int)
 @register("fr:length_constraints:number_paragraphs", num_paragraphs=int)
 @register("es:length_constraints:number_paragraphs", num_paragraphs=int)
