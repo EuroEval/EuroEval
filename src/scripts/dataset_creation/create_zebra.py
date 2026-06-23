@@ -50,6 +50,7 @@ THEMES = [
     ("sv_hus_2x3_5rh", "sv", "easy"),
     ("sv_hus_4x5_5rh", "sv", "hard"),
 ]
+# Split sizes from original dataset (arXiv:2511.03553)
 n_train = 128
 n_val = 128
 n_test = 1024
