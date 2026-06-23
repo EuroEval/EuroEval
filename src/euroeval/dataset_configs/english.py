@@ -8,6 +8,7 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
+    LOGIC,
     MCRC,
     NER,
     RC,
@@ -187,6 +188,24 @@ WIC_CONFIG = DatasetConfig(
     pretty_name="WiC",
     source="EuroEval/wic",
     task=WIC,
+    languages=[ENGLISH],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_EASY_EN_CONFIG = DatasetConfig(
+    name="zebra-puzzle-easy-en",
+    pretty_name="ZebraPuzzleEasy-en",
+    source="EuroEval/zebra-puzzle-easy-en",
+    task=LOGIC,
+    languages=[ENGLISH],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_EN_CONFIG = DatasetConfig(
+    name="zebra-puzzle-hard-en",
+    pretty_name="ZebraPuzzleHard-en",
+    source="EuroEval/zebra-puzzle-hard-en",
+    task=LOGIC,
     languages=[ENGLISH],
     unofficial=True,
 )
