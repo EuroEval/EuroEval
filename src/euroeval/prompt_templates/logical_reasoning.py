@@ -12,7 +12,8 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
     DANISH: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
-        default_instruction_prompt="Her er en gåde:\n<riddle>{text}</riddle>\n"
+        default_instruction_prompt="Her er en gåde:\n"
+        "<riddle>\n{text}\n</riddle>\n"
         "Hvem har hvilke egenskaber og bor i hvilket hus? Angiv venligst dit svar "
         "som en JSON dictionary. Hver key skal være object_X hvor X er husnummeret. "
         "Hver value skal være en liste med de egenskaber fra kategorierne ovenfor "
