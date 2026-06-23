@@ -13,7 +13,7 @@ def _punkt() -> None:
 
 
 class TestNumberSentencesLanguage:
-    """Tests for the ``language`` argument of ``check_number_sentences``.
+    """Tests for ``check_number_sentences_with_language``.
 
     The default English sentence tokenizer over-counts sentences in languages
     whose abbreviations it does not know — e.g. Norwegian ``f.eks.`` and
@@ -21,7 +21,7 @@ class TestNumberSentencesLanguage:
     selects the right Punkt model.
     """
 
-    constraint = "length_constraints:number_sentences"
+    constraint = "length_constraints:number_sentences_with_language"
     # Two real Norwegian sentences, each containing an abbreviation the English
     # tokenizer splits on (counting three sentences instead of two).
     two_sentences = "Vi bruker mange forkortelser, f.eks. denne. Det er to setninger."
@@ -65,4 +65,31 @@ class TestNumberSentencesLanguage:
             num_sentences=2,
             relation="less than",
             language="some-nonexistent-language",
+        )
+
+    def test_norwegian_relation_literal(self) -> None:
+        """The Norwegian 'færre enn' relation maps to a less-than check.
+
+        The multi-ifeval Norwegian splits carry one ``'færre enn'`` relation
+        among otherwise English literals, so the constraint must accept it.
+        """
+        verifier = ALL_CONSTRAINTS[self.constraint]
+        assert verifier(
+            self.two_sentences,
+            num_sentences=3,
+            relation="færre enn",
+            language="norwegian",
+        )
+
+
+class TestNumberSentencesBackwardsCompatible:
+    """The original constraint stays usable without a ``language`` argument."""
+
+    constraint = "length_constraints:number_sentences"
+
+    def test_no_language_argument_required(self) -> None:
+        """Older datasets call number_sentences with only num_sentences/relation."""
+        verifier = ALL_CONSTRAINTS[self.constraint]
+        assert verifier(
+            "First sentence. Second sentence.", num_sentences=3, relation="less than"
         )
