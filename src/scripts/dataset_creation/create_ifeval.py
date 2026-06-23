@@ -31,16 +31,17 @@ LANGUAGES = {
 }
 TARGET_REPO = "EuroEval/ifeval-{language}"
 
-# The `length_constraints:number_sentences` constraint counts sentences with an
-# NLTK Punkt model, taking the NLTK language name from a `language` kwarg. The
-# default English tokenizer over-counts languages whose abbreviations it does not
-# know (e.g. Norwegian `f.eks.`, `bl.a.`), so we record the NLTK language name per
-# dataset language. Languages without a dedicated entry fall back to English,
-# preserving existing behaviour; languages without an NLTK Punkt model degrade
-# gracefully in the constraint itself.
+# Datasets whose language needs a non-default NLTK Punkt sentence tokenizer remap
+# their `length_constraints:number_sentences` constraint to
+# `length_constraints:number_sentences_with_language`, carrying the NLTK language
+# name in a `language` kwarg. The default English tokenizer over-counts languages
+# whose abbreviations it does not know (e.g. Norwegian `f.eks.`, `bl.a.`).
+# Languages without an entry here keep the original constraint and data unchanged.
 NUMBER_SENTENCES_CONSTRAINT = "length_constraints:number_sentences"
+NUMBER_SENTENCES_WITH_LANGUAGE_CONSTRAINT = (
+    "length_constraints:number_sentences_with_language"
+)
 SENTENCE_TOKENIZER_LANGUAGE = {"nb": "norwegian", "nn": "norwegian"}
-DEFAULT_SENTENCE_TOKENIZER_LANGUAGE = "english"
 
 PROMPT_COLUMN_CANDIDATES = ["prompt", "promptly", "turn_1_prompt"]
 INSTRUCTION_ID_LIST_COLUMN_CANDIDATES = [
@@ -159,17 +160,22 @@ def main() -> None:
             if isinstance(kwargs, dict):
                 kwargs = [kwargs] * len(instruction_id_list)
 
-            # Record the NLTK sentence-tokenizer language for number_sentences, so
-            # the constraint counts sentences with the right Punkt model.
-            sentence_language = SENTENCE_TOKENIZER_LANGUAGE.get(
-                language, DEFAULT_SENTENCE_TOKENIZER_LANGUAGE
-            )
-            kwargs = [
-                {**kwarg, "language": sentence_language}
-                if instruction_id == NUMBER_SENTENCES_CONSTRAINT
-                else kwarg
-                for instruction_id, kwarg in zip(instruction_id_list, kwargs)
-            ]
+            # For languages that need a non-default sentence tokenizer, remap the
+            # number_sentences constraint to its language-aware variant and carry
+            # the NLTK language name. Other languages keep the original id and
+            # data unchanged, so existing datasets need no regeneration.
+            sentence_language = SENTENCE_TOKENIZER_LANGUAGE.get(language)
+            if sentence_language is not None:
+                remapped_ids = []
+                remapped_kwargs = []
+                for instruction_id, kwarg in zip(instruction_id_list, kwargs):
+                    if instruction_id == NUMBER_SENTENCES_CONSTRAINT:
+                        remapped_ids.append(NUMBER_SENTENCES_WITH_LANGUAGE_CONSTRAINT)
+                        remapped_kwargs.append({**kwarg, "language": sentence_language})
+                    else:
+                        remapped_ids.append(instruction_id)
+                        remapped_kwargs.append(kwarg)
+                instruction_id_list, kwargs = remapped_ids, remapped_kwargs
 
             return dict(
                 text=prompt,
