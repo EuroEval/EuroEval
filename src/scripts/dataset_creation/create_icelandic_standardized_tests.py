@@ -601,6 +601,8 @@ def extract_questions(
             "Questions", **{f"question_{i}": (McQuestion, ...) for i in ids}
         )
 
+    # The OpenAI SDK types ``messages`` with strict per-role TypedDicts, so a plain
+    # dict literal is rejected even though it is the documented runtime shape.
     completion = client.beta.chat.completions.parse(
         model=GPT_MODEL,
         messages=[{"role": "user", "content": content}],  # ty: ignore[invalid-argument-type]
@@ -667,6 +669,8 @@ def extract_answer_key(pdf_bytes: bytes, client: OpenAI) -> dict[int, AnswerKeyT
         *_images_to_content(images),
     ]
 
+    # The OpenAI SDK types ``messages`` with strict per-role TypedDicts, so a plain
+    # dict literal is rejected even though it is the documented runtime shape.
     completion = client.beta.chat.completions.parse(
         model=GPT_MODEL,
         messages=[{"role": "user", "content": content}],  # ty: ignore[invalid-argument-type]

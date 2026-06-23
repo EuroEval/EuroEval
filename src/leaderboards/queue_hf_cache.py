@@ -11,27 +11,19 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import sys
 import time
-from pathlib import Path
 
 from huggingface_hub import HfApi, ModelInfo
 from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 
-logger = logging.getLogger(__name__)
+from .constants import HF_CACHE_PATH, HF_CACHE_TTL_SECONDS
 
-HF_CACHE_PATH = Path(
-    os.environ.get(
-        "EUROEVAL_QUEUE_HF_CACHE",
-        str(Path.home() / ".cache" / "euroeval" / "queue_hf_cache.json"),
-    )
-)
-HF_CACHE_TTL_SECONDS = 6 * 60 * 60
+logger = logging.getLogger(__name__)
 
 
 def cached_model_summary(model_id: str) -> dict | None:
-    """Return a ``{param_count, gated, gated_repo, gguf}`` summary for a model id.
+    """Return a ``{param_count, gated, gguf}`` summary for a model id.
 
     Looks up :data:`HF_CACHE_PATH` first and falls back to
     ``HfApi.model_info`` only on cache miss or stale entry. Negative
@@ -49,10 +41,6 @@ def cached_model_summary(model_id: str) -> dict | None:
         - ``gated`` (bool, True when the configured assignee does not have
           read access to a gated repo -- i.e. ``model_info`` raised
           ``GatedRepoError``).
-        - ``gated_repo`` (bool, True when ``model_info`` reports the repo
-          as gated even though we *do* have read access -- the token used
-          by the euroeval subprocess may still lack download permission
-          for this specific repo).
         - ``gguf`` (bool, True when the repo is a GGUF model, which the
           evaluation queue cannot run).
 
@@ -64,7 +52,6 @@ def cached_model_summary(model_id: str) -> dict | None:
         return {
             "param_count": int(entry["param_count"]),
             "gated": False,
-            "gated_repo": bool(entry.get("gated_repo", False)),
             "gguf": bool(entry.get("gguf", False)),
         }
 
@@ -73,40 +60,29 @@ def cached_model_summary(model_id: str) -> dict | None:
     except GatedRepoError:
         # Don't cache: access can be granted at any time, and we want to
         # pick that up on the next run.
-        return {
-            "param_count": sys.maxsize,
-            "gated": True,
-            "gated_repo": True,
-            "gguf": False,
-        }
+        return {"param_count": sys.maxsize, "gated": True, "gguf": False}
     except RepositoryNotFoundError:
         # Expected for typo-d / since-deleted repos; just drop the candidate.
         return None
     except Exception as e:  # noqa: BLE001
+        # Best-effort network lookup: any other failure (transient HTTP, timeout,
+        # unexpected payload) should just drop the candidate, never crash the run.
         logger.warning(f"HF model lookup failed for {model_id}: {e}")
         return None
 
     safetensors = getattr(info, "safetensors", None)
     total = getattr(safetensors, "total", None) if safetensors else None
     param_count = total if isinstance(total, int) and total > 0 else sys.maxsize
-    # ``info.gated`` is ``False`` for public repos and ``"auto"`` / ``"manual"``
-    # for gated ones; coerce to a plain bool.
-    gated_repo = bool(getattr(info, "gated", False))
+
     gguf = is_gguf_model(info=info)
 
     cache[model_id] = {
         "timestamp": time.time(),
         "param_count": param_count,
-        "gated_repo": gated_repo,
         "gguf": gguf,
     }
     _write_hf_cache(cache=cache)
-    return {
-        "param_count": param_count,
-        "gated": False,
-        "gated_repo": gated_repo,
-        "gguf": gguf,
-    }
+    return {"param_count": param_count, "gated": False, "gguf": gguf}
 
 
 def is_gguf_model(info: ModelInfo) -> bool:
@@ -156,23 +132,28 @@ def _load_hf_cache() -> dict[str, dict]:
     try:
         data = json.loads(HF_CACHE_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return dict()
+        return {}
     if not isinstance(data, dict):
-        return dict()
+        return {}
     now = time.time()
-    fresh: dict[str, dict] = dict()
+    fresh: dict[str, dict] = {}
     for key, value in data.items():
         if not isinstance(value, dict):
             continue
         ts = value.get("timestamp")
-        if not isinstance(ts, (int, float)) or now - ts > HF_CACHE_TTL_SECONDS:
+        if not isinstance(ts, int | float) or now - ts > HF_CACHE_TTL_SECONDS:
             continue
         fresh[key] = value
     return fresh
 
 
 def _write_hf_cache(cache: dict[str, dict]) -> None:
-    """Persist ``cache`` to :data:`HF_CACHE_PATH` atomically."""
+    """Persist ``cache`` to :data:`HF_CACHE_PATH` atomically.
+
+    Args:
+        cache:
+            The mapping of model id to cache entry to write to disk.
+    """
     try:
         HF_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         tmp = HF_CACHE_PATH.with_suffix(HF_CACHE_PATH.suffix + ".tmp")

@@ -138,6 +138,7 @@ class TestBenchmarkResult:
                     languages=["da"],
                     task="task",
                     results=dict(),
+                    use_bits_per_character=False,
                 ),
             ),
             (
@@ -166,6 +167,7 @@ class TestBenchmarkResult:
                     languages=["da"],
                     task="task",
                     results=dict(),
+                    use_bits_per_character=False,
                 ),
             ),
             (
@@ -194,6 +196,7 @@ class TestBenchmarkResult:
                     languages=["da"],
                     task="task",
                     results=dict(),
+                    use_bits_per_character=False,
                 ),
             ),
             (
@@ -221,6 +224,7 @@ class TestBenchmarkResult:
                     languages=["da"],
                     task="task",
                     results=dict(),
+                    use_bits_per_character=False,
                 ),
             ),
         ],

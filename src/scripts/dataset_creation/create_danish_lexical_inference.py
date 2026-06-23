@@ -12,6 +12,7 @@
 """Create the Danish Lexical Inference dataset and upload it to the HF Hub."""
 
 import io
+import logging
 from zipfile import ZipFile
 
 import pandas as pd
@@ -19,6 +20,9 @@ import requests as rq
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
+
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_danish_lexical_inference")
 
 
 def main() -> None:
@@ -56,7 +60,7 @@ def main() -> None:
                             num_skipped += 1
 
     if num_skipped > 0:
-        print(f"Warning: skipped {num_skipped} malformed lines during parsing.")
+        logger.warning(f"Skipped {num_skipped} malformed lines during parsing.")
 
     df = pd.DataFrame(records)
 

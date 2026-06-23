@@ -155,6 +155,14 @@ const downloadCsv = async () => {
       <router-link to="/evaluation-queue">Evaluation Queue</router-link>.
     </p>
 
+    <aside class="lb-note" role="note">
+      <span class="lb-note-icon" aria-hidden="true">ℹ️</span>
+      <p>
+        Scores use fixed <strong>subsets</strong> — click a dataset for splits; hover a score for failure rates (<span class="fail-flag">*</span> = ≥10% failed).
+        <router-link to="/faq#why-do-some-model-names-end-in-val"><code>(val)</code></router-link> = validation split.
+      </p>
+    </aside>
+
     <nav class="lb-tabs" role="tablist">
       <button
         v-for="t in tabs"
@@ -281,6 +289,47 @@ const downloadCsv = async () => {
   color: var(--color-muted);
   font-size: 0.9rem;
   margin: 0;
+}
+
+.lb-note {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-link);
+  border-radius: 6px;
+  padding: 0.45rem 0.7rem;
+  margin-top: 0.5rem;
+}
+
+.lb-note-icon {
+  flex: none;
+}
+
+.lb-note p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  line-height: 1.4;
+}
+
+.lb-note strong {
+  color: var(--color-text);
+}
+
+.lb-note .fail-flag {
+  color: var(--color-danger, #b00020);
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+.lb-note code {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 0 0.25rem;
+  font-size: 0.8rem;
 }
 
 .lb-tabs {

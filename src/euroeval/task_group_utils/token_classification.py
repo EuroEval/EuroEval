@@ -1,11 +1,13 @@
 """Utility functions related to the token-classification task group."""
 
 import collections.abc as c
+import json
 import logging
 import typing as t
 from copy import deepcopy
 
 import numpy as np
+from transformers.trainer_utils import EvalPrediction
 
 from ..exceptions import InvalidBenchmark
 from ..logging_utils import log
@@ -16,10 +18,70 @@ if t.TYPE_CHECKING:
     from datasets.arrow_dataset import Dataset
     from transformers.tokenization_utils import PreTrainedTokenizer
     from transformers.tokenization_utils_base import BatchEncoding
-    from transformers.trainer_utils import EvalPrediction
 
     from ..data_models import BenchmarkConfig, DatasetConfig, GenerativeModelOutput
     from ..types import Labels, Predictions
+
+
+def serialise_ner_tags(
+    tokens: c.Sequence[str],
+    labels: c.Sequence[str | int],
+    prompt_label_mapping: dict[str, str],
+) -> str:
+    """Serialise NER token tags into the JSON answer string used as the gold answer.
+
+    This is the canonical serialisation for token-classification answers: it is used
+    both to construct the few-shot demonstration answers and the gold answer that BPC
+    scoring measures, so the two never diverge.
+
+    Args:
+        tokens:
+            The tokens of the example.
+        labels:
+            The BIO tags aligned with `tokens` (e.g. ``"b-per"``, ``"i-per"``, ``"o"``).
+        prompt_label_mapping:
+            Mapping from lower-cased BIO tag to the localised prompt label.
+
+    Returns:
+        A JSON object string mapping each localised prompt label to the list of tagged
+        entity strings, with every label type present (empty lists included).
+    """
+    tagged: dict[str, list[str]] = {
+        prompt_label: list() for prompt_label in prompt_label_mapping.values()
+    }
+    for token, label in zip(tokens, labels):
+        label_str = str(label).lower()
+        if label_str == "o" or label_str not in prompt_label_mapping:
+            continue
+        prompt_label = prompt_label_mapping[label_str]
+        if label_str.startswith("b-"):
+            tagged[prompt_label].append(token)
+        elif label_str.startswith("i-") and tagged[prompt_label]:
+            tagged[prompt_label][-1] += " " + token
+    return json.dumps(tagged, ensure_ascii=False)
+
+
+def serialised_ner_content_length(serialised_tags: str) -> int:
+    """Count the entity-text characters in a serialised NER answer.
+
+    The serialised answer (see `serialise_ner_tags`) is a JSON object whose every label
+    key is always present, so the bulk of its characters are fixed scaffolding (keys,
+    braces, brackets, commas) that a model predicts near-perfectly after seeing the
+    same format in the few-shot demonstrations. Dividing BPC by the full string length
+    therefore drowns the entity signal in predictable boilerplate. This returns just
+    the number of characters belonging to the tagged entity strings, so BPC can be
+    measured per entity character instead.
+
+    Args:
+        serialised_tags:
+            A serialised NER answer as produced by `serialise_ner_tags`.
+
+    Returns:
+        The total number of characters across all tagged entity strings (0 if the
+        example has no entities).
+    """
+    tagged: dict[str, list[str]] = json.loads(serialised_tags)
+    return sum(len(entity) for entities in tagged.values() for entity in entities)
 
 
 def compute_metrics(

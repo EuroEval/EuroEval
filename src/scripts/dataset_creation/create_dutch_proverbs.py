@@ -11,7 +11,7 @@
 """Create a Dutch proverbs dataset from the GPT-NL proverb dataset."""
 
 import random
-from typing import Any
+import typing as t
 
 import datasets
 from huggingface_hub import HfApi
@@ -30,8 +30,8 @@ def main() -> None:
     # Download the dataset
     dataset = datasets.load_dataset(source_dataset_id)
 
-    # format the questions for the benchmark
-    dataset = dataset.map(format, remove_columns=dataset["train"].column_names)
+    # Format the questions for the benchmark.
+    dataset = dataset.map(format_row, remove_columns=dataset["train"].column_names)
 
     # remove the dataset from Hugging Face Hub if it already exists
     try:
@@ -43,7 +43,7 @@ def main() -> None:
     dataset.push_to_hub(dataset_id_euroeval, private=True)
 
 
-def format(row: dict[str, Any]) -> dict[str, str]:
+def format_row(row: dict[str, t.Any]) -> dict[str, str]:
     """Format the dataset rows into promptable questions.
 
     The question for the model is to evaluate which proverbs fits the

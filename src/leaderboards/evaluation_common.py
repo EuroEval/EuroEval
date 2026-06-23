@@ -35,56 +35,14 @@ from huggingface_hub.errors import (
     SafetensorsParsingError,
 )
 
+from .constants import DTYPE_BYTES, GPU_FIT_OVERHEAD, LANGUAGE_GROUP_CODES
+
 # Heavy imports (``torch``, ``psutil``, and anything under ``euroeval`` -- which
 # transitively loads ``nltk`` and ``sklearn``) are deferred to the functions
 # that actually need them, so lightweight callers like the results collector
 # don't pay a multi-second import cost they never use.
 
 logger = logging.getLogger(__name__)
-
-_BALTIC = "Baltic languages (Latvian, Lithuanian)"
-_FINNIC = "Finnic languages (Estonian, Finnish)"
-_ROMANCE = "Romance languages (Catalan, French, Italian, Portuguese, Romanian, Spanish)"
-_SCANDI = "Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)"
-_SLAVIC = (
-    "Slavic languages (Belarusian, Bulgarian, Bosnian, Croatian, Czech, Polish,"
-    " Serbian, Slovak, Slovenian, Ukrainian)"
-)
-_WGERMANIC = "West Germanic languages (Dutch, English, German)"
-
-LANGUAGE_GROUP_CODES: dict[str, list[str]] = {
-    _BALTIC: ["lv", "lt"],
-    _FINNIC: ["et", "fi"],
-    _ROMANCE: ["ca", "fr", "it", "pt", "ro", "es"],
-    _SCANDI: ["da", "fo", "is", "no", "sv"],
-    _SLAVIC: ["be", "bg", "bs", "hr", "cs", "pl", "sr", "sk", "sl", "uk"],
-    _WGERMANIC: ["nl", "en", "de"],
-    "Albanian": ["sq"],
-    "Greek": ["el"],
-    "Hungarian": ["hu"],
-}
-
-DTYPE_BYTES: dict[str, int] = {
-    "F64": 8,
-    "I64": 8,
-    "U64": 8,
-    "F32": 4,
-    "I32": 4,
-    "U32": 4,
-    "F16": 2,
-    "BF16": 2,
-    "I16": 2,
-    "U16": 2,
-    "F8_E4M3": 1,
-    "F8_E5M2": 1,
-    "I8": 1,
-    "U8": 1,
-    "BOOL": 1,
-}
-
-# Multiplier applied to weight bytes to leave room for activations, KV cache,
-# and framework overhead when judging whether a model fits in GPU memory.
-GPU_FIT_OVERHEAD = 1.2
 
 
 def run_euroeval(
@@ -155,30 +113,33 @@ def run_euroeval(
         env.setdefault("HF_TOKEN", token)
         env.setdefault("HUGGINGFACE_API_KEY", token)
 
-    master_fd, slave_fd = pty.openpty()
+    parent_fd, child_fd = pty.openpty()
     try:
+        # Safe: ``cmd`` is a fixed argument list run without a shell; only the
+        # known euroeval CLI flags and operator-controlled model/language ids
+        # are interpolated, never untrusted shell input.
         proc = subprocess.Popen(  # noqa: S603
             cmd,
-            stdin=slave_fd,
-            stdout=slave_fd,
-            stderr=slave_fd,
+            stdin=child_fd,
+            stdout=child_fd,
+            stderr=child_fd,
             close_fds=True,
             env=env,
         )
     except FileNotFoundError:
-        os.close(master_fd)
-        os.close(slave_fd)
+        os.close(parent_fd)
+        os.close(child_fd)
         logger.error("`euroeval` CLI not found on PATH. Is it installed?")
         return 127, "`euroeval` CLI not found on PATH."
-    os.close(slave_fd)
+    os.close(child_fd)
 
     captured: list[bytes] = []
     try:
         while True:
-            ready, _, _ = select.select([master_fd], [], [], 0.1)
+            ready, _, _ = select.select([parent_fd], [], [], 0.1)
             if ready:
                 try:
-                    chunk = os.read(master_fd, 4096)
+                    chunk = os.read(parent_fd, 4096)
                 except OSError:
                     break
                 if not chunk:
@@ -189,7 +150,7 @@ def run_euroeval(
             elif proc.poll() is not None:
                 try:
                     while True:
-                        chunk = os.read(master_fd, 4096)
+                        chunk = os.read(parent_fd, 4096)
                         if not chunk:
                             break
                         sys.stderr.buffer.write(chunk)
@@ -199,7 +160,7 @@ def run_euroeval(
                     pass
                 break
     finally:
-        os.close(master_fd)
+        os.close(parent_fd)
     proc.wait()
     output = b"".join(captured).decode("utf-8", errors="replace")
     return proc.returncode, output
@@ -244,12 +205,13 @@ def estimated_model_bytes(model_id: str) -> int | None:
         The total weight bytes across all tensors, or None when the repo
         is not a safetensors repo or metadata cannot be parsed.
     """
+    # Deferred: see the module-level note on avoiding heavy euroeval import cost.
     from euroeval.string_utils import split_model_id  # noqa: PLC0415
 
     components = split_model_id(model_id=model_id)
     repo = components.model_id
     revision = components.revision
-    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
+    token = os.environ.get("HF_TOKEN")
     try:
         meta = get_safetensors_metadata(repo_id=repo, revision=revision, token=token)
     except (
@@ -297,15 +259,15 @@ def _dtype_bits(dtype: str) -> int | None:
 
 
 def gpu_total_memory_bytes() -> int | None:
-    """Return the total memory available for model weights on this host.
+    """Return the memory available for model weights on this host.
 
     Honours ``EUROEVAL_GPU_MEMORY_BYTES`` for overrides. Otherwise: when CUDA
     is available and the host is not flagged as ``UNIFIED_MEMORY=1``, report
-    the largest CUDA device's total memory; otherwise report total system
+    the largest CUDA device's free memory; otherwise report available system
     RAM via ``psutil``.
 
     Returns:
-        The total memory in bytes, or None if the override is unparseable.
+        The available memory in bytes, or None if the override is unparseable.
     """
     override = os.environ.get("EUROEVAL_GPU_MEMORY_BYTES")
     if override:
@@ -314,18 +276,17 @@ def gpu_total_memory_bytes() -> int | None:
         except ValueError:
             logger.warning(f"Ignoring invalid EUROEVAL_GPU_MEMORY_BYTES={override!r}.")
 
+    # Deferred: see the module-level note on avoiding heavy import cost.
     import psutil  # noqa: PLC0415
     import torch  # noqa: PLC0415
 
     unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
     if torch.cuda.is_available() and not unified:
-        sizes = [
-            torch.cuda.get_device_properties(i).total_memory
-            for i in range(torch.cuda.device_count())
-        ]
-        if sizes:
-            return max(sizes)
-    return int(psutil.virtual_memory().total)
+        # Use free memory on the largest GPU, not total capacity.
+        free, _ = torch.cuda.mem_get_info(0)
+        return free
+    # Use available (not total) system RAM for CPU-only or unified memory hosts.
+    return int(psutil.virtual_memory().available)
 
 
 @lru_cache(maxsize=1)
@@ -336,6 +297,7 @@ def official_dataset_language_pairs() -> set[tuple[str, str]]:
         The ``(dataset_name, language_code)`` pairs for every official
         (i.e. non-unofficial) dataset in :mod:`euroeval.dataset_configs`.
     """
+    # Deferred: see the module-level note on avoiding heavy euroeval import cost.
     from euroeval.dataset_configs import get_all_dataset_configs  # noqa: PLC0415
 
     all_dataset_configs = get_all_dataset_configs(
@@ -375,7 +337,16 @@ def extract_language_groups(body: str | None) -> list[str]:
 
 
 def result_dataset_language_pairs(lines: c.Iterable[str]) -> set[tuple[str, str]]:
-    """Return dataset/language pairs parsed from benchmark-result JSONL lines."""
+    """Return dataset/language pairs parsed from benchmark-result JSONL lines.
+
+    Args:
+        lines:
+            Benchmark-result JSONL lines to parse.
+
+    Returns:
+        The set of (dataset, language) pairs found in the lines.
+    """
+    # Deferred: see the module-level note on avoiding heavy euroeval import cost.
     from euroeval.data_models import BenchmarkResult  # noqa: PLC0415
 
     pairs: set[tuple[str, str]] = set()
@@ -391,7 +362,17 @@ def result_dataset_language_pairs(lines: c.Iterable[str]) -> set[tuple[str, str]
 def missing_official_dataset_language_pairs(
     lines: c.Iterable[str], requested_languages: c.Iterable[str]
 ) -> set[tuple[str, str]]:
-    """Return missing official dataset/language pairs for the requested languages."""
+    """Return missing official dataset/language pairs for the requested languages.
+
+    Args:
+        lines:
+            Benchmark-result JSONL lines that have already been produced.
+        requested_languages:
+            The language codes the leaderboard requested.
+
+    Returns:
+        The set of official (dataset, language) pairs that have no result yet.
+    """
     requested = set(requested_languages)
     expected_pairs = {
         pair for pair in official_dataset_language_pairs() if pair[1] in requested
@@ -406,8 +387,4 @@ def resolve_hf_token() -> str | None:
     Returns:
         The token string, or None if neither env nor cache yields one.
     """
-    return (
-        os.environ.get("HF_TOKEN")
-        or os.environ.get("HUGGINGFACE_API_KEY")
-        or get_token()
-    )
+    return os.environ.get("HF_TOKEN") or get_token()

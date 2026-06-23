@@ -12,10 +12,11 @@ from pathlib import Path
 from shutil import rmtree
 from time import sleep
 
+from huggingface_hub import snapshot_download
 from torch.distributed import destroy_process_group
 
 from .benchmark_config_factory import build_benchmark_config
-from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS
+from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS, ORTHOGONAL_TASKS
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
 from .enums import Device, GenerativeType, InferenceBackend, ModelType
@@ -23,13 +24,14 @@ from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
 from .finetuning import finetune
 from .generation import generate
 from .logging_utils import adjust_logging_level, get_pbar, log, log_once
+from .metrics.bpc import bpc_metric
 from .model_config import get_model_config
 from .model_loading import load_model
 from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .string_utils import split_model_id
 from .tasks import SPEED
-from .utils import enforce_reproducibility, internet_connection_available
+from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -80,6 +82,7 @@ class Benchmarker:
         ]
         | None = None,
         generative_type: GenerativeType | None = None,
+        use_bits_per_character: bool = False,
         custom_datasets_file: Path | str = Path("custom_datasets.py"),
         debug: bool = False,
         run_with_cli: bool = False,
@@ -156,6 +159,11 @@ class Benchmarker:
                 The type of generative model to benchmark. Only relevant if the model is
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to None.
+            use_bits_per_character:
+                Whether to compute bits-per-character (BPC) on the ground-truth answer.
+                For multiple-choice tasks, treats benchmark as text-to-text with bare
+                question → full answer text. Only supported for base decoder models.
+                Defaults to False.
             custom_datasets_file:
                 Path to a Python file defining custom datasets. Defaults to
                 'custom_datasets.py'.
@@ -222,6 +230,7 @@ class Benchmarker:
             gpu_memory_utilization=gpu_memory_utilization,
             attention_backend=attention_backend,
             generative_type=generative_type,
+            use_bits_per_character=use_bits_per_character,
             custom_datasets_file=Path(custom_datasets_file),
             verbose=verbose,
             force=force,
@@ -252,36 +261,41 @@ class Benchmarker:
             ValueError:
                 If there is an error decoding a line in the results file.
         """
-        if self.results_path.exists():
-            benchmark_results: list[BenchmarkResult] = list()
-            with self.results_path.open() as f:
-                for line in f:
-                    if line.strip():
-                        try:
-                            result_dict = json.loads(line.strip())
-                        except json.JSONDecodeError as e:
-                            raise ValueError(
-                                f"Error decoding JSON line: {line.strip()}"
-                            ) from e
-
-                        # Fix for older records
-                        has_old_raw_results = (
-                            "results" in result_dict
-                            and isinstance(result_dict["results"], dict)
-                            and "raw" in result_dict["results"]
-                            and isinstance(result_dict["results"]["raw"], dict)
-                            and "test" in result_dict["results"]["raw"]
-                        )
-                        if has_old_raw_results:
-                            result_dict["results"]["raw"] = result_dict["results"][
-                                "raw"
-                            ]["test"]
-
-                        result = BenchmarkResult.from_dict(result_dict)
-                        benchmark_results.append(result)
-            return benchmark_results
-        else:
+        if not self.results_path.exists():
             return list()
+
+        with self.results_path.open() as f:
+            lines = [line.strip() for line in f if line.strip()]
+
+        # Parsing each line (and the large raw-results blob it contains) can take a
+        # while for big results files, so show a progress bar that clears once done
+        # (`get_pbar` uses `leave=False`) to make clear the run is not hanging.
+        benchmark_results: list[BenchmarkResult] = list()
+        for line in get_pbar(
+            iterable=lines,
+            desc="Loading cached results",
+            disable=not self.benchmark_config.progress_bar,
+        ):
+            try:
+                result_dict = json.loads(line)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Error decoding JSON line: {line}") from e
+
+            # Fix for older records
+            has_old_raw_results = (
+                "results" in result_dict
+                and isinstance(result_dict["results"], dict)
+                and "raw" in result_dict["results"]
+                and isinstance(result_dict["results"]["raw"], dict)
+                and "test" in result_dict["results"]["raw"]
+            )
+            if has_old_raw_results:
+                result_dict["results"]["raw"] = result_dict["results"]["raw"]["test"]
+
+            result = BenchmarkResult.from_dict(result_dict)
+            benchmark_results.append(result)
+
+        return benchmark_results
 
     def _download(
         self,
@@ -306,12 +320,46 @@ class Benchmarker:
         )
         del dataset
 
-        model = load_model(
-            model_config=model_config,
-            dataset_config=dataset_config,
-            benchmark_config=benchmark_config,
-        )
-        del model
+        # Skip download if model is a local path
+        if not Path(model_config.model_id).exists():
+            # Check if model is already cached before downloading
+            cache_path = Path(model_config.model_cache_dir)
+            has_cached = cache_path.exists() and any(cache_path.rglob("*.safetensors"))
+            if has_cached:
+                log_once(
+                    f"Model {model_config.model_id!r} is already cached, skipping "
+                    "download.",
+                    level=logging.DEBUG,
+                )
+            else:
+                log_once(
+                    f"Downloading model {model_config.model_id!r}...",
+                    level=logging.INFO,
+                )
+                snapshot_download(
+                    repo_id=model_config.model_id,
+                    revision=model_config.revision,
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
+
+            # For adapter models, also download the base model
+            if model_config.adapter_base_model_id:
+                base_id = model_config.adapter_base_model_id
+                log_once(
+                    f"Downloading adapter base model {base_id!r}...", level=logging.INFO
+                )
+                snapshot_download(
+                    repo_id=model_config.adapter_base_model_id,
+                    revision="main",
+                    cache_dir=model_config.model_cache_dir,
+                    token=get_hf_token(api_key=benchmark_config.api_key),
+                )
+        else:
+            log_once(
+                f"Model {model_config.model_id!r} is a local path, skipping download",
+                level=logging.INFO,
+            )
 
         log_once(
             f"Loading metrics for the '{dataset_config.task.name}' task",
@@ -346,6 +394,7 @@ class Benchmarker:
         download_only: bool | None = None,
         gpu_memory_utilization: float | None = None,
         generative_type: GenerativeType | None = None,
+        use_bits_per_character: bool | None = None,
         attention_backend: t.Literal[
             *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
         ]
@@ -441,6 +490,11 @@ class Benchmarker:
                 generative. If not specified, then the type will be inferred based on
                 the tags of the model. Defaults to the value specified when initialising
                 the benchmarker.
+            use_bits_per_character:
+                Whether to compute bits-per-character (BPC) on the ground-truth answer.
+                For multiple-choice tasks, treats benchmark as text-to-text with bare
+                question → full answer text. Only supported for base decoder models.
+                Defaults to the value specified when initialising the benchmarker.
             attention_backend:
                 The attention backend to use for vLLM. Only relevant if the model is
                 generative. Defaults to the value specified when initialising the
@@ -477,6 +531,9 @@ class Benchmarker:
                 If we're offline benchmarking an adapter model, or if model loading
                 failed.
         """
+        if task is not None and dataset is not None:
+            raise ValueError("Only one of `task` and `dataset` can be specified.")
+
         # Determine if verbose mode is active (either from parameter, FULL_LOG env var,
         # or stored config from __init__)
         is_verbose = (
@@ -484,9 +541,11 @@ class Benchmarker:
             if verbose is not None
             else self.benchmark_config_default_params.verbose
         )
-        # FULL_LOG env var always forces verbose mode
-        if os.getenv("FULL_LOG", "0") == "1":
+
+        # FULL_LOG env var or debug mode always forces verbose mode
+        if os.getenv("FULL_LOG", "0") == "1" or debug:
             is_verbose = True
+
         log_once(
             (
                 "Started EuroEval run."
@@ -496,8 +555,21 @@ class Benchmarker:
             level=logging.INFO,
         )
 
-        if task is not None and dataset is not None:
-            raise ValueError("Only one of `task` and `dataset` can be specified.")
+        # Resolve BPC mode up front (it holds for every evaluation in the run) and
+        # announce it once, so it is clear the run is scoring bits-per-character rather
+        # than the usual task metrics.
+        is_bpc = (
+            use_bits_per_character
+            if use_bits_per_character is not None
+            else self.benchmark_config_default_params.use_bits_per_character
+        )
+        if is_bpc:
+            log_once(
+                "    ↳ Running in bits-per-character (BPC) mode: every dataset will be "
+                "scored by the bits-per-character of the ground-truth answer (lower is "
+                "better) instead of the usual task metrics.",
+                level=logging.INFO,
+            )
 
         # Get a new updated benchmark configuration, based on any changes to the
         # parameters
@@ -605,6 +677,11 @@ class Benchmarker:
                 if generative_type is not None
                 else self.benchmark_config_default_params.generative_type
             ),
+            use_bits_per_character=(
+                use_bits_per_character
+                if use_bits_per_character is not None
+                else self.benchmark_config_default_params.use_bits_per_character
+            ),
             attention_backend=(
                 attention_backend
                 if attention_backend is not None
@@ -684,7 +761,12 @@ class Benchmarker:
         }
 
         # Initialise the current benchmark results with all the ones that we have cached
-        # on disk already (can be none), and remove those datasets from the mapping
+        # on disk already (can be none), and remove those datasets from the mapping.
+        # Read the cached results once: `self.benchmark_results` re-reads and
+        # re-parses the entire results file on every access, and no new results are
+        # written during this partitioning loop, so reading it per-dataset would
+        # needlessly re-parse the whole file once per dataset.
+        existing_benchmark_results = self.benchmark_results
         current_benchmark_results: list[BenchmarkResult] = list()
         for (
             model_config,
@@ -696,7 +778,7 @@ class Benchmarker:
                     model_config=model_config,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,
-                    benchmark_results=self.benchmark_results,
+                    benchmark_results=existing_benchmark_results,
                 )
                 if benchmark_record is not None and not benchmark_config.force:
                     current_benchmark_results.append(benchmark_record)
@@ -808,11 +890,13 @@ class Benchmarker:
                             # Add the remaining number of benchmarks for the model to
                             # our benchmark counter, since we're erroring on the rest of
                             # them
-                            num_errored_benchmarks += (
-                                len(dataset_configs)
-                                - dataset_configs.index(dataset_config)
-                                - 1
-                            )
+                            model_dataset_configs = model_config_to_dataset_configs[
+                                model_config
+                            ]
+                            remaining_configs = model_dataset_configs[
+                                model_dataset_configs.index(dataset_config) + 1 :
+                            ]
+                            num_errored_benchmarks += 1 + len(remaining_configs)
                             break
 
                     # Skip the benchmark if the model is not of the correct
@@ -854,17 +938,25 @@ class Benchmarker:
 
                 elif isinstance(benchmark_output_or_err, InvalidBenchmark):
                     log(benchmark_output_or_err.message, level=logging.WARNING)
-                    num_errored_benchmarks += 1
+                    # Orthogonal task failures count as skipped, not errored
+                    if dataset_config.task.name in ORTHOGONAL_TASKS:
+                        num_skipped_benchmarks += 1
+                    else:
+                        num_errored_benchmarks += 1
                     continue
 
                 elif isinstance(benchmark_output_or_err, InvalidModel):
                     log(benchmark_output_or_err.message, level=logging.WARNING)
 
                     # Add the remaining number of benchmarks for the model to our
-                    # benchmark counter, since we're skipping the rest of them
-                    num_errored_benchmarks += (
-                        len(dataset_configs) - dataset_configs.index(dataset_config) - 1
-                    )
+                    # benchmark counter, since we're erroring on the rest of them
+                    model_dataset_configs = model_config_to_dataset_configs[
+                        model_config
+                    ]
+                    remaining_configs = model_dataset_configs[
+                        model_dataset_configs.index(dataset_config) + 1 :
+                    ]
+                    num_errored_benchmarks += 1 + len(remaining_configs)
                     break
 
                 else:
@@ -1027,7 +1119,11 @@ class Benchmarker:
 
                 results = log_scores(
                     dataset_name=dataset_config.logging_string,
-                    metrics=dataset_config.task.metrics,
+                    metrics=(
+                        [bpc_metric]
+                        if benchmark_config.use_bits_per_character
+                        else dataset_config.task.metrics
+                    ),
                     scores=scores,
                     model_id=model_config.model_id,
                     model_revision=model_config.revision,
@@ -1066,6 +1162,7 @@ class Benchmarker:
                         if dataset_config.val_split is None
                         else not benchmark_config.evaluate_test_split
                     ),
+                    use_bits_per_character=benchmark_config.use_bits_per_character,
                     vllm_version=(
                         get_package_version("vllm")
                         if model_config.inference_backend == InferenceBackend.VLLM

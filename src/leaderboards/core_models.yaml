@@ -13,7 +13,7 @@ issue_number: 1186
 # When the updater last ran. ISO-8601 date. The `generate_leaderboards`
 # script reads this and prompts the user to refresh the list if it's
 # older than 30 days.
-last_updated: 2026-06-11
+last_updated: 2026-06-15
 
 # Regex list seeded from the labels in issue #1186 (🇪🇺). Each pattern is
 # matched with `re.search` against the model identifier with any `#suffix`
@@ -74,11 +74,43 @@ osai_overrides:
 # rewrites everything from `models:` downwards. It is committed so that
 # the YAML diff matches the GitHub issue diff.
 models:
+  - id: 01-ai/Yi-34B
+    type: encoder
+    bucket: encoder
+    parameters: 34388917248
+    pareto_languages: [english, german, swedish]
+    eu: false
+    osai_rank: null
+    api: false
   - id: AI-Sweden-Models/bert-large-nordic-pile-1M-steps
     type: encoder
     bucket: encoder
     parameters: 369426435
     pareto_languages: [swedish]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: AiLab-IMCS-UL/lvbert
+    type: encoder
+    bucket: encoder
+    parameters: 110620928
+    pareto_languages: [latvian]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: almanach/camembert-large
+    type: encoder
+    bucket: encoder
+    parameters: 336695557
+    pareto_languages: [french]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: almanach/camembertv2-base
+    type: encoder
+    bucket: encoder
+    parameters: 111635713
+    pareto_languages: [french]
     eu: false
     osai_rank: null
     api: false
@@ -122,11 +154,67 @@ models:
     eu: false
     osai_rank: null
     api: false
+  - id: dbmdz/bert-medium-historic-multilingual-cased
+    type: encoder
+    bucket: encoder
+    parameters: 42427138
+    pareto_languages: [portuguese]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: dbmdz/bert-mini-historic-multilingual-cased
+    type: encoder
+    bucket: encoder
+    parameters: 11648258
+    pareto_languages: [portuguese]
+    eu: false
+    osai_rank: null
+    api: false
   - id: dbmdz/bert-tiny-historic-multilingual-cased
     type: encoder
     bucket: encoder
     parameters: 4624642
     pareto_languages: [dutch, finnish, french, italian, portuguese, spanish]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: distilbert/distilbert-base-cased
+    type: encoder
+    bucket: encoder
+    parameters: 65812036
+    pareto_languages: [portuguese]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: DTAI-KULeuven/robbert-2023-dutch-large
+    type: encoder
+    bucket: encoder
+    parameters: 355140946
+    pareto_languages: [dutch]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: DTAI-KULeuven/robbertje-1-gb-bort
+    type: encoder
+    bucket: encoder
+    parameters: 45895682
+    pareto_languages: [dutch]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: DTAI-KULeuven/robbertje-1-gb-non-shuffled
+    type: encoder
+    bucket: encoder
+    parameters: 74236418
+    pareto_languages: [dutch]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: EMBEDDIA/est-roberta
+    type: encoder
+    bucket: encoder
+    parameters: 116177666
+    pareto_languages: [estonian]
     eu: false
     osai_rank: null
     api: false
@@ -158,23 +246,15 @@ models:
     type: encoder
     bucket: encoder
     parameters: 93990500
-    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, dutch, english, estonian, french, german, greek, hungarian, latvian, lithuanian, polish, portuguese, romanian, serbian, slovak, slovene, ukrainian]
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, english, estonian, french, german, greek, hungarian, latvian, lithuanian, polish, romanian, serbian, slovak, slovene, ukrainian]
     eu: true
-    osai_rank: null
-    api: false
-  - id: FacebookAI/roberta-base
-    type: encoder
-    bucket: encoder
-    parameters: 124697947
-    pareto_languages: [english]
-    eu: false
     osai_rank: null
     api: false
   - id: FacebookAI/xlm-roberta-large
     type: encoder
     bucket: encoder
     parameters: 561192082
-    pareto_languages: [czech, estonian, french, german, lithuanian, romanian]
+    pareto_languages: [czech, estonian, german, lithuanian, polish, romanian]
     eu: false
     osai_rank: null
     api: false
@@ -182,23 +262,71 @@ models:
     type: encoder
     bucket: encoder
     parameters: 13738755
-    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, estonian, faroese, finnish, french, greek, hungarian, italian, latvian, lithuanian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, swedish, ukrainian]
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, estonian, faroese, finnish, french, greek, hungarian, italian, latvian, lithuanian, polish, romanian, serbian, slovak, slovene, spanish, ukrainian]
     eu: false
+    osai_rank: null
+    api: false
+  - id: Geotrend/bert-base-25lang-cased
+    type: encoder
+    bucket: encoder
+    parameters: 151311362
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
+  - id: Geotrend/bert-base-da-cased
+    type: encoder
+    bucket: encoder
+    parameters: 103822082
+    pareto_languages: [portuguese]
+    eu: true
+    osai_rank: null
+    api: false
+  - id: Geotrend/bert-base-en-da-cased
+    type: encoder
+    bucket: encoder
+    parameters: 111180290
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
+  - id: Geotrend/bert-base-en-fr-de-no-da-cased
+    type: encoder
+    bucket: encoder
+    parameters: 118118382
+    pareto_languages: [portuguese]
+    eu: true
+    osai_rank: null
+    api: false
+  - id: Geotrend/bert-base-en-no-cased
+    type: encoder
+    bucket: encoder
+    parameters: 111441410
+    pareto_languages: [portuguese]
+    eu: true
     osai_rank: null
     api: false
   - id: Geotrend/distilbert-base-25lang-cased
     type: encoder
     bucket: encoder
     parameters: 108867577
-    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, dutch, estonian, finnish, french, greek, hungarian, latvian, lithuanian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, ukrainian]
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, estonian, finnish, french, greek, hungarian, latvian, lithuanian, polish, romanian, serbian, slovak, slovene, spanish, ukrainian]
     eu: true
     osai_rank: null
     api: false
-  - id: google/rembert
+  - id: Geotrend/distilbert-base-en-fr-de-no-da-cased
     type: encoder
     bucket: encoder
-    parameters: 574602505
-    pareto_languages: [dutch]
+    parameters: 75547394
+    pareto_languages: [portuguese]
+    eu: true
+    osai_rank: null
+    api: false
+  - id: google/electra-base-discriminator
+    type: encoder
+    bucket: encoder
+    parameters: 109484547
+    pareto_languages: [english]
     eu: false
     osai_rank: null
     api: false
@@ -206,7 +334,7 @@ models:
     type: encoder
     bucket: encoder
     parameters: 278044162
-    pareto_languages: [albanian, bosnian, catalan, czech, dutch, estonian, finnish, greek, polish, slovak, slovene, spanish]
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, czech, finnish, greek, hungarian, lithuanian, polish, serbian, slovak, slovene, spanish, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -214,7 +342,7 @@ models:
     type: encoder
     bucket: encoder
     parameters: 559890946
-    pareto_languages: [albanian, bosnian, catalan, czech, hungarian, polish, spanish]
+    pareto_languages: [albanian, bosnian, catalan, czech, greek, hungarian, polish, spanish]
     eu: false
     osai_rank: null
     api: false
@@ -222,7 +350,7 @@ models:
     type: encoder
     bucket: encoder
     parameters: 307537161
-    pareto_languages: [bulgarian, catalan, croatian, czech, estonian, french, german, hungarian, italian, latvian, lithuanian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, ukrainian]
+    pareto_languages: [bulgarian, catalan, croatian, czech, dutch, german, hungarian, italian, latvian, polish, portuguese, romanian, serbian, slovak, slovene, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -230,7 +358,15 @@ models:
     type: encoder
     bucket: encoder
     parameters: 140645001
-    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, dutch, estonian, finnish, french, german, greek, hungarian, italian, latvian, lithuanian, polish, portuguese, romanian, serbian, slovene, spanish, ukrainian]
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, finnish, german, greek, hungarian, italian, lithuanian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, ukrainian]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: KB/bert-base-swedish-cased
+    type: encoder
+    bucket: encoder
+    parameters: 124693251
+    pareto_languages: [swedish]
     eu: false
     osai_rank: null
     api: false
@@ -250,6 +386,14 @@ models:
     eu: false
     osai_rank: null
     api: false
+  - id: KennethEnevoldsen/dfm-sentence-encoder-large-1
+    type: encoder
+    bucket: encoder
+    parameters: 407389520
+    pareto_languages: [danish]
+    eu: false
+    osai_rank: null
+    api: false
   - id: KennethEnevoldsen/dfm-sentence-encoder-medium
     type: encoder
     bucket: encoder
@@ -262,7 +406,7 @@ models:
     type: encoder
     bucket: encoder
     parameters: 21944195
-    pareto_languages: [swedish]
+    pareto_languages: [danish, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -310,7 +454,7 @@ models:
     type: encoder
     bucket: encoder
     parameters: 13738498
-    pareto_languages: [danish, swedish]
+    pareto_languages: [danish]
     eu: false
     osai_rank: null
     api: false
@@ -334,7 +478,7 @@ models:
     type: encoder
     bucket: encoder
     parameters: 278225673
-    pareto_languages: [bulgarian, catalan, estonian, finnish, greek, hungarian, italian, latvian, lithuanian, polish, romanian, serbian, slovene]
+    pareto_languages: [bulgarian, finnish, greek, italian, latvian, lithuanian, polish, romanian, serbian, slovene]
     eu: false
     osai_rank: null
     api: false
@@ -386,11 +530,51 @@ models:
     eu: false
     osai_rank: null
     api: false
+  - id: occiglot/occiglot-7b-de-en
+    type: encoder
+    bucket: encoder
+    parameters: 7241732096
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
+  - id: occiglot/occiglot-7b-de-en-instruct
+    type: encoder
+    bucket: encoder
+    parameters: 7241748480
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
+  - id: ReBatch/Llama-3-8B-dutch
+    type: encoder
+    bucket: encoder
+    parameters: 8030277632
+    pareto_languages: [dutch]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: sarnikowski/convbert-small-da-cased
+    type: encoder
+    bucket: encoder
+    parameters: 12948826
+    pareto_languages: [danish, swedish]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: sarnikowski/electra-small-discriminator-da-256-cased
+    type: encoder
+    bucket: encoder
+    parameters: 13353858
+    pareto_languages: [danish, portuguese, swedish]
+    eu: false
+    osai_rank: null
+    api: false
   - id: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
     type: encoder
     bucket: encoder
     parameters: 117654272
-    pareto_languages: [albanian, catalan, croatian, dutch, estonian, hungarian, latvian, lithuanian, romanian, serbian, slovak, slovene]
+    pareto_languages: [albanian, catalan, croatian, czech, greek, hungarian, lithuanian, romanian, serbian, slovak, slovene]
     eu: false
     osai_rank: null
     api: false
@@ -398,7 +582,7 @@ models:
     type: encoder
     bucket: encoder
     parameters: 134734080
-    pareto_languages: [portuguese, spanish]
+    pareto_languages: [spanish]
     eu: false
     osai_rank: null
     api: false
@@ -406,7 +590,15 @@ models:
     type: encoder
     bucket: encoder
     parameters: 470927360
-    pareto_languages: [albanian, bosnian, bulgarian, czech, dutch, estonian, greek, latvian, slovak, ukrainian]
+    pareto_languages: [albanian, bosnian, bulgarian, czech, estonian, greek, hungarian, latvian, slovak, slovene, ukrainian]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: syvai/llama3-da-base
+    type: encoder
+    bucket: encoder
+    parameters: 8030261248
+    pareto_languages: [dutch, faroese, german, icelandic]
     eu: false
     osai_rank: null
     api: false
@@ -454,15 +646,7 @@ models:
     type: encoder
     bucket: encoder
     parameters: 277453570
-    pareto_languages: [dutch]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: AI-Sweden-Models/gpt-sw3-1.3b-instruct
-    type: instruction_tuned_decoder
-    bucket: tiny
-    parameters: 1444532224
-    pareto_languages: [norwegian, swedish]
+    pareto_languages: [finnish]
     eu: false
     osai_rank: null
     api: false
@@ -470,7 +654,7 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 186112512
-    pareto_languages: [danish, faroese, icelandic, norwegian, swedish]
+    pareto_languages: [danish, icelandic, norwegian, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -478,7 +662,7 @@ models:
     type: base_decoder
     bucket: tiny
     parameters: 470607872
-    pareto_languages: [danish, english, icelandic, norwegian]
+    pareto_languages: [english, icelandic, norwegian]
     eu: false
     osai_rank: null
     api: false
@@ -502,7 +686,7 @@ models:
     type: base_decoder
     bucket: tiny
     parameters: 140248512
-    pareto_languages: [finnish]
+    pareto_languages: [estonian, finnish]
     eu: false
     osai_rank: null
     api: false
@@ -530,19 +714,11 @@ models:
     eu: false
     osai_rank: null
     api: false
-  - id: google/gemma-3-1b-it
-    type: instruction_tuned_decoder
-    bucket: tiny
-    parameters: 999885952
-    pareto_languages: [albanian, czech, danish, estonian, faroese, greek, latvian, lithuanian, norwegian, polish]
-    eu: false
-    osai_rank: null
-    api: false
   - id: google/gemma-3-1b-pt
     type: base_decoder
     bucket: tiny
     parameters: 999885952
-    pareto_languages: [bosnian, czech, danish, hungarian, lithuanian, portuguese, serbian, slovene, spanish, swedish]
+    pareto_languages: [bosnian, czech, danish, german, hungarian, lithuanian, polish, portuguese, serbian, slovene, spanish, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -550,7 +726,7 @@ models:
     type: base_decoder
     bucket: tiny
     parameters: 268098176
-    pareto_languages: [albanian, bosnian, catalan, czech, danish, dutch, english, estonian, faroese, finnish, french, greek, hungarian, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, swedish, ukrainian]
+    pareto_languages: [albanian, bosnian, catalan, czech, danish, dutch, english, estonian, faroese, finnish, french, greek, hungarian, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, slovak, slovene, spanish, swedish, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -558,15 +734,15 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 268098176
-    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, danish, estonian, finnish, german, greek, hungarian, icelandic, latvian, lithuanian, norwegian, polish, romanian, serbian, slovak, swedish, ukrainian]
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, danish, estonian, finnish, greek, hungarian, icelandic, latvian, lithuanian, norwegian, polish, romanian, serbian, slovak, swedish, ukrainian]
     eu: false
     osai_rank: null
     api: false
-  - id: HuggingFaceTB/SmolLM2-1.7B-Instruct
-    type: instruction_tuned_decoder
+  - id: HuggingFaceTB/SmolLM2-1.7B
+    type: base_decoder
     bucket: tiny
     parameters: 1711376384
-    pareto_languages: [dutch]
+    pareto_languages: [french]
     eu: false
     osai_rank: null
     api: false
@@ -574,7 +750,7 @@ models:
     type: base_decoder
     bucket: tiny
     parameters: 134515008
-    pareto_languages: [bosnian, catalan, danish, english, estonian, faroese, finnish, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, slovak, slovene, spanish, ukrainian]
+    pareto_languages: [bosnian, catalan, danish, english, estonian, faroese, finnish, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, slovene, spanish]
     eu: false
     osai_rank: null
     api: false
@@ -582,7 +758,7 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 134515008
-    pareto_languages: [albanian, croatian, danish, faroese, finnish, greek, hungarian, icelandic, latvian, norwegian, serbian]
+    pareto_languages: [albanian, danish, faroese, finnish, greek, hungarian, icelandic, latvian, norwegian, slovak, spanish]
     eu: false
     osai_rank: null
     api: false
@@ -590,7 +766,7 @@ models:
     type: base_decoder
     bucket: tiny
     parameters: 361821120
-    pareto_languages: [dutch, english, french, icelandic, italian, portuguese, spanish]
+    pareto_languages: [english, french, italian, portuguese, spanish]
     eu: false
     osai_rank: null
     api: false
@@ -599,22 +775,6 @@ models:
     bucket: tiny
     parameters: 361821120
     pareto_languages: [bosnian, croatian, faroese, serbian, slovene]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: ibm-granite/granite-3.0-1b-a400m-base
-    type: base_decoder
-    bucket: tiny
-    parameters: 1384956928
-    pareto_languages: [dutch]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: ibm-granite/granite-3.0-1b-a400m-instruct
-    type: instruction_tuned_decoder
-    bucket: tiny
-    parameters: 1334628352
-    pareto_languages: [dutch]
     eu: false
     osai_rank: null
     api: false
@@ -630,7 +790,7 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 1720574976
-    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, danish, english, french, greek, hungarian, italian, lithuanian, portuguese, romanian, serbian, slovak, slovene, spanish, swedish, ukrainian]
+    pareto_languages: [albanian, bosnian, catalan, croatian, danish, dutch, english, french, greek, hungarian, italian, lithuanian, portuguese, romanian, serbian, slovak, slovene, spanish, swedish, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -654,7 +814,7 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 354483968
-    pareto_languages: [english, german, italian, polish, portuguese, serbian, slovak, slovene, spanish]
+    pareto_languages: [czech, danish, english, german, italian, polish, portuguese, serbian, slovak, slovene, spanish]
     eu: true
     osai_rank: null
     api: false
@@ -662,7 +822,7 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 742489344
-    pareto_languages: [bosnian, czech, danish, english, icelandic, latvian, lithuanian, norwegian, polish, romanian, serbian]
+    pareto_languages: [bosnian, czech, danish, english, faroese, icelandic, latvian, lithuanian, norwegian, polish, romanian, serbian]
     eu: true
     osai_rank: null
     api: false
@@ -694,7 +854,15 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 354483968
-    pareto_languages: [bosnian]
+    pareto_languages: [bosnian, bulgarian]
+    eu: true
+    osai_rank: null
+    api: false
+  - id: LiquidAI/LFM2.5-350M-Base
+    type: instruction_tuned_decoder
+    bucket: tiny
+    parameters: 354483968
+    pareto_languages: []
     eu: true
     osai_rank: null
     api: false
@@ -702,7 +870,7 @@ models:
     type: base_decoder
     bucket: tiny
     parameters: 1235814400
-    pareto_languages: [bosnian, catalan, danish, swedish]
+    pareto_languages: [bosnian, catalan, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -710,7 +878,7 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 560898240
-    pareto_languages: []
+    pareto_languages: [french]
     eu: true
     osai_rank: null
     api: false
@@ -719,6 +887,30 @@ models:
     bucket: tiny
     parameters: 437760960
     pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
+  - id: NbAiLab/borealis-270m-instruct-preview
+    type: instruction_tuned_decoder
+    bucket: tiny
+    parameters: 268098176
+    pareto_languages: [icelandic]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: openbmb/MiniCPM5-1B
+    type: reasoning_decoder
+    bucket: tiny
+    parameters: 1080632832
+    pareto_languages: [greek]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: PleIAs/Baguettotron
+    type: base_decoder
+    bucket: tiny
+    parameters: 320956992
+    pareto_languages: [dutch]
     eu: true
     osai_rank: null
     api: false
@@ -766,7 +958,7 @@ models:
     type: base_decoder
     bucket: tiny
     parameters: 353424384
-    pareto_languages: [bosnian, bulgarian, catalan, estonian, finnish, greek, icelandic, italian, lithuanian, romanian, slovene]
+    pareto_languages: [albanian, bosnian, catalan, estonian, finnish, greek, icelandic, italian, lithuanian, romanian, slovene]
     eu: true
     osai_rank: null
     api: false
@@ -774,7 +966,7 @@ models:
     type: base_decoder
     bucket: tiny
     parameters: 1195468800
-    pareto_languages: [dutch]
+    pareto_languages: []
     eu: true
     osai_rank: null
     api: false
@@ -782,7 +974,7 @@ models:
     type: base_decoder
     bucket: tiny
     parameters: 353424384
-    pareto_languages: [danish]
+    pareto_languages: []
     eu: true
     osai_rank: null
     api: false
@@ -790,7 +982,7 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 619570176
-    pareto_languages: [danish]
+    pareto_languages: [english]
     eu: false
     osai_rank: null
     api: false
@@ -798,7 +990,7 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 619570176
-    pareto_languages: [dutch]
+    pareto_languages: [dutch, english, norwegian, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -806,7 +998,7 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 1543714304
-    pareto_languages: [albanian, bosnian, bulgarian, croatian, czech, danish, english, estonian, faroese, finnish, french, german, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, ukrainian]
+    pareto_languages: [czech, danish, dutch, english, faroese, french, german, icelandic, italian, norwegian, polish, serbian, slovak, spanish, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -826,11 +1018,27 @@ models:
     eu: false
     osai_rank: null
     api: false
+  - id: Qwen/Qwen3.5-0.8B
+    type: instruction_tuned_decoder
+    bucket: tiny
+    parameters: 873436192
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, danish, dutch, english, estonian, faroese, finnish, french, german, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, swedish, ukrainian]
+    eu: false
+    osai_rank: null
+    api: false
   - id: Qwen/Qwen3.5-0.8B-Base
     type: base_decoder
     bucket: tiny
     parameters: 873436192
     pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, danish, dutch, english, estonian, faroese, finnish, french, german, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, swedish, ukrainian]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: Sigurdur/icebreaker
+    type: base_decoder
+    bucket: tiny
+    parameters: 110418432
+    pareto_languages: [danish, icelandic]
     eu: false
     osai_rank: null
     api: false
@@ -846,7 +1054,7 @@ models:
     type: instruction_tuned_decoder
     bucket: tiny
     parameters: 1596507648
-    pareto_languages: [albanian, bosnian, catalan, french, polish]
+    pareto_languages: [catalan, polish]
     eu: true
     osai_rank: null
     api: false
@@ -854,7 +1062,7 @@ models:
     type: base_decoder
     bucket: tiny
     parameters: 1644515328
-    pareto_languages: [danish, dutch, portuguese]
+    pareto_languages: [dutch, icelandic, portuguese]
     eu: false
     osai_rank: null
     api: false
@@ -890,35 +1098,11 @@ models:
     eu: true
     osai_rank: null
     api: false
-  - id: 01-ai/Yi-1.5-6B
-    type: base_decoder
-    bucket: small
-    parameters: 6061035520
-    pareto_languages: [english]
-    eu: false
-    osai_rank: null
-    api: false
   - id: 01-ai/Yi-1.5-9B
     type: base_decoder
     bucket: small
     parameters: 8829407232
-    pareto_languages: [english, spanish]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: AI-Sweden-Models/gpt-sw3-6.7b
-    type: base_decoder
-    bucket: small
-    parameters: 7111057408
-    pareto_languages: [danish, swedish]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: AI-Sweden-Models/Llama-3-8B
-    type: base_decoder
-    bucket: small
-    parameters: 8030261248
-    pareto_languages: [danish]
+    pareto_languages: [spanish]
     eu: false
     osai_rank: null
     api: false
@@ -926,28 +1110,12 @@ models:
     type: base_decoder
     bucket: small
     parameters: 7298011136
-    pareto_languages: [english]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: bineric/NorskGPT-Mistral-7b
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 7241732096
-    pareto_languages: [english]
+    pareto_languages: [bosnian, english]
     eu: false
     osai_rank: null
     api: false
   - id: BSC-LT/salamandra-2b
     type: base_decoder
-    bucket: small
-    parameters: 2253490176
-    pareto_languages: []
-    eu: true
-    osai_rank: null
-    api: false
-  - id: BSC-LT/salamandra-2b-instruct
-    type: instruction_tuned_decoder
     bucket: small
     parameters: 2253490176
     pareto_languages: []
@@ -970,11 +1138,11 @@ models:
     eu: true
     osai_rank: null
     api: false
-  - id: CohereForAI/aya-expanse-8b
+  - id: CohereForAI/aya-23-8B
     type: instruction_tuned_decoder
     bucket: small
     parameters: 8028033024
-    pareto_languages: [dutch, english, french, german]
+    pareto_languages: [dutch]
     eu: false
     osai_rank: null
     api: false
@@ -982,31 +1150,23 @@ models:
     type: base_decoder
     bucket: small
     parameters: 3349227520
-    pareto_languages: [bosnian, bulgarian, catalan, czech, danish, estonian, french, hungarian, icelandic, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovene, swedish]
+    pareto_languages: [bosnian, bulgarian, catalan, czech, danish, estonian, french, hungarian, icelandic, lithuanian, norwegian, polish, romanian, slovene]
     eu: false
     osai_rank: null
     api: false
-  - id: danish-foundation-models/munin-7b-alpha
-    type: base_decoder
+  - id: CohereLabs/tiny-aya-global
+    type: instruction_tuned_decoder
     bucket: small
-    parameters: 7241732096
-    pareto_languages: [swedish]
+    parameters: 3349227520
+    pareto_languages: [estonian]
     eu: false
     osai_rank: null
     api: false
-  - id: danish-foundation-models/munin-7b-core-pt-3
-    type: base_decoder
+  - id: CohereLabs/tiny-aya-water
+    type: instruction_tuned_decoder
     bucket: small
-    parameters: 7002656768
-    pareto_languages: [swedish]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: google/gemma-2-2b
-    type: base_decoder
-    bucket: small
-    parameters: 2614341888
-    pareto_languages: [german]
+    parameters: 3349227520
+    pareto_languages: [catalan, greek, latvian]
     eu: false
     osai_rank: null
     api: false
@@ -1018,19 +1178,27 @@ models:
     eu: false
     osai_rank: null
     api: false
-  - id: google/gemma-2-9b-it
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 9241705984
-    pareto_languages: [norwegian]
-    eu: false
-    osai_rank: null
-    api: false
   - id: google/gemma-2b
     type: base_decoder
     bucket: small
     parameters: 2506172416
-    pareto_languages: [finnish]
+    pareto_languages: [finnish, german, swedish]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: google/gemma-3-4b-it
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 4300079472
+    pareto_languages: [danish]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: google/gemma-3-4b-pt
+    type: base_decoder
+    bucket: small
+    parameters: 4300079472
+    pareto_languages: [danish]
     eu: false
     osai_rank: null
     api: false
@@ -1038,7 +1206,7 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 5439438272
-    pareto_languages: [albanian, estonian, faroese, greek, norwegian]
+    pareto_languages: [albanian, danish, estonian, faroese, greek, norwegian]
     eu: false
     osai_rank: null
     api: false
@@ -1054,7 +1222,23 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 7849978192
-    pareto_languages: [albanian, bosnian, bulgarian, croatian, czech, estonian, faroese, finnish, french, german, greek, hungarian, icelandic, italian, latvian, norwegian, portuguese, romanian, serbian, slovak, slovene]
+    pareto_languages: [bosnian, croatian, czech, danish, estonian, faroese, italian, latvian, portuguese, slovak]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: google/gemma-4-E2B-it
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 5123178979
+    pareto_languages: [icelandic]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: google/gemma-4-E4B-it
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 7996157418
+    pareto_languages: [bosnian, finnish, polish, portuguese]
     eu: false
     osai_rank: null
     api: false
@@ -1078,7 +1262,7 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 3075098624
-    pareto_languages: [greek, icelandic, norwegian, polish, portuguese, serbian, spanish, swedish, ukrainian]
+    pareto_languages: [norwegian, polish, portuguese, serbian, spanish, swedish, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -1086,7 +1270,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 3075098624
-    pareto_languages: [bosnian, catalan, croatian, czech, danish, english, french, german, greek, icelandic, italian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovene, spanish, swedish]
+    pareto_languages: [bosnian, catalan, croatian, czech, danish, french, greek, italian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovene, spanish]
     eu: false
     osai_rank: null
     api: false
@@ -1094,23 +1278,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 2533525504
-    pareto_languages: [dutch, portuguese]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: ibm-granite/granite-3.0-2b-instruct
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 2634201088
-    pareto_languages: [dutch]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: ibm-granite/granite-3.0-3b-a800m-instruct
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 3374295552
-    pareto_languages: [dutch]
+    pareto_languages: [english, norwegian, portuguese]
     eu: false
     osai_rank: null
     api: false
@@ -1122,19 +1290,11 @@ models:
     eu: false
     osai_rank: null
     api: false
-  - id: ibm-granite/granite-3.0-8b-instruct
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 8170848256
-    pareto_languages: [swedish]
-    eu: false
-    osai_rank: null
-    api: false
   - id: ibm-granite/granite-4.0-h-micro
     type: instruction_tuned_decoder
     bucket: small
     parameters: 3191396096
-    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, danish, english, estonian, faroese, finnish, french, german, hungarian, icelandic, latvian, norwegian, polish, romanian, serbian, slovak, slovene, ukrainian]
+    pareto_languages: [albanian, bosnian, croatian, dutch, english, estonian, finnish, hungarian, icelandic, norwegian, polish, slovak, slovene]
     eu: false
     osai_rank: null
     api: false
@@ -1142,7 +1302,39 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 3402836480
-    pareto_languages: [bulgarian, catalan, czech, english, faroese, french, german, hungarian, italian, latvian, norwegian, polish, romanian, serbian, slovak, ukrainian]
+    pareto_languages: [catalan, danish, dutch, english, french, german, hungarian, italian, norwegian, polish, romanian, slovak, ukrainian]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: INSAIT-Institute/BgGPT-Gemma-2-9B-IT-v1.0
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 9241705984
+    pareto_languages: [bosnian, bulgarian, czech, slovene]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: INSAIT-Institute/BgGPT-Gemma-3-4B-IT
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 4300079472
+    pareto_languages: [bulgarian]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: INSAIT-Institute/MamayLM-Gemma-2-9B-IT-v0.1
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 9241705984
+    pareto_languages: [croatian, czech, polish, slovak]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: INSAIT-Institute/MamayLM-Gemma-3-4B-IT-v1.0
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 4300079472
+    pareto_languages: [bosnian, czech]
     eu: false
     osai_rank: null
     api: false
@@ -1158,7 +1350,15 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 2569272320
-    pareto_languages: [english, german, spanish]
+    pareto_languages: [spanish]
+    eu: true
+    osai_rank: null
+    api: false
+  - id: LiquidAI/LFM2.5-8B-A1B
+    type: reasoning_decoder
+    bucket: small
+    parameters: 8000000000
+    pareto_languages: []
     eu: true
     osai_rank: null
     api: false
@@ -1170,11 +1370,11 @@ models:
     eu: true
     osai_rank: null
     api: false
-  - id: LumiOpen/Llama-Poro-2-8B-SFT
-    type: instruction_tuned_decoder
+  - id: meta-llama/Llama-2-7b-hf
+    type: base_decoder
     bucket: small
-    parameters: 8030261248
-    pareto_languages: [finnish]
+    parameters: 6738417664
+    pareto_languages: [dutch]
     eu: false
     osai_rank: null
     api: false
@@ -1182,15 +1382,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 8030261248
-    pareto_languages: [catalan, french, italian, latvian, serbian, slovene]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: meta-llama/Llama-3.1-8B-Instruct
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 8030261248
-    pareto_languages: [danish, english]
+    pareto_languages: [bosnian, catalan, french, italian, latvian, norwegian, serbian, slovene]
     eu: false
     osai_rank: null
     api: false
@@ -1198,15 +1390,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 3212749824
-    pareto_languages: [danish, english]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: meta-llama/Llama-3.2-3B-Instruct
-    type: instruction_tuned_decoder
-    bucket: small
-    parameters: 3212749824
-    pareto_languages: [danish, dutch, english, french, german, greek]
+    pareto_languages: [icelandic, norwegian]
     eu: false
     osai_rank: null
     api: false
@@ -1214,7 +1398,15 @@ models:
     type: base_decoder
     bucket: small
     parameters: 8030261248
-    pareto_languages: [dutch, english]
+    pareto_languages: [dutch, english, faroese, german]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: microsoft/Phi-3-mini-128k-instruct
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 3821079552
+    pareto_languages: [dutch]
     eu: false
     osai_rank: null
     api: false
@@ -1222,7 +1414,7 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 4022468096
-    pareto_languages: [bosnian, croatian, czech, estonian, german, italian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, ukrainian]
+    pareto_languages: [bosnian, catalan, croatian, czech, estonian, french, german, italian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, ukrainian]
     eu: true
     osai_rank: null
     api: false
@@ -1230,7 +1422,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 4251743232
-    pareto_languages: [albanian, catalan, croatian, czech, danish, english, estonian, faroese, french, german, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, swedish, ukrainian]
+    pareto_languages: [albanian, catalan, croatian, czech, danish, english, estonian, faroese, french, german, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, ukrainian]
     eu: true
     osai_rank: null
     api: false
@@ -1254,7 +1446,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 8918026240
-    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, english, faroese, french, german, greek, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, ukrainian]
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, danish, french, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, ukrainian]
     eu: true
     osai_rank: null
     api: false
@@ -1262,7 +1454,15 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 7415529472
-    pareto_languages: []
+    pareto_languages: [albanian, bosnian, bulgarian, croatian, czech, danish, english, estonian, faroese, finnish, french, german, greek, hungarian, icelandic, latvian, norwegian, romanian, serbian, slovak, slovene, ukrainian]
+    eu: true
+    osai_rank: null
+    api: false
+  - id: mistralai/Ministral-3-8B-Reasoning-2512
+    type: reasoning_decoder
+    bucket: small
+    parameters: 8918026240
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, danish, english, estonian, faroese, finnish, french, german, greek, lithuanian, norwegian, portuguese, romanian, ukrainian]
     eu: true
     osai_rank: null
     api: false
@@ -1270,7 +1470,7 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 8019808256
-    pareto_languages: [dutch]
+    pareto_languages: [english]
     eu: true
     osai_rank: null
     api: false
@@ -1302,7 +1502,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 7248023552
-    pareto_languages: [dutch]
+    pareto_languages: []
     eu: true
     osai_rank: null
     api: false
@@ -1314,11 +1514,35 @@ models:
     eu: true
     osai_rank: null
     api: false
+  - id: NbAiLab/borealis-open-4b
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 4300079472
+    pareto_languages: [faroese]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: Nexusflow/Starling-LM-7B-beta
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 7241748480
+    pareto_languages: [norwegian]
+    eu: false
+    osai_rank: null
+    api: false
   - id: nvidia/mistral-nemo-minitron-8b-base
     type: base_decoder
     bucket: small
     parameters: 8414105600
-    pareto_languages: [english]
+    pareto_languages: [icelandic, norwegian]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: nvidia/NVIDIA-Nemotron-3-Nano-4B-BF16
+    type: reasoning_decoder
+    bucket: small
+    parameters: 3973556832
+    pareto_languages: [albanian, bosnian, catalan, czech, danish, english, french, greek, hungarian, italian, norwegian, romanian, serbian, spanish, swedish, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -1334,7 +1558,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 7241732096
-    pareto_languages: [danish, dutch, german, swedish]
+    pareto_languages: []
     eu: true
     osai_rank: null
     api: false
@@ -1342,7 +1566,7 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 7241748480
-    pareto_languages: [danish, dutch, french, german]
+    pareto_languages: []
     eu: true
     osai_rank: null
     api: false
@@ -1382,7 +1606,7 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 2031739904
-    pareto_languages: [albanian, bosnian, catalan, czech, danish, english, estonian, finnish, french, german, hungarian, icelandic, italian, latvian, norwegian, portuguese, romanian, serbian, spanish, ukrainian]
+    pareto_languages: [albanian, bosnian, catalan, czech, danish, dutch, english, estonian, finnish, french, german, greek, hungarian, icelandic, italian, latvian, norwegian, portuguese, romanian, serbian, spanish, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -1390,7 +1614,7 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 4022468096
-    pareto_languages: [albanian, bulgarian, catalan, finnish, greek, hungarian, icelandic, latvian, norwegian, slovak, slovene]
+    pareto_languages: [albanian, catalan, danish, finnish, greek, hungarian, icelandic, latvian, norwegian, slovak, slovene]
     eu: false
     osai_rank: null
     api: false
@@ -1414,7 +1638,7 @@ models:
     type: reasoning_decoder
     bucket: small
     parameters: 8190735360
-    pareto_languages: [faroese, finnish, norwegian]
+    pareto_languages: [finnish, norwegian, polish]
     eu: false
     osai_rank: null
     api: false
@@ -1422,7 +1646,15 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 8190735360
-    pareto_languages: [catalan, croatian, finnish, hungarian, latvian, polish, ukrainian]
+    pareto_languages: [catalan, finnish, hungarian, latvian]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: Qwen/Qwen3.5-2B
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 2274067232
+    pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, danish, dutch, english, estonian, faroese, finnish, french, german, greek, hungarian, icelandic, italian, latvian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -1454,7 +1686,7 @@ models:
     type: reasoning_decoder
     bucket: small
     parameters: 9653100528
-    pareto_languages: [albanian, bulgarian, catalan, croatian, danish, estonian, faroese, greek, icelandic, latvian, lithuanian, norwegian, slovene, swedish]
+    pareto_languages: [albanian, bulgarian, catalan, croatian, estonian, faroese, greek, icelandic, lithuanian, norwegian, slovene, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -1462,7 +1694,7 @@ models:
     type: base_decoder
     bucket: small
     parameters: 9653100528
-    pareto_languages: [albanian, bulgarian, faroese, greek, italian, slovak, ukrainian]
+    pareto_languages: [albanian, bulgarian, greek, italian, slovak, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -1474,10 +1706,34 @@ models:
     eu: false
     osai_rank: null
     api: false
+  - id: speakleash/Bielik-4.5B-v3
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 4757260288
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
   - id: speakleash/Bielik-4.5B-v3.0-Instruct
     type: instruction_tuned_decoder
     bucket: small
     parameters: 4757260288
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
+  - id: speakleash/Bielik-7B-Instruct-v0.1
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 7241732096
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
+  - id: speakleash/Bielik-7B-v0.1
+    type: base_decoder
+    bucket: small
+    parameters: 7241732096
     pareto_languages: []
     eu: true
     osai_rank: null
@@ -1530,6 +1786,22 @@ models:
     eu: false
     osai_rank: null
     api: false
+  - id: Unbabel/Tower-Plus-2B
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 2614341888
+    pareto_languages: [icelandic]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: Unbabel/Tower-Plus-9B
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 9241705984
+    pareto_languages: [bosnian, faroese]
+    eu: false
+    osai_rank: null
+    api: false
   - id: utter-project/EuroLLM-9B
     type: base_decoder
     bucket: small
@@ -1542,7 +1814,7 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 9152319488
-    pareto_languages: [czech]
+    pareto_languages: []
     eu: true
     osai_rank: null
     api: false
@@ -1550,7 +1822,7 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 9152319488
-    pareto_languages: []
+    pareto_languages: [czech, estonian]
     eu: true
     osai_rank: null
     api: false
@@ -1574,6 +1846,14 @@ models:
     type: instruction_tuned_decoder
     bucket: small
     parameters: 2061162016
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
+  - id: utter-project/EuroVLM-9B-Preview
+    type: instruction_tuned_decoder
+    bucket: small
+    parameters: 9571583520
     pareto_languages: []
     eu: true
     osai_rank: null
@@ -1610,11 +1890,11 @@ models:
     eu: false
     osai_rank: null
     api: false
-  - id: CohereForAI/c4ai-command-r-08-2024
+  - id: cjvt/GaMS3-12B-Instruct
     type: instruction_tuned_decoder
     bucket: medium
-    parameters: 32296476672
-    pareto_languages: [english]
+    parameters: 11766034176
+    pareto_languages: [slovak]
     eu: false
     osai_rank: null
     api: false
@@ -1622,7 +1902,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 14765947904
-    pareto_languages: [italian, slovak, spanish]
+    pareto_languages: [german, italian, slovak, spanish]
     eu: false
     osai_rank: null
     api: false
@@ -1630,7 +1910,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 32759790592
-    pareto_languages: [english, italian, latvian, polish, slovak, spanish]
+    pareto_languages: [german, spanish]
     eu: false
     osai_rank: null
     api: false
@@ -1638,7 +1918,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 12187325040
-    pareto_languages: [bosnian, bulgarian, croatian, czech, estonian, faroese, finnish, greek, hungarian, icelandic, latvian, norwegian, romanian, serbian, slovak, ukrainian]
+    pareto_languages: [bosnian, croatian, czech, danish, estonian, finnish, german, greek, hungarian, latvian, serbian, slovak]
     eu: false
     osai_rank: null
     api: false
@@ -1646,7 +1926,7 @@ models:
     type: base_decoder
     bucket: medium
     parameters: 12187325040
-    pareto_languages: [bosnian, catalan, croatian, czech, estonian, faroese, hungarian, lithuanian, norwegian, romanian, serbian]
+    pareto_languages: [bosnian, catalan, croatian, czech, danish, estonian, faroese, hungarian, lithuanian, norwegian, romanian, serbian]
     eu: false
     osai_rank: null
     api: false
@@ -1654,7 +1934,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 27432406640
-    pareto_languages: [croatian, estonian, faroese, greek, hungarian, latvian, norwegian]
+    pareto_languages: [croatian, estonian, greek, hungarian, latvian]
     eu: false
     osai_rank: null
     api: false
@@ -1662,7 +1942,39 @@ models:
     type: base_decoder
     bucket: medium
     parameters: 27432406640
-    pareto_languages: [albanian, bosnian, croatian, czech, estonian, faroese, greek, hungarian, lithuanian, norwegian, romanian, serbian, slovak, slovene, ukrainian]
+    pareto_languages: [albanian, bosnian, croatian, czech, danish, estonian, faroese, greek, hungarian, lithuanian, norwegian, romanian, serbian, slovak, slovene, ukrainian]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: google/gemma-4-26B-A4B-it
+    type: instruction_tuned_decoder
+    bucket: medium
+    parameters: 25805936206
+    pareto_languages: [czech, english, estonian, faroese, finnish, french, greek, italian, latvian, norwegian, polish, portuguese, swedish]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: google/gemma-4-31B-it
+    type: instruction_tuned_decoder
+    bucket: medium
+    parameters: 31273088876
+    pareto_languages: [albanian, bulgarian, catalan, croatian, czech, danish, dutch, english, estonian, faroese, finnish, french, german, greek, hungarian, icelandic, italian, latvian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, swedish]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: INSAIT-Institute/BgGPT-Gemma-3-12B-IT
+    type: instruction_tuned_decoder
+    bucket: medium
+    parameters: 12187325040
+    pareto_languages: [bosnian, bulgarian, croatian, slovak, slovene]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: INSAIT-Institute/BgGPT-Gemma-3-27B-IT
+    type: instruction_tuned_decoder
+    bucket: medium
+    parameters: 27432406640
+    pareto_languages: [bulgarian, croatian, slovene]
     eu: false
     osai_rank: null
     api: false
@@ -1670,7 +1982,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 24011361280
-    pareto_languages: [czech]
+    pareto_languages: [czech, danish]
     eu: true
     osai_rank: null
     api: false
@@ -1678,7 +1990,7 @@ models:
     type: base_decoder
     bucket: medium
     parameters: 13945031680
-    pareto_languages: [bosnian, bulgarian, catalan, croatian, czech, english, french, german, icelandic, italian, lithuanian, polish, portuguese, romanian, serbian, slovene, spanish, ukrainian]
+    pareto_languages: [bosnian, bulgarian, catalan, croatian, czech, danish, english, french, icelandic, italian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovene, spanish, ukrainian]
     eu: true
     osai_rank: null
     api: false
@@ -1686,7 +1998,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 12163481600
-    pareto_languages: []
+    pareto_languages: [croatian, english, finnish, french, german, greek, hungarian, icelandic, latvian, romanian, slovak, slovene, ukrainian]
     eu: true
     osai_rank: null
     api: false
@@ -1694,7 +2006,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 13945031680
-    pareto_languages: [albanian, bosnian, bulgarian, english, finnish, icelandic, romanian, slovene, ukrainian]
+    pareto_languages: [albanian, english, finnish, french, german, romanian, ukrainian]
     eu: true
     osai_rank: null
     api: false
@@ -1702,7 +2014,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 12247782400
-    pareto_languages: []
+    pareto_languages: [dutch]
     eu: true
     osai_rank: null
     api: false
@@ -1718,7 +2030,7 @@ models:
     type: base_decoder
     bucket: medium
     parameters: 24011361280
-    pareto_languages: [bosnian, catalan, croatian, czech, english, estonian, french, german, greek, hungarian, icelandic, italian, latvian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, ukrainian]
+    pareto_languages: [bosnian, catalan, croatian, czech, danish, english, estonian, french, greek, hungarian, icelandic, italian, latvian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, ukrainian]
     eu: true
     osai_rank: null
     api: false
@@ -1726,7 +2038,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 24011361280
-    pareto_languages: [croatian, czech, finnish, icelandic, italian, romanian, slovene, spanish]
+    pareto_languages: [croatian, czech, finnish, german, icelandic, italian, romanian, slovene, swedish]
     eu: true
     osai_rank: null
     api: false
@@ -1734,7 +2046,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 24011361280
-    pareto_languages: [albanian, bosnian, croatian, german, greek, hungarian, latvian, norwegian, polish, portuguese, serbian, slovak, slovene, ukrainian]
+    pareto_languages: [albanian, bosnian, croatian, french, german, greek, hungarian, latvian, norwegian, polish, serbian, slovak, slovene, spanish, ukrainian]
     eu: true
     osai_rank: null
     api: false
@@ -1746,6 +2058,14 @@ models:
     eu: true
     osai_rank: null
     api: false
+  - id: NbAiLab/borealis-12b
+    type: instruction_tuned_decoder
+    bucket: medium
+    parameters: 12187325040
+    pareto_languages: [norwegian]
+    eu: false
+    osai_rank: null
+    api: false
   - id: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16
     type: reasoning_decoder
     bucket: medium
@@ -1754,19 +2074,19 @@ models:
     eu: false
     osai_rank: null
     api: false
-  - id: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16#no-thinking
-    type: instruction_tuned_decoder
+  - id: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8
+    type: reasoning_decoder
     bucket: medium
-    parameters: 31577937344
-    pareto_languages: [portuguese]
+    parameters: 30491811840
+    pareto_languages: [english, finnish, italian, portuguese]
     eu: false
     osai_rank: null
     api: false
   - id: openai/gpt-oss-20b#medium
     type: reasoning_decoder
     bucket: medium
-    parameters: 21511953984
-    pareto_languages: [albanian, croatian, czech, danish, english, estonian, finnish, greek, hungarian, lithuanian, norwegian, polish, serbian, swedish]
+    parameters: 10152345600
+    pareto_languages: [albanian, czech, danish, estonian, finnish, hungarian, lithuanian, norwegian, polish, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -1782,7 +2102,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 14768307200
-    pareto_languages: [albanian, bosnian, catalan, croatian, finnish, romanian, slovak]
+    pareto_languages: [albanian, bosnian, catalan, finnish, romanian, slovak]
     eu: false
     osai_rank: null
     api: false
@@ -1790,7 +2110,7 @@ models:
     type: reasoning_decoder
     bucket: medium
     parameters: 30532122624
-    pareto_languages: [dutch, english, finnish, french, icelandic, latvian, polish, swedish]
+    pareto_languages: [dutch, english, finnish, icelandic, latvian, polish, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -1798,7 +2118,7 @@ models:
     type: reasoning_decoder
     bucket: medium
     parameters: 32762123264
-    pareto_languages: [icelandic, norwegian, swedish]
+    pareto_languages: [norwegian, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -1806,7 +2126,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 32762123264
-    pareto_languages: [catalan, croatian, latvian, romanian]
+    pareto_languages: [catalan, romanian]
     eu: false
     osai_rank: null
     api: false
@@ -1815,6 +2135,14 @@ models:
     bucket: medium
     parameters: 24699207680
     pareto_languages: [albanian, bosnian, bulgarian, catalan, croatian, czech, danish]
+    eu: false
+    osai_rank: null
+    api: false
+  - id: Qwen/Qwen3.5-35B-A3B-Base
+    type: reasoning_decoder
+    bucket: medium
+    parameters: 35951817904
+    pareto_languages: [bulgarian, english, estonian, faroese, french, german, greek, hungarian, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, romanian, serbian, slovak, slovene, spanish, swedish, ukrainian]
     eu: false
     osai_rank: null
     api: false
@@ -1834,19 +2162,51 @@ models:
     eu: false
     osai_rank: null
     api: false
-  - id: RekaAI/reka-flash-3.1
-    type: reasoning_decoder
+  - id: speakleash/Bielik-11B-v2
+    type: base_decoder
     bucket: medium
-    parameters: 20905482240
-    pareto_languages: [danish]
-    eu: false
+    parameters: 11168796672
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
+  - id: speakleash/Bielik-11B-v2.0-Instruct
+    type: instruction_tuned_decoder
+    bucket: medium
+    parameters: 11168796672
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
+  - id: speakleash/Bielik-11B-v2.1-Instruct
+    type: instruction_tuned_decoder
+    bucket: medium
+    parameters: 11168796672
+    pareto_languages: []
+    eu: true
+    osai_rank: null
+    api: false
+  - id: speakleash/Bielik-11B-v2.2-Instruct
+    type: instruction_tuned_decoder
+    bucket: medium
+    parameters: 11168796672
+    pareto_languages: []
+    eu: true
     osai_rank: null
     api: false
   - id: speakleash/Bielik-11B-v2.3-Instruct
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 11168796672
-    pareto_languages: [bosnian, catalan, croatian, hungarian, polish, slovene]
+    pareto_languages: [bosnian, catalan, croatian, hungarian, polish, romanian]
+    eu: true
+    osai_rank: null
+    api: false
+  - id: speakleash/Bielik-11B-v2.5-Instruct
+    type: instruction_tuned_decoder
+    bucket: medium
+    parameters: 11168796672
+    pareto_languages: []
     eu: true
     osai_rank: null
     api: false
@@ -1870,7 +2230,7 @@ models:
     type: instruction_tuned_decoder
     bucket: medium
     parameters: 11168796672
-    pareto_languages: [bulgarian, estonian, greek, icelandic, slovak, slovene]
+    pareto_languages: [estonian]
     eu: true
     osai_rank: null
     api: false
@@ -1878,7 +2238,7 @@ models:
     type: base_decoder
     bucket: medium
     parameters: 10731524096
-    pareto_languages: [danish, spanish, swedish]
+    pareto_languages: [spanish]
     eu: false
     osai_rank: null
     api: false
@@ -1886,7 +2246,7 @@ models:
     type: base_decoder
     bucket: medium
     parameters: 22637328384
-    pareto_languages: [estonian]
+    pareto_languages: []
     eu: true
     osai_rank: null
     api: false
@@ -1918,7 +2278,7 @@ models:
     type: reasoning_decoder
     bucket: medium
     parameters: 31221485568
-    pareto_languages: [english, estonian, faroese, french, greek, icelandic, italian, norwegian, romanian]
+    pareto_languages: [english, estonian, faroese, greek, icelandic, italian, norwegian]
     eu: false
     osai_rank: null
     api: false
@@ -1930,43 +2290,11 @@ models:
     eu: true
     osai_rank: null
     api: false
-  - id: deepcogito/cogito-v2-preview-llama-70B
-    type: instruction_tuned_decoder
-    bucket: large
-    parameters: 70553706496
-    pareto_languages: [czech, norwegian]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: LumiOpen/Llama-Poro-2-70B-SFT
-    type: instruction_tuned_decoder
-    bucket: large
-    parameters: 70553706496
-    pareto_languages: [finnish]
-    eu: false
-    osai_rank: null
-    api: false
   - id: meta-llama/Llama-3.1-70B
     type: base_decoder
     bucket: large
     parameters: 70553706496
-    pareto_languages: [croatian, english, estonian, faroese, german, greek, hungarian, italian, latvian, norwegian, polish, portuguese, slovak]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: meta-llama/Llama-3.1-70B-Instruct
-    type: instruction_tuned_decoder
-    bucket: large
-    parameters: 70553706496
-    pareto_languages: [danish, estonian]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: meta-llama/Llama-3.3-70B-Instruct
-    type: instruction_tuned_decoder
-    bucket: large
-    parameters: 70553706496
-    pareto_languages: [dutch]
+    pareto_languages: [croatian, danish, english, estonian, faroese, german, greek, hungarian, italian, latvian, norwegian, polish, portuguese]
     eu: false
     osai_rank: null
     api: false
@@ -1974,15 +2302,7 @@ models:
     type: base_decoder
     bucket: large
     parameters: 70553706496
-    pareto_languages: [danish, english, spanish]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: meta-llama/Meta-Llama-3-70B-Instruct
-    type: instruction_tuned_decoder
-    bucket: large
-    parameters: 70553706496
-    pareto_languages: [english]
+    pareto_languages: [icelandic, spanish]
     eu: false
     osai_rank: null
     api: false
@@ -1998,16 +2318,8 @@ models:
     type: base_decoder
     bucket: large
     parameters: 46702792704
-    pareto_languages: [danish]
+    pareto_languages: []
     eu: true
-    osai_rank: null
-    api: false
-  - id: Qwen/Qwen2.5-72B-Instruct
-    type: instruction_tuned_decoder
-    bucket: large
-    parameters: 72706203648
-    pareto_languages: [danish]
-    eu: false
     osai_rank: null
     api: false
   - id: swiss-ai/Apertus-70B-2509
@@ -2026,19 +2338,19 @@ models:
     eu: true
     osai_rank: 6
     api: false
+  - id: Unbabel/Tower-Plus-72B
+    type: instruction_tuned_decoder
+    bucket: large
+    parameters: 72706203648
+    pareto_languages: [catalan, icelandic, spanish]
+    eu: false
+    osai_rank: null
+    api: false
   - id: meta-llama/Llama-3.1-405B
     type: base_decoder
     bucket: xlarge
     parameters: 405853388800
-    pareto_languages: [faroese, icelandic, norwegian, spanish]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: meta-llama/Llama-3.1-405B-Instruct-FP8
-    type: instruction_tuned_decoder
-    bucket: xlarge
-    parameters: 405868625920
-    pareto_languages: [icelandic, norwegian]
+    pareto_languages: [danish, dutch, english, faroese, icelandic, norwegian, spanish]
     eu: false
     osai_rank: null
     api: false
@@ -2054,15 +2366,7 @@ models:
     type: reasoning_decoder
     bucket: xlarge
     parameters: 235093634560
-    pareto_languages: [german, icelandic, norwegian, spanish, swedish]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: Qwen/Qwen3-235B-A22B-Instruct-2507-FP8
-    type: instruction_tuned_decoder
-    bucket: xlarge
-    parameters: 235107904512
-    pareto_languages: [estonian, faroese, icelandic, latvian]
+    pareto_languages: [german, spanish]
     eu: false
     osai_rank: null
     api: false
@@ -2070,7 +2374,7 @@ models:
     type: reasoning_decoder
     bucket: xlarge
     parameters: 235107904512
-    pareto_languages: [english, estonian, finnish, french, german, icelandic, italian, latvian, lithuanian, norwegian, polish, portuguese, slovak, spanish, swedish]
+    pareto_languages: [estonian, german, latvian, lithuanian, norwegian, polish, portuguese, slovak, spanish, swedish]
     eu: false
     osai_rank: null
     api: false
@@ -2078,15 +2382,7 @@ models:
     type: reasoning_decoder
     bucket: xlarge
     parameters: 81324862720
-    pareto_languages: [german, polish, swedish]
-    eu: false
-    osai_rank: null
-    api: false
-  - id: zai-org/GLM-4.5-Air#thinking
-    type: reasoning_decoder
-    bucket: xlarge
-    parameters: 110468824832
-    pareto_languages: [swedish]
+    pareto_languages: [german]
     eu: false
     osai_rank: null
     api: false

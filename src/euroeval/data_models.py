@@ -320,7 +320,9 @@ class DatasetConfig:
         self.task = task
         self.languages = languages
 
-        template = self.task.template_dict.get(self.main_language)
+        template = self.task.template_dict.get(
+            self.main_language  # ty: ignore[invalid-argument-type]
+        )
         self.prompt_prefix = (
             prompt_prefix
             if prompt_prefix is not None
@@ -736,6 +738,10 @@ class BenchmarkConfig:
         vocabulary_size:
             Override for the vocabulary size of the model. If None, the value will be
             inferred automatically from the model.
+        use_bits_per_character:
+            Whether to compute bits-per-character (BPC) on the ground-truth answer.
+            For multiple-choice tasks, treats benchmark as text-to-text with bare
+            question → full answer text. Only supported for base decoder models.
     """
 
     datasets: c.Sequence[DatasetConfig]
@@ -755,7 +761,12 @@ class BenchmarkConfig:
     few_shot: bool
     num_iterations: int
     gpu_memory_utilization: float
-    attention_backend: t.Literal[*ATTENTION_BACKENDS] | None
+    attention_backend: (
+        t.Literal[
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
+        ]
+        | None
+    )
     requires_safetensors: bool
     generative_type: GenerativeType | None
     download_only: bool
@@ -765,6 +776,7 @@ class BenchmarkConfig:
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
+    use_bits_per_character: bool = False
 
     @property
     def tasks(self) -> c.Sequence[Task]:
@@ -806,7 +818,12 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     requires_safetensors: bool
     download_only: bool
     gpu_memory_utilization: float
-    attention_backend: t.Literal[*ATTENTION_BACKENDS] | None
+    attention_backend: (
+        t.Literal[
+            *ATTENTION_BACKENDS  # ty: ignore[invalid-type-form]
+        ]
+        | None
+    )
     generative_type: GenerativeType | None
     custom_datasets_file: Path
     force: bool
@@ -815,6 +832,47 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
+    use_bits_per_character: bool = False
+
+
+def _convert_old_raw_results_format(config: dict[str, object]) -> None:
+    """Convert old raw_results format in-place.
+
+    Handles legacy nested dict format:
+    - raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]}
+    and converts to flat list: raw = [{"test_mcc": 0.5, "test_accuracy": 0.6}].
+
+    List format raw = [{"mcc": 0.5, "accuracy": 0.6}] is preserved as-is for EEE format.
+    """
+    if "results" not in config:
+        return
+    results = t.cast(dict[str, object], config["results"])
+    if "raw" not in results:
+        return
+    raw = results["raw"]
+
+    # Preserve list format - it's what EEE format needs
+    if isinstance(raw, list):
+        return
+
+    # Convert nested dict format: {"test": [...]} to flat list [{...}]
+    if isinstance(raw, dict):
+        raw_list: list[dict[str, float]] = []
+        for split_name, split_data in raw.items():
+            if not isinstance(split_data, list) or not split_data:
+                continue
+            for i, item in enumerate(split_data):
+                if not isinstance(item, dict):
+                    continue
+                while len(raw_list) <= i:
+                    raw_list.append({})
+                for metric, value in item.items():
+                    if isinstance(value, (int, float)):
+                        key = f"{split_name}_{metric}"
+                        if key not in raw_list[i]:
+                            raw_list[i][key] = float(value)
+        if raw_list:
+            results["raw"] = raw_list
 
 
 class BenchmarkResult(pydantic.BaseModel):
@@ -833,12 +891,17 @@ class BenchmarkResult(pydantic.BaseModel):
     generative_type: str | None
     few_shot: bool | None
     validation_split: bool | None
+    use_bits_per_character: bool | None = None
     euroeval_version: str | None = get_package_version("euroeval")
     transformers_version: str | None = get_package_version("transformers")
     torch_version: str | None = get_package_version("torch")
     vllm_version: str | None = get_package_version("vllm")
     xgrammar_version: str | None = get_package_version("xgrammar")
     litellm_version: str | None = None
+    # EuroEval-specific metadata fields (preserved through EEE conversion)
+    commercially_licensed: bool | None = None
+    open: bool | None = None
+    trained_from_scratch: bool | None = None
 
     @classmethod
     def from_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
@@ -876,6 +939,8 @@ class BenchmarkResult(pydantic.BaseModel):
             config["few_shot"] = zero_shot_matches is None
         if "validation_split" not in config:
             config["validation_split"] = val_matches is not None
+        if "use_bits_per_character" not in config:
+            config["use_bits_per_character"] = False
 
         # Backwards compatibility
         if "dataset_languages" in config:
@@ -904,7 +969,12 @@ class BenchmarkResult(pydantic.BaseModel):
         if "vocabulary_size" not in config:
             config["vocabulary_size"] = 0
 
-        return cls(**config)
+        # Backwards compatibility: convert old raw_results format where
+        # raw = {"test": [{"mcc": 0.5, "accuracy": 0.6}]} to flattened
+        # raw = {"test_mcc": 0.5, "test_accuracy": 0.6}
+        _convert_old_raw_results_format(config)
+
+        return cls(**config)  # ty: ignore[invalid-argument-type]
 
     @classmethod
     def from_eee_dict(cls, config: dict[str, object]) -> "BenchmarkResult":
@@ -941,13 +1011,23 @@ class BenchmarkResult(pydantic.BaseModel):
     def append_to_results(self, results_path: Path) -> None:
         """Append the benchmark result to the results file.
 
+        Each record is written self-terminated with a trailing newline. If the
+        file already exists without a trailing newline (e.g. written by an older
+        version), a separating newline is added first so records can't be glued
+        onto the same line.
+
         Args:
             results_path:
                 The path to the results file.
         """
         json_str = json.dumps(self.to_eee_dict(), ensure_ascii=False)
+        needs_sep = (
+            results_path.exists()
+            and results_path.stat().st_size > 0
+            and not results_path.read_bytes().endswith(b"\n")
+        )
         with results_path.open("a") as f:
-            f.write("\n" + json_str)
+            f.write(("\n" if needs_sep else "") + json_str + "\n")
 
 
 @dataclass
@@ -1043,6 +1123,10 @@ class GenerativeModelOutput:
             A list of dictionaries, one per failed instance, each containing
             ``"sample_index"`` (the index of the sample in the batch) and ``"error"``
             (a short description of why it failed). Defaults to an empty list.
+        bpc_scores (optional):
+            Bits-per-character scores for each generated sequence. Computed as
+            ``sum(log P(answer_tokens)) / len(answer_chars)``. Lower is better.
+            Only populated when ``use_bits_per_character=True``. Defaults to None.
     """
 
     sequences: c.Sequence[str]
@@ -1050,6 +1134,7 @@ class GenerativeModelOutput:
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
     metadatas: list["HashableDict | None"] = field(default_factory=list)
     failed_instances: list["FailedInstance"] = field(default_factory=list)
+    bpc_scores: c.Sequence[float] | None = None
 
     def __post_init__(self) -> None:
         """Post-initialisation."""
@@ -1074,12 +1159,17 @@ class SingleGenerativeModelOutput:
         metadata (optional):
             The metadata fields for the sample, including ground truth labels (if
             applicable). Can be None if the metadata is not available. Defaults to None.
+        bpc_score (optional):
+            Bits-per-character score for this generated sequence. Computed as
+            ``sum(log P(answer_tokens)) / len(answer_chars)``. Lower is better.
+            Only populated when ``use_bits_per_character=True``. Defaults to None.
     """
 
     sequence: str
     predicted_label: str | None = None
     scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
     metadata: "HashableDict | None" = None
+    bpc_score: float | None = None
 
 
 @dataclass

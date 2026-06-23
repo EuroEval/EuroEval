@@ -11,6 +11,7 @@
 
 """Create the MMLU-LV (Latvian) dataset from VTI-Data and upload to HF Hub."""
 
+import logging
 import typing as t
 from collections import Counter
 
@@ -27,6 +28,9 @@ from constants import (
 from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
+
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_mmlu_lv")
 
 
 def main() -> None:
@@ -48,7 +52,7 @@ def main() -> None:
     df = process_mmlu_data(all_data)
 
     if df.empty:
-        print("No valid data after processing. Exiting.")
+        logger.error("No valid data after processing. Exiting.")
         return
 
     # Apply filtering from the original script

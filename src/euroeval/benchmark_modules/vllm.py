@@ -5,6 +5,7 @@ import contextlib
 import importlib.util
 import json
 import logging
+import os
 import re
 import shutil
 import typing as t
@@ -18,10 +19,12 @@ from huggingface_hub import snapshot_download
 from pydantic import conlist, create_model
 from transformers import PythonBackend, SentencePieceBackend, TokenizersBackend
 from transformers.generation.configuration_utils import GenerationConfig
+from transformers.models.auto.image_processing_auto import AutoImageProcessor
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from urllib3.exceptions import RequestError
 
 from ..constants import (
+    BPC_LOGPROBS,
     CUSTOM_STOP_TOKENS,
     GENERATION_KWARGS,
     GENERATIVE_PIPELINE_TAGS,
@@ -116,11 +119,96 @@ if t.TYPE_CHECKING:
 
     from ..data_models import BenchmarkConfig, DatasetConfig, Task
 
+from ..bpc_scoring import compute_bpc_scores_for_vllm_outputs
+
 # Mapping from HuggingFace architecture names that vLLM does not recognise to their
-# vLLM-compatible equivalents.  Transformers 4.57 split Gemma 4 into a multimodal
-# class (Gemma4ForConditionalGeneration) and a text-only class
-# (Gemma4TextForCausalLM).  vLLM only registers the former, so we remap here.
-_ARCHITECTURE_ALIASES: dict[str, str] = {"Gemma4TextForCausalLM": "Gemma4ForCausalLM"}
+# vLLM-compatible equivalents
+_ARCHITECTURE_ALIASES: dict[str, str] = {
+    "Gemma4TextForCausalLM": "Gemma4ForCausalLM",
+    "BloomModel": "BloomForCausalLM",
+}
+
+
+@contextlib.contextmanager
+def _skip_image_processor_context() -> c.Generator[None, None, None]:
+    """Suppress missing image processor errors during model loading.
+
+    Some models have multimodal architectures (e.g. Mistral3ForConditionalGeneration)
+    but are released without the preprocessor_config.json that transformers needs to
+    load the image processor.  Since EuroEval only does text inference, we can safely
+    return None for the image processor and let vLLM load the text backbone normally.
+
+    This context manager also sets environment flags to instruct vLLM to skip
+    multimodal initialisation.
+    """
+    original_func = AutoImageProcessor.from_pretrained.__func__
+
+    @classmethod  # type: ignore[misc]
+    def patched(
+        cls: type, pretrained_model_name_or_path: str, *args: object, **kwargs: object
+    ) -> object:
+        try:
+            return original_func(cls, pretrained_model_name_or_path, *args, **kwargs)  # ty: ignore[invalid-argument-type]
+        except OSError as e:
+            if "Can't load image processor" in str(
+                e
+            ) and "preprocessor_config.json" in str(e):
+                return None
+            raise
+
+    AutoImageProcessor.from_pretrained = patched  # ty: ignore[invalid-assignment]
+
+    # Set environment flags to tell vLLM to skip multimodal initialisation
+    original_mm_limit = os.environ.get("VLLM_LIMIT_MM_PER_PROMPT")
+    os.environ["VLLM_LIMIT_MM_PER_PROMPT"] = "0"
+
+    try:
+        yield
+    finally:
+        AutoImageProcessor.from_pretrained = classmethod(original_func)  # ty: ignore[invalid-assignment]
+        if original_mm_limit is not None:
+            os.environ["VLLM_LIMIT_MM_PER_PROMPT"] = original_mm_limit
+        else:
+            os.environ.pop("VLLM_LIMIT_MM_PER_PROMPT", None)
+
+
+def compute_token_budget(
+    model_max_length: int, max_generated_tokens: int
+) -> tuple[int, int]:
+    """Compute the generation and per-prompt token budgets for a model.
+
+    The generation budget cannot exceed the model's context length, and we
+    additionally need to reserve room for the prompt. For models whose context is
+    too small to fit both the prompt and the dataset's full generation budget, we
+    shrink the generation budget (down to half the context) so that the prompt
+    retains room, rather than truncating the prompt down to nothing.
+
+    Args:
+        model_max_length:
+            The maximum context length of the model's tokeniser.
+        max_generated_tokens:
+            The dataset's configured number of tokens to generate.
+
+    Returns:
+        A pair ``(generation_budget, max_tokens_per_prompt)``, being the number of
+        tokens reserved for generation and the resulting maximum number of tokens
+        allowed in a prompt, respectively.
+
+    Raises:
+        InvalidBenchmark:
+            If the model's context length is too small to fit any prompt alongside
+            the generation budget.
+    """
+    max_context_length = min(model_max_length, MAX_CONTEXT_LENGTH)
+    generation_budget = min(max_generated_tokens, max(max_context_length // 2, 1))
+    max_tokens_per_prompt = max_context_length - generation_budget
+    if max_tokens_per_prompt <= 0:
+        raise InvalidBenchmark(
+            f"The model's context length of {max_context_length:,} tokens is too "
+            "small to fit any prompt alongside its generation budget, so it cannot "
+            "be benchmarked on this dataset."
+        )
+    return generation_budget, max_tokens_per_prompt
 
 
 class VLLMModel(HuggingFaceEncoderModel):
@@ -422,6 +510,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 generative_type=self.generative_type,
                 always_populate_text_field=True,
                 tokeniser=self._tokeniser,
+                use_bits_per_character=self.benchmark_config.use_bits_per_character,
             ),
             batched=True,
             load_from_cache_file=False,
@@ -465,23 +554,29 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
         return self
 
-    def generate(self, inputs: dict) -> "GenerativeModelOutput":
-        """Generate outputs from the model.
+    def _run_vllm_core(
+        self, inputs: dict, prompt_key: str, sampling_params: "SamplingParams"
+    ) -> tuple[list[str], list]:
+        """Run vLLM generation with given parameters.
+
+        Shared implementation used by both generate() and score().
 
         Args:
             inputs:
                 A batch of inputs to pass through the model.
+            prompt_key:
+                Key to extract prompts from inputs ("text" or "bpc_prompt").
+            sampling_params:
+                Sampling parameters for vLLM generation.
 
         Returns:
-            The generated model outputs.
+            Tuple of (completions, raw_outputs).
 
         Raises:
             InvalidBenchmark:
-                If the dataset requires logprobs, but we could not get the first token
-                of each label in the dataset.
+                If generation fails or prompts are too long.
             InvalidTask:
-                If the task requires structured output, but it is not a token
-                classification task and does not define an output structure.
+                If structured output is misconfigured.
         """
         # Get stopping tokens
         stop_tokens: list[str] = self.custom_stop_tokens.copy()
@@ -541,8 +636,6 @@ class VLLMModel(HuggingFaceEncoderModel):
                 level=logging.DEBUG,
             )
         elif self.dataset_config.task.uses_structured_output:
-            # TODO: This only deals with NER right now for token classification - should
-            # also deal with LOGIC tasks
             if self.dataset_config.task.structured_output_format is not None:
                 structured_outputs = StructuredOutputsParams(
                     json=self.dataset_config.task.structured_output_format.model_json_schema()
@@ -641,27 +734,56 @@ class VLLMModel(HuggingFaceEncoderModel):
                     level=logging.DEBUG,
                 )
 
-        max_tokens: int = (
-            REASONING_MAX_TOKENS
-            if self.generative_type == GenerativeType.REASONING
-            else self.dataset_config.max_generated_tokens
-        )
-        sampling_params = SamplingParams(
-            max_tokens=max_tokens,
-            logprobs=MAX_VLLM_LOGPROBS
-            if self.buffer["first_label_token_mapping"]
-            else None,
-            temperature=generation_kwargs["temperature"],
-            top_p=generation_kwargs["top_p"],
-            top_k=int(generation_kwargs["top_k"]),
-            repetition_penalty=generation_kwargs["repetition_penalty"],
-            stop=[stop_token for stop_token in stop_tokens if stop_token],
-            structured_outputs=structured_outputs,
-        )
+        # The sampling parameters are constructed by the caller (`generate()` or
+        # `score()`); here we fill in the stop tokens, structured outputs and any
+        # per-model generation-config overrides that depend on this method's local
+        # state.
+        sampling_params.stop = [stop_token for stop_token in stop_tokens if stop_token]
+        sampling_params.structured_outputs = structured_outputs
+        sampling_params.temperature = generation_kwargs["temperature"]
+        sampling_params.top_p = generation_kwargs["top_p"]
+        sampling_params.top_k = int(generation_kwargs["top_k"])
+        sampling_params.repetition_penalty = generation_kwargs["repetition_penalty"]
 
-        # If any of the prompts are empty then we need to replace them with a BOS token
-        # so that the vLLM model can generate from them
-        prompts: c.Sequence[str] = inputs["text"]
+        # Token-level logprobs are only needed for generation tasks that score labels
+        # via logprobs; this depends on `first_label_token_mapping`, which is only
+        # computed above. BPC scoring (which sets `prompt_logprobs`) never uses them.
+        if sampling_params.prompt_logprobs is None:
+            sampling_params.logprobs = (
+                MAX_VLLM_LOGPROBS if self.buffer["first_label_token_mapping"] else None
+            )
+
+        # Compute how many tokens to reserve for generation and, correspondingly, how
+        # long prompts may be. For models whose context is too small to fit both the
+        # prompt and the dataset's full generation budget, the reserved generation
+        # budget is shrunk so the prompt retains room (see `compute_token_budget`). BPC
+        # scoring (signalled by `prompt_logprobs`) generates only a single throwaway
+        # token, so prompts may use almost the full context.
+        max_context_length = min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
+        if sampling_params.prompt_logprobs is not None:
+            max_tokens_per_prompt = max_context_length - sampling_params.max_tokens
+        else:
+            generation_budget, max_tokens_per_prompt = compute_token_budget(
+                model_max_length=self._tokeniser.model_max_length,
+                max_generated_tokens=self.dataset_config.max_generated_tokens,
+            )
+            if generation_budget < self.dataset_config.max_generated_tokens:
+                log_once(
+                    f"The model {self.model_config.model_id!r} has a context length of "
+                    f"{max_context_length:,} tokens, which is too small to fit both "
+                    "the prompt and the dataset's full generation budget of "
+                    f"{self.dataset_config.max_generated_tokens:,} tokens. Reserving "
+                    f"{generation_budget:,} tokens for generation when budgeting "
+                    "prompt lengths instead.",
+                    level=logging.WARNING,
+                )
+                # Reasoning models govern their own budget via REASONING_MAX_TOKENS, so
+                # we only shrink the generation budget for non-reasoning models.
+                if self.generative_type != GenerativeType.REASONING:
+                    sampling_params.max_tokens = generation_budget
+
+        # Extract prompts using the provided key
+        prompts: c.Sequence[str] = inputs[prompt_key]
         if any(len(prompt.strip()) == 0 for prompt in prompts):
             log("Found empty prompts, replacing with BOS token.", level=logging.DEBUG)
             prompts = [
@@ -684,13 +806,8 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             prompts = [prompt.strip() for prompt in prompts]
 
-        # Truncate the prompts if needed
-        max_tokens_per_prompt = min(
-            self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH
-        )
-        max_tokens_per_prompt -= min(
-            self.dataset_config.max_generated_tokens, max_tokens_per_prompt - 1
-        )
+        # Truncate the prompts if needed, using the per-prompt token budget computed
+        # above.
         tokenized_prompts = self._tokeniser(
             text=prompts, max_length=max_tokens_per_prompt
         )
@@ -705,11 +822,25 @@ class VLLMModel(HuggingFaceEncoderModel):
             )
             match self.generative_type:
                 case GenerativeType.BASE:
-                    truncated_tokenized_prompts = self._tokeniser(
-                        text=prompts, max_length=max_tokens_per_prompt, truncation=True
-                    )
-                    prompts = self._tokeniser.batch_decode(
-                        sequences=truncated_tokenized_prompts.input_ids,
+                    # For BPC scoring (signalled by `prompt_logprobs`) the gold answer
+                    # is appended to the end of the prompt, so truncate from the left —
+                    # dropping leading prompt prefix / few-shot context — to keep the
+                    # answer intact. Default right-truncation would silently cut the
+                    # answer off, leaving no answer tokens to score (infinite BPC).
+                    original_truncation_side = self._tokeniser.truncation_side
+                    if sampling_params.prompt_logprobs is not None:
+                        self._tokeniser.truncation_side = "left"
+                    try:
+                        truncated_tokenized_prompts = self._tokeniser(
+                            text=prompts,
+                            max_length=max_tokens_per_prompt,
+                            truncation=True,
+                        )
+                    finally:
+                        self._tokeniser.truncation_side = original_truncation_side
+                    prompts = _safe_batch_decode(
+                        self._tokeniser,
+                        truncated_tokenized_prompts.input_ids,
                         skip_special_tokens=True,
                     )
                 case GenerativeType.INSTRUCTION_TUNED | GenerativeType.REASONING:
@@ -747,9 +878,36 @@ class VLLMModel(HuggingFaceEncoderModel):
                             prompts = new_prompts
                             break
                     else:
-                        raise InvalidBenchmark(
-                            "Truncation of prompts failed, some prompts are still too "
-                            "long."
+                        # Removing few-shot examples was not enough (or there were
+                        # none to remove, as in zero-shot tasks), so hard-truncate the
+                        # prompts as a last resort rather than failing the benchmark.
+                        # We truncate the prompts with *all* few-shot examples removed,
+                        # to avoid keeping partial few-shot context while cutting away
+                        # the actual query.
+                        prompts_without_few_shots = [
+                            end_of_chat_token.join(
+                                prompt_segment[
+                                    2 * self.dataset_config.num_few_shot_examples :
+                                ]
+                            )
+                            for prompt_segment in prompt_segments
+                        ]
+                        log_once(
+                            "Could not fit the prompts for the model "
+                            f"{self.model_config.model_id!r} within "
+                            f"{max_tokens_per_prompt:,} tokens by removing few-shot "
+                            "examples, so hard-truncating them instead.",
+                            level=logging.WARNING,
+                        )
+                        truncated_tokenized_prompts = self._tokeniser(
+                            text=prompts_without_few_shots,
+                            max_length=max_tokens_per_prompt,
+                            truncation=True,
+                        )
+                        prompts = _safe_batch_decode(
+                            self._tokeniser,
+                            truncated_tokenized_prompts.input_ids,
+                            skip_special_tokens=True,
                         )
                 case _:
                     raise InvalidBenchmark("The model type is not set!")
@@ -764,6 +922,38 @@ class VLLMModel(HuggingFaceEncoderModel):
         input_is_a_test = len(prompts) == 1 and len(set(prompts[0])) == 1
         num_attempts = 3
         truncation_attempts = 1
+
+        # Device out-of-memory signatures. On shared-memory devices (e.g. Apple
+        # Metal) these typically surface during generation rather than at load time,
+        # either as a `RuntimeError` or by killing the engine subprocess.
+        out_of_memory_messages = [
+            "out of memory",
+            "outofmemory",
+            "insufficient memory",
+            "command buffer execution failed",
+        ]
+
+        def _raise_if_out_of_memory(error: Exception) -> None:
+            """Raise a clear, actionable error if `error` is a device OOM.
+
+            Args:
+                error:
+                    The exception raised during vLLM generation.
+
+            Raises:
+                InvalidModel:
+                    If `error` is a device out-of-memory error.
+            """
+            if any(message in str(error).lower() for message in out_of_memory_messages):
+                raise InvalidModel(
+                    "vLLM ran out of device memory during generation. On "
+                    "shared-memory devices (e.g. Apple Metal) the default GPU memory "
+                    "utilization is often too high, since the reserved KV cache "
+                    "leaves no room for the per-step allocations. Re-run with a lower "
+                    "value, e.g. `--gpu-memory-utilization 0.3` (or lower). "
+                    f"Underlying error: {str(error)}"
+                ) from error
+
         for _ in range(num_attempts):
             try:
                 # Replace any empty prompts with the BOS token to avoid vLLM
@@ -773,7 +963,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 prompts = [
                     prompt if prompt.strip() else bos_token for prompt in prompts
                 ]
-                raw_outputs = self._model.generate(
+                raw_outputs = self._model.generate(  # ty: ignore[call-non-callable]
                     prompts=prompts,
                     sampling_params=sampling_params,
                     use_tqdm=False if input_is_a_test else get_pbar,
@@ -787,6 +977,10 @@ class VLLMModel(HuggingFaceEncoderModel):
                 )
                 sleep(1)
             except (ValueError, RuntimeError) as e:
+                # A device out-of-memory error is not recoverable by retrying, so
+                # surface clear guidance to lower the GPU memory utilization.
+                _raise_if_out_of_memory(e)
+
                 # Truncate the prompts if they are too long for the model
                 truncate_error_messages = [
                     r"prompt \(length [0-9]+\) is longer than the maximum model length",
@@ -811,20 +1005,26 @@ class VLLMModel(HuggingFaceEncoderModel):
                         text=prompts,
                         truncation=True,
                         max_length=max(
-                            min(self._tokeniser.model_max_length, MAX_CONTEXT_LENGTH)
-                            - max_tokens
+                            max_context_length
+                            - sampling_params.max_tokens
                             - extra_truncation,
                             0,
                         ),
                     )
-                    prompts = self._tokeniser.batch_decode(
-                        sequences=tokenized_prompts.input_ids, skip_special_tokens=True
+                    prompts = _safe_batch_decode(
+                        self._tokeniser,
+                        tokenized_prompts.input_ids,
+                        skip_special_tokens=True,
                     )
                 else:
                     raise InvalidBenchmark(
                         f"An error occurred during vLLM generation: {str(e)}"
                     ) from e
             except Exception as e:
+                # A device out-of-memory error can also manifest as the engine
+                # subprocess dying, so check for it before the generic handling.
+                _raise_if_out_of_memory(e)
+
                 # The vLLM v1 engine raises `EngineDeadError` when a worker RPC
                 # times out. The engine cannot be reused once dead, so surface a
                 # clean benchmark error instead of an opaque crash.
@@ -864,71 +1064,110 @@ class VLLMModel(HuggingFaceEncoderModel):
 
         # Parse the raw model outputs. We keep the special tokens for now, as we need
         # them to potentially remove reasoning content and stop tokens
-        completion_ids: c.Sequence[c.Sequence[int]] = [
-            list(output.outputs[0].token_ids) for output in raw_outputs
-        ]
-        completions = self._tokeniser.batch_decode(
-            sequences=[list(completion_id) for completion_id in completion_ids],
-            skip_special_tokens=False,
-        )
-        if (
-            self.end_of_reasoning_token is not None
-            and self.generative_type == GenerativeType.REASONING
-        ):
-            num_samples_without_eor_token = 0
-            for idx in range(len(completions)):
-                if (
-                    isinstance(self.end_of_reasoning_token, str)
-                    and self.end_of_reasoning_token in completions[idx]
-                ):
-                    completions[idx] = completions[idx].split(
-                        self.end_of_reasoning_token
-                    )[-1]
-                elif isinstance(
-                    self.end_of_reasoning_token, re.Pattern
-                ) and self.end_of_reasoning_token.search(completions[idx]):
-                    completions[idx] = self.end_of_reasoning_token.split(
-                        completions[idx]
-                    )[-1]
-                else:
-                    num_samples_without_eor_token += 1
-                    completions[idx] = ""
-            if num_samples_without_eor_token > 0:
-                log_once(
-                    f"The model {self.model_config.model_id!r} is a reasoning "
-                    "model, but the generated output did not contain the end of "
-                    f"reasoning token ({self.end_of_reasoning_token!r}) in "
-                    f"{num_samples_without_eor_token:,}/{len(completions):,} of "
-                    "the samples. Using an empty string for all these samples "
-                    "instead.",
-                    level=(
-                        logging.WARNING
-                        if num_samples_without_eor_token / len(completions) > 0.5
-                        else logging.DEBUG
-                    ),
-                )
-        stop_token_pattern = re.compile(
-            "|".join(re.escape(stop_token) for stop_token in stop_tokens)
-        )
-        completions = [
-            re.split(pattern=stop_token_pattern, string=completion)[0].strip()
-            for completion in completions
-        ]
+        if sampling_params.prompt_logprobs is not None:
+            # BPC mode: the single generated token is discarded; only prompt_logprobs
+            # are used for scoring.
+            completions = [""] * len(raw_outputs)
+        else:
+            completion_ids: c.Sequence[c.Sequence[int]] = [
+                list(output.outputs[0].token_ids) for output in raw_outputs
+            ]
+            completions = _safe_batch_decode(
+                self._tokeniser,
+                [list(completion_id) for completion_id in completion_ids],
+                skip_special_tokens=False,
+            )
+            if (
+                self.end_of_reasoning_token is not None
+                and self.generative_type == GenerativeType.REASONING
+            ):
+                num_samples_without_eor_token = 0
+                for idx in range(len(completions)):
+                    if (
+                        isinstance(self.end_of_reasoning_token, str)
+                        and self.end_of_reasoning_token in completions[idx]
+                    ):
+                        completions[idx] = completions[idx].split(
+                            self.end_of_reasoning_token
+                        )[-1]
+                    elif isinstance(
+                        self.end_of_reasoning_token, re.Pattern
+                    ) and self.end_of_reasoning_token.search(completions[idx]):
+                        completions[idx] = self.end_of_reasoning_token.split(
+                            completions[idx]
+                        )[-1]
+                    else:
+                        num_samples_without_eor_token += 1
+                        completions[idx] = ""
+                if num_samples_without_eor_token > 0:
+                    log_once(
+                        f"The model {self.model_config.model_id!r} is a reasoning "
+                        "model, but the generated output did not contain the end of "
+                        f"reasoning token ({self.end_of_reasoning_token!r}) in "
+                        f"{num_samples_without_eor_token:,}/{len(completions):,} of "
+                        "the samples. Using an empty string for all these samples "
+                        "instead.",
+                        level=(
+                            logging.WARNING
+                            if num_samples_without_eor_token / len(completions) > 0.5
+                            else logging.DEBUG
+                        ),
+                    )
+            stop_token_pattern = re.compile(
+                "|".join(re.escape(stop_token) for stop_token in stop_tokens)
+            )
+            completions = [
+                re.split(pattern=stop_token_pattern, string=completion)[0].strip()
+                for completion in completions
+            ]
 
-        # Remove all the special tokens from the completions, if any are present
-        completion_ids = self._tokeniser(text=completions).input_ids
-        completions = self._tokeniser.batch_decode(
-            sequences=completion_ids, skip_special_tokens=True
-        )
-
-        # Sanity check
-        if len(completions) != len(prompts):
-            raise InvalidBenchmark(
-                f"Expected {len(prompts):,} completions, but got {len(completions):,}."
+            # Remove all the special tokens from the completions, if any are present
+            completion_ids = self._tokeniser(text=completions).input_ids
+            completions = _safe_batch_decode(
+                self._tokeniser, completion_ids, skip_special_tokens=True
             )
 
-        # Add logprobs scores to the output
-        if self.buffer["first_label_token_mapping"]:
+            # Sanity check
+            if len(completions) != len(prompts):
+                raise InvalidBenchmark(
+                    f"Expected {len(prompts):,} completions, but got "
+                    f"{len(completions):,}."
+                )
+
+        # Return completions and raw outputs for caller to handle scoring
+        return completions, raw_outputs
+
+    def generate(self, inputs: dict) -> "GenerativeModelOutput":
+        """Generate outputs from the model.
+
+        Args:
+            inputs:
+                A batch of inputs to pass through the model.
+
+        Returns:
+            The generated model outputs.
+        """
+        # Compute max_tokens based on model type
+        max_tokens: int = (
+            REASONING_MAX_TOKENS
+            if self.generative_type == GenerativeType.REASONING
+            else self.dataset_config.max_generated_tokens
+        )
+        sampling_params = SamplingParams(
+            max_tokens=max_tokens,
+            prompt_logprobs=None,
+            logprobs=None,  # Set in _run_vllm_core from first_label_token_mapping
+            temperature=GENERATION_KWARGS["temperature"],
+            top_p=GENERATION_KWARGS["top_p"],
+            top_k=int(GENERATION_KWARGS["top_k"]),
+            repetition_penalty=GENERATION_KWARGS["repetition_penalty"],
+            stop=[],  # Set in _run_vllm_core
+            structured_outputs=None,  # Set in _run_vllm_core
+        )
+        completions, raw_outputs = self._run_vllm_core(inputs, "text", sampling_params)
+
+        # Extract logprobs scores if available
+        if self.buffer["first_label_token_mapping"] and sampling_params.logprobs:
             scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] = [
                 [
                     [
@@ -939,10 +1178,43 @@ class VLLMModel(HuggingFaceEncoderModel):
                 ]
                 for raw_output in raw_outputs
             ]
-            output = GenerativeModelOutput(sequences=completions, scores=scores)
-        else:
-            output = GenerativeModelOutput(sequences=completions)
+            return GenerativeModelOutput(sequences=completions, scores=scores)
+        return GenerativeModelOutput(sequences=completions)
 
+    def score(self, inputs: dict) -> "GenerativeModelOutput":
+        """Compute BPC scores from prompt_logprobs.
+
+        Args:
+            inputs:
+                A batch of inputs with bpc_prompt column.
+
+        Returns:
+            Model output with BPC scores.
+        """
+        sampling_params = SamplingParams(
+            # BPC scoring only reads `prompt_logprobs`; no generation is needed, but
+            # vLLM requires `max_tokens >= 1`, so we generate a single throwaway token.
+            max_tokens=1,
+            prompt_logprobs=BPC_LOGPROBS,
+            logprobs=None,
+            temperature=GENERATION_KWARGS["temperature"],
+            top_p=GENERATION_KWARGS["top_p"],
+            top_k=int(GENERATION_KWARGS["top_k"]),
+            repetition_penalty=GENERATION_KWARGS["repetition_penalty"],
+            stop=[],  # Set in _run_vllm_core
+            structured_outputs=None,  # Set in _run_vllm_core
+        )
+        completions, raw_outputs = self._run_vllm_core(
+            inputs, "bpc_prompt", sampling_params
+        )
+
+        # Compute BPC scores
+        bpc_scores = compute_bpc_scores_for_vllm_outputs(
+            raw_outputs=raw_outputs, inputs=inputs, tokeniser=self._tokeniser
+        )
+        output = GenerativeModelOutput(sequences=completions)
+        if bpc_scores is not None:
+            output.bpc_scores = bpc_scores
         return output
 
     @classmethod
@@ -1194,7 +1466,7 @@ def load_model(
     # MacOS/CPU installs an older version of vLLM, which doesn't have the attention
     # config
     if hasattr(vllm.config, "attention") and attention_backend is not None:
-        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)
+        vllm_params["attention_config"] = AttentionConfig(backend=attention_backend)  # ty: ignore[invalid-argument-type]
 
     clear_vllm()
 
@@ -1217,20 +1489,21 @@ def load_model(
         select_backend_and_parallelism()
     )
 
-    try:
-        model_location = (
-            model_id
-            if internet_connection_available() or Path(model_id).is_dir()
-            else resolve_model_path(download_dir=download_dir)
-        )
+    model_location = (
+        model_id
+        if internet_connection_available() or Path(model_id).is_dir()
+        else resolve_model_path(download_dir=download_dir)
+    )
 
-        max_model_len = min(
-            true_max_model_len,
-            MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
-            if generative_type == GenerativeType.REASONING
-            else MAX_CONTEXT_LENGTH,
-        )
-        model = LLM(
+    max_model_len = min(
+        true_max_model_len,
+        MAX_CONTEXT_LENGTH + REASONING_MAX_TOKENS
+        if generative_type == GenerativeType.REASONING
+        else MAX_CONTEXT_LENGTH,
+    )
+
+    def _create_llm() -> "LLM":
+        return LLM(
             model=model_location,
             tokenizer=model_location,
             gpu_memory_utilization=benchmark_config.gpu_memory_utilization,
@@ -1245,18 +1518,69 @@ def load_model(
             pipeline_parallel_size=pipeline_parallel_size,
             disable_custom_all_reduce=True,
             quantization=quantization,
-            dtype=dtype,
+            dtype=dtype,  # ty: ignore[invalid-argument-type]
             enforce_eager=True,
             # TEMP: Prefix caching isn't supported with sliding window in vLLM yet,
             # so we disable it for now
             enable_prefix_caching=False,
             enable_lora=model_config.adapter_base_model_id is not None,
             max_lora_rank=256,
-            **({"hf_overrides": hf_overrides} if hf_overrides else {}),
+            limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
+            # runner is required for LLM.generate() to work with generative models
+            runner="generate",
+            **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
             **vllm_params,
         )
+
+    try:
+        model = _create_llm()
     except (RuntimeError, ValueError, OSError) as e:
-        if "awaiting a review from the repo authors" in str(e):
+        error_str = str(e)
+        # Catch missing image processor config
+        has_missing_processor = (
+            "Can't load image processor" in error_str
+            and "preprocessor_config.json" in error_str
+        )
+        if has_missing_processor:
+            log(
+                f"Model {model_id!r} is missing an image processor config. Retrying "
+                "without image processing since EuroEval only does text inference.",
+                level=logging.DEBUG,
+            )
+            try:
+                with _skip_image_processor_context():
+                    model = _create_llm()
+            except (RuntimeError, ValueError, OSError) as retry_e:
+                raise InvalidModel(
+                    f"The model {model_id!r} could not be loaded. The error was "
+                    f"{retry_e!r}."
+                ) from retry_e
+        # Catch multimodal budget errors for text-only inference on multimodal models.
+        # Note: These patterns may need updating as vLLM evolves its error messages.
+        elif any(
+            pattern in error_str
+            for pattern in [
+                "multimodal budget",
+                "MM input",
+                "image input",
+                "vision model",
+            ]
+        ):
+            log(
+                f"Model {model_id!r} triggered multimodal error during initialisation. "
+                "Retrying with multimodal inputs disabled since EuroEval only does "
+                "text inference.",
+                level=logging.DEBUG,
+            )
+            try:
+                with _skip_image_processor_context():
+                    model = _create_llm()
+            except (RuntimeError, ValueError, OSError) as retry_e:
+                raise InvalidModel(
+                    f"The model {model_id!r} could not be loaded in text-only mode. "
+                    f"The error was {retry_e!r}."
+                ) from retry_e
+        elif "awaiting a review from the repo authors" in str(e):
             raise InvalidModel(
                 f"The model {model_id!r} is awaiting a review from the repository "
                 "authors. Please try again later."
@@ -1293,9 +1617,10 @@ def load_model(
                 f"`FULL_LOG=1 euroeval --model {model_id}`."
             )
             raise InvalidModel(msg) from e
-        raise InvalidModel(
-            f"The model {model_id!r} could not be loaded. The error was {e!r}."
-        ) from e
+        else:
+            raise InvalidModel(
+                f"The model {model_id!r} could not be loaded. The error was {e!r}."
+            ) from e
 
     model.config = hf_model_config
 
@@ -1685,17 +2010,64 @@ def get_vllm_tokenisation_params(
     )
 
 
+def _safe_batch_decode(
+    tokeniser: Tokeniser, sequences: list[list[int]], skip_special_tokens: bool
+) -> list[str]:
+    """Safely decode sequences of token IDs using batch_decode or individual decode.
+
+    Attempts to use the tokeniser's batch_decode method first. If that fails
+    with an AttributeError (e.g., for custom tokenisers that don't implement
+    batch_decode), falls back to calling decode for each sequence individually.
+
+    Args:
+        tokeniser:
+            The tokeniser to use for decoding.
+        sequences:
+            List of token ID sequences to decode.
+        skip_special_tokens:
+            Whether to skip special tokens during decoding.
+
+    Returns:
+        List of decoded strings.
+    """
+    try:
+        return tokeniser.batch_decode(
+            sequences, skip_special_tokens=skip_special_tokens
+        )
+    except AttributeError:
+        log_once(
+            "Tokeniser does not support batch_decode, falling back to individual "
+            "decode calls",
+            level=logging.WARNING,
+        )
+        return [
+            t.cast(str, tokeniser.decode(seq, skip_special_tokens=skip_special_tokens))
+            for seq in sequences
+        ]
+
+
 def select_backend_and_parallelism() -> tuple[str, int, int]:
     """Determine the distributed backend and parallelism for vLLM.
 
     Returns:
         Tuple containing:
-        - backend (str): "ray" if multi-node Ray is available, else "mp".
+        - backend (str): "ray" for multi-node Ray, "uni" for a single non-CUDA
+          device (e.g. Apple Metal, CPU), else "mp".
         - tensor_parallel_size (int): Number of GPUs per node.
         - pipeline_parallel_size (int): Number of stages across nodes.
     """
     if not torch.cuda.is_available():
-        return "mp", 1, 1
+        # Non-CUDA backends (e.g. Apple Metal, CPU) only ever expose a single device
+        # here, and their vLLM plugins don't support the multiprocessing executor —
+        # the Metal plugin rejects the worker's "mps" device. Use the in-process
+        # executor instead, which vLLM also selects by default for a single device.
+        #
+        # vLLM still initialises a gloo process group to talk to its engine-core
+        # subprocess, rendezvousing on the host's primary IP. On macOS that address is
+        # often unreachable from the host itself, so the rendezvous hangs indefinitely.
+        # Pin it to loopback (without clobbering an explicit user setting).
+        os.environ.setdefault("VLLM_HOST_IP", "127.0.0.1")
+        return "uni", 1, 1
 
     if not ray.is_initialized():
         try:

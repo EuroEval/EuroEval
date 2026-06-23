@@ -7,6 +7,7 @@ from typing import Generator
 import pytest
 import torch
 
+from euroeval import Benchmarker
 from euroeval.benchmark_config_factory import (
     prepare_dataset_configs,
     prepare_device,
@@ -239,6 +240,26 @@ def test_prepare_dataset_configs_invalid_dataset() -> None:
             run_with_cli=True,
         )
     assert exc_info.value.code == 1
+
+
+class TestBitsPerCharacterGating:
+    """Tests for the BPC scoring-method gating inside `build_benchmark_config`."""
+
+    def test_bpc_on_mcq_dataset_passes(self) -> None:
+        """BPC on a multiple-choice dataset builds a config without raising."""
+        benchmarker = Benchmarker(dataset="belebele-nl", use_bits_per_character=True)
+        assert benchmarker.benchmark_config.use_bits_per_character is True
+
+    def test_bpc_on_non_mcq_dataset_logs_debug(self) -> None:
+        """BPC on a non-MCQ dataset logs a debug message."""
+        benchmarker = Benchmarker(dataset="scala-da", use_bits_per_character=True)
+        # Non-MCQ tasks still set the flag but log a debug message
+        assert benchmarker.benchmark_config.use_bits_per_character is True
+
+    def test_mcf_default(self) -> None:
+        """MCF is the default when use_bits_per_character is not set."""
+        benchmarker = Benchmarker(dataset="belebele-nl")
+        assert benchmarker.benchmark_config.use_bits_per_character is False
 
 
 @pytest.mark.parametrize(

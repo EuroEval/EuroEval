@@ -123,19 +123,28 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
             "version": result.transformers_version,
         }
 
+    model_additional_details: dict = {
+        "num_model_parameters": str(result.num_model_parameters),
+        "max_sequence_length": str(result.max_sequence_length),
+        "vocabulary_size": str(result.vocabulary_size),
+        "merge": str(result.merge).lower(),
+        "generative": str(result.generative).lower(),
+        "generative_type": result.generative_type
+        if result.generative_type is not None
+        else None,
+    }
+    # Preserve EuroEval-specific metadata fields
+    if result.commercially_licensed is not None:
+        model_additional_details["commercially_licensed"] = result.commercially_licensed
+    if result.open is not None:
+        model_additional_details["open"] = result.open
+    if result.trained_from_scratch is not None:
+        model_additional_details["trained_from_scratch"] = result.trained_from_scratch
+
     model_info: dict = {
         "name": result.model,
         "id": result.model,
-        "additional_details": {
-            "num_model_parameters": str(result.num_model_parameters),
-            "max_sequence_length": str(result.max_sequence_length),
-            "vocabulary_size": str(result.vocabulary_size),
-            "merge": str(result.merge).lower(),
-            "generative": str(result.generative).lower(),
-            "generative_type": result.generative_type
-            if result.generative_type is not None
-            else None,
-        },
+        "additional_details": model_additional_details,
     }
     if inference_engine:
         model_info["inference_engine"] = inference_engine
@@ -149,6 +158,9 @@ def benchmark_result_to_eee_dict(result: "BenchmarkResult") -> dict:
         else None,
         "validation_split": str(result.validation_split).lower()
         if result.validation_split is not None
+        else None,
+        "use_bits_per_character": str(result.use_bits_per_character).lower()
+        if result.use_bits_per_character is not None
         else None,
         "transformers_version": result.transformers_version or None,
         "torch_version": result.torch_version or None,
@@ -202,7 +214,7 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
     eval_library = config.get("eval_library", {})
     evaluation_results: c.Sequence[dict] = config.get("evaluation_results", [])
 
-    model = model_info.get("id", "")
+    model = model_info.get("name", "")
     model_additional = model_info.get("additional_details", {})
     eval_lib_additional = eval_library.get("additional_details", {})
 
@@ -244,6 +256,17 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
     except json.JSONDecodeError:
         languages = []
 
+    # Metadata
+    commercially_licensed = parse_optional_bool(
+        model_additional.get(
+            "commercially_licensed", config.get("commercially_licensed")
+        )
+    )
+    open = parse_optional_bool(model_additional.get("open", config.get("open")))
+    trained_from_scratch = parse_optional_bool(
+        model_additional.get("trained_from_scratch", config.get("trained_from_scratch"))
+    )
+
     return BenchmarkResult(
         dataset=dataset,
         task=eval_lib_additional.get("task", ""),
@@ -264,6 +287,9 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
         validation_split=parse_optional_bool(
             eval_lib_additional.get("validation_split")
         ),
+        use_bits_per_character=parse_optional_bool(
+            eval_lib_additional.get("use_bits_per_character")
+        ),
         euroeval_version=parse_optional_str(
             None
             if eval_library.get("version") == "unknown"
@@ -278,6 +304,9 @@ def benchmark_result_from_eee_dict(config: dict) -> "BenchmarkResult":
             eval_lib_additional.get("xgrammar_version")
         ),
         litellm_version=parse_optional_str(eval_lib_additional.get("litellm_version")),
+        commercially_licensed=commercially_licensed,
+        open=open,
+        trained_from_scratch=trained_from_scratch,
     )
 
 
@@ -294,17 +323,20 @@ def parse_optional_str(value: str | None) -> str | None:
     return None if value is None else value
 
 
-def parse_optional_bool(value: str | None) -> bool | None:
-    """Parse a string-encoded optional boolean value.
+def parse_optional_bool(value: str | bool | None) -> bool | None:
+    """Parse a string-encoded or bool optional boolean value.
 
     Args:
         value:
-            The string to parse. `None` maps to `None`; any other value is
-            compared case-insensitively to `"true"`.
+            The value to parse. `None` maps to `None`; bool values are
+            returned as-is; string values are compared case-insensitively
+            to `"true"`.
 
     Returns:
         `None` if value is `None`, otherwise a boolean.
     """
     if value is None:
         return None
+    if isinstance(value, bool):
+        return value
     return value.lower() == "true"

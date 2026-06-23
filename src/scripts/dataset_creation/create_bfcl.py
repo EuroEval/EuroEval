@@ -1,6 +1,7 @@
 """Create the BFCL-v2 dataset and upload it to the HF Hub."""
 
 import json
+import logging
 import os
 import random
 from pathlib import Path
@@ -8,6 +9,9 @@ from urllib.request import urlopen
 
 from datasets import Dataset, DatasetDict
 from dotenv import load_dotenv
+
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
+logger = logging.getLogger("create_bfcl")
 
 
 def main() -> None:
@@ -31,7 +35,7 @@ def main() -> None:
         )
         input_url = f"{url_prefix}/BFCL_v4_{subset_name}.json"
         ground_truth_url = f"{url_prefix}/possible_answer/BFCL_v4_{subset_name}.json"
-        print(f"Loading dataset '{subset_name}'")
+        logger.info(f"Loading dataset '{subset_name}'")
         inputs = _load_jsonl_from_url(input_url)
         ground_truth = _load_jsonl_from_url(ground_truth_url)
 

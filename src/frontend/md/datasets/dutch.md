@@ -362,6 +362,14 @@ students as part of their thesis work.
 The original SQuAD and XQuAD datasets are based on English Wikipedia articles and the
 questions and answers are written by crowdworkers.
 
+The original dataset consists of 130,319 / 10,174 / 1,699 samples for training,
+validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
+validation and testing, respectively (so 3,328 samples used in total), keeping only
+samples whose answer occurs in the context. The training and validation splits are
+subsets of the original training and validation splits. As the original test split is
+smaller than our desired test size, the test split is sampled from the original test
+split together with the validation samples not used in our validation split.
+
 Here are a few examples from the training split:
 
 ```json

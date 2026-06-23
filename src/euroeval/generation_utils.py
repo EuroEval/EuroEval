@@ -2,7 +2,6 @@
 
 import collections.abc as c
 import itertools as it
-import json
 import logging
 import random
 import re
@@ -14,7 +13,15 @@ from .enums import GenerativeType, TaskGroup
 from .exceptions import InvalidBenchmark, InvalidModel
 from .logging_utils import log_once
 from .string_utils import extract_multiple_choice_labels
-from .tokenisation_utils import apply_chat_template
+from .task_group_utils.cloze import (
+    letter_to_choice_text,
+    parse_bare_question_and_choices,
+)
+from .task_group_utils.token_classification import (
+    serialise_ner_tags,
+    serialised_ner_content_length,
+)
+from .tokenisation_utils import apply_chat_template, should_prompts_be_stripped
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -234,6 +241,7 @@ def apply_prompt(
     generative_type: GenerativeType | None,
     always_populate_text_field: bool,
     tokeniser: "PreTrainedTokenizer | None",
+    use_bits_per_character: bool = False,
 ) -> dict[str, t.Any]:
     """Apply prompt template to an example, potentially with few-shot examples.
 
@@ -253,6 +261,10 @@ def apply_prompt(
             the 'messages' field.
         tokeniser:
             The tokeniser to use for the model. If None, the tokeniser is not used.
+        use_bits_per_character:
+            Whether to use bits-per-character (BPC) scoring. For multiple-choice tasks,
+            treats benchmark as text-to-text with bare question → full answer text.
+            Defaults to False.
 
     Returns:
         The example with the few-shot examples applied.
@@ -301,6 +313,30 @@ def apply_prompt(
             kwargs[label_key] = label
             return dataset_config.prompt_template.format(**kwargs), ""
 
+    # Multiple-choice datasets currently expose only a pre-formatted `text` column, so
+    # when BPC (cloze) scoring is requested we recover the bare question and the choice
+    # texts it needs and attach them to both the batch and the few-shot examples.
+    if (
+        use_bits_per_character
+        and dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        and "raw_choices" not in examples
+    ):
+        bare_inputs: list[str] = []
+        raw_choices_list: list[list[str]] = []
+        for text in examples["text"]:
+            bare_input, raw_choices = parse_bare_question_and_choices(text)
+            bare_inputs.append(bare_input)
+            raw_choices_list.append(raw_choices)
+        examples["bare_input"] = bare_inputs
+        examples["raw_choices"] = raw_choices_list
+        for fs_example in few_shot_examples:
+            if "raw_choices" not in fs_example:
+                fs_bare, fs_choices = parse_bare_question_and_choices(
+                    fs_example["text"]
+                )
+                fs_example["bare_input"] = fs_bare
+                fs_example["raw_choices"] = fs_choices
+
     match dataset_config.task.task_group:
         case TaskGroup.SEQUENCE_CLASSIFICATION:
             labels_str = dataset_config.get_labels_str()
@@ -322,31 +358,59 @@ def apply_prompt(
             ]
 
         case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-            few_shot_sections = [
-                create_prompt(
-                    text=example["text"].replace("\n", " ").strip(),
-                    label=str(example["label"]).replace("\n", " ").strip(),
-                    labels_str=dataset_config.get_labels_str(
-                        labels=extract_multiple_choice_labels(
-                            prompt=example["text"],
-                            candidate_labels=dataset_config.labels,
+            if use_bits_per_character:
+                # BPC (cloze) scoring: present the bare question and score the full
+                # answer text, which is appended when building `bpc_prompt` below. This
+                # mirrors the sequence-classification BPC path: few-shot examples show
+                # the complete question → answer, while the sections to be scored leave
+                # the answer empty. The answer fills the template's `{label}` slot (the
+                # MCQ template has no `{target_text}` placeholder).
+                few_shot_sections = [
+                    create_prompt(
+                        text=example["bare_input"].replace("\n", " ").strip(),
+                        label=letter_to_choice_text(
+                            letter=str(example["label"]).strip().lower(),
+                            raw_choices=example["raw_choices"],
                         )
-                    ),
-                )
-                for example in few_shot_examples
-            ]
-            new_sections = [
-                create_prompt(
-                    text=text.replace("\n", " ").strip(),
-                    label="",
-                    labels_str=dataset_config.get_labels_str(
-                        labels=extract_multiple_choice_labels(
-                            prompt=text, candidate_labels=dataset_config.labels
-                        )
-                    ),
-                )
-                for text in examples["text"]
-            ]
+                        .replace("\n", " ")
+                        .strip(),
+                    )
+                    for example in few_shot_examples
+                ]
+                new_sections = [
+                    create_prompt(
+                        text=examples["bare_input"][i].replace("\n", " ").strip(),
+                        label="",
+                    )
+                    for i in range(len(examples["text"]))
+                ]
+            else:
+                # Standard scoring: enumerated choices
+                few_shot_sections = [
+                    create_prompt(
+                        text=example["text"].replace("\n", " ").strip(),
+                        label=str(example["label"]).replace("\n", " ").strip(),
+                        labels_str=dataset_config.get_labels_str(
+                            labels=extract_multiple_choice_labels(
+                                prompt=example["text"],
+                                candidate_labels=dataset_config.labels,
+                            )
+                        ),
+                    )
+                    for example in few_shot_examples
+                ]
+                new_sections = [
+                    create_prompt(
+                        text=text.replace("\n", " ").strip(),
+                        label="",
+                        labels_str=dataset_config.get_labels_str(
+                            labels=extract_multiple_choice_labels(
+                                prompt=text, candidate_labels=dataset_config.labels
+                            )
+                        ),
+                    )
+                    for text in examples["text"]
+                ]
 
         case TaskGroup.TEXT_TO_TEXT:
             few_shot_sections = [
@@ -364,26 +428,14 @@ def apply_prompt(
         case TaskGroup.TOKEN_CLASSIFICATION:
             labels_str = dataset_config.get_labels_str()
 
-            def create_label(example: dict) -> str:
-                prompt_labels = dataset_config.prompt_label_mapping.values()
-                labels: dict[str, list[str]] = {
-                    prompt_label: list() for prompt_label in prompt_labels
-                }
-                for token, label in zip(example["tokens"], example["labels"]):
-                    label = str(label).lower()
-                    if label == "o":
-                        continue
-                    prompt_label = dataset_config.prompt_label_mapping[label]
-                    if label.startswith("b-"):
-                        labels[prompt_label].append(token)
-                    elif label.startswith("i-"):
-                        labels[prompt_label][-1] += " " + token
-                return json.dumps(labels, ensure_ascii=False)
-
             few_shot_sections = [
                 create_prompt(
                     text=" ".join(example["tokens"]).replace("\n", " ").strip(),
-                    label=create_label(example=example),
+                    label=serialise_ner_tags(
+                        tokens=example["tokens"],
+                        labels=example["labels"],
+                        prompt_label_mapping=dataset_config.prompt_label_mapping,
+                    ),
                     labels_str=labels_str,
                 )
                 for example in few_shot_examples
@@ -499,6 +551,138 @@ def apply_prompt(
 
     # Always add the final prompts without few-shot examples, too, for analysis
     examples["prompt"] = [new_prompt for new_prompt, _ in new_sections]
+
+    # Create bpc_prompt column for BPC scoring when requested
+    # bpc_prompt = prompt + answer text (for scoring with prompt_logprobs)
+    # Also track bpc_answer_start: token index where answer begins in bpc_prompt
+    if use_bits_per_character:
+        assert tokeniser is not None, (
+            "tokeniser must be provided when use_bits_per_character=True"
+        )
+        bpc_tokeniser = tokeniser
+
+        # Decide, once for this tokeniser, how to join a prompt with its gold answer.
+        # This mirrors the generation path (see `should_prompts_be_stripped`): if the
+        # tokeniser merges a leading space into the following token, the prompt's
+        # trailing whitespace must be stripped and a single space placed before the
+        # answer so the answer's first token carries its natural leading space.
+        # Otherwise the prompt keeps its trailing whitespace (emitted as its own token)
+        # and the answer is appended directly. Either way the prefix tokenises stably,
+        # so its token count is the exact answer-start index.
+        labels_for_spacing = list(dataset_config.prompt_label_mapping.values()) or [
+            "negative",
+            "positive",
+        ]
+        strip_bpc_prompt = should_prompts_be_stripped(
+            labels_to_be_generated=labels_for_spacing, tokeniser=bpc_tokeniser
+        )
+
+        def build_bpc_prompt(prompt: str, answer: str) -> tuple[str, int]:
+            """Join a prompt and gold answer, returning the answer-start token index.
+
+            Args:
+                prompt:
+                    The full prompt for the example (including any prompt prefix and
+                    few-shot examples), ending with the answer prefix (e.g.
+                    ``"Svar: "``).
+                answer:
+                    The gold answer text to be scored.
+
+            Returns:
+                A pair ``(bpc_prompt, answer_start_token_index)``.
+            """
+            if strip_bpc_prompt:
+                prefix = prompt.rstrip()
+                full_prompt = f"{prefix} {answer}"
+            else:
+                prefix = prompt
+                full_prompt = f"{prefix}{answer}"
+            answer_start = len(bpc_tokeniser.encode(prefix, add_special_tokens=False))
+            return full_prompt, answer_start
+
+        # Score the answer against the same full prompt the model is conditioned on
+        # during generation (prompt prefix + few-shot examples + question), which is
+        # already assembled in `examples["text"]`. Few-shot context is automatically
+        # absent here when zero-shot evaluation is requested, since `few_shot_examples`
+        # is then empty.
+        full_prompts: list[str] = [str(text) for text in examples["text"]]
+        num_examples = len(new_sections)
+
+        # Derive the gold answer text for each example once, here, where the original
+        # task columns (``answers``, ``tokens``, ``target_text``, ...) are still
+        # present. The same string is both appended to ``bpc_prompt`` and carried
+        # forward in ``bpc_answer_text``, so the text scored by BPC and the text whose
+        # characters it divides by cannot diverge (``bpc_scoring`` reads the column
+        # rather than re-deriving the answer). ``None`` means the task group has no
+        # scoreable answer.
+        answers: list[str] | None
+        match dataset_config.task.task_group:
+            case TaskGroup.SEQUENCE_CLASSIFICATION:
+                answers = [
+                    dataset_config.prompt_label_mapping.get(
+                        examples["label"][i], examples["label"][i]
+                    )
+                    for i in range(num_examples)
+                ]
+            case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION if "raw_choices" in examples:
+                answers = [
+                    letter_to_choice_text(
+                        letter=str(examples["label"][i]).strip().lower(),
+                        raw_choices=examples["raw_choices"][i],
+                    )
+                    for i in range(num_examples)
+                ]
+            case TaskGroup.TEXT_TO_TEXT if "target_text" in examples:
+                answers = [str(examples["target_text"][i]) for i in range(num_examples)]
+            case TaskGroup.QUESTION_ANSWERING if "answers" in examples:
+                answers = [
+                    examples["answers"][i]["text"][0] for i in range(num_examples)
+                ]
+            case TaskGroup.TOKEN_CLASSIFICATION if (
+                "tokens" in examples and "labels" in examples
+            ):
+                answers = [
+                    serialise_ner_tags(
+                        tokens=examples["tokens"][i],
+                        labels=examples["labels"][i],
+                        prompt_label_mapping=dataset_config.prompt_label_mapping,
+                    )
+                    for i in range(num_examples)
+                ]
+            case _:
+                answers = None
+
+        if answers is None:
+            examples["bpc_prompt"] = list(full_prompts)
+            examples["bpc_answer_start"] = [0] * num_examples
+            examples["bpc_answer_text"] = [""] * num_examples
+            examples["bpc_answer_char_count"] = [0] * num_examples
+        else:
+            # The number of characters BPC divides the answer's bits by. It is the full
+            # answer length for every task group except token classification (NER),
+            # where the serialised JSON answer is mostly fixed scaffolding; there we use
+            # only the entity-text characters so BPC measures bits per entity character
+            # rather than bits per (largely predictable) boilerplate character. Examples
+            # with no entities have no entity characters, so they fall back to the full
+            # answer length to keep every score a finite, cache-safe positive float.
+            if dataset_config.task.task_group == TaskGroup.TOKEN_CLASSIFICATION:
+                answer_char_counts = [
+                    serialised_ner_content_length(answer) or len(answer)
+                    for answer in answers
+                ]
+            else:
+                answer_char_counts = [len(answer) for answer in answers]
+
+            bpc_prompts: list[str] = []
+            bpc_answer_starts: list[int] = []
+            for full_prompt, answer in zip(full_prompts, answers):
+                bpc_prompt, answer_start = build_bpc_prompt(full_prompt, answer)
+                bpc_prompts.append(bpc_prompt)
+                bpc_answer_starts.append(answer_start)
+            examples["bpc_prompt"] = bpc_prompts
+            examples["bpc_answer_start"] = bpc_answer_starts
+            examples["bpc_answer_text"] = answers
+            examples["bpc_answer_char_count"] = answer_char_counts
 
     return examples
 

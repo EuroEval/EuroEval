@@ -17,33 +17,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from .constants import FAILED_LABEL, GATED_LABEL, REPO, RESULTS_READY_LABEL, USER_AGENT
+
 logger = logging.getLogger(__name__)
-
-REPO = "EuroEval/EuroEval"
-LABEL = "model evaluation request"
-FAILED_LABEL = "evaluation-failed"
-GATED_LABEL = "gated"
-RESULTS_READY_LABEL = "results-ready"
-TITLE_PREFIX = "[MODEL EVALUATION REQUEST]"
-
-USER_AGENT = "euroeval-leaderboards"
-
-
-def list_comments(number: int) -> list[dict[str, t.Any]]:
-    """Return up to 100 comments for the issue with the given number.
-
-    Args:
-        number:
-            The issue number whose comments should be fetched.
-
-    Returns:
-        The list of comment objects returned by the GitHub API.
-    """
-    comments = gh_request(
-        path=f"/repos/{REPO}/issues/{number}/comments", params={"per_page": "100"}
-    )
-    assert isinstance(comments, list)
-    return comments
 
 
 def comment_on_issue(number: int, body: str) -> None:
@@ -144,7 +120,7 @@ def remove_failed_label(number: int) -> None:
 
 
 def add_gated_label(number: int) -> None:
-    """Attach the ``Gated`` label to an issue.
+    """Attach the ``gated`` label to an issue.
 
     Args:
         number:
@@ -158,7 +134,7 @@ def add_gated_label(number: int) -> None:
 
 
 def remove_gated_label(number: int) -> None:
-    """Remove the ``Gated`` label from an issue if present.
+    """Remove the ``gated`` label from an issue if present.
 
     Args:
         number:
@@ -170,7 +146,9 @@ def remove_gated_label(number: int) -> None:
     """
     try:
         gh_request(
-            path=f"/repos/{REPO}/issues/{number}/labels/{GATED_LABEL}", method="DELETE"
+            path=f"/repos/{REPO}/issues/{number}/labels/"
+            + urllib.parse.quote(GATED_LABEL),
+            method="DELETE",
         )
     except urllib.error.HTTPError as e:
         if e.code == 404:

@@ -120,6 +120,9 @@ const transformAdmonitions = (text: string): string => {
   const openRe = /^(\?\?\?\+?)\s+(\S+)(?:\s+"([^"]+)")?\s*$/;
   const capitalize = (s: string): string =>
     s.charAt(0).toUpperCase() + s.slice(1);
+  // Admonitions with an explicit title (e.g. the "recipes" in the Python
+  // package docs) get their own permalink anchor, keyed off the title slug.
+  const usedAdmonitionIds = new Set<string>();
   let i = 0;
   while (i < lines.length) {
     const m = lines[i].match(openRe);
@@ -130,8 +133,28 @@ const transformAdmonitions = (text: string): string => {
     }
     const marker = m[1];
     const type = m[2].toLowerCase();
-    const title = m[3] ?? capitalize(m[2]);
+    const explicitTitle = m[3];
+    const title = explicitTitle ?? capitalize(m[2]);
     const openAttr = marker.endsWith("+") ? " open" : "";
+    // Only titled admonitions get a stable, shareable id + anchor; generic
+    // ones (`??? note`) would otherwise collide on "#note", "#example", etc.
+    let idAttr = "";
+    let anchor = "";
+    if (explicitTitle) {
+      const base = slugify(explicitTitle);
+      if (base) {
+        let unique = base;
+        let n = 1;
+        while (usedAdmonitionIds.has(unique)) {
+          unique = `${base}-${++n}`;
+        }
+        usedAdmonitionIds.add(unique);
+        idAttr = ` id="${unique}"`;
+        anchor =
+          `<a class="header-anchor" href="#${unique}" ` +
+          `aria-hidden="true" tabindex="-1">#</a>`;
+      }
+    }
     i++;
     // Skip a single blank line directly after the marker, if present.
     if (i < lines.length && lines[i].trim() === "") i++;
@@ -153,10 +176,10 @@ const transformAdmonitions = (text: string): string => {
     while (contentLines.length && contentLines[contentLines.length - 1] === "")
       contentLines.pop();
     out.push(
-      `<details class="md-admonition md-admonition-${escapeHtml(type)}"${openAttr}>`,
+      `<details class="md-admonition md-admonition-${escapeHtml(type)}"${idAttr}${openAttr}>`,
     );
     out.push(
-      `<summary class="md-admonition-title">${escapeHtml(title)}</summary>`,
+      `<summary class="md-admonition-title">${escapeHtml(title)}${anchor}</summary>`,
     );
     out.push("");
     out.push(contentLines.join("\n"));
@@ -198,6 +221,12 @@ const simplifyHeadingForToc = (rawInner: string): string => {
   // TOC label.
   let stripped = rawInner.replace(
     /<a\s+class="api-source-link"[^>]*>[\s\S]*?<\/a>/gi,
+    "",
+  );
+  // Also drop the permalink "header anchor" injected before each heading, so
+  // its "#" glyph doesn't leak into the TOC label.
+  stripped = stripped.replace(
+    /<a\s+class="header-anchor"[^>]*>[\s\S]*?<\/a>/gi,
     "",
   );
   let text = decodeEntities(stripped.replace(/<[^>]+>/g, "")).trim();
@@ -256,6 +285,14 @@ md.core.ruler.push("inject-heading-ids", (state) => {
     }
     usedIds.add(unique);
     token.attrSet("id", unique);
+    // Inject a permalink "header anchor" before the heading text, so each
+    // heading gets a clickable, copyable deep link (revealed on hover via CSS).
+    const anchor = new state.Token("html_inline", "", 0);
+    anchor.content =
+      `<a class="header-anchor" href="#${unique}" ` +
+      `aria-hidden="true" tabindex="-1">#</a>`;
+    inline.children = inline.children ?? [];
+    inline.children.unshift(anchor);
   }
 });
 
