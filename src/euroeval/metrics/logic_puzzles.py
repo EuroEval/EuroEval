@@ -1,4 +1,4 @@
-"""Logic reasoning metrics for puzzles."""
+"""Metrics for logic puzzle evaluation."""
 
 import collections.abc as c
 import itertools
@@ -20,8 +20,8 @@ if t.TYPE_CHECKING:
 logger: logging.Logger = logging.getLogger("euroeval")
 
 
-class StructuredGenerationMetric(Metric):
-    """Base class for structured generation metrics."""
+class LogicPuzzleMetric(Metric):
+    """Base class for logic puzzle metrics."""
 
     def __call__(
         self,
@@ -252,7 +252,7 @@ class StructuredGenerationMetric(Metric):
         return prediction_sets, label_sets, n_keys, n_elements_per_key
 
 
-class PuzzleLevelAccuracyMetric(StructuredGenerationMetric):
+class PuzzleLevelAccuracyMetric(LogicPuzzleMetric):
     """Puzzle-level accuracy metric."""
 
     def __init__(self) -> None:
@@ -315,7 +315,7 @@ class PuzzleLevelAccuracyMetric(StructuredGenerationMetric):
         return 1
 
 
-class CellWiseAccuracyMetric(StructuredGenerationMetric):
+class CellWiseAccuracyMetric(LogicPuzzleMetric):
     """Cell-wise accuracy metric."""
 
     def __init__(self) -> None:
@@ -394,7 +394,7 @@ class CellWiseAccuracyMetric(StructuredGenerationMetric):
         return cell_score
 
 
-class BestPermutedCellWiseAccuracyMetric(StructuredGenerationMetric):
+class BestPermutedCellWiseAccuracyMetric(LogicPuzzleMetric):
     """Best permuted cell-wise accuracy metric."""
 
     def __init__(self) -> None:
