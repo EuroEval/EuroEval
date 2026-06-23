@@ -243,8 +243,8 @@ GERLANGMOD_DA_CONFIG = DatasetConfig(
 )
 
 ZEBRA_PUZZLE_EASY_DA_CONFIG = DatasetConfig(
-    name="zebra-puzzle-easy-da",
-    pretty_name="ZebraPuzzleEasy-da",
+    name="zebra-puzzles-easy-da",
+    pretty_name="ZebraPuzzlesEasy-da",
     source="EuroEval/zebra-puzzles-da_huse_2x3_5rh",
     task=LOGIC,
     languages=[DANISH],
@@ -252,8 +252,8 @@ ZEBRA_PUZZLE_EASY_DA_CONFIG = DatasetConfig(
 )
 
 ZEBRA_PUZZLE_HARD_DA_CONFIG = DatasetConfig(
-    name="zebra-puzzle-hard-da",
-    pretty_name="ZebraPuzzleHard-da",
+    name="zebra-puzzles-hard-da",
+    pretty_name="ZebraPuzzlesHard-da",
     source="EuroEval/zebra-puzzles-da_huse_4x5_5rh",
     task=LOGIC,
     languages=[DANISH],

@@ -193,18 +193,18 @@ WIC_CONFIG = DatasetConfig(
 )
 
 ZEBRA_PUZZLE_EASY_EN_CONFIG = DatasetConfig(
-    name="zebra-puzzle-easy-en",
-    pretty_name="ZebraPuzzleEasy-en",
-    source="EuroEval/zebra-puzzle-easy-en",
+    name="zebra-puzzles-easy-en",
+    pretty_name="ZebraPuzzlesEasy-en",
+    source="EuroEval/zebra-puzzles-easy-en",
     task=LOGIC,
     languages=[ENGLISH],
     unofficial=True,
 )
 
 ZEBRA_PUZZLE_HARD_EN_CONFIG = DatasetConfig(
-    name="zebra-puzzle-hard-en",
-    pretty_name="ZebraPuzzleHard-en",
-    source="EuroEval/zebra-puzzle-hard-en",
+    name="zebra-puzzles-hard-en",
+    pretty_name="ZebraPuzzlesHard-en",
+    source="EuroEval/zebra-puzzles-hard-en",
     task=LOGIC,
     languages=[ENGLISH],
     unofficial=True,

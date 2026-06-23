@@ -17,6 +17,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Renamed all zebra puzzle dataset IDs from singular to plural form (e.g.,
+  `zebra-puzzle-easy-da` → `zebra-puzzles-easy-da`, `zebra-puzzle-hard-de` →
+  `zebra-puzzles-hard-de`). This applies to all language variants (da, de, en, fo, is,
+  nb, nn, nl, sv).
+
+### Changed
+
 - The `num_failed_instances` count stored in result records now counts only the samples
   where no clean label could be parsed _and_ the fallback label (the closest candidate)
   was also wrong. Previously it counted every sample that needed the closest-candidate

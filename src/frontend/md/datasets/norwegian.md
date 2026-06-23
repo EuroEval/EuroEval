@@ -2361,7 +2361,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset zebra-puzzle-easy-nb
+euroeval --model <model-id> --dataset zebra-puzzles-easy-nb
 ```
 
 ### Unofficial: ZebraPuzzleHard-nb
@@ -2430,7 +2430,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset zebra-puzzle-hard-nb
+euroeval --model <model-id> --dataset zebra-puzzles-hard-nb
 ```
 
 ## Logical Reasoning
@@ -2495,7 +2495,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset zebra-puzzle-easy-nn
+euroeval --model <model-id> --dataset zebra-puzzles-easy-nn
 ```
 
 ### Unofficial: ZebraPuzzleHard-nn
@@ -2564,5 +2564,5 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset zebra-puzzle-hard-nn
+euroeval --model <model-id> --dataset zebra-puzzles-hard-nn
 ```

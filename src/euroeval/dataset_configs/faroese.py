@@ -70,18 +70,18 @@ GERLANGMOD_FO_CONFIG = DatasetConfig(
 )
 
 ZEBRA_PUZZLE_EASY_FO_CONFIG = DatasetConfig(
-    name="zebra-puzzle-easy-fo",
-    pretty_name="ZebraPuzzleEasy-fo",
-    source="EuroEval/zebra-puzzle-easy-fo",
+    name="zebra-puzzles-easy-fo",
+    pretty_name="ZebraPuzzlesEasy-fo",
+    source="EuroEval/zebra-puzzles-easy-fo",
     task=LOGIC,
     languages=[FAROESE],
     unofficial=True,
 )
 
 ZEBRA_PUZZLE_HARD_FO_CONFIG = DatasetConfig(
-    name="zebra-puzzle-hard-fo",
-    pretty_name="ZebraPuzzleHard-fo",
-    source="EuroEval/zebra-puzzle-hard-fo",
+    name="zebra-puzzles-hard-fo",
+    pretty_name="ZebraPuzzlesHard-fo",
+    source="EuroEval/zebra-puzzles-hard-fo",
     task=LOGIC,
     languages=[FAROESE],
     unofficial=True,

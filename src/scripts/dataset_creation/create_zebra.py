@@ -137,7 +137,7 @@ def main() -> None:
         )
 
         # Create dataset ID
-        dataset_id = f"EuroEval/zebra-puzzle-{difficulty}-{lang_code}"
+        dataset_id = f"EuroEval/zebra-puzzles-{difficulty}-{lang_code}"
 
         # Remove the dataset from Hugging Face Hub if it already exists
         try:

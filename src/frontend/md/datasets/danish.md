@@ -1606,7 +1606,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset zebra-puzzle-easy-da
+euroeval --model <model-id> --dataset zebra-puzzles-easy-da
 ```
 
 ### Unofficial: ZebraPuzzleHard-da
@@ -1678,7 +1678,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset zebra-puzzle-hard-da
+euroeval --model <model-id> --dataset zebra-puzzles-hard-da
 ```
 
 ## Summarisation

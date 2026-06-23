@@ -207,18 +207,18 @@ GERLANGMOD_SV_CONFIG = DatasetConfig(
 )
 
 ZEBRA_PUZZLE_EASY_SV_CONFIG = DatasetConfig(
-    name="zebra-puzzle-easy-sv",
-    pretty_name="ZebraPuzzleEasy-sv",
-    source="EuroEval/zebra-puzzle-easy-sv",
+    name="zebra-puzzles-easy-sv",
+    pretty_name="ZebraPuzzlesEasy-sv",
+    source="EuroEval/zebra-puzzles-easy-sv",
     task=LOGIC,
     languages=[SWEDISH],
     unofficial=True,
 )
 
 ZEBRA_PUZZLE_HARD_SV_CONFIG = DatasetConfig(
-    name="zebra-puzzle-hard-sv",
-    pretty_name="ZebraPuzzleHard-sv",
-    source="EuroEval/zebra-puzzle-hard-sv",
+    name="zebra-puzzles-hard-sv",
+    pretty_name="ZebraPuzzlesHard-sv",
+    source="EuroEval/zebra-puzzles-hard-sv",
     task=LOGIC,
     languages=[SWEDISH],
     unofficial=True,

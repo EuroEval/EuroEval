@@ -232,18 +232,18 @@ SICK_NL_CONFIG = DatasetConfig(
 )
 
 ZEBRA_PUZZLE_EASY_NL_CONFIG = DatasetConfig(
-    name="zebra-puzzle-easy-nl",
-    pretty_name="ZebraPuzzleEasy-nl",
-    source="EuroEval/zebra-puzzle-easy-nl",
+    name="zebra-puzzles-easy-nl",
+    pretty_name="ZebraPuzzlesEasy-nl",
+    source="EuroEval/zebra-puzzles-easy-nl",
     task=LOGIC,
     languages=[DUTCH],
     unofficial=True,
 )
 
 ZEBRA_PUZZLE_HARD_NL_CONFIG = DatasetConfig(
-    name="zebra-puzzle-hard-nl",
-    pretty_name="ZebraPuzzleHard-nl",
-    source="EuroEval/zebra-puzzle-hard-nl",
+    name="zebra-puzzles-hard-nl",
+    pretty_name="ZebraPuzzlesHard-nl",
+    source="EuroEval/zebra-puzzles-hard-nl",
     task=LOGIC,
     languages=[DUTCH],
     unofficial=True,

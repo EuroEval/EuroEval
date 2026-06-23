@@ -201,18 +201,18 @@ GERLANGMOD_IS_CONFIG = DatasetConfig(
 )
 
 ZEBRA_PUZZLE_EASY_IS_CONFIG = DatasetConfig(
-    name="zebra-puzzle-easy-is",
-    pretty_name="ZebraPuzzleEasy-is",
-    source="EuroEval/zebra-puzzle-easy-is",
+    name="zebra-puzzles-easy-is",
+    pretty_name="ZebraPuzzlesEasy-is",
+    source="EuroEval/zebra-puzzles-easy-is",
     task=LOGIC,
     languages=[ICELANDIC],
     unofficial=True,
 )
 
 ZEBRA_PUZZLE_HARD_IS_CONFIG = DatasetConfig(
-    name="zebra-puzzle-hard-is",
-    pretty_name="ZebraPuzzleHard-is",
-    source="EuroEval/zebra-puzzle-hard-is",
+    name="zebra-puzzles-hard-is",
+    pretty_name="ZebraPuzzlesHard-is",
+    source="EuroEval/zebra-puzzles-hard-is",
     task=LOGIC,
     languages=[ICELANDIC],
     unofficial=True,
