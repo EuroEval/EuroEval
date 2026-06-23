@@ -86,7 +86,6 @@ def detect_hallucinations(
     model: str,
     device: Device,
     cache_dir: str,
-    max_input_length: int = DEFAULT_MAX_INPUT_LENGTH,
 ) -> float:
     """Load model and detect hallucinations.
 
@@ -106,9 +105,6 @@ def detect_hallucinations(
         cache_dir:
             The directory where the detection model is cached. Loading from the same
             directory that ``download`` populates is what enables offline runs.
-        max_input_length:
-            The maximum combined prompt and answer token budget for the detector.
-            Defaults to ``DEFAULT_MAX_INPUT_LENGTH``.
 
     Returns:
         A hallucination rate (hallucinated_tokens/total_tokens).
@@ -131,9 +127,8 @@ def detect_hallucinations(
     transformer_detector = detector.detector
     # ``HallucinationDetector`` does not forward ``max_length`` to the underlying
     # transformer detector, so override it directly to use the configured budget.
-    transformer_detector.max_length = max_input_length
+    transformer_detector.max_length = DEFAULT_MAX_INPUT_LENGTH
     tokenizer = transformer_detector.tokenizer
-    max_length = transformer_detector.max_length
 
     id_to_context = dict(zip(dataset["id"], dataset["context"]))
 
@@ -146,7 +141,9 @@ def detect_hallucinations(
         predicted_text = prediction["prediction_text"]
 
         if _answer_too_long(
-            answer=predicted_text, tokenizer=tokenizer, max_length=max_length
+            answer=predicted_text,
+            tokenizer=tokenizer,
+            max_length=DEFAULT_MAX_INPUT_LENGTH,
         ):
             skipped_samples += 1
             continue
@@ -161,7 +158,7 @@ def detect_hallucinations(
         logger.warning(
             f"Skipped {skipped_samples} sample(s) during hallucination detection "
             f"because the predicted answer alone exceeded the detector's maximum "
-            f"context length of {max_length} tokens."
+            f"context length of {DEFAULT_MAX_INPUT_LENGTH} tokens."
         )
 
     if total_tokens == 0:
