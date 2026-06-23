@@ -15,7 +15,7 @@ import json
 import typing as t
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split
+from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from huggingface_hub.utils import HfHubHTTPError
 
@@ -62,17 +62,12 @@ def main() -> None:
     repo_id = "alexandrainst/multi-zebra-logic"
 
     for theme, lang_code, difficulty in THEMES:
-        # Load dataset from parquet files directly to avoid deprecated List feature type
-        # The source dataset uses List(Value(...)) which was removed in datasets 5.0.0
-        train_data: Dataset = Dataset.from_parquet(
-            f"hf://datasets/{repo_id}/dataset_{theme}/train-00000-of-00001.parquet"
+        # Load dataset using load_dataset for robustness and proper dataset handling
+        train_data: Dataset = load_dataset(repo_id, f"dataset_{theme}", split="train")
+        val_data: Dataset = load_dataset(
+            repo_id, f"dataset_{theme}", split="validation"
         )
-        val_data: Dataset = Dataset.from_parquet(
-            f"hf://datasets/{repo_id}/dataset_{theme}/val-00000-of-00001.parquet"
-        )
-        test_data: Dataset = Dataset.from_parquet(
-            f"hf://datasets/{repo_id}/dataset_{theme}/test-00000-of-00001.parquet"
-        )
+        test_data: Dataset = load_dataset(repo_id, f"dataset_{theme}", split="test")
 
         # Check length
         assert len(train_data) == n_train
