@@ -60,8 +60,7 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         "Хто мае якія ўласцівасці і жыве ў якім доме? Калі ласка, дайце свой адказ у "
         "выглядзе JSON-слоўніка. Кожны ключ павінен быць object_X, дзе X — нумар дома. "
         "Кожнае значэнне павінна быць спісам уласцівасцей з вышэйпералічаных "
-        "катэгорый, "
-        "якія належаць чалавеку ў доме нумар X.",
+        "катэгорый, якія належаць чалавеку ў доме нумар X.",
         default_prompt_label_mapping=dict(),
     ),
     BOSNIAN: PromptConfig(
@@ -362,7 +361,7 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
     SWEDISH: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
-        default_instruction_prompt="Här är ett kapitel:\n<riddle>{text}</riddle>\n"
+        default_instruction_prompt="Här är en gåta:\n<riddle>{text}</riddle>\n"
         "Vem har vilka egenskaper och bor i vilket hus? Vänligen ange ditt svar som "
         "en JSON-ordbok. Varje nyckel ska vara object_X där X är husnummer. Varje "
         "värde ska vara en lista över egenskaperna från kategorierna ovan som "
