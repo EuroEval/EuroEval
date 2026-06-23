@@ -3,6 +3,7 @@
 import collections.abc as c
 import logging
 import typing as t
+from pathlib import Path
 
 from datasets import Dataset
 from huggingface_hub import HfApi, snapshot_download
@@ -42,12 +43,16 @@ def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
     )
 
 
-def _hallucination_model_ids() -> set[str]:
+def _hallucination_model_ids(cache_dir: str) -> set[str]:
     """Collect the model IDs of every dataset using the hallucination metric.
 
     This enables pre-downloading all language-specific hallucination detection
     models up front (e.g. for offline benchmarking), since the per-dataset language
     is not known inside the metric's ``download`` method.
+
+    Args:
+        cache_dir:
+            The directory to store the dataset configuration cache in.
 
     Returns:
         The set of Hugging Face Hub repository IDs of all hallucination detection
@@ -55,17 +60,23 @@ def _hallucination_model_ids() -> set[str]:
     """
     # Imported here rather than at module level to avoid a circular import, since
     # the dataset configurations import this metric module via the task registry.
-    from .. import dataset_configs  # noqa: PLC0415
-    from ..data_models import DatasetConfig  # noqa: PLC0415
+    from ..dataset_configs import get_all_dataset_configs  # noqa: PLC0415
 
+    dataset_configs = get_all_dataset_configs(
+        custom_datasets_file=Path("custom_datasets.py"),
+        dataset_ids=[],
+        api_key=None,
+        cache_dir=Path(cache_dir),
+        trust_remote_code=False,
+        run_with_cli=False,
+    )
     model_ids: set[str] = set()
-    for obj in vars(dataset_configs).values():
-        if not isinstance(obj, DatasetConfig):
-            continue
+    for dataset_config in dataset_configs.values():
         if any(
-            isinstance(metric, TokenHallucinationMetric) for metric in obj.task.metrics
+            isinstance(metric, TokenHallucinationMetric)
+            for metric in dataset_config.task.metrics
         ):
-            model_ids.add(_hallucination_model_id(dataset_config=obj))
+            model_ids.add(_hallucination_model_id(dataset_config=dataset_config))
     return model_ids
 
 
@@ -226,7 +237,7 @@ class TokenHallucinationMetric(Metric):
             The metric object itself.
         """
         api = HfApi()
-        for model_id in _hallucination_model_ids():
+        for model_id in _hallucination_model_ids(cache_dir=cache_dir):
             if not api.repo_exists(repo_id=model_id):
                 logger.warning(
                     f"The hallucination detection model {model_id!r} does not exist "
