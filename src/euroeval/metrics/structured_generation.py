@@ -7,8 +7,6 @@ import typing as t
 from copy import deepcopy
 
 import numpy as np
-from typeguard import TypeCheckError, check_type
-
 from ..exceptions import InvalidBenchmark
 from ..string_utils import extract_json_dict_from_string
 from .base import Metric
@@ -70,7 +68,7 @@ class StructuredGenerationMetric(Metric):
                 list[dict[str, list[str]]], deepcopy(raw_predictions)
             )
         else:
-            formatted_predictions = []
+            formatted_predictions: list[dict[str, list[str]]] = []
             for raw_prediction in raw_predictions:
                 if not isinstance(raw_prediction, str):
                     logger.warning(
@@ -79,7 +77,7 @@ class StructuredGenerationMetric(Metric):
                     )
                     raw_prediction = str(raw_prediction)
                 formatted_prediction = extract_json_dict_from_string(s=raw_prediction)
-                if not self._check_full_type(
+                if formatted_prediction is None or not self._check_full_type(
                     formatted_prediction, dict[str, list[str]]
                 ):
                     logger.warning(
@@ -123,7 +121,9 @@ class StructuredGenerationMetric(Metric):
         return mean_result
 
     @staticmethod
-    def _check_full_type(variable: object, expected_type: t.Type) -> bool:
+    def _check_full_type(
+        variable: object, expected_type: t.Type
+    ) -> bool:
         """Check if a variable is of the expected type.
 
         Args:
@@ -135,11 +135,26 @@ class StructuredGenerationMetric(Metric):
         Returns:
             True if the variable is of the expected type, False otherwise.
         """
-        try:
-            check_type(variable, expected_type)
-            return True
-        except (TypeError, TypeCheckError):
-            return False
+        # Handle list[dict[str, list[str]]] type
+        if expected_type == list[dict[str, list[str]]]:
+            if not isinstance(variable, list):
+                return False
+            return all(
+                isinstance(item, dict)
+                and all(
+                    isinstance(k, str) and isinstance(v, list)
+                    for k, v in item.items()
+                )
+                for item in variable
+            )
+        # Handle dict[str, list[str]] type
+        if expected_type == dict[str, list[str]]:
+            if not isinstance(variable, dict):
+                return False
+            return all(
+                isinstance(k, str) and isinstance(v, list) for k, v in variable.items()
+            )
+        return False
 
     def _compare_all_json_predictions_and_labels(
         self,
