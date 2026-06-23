@@ -10,7 +10,7 @@ import numpy as np
 from typeguard import TypeCheckError, check_type
 
 from ..exceptions import InvalidBenchmark
-from ..utils import extract_json_dict_from_string
+from ..string_utils import extract_json_dict_from_string
 from .base import Metric
 
 if t.TYPE_CHECKING:
