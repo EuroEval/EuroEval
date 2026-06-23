@@ -299,6 +299,10 @@ class PuzzleLevelAccuracyMetric(LogicPuzzleMetric):
         prediction = dict(sorted(prediction.items()))
         label = dict(sorted(label.items()))
 
+        # Reject predictions with wrong key counts
+        if len(prediction) != len(label):
+            return 0
+
         if prediction == label:
             return 1
 
@@ -371,6 +375,10 @@ class CellWiseAccuracyMetric(LogicPuzzleMetric):
         # Sort the prediction and label by object keys to ensure consistent order
         prediction = dict(sorted(prediction.items()))
         label = dict(sorted(label.items()))
+
+        # Reject predictions with wrong key counts
+        if len(prediction) != len(label):
+            return 0.0
 
         if prediction == label:
             return 1.0
