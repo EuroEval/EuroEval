@@ -90,9 +90,9 @@ euroeval --model <model-id> --dataset sst5
 ### CoNLL-en
 
 This dataset was published in [this paper](https://aclanthology.org/W03-0419/) and was
-part of the CoNNL-2003 shared task. The data comes from the [Reuters
-Corpus](http://www.reuters.com/researchandstandards) and consists of news articles
-between August 1996 and August 1997, labelled with named entities.
+part of the CoNNL-2003 shared task. The data comes from the
+[Reuters Corpus](http://www.reuters.com/researchandstandards) and consists of news
+articles between August 1996 and August 1997, labelled with named entities.
 
 The original full dataset consists of 14,041 / 3,250 / 3,453 samples for the training,
 validation and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our
@@ -168,13 +168,13 @@ euroeval --model <model-id> --dataset conll-en
 ### ScaLA-En
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [English Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_English-GUM/) by assuming that the
-documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[English Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_English-GUM/)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original full dataset consists of 1,024 / 256 / 2,048 samples for training,
 validation and testing, respectively (so 3,328 samples used in total). These splits are
@@ -259,15 +259,15 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Word: cover\nContext 1: Does my policy cover accidental loss?\nContext 2: The insurance won't cover this.",
-    "label": "same_sense"
+  "text": "Word: cover\nContext 1: Does my policy cover accidental loss?\nContext 2: The insurance won't cover this.",
+  "label": "same_sense"
 }
 ```
 
 ```json
 {
-    "text": "Word: dress\nContext 1: Dress a turkey.\nContext 2: Dress the patient.",
-    "label": "different_sense"
+  "text": "Word: dress\nContext 1: Dress a turkey.\nContext 2: Dress the patient.",
+  "label": "different_sense"
 }
 ```
 
@@ -396,9 +396,9 @@ euroeval --model <model-id> --dataset squad
 ### Unofficial: XQuAD-en
 
 This dataset was published in [this paper](https://aclanthology.org/2020.acl-main.421/)
-and contains 1190 question-answer pairs from [SQuAD
-v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages by
-professional translators.
+and contains 1190 question-answer pairs from
+[SQuAD v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages
+by professional translators.
 
 The dataset is split intro 550 / 128 / 512 question-answer pairs for training,
 validation, and testing, respectively.
@@ -486,21 +486,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": 'Text: """We will endeavour to cut carbon dioxide emissions per unit of GDP by a notable margin by 2020 from the 2005 level,"" Hu said. He did not set a figure for the cuts, saying they will be made based on China\'s economic output. Hu encouraged developing countries ""to avoid the old path of polluting first and cleaning up later."" He added that ""they should not, however, be asked to take on obligations that go beyond their development stage, responsibility and capabilities."""\nQuestion: What did Hu suggest that developing countries do?\nChoices:\na. Take on obligations that push their development stage\nb. Focus on economic output\nc. Go beyond their current responsibilities\nd. Avoiding old paths of pollution',
+  "text": "Text: \"\"\"We will endeavour to cut carbon dioxide emissions per unit of GDP by a notable margin by 2020 from the 2005 level,\"\" Hu said. He did not set a figure for the cuts, saying they will be made based on China's economic output. Hu encouraged developing countries \"\"to avoid the old path of polluting first and cleaning up later.\"\" He added that \"\"they should not, however, be asked to take on obligations that go beyond their development stage, responsibility and capabilities.\"\"\"\nQuestion: What did Hu suggest that developing countries do?\nChoices:\na. Take on obligations that push their development stage\nb. Focus on economic output\nc. Go beyond their current responsibilities\nd. Avoiding old paths of pollution",
   "label": "d"
 }
 ```
 
 ```json
 {
-  "text": 'Text: "All of the cave entrances, which were named ""The Seven Sisters"", are at least 100 to 250 meters (328 to 820 feet) in diameter. Infrared images show that the temperature variations from night and day show that they are likely caves. ""They are cooler than the surrounding surface in the day and warmer at night. Their thermal behavior is not as steady as large caves on Earth that often maintain a fairly constant temperature, but it is consistent with these being deep holes in the ground,"" said Glen Cushing of the United States Geological Survey (USGS) Astrogeology Team and of Northern Arizona University located in Flagstaff, Arizona."\nQuestion: What information suggests that The Seven Sisters are caves?\nChoices:\na. Temperature variations\nb. The diameter of the cave entrances\nc. Geological surveys\nd. Pictures of caves on Earth',
+  "text": "Text: \"All of the cave entrances, which were named \"\"The Seven Sisters\"\", are at least 100 to 250 meters (328 to 820 feet) in diameter. Infrared images show that the temperature variations from night and day show that they are likely caves. \"\"They are cooler than the surrounding surface in the day and warmer at night. Their thermal behavior is not as steady as large caves on Earth that often maintain a fairly constant temperature, but it is consistent with these being deep holes in the ground,\"\" said Glen Cushing of the United States Geological Survey (USGS) Astrogeology Team and of Northern Arizona University located in Flagstaff, Arizona.\"\nQuestion: What information suggests that The Seven Sisters are caves?\nChoices:\na. Temperature variations\nb. The diameter of the cave entrances\nc. Geological surveys\nd. Pictures of caves on Earth",
   "label": "a"
 }
 ```
 
 ```json
 {
-  "text": 'Text: The proposed amendment already passed both houses in 2011. A change was made this legislative session when the second sentence was deleted first by the House of Representatives and then was passed in a similar form by the Senate Monday. The failure of the second sentence, which proposes to ban same-sex civil unions, could possibly open the door for civil unions in the future. Following the process, HJR-3 will be reviewed again by the next elected legislature in either 2015 or 2016 to remain in process.\nQuestion: According to the passage, when was the second sentence deleted?\nChoices:\na. During the legislative session\nb. In 2011\nc. On Monday\nd. In 2015',
+  "text": "Text: The proposed amendment already passed both houses in 2011. A change was made this legislative session when the second sentence was deleted first by the House of Representatives and then was passed in a similar form by the Senate Monday. The failure of the second sentence, which proposes to ban same-sex civil unions, could possibly open the door for civil unions in the future. Following the process, HJR-3 will be reviewed again by the next elected legislature in either 2015 or 2016 to remain in process.\nQuestion: According to the passage, when was the second sentence deleted?\nChoices:\na. During the legislative session\nb. In 2011\nc. On Monday\nd. In 2015",
   "label": "a"
 }
 ```
@@ -790,25 +790,25 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "The coil of a moving coil meter has 100 turns, is 40 mm long and 30 mm wide. The control torque is 240*10-6 N-m on full scale. If magnetic flux density is 1Wb/m2 range of meter is\nChoices:\na. 2 mA.\nb. 5 mA.\nc. 1.5 mA.\nd. 0.5 mA.\ne. 6 mA.\nf. 4 mA.\ng. 3 mA.\nh. 1 mA.\ni. 2.5 mA.\nj. 3.5 mA.",
-    "label": "a",
-    "category": "engineering"
+  "text": "The coil of a moving coil meter has 100 turns, is 40 mm long and 30 mm wide. The control torque is 240*10-6 N-m on full scale. If magnetic flux density is 1Wb/m2 range of meter is\nChoices:\na. 2 mA.\nb. 5 mA.\nc. 1.5 mA.\nd. 0.5 mA.\ne. 6 mA.\nf. 4 mA.\ng. 3 mA.\nh. 1 mA.\ni. 2.5 mA.\nj. 3.5 mA.",
+  "label": "a",
+  "category": "engineering"
 }
 ```
 
 ```json
 {
-    "text": "Predict the number of lines in the EPR spectrum of a solution of 13C-labelled methyl radical (13CH3•), assuming the lines do not overlap.\nChoices:\na. 10\nb. 8\nc. 4\nd. 20\ne. 12\nf. 3\ng. 16\nh. 5\ni. 24\nj. 6",
-    "label": "b",
-    "category": "chemistry"
+  "text": "Predict the number of lines in the EPR spectrum of a solution of 13C-labelled methyl radical (13CH3•), assuming the lines do not overlap.\nChoices:\na. 10\nb. 8\nc. 4\nd. 20\ne. 12\nf. 3\ng. 16\nh. 5\ni. 24\nj. 6",
+  "label": "b",
+  "category": "chemistry"
 }
 ```
 
 ```json
 {
-    "text": "In an SR latch built from NOR gates, which condition is not allowed\nChoices:\na. S=0, R=2\nb. S=2, R=2\nc. S=1, R=1\nd. S=1, R=-1\ne. S=1, R=2\nf. S=0, R=0\ng. S=2, R=0\nh. S=1, R=0\ni. S=2, R=1\nj. S=0, R=1",
-    "label": "c",
-    "category": "engineering"
+  "text": "In an SR latch built from NOR gates, which condition is not allowed\nChoices:\na. S=0, R=2\nb. S=2, R=2\nc. S=1, R=1\nd. S=1, R=-1\ne. S=1, R=2\nf. S=0, R=0\ng. S=2, R=0\nh. S=1, R=0\ni. S=2, R=1\nj. S=0, R=1",
+  "label": "c",
+  "category": "engineering"
 }
 ```
 
@@ -920,35 +920,35 @@ euroeval --model <model-id> --dataset arc
 ### Unofficial: MultiLoKo-en
 
 This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The English
-questions are separately sourced and designed to target locally relevant topics for
-English-speaking populations.
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
+English questions are separately sourced and designed to target locally relevant topics
+for English-speaking populations.
 
 We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer as
-the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
-question. We create a 16 / 234 split for training and testing, respectively.
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "At age 16, what app was Jake Paul posting videos on?\nChoices:\na. Vine\nb. YouTube Shorts\nc. TikTok\nd. Instagram Reels",
-    "label": "a"
+  "text": "At age 16, what app was Jake Paul posting videos on?\nChoices:\na. Vine\nb. YouTube Shorts\nc. TikTok\nd. Instagram Reels",
+  "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Which Fifty Shades book was published four months after the American film adaptation of the original novel?\nChoices:\na. Fifty Shades Darker\nb. Fifty Shades of Grey as Told by Christian\nc. Fifty Shades Freed\nd. Fifty Shades of Grey: The Official Movie Novelization",
-    "label": "b"
+  "text": "Which Fifty Shades book was published four months after the American film adaptation of the original novel?\nChoices:\na. Fifty Shades Darker\nb. Fifty Shades of Grey as Told by Christian\nc. Fifty Shades Freed\nd. Fifty Shades of Grey: The Official Movie Novelization",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "The first three seasons of \"The Grand Tour\" TV series was similar in format to which existing TV program at the time?\nChoices:\na. Fifth Gear\nb. Wheeler Dealers\nc. Top Gear\nd. MotorWeek",
-    "label": "c"
+  "text": "The first three seasons of \"The Grand Tour\" TV series was similar in format to which existing TV program at the time?\nChoices:\na. Fifth Gear\nb. Wheeler Dealers\nc. Top Gear\nd. MotorWeek",
+  "label": "c"
 }
 ```
 
@@ -1238,22 +1238,22 @@ Here are a few examples from some of the training splits:
 
 ```json
 {
-    "text": "Still to do; hallway floor, all the skirtings. Decorator is coming in a month, so it’s bare plaster chic for us for now",
-    "target_text": "Vi mangler gulvet i gangen og alle fodlister. Maleren kommer om en måned, så det er et pænt råpuds for os indtil videre."
+  "text": "Still to do; hallway floor, all the skirtings. Decorator is coming in a month, so it’s bare plaster chic for us for now",
+  "target_text": "Vi mangler gulvet i gangen og alle fodlister. Maleren kommer om en måned, så det er et pænt råpuds for os indtil videre."
 }
 ```
 
 ```json
 {
-    "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
-    "target_text": "У мене немає телеметрії для акумулятора. Це те, що я, можливо, додам у майбутній версії."
+  "text": "I don't have any telemetry for the battery. This is something I might add in a future revision.",
+  "target_text": "У мене немає телеметрії для акумулятора. Це те, що я, можливо, додам у майбутній версії."
 }
 ```
 
 ```json
 {
-    "text": "\"You mean... the horrible god monster thing that we... helped kill?\" Tenuk stuttered.",
-    "target_text": "\"Vols dir… l'horrible deïtat monstruosa que hem… ajudat a matar?\", Tanuk tartamudejà."
+  "text": "\"You mean... the horrible god monster thing that we... helped kill?\" Tenuk stuttered.",
+  "target_text": "\"Vols dir… l'horrible deïtat monstruosa que hem… ajudat a matar?\", Tanuk tartamudejà."
 }
 ```
 
@@ -1302,58 +1302,52 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Write an essay on the differences between Sunni and Shi'a Muslims. Your entire response must contain at least 1200 words.",
-    "target_text": {
-        "instruction_id_list": [
-            "length_constraints:number_words"
-        ],
-        "kwargs": [
-            {
-                "num_words": 1200,
-                "relation": "at least"
-            }
-        ]
-    }
+  "text": "Write an essay on the differences between Sunni and Shi'a Muslims. Your entire response must contain at least 1200 words.",
+  "target_text": {
+    "instruction_id_list": ["length_constraints:number_words"],
+    "kwargs": [
+      {
+        "num_words": 1200,
+        "relation": "at least"
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "You feel strongly about a local issue that involves the environment, pollution, and climate change. Write a template for a letter to the editor of a newspaper. Use the word para at least once.",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:frequency"
-        ],
-        "kwargs": [
-            {
-                "frequency": 1,
-                "keyword": "para",
-                "relation": "at least"
-            }
-        ]
-    }
+  "text": "You feel strongly about a local issue that involves the environment, pollution, and climate change. Write a template for a letter to the editor of a newspaper. Use the word para at least once.",
+  "target_text": {
+    "instruction_id_list": ["keywords:frequency"],
+    "kwargs": [
+      {
+        "frequency": 1,
+        "keyword": "para",
+        "relation": "at least"
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Students are travelling to UCI for 3 days. Create a hilarious itinerary for them. Do not use the word 'university'. Your entire response should have exactly 4 paragraphs.  Separate paragraphs with the markdown divider: ***",
-    "target_text": {
-        "instruction_id_list": [
-            "length_constraints:number_paragraphs",
-            "keywords:forbidden_words"
-        ],
-        "kwargs": [
-            {
-                "num_paragraphs": 4
-            },
-            {
-                "forbidden_words": [
-                    "university"
-                ],
-            }
-        ]
-    }
+  "text": "Students are travelling to UCI for 3 days. Create a hilarious itinerary for them. Do not use the word 'university'. Your entire response should have exactly 4 paragraphs.  Separate paragraphs with the markdown divider: ***",
+  "target_text": {
+    "instruction_id_list": [
+      "length_constraints:number_paragraphs",
+      "keywords:forbidden_words"
+    ],
+    "kwargs": [
+      {
+        "num_paragraphs": 4
+      },
+      {
+        "forbidden_words": ["university"]
+      }
+    ]
+  }
 }
 ```
 
@@ -1381,10 +1375,10 @@ euroeval --model <model-id> --dataset ifeval
 
 ### ValEU-en
 
-This dataset is the official English version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official English version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU
@@ -1483,105 +1477,83 @@ Here is an example from the training split:
 
 ```json
 {
-    "id": "live_multiple_295-130-4",
-    "question": [
-        [
-            {
-                "role": "user",
-                "content": "Hotel room are so costly , I need a house to stay . I am travelling to LAX."
-            }
-        ]
-    ],
-    "function": [
-        {
-            "name": "Hotels_2_BookHouse",
-            "description": "Books a selected house for a specified duration and number of adults.",
-            "parameters": {
-                "type": "dict",
-                "required": [
-                    "where_to",
-                    "number_of_adults",
-                    "check_in_date",
-                    "check_out_date"
-                ],
-                "properties": {
-                    "where_to": {
-                        "type": "string",
-                        "description": "The location of the house to book, in the format of 'City, State', such as 'San Francisco, CA'."
-                    },
-                    "number_of_adults": {
-                        "type": "integer",
-                        "description": "The number of adults to include in the reservation."
-                    },
-                    "check_in_date": {
-                        "type": "string",
-                        "description": "The check-in date for the reservation in the format 'MM/DD/YYYY'."
-                    },
-                    "check_out_date": {
-                        "type": "string",
-                        "description": "The check-out date for the reservation in the format 'MM/DD/YYYY'."
-                    }
-                }
-            }
-        },
-        {
-            "name": "Hotels_2_SearchHouse",
-            "description": "Search for a house accommodation at a specific location, optionally filtering by laundry service availability, number of adults, and review rating.",
-            "parameters": {
-                "type": "dict",
-                "required": [
-                    "where_to"
-                ],
-                "properties": {
-                    "where_to": {
-                        "type": "string",
-                        "description": "The destination where the house is searched for, in the format of 'City, State', such as 'Austin, TX' or 'San Francisco, CA'. State has to be abbrieviated"
-                    },
-                    "has_laundry_service": {
-                        "type": "string",
-                        "description": "Indicates if the house should have laundry service available.",
-                        "enum": [
-                            "True",
-                            "False",
-                            "dontcare"
-                        ],
-                        "default": "dontcare"
-                    },
-                    "number_of_adults": {
-                        "type": "integer",
-                        "description": "The number of adults for the reservation. Use 0 to indicate 'dontcare'.",
-                        "default": 0
-                    },
-                    "rating": {
-                        "type": "float",
-                        "description": "The minimum review rating of the house on a scale from 1.0 to 5.0, with 5.0 being the highest. Use 0 to indicate 'dontcare'.",
-                        "default": 0.0
-                    }
-                }
-            }
-        }
-    ],
-    "ground_truth": [
-        {
-            "Hotels_2_SearchHouse": {
-                "where_to": [
-                    "Los Angeles, CA"
-                ],
-                "has_laundry_service": [
-                    "",
-                    "dontcare"
-                ],
-                "number_of_adults": [
-                    "",
-                    0
-                ],
-                "rating": [
-                    "",
-                    0.0
-                ]
-            }
-        }
+  "id": "live_multiple_295-130-4",
+  "question": [
+    [
+      {
+        "role": "user",
+        "content": "Hotel room are so costly , I need a house to stay . I am travelling to LAX."
+      }
     ]
+  ],
+  "function": [
+    {
+      "name": "Hotels_2_BookHouse",
+      "description": "Books a selected house for a specified duration and number of adults.",
+      "parameters": {
+        "type": "dict",
+        "required": ["where_to", "number_of_adults", "check_in_date", "check_out_date"],
+        "properties": {
+          "where_to": {
+            "type": "string",
+            "description": "The location of the house to book, in the format of 'City, State', such as 'San Francisco, CA'."
+          },
+          "number_of_adults": {
+            "type": "integer",
+            "description": "The number of adults to include in the reservation."
+          },
+          "check_in_date": {
+            "type": "string",
+            "description": "The check-in date for the reservation in the format 'MM/DD/YYYY'."
+          },
+          "check_out_date": {
+            "type": "string",
+            "description": "The check-out date for the reservation in the format 'MM/DD/YYYY'."
+          }
+        }
+      }
+    },
+    {
+      "name": "Hotels_2_SearchHouse",
+      "description": "Search for a house accommodation at a specific location, optionally filtering by laundry service availability, number of adults, and review rating.",
+      "parameters": {
+        "type": "dict",
+        "required": ["where_to"],
+        "properties": {
+          "where_to": {
+            "type": "string",
+            "description": "The destination where the house is searched for, in the format of 'City, State', such as 'Austin, TX' or 'San Francisco, CA'. State has to be abbrieviated"
+          },
+          "has_laundry_service": {
+            "type": "string",
+            "description": "Indicates if the house should have laundry service available.",
+            "enum": ["True", "False", "dontcare"],
+            "default": "dontcare"
+          },
+          "number_of_adults": {
+            "type": "integer",
+            "description": "The number of adults for the reservation. Use 0 to indicate 'dontcare'.",
+            "default": 0
+          },
+          "rating": {
+            "type": "float",
+            "description": "The minimum review rating of the house on a scale from 1.0 to 5.0, with 5.0 being the highest. Use 0 to indicate 'dontcare'.",
+            "default": 0.0
+          }
+        }
+      }
+    }
+  ],
+  "ground_truth": [
+    {
+      "Hotels_2_SearchHouse": {
+        "where_to": ["Los Angeles, CA"],
+        "has_laundry_service": ["", "dontcare"],
+        "number_of_adults": ["", 0],
+        "rating": ["", 0.0]
+      }
+    }
+  ]
 }
 ```
 
@@ -1589,4 +1561,144 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset bfcl-v2
+```
+
+## Logical Reasoning
+
+### Unofficial: ZebraPuzzleEasy-en
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "A row of houses have numbers 1 to 2 from left to right.\n\nIn each house lives a person with unique attributes in each of the following categories:\n\nJobs: nurse and police officer.\nFavourite book genres: fantasy and romance.\nHobbies: bouldering and handball.\n\nWe also know the following:\n\n\n\n1. The person with a guinea pig lives in house no. 2.\n2. The person who plays handball knows that snails are molluscs.\n3. The person who plays handball knows that herrings are fish.\n4. The police officer lives to the left of the nurse.\n5. There are many cars on the street.\n6. The person who plays handball does not live in house no. 2.\n7. The romance reader lives in house no. 2.\n8. The person with glasses does not live in house no. 1.",
+  "target_text": {
+    "object_1": ["police officer", "fantasy", "handball"],
+    "object_2": ["nurse", "romance", "bouldering"]
+  }
+}
+```
+
+```json
+{
+  "text": "A row of houses have numbers 1 to 2 from left to right.\n\nIn each house lives a person with unique attributes in each of the following categories:\n\nJobs: nurse and shop assistant.\nDrinks: juice and soda.\nFavourite fruits: pear and strawberry.\n\nWe also know the following:\n\n\n\n1. The nurse has a guinea pig.\n2. The shop assistant drinks juice.\n3. The nurse is good friends with the person with a bike.\n4. The juice drinker does not like strawberries.\n5. The juice drinker watches ski jumping.\n6. The nurse lives in house no. 2.\n7. The person who loves pears enjoys solving puzzles.\n8. Several of the houses have a green door.",
+  "target_text": {
+    "object_1": ["shop assistant", "juice", "pear"],
+    "object_2": ["nurse", "soda", "strawberry"]
+  }
+}
+```
+
+```json
+{
+  "text": "A row of houses have numbers 1 to 2 from left to right.\n\nIn each house lives a person with unique attributes in each of the following categories:\n\nFavourite book genres: horror and non-fiction.\nHobbies: bouldering and football.\nFavourite fruits: blackcurrant and pear.\n\nWe also know the following:\n\n\n\n1. The person who watches ski jumping does not live in house no. 2.\n2. The horror reader lives to the right of the person who loves blackcurrants.\n3. The person who often sails does not live in house no. 1.\n4. The person who plays video games does not live in house no. 2.\n5. The person with a pet that is old for its species lives in house no. 1.\n6. The person who boulders lives to the left of the person who loves pears.\n7. Several of the houses have a green door.",
+  "target_text": {
+    "object_1": ["non-fiction", "bouldering", "blackcurrant"],
+    "object_2": ["horror", "football", "pear"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Here is a riddle:
+  <riddle>
+  {text}
+  </riddle>
+  Who has which properties and lives in which house? Please provide your answer as a JSON dictionary. Each key should be object_X where X is the house number. Each value should be a list of the properties from the categories above that belong to the person in house no. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzle-easy-en
+```
+
+### Unofficial: ZebraPuzzleHard-en
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "A row of houses have numbers 1 to 4 from left to right.\n\nIn each house lives a person with unique attributes in each of the following categories:\n\nJobs: baker, nurse, shop assistant and teacher.\nPets: budgerigar, cat, dog and rabbit.\nDrinks: coffee, juice, milk and tea.\nHobbies: board games, handball, football and tennis.\nFavourite fruits: apple, blackcurrant, orange and wild strawberry.\n\nWe also know the following:\n\n\n\n1. The person with a master's degree in mathematics does not live in house no. 1.\n2. The teacher lives to the immediate right of the coffee drinker.\n3. The shop assistant lives to the immediate right of the budgie owner.\n4. The rabbit owner does not live between the coffee drinker and the juice drinker, and they are three different people.\n5. The dog owner does not like apples.\n6. The person who owns a cactus often sails.\n7. There are 2 houses between the nurse and the baker.\n8. The tea drinker does not live next to the person who loves blackcurrants, and they are different people.\n9. There is one house between the coffee drinker and the milk drinker.\n10. There are many cars on the street.\n11. There are 2 houses between the milk drinker and the tea drinker.\n12. The nurse lives next to the dog owner.\n13. There is one house between the person who plays board games and the person who plays handball.\n14. The person who plays football lives next to the person who plays board games.\n15. There are 2 houses between the person who plays football and the person who loves blackcurrants.\n16. The person with a tattoo does not live in house no. 3.\n17. The milk drinker is good friends with the person with a pet that is old for its species.\n18. There is one house between the cat owner and the person who loves oranges.",
+  "target_text": {
+    "object_1": ["nurse", "budgerigar", "tea", "football", "orange"],
+    "object_2": ["shop assistant", "dog", "coffee", "board games", "wild strawberry"],
+    "object_3": ["teacher", "cat", "juice", "tennis", "apple"],
+    "object_4": ["baker", "rabbit", "milk", "handball", "blackcurrant"]
+  }
+}
+```
+
+```json
+{
+  "text": "A row of houses have numbers 1 to 4 from left to right.\n\nIn each house lives a person with unique attributes in each of the following categories:\n\nNationalities: Denmark, Iceland, Netherlands and Norway.\nJobs: baker, minister, software developer and teacher.\nPets: budgerigar, rabbit, snail and stick insect.\nDrinks: coffee, juice, smoothie and soda.\nHobbies: bouldering, crocheting, football and tennis.\n\nWe also know the following:\n\n\n\n1. The teacher lives to the immediate left of the rabbit owner.\n2. There are 2 houses between the coffee drinker and the juice drinker.\n3. The person with red hair has a bike.\n4. The Dutchman lives next to the person who plays tennis.\n5. The baker lives to the immediate right of the smoothie drinker.\n6. The person who plays video games does not live in house no. 1.\n7. The person with glasses has a master's degree in mathematics.\n8. The person with a sister has been to Canada.\n9. The rabbit owner lives in house no. 3.\n10. The person who boulders lives in house no. 4.\n11. The minister lives between the Norwegian and the person who crochets.\n12. There are 2 houses between the Icelander and the juice drinker.\n13. The minister knows that all the houses on the street have beautiful gardens.\n14. The Icelander lives to the immediate left of the person who plays tennis.\n15. The budgie owner lives in house no. 4.\n16. The snail owner drinks soda.",
+  "target_text": {
+    "object_1": [
+      "Iceland",
+      "software developer",
+      "stick insect",
+      "coffee",
+      "crocheting"
+    ],
+    "object_2": ["Denmark", "teacher", "snail", "soda", "tennis"],
+    "object_3": ["Netherlands", "minister", "rabbit", "smoothie", "football"],
+    "object_4": ["Norway", "baker", "budgerigar", "juice", "bouldering"]
+  }
+}
+```
+
+```json
+{
+  "text": "A row of houses have numbers 1 to 4 from left to right.\n\nIn each house lives a person with unique attributes in each of the following categories:\n\nNationalities: France, Iceland, Italy and United Kingdom.\nPets: budgerigar, dog, rabbit and stick insect.\nFavourite book genres: crime, horror, non-fiction and romance.\nHobbies: board games, bouldering, handball and football.\nFavourite fruits: apple, banana, blackcurrant and wild strawberry.\n\nWe also know the following:\n\n\n\n1. The rabbit owner lives between the Brit and the person who loves apples.\n2. The Brit lives to the right of the romance reader.\n3. There are 2 houses between the Italian and the Icelander.\n4. The person who boulders does not live next to the person who loves blackcurrants, and they are different people.\n5. The person who loves wild strawberries loves physics.\n6. The non-fiction reader lives to the right of the person who plays football.\n7. The person who loves blackcurrants lives next to the person who often sails.\n8. The Icelander lives to the right of the Brit.\n9. The person who plays board games lives in house no. 2.\n10. The person who plays video games lives in house no. 2.\n11. The dog owner does not live between the stick insect owner and the person who plays handball, and they are three different people.\n12. The horror reader does not live in house no. 2.\n13. The dog owner loves wild strawberries.\n14. The person with a pet that is old for its species does not live in house no. 4.\n15. The person who boulders lives in house no. 1.\n16. The person who owns a cactus lives in house no. 3.",
+  "target_text": {
+    "object_1": ["Italy", "dog", "romance", "bouldering", "wild strawberry"],
+    "object_2": ["United Kingdom", "stick insect", "crime", "board games", "banana"],
+    "object_3": ["France", "rabbit", "horror", "football", "blackcurrant"],
+    "object_4": ["Iceland", "budgerigar", "non-fiction", "handball", "apple"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Here is a riddle:
+  <riddle>
+  {text}
+  </riddle>
+  Who has which properties and lives in which house? Please provide your answer as a JSON dictionary. Each key should be object_X where X is the house number. Each value should be a list of the properties from the categories above that belong to the person in house no. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzle-hard-en
 ```
