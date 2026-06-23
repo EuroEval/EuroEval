@@ -9,10 +9,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added the Danish zebra puzzle dataset
-  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
-  is given by 128 / 1,024 samples for train / test, respectively. It is marked as
-  `unofficial` for now. This was contributed by @sofiehb ✨
+- Added the Danish zebra puzzle dataset (easy and hard variants). The dataset consists
+  of logic grid puzzles (Einstein's riddles) and was published in
+  [this paper](https://doi.org/10.48550/arXiv.2511.03553). The split is given by 128 /
+  1,024 samples for train / test, respectively. It is marked as `unofficial` for now.
+  This was contributed by @sofiehb ✨
 - Added "Dutch Proverbs" dataset - brief scenarios with two proverb choices, created
   manually and reviewed by native Dutch speakers. Thanks to @lswiers! ✨
 - Added `--use-bits-per-character`/`-bpc` flag for base decoder models to enable
@@ -50,8 +51,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Fixed a bug where evaluating on AngryTweets sentiment classification raised
-  `Sequences and scores must have the same length` when the model returned no choices for
-  some samples. The `_create_model_output` method now appends an empty score list
+  `Sequences and scores must have the same length` when the model returned no choices
+  for some samples. The `_create_model_output` method now appends an empty score list
   alongside the empty sequence to keep both lists in sync.
 - Fixed deprecation warnings from `transformers` v5.2+:
   - Replaced deprecated `warmup_ratio` with dynamic `warmup_steps` calculation (1% of
@@ -65,12 +66,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   a JSON-encoded string (e.g. `'"bg"'` instead of `["bg"]`). This occurred when mixing
   EEE format results with legacy format results.
 - Fixed model loading failures (e.g., shape mismatches, CUDA errors) incorrectly being
-  counted as "skipped" benchmarks instead of "errored". The queue processor now correctly
-  detects these as failures and applies the `evaluation-failed` label to GitHub issues.
+  counted as "skipped" benchmarks instead of "errored". The queue processor now
+  correctly detects these as failures and applies the `evaluation-failed` label to
+  GitHub issues.
 - Fixed tokenizer loading failures for XLM-RoBERTa variant models (e.g.
-  `EMBEDDIA/litlat-bert`) that raised `TypeError: argument 'vocab': 'dict' object cannot
-  be converted to 'Sequence'`. The tokenizer loader now falls back to `use_fast=False`
-  when this error occurs.
+  `EMBEDDIA/litlat-bert`) that raised
+  `TypeError: argument 'vocab': 'dict' object cannot be converted to 'Sequence'`. The
+  tokenizer loader now falls back to `use_fast=False` when this error occurs.
 - The Belarusian datasets (`besls`, `scala-be`, `wikiann-be`, `multi-wiki-qa-be` and
   `be-wsc`) were not included in evaluations by default, because the `belarusian` module
   was missing from the `euroeval.dataset_configs` package exports. They are now exported
@@ -539,7 +541,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   the maximum context length of the model, which gave errors with models that had a
   maximum context length of less than 8,192.
 
->>>>>>> main
+> > > > > > > main
 
 ## [v16.11.0] - 2026-01-21
 
