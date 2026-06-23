@@ -81,10 +81,11 @@ def detect_hallucinations(
 
     Args:
         dataset:
-            Hallucination dataset, generated with e.g. lettuce. Each example must
+            Hallucination dataset, generated with e.g. lettucedetect. Each example must
             provide an ``"id"`` field and a ``"context"`` field containing the full
             RAG prompt.
-        predictions: Iterable of prediction objects, each containing an ``"id"``
+        predictions:
+            Iterable of prediction objects, each containing an ``"id"``
             field matching a dataset example and a ``"prediction_text"`` field with
             the model's answer text.
         model:
