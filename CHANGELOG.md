@@ -14,22 +14,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   [this paper](https://doi.org/10.48550/arXiv.2511.03553). The split is given by 128 /
   1,024 samples for train / test, respectively. It is marked as `unofficial` for now.
   This was contributed by @sofiehb ✨
-- Added "Dutch Proverbs" dataset - brief scenarios with two proverb choices, created
-  manually and reviewed by native Dutch speakers. Thanks to @lswiers! ✨
-- Added `--use-bits-per-character`/`-bpc` flag for base decoder models to enable
-  bits-per-character (BPC) scoring on all tasks. For multiple-choice tasks, this uses a
-  cloze formulation with question + full answer text. BPC runs are excluded from
-  official leaderboards. Only the vLLM backend supports BPC; HF encoder and LiteLLM
-  backends raise `InvalidModel`, as do instruction-tuned models in vLLM. Thanks to
-  @tvosch for the contribution!
-- Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
-- Added the `google-cloud-aiplatform` dependency, as it's required to run
-  Gemini-3.1-pro.
-- Added `download()` method to `PipelineMetric` class
-  - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
-    Values metric)
-  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
-    the pipeline
 
 ### Changed
 
@@ -41,38 +25,9 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   now reflects genuine scoring failures only. This affects sequence-classification
   (including multiple-choice) and named-entity-recognition tasks; existing records are
   unchanged (the new semantics only apply to evaluations run from this version onwards).
-- Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
-  model architectures and tokenisers.
-- Bumped the minimum vLLM version on Linux from v0.14.1 to v0.22.0, for both Linux and
-  MacOS, and updated `vllm-metal` to `v0.2.0-20260531-071330`.
-- Now ignores the language detection logging for Norwegian ('no'), since it's covered by
-  Norwegian Bokmål ('nb') and Norwegian Nynorsk ('nn').
 
 ### Fixed
 
-- Fixed a bug where evaluating on AngryTweets sentiment classification raised
-  `Sequences and scores must have the same length` when the model returned no choices
-  for some samples. The `_create_model_output` method now appends an empty score list
-  alongside the empty sequence to keep both lists in sync.
-- Fixed deprecation warnings from `transformers` v5.2+:
-  - Replaced deprecated `warmup_ratio` with dynamic `warmup_steps` calculation (1% of
-    `max_steps`, minimum 1 step).
-  - Replaced `self.tokenizer` with `self.processing_class` in `QuestionAnsweringTrainer`
-    to match the renamed attribute in the `Trainer` base class.
-- Fixed validation errors when loading legacy benchmark results missing required fields
-  (`task`, `languages`, `results`, `num_model_parameters`, `max_sequence_length`,
-  `vocabulary_size`). These fields are now populated with sensible defaults when absent.
-- Fixed validation error when loading benchmark results with `languages` field stored as
-  a JSON-encoded string (e.g. `'"bg"'` instead of `["bg"]`). This occurred when mixing
-  EEE format results with legacy format results.
-- Fixed model loading failures (e.g., shape mismatches, CUDA errors) incorrectly being
-  counted as "skipped" benchmarks instead of "errored". The queue processor now
-  correctly detects these as failures and applies the `evaluation-failed` label to
-  GitHub issues.
-- Fixed tokenizer loading failures for XLM-RoBERTa variant models (e.g.
-  `EMBEDDIA/litlat-bert`) that raised
-  `TypeError: argument 'vocab': 'dict' object cannot be converted to 'Sequence'`. The
-  tokenizer loader now falls back to `use_fast=False` when this error occurs.
 - The Belarusian datasets (`besls`, `scala-be`, `wikiann-be`, `multi-wiki-qa-be` and
   `be-wsc`) were not included in evaluations by default, because the `belarusian` module
   was missing from the `euroeval.dataset_configs` package exports. They are now exported
@@ -88,6 +43,23 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   architectures (e.g. `Mistral3ForConditionalGeneration`) that raised multimodal budget
   errors during initialisation are now automatically retried with multimodal inputs
   disabled.
+
+## [v17.5.0] - 2026-06-19
+
+### Added
+
+- Added `--use-bits-per-character`/`-bpc` flag for base decoder models to enable
+  bits-per-character (BPC) scoring on all tasks. For multiple-choice tasks, this uses a
+  cloze formulation with question + full answer text. BPC runs are excluded from
+  official leaderboards. Only the vLLM backend supports BPC; HF encoder and LiteLLM
+  backends raise `InvalidModel`, as do instruction-tuned models in vLLM. Thanks to
+  @tvosch for the contribution!
+- Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
+- Added the `google-cloud-aiplatform` dependency, as it's required to run
+  Gemini-3.1-pro.
+
+### Fixed
+
 - vLLM device out-of-memory errors during generation (common on shared-memory devices
   such as Apple Metal, where the default GPU memory utilization leaves no room for
   per-step allocations) are now caught and reported with clear guidance to re-run with a
@@ -114,6 +86,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   no trailing newline, which left results files without a final newline and could glue
   two records onto a single line. Records are now written self-terminated, with a
   separating newline added first if the existing file doesn't already end in one.
+- Added `download()` method to `PipelineMetric` class
+  - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
+    Values metric)
+  - Follows the same pattern as `HuggingFaceMetric` by eagerly downloading and caching
+    the pipeline
 - Fixed `BenchmarkResult.from_dict()` failing to parse legacy results from Hugging Face
   bucket where `results.raw` contained nested dicts (e.g. `{"test": [{"mcc": 0.5}]}`)
   instead of flattened format (`{"test_mcc": 0.5}`)
@@ -133,27 +110,52 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   error was due to OpenAI having changed their error messages.
 - Fixed an error with Claude Opus 4.8 as it disallows changing the temperature argument.
   The error was due to Anthropic having changed their error messages.
-- Running with `HF_HUB_OFFLINE=1` no longer crashes when loading a local custom dataset
-  whose id happens to look like a Hub repo. The Hub existence check now treats an
-  offline-mode error as "not reachable, so not present" and lets the caller fall back to
-  the local config. This was contributed by @Touzen ✨
-- Added an architecture alias remapping `Gemma4TextForCausalLM` to `Gemma4ForCausalLM`
-  so that text-only Gemma 4 fine-tunes can be loaded with vLLM versions that only
-  register the multimodal class. This was contributed by @lardinator ✨
-- Raised the default vLLM worker RPC timeouts (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and
-  `VLLM_ENGINE_ITERATION_TIMEOUT_S`) from 300s to 1800s so that large models on slow
-  hardware no longer crash mid-evaluation with
-  `EngineDeadError: RPC call to sample_tokens timed out`. The engine-dead case is also
-  now caught and reported as an `InvalidBenchmark` error instead of an opaque crash.
-- Fixed a bug where `load_custom_datasets_module` would attempt to load a module spec
-  from the current working directory when an empty path was passed as the custom
-  datasets file, emitting a spurious "Could not load the spec for the custom datasets
-  file" error. It now requires the path to point at an actual file.
 
 ### Security
 
 - Raised the minimum `litellm` version to 1.83.7 due to a vulnerability.
 - Raised the minimum `ray` version to 2.55.0 due to a vulnerability.
+
+## [v17.4.0] - 2026-06-12
+
+### Changed
+
+- Raised the minimum `transformers` version from 5.5.0 to 5.10.1, to support the latest
+  model architectures and tokenisers.
+
+### Fixed
+
+- Fixed a bug where evaluating on AngryTweets sentiment classification raised
+  `Sequences and scores must have the same length` when the model returned no choices
+  for some samples. The `_create_model_output` method now appends an empty score list
+  alongside the empty sequence to keep both lists in sync.
+- Fixed deprecation warnings from `transformers` v5.2+:
+  - Replaced deprecated `warmup_ratio` with dynamic `warmup_steps` calculation (1% of
+    `max_steps`, minimum 1 step).
+  - Replaced `self.tokenizer` with `self.processing_class` in `QuestionAnsweringTrainer`
+    to match the renamed attribute in the `Trainer` base class.
+- Fixed validation errors when loading legacy benchmark results missing required fields
+  (`task`, `languages`, `results`, `num_model_parameters`, `max_sequence_length`,
+  `vocabulary_size`). These fields are now populated with sensible defaults when absent.
+- Fixed validation error when loading benchmark results with `languages` field stored as
+  a JSON-encoded string (e.g. `'"bg"'` instead of `["bg"]`). This occurred when mixing
+  EEE format results with legacy format results.
+- Fixed model loading failures (e.g., shape mismatches, CUDA errors) incorrectly being
+  counted as "skipped" benchmarks instead of "errored". The queue processor now
+  correctly detects these as failures and applies the `evaluation-failed` label to
+  GitHub issues.
+- Fixed tokenizer loading failures for XLM-RoBERTa variant models (e.g.
+  `EMBEDDIA/litlat-bert`) that raised
+  `TypeError: argument 'vocab': 'dict' object cannot be converted to 'Sequence'`. The
+  tokenizer loader now falls back to `use_fast=False` when this error occurs.
+
+## [v17.3.0] - 2026-05-31
+
+### Added
+
+- Added the "Dutch Proverbs" dataset. The dataset consists of brief scenarios and two
+  possible proverbs for the LLM to select from. The dataset was created manually and
+  reviewed by native Dutch speakers. This was contributed by @lswiers ✨
 
 ### Changed
 
@@ -167,10 +169,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Running with `HF_HUB_OFFLINE=1` no longer crashes when loading a local custom dataset
   whose id happens to look like a Hub repo. The Hub existence check now treats an
   offline-mode error as "not reachable, so not present" and lets the caller fall back to
-  the local config. This was contributed by @Touzen ✨
+  the local config. Thanks to [@Touzen](https://github.com/Touzen) for the contribution!
 - Added an architecture alias remapping `Gemma4TextForCausalLM` to `Gemma4ForCausalLM`
   so that text-only Gemma 4 fine-tunes can be loaded with vLLM versions that only
-  register the multimodal class. This was contributed by @lardinator ✨
+  register the multimodal class. Thanks to [@lardiator](https://github.com/lardiator)
+  for the contribution!
 - Raised the default vLLM worker RPC timeouts (`VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS` and
   `VLLM_ENGINE_ITERATION_TIMEOUT_S`) from 300s to 1800s so that large models on slow
   hardware no longer crash mid-evaluation with
@@ -180,6 +183,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   from the current working directory when an empty path was passed as the custom
   datasets file, emitting a spurious "Could not load the spec for the custom datasets
   file" error. It now requires the path to point at an actual file.
+
+### Added
+
+- Added a benchmark for the purpose of testing the knowledge of Dutch proverbs. The
+  dataset consists of brief scenarios and two possible proverbs for the Large Language
+  Model to select from. The dataset was created manually and reviewed by native Dutch
+  speakers.
 
 ## [v17.2.0] - 2026-04-17
 
@@ -540,8 +550,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Now ensures that the vLLM argument `max_num_batched_tokens` is at least as large as
   the maximum context length of the model, which gave errors with models that had a
   maximum context length of less than 8,192.
-
-> > > > > > > main
 
 ## [v16.11.0] - 2026-01-21
 
