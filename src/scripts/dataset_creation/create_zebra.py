@@ -64,9 +64,7 @@ def main() -> None:
     for theme, lang_code, difficulty in THEMES:
         # Load dataset using load_dataset for robustness and proper dataset handling
         train_data: Dataset = load_dataset(repo_id, f"dataset_{theme}", split="train")
-        val_data: Dataset = load_dataset(
-            repo_id, f"dataset_{theme}", split="validation"
-        )
+        val_data: Dataset = load_dataset(repo_id, f"dataset_{theme}", split="val")
         test_data: Dataset = load_dataset(repo_id, f"dataset_{theme}", split="test")
 
         # Check length
