@@ -242,20 +242,18 @@ GERLANGMOD_DA_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-ZEBRA_PUZZLE_DA_CONFIG_2X3 = DatasetConfig(
-    name="zebra-puzzle-da-2x3",
-    pretty_name="the Danish version of the zebra puzzle dataset with 2x3 attributes "
-    "and 5 red herrings in the house theme.",
+ZEBRA_PUZZLE_EASY_DA_CONFIG = DatasetConfig(
+    name="zebra-puzzle-easy-da",
+    pretty_name="ZebraPuzzleEasy-da",
     source="EuroEval/zebra-puzzles-da_huse_2x3_5rh",
     task=LOGIC,
     languages=[DANISH],
     unofficial=True,
 )
 
-ZEBRA_PUZZLE_DA_CONFIG_4X5 = DatasetConfig(
-    name="zebra-puzzle-da-4x5",
-    pretty_name="the Danish version of the zebra puzzle dataset with 4x5 attributes "
-    "and 5 red herrings in the house theme.",
+ZEBRA_PUZZLE_HARD_DA_CONFIG = DatasetConfig(
+    name="zebra-puzzle-hard-da",
+    pretty_name="ZebraPuzzleHard-da",
     source="EuroEval/zebra-puzzles-da_huse_4x5_5rh",
     task=LOGIC,
     languages=[DANISH],
