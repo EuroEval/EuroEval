@@ -28,7 +28,7 @@ n_test = 1024
 def main() -> None:
     """Create the zebra puzzle datasets and upload them to the HF Hub."""
     # Define the base download URL
-    repo_id = "alexandrainst/zebra_puzzles"
+    repo_id = "alexandrainst/multi-zebra-logic"
 
     for theme in THEMES:
         # Download the dataset
