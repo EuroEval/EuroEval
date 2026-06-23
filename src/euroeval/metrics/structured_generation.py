@@ -104,12 +104,17 @@ class StructuredGenerationMetric(Metric):
                         "parsed correctly."
                     )
                 label = extract_json_dict_from_string(s=raw_label)
-                if not self._check_full_type(label, dict[str, list[str]]):
+                if label is None:
                     raise InvalidBenchmark(
                         "The label string was not converted to a dictionary. "
                         "Please ensure that the labels are parsed correctly."
                     )
-                labels.append(extract_json_dict_from_string(s=raw_label))
+                if not self._check_full_type(label, dict[str, list[str]]):
+                    raise InvalidBenchmark(
+                        "The label was not converted to a dictionary with list values. "
+                        "Please ensure that the labels are parsed correctly."
+                    )
+                labels.append(label)
 
         results = self._compare_all_json_predictions_and_labels(
             predictions=formatted_predictions, labels=labels
