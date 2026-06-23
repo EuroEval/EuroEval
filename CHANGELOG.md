@@ -12,8 +12,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added the Danish zebra puzzle dataset (easy and hard variants). The dataset consists
   of logic grid puzzles (Einstein's riddles) and was published in
   [this paper](https://doi.org/10.48550/arXiv.2511.03553). The split is given by 128 /
-  1,024 samples for train / test, respectively. It is marked as `unofficial` for now.
-  This was contributed by @sofiehb ✨
+  128 / 1,024 samples for train / validation / test, respectively (so 1,280 samples used
+  in total). It is marked as `unofficial` for now. This was contributed by @sofiehb ✨
 
 ### Changed
 

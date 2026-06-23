@@ -1550,8 +1550,8 @@ and consists of logic grid puzzles (also known as Einstein's riddles or Zebra pu
 where the task is to determine which attributes belong to which house based on a set of
 clues. This is the easy variant with 2 houses and 3 attribute categories.
 
-The original full dataset consists of 128 / 1,024 samples for training and testing, and
-we use the same splits.
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
 
 Here are a few examples from the training split:
 
@@ -1617,8 +1617,8 @@ and consists of logic grid puzzles (also known as Einstein's riddles or Zebra pu
 where the task is to determine which attributes belong to which house based on a set of
 clues. This is the hard variant with 4 houses and 5 attribute categories.
 
-The original full dataset consists of 128 / 1,024 samples for training and testing, and
-we use the same splits.
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
 
 Here are a few examples from the training split:
 
