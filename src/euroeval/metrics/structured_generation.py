@@ -7,6 +7,7 @@ import typing as t
 from copy import deepcopy
 
 import numpy as np
+
 from ..exceptions import InvalidBenchmark
 from ..string_utils import extract_json_dict_from_string
 from .base import Metric
@@ -121,9 +122,7 @@ class StructuredGenerationMetric(Metric):
         return mean_result
 
     @staticmethod
-    def _check_full_type(
-        variable: object, expected_type: t.Type
-    ) -> bool:
+    def _check_full_type(variable: object, expected_type: t.Type) -> bool:
         """Check if a variable is of the expected type.
 
         Args:
@@ -142,8 +141,7 @@ class StructuredGenerationMetric(Metric):
             return all(
                 isinstance(item, dict)
                 and all(
-                    isinstance(k, str) and isinstance(v, list)
-                    for k, v in item.items()
+                    isinstance(k, str) and isinstance(v, list) for k, v in item.items()
                 )
                 for item in variable
             )
