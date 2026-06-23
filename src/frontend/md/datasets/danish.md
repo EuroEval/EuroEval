@@ -1556,9 +1556,12 @@ we use the same splits.
 Here are a few examples from the training split:
 
 ```json
-{"text": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nJobs: lærer og minister.\nHobbyer: brætspil og maleri.\nYndlingsfrugter: appelsin og skovjordbær.\n\nDerudover ved vi følgende:\n\n1. Ministeren sejler ofte.\n2. Personen der elsker fysik bor ikke i hus nummer 2.\n3. Læreren er gode venner med personen der synes den næstbedste frugt er mango.\n4. Personen der spiller brætspil bor til højre for personen der elsker appelsiner.\n5. Personen med en tatovering bor ikke i hus nummer 2.\n6. Personen med et marsvin bor i hus nummer 1.\n7. Ministeren bor ikke i hus nummer 1."],
-"target_text": {"object_1": ["lærer", "maleri", "appelsin"],
-                "object_2": ["minister", "brætspil", "skovjordbær"]},
+{
+  "text": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nJobs: lærer og minister.\nHobbyer: brætspil og maleri.\nYndlingsfrugter: appelsin og skovjordbær.\n\nDerudover ved vi følgende:\n\n1. Ministeren sejler ofte.\n2. Personen der elsker fysik bor ikke i hus nummer 2.\n3. Læreren er gode venner med personen der synes den næstbedste frugt er mango.\n4. Personen der spiller brætspil bor til højre for personen der elsker appelsiner.\n5. Personen med en tatovering bor ikke i hus nummer 2.\n6. Personen med et marsvin bor i hus nummer 1.\n7. Ministeren bor ikke i hus nummer 1.",
+  "target_text": {
+    "object_1": ["lærer", "maleri", "appelsin"],
+    "object_2": ["minister", "brætspil", "skovjordbær"]
+  }
 }
 ```
 
@@ -1585,41 +1588,20 @@ Here are a few examples from the training split:
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
 - Number of few-shot examples: 8
-- Prefix prompt:
+- Prefix prompt: (empty)
+- Instruction prompt:
 
   ```text
-  Følgende er en række gåder med svar.
-  ```
-
-- Base prompt template:
-
-  ```text
-  Gåde:
-
-  {text}
-
-  Hvem har hvilke egenskaber og bor i hvilket hus?
-
-  Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører personen i hus nr. X.
-
-  Svar:
-  {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Gåde:
-
-  {text}
-
-  Hvem har hvilke egenskaber og bor i hvilket hus?
-
-  Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører personen i hus nr. X.
-
-  Svar:
-  {target_text}
+  Her er en gåde:
+  <riddle>{text}</riddle>
+  Hvem har hvilke egenskaber og bor i hvilket hus? Angiv venligst dit svar som en
+  JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value
+  skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører
+  personen i hus nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -1679,43 +1661,17 @@ Here are a few examples from the training split:
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-**TODO**: Update this
-
-- Number of few-shot examples: 5
-- Prefix prompt:
-
-  ```text
-  Følgende er en række gåder med svar.
-  ```
-
-- Base prompt template:
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
 
   ```text
-  Gåde:
-
-  {text}
-
-  Hvem har hvilke egenskaber og bor i hvilket hus?
-
-  Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører personen i hus nr. X.
-
-  Svar:
-  {target_text}
-  ```
-
-- Instruction-tuned prompt template:
-
-  ```text
-  Gåde:
-
-  {text}
-
-  Hvem har hvilke egenskaber og bor i hvilket hus?
-
-  Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører personen i hus nr. X.
-
-  Svar:
-  {target_text}
+  Her er en gåde:
+  <riddle>{text}</riddle>
+  Hvem har hvilke egenskaber og bor i hvilket hus? Angiv venligst dit svar som en
+  JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value
+  skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører
+  personen i hus nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
