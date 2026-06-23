@@ -43,6 +43,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   architectures (e.g. `Mistral3ForConditionalGeneration`) that raised multimodal budget
   errors during initialisation are now automatically retried with multimodal inputs
   disabled.
+- Normalized newlines in text processing for text-to-text tasks. Consecutive newlines (2
+  or more) are now collapsed to a single newline before applying prompts, and
+  instruction prompts for Dutch, German, Greek, Italian, and Portuguese have been
+  reformatted to avoid unnecessary line breaks.
 
 ## [v17.5.0] - 2026-06-19
 

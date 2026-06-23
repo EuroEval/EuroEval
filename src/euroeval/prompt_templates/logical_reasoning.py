@@ -129,8 +129,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
     DUTCH: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
-        default_instruction_prompt="Hier is een raadsel:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Wie heeft welke eigenschappen en woont in welk huis? Geef je antwoord als "
+        default_instruction_prompt="Hier is een raadsel:\n"
+        "<riddle>\n{text}\n</riddle>\n\n"
+        "Wie heeft welke eigenschappen en woont in welk huis? "
+        "Geef je antwoord als "
         "een JSON-woordenboek. Elke sleutel moet object_X zijn, waarbij X het "
         "huisnummer is. Elke waarde moet een lijst zijn van de eigenschappen uit de "
         "bovenstaande categorieën die behoren tot de persoon in huis nummer X.",
@@ -191,8 +193,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
     GERMAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
-        default_instruction_prompt="Hier ist ein Rätsel:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Wer hat welche Eigenschaften und wohnt in welchem Haus? Bitte geben Sie "
+        default_instruction_prompt="Hier ist ein Rätsel:\n"
+        "<riddle>\n{text}\n</riddle>\n\n"
+        "Wer hat welche Eigenschaften und wohnt in welchem Haus? "
+        "Bitte geben Sie "
         "Ihre Antwort als JSON-Wörterbuch an. Jeder Schlüssel sollte object_X sein, "
         "wobei X die Hausnummer ist. Jeder Wert sollte eine Liste der Attribute aus "
         "den obigen Kategorien sein, die zur Person in Haus Nummer X gehören.",
@@ -201,8 +205,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
     GREEK: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
-        default_instruction_prompt="Ορίστε ένα αίνιγμα:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Ποιος έχει ποια χαρακτηριστικά και μένει σε ποιο σπίτι; Παρακαλώ δώστε την "
+        default_instruction_prompt="Ορίστε ένα αίνιγμα:\n"
+        "<riddle>\n{text}\n</riddle>\n\n"
+        "Ποιος έχει ποια χαρακτηριστικά και μένει σε ποιο σπίτι; "
+        "Παρακαλώ δώστε την "
         "απάντησή σας ως λεξικό JSON. Κάθε κλειδί πρέπει να είναι object_X όπου X "
         "είναι ο αριθμός του σπιτιού. Κάθε τιμή πρέπει να είναι λίστα με τα "
         "χαρακτηριστικά από τις παραπάνω κατηγορίες που ανήκουν στο άτομο στο σπίτι "
@@ -234,8 +240,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
     ITALIAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
-        default_instruction_prompt="Ecco un indovinello:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Chi ha quali attributi e vive in quale casa? Fornisci la tua risposta come "
+        default_instruction_prompt="Ecco un indovinello:\n"
+        "<riddle>\n{text}\n</riddle>\n\n"
+        "Chi ha quali attributi e vive in quale casa? "
+        "Fornisci la tua risposta come "
         "dizionario JSON. Ogni chiave dovrebbe essere object_X dove X è il numero "
         "della casa. Ogni valore dovrebbe essere un elenco degli attributi dalle "
         "categorie sopra che appartengono alla persona nella casa numero X.",
@@ -304,8 +312,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
     PORTUGUESE: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
-        default_instruction_prompt="Aqui está um enigma:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Quem tem quais atributos e vive em qual casa? Por favor, forneça sua "
+        default_instruction_prompt="Aqui está um enigma:\n"
+        "<riddle>\n{text}\n</riddle>\n\n"
+        "Quem tem quais atributos e vive em qual casa? "
+        "Por favor, forneça sua "
         "resposta como um dicionário JSON. Cada chave deve ser object_X onde X é o "
         "número da casa. Cada valor deve ser uma lista dos atributos das categorias "
         "acima que pertencem à pessoa na casa número X.",

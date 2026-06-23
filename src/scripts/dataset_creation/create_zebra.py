@@ -1,11 +1,11 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "datasets==3.5.0",
-#     "huggingface-hub==0.24.0",
-#     "pandas==2.2.0",
-#     "requests==2.32.3",
-#     "scikit-learn<1.6.0",
+#     "datasets==5.0.0",
+#     "huggingface-hub==1.20.1",
+#     "pandas==3.0.3",
+#     "requests==2.34.2",
+#     "scikit-learn==1.6.1",
 # ]
 # ///
 
@@ -15,7 +15,7 @@ import json
 import typing as t
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, Split, load_dataset
+from datasets import Dataset, DatasetDict, Split
 from huggingface_hub import HfApi
 from huggingface_hub.utils import HfHubHTTPError
 
@@ -62,15 +62,16 @@ def main() -> None:
     repo_id = "alexandrainst/multi-zebra-logic"
 
     for theme, lang_code, difficulty in THEMES:
-        # Download the dataset
-        train_data: Dataset = load_dataset(
-            path=repo_id, name=f"dataset_{theme}", token=True, split="train"
+        # Load dataset from parquet files directly to avoid deprecated List feature type
+        # The source dataset uses List(Value(...)) which was removed in datasets 5.0.0
+        train_data: Dataset = Dataset.from_parquet(
+            f"hf://datasets/{repo_id}/dataset_{theme}/train-00000-of-00001.parquet"
         )
-        val_data: Dataset = load_dataset(
-            path=repo_id, name=f"dataset_{theme}", token=True, split="val"
+        val_data: Dataset = Dataset.from_parquet(
+            f"hf://datasets/{repo_id}/dataset_{theme}/val-00000-of-00001.parquet"
         )
-        test_data: Dataset = load_dataset(
-            path=repo_id, name=f"dataset_{theme}", token=True, split="test"
+        test_data: Dataset = Dataset.from_parquet(
+            f"hf://datasets/{repo_id}/dataset_{theme}/test-00000-of-00001.parquet"
         )
 
         # Check length
