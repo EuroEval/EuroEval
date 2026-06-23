@@ -1588,18 +1588,17 @@ Here are a few examples from the training split:
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
 - Number of few-shot examples: 8
 - Prefix prompt: (empty)
 - Instruction prompt:
 
   ```text
   Her er en gåde:
-  <riddle>{text}</riddle>
+  <riddle>
+  {text}
+  </riddle>
   Hvem har hvilke egenskaber og bor i hvilket hus? Angiv venligst dit svar som en
-  JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value
+  JSON-dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value
   skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører
   personen i hus nr. X.
   ```
@@ -1667,9 +1666,11 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Her er en gåde:
-  <riddle>{text}</riddle>
+  <riddle>
+  {text}
+  </riddle>
   Hvem har hvilke egenskaber og bor i hvilket hus? Angiv venligst dit svar som en
-  JSON dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value
+  JSON-dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value
   skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører
   personen i hus nr. X.
   ```
