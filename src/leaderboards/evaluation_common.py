@@ -259,15 +259,15 @@ def _dtype_bits(dtype: str) -> int | None:
 
 
 def gpu_total_memory_bytes() -> int | None:
-    """Return the total memory available for model weights on this host.
+    """Return the memory available for model weights on this host.
 
     Honours ``EUROEVAL_GPU_MEMORY_BYTES`` for overrides. Otherwise: when CUDA
     is available and the host is not flagged as ``UNIFIED_MEMORY=1``, report
-    the largest CUDA device's total memory; otherwise report total system
+    the largest CUDA device's free memory; otherwise report available system
     RAM via ``psutil``.
 
     Returns:
-        The total memory in bytes, or None if the override is unparseable.
+        The available memory in bytes, or None if the override is unparseable.
     """
     override = os.environ.get("EUROEVAL_GPU_MEMORY_BYTES")
     if override:
@@ -282,13 +282,11 @@ def gpu_total_memory_bytes() -> int | None:
 
     unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
     if torch.cuda.is_available() and not unified:
-        sizes = [
-            torch.cuda.get_device_properties(i).total_memory
-            for i in range(torch.cuda.device_count())
-        ]
-        if sizes:
-            return max(sizes)
-    return int(psutil.virtual_memory().total)
+        # Use free memory on the largest GPU, not total capacity.
+        free, _ = torch.cuda.mem_get_info(0)
+        return free
+    # Use available (not total) system RAM for CPU-only or unified memory hosts.
+    return int(psutil.virtual_memory().available)
 
 
 @lru_cache(maxsize=1)

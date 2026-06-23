@@ -426,7 +426,10 @@ DTYPE_BYTES: dict[str, int] = {
 
 # Multiplier applied to weight bytes to leave room for activations, KV cache,
 # and framework overhead when judging whether a model fits in GPU memory.
-GPU_FIT_OVERHEAD = 1.2
+# Overhead multiplier for vLLM memory footprint beyond raw weights.
+# Covers KV cache, activation buffers, expert routing (MoE), and fragmentation.
+# Increased from 1.2 after GLM-4.7-Flash (58 GiB weights) crashed on 64 GiB VM.
+GPU_FIT_OVERHEAD = 1.35
 
 # ---------------------------------------------------------------------------
 # Leaderboard generation
