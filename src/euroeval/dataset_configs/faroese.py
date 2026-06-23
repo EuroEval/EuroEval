@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FAROESE
-from ..tasks import GED, LA, NER, RC, SENT
+from ..tasks import GED, LA, LOGIC, NER, RC, SENT
 
 # Official datasets ###
 
@@ -65,6 +65,24 @@ GERLANGMOD_FO_CONFIG = DatasetConfig(
     pretty_name="GerLangMod-fo",
     source="EuroEval/gerlangmod-fo",
     task=GED,
+    languages=[FAROESE],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_EASY_FO_CONFIG = DatasetConfig(
+    name="zebra-puzzle-easy-fo",
+    pretty_name="ZebraPuzzleEasy-fo",
+    source="EuroEval/zebra-puzzle-easy-fo",
+    task=LOGIC,
+    languages=[FAROESE],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_FO_CONFIG = DatasetConfig(
+    name="zebra-puzzle-hard-fo",
+    pretty_name="ZebraPuzzleHard-fo",
+    source="EuroEval/zebra-puzzle-hard-fo",
+    task=LOGIC,
     languages=[FAROESE],
     unofficial=True,
 )

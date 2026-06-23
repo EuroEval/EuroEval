@@ -8,6 +8,7 @@ from ..tasks import (
     GED,
     KNOW,
     LA,
+    LOGIC,
     MCRC,
     MCSTEREO,
     NER,
@@ -226,6 +227,24 @@ SICK_NL_CONFIG = DatasetConfig(
     pretty_name="The Dutch SICK-NL Entailment Dataset",
     source="EuroEval/sick-nl",
     task=NLI,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_EASY_NL_CONFIG = DatasetConfig(
+    name="zebra-puzzle-easy-nl",
+    pretty_name="ZebraPuzzleEasy-nl",
+    source="EuroEval/zebra-puzzle-easy-nl",
+    task=LOGIC,
+    languages=[DUTCH],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_NL_CONFIG = DatasetConfig(
+    name="zebra-puzzle-hard-nl",
+    pretty_name="ZebraPuzzleHard-nl",
+    source="EuroEval/zebra-puzzle-hard-nl",
+    task=LOGIC,
     languages=[DUTCH],
     unofficial=True,
 )
