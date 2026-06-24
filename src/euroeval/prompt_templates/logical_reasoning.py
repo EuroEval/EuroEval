@@ -377,10 +377,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Här är en gåta:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Vem har vilka egenskaper och bor i vilket hus? Vänligen ange ditt svar som "
-        "en JSON-ordbok. Varje nyckel ska vara object_X där X är husnummer. Varje "
-        "värde ska vara en lista över egenskaperna från kategorierna ovan som "
-        "tillhör personen i hus nummer X.",
+        "Vem har vilka egenskaper och bor i vilket hus?\n\n"
+        "Vänligen ange ditt svar som en JSON dictionary. Varje key ska vara object_X "
+        "där X är husnumret. Varje value ska vara en lista över egenskaperna från "
+        "ovannämnda kategorier som tillhör personen i hus nr. X.",
         default_prompt_label_mapping=dict(),
     ),
     UKRAINIAN: PromptConfig(

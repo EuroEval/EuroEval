@@ -1615,7 +1615,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Vem har vilka egenskaper och bor i vilket hus? Vänligen ange ditt svar som en JSON-ordbok. Varje nyckel ska vara object_X där X är husnumret. Varje värde ska vara en lista med egenskaperna från kategorierna ovan som tillhör personen i hus nr. X.
+  Vem har vilka egenskaper och bor i vilket hus?
+
+  Vänligen ange ditt svar som en JSON dictionary. Varje key ska vara object_X där X är husnumret. Varje value ska vara en lista över egenskaperna från ovannämnda kategorier som tillhör personen i hus nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -1696,7 +1698,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Vem har vilka egenskaper och bor i vilket hus? Vänligen ange ditt svar som en JSON-ordbok. Varje nyckel ska vara object_X där X är husnumret. Varje värde ska vara en lista med egenskaperna från kategorierna ovan som tillhör personen i hus nr. X.
+  Vem har vilka egenskaper och bor i vilket hus?
+
+  Vänligen ange ditt svar som en JSON dictionary. Varje key ska vara object_X där X är husnumret. Varje value ska vara en lista över egenskaperna från ovannämnda kategorier som tillhör personen i hus nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
