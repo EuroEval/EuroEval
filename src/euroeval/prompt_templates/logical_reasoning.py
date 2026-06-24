@@ -282,10 +282,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Her er ei gåte:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Kven har kva eigenskapar og bur i kva hus? Ver vennleg og oppgi svaret ditt "
-        "som ei JSON-ordbok. Kvar nøkkel skal vere object_X der X er husnummeret. "
-        "Kvar verdi skal vere ein liste med eigenskapane frå kategoriane ovanfor som "
-        "høyrer til personen i hus nummer X.",
+        "Kven har kva eigenskapar og bur i kva for eit hus?\n\n"
+        "Gjer vel å oppgi svaret ditt som ein JSON-dictionary. Kvar key skal vera "
+        "object_X der X er husnummeret. Kvar value skal vera ei liste over eigenskapane"
+        " frå nemnde kategoriar som høyrer til personen i hus nr. X.",
         default_prompt_label_mapping=dict(),
     ),
     NORWEGIAN: PromptConfig(

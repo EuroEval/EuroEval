@@ -2493,7 +2493,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Kven har kva eigenskapar og bur i kva hus? Ver vennleg og oppgje svaret ditt som ein JSON-ordbok. Kvarnøkkel skal vere object_X der X er husnummeret. Kvar verdi skal vere ein liste med eigenskapane frå kategoriane over som høyrer til personen i hus nr. X.
+  Kven har kva eigenskapar og bur i kva for eit hus?
+
+  Gjer vel å oppgi svaret ditt som ein JSON-dictionary. Kvar key skal vera object_X der X er husnummeret. Kvar value skal vera ei liste over eigenskapane frå nemnde kategoriar som høyrer til personen i hus nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -2562,7 +2564,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Kven har kva eigenskapar og bur i kva hus? Ver vennleg og oppgje svaret ditt som ein JSON-ordbok. Kvarnøkkel skal vere object_X der X er husnummeret. Kvar verdi skal vere ein liste med eigenskapane frå kategoriane over som høyrer til personen i hus nr. X.
+  Kven har kva eigenskapar og bur i kva for eit hus?
+
+  Gjer vel å oppgi svaret ditt som ein JSON-dictionary. Kvar key skal vera object_X der X er husnummeret. Kvar value skal vera ei liste over eigenskapane frå nemnde kategoriar som høyrer til personen i hus nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
