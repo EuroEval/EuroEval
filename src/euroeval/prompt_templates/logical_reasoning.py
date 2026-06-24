@@ -162,10 +162,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Her er ein gáta:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Hvør hevur hvørjar eginleikar og býr í hvørjum húsi? Vinarliga gev títt svar "
-        "sum eina JSON orðabók. Hvør lykil skal vera object_X har X er húsavalið. "
-        "Hvørt virði skal vera ein listi yvir eginleikarnar frá bólkunum omanfyri, "
-        "sum hoyra til persóninum í húsi nr. X.",
+        "Hvør hevur hvørjar eginleikar og býr í hvørjum húsum?\n\n"
+        "Vinarliga gev títt svar sum JSON dictionary. Hvør key skal vera object_X har X"
+        " er húsanummarið. Hvør value skal vera ein listi við eginleikum úr áðurnevndu "
+        "flokkunum, sum tilhoyra persóninum í húsi nr. X.",
         default_prompt_label_mapping=dict(),
     ),
     FINNISH: PromptConfig(

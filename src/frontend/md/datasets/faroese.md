@@ -589,7 +589,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Hvør hevur hvørjar eginleikar og býr í hvørjum húsi? Vinarliga uppgið svar títt sum ein JSON orðabók. Hvør lykil skal vera object_X har X er húsnummarið. Hvør virði skal vera ein listi við eginleikunum frá bólkunum omanfyri sum hoyra til persónin í húsi nr. X.
+  Hvør hevur hvørjar eginleikar og býr í hvørjum húsum?
+
+  Vinarliga gev títt svar sum JSON dictionary. Hvør key skal vera object_X har X er húsanummarið. Hvør value skal vera ein listi við eginleikum úr áðurnevndu flokkunum, sum tilhoyra persóninum í húsi nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -670,7 +672,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Hvør hevur hvørjar eginleikar og býr í hvørjum húsi? Vinarliga uppgið svar títt sum ein JSON orðabók. Hvør lykil skal vera object_X har X er húsnummarið. Hvør virði skal vera ein listi við eginleikunum frá bólkunum omanfyri sum hoyra til persónin í húsi nr. X.
+  Hvør hevur hvørjar eginleikar og býr í hvørjum húsum?
+
+  Vinarliga gev títt svar sum JSON dictionary. Hvør key skal vera object_X har X er húsanummarið. Hvør value skal vera ein listi við eginleikum úr áðurnevndu flokkunum, sum tilhoyra persóninum í húsi nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
