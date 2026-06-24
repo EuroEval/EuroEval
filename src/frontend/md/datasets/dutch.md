@@ -1707,7 +1707,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Wie heeft welke eigenschappen en woont in welk huis? Geef je antwoord als een JSON-woordenboek. Elke sleutel moet object_X zijn waarbij X het huisnummer is. Elke waarde moet een lijst zijn van de eigenschappen uit de bovenstaande categorieën die behoren bij de persoon in huis nr. X.
+  Wie heeft welke eigenschappen en woont in welk huis?
+
+  Geef je antwoord als een JSON dictionary. Elke key moet object_X zijn, waarbij X het huisnummer is. Elke value moet een lijst zijn van de eigenschappen uit de bovengenoemde categorieën die horen bij de persoon in huis nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -1776,7 +1778,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Wie heeft welke eigenschappen en woont in welk huis? Geef je antwoord als een JSON-woordenboek. Elke sleutel moet object_X zijn waarbij X het huisnummer is. Elke waarde moet een lijst zijn van de eigenschappen uit de bovenstaande categorieën die behoren bij de persoon in huis nr. X.
+  Wie heeft welke eigenschappen en woont in welk huis?
+
+  Geef je antwoord als een JSON dictionary. Elke key moet object_X zijn, waarbij X het huisnummer is. Elke value moet een lijst zijn van de eigenschappen uit de bovengenoemde categorieën die horen bij de persoon in huis nr. X.
   ```
 
 You can evaluate this dataset directly as follows:

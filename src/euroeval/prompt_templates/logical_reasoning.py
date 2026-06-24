@@ -131,11 +131,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="",
         default_instruction_prompt="Hier is een raadsel:\n"
         "<riddle>\n{text}\n</riddle>\n\n"
-        "Wie heeft welke eigenschappen en woont in welk huis? "
-        "Geef je antwoord als "
-        "een JSON-woordenboek. Elke sleutel moet object_X zijn, waarbij X het "
-        "huisnummer is. Elke waarde moet een lijst zijn van de eigenschappen uit de "
-        "bovenstaande categorieën die behoren tot de persoon in huis nummer X.",
+        "Wie heeft welke eigenschappen en woont in welk huis?\n\n"
+        "Geef je antwoord als een JSON dictionary. Elke key moet object_X zijn, waarbij"
+        " X het huisnummer is. Elke value moet een lijst zijn van de eigenschappen uit "
+        "de bovengenoemde categorieën die horen bij de persoon in huis nr. X.",
         default_prompt_label_mapping=dict(),
     ),
     ENGLISH: PromptConfig(
