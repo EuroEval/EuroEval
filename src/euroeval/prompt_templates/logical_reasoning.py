@@ -142,10 +142,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Here is a riddle:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Who has which attributes and lives in which house? Please provide your "
-        "answer as a JSON dictionary. Each key should be object_X where X is the "
-        "house number. Each value should be a list of the attributes from the "
-        "categories above that belong to the person in house number X.",
+        "Who has which attributes and lives in which house?\n\n"
+        "Please submit your answer as a JSON dictionary. Each key must be object_X "
+        "where X is the house number. Each value must be a list of the attributes from "
+        "the aforementioned categories that belong to the person in house no. X.",
         default_prompt_label_mapping=dict(),
     ),
     ESTONIAN: PromptConfig(

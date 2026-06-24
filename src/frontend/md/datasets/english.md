@@ -1619,7 +1619,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Who has which properties and lives in which house? Please provide your answer as a JSON dictionary. Each key should be object_X where X is the house number. Each value should be a list of the properties from the categories above that belong to the person in house no. X.
+  Who has which attributes and lives in which house?
+
+  Please submit your answer as a JSON dictionary. Each key must be object_X where X is the house number. Each value must be a list of the attributes from the aforementioned categories that belong to the person in house no. X.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -1694,7 +1696,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Who has which properties and lives in which house? Please provide your answer as a JSON dictionary. Each key should be object_X where X is the house number. Each value should be a list of the properties from the categories above that belong to the person in house no. X.
+  Who has which attributes and lives in which house?
+
+  Please submit your answer as a JSON dictionary. Each key must be object_X where X is the house number. Each value must be a list of the attributes from the aforementioned categories that belong to the person in house no. X.
   ```
 
 You can evaluate this dataset directly as follows:
