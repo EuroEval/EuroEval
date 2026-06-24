@@ -24,6 +24,7 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
 from load_ud_pos import (
+    load_bedt_pos,
     load_bgdt_pos,
     load_cadt_pos,
     load_csdt_pos,
@@ -92,6 +93,7 @@ def main() -> None:
         "ro": load_rodt_pos,
         "ca": load_cadt_pos,
         "sq": load_sqdt_pos,
+        "be": load_bedt_pos,
     }
 
     # Set up the progress bar and iterate over the languages
