@@ -1464,7 +1464,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Wer hat welche Eigenschaften und in welchem Haus lebt er? Bitte geben Sie Ihre Antwort als JSON-Wörterbuch an. Jeder Schlüssel soll object_X sein, wobei X die Hausnummer ist. Jeder Wert soll eine Liste der Eigenschaften aus den obigen Kategorien sein, die zur Person in Haus Nr. X gehören.
+  Wer hat welche Eigenschaften und wohnt in welchem Haus?
+
+  Bitte geben Sie Ihre Antwort als JSON-Dictionary an. Jeder Key sollte object_X sein, wobei X die Hausnummer ist. Jeder Value sollte eine Liste der Eigenschaften aus den aufgelisteten Kategorien sein, die zur Person in Haus Nummer X gehören.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -1545,7 +1547,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Wer hat welche Eigenschaften und in welchem Haus lebt er? Bitte geben Sie Ihre Antwort als JSON-Wörterbuch an. Jeder Schlüssel soll object_X sein, wobei X die Hausnummer ist. Jeder Wert soll eine Liste der Eigenschaften aus den obigen Kategorien sein, die zur Person in Haus Nr. X gehören.
+  Wer hat welche Eigenschaften und wohnt in welchem Haus?
+
+  Bitte geben Sie Ihre Antwort als JSON-Dictionary an. Jeder Key sollte object_X sein, wobei X die Hausnummer ist. Jeder Value sollte eine Liste der Eigenschaften aus den aufgelisteten Kategorien sein, die zur Person in Haus Nummer X gehören.
   ```
 
 You can evaluate this dataset directly as follows:

@@ -195,11 +195,11 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="",
         default_instruction_prompt="Hier ist ein Rätsel:\n"
         "<riddle>\n{text}\n</riddle>\n\n"
-        "Wer hat welche Eigenschaften und wohnt in welchem Haus? "
-        "Bitte geben Sie "
-        "Ihre Antwort als JSON-Wörterbuch an. Jeder Schlüssel sollte object_X sein, "
-        "wobei X die Hausnummer ist. Jeder Wert sollte eine Liste der Attribute aus "
-        "den obigen Kategorien sein, die zur Person in Haus Nummer X gehören.",
+        "Wer hat welche Eigenschaften und wohnt in welchem Haus?\n\n"
+        "Bitte geben Sie Ihre Antwort als JSON-Dictionary an. Jeder Key sollte object_X"
+        " sein, wobei X die Hausnummer ist. Jeder Value sollte eine Liste der "
+        "Eigenschaften aus den aufgelisteten Kategorien sein, die zur Person in Haus "
+        "Nummer X gehören.",
         default_prompt_label_mapping=dict(),
     ),
     GREEK: PromptConfig(
