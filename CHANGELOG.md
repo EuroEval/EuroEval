@@ -9,11 +9,14 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added the Danish zebra puzzle dataset (easy and hard variants). The dataset consists
-  of logic grid puzzles (Einstein's riddles) and was published in
-  [this paper](https://doi.org/10.48550/arXiv.2511.03553). The split is given by 128 /
-  128 / 1,024 samples for train / validation / test, respectively (so 1,280 samples used
-  in total). It is marked as `unofficial` for now. This was contributed by @sofiehb ✨
+- Added zebra puzzle datasets (easy and hard variants) in 9 languages: Danish
+  (da), German (de), English (en), Faroese (fo), Icelandic (is), Norwegian
+  Bokmål (nb), Norwegian Nynorsk (nn), Dutch (nl), and Swedish (sv). The
+  datasets consist of logic grid puzzles (Einstein's riddles) and were published
+  in [this paper](https://doi.org/10.48550/arXiv.2511.03553). Each language
+  variant has 128 / 128 / 1,024 samples for train / validation / test,
+  respectively (1,280 samples per variant, 11,520 total). All variants are
+  marked as `unofficial` for now. This was contributed by @sofiehb ✨
 
 ### Changed
 
