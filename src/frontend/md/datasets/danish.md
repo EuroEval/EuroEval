@@ -1597,10 +1597,11 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Hvem har hvilke egenskaber og bor i hvilket hus? Angiv venligst dit svar som en
-  JSON-dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value
-  skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører
-  personen i hus nr. X.
+  Hvem har hvilke egenskaber og bor i hvilket hus?
+
+  Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er
+  husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor
+  som tilhører personen i hus nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -1669,10 +1670,11 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Hvem har hvilke egenskaber og bor i hvilket hus? Angiv venligst dit svar som en
-  JSON-dictionary. Hver key skal være object_X hvor X er husnummeret. Hver value
-  skal være en liste med de egenskaber fra kategorierne ovenfor som tilhører
-  personen i hus nr. X.
+  Hvem har hvilke egenskaber og bor i hvilket hus?
+
+  Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er
+  husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor
+  som tilhører personen i hus nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
