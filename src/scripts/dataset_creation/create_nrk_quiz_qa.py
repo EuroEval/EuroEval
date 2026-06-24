@@ -11,7 +11,6 @@
 
 """Create the NRK-Quiz-QA-mini dataset and upload them to the HF Hub."""
 
-import warnings
 from collections import Counter
 
 import pandas as pd
@@ -23,10 +22,7 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
-from pandas.errors import SettingWithCopyWarning
 from sklearn.model_selection import train_test_split
-
-warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 
 
 def main() -> None:

@@ -9,6 +9,7 @@ from ..tasks import (
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
+    LOGIC,
     MCRC,
     NER,
     RC,
@@ -177,6 +178,24 @@ GERLANGMOD_DE_CONFIG = DatasetConfig(
     pretty_name="GerLangMod-de",
     source="EuroEval/gerlangmod-de",
     task=GED,
+    languages=[GERMAN],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_EASY_DE_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-de",
+    pretty_name="ZebraPuzzlesEasy-de",
+    source="EuroEval/zebra-puzzles-easy-de",
+    task=LOGIC,
+    languages=[GERMAN],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_DE_CONFIG = DatasetConfig(
+    name="zebra-puzzles-hard-de",
+    pretty_name="ZebraPuzzlesHard-de",
+    source="EuroEval/zebra-puzzles-hard-de",
+    task=LOGIC,
     languages=[GERMAN],
     unofficial=True,
 )

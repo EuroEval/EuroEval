@@ -1,6 +1,6 @@
 [project]
 name = "EuroEval"
-version = "17.4.0.dev"
+version = "17.5.0.dev"
 description = "The robust European language model benchmark."
 readme = "README.md"
 authors = [
@@ -40,8 +40,6 @@ dependencies = [
     "peft>=0.15.0",
     "protobuf>=2.0.0",
     "cloudpickle>=3.1.1",
-    "typeguard>=4.4.4",
-    "pyrefly>=0.43.1",
     "sacrebleu>=2.5.1",
     "nltk>=3.9.1",
     "langdetect>=1.0.9",
@@ -215,6 +213,8 @@ unresolved-attribute = "ignore"
 # Pandas type stub issues - these are false positives due to incomplete type stubs
 unsupported-operator = "ignore"
 no-matching-overload = "ignore"
+# vLLM types differ between macOS (0.22.0+cpu) and Linux (0.23.0), so ignore warnings
+unused-ignore-comment = "ignore"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
@@ -244,9 +244,6 @@ pythonpath = [
     "src/scripts",
     "src/scripts/dataset_creation",
 ]
-
-[tool.pyrefly]
-site-package-path=[".venv/lib/python3.11/site-packages"]
 
 [build-system]
 requires = ["hatchling"]

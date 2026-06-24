@@ -55,7 +55,6 @@ from load_ud_pos import (
     load_svdt_pos,
     load_ukdt_pos,
 )
-from pandas.errors import SettingWithCopyWarning
 from tqdm.auto import tqdm
 
 
@@ -436,7 +435,6 @@ def prepare_df(df: pd.DataFrame, split: str) -> Dataset:
 
     # Add the corrupted strings to the dataframe
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=SettingWithCopyWarning)
         df["corrupted"] = [tup[0] for tup in corrupted_list]
         df["corruption_type"] = [tup[1] for tup in corrupted_list]
 

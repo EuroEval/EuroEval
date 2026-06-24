@@ -1,11 +1,11 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "datasets==3.5.0",
-#     "huggingface-hub==0.24.0",
-#     "pandas==2.2.0",
-#     "requests==2.32.3",
-#     "scikit-learn<1.6.0",
+#     "datasets==5.0.0",
+#     "huggingface-hub==1.20.1",
+#     "pandas==3.0.3",
+#     "requests==2.34.2",
+#     "scikit-learn==1.6.1",
 # ]
 # ///
 
@@ -19,7 +19,38 @@ from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
 from huggingface_hub.utils import HfHubHTTPError
 
-THEMES = ["da_huse_2x3_5rh", "da_huse_4x5_5rh"]
+# All themes except Danish smørrebrød variants
+# Format: (theme, language_code, difficulty)
+THEMES = [
+    # Danish (house theme)
+    ("da_huse_2x3_5rh", "da", "easy"),
+    ("da_huse_4x5_5rh", "da", "hard"),
+    # German
+    ("de_hauser_2x3_5rh", "de", "easy"),
+    ("de_hauser_4x5_5rh", "de", "hard"),
+    # English
+    ("en_houses_2x3_5rh", "en", "easy"),
+    ("en_houses_4x5_5rh", "en", "hard"),
+    # Faroese
+    ("fo_hus_2x3_5rh", "fo", "easy"),
+    ("fo_hus_4x5_5rh", "fo", "hard"),
+    # Icelandic
+    ("is_husum_2x3_5rh", "is", "easy"),
+    ("is_husum_4x5_5rh", "is", "hard"),
+    # Norwegian Bokmål
+    ("nb_hus_2x3_5rh", "nb", "easy"),
+    ("nb_hus_4x5_5rh", "nb", "hard"),
+    # Dutch
+    ("nl_huizen_2x3_5rh", "nl", "easy"),
+    ("nl_huizen_4x5_5rh", "nl", "hard"),
+    # Norwegian Nynorsk
+    ("nn_hus_2x3_5rh", "nn", "easy"),
+    ("nn_hus_4x5_5rh", "nn", "hard"),
+    # Swedish
+    ("sv_hus_2x3_5rh", "sv", "easy"),
+    ("sv_hus_4x5_5rh", "sv", "hard"),
+]
+# Split sizes from original dataset (arXiv:2511.03553)
 n_train = 128
 n_val = 128
 n_test = 1024
@@ -28,19 +59,13 @@ n_test = 1024
 def main() -> None:
     """Create the zebra puzzle datasets and upload them to the HF Hub."""
     # Define the base download URL
-    repo_id = "alexandrainst/zebra_puzzles"
+    repo_id = "alexandrainst/multi-zebra-logic"
 
-    for theme in THEMES:
-        # Download the dataset
-        train_data: Dataset = load_dataset(
-            path=repo_id, name=f"dataset_{theme}", token=True, split="train"
-        )
-        val_data: Dataset = load_dataset(
-            path=repo_id, name=f"dataset_{theme}", token=True, split="val"
-        )
-        test_data: Dataset = load_dataset(
-            path=repo_id, name=f"dataset_{theme}", token=True, split="test"
-        )
+    for theme, lang_code, difficulty in THEMES:
+        # Load dataset using load_dataset for robustness and proper dataset handling
+        train_data: Dataset = load_dataset(repo_id, f"dataset_{theme}", split="train")
+        val_data: Dataset = load_dataset(repo_id, f"dataset_{theme}", split="val")
+        test_data: Dataset = load_dataset(repo_id, f"dataset_{theme}", split="test")
 
         # Check length
         assert len(train_data) == n_train
@@ -53,7 +78,6 @@ def main() -> None:
         test_df: pd.DataFrame = t.cast(pd.DataFrame, test_data.to_pandas())
 
         # Remove unused columns
-        # TODO: Consider including format_example in the dataset
         train_df = train_df[["introduction", "clues", "solution"]]
         val_df = val_df[["introduction", "clues", "solution"]]
         test_df = test_df[["introduction", "clues", "solution"]]
@@ -106,7 +130,7 @@ def main() -> None:
         )
 
         # Create dataset ID
-        dataset_id = f"EuroEval/zebra-puzzles-{theme}"
+        dataset_id = f"EuroEval/zebra-puzzles-{difficulty}-{lang_code}"
 
         # Remove the dataset from Hugging Face Hub if it already exists
         try:

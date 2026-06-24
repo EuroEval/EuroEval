@@ -144,6 +144,6 @@ def extract_labels_from_generation(
             The generative model output.
 
     Returns:
-        Results for a metric.
+        The predicted labels extracted from the model output sequences.
     """
     return model_output.sequences

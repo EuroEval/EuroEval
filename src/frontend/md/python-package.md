@@ -33,24 +33,29 @@ missing dependency.
 
 ## Quickstart
 
+The three interfaces below all do the same thing — only the syntax differs. Pick the
+tab that matches how you want to drive EuroEval; the steps and examples line up
+one-to-one.
+
 /// tab | Command line
+
+Benchmark a model on every compatible dataset:
 
 ```bash
 euroeval --model meta-llama/Llama-3.1-8B-Instruct
 ```
 
-That's it. EuroEval picks every dataset compatible with the model (encoder vs decoder,
-generative or not) across every supported language and writes one line per
-(model, dataset) combination to `euroeval_benchmark_results.jsonl` in the current
-directory.
+EuroEval picks every dataset compatible with the model (encoder vs decoder, generative
+or not) across every supported language and writes one line per (model, dataset)
+combination to `euroeval_benchmark_results.jsonl` in the current directory.
 
-Most runs narrow the scope with `--task` and/or `--language`:
+Narrow the scope with `--task` and/or `--language`:
 
 ```bash
 euroeval --model <model-id> --task sentiment-classification --language da
 ```
 
-Any flag can be repeated to fan out:
+Repeat any flag to fan out across models or languages:
 
 ```bash
 euroeval --model gpt-4o-mini --model claude-sonnet-4-5 --language en --language de
@@ -67,35 +72,79 @@ Run `euroeval --help` for the complete flag list.
 ///
 /// tab | Python
 
+Benchmark a model on every compatible dataset:
+
 ```python
 from euroeval import Benchmarker
 
 benchmarker = Benchmarker()
-results = benchmarker.benchmark(
-    model="meta-llama/Llama-3.1-8B-Instruct",
-    task="sentiment-classification",
-    language="da",
-)
+results = benchmarker.benchmark(model="meta-llama/Llama-3.1-8B-Instruct")
 ```
 
-Every CLI flag maps to a snake_case keyword argument. Omitting `model` benchmarks every
-matching model on the Hugging Face Hub — for example, every Danish model on the Danish
-sentiment task:
+EuroEval picks every dataset compatible with the model (encoder vs decoder, generative
+or not) across every supported language, writes one line per (model, dataset)
+combination to `euroeval_benchmark_results.jsonl`, and returns the results as a list of
+`BenchmarkResult` objects (see [Output format](#output-format-every-eval-ever-eee) for
+the schema).
+
+Narrow the scope with `task` and/or `language`:
 
 ```python
-benchmarker.benchmark(task="sentiment-classification", language="da")
+benchmarker.benchmark(model="<model-id>", task="sentiment-classification", language="da")
 ```
 
-`benchmark()` returns a list of `BenchmarkResult` objects; see
-[Output format](#output-format-every-eval-ever-eee) for the schema.
+Pass a list to fan out across models or languages:
+
+```python
+benchmarker.benchmark(model=["gpt-4o-mini", "claude-sonnet-4-5"], language=["en", "de"])
+```
+
+Pin a model revision (branch, tag, or commit) by suffixing `@`:
+
+```python
+benchmarker.benchmark(model="<model-id>@<sha>")
+```
+
+Every CLI flag maps to a snake_case keyword argument; browse the
+[full API reference](/api) for the complete list.
 
 ///
 /// tab | Docker
 
+Build the image once, then everything after `euroeval` on the `docker run` line is
+passed through as CLI flags:
+
 ```bash
 wget https://raw.githubusercontent.com/EuroEval/EuroEval/main/Dockerfile
 docker build --pull -t euroeval .
-docker run --rm --gpus 1 euroeval --model <model-id>
+```
+
+Benchmark a model on every compatible dataset:
+
+```bash
+docker run --rm --gpus 1 euroeval --model meta-llama/Llama-3.1-8B-Instruct
+```
+
+EuroEval picks every dataset compatible with the model (encoder vs decoder, generative
+or not) across every supported language and writes one line per (model, dataset)
+combination to `euroeval_benchmark_results.jsonl` in the container's working directory.
+
+Narrow the scope with `--task` and/or `--language`:
+
+```bash
+docker run --rm --gpus 1 euroeval --model <model-id> --task sentiment-classification --language da
+```
+
+Repeat any flag to fan out across models or languages:
+
+```bash
+docker run --rm --gpus 1 euroeval --model gpt-4o-mini --model claude-sonnet-4-5 --language en --language de
+```
+
+Pin a model revision (branch, tag, or commit) by suffixing `@`:
+
+```bash
+docker run --rm --gpus 1 euroeval --model <model-id>@<sha>
 ```
 
 Two prerequisites on the host:
@@ -104,8 +153,6 @@ Two prerequisites on the host:
   is installed and configured for Docker.
 - The CUDA version at the top of the `Dockerfile` matches the one reported by
   `nvidia-smi` on the host.
-
-Everything after `euroeval` on the `docker run` line is passed through as CLI flags.
 
 ///
 
@@ -164,6 +211,26 @@ Concrete, end-to-end tasks. Each is self-contained — copy, adapt, run.
 
     This works for both encoder and decoder checkpoints. If you'd rather serve the model
     through an inference server and benchmark over HTTP, see the previous recipe.
+
+??? example "Score a base decoder with bits-per-character (BPC)"
+
+    For base (completion-only) decoder models, bits-per-character scoring measures the
+    information content of the ground-truth answer instead of exact-match accuracy. It is
+    handy for tracking small models or early training checkpoints that cannot yet follow
+    the multiple-choice format, where standard metrics sit near chance. For
+    multiple-choice tasks BPC treats the benchmark as text-to-text (bare question → full
+    answer text). BPC is only supported by the vLLM backend with base decoders; see
+    [Evaluation Methodology](/methodology) for details.
+
+    ```bash
+    euroeval --model <model-id> --use-bits-per-character
+    ```
+
+    The Python equivalent:
+
+    ```python
+    benchmarker.benchmark(model="<model-id>", use_bits_per_character=True)
+    ```
 
 ??? example "Override missing or incorrect model metadata"
 

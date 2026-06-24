@@ -1,4 +1,4 @@
-"""Logic reasoning metrics for puzzles."""
+"""Metrics for logic puzzle evaluation."""
 
 import collections.abc as c
 import itertools
@@ -7,10 +7,9 @@ import typing as t
 from copy import deepcopy
 
 import numpy as np
-from typeguard import TypeCheckError, check_type
 
 from ..exceptions import InvalidBenchmark
-from ..utils import extract_json_dict_from_string
+from ..string_utils import extract_json_dict_from_string
 from .base import Metric
 
 if t.TYPE_CHECKING:
@@ -21,8 +20,8 @@ if t.TYPE_CHECKING:
 logger: logging.Logger = logging.getLogger("euroeval")
 
 
-class StructuredGenerationMetric(Metric):
-    """Base class for structured generation metrics."""
+class LogicPuzzleMetric(Metric):
+    """Base class for logic puzzle metrics."""
 
     def __call__(
         self,
@@ -70,7 +69,7 @@ class StructuredGenerationMetric(Metric):
                 list[dict[str, list[str]]], deepcopy(raw_predictions)
             )
         else:
-            formatted_predictions = []
+            formatted_predictions: list[dict[str, list[str]]] = []
             for raw_prediction in raw_predictions:
                 if not isinstance(raw_prediction, str):
                     logger.warning(
@@ -79,7 +78,7 @@ class StructuredGenerationMetric(Metric):
                     )
                     raw_prediction = str(raw_prediction)
                 formatted_prediction = extract_json_dict_from_string(s=raw_prediction)
-                if not self._check_full_type(
+                if formatted_prediction is None or not self._check_full_type(
                     formatted_prediction, dict[str, list[str]]
                 ):
                     logger.warning(
@@ -104,12 +103,17 @@ class StructuredGenerationMetric(Metric):
                         "parsed correctly."
                     )
                 label = extract_json_dict_from_string(s=raw_label)
-                if not self._check_full_type(label, dict[str, list[str]]):
+                if label is None:
                     raise InvalidBenchmark(
                         "The label string was not converted to a dictionary. "
                         "Please ensure that the labels are parsed correctly."
                     )
-                labels.append(extract_json_dict_from_string(s=raw_label))
+                if not self._check_full_type(label, dict[str, list[str]]):
+                    raise InvalidBenchmark(
+                        "The label was not converted to a dictionary with list values. "
+                        "Please ensure that the labels are parsed correctly."
+                    )
+                labels.append(label)
 
         results = self._compare_all_json_predictions_and_labels(
             predictions=formatted_predictions, labels=labels
@@ -130,11 +134,25 @@ class StructuredGenerationMetric(Metric):
         Returns:
             True if the variable is of the expected type, False otherwise.
         """
-        try:
-            check_type(variable, expected_type)
-            return True
-        except (TypeError, TypeCheckError):
-            return False
+        # Handle list[dict[str, list[str]]] type
+        if expected_type == list[dict[str, list[str]]]:
+            if not isinstance(variable, list):
+                return False
+            return all(
+                isinstance(item, dict)
+                and all(
+                    isinstance(k, str) and isinstance(v, list) for k, v in item.items()
+                )
+                for item in variable
+            )
+        # Handle dict[str, list[str]] type
+        if expected_type == dict[str, list[str]]:
+            if not isinstance(variable, dict):
+                return False
+            return all(
+                isinstance(k, str) and isinstance(v, list) for k, v in variable.items()
+            )
+        return False
 
     def _compare_all_json_predictions_and_labels(
         self,
@@ -234,7 +252,7 @@ class StructuredGenerationMetric(Metric):
         return prediction_sets, label_sets, n_keys, n_elements_per_key
 
 
-class PuzzleLevelAccuracyMetric(StructuredGenerationMetric):
+class PuzzleLevelAccuracyMetric(LogicPuzzleMetric):
     """Puzzle-level accuracy metric."""
 
     def __init__(self) -> None:
@@ -281,6 +299,10 @@ class PuzzleLevelAccuracyMetric(StructuredGenerationMetric):
         prediction = dict(sorted(prediction.items()))
         label = dict(sorted(label.items()))
 
+        # Reject predictions with wrong key counts
+        if len(prediction) != len(label):
+            return 0
+
         if prediction == label:
             return 1
 
@@ -288,16 +310,16 @@ class PuzzleLevelAccuracyMetric(StructuredGenerationMetric):
         for attributes_pred, attributes_label in zip(
             prediction.values(), label.values()
         ):
-            # strip whitespace
-            attributes_pred = {attr.strip() for attr in attributes_pred}
-            attributes_label = {attr.strip() for attr in attributes_label}
+            # strip whitespace (coerce to str to handle non-string attributes)
+            attributes_pred = {str(attr).strip() for attr in attributes_pred}
+            attributes_label = {str(attr).strip() for attr in attributes_label}
             if attributes_pred != attributes_label:
                 return 0
 
         return 1
 
 
-class CellWiseAccuracyMetric(StructuredGenerationMetric):
+class CellWiseAccuracyMetric(LogicPuzzleMetric):
     """Cell-wise accuracy metric."""
 
     def __init__(self) -> None:
@@ -354,6 +376,10 @@ class CellWiseAccuracyMetric(StructuredGenerationMetric):
         prediction = dict(sorted(prediction.items()))
         label = dict(sorted(label.items()))
 
+        # Reject predictions with wrong key counts
+        if len(prediction) != len(label):
+            return 0.0
+
         if prediction == label:
             return 1.0
 
@@ -363,9 +389,9 @@ class CellWiseAccuracyMetric(StructuredGenerationMetric):
         for attributes_pred, attributes_label in zip(
             prediction.values(), label.values()
         ):
-            # strip whitespace
-            attributes_pred = {attr.strip() for attr in attributes_pred}
-            attributes_label = {attr.strip() for attr in attributes_label}
+            # strip whitespace (coerce to str to handle non-string attributes)
+            attributes_pred = {str(attr).strip() for attr in attributes_pred}
+            attributes_label = {str(attr).strip() for attr in attributes_label}
 
             # Count the number of correct attributes
             n_correct_attributes += len(attributes_pred.intersection(attributes_label))
@@ -376,7 +402,7 @@ class CellWiseAccuracyMetric(StructuredGenerationMetric):
         return cell_score
 
 
-class BestPermutedCellWiseAccuracyMetric(StructuredGenerationMetric):
+class BestPermutedCellWiseAccuracyMetric(LogicPuzzleMetric):
     """Best permuted cell-wise accuracy metric."""
 
     def __init__(self) -> None:

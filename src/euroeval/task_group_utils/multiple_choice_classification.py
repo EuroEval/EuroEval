@@ -1,7 +1,6 @@
 """Utility functions related to the multiple-choice classification task group."""
 
 import hashlib
-import re
 import typing as t
 from collections import defaultdict
 
@@ -9,6 +8,8 @@ import numpy as np
 from transformers.trainer import Trainer
 
 from ..exceptions import InvalidBenchmark
+from ..string_utils import CHOICE_LETTERS
+from .cloze import parse_bare_question_and_choices
 
 if t.TYPE_CHECKING:
     from datasets import Dataset
@@ -100,45 +101,22 @@ def prepare_examples(
         The prepared examples.
     """
     doc: str = examples["text"][0]
-    sections = doc.split("\n")
 
-    candidate_choice_idxs = [
-        idx
-        for idx, section in enumerate(sections)
-        if re.match(pattern=r"^[a-z0-9]+\. ", string=section) is not None
-    ]
-
-    # Sometimes the question itself starts with a letter or number followed by a dot, We
-    # want to ignore these cases, and focus on the final contingent block of at least
-    # two choices.
-    choice_idxs: list[int] = list()
-    for idx in reversed(candidate_choice_idxs):
-        if len(choice_idxs) < 2 or (
-            len(choice_idxs) >= 2 and idx == choice_idxs[-1] - 1
-        ):
-            choice_idxs.append(idx)
-
-    choices = [sections[idx] for idx in reversed(choice_idxs)]
-
-    # Check that the choices are present, and that all of them are at the end
+    # Recover the bare question and the individual choice texts from the formatted
+    # prompt. This is the canonical parser shared with cloze/BPC scoring, so the two
+    # paths cannot drift in how they split the choices block out of the prompt.
+    context_and_question, choices = parse_bare_question_and_choices(doc)
     assert len(choices) > 0, "No choices found in the document."
-    assert all(
-        choice_idx == len(sections) - i
-        for i, choice_idx in enumerate(sorted(choice_idxs, reverse=True), start=1)
-    ), "Choices are not at the end of the document."
 
-    question_idx = min(choice_idxs) - 2  # -2 to remove the 'Choices:' line
-    context_and_question = "\n".join(sections[: question_idx + 1]).strip()
-
+    gold_letter = examples["label"][0]
     new_examples = tokeniser(
         text=[context_and_question] * len(choices),
-        text_pair=[choice[3:] for choice in choices],
+        text_pair=choices,
         padding=True,
         truncation=True,
     )
     new_examples["label"] = [
-        int(choice.startswith(f"{letter}. ") and letter == examples["label"][0])
-        for letter, choice in zip("abcdefghijklmnopqrstuvwxyz", choices)
+        int(letter == gold_letter) for letter, _ in zip(CHOICE_LETTERS, choices)
     ]
     new_examples["id"] = [hashlib.md5(string=doc.encode()).hexdigest()] * len(choices)
     return new_examples

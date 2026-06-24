@@ -8,9 +8,9 @@ information about what these constitute.
 
 ### SweReC
 
-This dataset was published [in this B.Sc.
-thesis](https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1105494&dswid=3392) and
-is a manually annotated dataset of Swedish reviews from both Trustpilot and Reco.se.
+This dataset was published
+[in this B.Sc. thesis](https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1105494&dswid=3392)
+and is a manually annotated dataset of Swedish reviews from both Trustpilot and Reco.se.
 
 The original dataset contains 10,757 reviews. We use a split of 1,024 / 256 / 2,048
 samples for training, validation, and testing, respectively.
@@ -165,13 +165,13 @@ euroeval --model <model-id> --dataset suc3
 ### ScaLA-sv
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Swedish Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Swedish-Talbanken) by assuming
-that the documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Swedish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Swedish-Talbanken)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original dataset consists of 6,026 samples, from which we use 1,024 / 256 / 2,048
 samples for training, validation and testing, respectively (so 3,328 samples used in
@@ -318,21 +318,21 @@ euroeval --model <model-id> --dataset multi-wiki-qa-sv
 ### Unofficial: ScandiQA-sv
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the Swedish part of the [MKQA
-dataset](https://aclanthology.org/2021.tacl-1.82/). The MKQA dataset is based on the
-English [Natural Questions dataset](https://aclanthology.org/Q19-1026/), based on search
-queries from the Google search engine. The questions and answers were manually
+and was automatically created from the Swedish part of the
+[MKQA dataset](https://aclanthology.org/2021.tacl-1.82/). The MKQA dataset is based on
+the English [Natural Questions dataset](https://aclanthology.org/Q19-1026/), based on
+search queries from the Google search engine. The questions and answers were manually
 translated to Swedish (and other languages) as part of MKQA, and the contexts were in
-ScandiQA-sv machine translated using the [DeepL translation
-API](https://www.deepl.com/en/pro-api/). A rule-based approach was used to ensure that
-the translated contexts still contained the answer to the question, potentially by
-changing the answers slightly.
+ScandiQA-sv machine translated using the
+[DeepL translation API](https://www.deepl.com/en/pro-api/). A rule-based approach was
+used to ensure that the translated contexts still contained the answer to the question,
+potentially by changing the answers slightly.
 
-The original full dataset consists of 6,810 / 500 / 500 samples for training,
-validation and testing, respectively (so 3,328 samples used in total).
-We use a 1,024 / 256 / 2,048 split for training, validation and testing, respectively,
-where the splits are made by randomly sampling from the full dataset without considering
-the original train/validation/test splits.
+The original full dataset consists of 6,810 / 500 / 500 samples for training, validation
+and testing, respectively (so 3,328 samples used in total). We use a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively, where the splits are made by
+randomly sampling from the full dataset without considering the original
+train/validation/test splits.
 
 Here are a few examples from the training split:
 
@@ -480,11 +480,11 @@ euroeval --model <model-id> --dataset belebele-sv
 
 ### MMLU-sv
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Swedish was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Swedish was done by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -548,10 +548,10 @@ euroeval --model <model-id> --dataset mmlu-sv
 
 ### Unofficial: ARC-sv
 
-This dataset is a machine translated version of the English [ARC
-dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school science
-questions. The translation to Swedish was done by the University of Oregon as part of
-[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[ARC dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school
+science questions. The translation to Swedish was done by the University of Oregon as
+part of [this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 1,110 / 297 / 1,170 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for training,
@@ -624,13 +624,13 @@ euroeval --model <model-id> --dataset arc-sv
 
 ### Unofficial: Skolprov
 
-This dataset contains data from six Swedish knowledge tests and was published at [this
-HuggingFace repository](https://huggingface.co/datasets/Ekgren/swedish_skolprov). The
-dataset features multiple-choice questions from official Swedish examinations including
-the Swedish Scholastic Aptitude Test (högskoleprovet), medical doctor test (kunskapsprov
-läkare), dentist test (kunskapsprov tandläkare), audiologist test (kunskapsprov
-audionom), pharmacist test (kunskapsprov apotekare), and mathematics and physics test
-(matematik och fysikprovet).
+This dataset contains data from six Swedish knowledge tests and was published at
+[this HuggingFace repository](https://huggingface.co/datasets/Ekgren/swedish_skolprov).
+The dataset features multiple-choice questions from official Swedish examinations
+including the Swedish Scholastic Aptitude Test (högskoleprovet), medical doctor test
+(kunskapsprov läkare), dentist test (kunskapsprov tandläkare), audiologist test
+(kunskapsprov audionom), pharmacist test (kunskapsprov apotekare), and mathematics and
+physics test (matematik och fysikprovet).
 
 The original dataset consists of 545 samples, which we filter down to 474 samples. We
 use a 32 / 32 / 410 split for training, validation and testing, respectively.
@@ -701,16 +701,16 @@ euroeval --model <model-id> --dataset skolprov
 
 ### Unofficial: SwedishFacts
 
-This is a benchmark for factual knowledge about Sweden.
-The questions are based on topics related to the hosts of the Swedish radio program
+This is a benchmark for factual knowledge about Sweden. The questions are based on
+topics related to the hosts of the Swedish radio program
 [Sommar i P1](https://www.sverigesradio.se/sommar-i-p1) as well as Swedish sporting
 events, such as those featured in [En Svensk Klassiker](https://ensvenskklassiker.se).
-In the [dataset card](https://huggingface.co/datasets/liu-nlp/swedish-facts-v1)
-it is mentioned that a paper with more information is coming soon.
+In the [dataset card](https://huggingface.co/datasets/liu-nlp/swedish-facts-v1) it is
+mentioned that a paper with more information is coming soon.
 
-Since the dataset does not include candidate answers, we generate them using GPT-4o.
-The original dataset consists of 1,289 samples. We
-use a 128 / 64 / 1,097 split for training, validation and testing, respectively.
+Since the dataset does not include candidate answers, we generate them using GPT-4o. The
+original dataset consists of 1,289 samples. We use a 128 / 64 / 1,097 split for
+training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -779,35 +779,35 @@ euroeval --model <model-id> --dataset swedish-facts
 ### Unofficial: MultiLoKo-sv
 
 This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Swedish
-questions are separately sourced and designed to target locally relevant topics for
-Swedish-speaking populations.
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
+Swedish questions are separately sourced and designed to target locally relevant topics
+for Swedish-speaking populations.
 
 We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer as
-the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
-question. We create a 16 / 234 split for training and testing, respectively.
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Vilket språk talades när tv-serien Der Kommissar und das Meer visades i Sverige?\nSvarsalternativ:\na. Svenska\nb. Tyska\nc. Engelska\nd. Franska",
-    "label": "a"
+  "text": "Vilket språk talades när tv-serien Der Kommissar und das Meer visades i Sverige?\nSvarsalternativ:\na. Svenska\nb. Tyska\nc. Engelska\nd. Franska",
+  "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Felix Sandman och Farah Abadi var programledare för musikhjälpen. Vem var den tredje som deltog?\nSvarsalternativ:\na. Molly Sandén\nb. Zackari\nc. Gina Dirawi\nd. Oscar Zia",
-    "label": "b"
+  "text": "Felix Sandman och Farah Abadi var programledare för musikhjälpen. Vem var den tredje som deltog?\nSvarsalternativ:\na. Molly Sandén\nb. Zackari\nc. Gina Dirawi\nd. Oscar Zia",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Vilket var det tredje landet utanför Sverige där Robin Olsen spelade klubblagsfotboll?\nSvarsalternativ:\na. Spanien\nb. Frankrike\nc. Italien\nd. Tyskland",
-    "label": "c"
+  "text": "Vilket var det tredje landet utanför Sverige där Robin Olsen spelade klubblagsfotboll?\nSvarsalternativ:\na. Spanien\nb. Frankrike\nc. Italien\nd. Tyskland",
+  "label": "c"
 }
 ```
 
@@ -846,11 +846,11 @@ euroeval --model <model-id> --dataset multiloko-sv
 
 ### HellaSwag-sv
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/). The original dataset was based on both
-video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
-was translated by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
+on both video descriptions from ActivityNet as well as how-to articles from WikiHow. The
+dataset was translated by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 9,310 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).
@@ -921,13 +921,13 @@ euroeval --model <model-id> --dataset hellaswag-sv
 
 ### Unofficial: GoldenSwag-sv
 
-This dataset is a filtered and machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
-ActivityNet as well as how-to articles from WikiHow. The machine translated version was
-published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
-DeepL, and the filtering was published in [this
-paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
-samples.
+This dataset is a filtered and machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video
+descriptions from ActivityNet as well as how-to articles from WikiHow. The machine
+translated version was published in
+[this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and
+the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825),
+which resulted in higher quality samples.
 
 The original full dataset consists of 1530 / 1530 samples for training and validation,
 respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
@@ -1000,8 +1000,8 @@ euroeval --model <model-id> --dataset goldenswag-sv
 ### Unofficial: Winogrande-sv
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -1071,10 +1071,10 @@ euroeval --model <model-id> --dataset winogrande-sv
 
 ### SweDN
 
-This dataset was published in [this
-paper](https://aclanthology.org/2023.emnlp-main.506/) and are based on news articles
-from the Swedish newspaper Dagens Nyheter, with the summaries being the first paragraph
-of the article (and that paragraph being removed from the article).
+This dataset was published in
+[this paper](https://aclanthology.org/2023.emnlp-main.506/) and are based on news
+articles from the Swedish newspaper Dagens Nyheter, with the summaries being the first
+paragraph of the article (and that paragraph being removed from the article).
 
 The original dataset consists of 29,800 / 4,530 / 3,750 samples for training, validation
 and testing, respectively. We use a 1,024 / 256 / 2,048 split for training, validation
@@ -1209,31 +1209,31 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "article_id": "https://www.svd.se/a/9z5KQM/",
-    "text": "Med en pistol mot huvudet – om han tvingas välja – så blir det Biden. Sverigedemokraten Mattias Karlsson har fått nog av republikaner, Trump och ”Make America great again”. Mattias Karlsson sitter i fiket. Han är deprimerad. I förrgår kom han hem från Washington, och där är ingenting roligt längre.  – Det är fruktansvärt illa ställt. Han tar en snus. – Ingen vet var det ska ta vägen. Det känns som att vad som helst kan hända med USA och med det republikanska partiet. – Men, säger jag, gillade inte du den amerikanska rörelsen, gillade inte du ”Make America great again”? – Jag vet inte. Hans blick är nere i bordet. – Jag vet inte vad den här rörelsen är längre. Jag tänker på 2016. När Trump valdes till president fanns det ett par sverigedemokrater som öppet sympatiserade med honom. Mikael Jansson, den förre partiledaren, som satt i försvarsutskottet och Gustav Kasselstrand, som nyss varit ordförande i ungdomsförbundet. Jansson försvann snart också från partiet. Många svenskar förfärades sedan över vad Trump gjorde och sa som president. Fast då blev fler och fler sverigedemokrater nyfikna. Han som så länge har kallats för partiets chefsideolog blev rentav imponerad. Jag har aldrig trott på Trump som person, jag tål inte karln. När Trump skulle återväljas, 2020, sa Mattias Karlsson i SVT: – Jag stöttar den republikanska sidan därför att det är två världsbilder som står mot varandra, och det är viktigare än de här två personerna som det pratas så mycket om. Han sa: – Det är en reell konflikt som man kan se över hela västvärlden. Det handlar om nationell suveränitet kontra mer globalism, om patriotism kontra mångkulturalism. Nu byter han snus. Det är en trött onsdagseftermiddag i riksdagsfiket. – Jag har aldrig trott på Trump som person, säger han, jag tål inte karln. Men jag trodde på rörelsen och på positionsförflyttningen. Republikanerna lämnade neoliberala ekonomiska teorier och aggressiv utrikespolitik, partiet fick ett mer kommunitärt drag. Jag gillade det. Att man ville ha in arbetarklassen i ett konservativt projekt, landsbygden, vi var alla ”somewheres” och mot globalism. Det fanns en bra grund för en enad rörelse. – Och nu? – Det blev splittring redan under coronan, det dök upp en massa konspirationsteorier. Och nu är det geopolitiken, och där är det nästan revolutionär kursomläggning. Stora delar av den amerikanska högern har släppt idén om sig själv som demokratins banerförare, den har släppt idén om väst.  – Väst? – Ja? – När började du bry dig om väst? Han skrattar. – Det var inget centralt begrepp i min idévärld när jag började i politiken. Det har väl växt fram. Jag läste Roger Scruton, vi som parti började resa mer. Sverigedemokraterna är ett parti som länge inte hade någon utrikespolitik. Ett parti vars första internationella partner hette Le Pen. Ett parti där människor avskydde USA, eftersom det var ett invandrarland med mångkultur. Sverigedemokraterna har aldrig varit ett transatlantiskt parti. – Vad är väst för dig, Mattias? frågar jag. – Det är en uppsättning filosofiska idéer som går tillbaka till Rom och Grekland. Kristendomsarvet. Klassisk musik, klassisk arkitektur, konst. I viss mån delade högtider och traditioner. – Är det geografiskt? Det finns ingen annan allians som försvarar väst.  – Jag ser det inte så primärt, men om vi som parti från början bara tog in Norden så har vi sedan gått längre. Vi är en del av västerlandet och västerlandet är Europa och USA. – Är Turkiet en del av väst? – Nej, det skulle jag inte säga. – Så varför vill du gå in i en försvarsallians med Turkiet? – Det finns ingen annan allians som försvarar väst.  Det är något konstigt i det här samtalet, tänker jag",
-    "keyword": "trump",
-    "target_text": "Torbjörn Nilsson: SD:s Mattias Karlsson väljer Biden, inte Trump",
-    "newsroom": "SVD"
+  "article_id": "https://www.svd.se/a/9z5KQM/",
+  "text": "Med en pistol mot huvudet – om han tvingas välja – så blir det Biden. Sverigedemokraten Mattias Karlsson har fått nog av republikaner, Trump och ”Make America great again”. Mattias Karlsson sitter i fiket. Han är deprimerad. I förrgår kom han hem från Washington, och där är ingenting roligt längre.  – Det är fruktansvärt illa ställt. Han tar en snus. – Ingen vet var det ska ta vägen. Det känns som att vad som helst kan hända med USA och med det republikanska partiet. – Men, säger jag, gillade inte du den amerikanska rörelsen, gillade inte du ”Make America great again”? – Jag vet inte. Hans blick är nere i bordet. – Jag vet inte vad den här rörelsen är längre. Jag tänker på 2016. När Trump valdes till president fanns det ett par sverigedemokrater som öppet sympatiserade med honom. Mikael Jansson, den förre partiledaren, som satt i försvarsutskottet och Gustav Kasselstrand, som nyss varit ordförande i ungdomsförbundet. Jansson försvann snart också från partiet. Många svenskar förfärades sedan över vad Trump gjorde och sa som president. Fast då blev fler och fler sverigedemokrater nyfikna. Han som så länge har kallats för partiets chefsideolog blev rentav imponerad. Jag har aldrig trott på Trump som person, jag tål inte karln. När Trump skulle återväljas, 2020, sa Mattias Karlsson i SVT: – Jag stöttar den republikanska sidan därför att det är två världsbilder som står mot varandra, och det är viktigare än de här två personerna som det pratas så mycket om. Han sa: – Det är en reell konflikt som man kan se över hela västvärlden. Det handlar om nationell suveränitet kontra mer globalism, om patriotism kontra mångkulturalism. Nu byter han snus. Det är en trött onsdagseftermiddag i riksdagsfiket. – Jag har aldrig trott på Trump som person, säger han, jag tål inte karln. Men jag trodde på rörelsen och på positionsförflyttningen. Republikanerna lämnade neoliberala ekonomiska teorier och aggressiv utrikespolitik, partiet fick ett mer kommunitärt drag. Jag gillade det. Att man ville ha in arbetarklassen i ett konservativt projekt, landsbygden, vi var alla ”somewheres” och mot globalism. Det fanns en bra grund för en enad rörelse. – Och nu? – Det blev splittring redan under coronan, det dök upp en massa konspirationsteorier. Och nu är det geopolitiken, och där är det nästan revolutionär kursomläggning. Stora delar av den amerikanska högern har släppt idén om sig själv som demokratins banerförare, den har släppt idén om väst.  – Väst? – Ja? – När började du bry dig om väst? Han skrattar. – Det var inget centralt begrepp i min idévärld när jag började i politiken. Det har väl växt fram. Jag läste Roger Scruton, vi som parti började resa mer. Sverigedemokraterna är ett parti som länge inte hade någon utrikespolitik. Ett parti vars första internationella partner hette Le Pen. Ett parti där människor avskydde USA, eftersom det var ett invandrarland med mångkultur. Sverigedemokraterna har aldrig varit ett transatlantiskt parti. – Vad är väst för dig, Mattias? frågar jag. – Det är en uppsättning filosofiska idéer som går tillbaka till Rom och Grekland. Kristendomsarvet. Klassisk musik, klassisk arkitektur, konst. I viss mån delade högtider och traditioner. – Är det geografiskt? Det finns ingen annan allians som försvarar väst.  – Jag ser det inte så primärt, men om vi som parti från början bara tog in Norden så har vi sedan gått längre. Vi är en del av västerlandet och västerlandet är Europa och USA. – Är Turkiet en del av väst? – Nej, det skulle jag inte säga. – Så varför vill du gå in i en försvarsallians med Turkiet? – Det finns ingen annan allians som försvarar väst.  Det är något konstigt i det här samtalet, tänker jag",
+  "keyword": "trump",
+  "target_text": "Torbjörn Nilsson: SD:s Mattias Karlsson väljer Biden, inte Trump",
+  "newsroom": "SVD"
 }
 ```
 
 ```json
 {
-    "article_id": "https://www.svd.se/a/abgaR5/",
-    "text": "Både regionstyret och oppositionen i Stockholm vill snabbutreda det medicinska behovet av intensivvårdsrehabilitering på privata Remeokliniken – vars framtid är hotad. ”Vi vill ha en snabb genomgång av läget just nu”, säger sjukvårdsregionrådet Talla Alkurdi (S). Under tisdagen var den laddade frågan uppe i hälso- och sjukvårdsnämnden i region Stockholm om vad man ska göra angående den uppkomna situationen på Remeokliniken i Stora Sköndal. Beslutet blev att både regionstyret och oppositionens skrivelser gick vidare till  förvaltningen för skyndsam hantering. Vänsterpartiets regionråd Jonas Lindberg, som normalt samarbetar tätt med mittkoalitionen med S, MP och C, har annars stuckit ut hakan rejält just i den här frågan. Han var beredd att tillsammans med bland andra Moderaterna rädda ett privat bolag från konkurs. – Det handlar inte om att rädda bolaget utan om vården för svårt sjuka patienter, säger han. De senaste fem åren har Remeokliniken sammanlagt fått över en halv miljard kronor för den intensivvårdsrehabilitering som man sålt till främst Karolinska i Solna och Huddinge. Men nu har beställningarna mattats av och Remeoklinikens framtid är hotad – vilket lett till politisk strid. V och tre av de borgerliga partierna (M, KD, L) har tidigare tagit initiativ till att utreda klinikens framtid både på kort och lång sikt. Ett av utredningsuppdragen handlar om att regionen skriver ett direkt avtal med Remeo. Styret lägger fram nytt förslag Inför hotet att röstas ned under tisdagens möte valde den styrande mittenkoalitionen att lägga fram ett liknande utredningsförslag. Dock med den skillnaden att förvaltningen inte ska undersöka möjligheterna till ett regionavtal med Remeo. – Det skulle vara en direktupphandling som kan vara olaglig. Vi vill att juristerna klarlägger hur vi kan använda oss av kliniken om vi behöver den av medicinska skäl, säger sjukvårdsregionrådet Talla Alkurdi (S). Hon fortsätter: – Det finns ju även andra uppgifter som säger att regionen och Nya Karolinska delvis klarar behovet av platser utan att anlita Remeo. Charlotte Broberg (M) tycker att S spelar bort korten då de inte ser vikten av den livsnödvändiga vård som Remeo bedriver. Det är bedrövligt att S försöker lura stockholmarna på det här sättet, säger Charlotte Broberg (M) och tillägger: - Vi föreslår en direktupphandling, ett övertagande av kostnadsansvar från akutsjukhusen eller en annan laglig modell för att rädda Remeokliniken. Att S försöker skjutsa dessa patienter under mattan och påstå att den här vården skulle finnas på våra akutsjukhus idag är inget annat än lögn och båg, säger Charlotte Broberg (M). SD valde i sista stund att ansluta sig till förslaget från S, MP och C, därmed fanns det egentligen majoritet för den skrivelsen. Men beslutet blev alltså att skicka båda skrivelserna. – Vi har satt tryck i frågan och har nu en enig politik, genom två initiativ, signalerat tydligt att denna vård måste säkerställas så att regionen inte tappar någon intensivvårdskapacitet, kommenterade Jonas Lindberg (V). Kajsa Giesecke är narkosläkare och tidigare verksamhetschef på privata Remeokliniken i Stora Sköndal, som hon var med och startade. I mer än tio år har kliniken avlastat den underdimensionerade intensivvården i Stockholm, vilket inte minst visade sig under pandemin.  Här finns 14 vårdplatser för långvarigt kritiskt sjuka, svaga patienter som legat länge på någon av sjukhusens intensivvårdskliniker. Det kallas intensivvårdsrehabilitering och kan exempelvis vara patienter som inte klarar att andas själva, som behöver andningsstöd med respirator. Normalt är kliniken fullbelagd men sedan i november finns det flera lediga sängar, i dagsläget fem lediga vårdplatser. Anledningen är att Karolinska i Solna och Huddinge remitterat färre patienter än vanligt till Remeokliniken",
-    "keyword": "remeokliniken",
-    "target_text": "Nya bud kring Remeokliniken",
-    "newsroom": "SVD"
+  "article_id": "https://www.svd.se/a/abgaR5/",
+  "text": "Både regionstyret och oppositionen i Stockholm vill snabbutreda det medicinska behovet av intensivvårdsrehabilitering på privata Remeokliniken – vars framtid är hotad. ”Vi vill ha en snabb genomgång av läget just nu”, säger sjukvårdsregionrådet Talla Alkurdi (S). Under tisdagen var den laddade frågan uppe i hälso- och sjukvårdsnämnden i region Stockholm om vad man ska göra angående den uppkomna situationen på Remeokliniken i Stora Sköndal. Beslutet blev att både regionstyret och oppositionens skrivelser gick vidare till  förvaltningen för skyndsam hantering. Vänsterpartiets regionråd Jonas Lindberg, som normalt samarbetar tätt med mittkoalitionen med S, MP och C, har annars stuckit ut hakan rejält just i den här frågan. Han var beredd att tillsammans med bland andra Moderaterna rädda ett privat bolag från konkurs. – Det handlar inte om att rädda bolaget utan om vården för svårt sjuka patienter, säger han. De senaste fem åren har Remeokliniken sammanlagt fått över en halv miljard kronor för den intensivvårdsrehabilitering som man sålt till främst Karolinska i Solna och Huddinge. Men nu har beställningarna mattats av och Remeoklinikens framtid är hotad – vilket lett till politisk strid. V och tre av de borgerliga partierna (M, KD, L) har tidigare tagit initiativ till att utreda klinikens framtid både på kort och lång sikt. Ett av utredningsuppdragen handlar om att regionen skriver ett direkt avtal med Remeo. Styret lägger fram nytt förslag Inför hotet att röstas ned under tisdagens möte valde den styrande mittenkoalitionen att lägga fram ett liknande utredningsförslag. Dock med den skillnaden att förvaltningen inte ska undersöka möjligheterna till ett regionavtal med Remeo. – Det skulle vara en direktupphandling som kan vara olaglig. Vi vill att juristerna klarlägger hur vi kan använda oss av kliniken om vi behöver den av medicinska skäl, säger sjukvårdsregionrådet Talla Alkurdi (S). Hon fortsätter: – Det finns ju även andra uppgifter som säger att regionen och Nya Karolinska delvis klarar behovet av platser utan att anlita Remeo. Charlotte Broberg (M) tycker att S spelar bort korten då de inte ser vikten av den livsnödvändiga vård som Remeo bedriver. Det är bedrövligt att S försöker lura stockholmarna på det här sättet, säger Charlotte Broberg (M) och tillägger: - Vi föreslår en direktupphandling, ett övertagande av kostnadsansvar från akutsjukhusen eller en annan laglig modell för att rädda Remeokliniken. Att S försöker skjutsa dessa patienter under mattan och påstå att den här vården skulle finnas på våra akutsjukhus idag är inget annat än lögn och båg, säger Charlotte Broberg (M). SD valde i sista stund att ansluta sig till förslaget från S, MP och C, därmed fanns det egentligen majoritet för den skrivelsen. Men beslutet blev alltså att skicka båda skrivelserna. – Vi har satt tryck i frågan och har nu en enig politik, genom två initiativ, signalerat tydligt att denna vård måste säkerställas så att regionen inte tappar någon intensivvårdskapacitet, kommenterade Jonas Lindberg (V). Kajsa Giesecke är narkosläkare och tidigare verksamhetschef på privata Remeokliniken i Stora Sköndal, som hon var med och startade. I mer än tio år har kliniken avlastat den underdimensionerade intensivvården i Stockholm, vilket inte minst visade sig under pandemin.  Här finns 14 vårdplatser för långvarigt kritiskt sjuka, svaga patienter som legat länge på någon av sjukhusens intensivvårdskliniker. Det kallas intensivvårdsrehabilitering och kan exempelvis vara patienter som inte klarar att andas själva, som behöver andningsstöd med respirator. Normalt är kliniken fullbelagd men sedan i november finns det flera lediga sängar, i dagsläget fem lediga vårdplatser. Anledningen är att Karolinska i Solna och Huddinge remitterat färre patienter än vanligt till Remeokliniken",
+  "keyword": "remeokliniken",
+  "target_text": "Nya bud kring Remeokliniken",
+  "newsroom": "SVD"
 }
 ```
 
 ```json
 {
-    "article_id": "https://www.svd.se/a/nQz9md/",
-    "text": "Skildringen av en nyförlöst mors oro har vissa drag av Netflixdrama, och översättningen haltar något – men hajpade ”Mjölkbaren” är ändå riktigt bra, tycker Emi-Simone Zawall. I novellen ”Den gula tapeten” av Charlotte Perkins Gilman (1892) har en nyförlöst kvinna tillfälligt flyttat in i ett stort hus på landet tillsammans med sin make John. John har bestämt att de ska bo i husets väldiga barnkammare (the nursery), men eftersom han är på sitt arbete om dagarna lämnas hon mest åt sig själv. Barnet sköts av en hushållerska, tanken är att modern ska bota sin underliga nedstämdhet med en fullständig passivitet. De sysslolösa dagarna går och barnkammarens gula tapet börjar allt mer uppta hennes uppmärksamhet. Varför är den så ful, undrar hon, och varför har den så konstiga mönster? Och en dag: varför rör mönstren på sig? En annan dag: varför är en kvinna instängd bakom tapeten? Och senare: varför är det flera kvinnor som kryper omkring där? Hennes kusliga syner och tilltagande galenskap har av eftervärlden tolkats som en kritik av kvinnans plats i det patriarkala systemets fängelse. Men i sin debutroman ”The Nursery”, som nyligen översatts till svenska med titeln ”Mjölkbaren” (Bakhåll), har Szilvia Molnar tagit fasta på att det faktiskt är en förlossningspsykos som skildras. I Molnars moderna parafras bor berättarjaget i en stad någonstans i USA, arbetar som översättare av svensk skönlitteratur och har nyss fött barn, lilla Ärtan. Maken John är snäll och omtänksam men hänvisas snabbt efter förlossningen till sitt arbete. Den första tiden med barnet blir alltså en ensam, snudd på klaustrofobisk upplevelse. Kroppen värker, tvivlen växer, barnet skriker, utmattningen är gränslös – ändå måste barnet ammas, bytas på, vyssjas. Hemmets fyra väggar tränger sig på, minnen från det förflutna gör sig påminda och vem är egentligen den märklige grannen Peter med syrgastanken som insisterar på att komma på besök? Molnar viker aldrig med blicken från den kroppsliga chock och sipprande sörja som en förlossning innebär eller de fullkomligt bisarra tankar en nyförlöst kvinna kan drabbas av. Bildspråket är vackert och drastiskt, en bebis kan ha tulpanens tunga huvud eller liknas vid en glänsande färsk kycklingkropp som snart ska styckas. Man förstår att Molnar förstår att det är litteratur hon skriver, varken loggbok eller dagbok: här får overklighetens lungsjuka män, spindlar, och dragspelsmusik tränga in och göra verkligheten verkligare – det är så uppfriskande att hon tar sig an sitt ämne på det sättet. Det gör i sin tur att man förlåter romanens lätta dragning åt den Netflixartade dramaturgi som dagens samtidslitteratur blivit så impregnerad av – alltså den litterära motsvarigheten till tv-seriernas många sekvenser med ”förklarande återblickar”, ”dröjande närbilder” av ”målande detaljer”; en stil som låter läsaren se framför sig hur romanfigurernas gester skulle utföras av skådespelare i en framtida filmatisering. En liten invändning kan också riktas mot den smått koketta retorik som hos Molnar visserligen är i det mildaste laget men i övrigt verkar inbyggd i erfarenhetsgenren som sådan, och som kan sammanfattas i frågan: varför har ingen annan skrivit om det jag skriver om? Det är kanske sant (som Molnar påstår) att hela världslitteraturen är renons på beskrivningar av blöjbyten eller de förtärande tomma timmar där man bara sitter och håller ett sovande eller skrikande barn i famnen.  Men måste det påstås? Räcker det inte med att bara skapa det som inte finns? Författare som själva framhåller sin egen betydelse är en olat",
-    "keyword": "mjölkbaren",
-    "target_text": "Recension: Szilvia Molnars Mjölkbaren är riktigt bra",
-    "newsroom": "SVD"
+  "article_id": "https://www.svd.se/a/nQz9md/",
+  "text": "Skildringen av en nyförlöst mors oro har vissa drag av Netflixdrama, och översättningen haltar något – men hajpade ”Mjölkbaren” är ändå riktigt bra, tycker Emi-Simone Zawall. I novellen ”Den gula tapeten” av Charlotte Perkins Gilman (1892) har en nyförlöst kvinna tillfälligt flyttat in i ett stort hus på landet tillsammans med sin make John. John har bestämt att de ska bo i husets väldiga barnkammare (the nursery), men eftersom han är på sitt arbete om dagarna lämnas hon mest åt sig själv. Barnet sköts av en hushållerska, tanken är att modern ska bota sin underliga nedstämdhet med en fullständig passivitet. De sysslolösa dagarna går och barnkammarens gula tapet börjar allt mer uppta hennes uppmärksamhet. Varför är den så ful, undrar hon, och varför har den så konstiga mönster? Och en dag: varför rör mönstren på sig? En annan dag: varför är en kvinna instängd bakom tapeten? Och senare: varför är det flera kvinnor som kryper omkring där? Hennes kusliga syner och tilltagande galenskap har av eftervärlden tolkats som en kritik av kvinnans plats i det patriarkala systemets fängelse. Men i sin debutroman ”The Nursery”, som nyligen översatts till svenska med titeln ”Mjölkbaren” (Bakhåll), har Szilvia Molnar tagit fasta på att det faktiskt är en förlossningspsykos som skildras. I Molnars moderna parafras bor berättarjaget i en stad någonstans i USA, arbetar som översättare av svensk skönlitteratur och har nyss fött barn, lilla Ärtan. Maken John är snäll och omtänksam men hänvisas snabbt efter förlossningen till sitt arbete. Den första tiden med barnet blir alltså en ensam, snudd på klaustrofobisk upplevelse. Kroppen värker, tvivlen växer, barnet skriker, utmattningen är gränslös – ändå måste barnet ammas, bytas på, vyssjas. Hemmets fyra väggar tränger sig på, minnen från det förflutna gör sig påminda och vem är egentligen den märklige grannen Peter med syrgastanken som insisterar på att komma på besök? Molnar viker aldrig med blicken från den kroppsliga chock och sipprande sörja som en förlossning innebär eller de fullkomligt bisarra tankar en nyförlöst kvinna kan drabbas av. Bildspråket är vackert och drastiskt, en bebis kan ha tulpanens tunga huvud eller liknas vid en glänsande färsk kycklingkropp som snart ska styckas. Man förstår att Molnar förstår att det är litteratur hon skriver, varken loggbok eller dagbok: här får overklighetens lungsjuka män, spindlar, och dragspelsmusik tränga in och göra verkligheten verkligare – det är så uppfriskande att hon tar sig an sitt ämne på det sättet. Det gör i sin tur att man förlåter romanens lätta dragning åt den Netflixartade dramaturgi som dagens samtidslitteratur blivit så impregnerad av – alltså den litterära motsvarigheten till tv-seriernas många sekvenser med ”förklarande återblickar”, ”dröjande närbilder” av ”målande detaljer”; en stil som låter läsaren se framför sig hur romanfigurernas gester skulle utföras av skådespelare i en framtida filmatisering. En liten invändning kan också riktas mot den smått koketta retorik som hos Molnar visserligen är i det mildaste laget men i övrigt verkar inbyggd i erfarenhetsgenren som sådan, och som kan sammanfattas i frågan: varför har ingen annan skrivit om det jag skriver om? Det är kanske sant (som Molnar påstår) att hela världslitteraturen är renons på beskrivningar av blöjbyten eller de förtärande tomma timmar där man bara sitter och håller ett sovande eller skrikande barn i famnen.  Men måste det påstås? Räcker det inte med att bara skapa det som inte finns? Författare som själva framhåller sin egen betydelse är en olat",
+  "keyword": "mjölkbaren",
+  "target_text": "Recension: Szilvia Molnars Mjölkbaren är riktigt bra",
+  "newsroom": "SVD"
 }
 ```
 
@@ -1273,9 +1273,9 @@ euroeval --model <model-id> --dataset svd-seo-title
 ### IFEval-sv
 
 This dataset was published [here](https://huggingface.co/datasets/LumiOpen/ifeval_mt)
-and is a translation of the English IFEval dataset, which was published in [this
-paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
-combination of one or more of 25 different constraints. The dataset was machine
+and is a translation of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each
+with a combination of one or more of 25 different constraints. The dataset was machine
 translated with DeepL and manually reviewed and corrected by native speakers.
 
 We use the original dataset as the test split, and do not include the other splits, as
@@ -1286,61 +1286,51 @@ Here are a few examples from the test split:
 
 ```json
 {
-    "text": "Förklara för mig hur man cyklar som om jag vore ett barn. Inkludera inte heller nyckelorden \"långsam\", \"som\" och \"barn\".",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:forbidden_words",
-            "language:response_language"
-        ],
-        "kwargs": [
-            {
-                "forbidden_words": [
-                    "långsam",
-                    "som",
-                    "barn"
-                ],
-            },
-            {
-                "language": "sv"
-            }
-        ]
-    }
+  "text": "Förklara för mig hur man cyklar som om jag vore ett barn. Inkludera inte heller nyckelorden \"långsam\", \"som\" och \"barn\".",
+  "target_text": {
+    "instruction_id_list": ["keywords:forbidden_words", "language:response_language"],
+    "kwargs": [
+      {
+        "forbidden_words": ["långsam", "som", "barn"]
+      },
+      {
+        "language": "sv"
+      }
+    ]
+  }
 }
 ```
 
-```json
+````json
 {
-    "text": "Vilka är fördelarna och nackdelarna med att ha övernaturliga krafter? Gör det kort. Packa in hela utdata i JSON-format. Du kan använda markdown-ticks som ```.",
-    "target_text": {
-        "instruction_id_list": [
-            "detectable_format:json_format",
-            "language:response_language"
-        ],
-        "kwargs": [
-            {},
-            {
-                "language": "sv"
-            }
-        ]
-    }
+  "text": "Vilka är fördelarna och nackdelarna med att ha övernaturliga krafter? Gör det kort. Packa in hela utdata i JSON-format. Du kan använda markdown-ticks som ```.",
+  "target_text": {
+    "instruction_id_list": [
+      "detectable_format:json_format",
+      "language:response_language"
+    ],
+    "kwargs": [
+      {},
+      {
+        "language": "sv"
+      }
+    ]
+  }
 }
-```
+````
 
 ```json
 {
-    "text": "Skriv en gåta om Camilla utan att använda kommatecken.",
-    "target_text": {
-        "instruction_id_list": [
-            "punctuation:no_comma",
-            "language:response_language"
-        ],
-        "kwargs": [
-            {},
-            {
-                "language": "sv"
-            }
-        ]
-    }
+  "text": "Skriv en gåta om Camilla utan att använda kommatecken.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma", "language:response_language"],
+    "kwargs": [
+      {},
+      {
+        "language": "sv"
+      }
+    ]
+  }
 }
 ```
 
@@ -1368,10 +1358,10 @@ euroeval --model <model-id> --dataset ifeval-sv
 
 ### ValEU-sv
 
-This dataset is the official Swedish version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official Swedish version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU
@@ -1457,93 +1447,80 @@ the first phrase of each sentence to avoid creating correct polar question synta
 The original dataset consists of 11,485 samples derived from the
 [UD_Swedish-Talbanken](https://github.com/UniversalDependencies/UD_Swedish-Talbanken),
 [UD_Swedish-LinES](https://github.com/UniversalDependencies/UD_Swedish-LinES) and
-[UD_Swedish-PUD](https://github.com/UniversalDependencies/UD_Swedish-PUD) treebanks.
-We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
+[UD_Swedish-PUD](https://github.com/UniversalDependencies/UD_Swedish-PUD) treebanks. We
+use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
 respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": [
-        "mörkt",
-        "regn",
-        "på",
-        "eftermiddagen",
-        "i",
-        "london",
-        "när",
-        "planet",
-        "startade",
-        "flygplatsen",
-        "i",
-        "rom",
-        "ett",
-        "väldigt",
-        "surögt",
-        "skyltfönster",
-        "blanka",
-        "flödiga",
-        "färger",
-        "genom",
-        "regnet"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+  "tokens": [
+    "mörkt",
+    "regn",
+    "på",
+    "eftermiddagen",
+    "i",
+    "london",
+    "när",
+    "planet",
+    "startade",
+    "flygplatsen",
+    "i",
+    "rom",
+    "ett",
+    "väldigt",
+    "surögt",
+    "skyltfönster",
+    "blanka",
+    "flödiga",
+    "färger",
+    "genom",
+    "regnet"
+  ],
+  "labels": [
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O"
+  ]
 }
 ```
 
 ```json
 {
-    "tokens": [
-        "de",
-        "flesta",
-        "bilar",
-        "i",
-        "dag",
-        "redan",
-        "är",
-        "från",
-        "fabriken",
-        "utrustade",
-        "med",
-        "radialdäck"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "B-ERR",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+  "tokens": [
+    "de",
+    "flesta",
+    "bilar",
+    "i",
+    "dag",
+    "redan",
+    "är",
+    "från",
+    "fabriken",
+    "utrustade",
+    "med",
+    "radialdäck"
+  ],
+  "labels": ["O", "O", "O", "O", "O", "O", "B-ERR", "O", "O", "O", "O", "O"]
 }
 ```
 
@@ -1580,4 +1557,150 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset gerlangmod-sv
+```
+
+## Logical Reasoning
+
+### Unofficial: ZebraPuzzleEasy-sv
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "En rad med hus är numrerade från 1 till 2 från vänster till höger.\n\nI varje hus bor en person med unika egenskaper i var och en av följande kategorier:\n\nNationaliteter: Nederländerna och Sverige.\nHusdjur: snigel och zebra.\nFavoritfrukter: smultron och svartvinbär.\n\nDessutom vet vi följande:\n\n\n\n1. Personen som älskar svartvinbär vet att gurka är ett bär.\n2. Personen som älskar smultron bor bredvid personen med ett husdjur som är gammalt för sin sort.\n3. Neder­ländaren bor till höger om zebraägaren.\n4. Zebraägaren bor bredvid personen som tycker att den näst bästa frukten är mango.\n5. Sniglar är blötdjur.\n6. Personen med marsvin spelar datorspel.\n7. Svensken gillar inte svartvinbär.",
+  "target_text": {
+    "object_1": ["Sverige", "zebra", "smultron"],
+    "object_2": ["Nederländerna", "snigel", "svartvinbär"]
+  }
+}
+```
+
+```json
+{
+  "text": "En rad med hus är numrerade från 1 till 2 från vänster till höger.\n\nI varje hus bor en person med unika egenskaper i var och en av följande kategorier:\n\nJobb: butiksbiträde och polis.\nDrycker: smoothie och te.\nHobbyer: brädspel och virkning.\n\nDessutom vet vi följande:\n\n\n\n1. Smoothiedrickaren bor till vänster om personen som spelar brädspel.\n2. Polisen dricker inte te.\n3. Smoothiedrickaren har inte en kaktus.\n4. Personen med ett husdjur som är gammalt för sin sort bär glasögon.\n5. Personen som spelar brädspel vet att kaffe innehåller koffein.\n6. Det finns många bilar på vägen.\n7. Butiksbiträdet är god vän med personen som älskar fysik.",
+  "target_text": {
+    "object_1": ["polis", "smoothie", "virkning"],
+    "object_2": ["butiksbiträde", "te", "brädspel"]
+  }
+}
+```
+
+```json
+{
+  "text": "En rad med hus är numrerade från 1 till 2 från vänster till höger.\n\nI varje hus bor en person med unika egenskaper i var och en av följande kategorier:\n\nDrycker: kaffe och te.\nHobbyer: handboll och klättring.\nFavoritfrukter: banan och äpple.\n\nDessutom vet vi följande:\n\n\n\n1. Personen som älskar äpplen är god vän med personen med ett husdjur som är gammalt för sin sort.\n2. Tedrickaren bor till höger om personen som älskar bananer.\n3. Personen som klättrar är god vän med personen som inte äger en kaktus.\n4. Sniglar är blötdjur.\n5. Personen med glasögon spelar gitarr.\n6. Flera av husen har gröna dörrar.\n7. Tedrickaren bor till höger om personen som spelar handboll.",
+  "target_text": {
+    "object_1": ["kaffe", "handboll", "banan"],
+    "object_2": ["te", "klättring", "äpple"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Här är ett pussel:
+  <riddle>
+  {text}
+  </riddle>
+  Vem har vilka egenskaper och bor i vilket hus? Vänligen ange ditt svar som en JSON-ordbok. Varje nyckel ska vara object_X där X är husnumret. Varje värde ska vara en lista med egenskaperna från kategorierna ovan som tillhör personen i hus nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-sv
+```
+
+### Unofficial: ZebraPuzzleHard-sv
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "En rad med hus är numrerade från 1 till 4 från vänster till höger.\n\nI varje hus bor en person med unika egenskaper i var och en av följande kategorier:\n\nNationaliteter: Island, Italien, Nederländerna och Storbritannien.\nHusdjur: kanin, katt, undulat och vandrande pinne.\nDrycker: juice, mjölk, smoothie och varm choklad.\nFavoritboksgenrer: deckare, kärleksromaner, poesi och science fiction.\nHobbyer: handboll, klättring, målning och tennis.\n\nDessutom vet vi följande:\n\n\n\n1. Italienaren bor till höger om kaninägaren.\n2. Neder­ländaren bor inte bredvid ägaren av en vandrande pinne, och de är inte samma person.\n3. Kaninägaren vet att gurka är ett bär.\n4. Kaninägaren bor bredvid personen som målar.\n5. Det finns ett hus mellan personen som läser kärleksromaner och personen som läser deckare.\n6. Smoothiedrickaren bor precis till vänster om personen som spelar tennis.\n7. Personen som spelar handboll har en tatuering.\n8. Personen som dricker varm choklad bor till höger om poesiläsaren.\n9. Neder­ländaren bor precis till höger om juicedrickaren.\n10. Personen som läser kärleksromaner bor precis till vänster om personen som spelar handboll.\n11. Det finns ett hus mellan neder­ländaren och kaninägaren.\n12. Britten bor precis till vänster om undulatägaren.\n13. Kattägaren har varit i Kanada.\n14. Personen som läser science fiction klättrar.\n15. Personen som tittar på backhoppning seglar ofta.\n16. Personen med cykel bor inte i hus nummer 4.",
+  "target_text": {
+    "object_1": ["Island", "vandrande pinne", "mjölk", "kärleksromaner", "målning"],
+    "object_2": ["Storbritannien", "kanin", "smoothie", "poesi", "handboll"],
+    "object_3": ["Italien", "undulat", "juice", "deckare", "tennis"],
+    "object_4": [
+      "Nederländerna",
+      "katt",
+      "varm choklad",
+      "science fiction",
+      "klättring"
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "En rad med hus är numrerade från 1 till 4 från vänster till höger.\n\nI varje hus bor en person med unika egenskaper i var och en av följande kategorier:\n\nHusdjur: hund, kanin, katt och vandrande pinne.\nDrycker: juice, kaffe, mjölk och varm choklad.\nFavoritboksgenrer: fantasy, kärleksromaner, poesi och science fiction.\nHobbyer: handboll, klättring, målning och virkning.\nFavoritfrukter: apelsin, smultron, svartvinbär och äpple.\n\nDessutom vet vi följande:\n\n\n\n1. Kaninägaren bor bredvid personen som målar.\n2. Personen som läser science fiction älskar apelsiner.\n3. Flera av husen har gröna dörrar.\n4. Ägaren av en vandrande pinne bor precis till vänster om hundägaren.\n5. Juicedrickaren målar inte.\n6. Mjölkdrickaren bor bredvid personen som spelar datorspel.\n7. Ägaren av en vandrande pinne bor inte mellan kaffedrickaren och poesiläsaren, och de är tre olika personer.\n8. Juicedrickaren bor bredvid personen som klättrar.\n9. Ägaren av en vandrande pinne älskar apelsiner.\n10. Mjölkdrickaren och personen som älskar smultron bor med 2 hus mellan sig.\n11. Personen som spelar handboll bor till höger om personen som älskar svartvinbär.\n12. Personen som tittar på backhoppning har ett husdjur som är gammalt för sin sort.\n13. Personen som läser fantasy bor inte bredvid personen som älskar apelsiner, och de är inte samma person.\n14. Mjölkdrickaren bor till höger om personen som virkar.\n15. Personen med rött hår har en masterexamen i matematik.\n16. Poesiläsaren bor precis till höger om personen som klättrar.\n17. Personen med en syster har en tatuering.",
+  "target_text": {
+    "object_1": ["katt", "kaffe", "fantasy", "klättring", "smultron"],
+    "object_2": ["kanin", "juice", "poesi", "virkning", "svartvinbär"],
+    "object_3": [
+      "vandrande pinne",
+      "varm choklad",
+      "science fiction",
+      "målning",
+      "apelsin"
+    ],
+    "object_4": ["hund", "mjölk", "kärleksromaner", "handboll", "äpple"]
+  }
+}
+```
+
+```json
+{
+  "text": "En rad med hus är numrerade från 1 till 4 från vänster till höger.\n\nI varje hus bor en person med unika egenskaper i var och en av följande kategorier:\n\nNationaliteter: Italien, Nederländerna, Storbritannien och Sverige.\nDrycker: kaffe, läsk, mjölk och varm choklad.\nFavoritboksgenrer: facklitteratur, kärleksromaner, poesi och skräck.\nHobbyer: fotboll, handboll, tennis och virkning.\nFavoritfrukter: jordgubbe, päron, smultron och svartvinbär.\n\nDessutom vet vi följande:\n\n\n\n1. Kaffedrickaren älskar svartvinbär.\n2. Personen som virkar bor inte bredvid personen som älskar smultron, och de är inte samma person.\n3. Det finns ett hus mellan svensken och personen som dricker varm choklad.\n4. Italienaren dricker läsk.\n5. Kaffedrickaren bor inte mellan personen som läser facklitteratur bor här och personen som spelar fotboll, och de är tre olika personer.\n6. Det är roligt att lösa pussel.\n7. Neder­ländaren bor precis till höger om personen som läser kärleksromaner.\n8. Neder­ländaren och personen som älskar svartvinbär bor med 2 hus mellan sig.\n9. Poesiläsaren och personen som älskar jordgubbar bor med 2 hus mellan sig.\n10. Personen som läser facklitteratur bor här bor mellan läskdrickaren och personen som spelar handboll.\n11. Personen som älskar päron är god vän med personen med tatuering.\n12. Personen som spelar datorspel bor inte i hus nummer 3.\n13. Personen med marsvin bor i hus nummer 4.\n14. Kaffedrickaren är god vän med personen med en syster.",
+  "target_text": {
+    "object_1": ["Storbritannien", "kaffe", "poesi", "handboll", "svartvinbär"],
+    "object_2": ["Sverige", "mjölk", "facklitteratur", "tennis", "smultron"],
+    "object_3": ["Italien", "läsk", "kärleksromaner", "fotboll", "päron"],
+    "object_4": ["Nederländerna", "varm choklad", "skräck", "virkning", "jordgubbe"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Här är ett pussel:
+  <riddle>
+  {text}
+  </riddle>
+  Vem har vilka egenskaper och bor i vilket hus? Vänligen ange ditt svar som en JSON-ordbok. Varje nyckel ska vara object_X där X är husnumret. Varje värde ska vara en lista med egenskaperna från kategorierna ovan som tillhör personen i hus nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-sv
 ```

@@ -1,8 +1,8 @@
 # 🇳🇱 Dutch
 
-This is an overview of all the datasets used in the Dutch part of EuroEval. The
-datasets are grouped by their task - see the [task overview](/tasks) for more
-information about what these constitute.
+This is an overview of all the datasets used in the Dutch part of EuroEval. The datasets
+are grouped by their task - see the [task overview](/tasks) for more information about
+what these constitute.
 
 ## Sentiment Classification
 
@@ -68,7 +68,6 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
-
   - `positive` ➡️ `positief`
   - `negative` ➡️ `negatief`
 
@@ -141,7 +140,6 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
-
   - `B-PER` ➡️ `persoon`
   - `I-PER` ➡️ `persoon`
   - `B-LOC` ➡️ `locatie`
@@ -162,13 +160,13 @@ euroeval --model <model-id> --dataset conll-nl
 ### ScaLA-nl
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Dutch Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Dutch-Alpino/) by assuming that
-the documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Dutch Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Dutch-Alpino/)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original dataset consists of 13,603 samples, from which we use 1,024 / 256 / 2,048
 samples for training, validation and testing, respectively (so 3,328 samples used in
@@ -224,7 +222,6 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
-
   - `correct` ➡️ `ja`
   - `incorrect` ➡️ `nee`
 
@@ -276,10 +273,10 @@ Here are a few examples from the training split:
 This dataset is a Dutch translation of the English
 [SICK (Sentences Involving Compositional Knowledge)](https://marcobaroni.org/composes/sick.html)
 dataset, published in the repository [sick_nl](https://github.com/gijswijnholds/sick_nl)
-and described in the paper [SICK-NL: A Dataset for Dutch Natural Language Inference](https://aclanthology.org/2021.eacl-main.126/)
-by Gijs Wijnholds and Michael Moortgat.
-Each sample pairs two Dutch sentences and asks whether the second
-sentence follows from the first.
+and described in the paper
+[SICK-NL: A Dataset for Dutch Natural Language Inference](https://aclanthology.org/2021.eacl-main.126/)
+by Gijs Wijnholds and Michael Moortgat. Each sample pairs two Dutch sentences and asks
+whether the second sentence follows from the first.
 
 The original dataset consists of 4,439 / 495 / 4,906 samples for training, validation
 and testing, respectively. We use a 1,024 / 256 / 1,024 split for training, validation
@@ -350,9 +347,9 @@ euroeval --model <model-id> --dataset sick-nl
 
 ### SQuAD-nl
 
-This dataset is published
-[here](https://huggingface.co/datasets/GroNLP/squad-nl-v2.0) and is a machine translated
-dataset of the English [SQuAD](https://aclanthology.org/D16-1264/) and
+This dataset is published [here](https://huggingface.co/datasets/GroNLP/squad-nl-v2.0)
+and is a machine translated dataset of the English
+[SQuAD](https://aclanthology.org/D16-1264/) and
 [XQuAD](https://aclanthology.org/2020.acl-main.421/) datasets, created for the
 Dutch-language [DUMB](https://dumbench.nl/) benchmark. Google Translate was used to
 translate the original datasets to Dutch. The test data
@@ -361,6 +358,14 @@ students as part of their thesis work.
 
 The original SQuAD and XQuAD datasets are based on English Wikipedia articles and the
 questions and answers are written by crowdworkers.
+
+The original dataset consists of 130,319 / 10,174 / 1,699 samples for training,
+validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
+validation and testing, respectively (so 3,328 samples used in total), keeping only
+samples whose answer occurs in the context. The training and validation splits are
+subsets of the original training and validation splits. As the original test split is
+smaller than our desired test size, the test split is sampled from the original test
+split together with the validation samples not used in our validation split.
 
 Here are a few examples from the training split:
 
@@ -589,11 +594,11 @@ euroeval --model <model-id> --dataset multi-wiki-qa-nl
 
 ### MMLU-nl
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Dutch was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Dutch was done by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -606,21 +611,21 @@ Here are a few examples from the training split:
 ```json
 {
   "text": "Polarisatie is een eigenschap van\nAntwoordopties:\na. transversale golven.\nb. longitudinale golven.\nc. alle golven.\nd. Geen van deze.",
-  "label": "a",
+  "label": "a"
 }
 ```
 
 ```json
 {
   "text": "Welk internetbedrijf gaat onder de afkorting AOL?\nAntwoordopties:\na. Amerika Over Lijnen\nb. Amerika Online\nc. Amerikanen op Links\nd. Amerikanen op LOR",
-  "label": "b",
+  "label": "b"
 }
 ```
 
 ```json
 {
   "text": "Deze vraag verwijst naar de volgende informatie. Lees het volgende fragment. Nooit waren talenten van het hoogste genie van de meest verheven soort overvloediger geschonken aan een mens. Het genie van Napoleon is verbazingwekkend. Alle takken van menselijke kennis leken even vertrouwd voor zijn gigantische geest. Zijn conversaties op St. Helena, verspreid over de talloze en omvangrijke herdenkingsstukken van degenen die ze verzamelden, zijn gevuld met de grootste interesse. Tijdens de lange doodsstrijd van zijn gevangenschap en zijn dood, sprak hij met volledige vrijheid over de gebeurtenissen van zijn wonderbaarlijke carri\u00e8re, en over al die onderwerpen van moralen, politiek en religie, die het meest diep de welvaart van ons ras betreffen. Er is geen geest die niet zal worden versterkt door bekendheid met deze diepzinnige gedachten, uitgedrukt met zoveel gloed van gevoel en energie van dictie. \u2014 John S. C. Abbott, historicus, Napoleon op St. Helena, 1855 Napoleon hielp de Franse Revolutie tot een internationale beweging te maken in de gebieden die hij veroverde.\nAntwoordopties:\na. Door een universele valuta op basis van de Franse frank op te leggen\nb. Door de brute onderdrukking van guerrilla-verzet\nc. Door het afschaffen van feodalisme en herenboerderijen\nd. Door het aanmoedigen van het gebruik van Frans als universele taal",
-  "label": "c",
+  "label": "c"
 }
 ```
 
@@ -668,10 +673,10 @@ euroeval --model <model-id> --dataset mmlu-nl
 
 ### Unofficial: ARC-nl
 
-This dataset is a machine translated version of the English [ARC
-dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school science
-questions. The translation to Dutch was done by the University of Oregon as part of
-[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[ARC dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school
+science questions. The translation to Dutch was done by the University of Oregon as part
+of [this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 1,110 / 297 / 1,170 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for training,
@@ -745,14 +750,14 @@ euroeval --model <model-id> --dataset arc-nl
 
 ### Unofficial: Dutch Proverbs
 
-This dataset contains scenarios in Dutch with two accompanying proverbs: one that
-fits the scenario and one that fits less or not at all.
-The dataset was created for the [GPT-NL](https://gpt-nl.nl/) project, _Work
-Package_ Evaluation \& Benchmarking. All samples were created manually and have been reviewed.
+This dataset contains scenarios in Dutch with two accompanying proverbs: one that fits
+the scenario and one that fits less or not at all. The dataset was created for the
+[GPT-NL](https://gpt-nl.nl/) project, _Work Package_ Evaluation \& Benchmarking. All
+samples were created manually and have been reviewed.
 
-The dataset consists of 32 / 0 / 98 samples for training,
-validation and testing, respectively. This means the dataset is not suitable for
-encoder models that need to be trained on the dataset.
+The dataset consists of 32 / 0 / 98 samples for training, validation and testing,
+respectively. This means the dataset is not suitable for encoder models that need to be
+trained on the dataset.
 
 Here are a few examples from the training split:
 
@@ -825,25 +830,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Je zit op kot (studentenkamer) met zes medestudenten. Omdat jullie de fietsen tegen de gevel van het huis plaatsen, zetten jullie de vuilniszakken tegen de gevel van de buurman, waar altijd plaats is. Op een morgen gebeurt dit weer. De buurman komt woedend naar buiten en hij scheldt jullie uit dat jullie grote egoïsten zijn. Welke reactie zal het conflict niet doen escaleren?\nAntwoordopties:\na. 'Sorry, we gingen er misschien te gemakkelijk van uit dat dit u niet hinderde.'\nb. 'Wie dat zegt? We hebben de voorbije maanden nooit een vriendelijk woord gekregen.'\nc. 'Wij egoïsten? Mochten er meer parkeerplaatsen zijn voor fietsen, dan was het opgelost.'\nd. 'Maak u toch niet zo druk. Het zijn maar vuilniszakken hoor, geen bompakketten.'",
-    "label": "a",
-    "subject": "Journalism, media studies, and communication"
+  "text": "Je zit op kot (studentenkamer) met zes medestudenten. Omdat jullie de fietsen tegen de gevel van het huis plaatsen, zetten jullie de vuilniszakken tegen de gevel van de buurman, waar altijd plaats is. Op een morgen gebeurt dit weer. De buurman komt woedend naar buiten en hij scheldt jullie uit dat jullie grote egoïsten zijn. Welke reactie zal het conflict niet doen escaleren?\nAntwoordopties:\na. 'Sorry, we gingen er misschien te gemakkelijk van uit dat dit u niet hinderde.'\nb. 'Wie dat zegt? We hebben de voorbije maanden nooit een vriendelijk woord gekregen.'\nc. 'Wij egoïsten? Mochten er meer parkeerplaatsen zijn voor fietsen, dan was het opgelost.'\nd. 'Maak u toch niet zo druk. Het zijn maar vuilniszakken hoor, geen bompakketten.'",
+  "label": "a",
+  "subject": "Journalism, media studies, and communication"
 }
 ```
 
 ```json
 {
-    "text": "Bij de Vrede van Versailles werd besloten dat Duitsland moest demilitariseren. Welke reden voor deze demilitarisatie is juist?\nAntwoordopties:\na. Duitsland moest economisch sterker worden.\nb. Frankrijk wilde geen Duits leger aan zijn grens hebben.\nc. Het Duitse leger was na de Eerste Wereldoorlog te klein geworden.\nd. Het Franse leger moest even sterk zijn als het Duitse leger.",
-    "label": "b",
-    "subject": "History"
+  "text": "Bij de Vrede van Versailles werd besloten dat Duitsland moest demilitariseren. Welke reden voor deze demilitarisatie is juist?\nAntwoordopties:\na. Duitsland moest economisch sterker worden.\nb. Frankrijk wilde geen Duits leger aan zijn grens hebben.\nc. Het Duitse leger was na de Eerste Wereldoorlog te klein geworden.\nd. Het Franse leger moest even sterk zijn als het Duitse leger.",
+  "label": "b",
+  "subject": "History"
 }
 ```
 
 ```json
 {
-    "text": "In welke productiesector werkt een tandarts?\nAntwoordopties:\na. in de primaire sector\nb. in de secundaire sector\nc. in de tertiaire sector\nd. in de quartaire sector",
-    "label": "c",
-    "subject": "Economics"
+  "text": "In welke productiesector werkt een tandarts?\nAntwoordopties:\na. in de primaire sector\nb. in de secundaire sector\nc. in de tertiaire sector\nd. in de quartaire sector",
+  "label": "c",
+  "subject": "Economics"
 }
 ```
 
@@ -886,30 +891,30 @@ questions are separately sourced and designed to target locally relevant topics 
 Dutch-speaking populations.
 
 We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer as
-the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
-question. We create a 16 / 234 split for training and testing, respectively.
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Wanneer maakten Twan Huys en Mark Rutte een Nederlandse versie van het Correspondents' Dinner, in de Beurs van Berlage?\nAntwoordopties:\na. 10-02-2024\nb. 15 maart 2017\nc. 5 november 2018\nd. 22 januari 2015",
-    "label": "a"
+  "text": "Wanneer maakten Twan Huys en Mark Rutte een Nederlandse versie van het Correspondents' Dinner, in de Beurs van Berlage?\nAntwoordopties:\na. 10-02-2024\nb. 15 maart 2017\nc. 5 november 2018\nd. 22 januari 2015",
+  "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Bij welke zender maakte Patrick Martens het programma Supernick tussen 2007 en 2011?\nAntwoordopties:\na. AVROTROS\nb. Nickelodeon\nc. RTL 4\nd. SBS6",
-    "label": "b"
+  "text": "Bij welke zender maakte Patrick Martens het programma Supernick tussen 2007 en 2011?\nAntwoordopties:\na. AVROTROS\nb. Nickelodeon\nc. RTL 4\nd. SBS6",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Hoeveel doelpunten maakte Youri Mulder in zijn laatste seizoen voor FC Twente?\nAntwoordopties:\na. vier\nb. vijf\nc. Drie\nd. twee",
-    "label": "c"
+  "text": "Hoeveel doelpunten maakte Youri Mulder in zijn laatste seizoen voor FC Twente?\nAntwoordopties:\na. vier\nb. vijf\nc. Drie\nd. twee",
+  "label": "c"
 }
 ```
 
@@ -948,11 +953,11 @@ euroeval --model <model-id> --dataset multiloko-nl
 
 ### HellaSwag-nl
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/). The original dataset was based on both
-video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
-was translated by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
+on both video descriptions from ActivityNet as well as how-to articles from WikiHow. The
+dataset was translated by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 9,310 samples. We use an 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).
@@ -962,21 +967,21 @@ Here are a few examples from the training split:
 ```json
 {
   "text": "[header] Hoe maak je organische babydoekjes? [title] Kies een rol organische papieren handdoeken. [step] Deze dienen als de eigenlijke doekjes. Experimenteer met verschillende merken en texturen totdat je degene vindt die het beste werkt voor de huid van je baby.\nAntwoordopties:\na. Het is belangrijk om organische papieren handdoeken te gebruiken, omdat niet-organische papieren handdoeken bleekmiddel, verf en andere chemicali\u00ebn kunnen bevatten die vaak worden gebruikt bij de productie van papierproducten. [substeps] Over het algemeen maken bekende merken van papieren handdoeken betere doekjes dan de goedkopere, generieke versies.\nb. Je kunt een papieren handdoek gebruiken die gebruikt wordt voor luierdoekjes, maar je kunt dezelfde ook gebruiken voor andere doekjes. [substeps] Je kunt drie- of vierzijdige doekjes gebruiken om je te helpen bij het mengen van alle melk, yoghurt en water die je in \u00e9\u00e9n container hebt gemengd.\nc. Als je zelfgemaakte lotion gebruikt, gebruik dan geen papieren handdoeken; deze moeten ook van niet-papier zijn. Rol een grote rol kleine papieren handdoeken uit en houd rekening met de algehele geur van de pad.\nd. [substeps] Spreid het droge doekje uit over het hele oppervlak van de huid van je baby en vermijd contact met het droge doekje (tondeuse, kam of puimsteen). [title] Plaats de fles boven een kom met warm water gedurende 10 minuten.",
-  "label": "a",
+  "label": "a"
 }
 ```
 
 ```json
 {
   "text": "[header] Hoe maak je een jurk zonder patroon [title] Koop een jurkmodel. [step] Je hebt een verstelbaar jurkmodel nodig om ervoor te zorgen dat je jurkontwerpen op exact de maat worden gemaakt die je nodig hebt. Verstelbare jurkmodellen zijn verkrijgbaar voor ongeveer $ 250 nieuw.\nAntwoordopties:\na. [substeps] Je kunt een schoenmakersstof, bedrukte binnenbekleding of bedrukt behang gebruiken om je jurkmodel te maken. Kies het patroon en knip het patroon zelf uit.\nb. [title] Stel je jurkmodel af op de hoogte-, taille- en torso-maten die je gaat gebruiken voor je prototypejurk. [title] Maak een schets van de jurk die je wilt maken.\nc. Als je van plan bent om strapless jurken te dragen, wil je misschien een jurkmodel kopen met een grotere voor-achter-maat. [title] Plaats je jurkmodel op de tafel.\nd. Je kunt ook een jurkmodel in de supermarkt kopen. [substeps] Als je een strapless jurk wilt, kies dan voor een mouwloze jurk.",
-  "label": "b",
+  "label": "b"
 }
 ```
 
 ```json
 {
   "text": "[header] Hoe citrusvruchten te raspen [title] Was de citrusvrucht. [step] Voordat je begint, spoel de vrucht af onder stromend koel water en wrijf het vervolgens zachtjes schoon met een schone doek of papieren handdoek. Een lichte spoeling helpt bij het verwijderen van het natuurlijke wasachtige residu aan de buitenkant van de vrucht.\nAntwoordopties:\na. [substeps] Zorg ervoor dat de vrucht volledig is afgespoeld voordat je doorgaat naar de volgende stap. De meeste citrusvruchten hebben het beschadigde deel verwijderd, maar met het middenstuk kun je afwisselen tussen het opfrissen van de schil met water en het verwijderen van de schil.\nb. [substeps] Het werk kan het beste ook laat in de avond worden gedaan, nadat de suiker is verdampt. [title] Maak een zure citrus door een kom met zout in het water te dompelen.\nc. Je kunt de citrusvrucht ook kort laten weken in een ondiepe kom met water. [substeps] Het is belangrijk om citrusvruchten altijd te wassen wanneer je ze raspt, omdat de buitenkant het deel is dat daadwerkelijk in je voedsel terechtkomt.\nd. [title] Doe het mengsel van rasp in een druppelaar. [step] Commercieel verkrijgbare rasp komt van de schil van de citrusboom.",
-  "label": "c",
+  "label": "c"
 }
 ```
 
@@ -1031,13 +1036,13 @@ It is a Causal Reasoning dataset based on the English-language
 [Choice of Plausible Alternatives (COPA)](https://web.archive.org/web/20240402061922/https://people.ict.usc.edu/~gordon/copa.html)
 dataset under the BSD 2-Clause License.
 
-COPA-NL was translated to Dutch using Google Translate and manually corrected by
-native Dutch speakers.
+COPA-NL was translated to Dutch using Google Translate and manually corrected by native
+Dutch speakers.
 
 The dataset consists of two different types of challenges. In each case, a premise is
-given together with two choices. For about half of the dataset, the question is
-which of those two choices is a plausible _effect_ of the premise. For the other
-half, the question is which of the two choices is a plausible _cause_ of the premise.
+given together with two choices. For about half of the dataset, the question is which of
+those two choices is a plausible _effect_ of the premise. For the other half, the
+question is which of the two choices is a plausible _cause_ of the premise.
 
 The original dataset consists of 400 / 100 / 500 samples for training, validation and
 testing, respectively. We keep the same splits for EuroEval.
@@ -1090,13 +1095,13 @@ euroeval --model <model-id> --dataset copa-nl
 
 ### Unofficial: GoldenSwag-nl
 
-This dataset is a filtered and machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
-ActivityNet as well as how-to articles from WikiHow. The machine translated version was
-published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
-DeepL, and the filtering was published in [this
-paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
-samples.
+This dataset is a filtered and machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video
+descriptions from ActivityNet as well as how-to articles from WikiHow. The machine
+translated version was published in
+[this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and
+the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825),
+which resulted in higher quality samples.
 
 The original full dataset consists of 1530 / 1530 samples for training and validation,
 respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
@@ -1170,8 +1175,8 @@ euroeval --model <model-id> --dataset goldenswag-nl
 ### Unofficial: Winogrande-nl
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -1316,16 +1321,17 @@ of the English BBQ dataset, extended to Dutch, Spanish, and Turkish, which measu
 stereotypes commonly held across these languages. MBBQ-NL only contains the Dutch part
 of this dataset.
 
-- The paper, describing this dataset can be found [here](https://openreview.net/forum?id=X9yV4lFHt4)
+- The paper, describing this dataset can be found
+  [here](https://openreview.net/forum?id=X9yV4lFHt4)
 - The original data and code were published [here](https://github.com/Veranep/MBBQ)
-- The original Dutch data was sourced from [Amadeus99 on Huggingface](https://huggingface.co/datasets/Amadeus99/mbbq_nl).
+- The original Dutch data was sourced from
+  [Amadeus99 on Huggingface](https://huggingface.co/datasets/Amadeus99/mbbq_nl).
 
 The data contains only ambiguous examples, where the correct answer is not explicitly
 clear from the given context (the correct answer should in those cases be 'unknown').
 
-The original dataset doesn't have a dedicated train/validation/test split. We use a
-256 / 2,048 split for validation and testing, respectively (so 2,304 samples used in
-total).
+The original dataset doesn't have a dedicated train/validation/test split. We use a 256
+/ 2,048 split for validation and testing, respectively (so 2,304 samples used in total).
 
 Here are a few examples from the original dataset:
 
@@ -1405,8 +1411,8 @@ euroeval --model <model-id> --language nl --dataset mbbq-nl
 
 The [Duidelijke Taal dataset](http://hdl.handle.net/10032/tm-a2-y8) was created by
 Instituut voor de Nederlandse Taal and published in _Human Evaluation of Automated Text
-Simplification through Crowdsourcing_ [(Vandeghinste et al.,
-2025)](https://scholar.google.com/scholar?oi=bibs&cluster=2894378448414629586&btnI=1&hl=en).
+Simplification through Crowdsourcing_
+[(Vandeghinste et al., 2025)](https://scholar.google.com/scholar?oi=bibs&cluster=2894378448414629586&btnI=1&hl=en).
 It consists of crowd-sourced human evaluations of automated simplifications. The
 original dataset contains 1,071 sentence pairs with crowdsourced annotations. A
 [pre-split version](https://huggingface.co/datasets/GPT-NL/DuidelijkeTaal-v1.0-split) of
@@ -1414,8 +1420,8 @@ the dataset is used to ensure consistency and partially reduce the risk of data
 contamination.
 
 After running the filtering and splitting script (
-`scripts/dataset_creation/create_duidelijke_taal_nl.py`), the dataset
-contains 50 / 51 / 90 samples for training, validation and testing, respectively.
+`scripts/dataset_creation/create_duidelijke_taal_nl.py`), the dataset contains 50 / 51 /
+90 samples for training, validation and testing, respectively.
 
 Here are a few examples from the training split:
 
@@ -1475,10 +1481,10 @@ euroeval --model <model-id> --dataset duidelijke-taal
 
 ### ValEU-nl
 
-This dataset is the official Dutch version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official Dutch version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU
@@ -1571,69 +1577,42 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": [
-        "om",
-        "in",
-        "de",
-        "finale",
-        "te",
-        "raken",
-        "verslaat",
-        "ze",
-        "ex-us",
-        "open",
-        "winnares",
-        "svetlana",
-        "kuznetsova",
-        "6-3",
-        "6-1"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+  "tokens": [
+    "om",
+    "in",
+    "de",
+    "finale",
+    "te",
+    "raken",
+    "verslaat",
+    "ze",
+    "ex-us",
+    "open",
+    "winnares",
+    "svetlana",
+    "kuznetsova",
+    "6-3",
+    "6-1"
+  ],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": [
-        "de",
-        "musical",
-        "zowel",
-        "in",
-        "belgië",
-        "als",
-        "in",
-        "nederland",
-        "is",
-        "opgevoerd"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "B-ERR",
-        "O"
-    ]
+  "tokens": [
+    "de",
+    "musical",
+    "zowel",
+    "in",
+    "belgië",
+    "als",
+    "in",
+    "nederland",
+    "is",
+    "opgevoerd"
+  ],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "B-ERR", "O"]
 }
 ```
 
@@ -1670,4 +1649,138 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset gerlangmod-nl
+```
+
+## Logical Reasoning
+
+### Unofficial: ZebraPuzzleEasy-nl
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Een rij huizen is van links naar rechts genummerd van 1 tot 2.\n\nIn elk huis woont een persoon met unieke eigenschappen in elk van de volgende categorieën:\n\nBanen: politieagent en winkelbediende.\nHuisdier: hond en zebra.\nHobby's: klimmen en tennis.\n\nDaarnaast weten we het volgende:\n\n\n\n1. De winkelbediende is goede vrienden met de persoon met een tatoeage.\n2. De winkelbediende klimt niet.\n3. De politieagent weet dat haring een vis is.\n4. De winkelbediende woont op huisnummer 1.\n5. De zebraeigenaar tennist niet.\n6. De persoon heeft een masterdiploma in wiskunde woont niet op huisnummer 1.\n7. De persoon die naar schansspringen kijkt woont op huisnummer 2.\n8. Het is leuk om raadsels op te lossen.",
+  "target_text": {
+    "object_1": ["winkelbediende", "hond", "tennis"],
+    "object_2": ["politieagent", "zebra", "klimmen"]
+  }
+}
+```
+
+```json
+{
+  "text": "Een rij huizen is van links naar rechts genummerd van 1 tot 2.\n\nIn elk huis woont een persoon met unieke eigenschappen in elk van de volgende categorieën:\n\nDranken: frisdrank en thee.\nHobby's: haken en tennis.\nFavoriete fruitsoorten: banaan en peer.\n\nDaarnaast weten we het volgende:\n\n\n\n1. De persoon die tennist weet dat haring een vis is.\n2. De persoon die van peren houdt speelt computerspellen.\n3. De theedrinker zeilt vaak.\n4. De persoon die tennist woont rechts van de persoon die van bananen houdt.\n5. De persoon die haakt is goede vrienden met de persoon met een huisdier dat oud is voor zijn soort.\n6. De persoon die in Canada is geweest woont op huisnummer 1.\n7. De frisdrankdrinker woont links van de persoon die van peren houdt.",
+  "target_text": {
+    "object_1": ["frisdrank", "haken", "banaan"],
+    "object_2": ["thee", "tennis", "peer"]
+  }
+}
+```
+
+```json
+{
+  "text": "Een rij huizen is van links naar rechts genummerd van 1 tot 2.\n\nIn elk huis woont een persoon met unieke eigenschappen in elk van de volgende categorieën:\n\nDranken: chocolademelk en koffie.\nFavoriete boekgenres: krimi en non-fictie.\nHobby's: haken en handbal.\n\nDaarnaast weten we het volgende:\n\n\n\n1. De persoon die gitaar speelt zeilt vaak.\n2. De persoon die haakt woont niet op huisnummer 1.\n3. De koffiedrinker haakt.\n4. De persoon met een fiets heeft geen cactus.\n5. De persoon die naar schansspringen kijkt woont op huisnummer 1.\n6. De krimilezer weet dat een aantal huizen een groene deur hebben.\n7. De chocolademelkdrinker weet dat alle huizen aan de weg mooie tuinen hebben.\n8. De chocolademelkdrinker leest geen non-fictie.",
+  "target_text": {
+    "object_1": ["chocolademelk", "krimi", "handbal"],
+    "object_2": ["koffie", "non-fictie", "haken"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Hier is een raadsel:
+  <riddle>
+  {text}
+  </riddle>
+  Wie heeft welke eigenschappen en woont in welk huis? Geef je antwoord als een JSON-woordenboek. Elke sleutel moet object_X zijn waarbij X het huisnummer is. Elke waarde moet een lijst zijn van de eigenschappen uit de bovenstaande categorieën die behoren bij de persoon in huis nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-nl
+```
+
+### Unofficial: ZebraPuzzleHard-nl
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Een rij huizen is van links naar rechts genummerd van 1 tot 4.\n\nIn elk huis woont een persoon met unieke eigenschappen in elk van de volgende categorieën:\n\nNationaliteiten: Frankrijk, IJsland, Nederland en Zweden.\nBanen: bakker, minister, politieagent en winkelbediende.\nDranken: frisdrank, koffie, smoothie en thee.\nFavoriete boekgenres: horror, poëzie, romantiek en sciencefiction.\nFavoriete fruitsoorten: appel, banaan, bosaardbei en peer.\n\nDaarnaast weten we het volgende:\n\n\n\n1. De theedrinker en de persoon die van bosaardbeien houdt wonen met 2 huizen tussen zich.\n2. De winkelbediende woont links van de persoon die van appels houdt.\n3. Alle huizen hebben grote ramen.\n4. De bakker woont tussen de Zweed en de persoon die van bosaardbeien houdt.\n5. De smoothiedrinker weet dat alle huizen aan de weg mooie tuinen hebben.\n6. De bakker woont naast de persoon met een tatoeage.\n7. De minister woont niet tussen de politieagent en de persoon die sciencefiction leest, en het zijn drie verschillende personen.\n8. De Fransman woont direct rechts van de smoothiedrinker.\n9. De persoon die naar schansspringen kijkt is in Canada geweest.\n10. De horrorlezer woont direct links van de persoon die van bananen houdt.\n11. De IJslander woont links van de persoon die liefdesromans leest.\n12. De frisdrankdrinker woont naast de theedrinker.\n13. De persoon die liefdesromans leest weet dat er veel auto's op de weg zijn.\n14. De Nederlander woont links van de horrorlezer.\n15. De frisdrankdrinker woont tussen de Nederlander en de smoothiedrinker.\n16. De politieagent houdt van bosaardbeien.",
+  "target_text": {
+    "object_1": ["Nederland", "winkelbediende", "thee", "poëzie", "peer"],
+    "object_2": ["Zweden", "minister", "frisdrank", "horror", "appel"],
+    "object_3": ["IJsland", "bakker", "smoothie", "sciencefiction", "banaan"],
+    "object_4": ["Frankrijk", "politieagent", "koffie", "romantiek", "bosaardbei"]
+  }
+}
+```
+
+```json
+{
+  "text": "Een rij huizen is van links naar rechts genummerd van 1 tot 4.\n\nIn elk huis woont een persoon met unieke eigenschappen in elk van de volgende categorieën:\n\nNationaliteiten: Italië, Letland, Noorwegen en Zweden.\nHuisdier: kat, slak, wandelende tak en zebra.\nFavoriete boekgenres: fantasy, non-fictie, poëzie en sciencefiction.\nHobby's: bordspellen, haken, klimmen en schilderen.\nFavoriete fruitsoorten: appel, banaan, peer en sinaasappel.\n\nDaarnaast weten we het volgende:\n\n\n\n1. De fantasylezer woont naast de persoon die van bananen houdt.\n2. De persoon die denkt dat mango het op één na beste fruit is zeilt vaak.\n3. De Italiaan woont naast de persoon die schildert.\n4. De slakkeneigenaar woont naast de persoon met een huisdier dat oud is voor zijn soort.\n5. De eigenaar van een wandelende tak klimt.\n6. De eigenaar van een wandelende tak woont naast de persoon die geen cactus heeft.\n7. De persoon die non-fictie leest woont op huisnummer 3.\n8. De fantasylezer is goede vrienden met de persoon met rood haar.\n9. De persoon die klimt woont direct rechts van de persoon die van sinaasappels houdt.\n10. De katteneigenaar en de persoon die bordspellen speelt wonen met 2 huizen tussen zich.\n11. De Let woont direct rechts van de Zweed.\n12. De Let woont rechts van de persoon die van appels houdt.\n13. De persoon met een cavia heeft een tatoeage.\n14. De slakkeneigenaar houdt niet van peren.\n15. De Noor woont links van de poëzielezer.\n16. De Let woont naast de zebraeigenaar.\n17. De Noor en de persoon die sciencefiction leest wonen met 2 huizen tussen zich.",
+  "target_text": {
+    "object_1": ["Noorwegen", "slak", "fantasy", "bordspellen", "sinaasappel"],
+    "object_2": ["Italië", "wandelende tak", "poëzie", "klimmen", "banaan"],
+    "object_3": ["Zweden", "zebra", "non-fictie", "schilderen", "appel"],
+    "object_4": ["Letland", "kat", "sciencefiction", "haken", "peer"]
+  }
+}
+```
+
+```json
+{
+  "text": "Een rij huizen is van links naar rechts genummerd van 1 tot 4.\n\nIn elk huis woont een persoon met unieke eigenschappen in elk van de volgende categorieën:\n\nNationaliteiten: Denemarken, Letland, Nederland en Noorwegen.\nHuisdier: hond, konijn, slak en wandelende tak.\nDranken: frisdrank, koffie, smoothie en thee.\nFavoriete boekgenres: fantasy, horror, non-fictie en romantiek.\nHobby's: bordspellen, handbal, schilderen en voetbal.\n\nDaarnaast weten we het volgende:\n\n\n\n1. De frisdrankdrinker woont direct rechts van de persoon die liefdesromans leest.\n2. De persoon die liefdesromans leest is goede vrienden met de persoon die vaak zeilt.\n3. De persoon met een fiets woont niet op huisnummer 3.\n4. De eigenaar van een wandelende tak leest geen non-fictie.\n5. De koffiedrinker woont tussen de Nederlander en de frisdrankdrinker.\n6. De persoon die van natuurkunde houdt woont niet op huisnummer 3.\n7. De persoon die handbalt woont tussen de hondeneigenaar en de persoon die bordspellen speelt.\n8. De frisdrankdrinker woont tussen de hondeneigenaar en de fantasylezer.\n9. De hondeneigenaar woont direct links van de frisdrankdrinker.\n10. De konijneneigenaar leest geen non-fictie.\n11. De persoon die gitaar speelt woont niet op huisnummer 1.\n12. De hondeneigenaar en de persoon die schildert wonen met 2 huizen tussen zich.\n13. De persoon heeft een masterdiploma in wiskunde heeft geen cactus.\n14. De Let woont op huisnummer 3.\n15. Er staat één huis tussen de konijneneigenaar en de theedrinker.\n16. De Deen woont direct links van de frisdrankdrinker.\n17. De frisdrankdrinker woont naast de horrorlezer.",
+  "target_text": {
+    "object_1": ["Denemarken", "hond", "thee", "romantiek", "voetbal"],
+    "object_2": ["Noorwegen", "slak", "frisdrank", "non-fictie", "handbal"],
+    "object_3": ["Letland", "konijn", "koffie", "horror", "bordspellen"],
+    "object_4": ["Nederland", "wandelende tak", "smoothie", "fantasy", "schilderen"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Hier is een raadsel:
+  <riddle>
+  {text}
+  </riddle>
+  Wie heeft welke eigenschappen en woont in welk huis? Geef je antwoord als een JSON-woordenboek. Elke sleutel moet object_X zijn waarbij X het huisnummer is. Elke waarde moet een lijst zijn van de eigenschappen uit de bovenstaande categorieën die behoren bij de persoon in huis nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-nl
 ```
