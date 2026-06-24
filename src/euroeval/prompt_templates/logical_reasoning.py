@@ -231,10 +231,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Hér er ráða:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Hver hefur hvilkeiginleika og býr í hvílíku húsi? Vinsamlega gefðu svar þitt "
-        "sem JSON orðabók. Hver lykill á að vera object_X þar sem X er númer hússins. "
-        "Hvert gildi á að vera listi yfir eiginleikana frá flokkunum hér að ofan sem "
-        "tilheyra manneskjunni í húsi númer X.",
+        "Hver hefur hvaða einkenni og býr í hvaða húsi?\n\n"
+        "Vinsamlegast gefðu svarið þitt sem JSON dictionary. Hvert key ætti að vera "
+        "object_X þar sem X er húsnúmerið. Hvert value ætti að vera listi með einkennum"
+        " úr áðurnefndum flokkum sem tilheyra einstaklingnum í húsi nr. X.",
         default_prompt_label_mapping=dict(),
     ),
     ITALIAN: PromptConfig(

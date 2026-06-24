@@ -1539,7 +1539,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Hver hefur hvaða eiginleika og býr í hvaða húsi? Vinsamlegast gefðu upp svar þitt sem JSON orðabók. Hver lykill ætti að vera object_X þar sem X er húsnúmerið. Hvert gildi ætti að vera listi yfir eiginleikana úr flokkunum hér að ofan sem tilheyra einstaklingnum í húsi númer X.
+  Hver hefur hvaða einkenni og býr í hvaða húsi?
+
+  Vinsamlegast gefðu svarið þitt sem JSON dictionary. Hvert key ætti að vera object_X þar sem X er húsnúmerið. Hvert value ætti að vera listi með einkennum úr áðurnefndum flokkum sem tilheyra einstaklingnum í húsi nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
@@ -1632,7 +1634,9 @@ When evaluating generative models, we use the following setup (see the
   <riddle>
   {text}
   </riddle>
-  Hver hefur hvaða eiginleika og býr í hvaða húsi? Vinsamlegast gefðu upp svar þitt sem JSON orðabók. Hver lykill ætti að vera object_X þar sem X er húsnúmerið. Hvert gildi ætti að vera listi yfir eiginleikana úr flokkunum hér að ofan sem tilheyra einstaklingnum í húsi númer X.
+  Hver hefur hvaða einkenni og býr í hvaða húsi?
+
+  Vinsamlegast gefðu svarið þitt sem JSON dictionary. Hvert key ætti að vera object_X þar sem X er húsnúmerið. Hvert value ætti að vera listi með einkennum úr áðurnefndum flokkum sem tilheyra einstaklingnum í húsi nr. X.
   ```
 
 You can evaluate this dataset directly as follows:
