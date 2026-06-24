@@ -47,40 +47,43 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Ja një enigmë:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Kush ka cilat karakteristika dhe banon në cilin shtëpi? Ju lutemi jepni "
-        "përgjigjen tuaj si një fjalor JSON. Çdo kyç duhet të jetë object_X ku X është "
-        "numri i shtëpisë. Çdo vlerë duhet të jetë një listë e karakteristikave nga "
-        "kategoritë e mësipërme që i përkasin personit në shtëpinë nr. X.",
+        "Kush ka cilat karakteristika dhe banon në cilin shtëpi?\n\n"
+        "Ju lutemi jepni përgjigjen tuaj si një fjalor JSON. Çdo kyç duhet të jetë "
+        "object_X ku X është numri i shtëpisë. Çdo vlerë duhet të jetë një listë e "
+        "karakteristikave nga kategoritë e mësipërme që i përkasin personit në "
+        "shtëpinë nr. X.",
         default_prompt_label_mapping=dict(),
     ),
     BELARUSIAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Вось загадка:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Хто мае якія ўласцівасці і жыве ў якім доме? Калі ласка, дайце свой адказ у "
-        "выглядзе JSON-слоўніка. Кожны ключ павінен быць object_X, дзе X — нумар дома. "
-        "Кожнае значэнне павінна быць спісам уласцівасцей з вышэйпералічаных "
-        "катэгорый, якія належаць чалавеку ў доме нумар X.",
+        "Хто мае якія ўласцівасці і жыве ў якім доме?\n\n"
+        "Калі ласка, дайце свой адказ у выглядзе JSON-слоўніка. Кожны ключ павінен "
+        "быць object_X, дзе X — нумар дома. Кожнае значэнне павінна быць спісам "
+        "уласцівасцей з вышэйпералічаных катэгорый, якія належаць чалавеку ў доме "
+        "нумар X.",
         default_prompt_label_mapping=dict(),
     ),
     BOSNIAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Evo zagonetke:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Tko ima koje osobine i živi u kojoj kući? Molimo da svoj odgovor date kao "
-        "JSON rječnik. Svaki ključ treba biti object_X gdje je X broj kuće. Svaka "
-        "vrijednost treba biti popis osobina iz gornjih kategorija koje pripadaju "
-        "osobi u kući broj X.",
+        "Tko ima koje osobine i živi u kojoj kući?\n\n"
+        "Molimo da svoj odgovor date kao JSON rječnik. Svaki ključ treba biti "
+        "object_X gdje je X broj kuće. Svaka vrijednost treba biti popis osobina iz "
+        "gornjih kategorija koje pripadaju osobi u kući broj X.",
         default_prompt_label_mapping=dict(),
     ),
     BULGARIAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Ето една гатанка:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Кой има какви характеристики и живее в коя къща? Моля, предоставете отговора "
-        "си като JSON речник. Всеки ключ трябва да бъде object_X, където X е номерът "
-        "на къщата. Всяка стойност трябва да бъде списък с характеристиките от "
-        "категориите по-горе, които принадлежат на лицето в къща номер X.",
+        "Кой има какви характеристики и живее в коя къща?\n\n"
+        "Моля, предоставете отговора си като JSON речник. Всеки ключ трябва да бъде "
+        "object_X, където X е номерът на къщата. Всяка стойност трябва да бъде "
+        "списък с характеристиките от категориите по-горе, които принадлежат на "
+        "лицето в къща номер X.",
         default_prompt_label_mapping=dict(),
     ),
     CATALAN: PromptConfig(
@@ -88,32 +91,31 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="",
         default_instruction_prompt="Aquí teniu un enigma:\n"
         "<riddle>\n{text}\n</riddle>\n\n"
-        "Qui té quines característiques i viu en quina casa? Si us plau, "
-        "proporcioneu "
-        "la vostra resposta com un diccionari JSON. Cada clau ha de ser object_X on X "
-        "és el número de la casa. Cada valor ha de ser una llista de les "
-        "característiques de les categories anteriors que pertanyen a la persona de "
-        "la casa número X.",
+        "Qui té quines característiques i viu en quina casa?\n\n"
+        "Si us plau, proporcioneu la vostra resposta com un diccionari JSON. Cada "
+        "clau ha de ser object_X on X és el número de la casa. Cada valor ha de ser "
+        "una llista de les característiques de les categories anteriors que pertanyen "
+        "a la persona de la casa número X.",
         default_prompt_label_mapping=dict(),
     ),
     CROATIAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Evo zagonetke:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Tko ima koje osobine i živi u kojoj kući? Molimo da svoj odgovor date kao "
-        "JSON rječnik. Svaki ključ treba biti object_X gdje je X broj kuće. Svaka "
-        "vrijednost treba biti popis osobina iz gornjih kategorija koje pripadaju "
-        "osobi u kući broj X.",
+        "Tko ima koje osobine i živi u kojoj kući?\n\n"
+        "Molimo da svoj odgovor date kao JSON rječnik. Svaki ključ treba biti "
+        "object_X gdje je X broj kuće. Svaka vrijednost treba biti popis osobina iz "
+        "gornjih kategorija koje pripadaju osobi u kući broj X.",
         default_prompt_label_mapping=dict(),
     ),
     CZECH: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Zde je hádanka:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Kdo má jaké vlastnosti a bydlí v kterém domě? Uveďte prosím svou odpověď "
-        "jako JSON slovník. Každý klíč by měl být object_X, kde X je číslo domu. "
-        "Každá hodnota by měla být seznamem vlastností z výše uvedených kategorií, "
-        "které patří osobě v domě číslo X.",
+        "Kdo má jaké vlastnosti a bydlí v kterém domě?\n\n"
+        "Uveďte prosím svou odpověď jako JSON slovník. Každý klíč by měl být "
+        "object_X, kde X je číslo domu. Každá hodnota by měla být seznamem vlastností "
+        "z výše uvedených kategorií, které patří osobě v domě číslo X.",
         default_prompt_label_mapping=dict(),
     ),
     DANISH: PromptConfig(
@@ -151,10 +153,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Siin on mõistatus:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Kellel on millised omadused ja kes elab millises majas? Palun esitage oma "
-        "vastus JSON-sõnastikuna. Iga võti peaks olema object_X, kus X on maja number. "
-        "Iga väärtus peaks olema loend omadustest ülaltoodud kategooriatest, mis "
-        "kuuluvad majas nummer X elavale isikule.",
+        "Kellel on millised omadused ja kes elab millises majas?\n\n"
+        "Palun esitage oma vastus JSON-sõnastikuna. Iga võti peaks olema object_X, "
+        "kus X on maja number. Iga väärtus peaks olema loend omadustest ülaltoodud "
+        "kategooriatest, mis kuuluvad majas nummer X elavale isikule.",
         default_prompt_label_mapping=dict(),
     ),
     FAROESE: PromptConfig(
@@ -171,22 +173,22 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Tässä on arvoitus:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Kenellä on mitkä ominaisuudet ja kuka asuu missäkin talossa? Anna "
-        "vastauksesi JSON-sanakirjana. Jokaisen avaimen tulee olla object_X, jossa X "
-        "on talon numero. Jokaisen arvon tulee olla luettelo yllä olevien "
-        "kategorioiden "
-        "ominaisuuksista, jotka kuuluvat talossa numero X asuvalle henkilölle.",
+        "Kenellä on mitkä ominaisuudet ja kuka asuu missäkin talossa?\n\n"
+        "Anna vastauksesi JSON-sanakirjana. Jokaisen avaimen tulee olla object_X, "
+        "jossa X on talon numero. Jokaisen arvon tulee olla luettelo yllä olevien "
+        "kategorioiden ominaisuuksista, jotka kuuluvat talossa numero X asuvalle "
+        "henkilölle.",
         default_prompt_label_mapping=dict(),
     ),
     FRENCH: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Voici une énigme :\n<riddle>\n{text}\n</riddle>\n\n"
-        "Qui a quelles caractéristiques et habite dans quelle maison ? Veuillez "
-        "fournir votre réponse sous forme de dictionnaire JSON. Chaque clé doit être "
-        "object_X où X est le numéro de la maison. Chaque valeur doit être une liste "
-        "des caractéristiques des catégories ci-dessus qui appartiennent à la "
-        "personne dans la maison numéro X.",
+        "Qui a quelles caractéristiques et habite dans quelle maison ?\n\n"
+        "Veuillez fournir votre réponse sous forme de dictionnaire JSON. Chaque clé "
+        "doit être object_X où X est le numéro de la maison. Chaque valeur doit être "
+        "une liste des caractéristiques des catégories ci-dessus qui appartiennent à "
+        "la personne dans la maison numéro X.",
         default_prompt_label_mapping=dict(),
     ),
     GERMAN: PromptConfig(
@@ -206,12 +208,11 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="",
         default_instruction_prompt="Ορίστε ένα αίνιγμα:\n"
         "<riddle>\n{text}\n</riddle>\n\n"
-        "Ποιος έχει ποια χαρακτηριστικά και μένει σε ποιο σπίτι; "
-        "Παρακαλώ δώστε την "
-        "απάντησή σας ως λεξικό JSON. Κάθε κλειδί πρέπει να είναι object_X όπου X "
-        "είναι ο αριθμός του σπιτιού. Κάθε τιμή πρέπει να είναι λίστα με τα "
-        "χαρακτηριστικά από τις παραπάνω κατηγορίες που ανήκουν στο άτομο στο σπίτι "
-        "αριθμός X.",
+        "Ποιος έχει ποια χαρακτηριστικά και μένει σε ποιο σπίτι;\n\n"
+        "Παρακαλώ δώστε την απάντησή σας ως λεξικό JSON. Κάθε κλειδί πρέπει να "
+        "είναι object_X όπου X είναι ο αριθμός του σπιτιού. Κάθε τιμή πρέπει να "
+        "είναι λίστα με τα χαρακτηριστικά από τις παραπάνω κατηγορίες που ανήκουν "
+        "στο άτομο στο σπίτι αριθμός X.",
         default_prompt_label_mapping=dict(),
     ),
     HUNGARIAN: PromptConfig(
@@ -219,10 +220,9 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="",
         default_instruction_prompt="Íme egy találós kérdés:\n"
         "<riddle>\n{text}\n</riddle>\n\n"
-        "Kinek milyen tulajdonságai vannak és melyik házban lakik? Kérjük, "
-        "adja meg "
-        "válaszát JSON szótárként. Minden kulcs object_X legyen, ahol X a ház száma. "
-        "Minden érték legyen lista a fenti kategóriákból származó "
+        "Kinek milyen tulajdonságai vannak és melyik házban lakik?\n\n"
+        "Kérjük, adja meg válaszát JSON szótárként. Minden kulcs object_X legyen, ahol "
+        "X a ház száma. Minden érték legyen lista a fenti kategóriákból származó "
         "tulajdonságokkal, amelyek az X. számú házban lakó személyhez tartoznak.",
         default_prompt_label_mapping=dict(),
     ),
@@ -241,31 +241,31 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="",
         default_instruction_prompt="Ecco un indovinello:\n"
         "<riddle>\n{text}\n</riddle>\n\n"
-        "Chi ha quali attributi e vive in quale casa? "
-        "Fornisci la tua risposta come "
-        "dizionario JSON. Ogni chiave dovrebbe essere object_X dove X è il numero "
-        "della casa. Ogni valore dovrebbe essere un elenco degli attributi dalle "
-        "categorie sopra che appartengono alla persona nella casa numero X.",
+        "Chi ha quali attributi e vive in quale casa?\n\n"
+        "Fornisci la tua risposta come dizionario JSON. Ogni chiave dovrebbe essere "
+        "object_X dove X è il numero della casa. Ogni valore dovrebbe essere un elenco "
+        "degli attributi dalle categorie sopra che appartengono alla persona nella "
+        "casa numero X.",
         default_prompt_label_mapping=dict(),
     ),
     LATVIAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Lūk mīkla:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Kam ir kādas īpašības un kurš dzīvo kurā mājā? Lūdzu, sniedziet savu atbildi "
-        "kā JSON vārdnīcu. Katrai atslēgai jābūt object_X, kur X ir mājas numurs. "
-        "Katrai vērtībai jābūt sarakstam ar īpašībām no augstāk minētajām kategorijām, "
-        "kas pieder personai mājas numurā X.",
+        "Kam ir kādas īpašības un kurš dzīvo kurā mājā?\n\n"
+        "Lūdzu, sniedziet savu atbildi kā JSON vārdnīcu. Katrai atslēgai jābūt "
+        "object_X, kur X ir mājas numurs. Katrai vērtībai jābūt sarakstam ar īpašībām "
+        "no augstāk minētajām kategorijām, kas pieder personai mājas numurā X.",
         default_prompt_label_mapping=dict(),
     ),
     LITHUANIAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Štai mįslė:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Kas turi kokias savybes ir gyvena kuriame name? Prašom pateikti savo "
-        "atsakymą kaip JSON žodyną. Kiekvienas raktas turi būti object_X, kur X yra "
-        "namo numeris. Kiekviena reikšmė turi būti savybių iš aukščiau nurodytų "
-        "kategorijų, priklausančių asmeniui name numeriu X, sąrašas.",
+        "Kas turi kokias savybes ir gyvena kuriame name?\n\n"
+        "Prašom pateikti savo atsakymą kaip JSON žodyną. Kiekvienas raktas turi būti "
+        "object_X, kur X yra namo numeris. Kiekviena reikšmė turi būti savybių iš "
+        "aukščiau nurodytų kategorijų, priklausančių asmeniui name numeriu X, sąrašas.",
         default_prompt_label_mapping=dict(),
     ),
     NORWEGIAN_BOKMÅL: PromptConfig(
@@ -302,10 +302,10 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Oto zagadka:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Kto ma jakie cechy i mieszka w którym domu? Proszę podać odpowiedź jako "
-        "słownik JSON. Każdy klucz powinien być object_X, gdzie X to numer domu. "
-        "Każda wartość powinna być listą cech z powyższych kategorii, które należą "
-        "do osoby w domu numer X.",
+        "Kto ma jakie cechy i mieszka w którym domu?\n\n"
+        "Proszę podać odpowiedź jako słownik JSON. Każdy klucz powinien być object_X, "
+        "gdzie X to numer domu. Każda wartość powinna być listą cech z powyższych "
+        "kategorii, które należą do osoby w domu numer X.",
         default_prompt_label_mapping=dict(),
     ),
     PORTUGUESE: PromptConfig(
@@ -313,52 +313,51 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="",
         default_instruction_prompt="Aqui está um enigma:\n"
         "<riddle>\n{text}\n</riddle>\n\n"
-        "Quem tem quais atributos e vive em qual casa? "
-        "Por favor, forneça sua "
-        "resposta como um dicionário JSON. Cada chave deve ser object_X onde X é o "
-        "número da casa. Cada valor deve ser uma lista dos atributos das categorias "
-        "acima que pertencem à pessoa na casa número X.",
+        "Quem tem quais atributos e vive em qual casa?\n\n"
+        "Por favor, forneça sua resposta como um dicionário JSON. Cada chave deve ser "
+        "object_X onde X é o número da casa. Cada valor deve ser uma lista dos "
+        "atributos das categorias acima que pertencem à pessoa na casa número X.",
         default_prompt_label_mapping=dict(),
     ),
     ROMANIAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Iată o ghicitoare:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Cine are ce atribute și locuiește în care casă? Vă rugăm să furnizați "
-        "răspunsul dvs. ca un dicționar JSON. Fiecare cheie trebuie să fie object_X "
-        "unde X este numărul casei. Fiecare valoare trebuie să fie o listă a "
-        "atributelor din categoriile de mai sus care aparțin persoanei din casa "
-        "numărul X.",
+        "Cine are ce atribute și locuiește în care casă?\n\n"
+        "Vă rugăm să furnizați răspunsul dvs. ca un dicționar JSON. Fiecare cheie "
+        "trebuie să fie object_X unde X este numărul casei. Fiecare valoare trebuie să "
+        "fie o listă a atributelor din categoriile de mai sus care aparțin persoanei "
+        "din casa numărul X.",
         default_prompt_label_mapping=dict(),
     ),
     SERBIAN: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Evo zagonetke:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Ko ima koje osobine i živi u kojoj kući? Molimo da svoj odgovor date kao "
-        "JSON rečnik. Svaki ključ treba da bude object_X gde je X broj kuće. Svaka "
-        "vrednost treba da bude lista osobina iz gornjih kategorija koje pripadaju "
-        "osobi u kući broj X.",
+        "Ko ima koje osobine i živi u kojoj kući?\n\n"
+        "Molimo da svoj odgovor date kao JSON rečnik. Svaki ključ treba da bude "
+        "object_X gde je X broj kuće. Svaka vrednost treba da bude lista osobina iz "
+        "gornjih kategorija koje pripadaju osobi u kući broj X.",
         default_prompt_label_mapping=dict(),
     ),
     SLOVAK: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Tu je hádanka:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Kto má aké vlastnosti a býva v ktorom dome? Prosím, uveďte svoju odpoveď "
-        "ako JSON slovník. Každý kľúč by mal byť object_X, kde X je číslo domu. "
-        "Každá hodnota by mala byť zoznamom vlastností z vyššie uvedených kategórií, "
-        "ktoré patria osobe v dome číslo X.",
+        "Kto má aké vlastnosti a býva v ktorom dome?\n\n"
+        "Prosím, uveďte svoju odpoveď ako JSON slovník. Každý kľúč by mal byť "
+        "object_X, kde X je číslo domu. Každá hodnota by mala byť zoznamom vlastností "
+        "z vyššie uvedených kategórií, ktoré patria osobe v dome číslo X.",
         default_prompt_label_mapping=dict(),
     ),
     SLOVENE: PromptConfig(
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Tukaj je uganka:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Kdo ima katere lastnosti in živi v kateri hiši? Prosimo, podajte svoj odgovor "
-        "kot JSON slovar. Vsak ključ naj bo object_X, kjer je X številka hiše. Vsaka "
-        "vrednost naj bo seznam lastnosti iz zgornjih kategorij, ki pripadajo osebi v "
-        "hiši številka X.",
+        "Kdo ima katere lastnosti in živi v kateri hiši?\n\n"
+        "Prosimo, podajte svoj odgovor kot JSON slovar. Vsak ključ naj bo object_X, "
+        "kjer je X številka hiše. Vsaka vrednost naj bo seznam lastnosti iz zgornjih "
+        "kategorij, ki pripadajo osebi v hiši številka X.",
         default_prompt_label_mapping=dict(),
     ),
     SPANISH: PromptConfig(
@@ -366,11 +365,11 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="",
         default_instruction_prompt="Aquí hay un acertijo:\n"
         "<riddle>\n{text}\n</riddle>\n\n"
-        "¿Quién tiene qué atributos y vive en qué casa? Por favor, "
-        "proporciona tu "
-        "respuesta como un diccionario JSON. Cada clave debe ser object_X donde X es "
-        "el número de la casa. Cada valor debe ser una lista de los atributos de las "
-        "categorías anteriores que pertenecen a la persona en la casa número X.",
+        "¿Quién tiene qué atributos y vive en qué casa?\n\n"
+        "Por favor, proporciona tu respuesta como un diccionario JSON. Cada clave debe "
+        "ser object_X donde X es el número de la casa. Cada valor debe ser una lista "
+        "de los atributos de las categorías anteriores que pertenecen a la persona en "
+        "la casa número X.",
         default_prompt_label_mapping=dict(),
     ),
     SWEDISH: PromptConfig(
@@ -387,10 +386,11 @@ LOGIC_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_prefix="",
         default_prompt_template="",
         default_instruction_prompt="Ось загадка:\n<riddle>\n{text}\n</riddle>\n\n"
-        "Хто має які характеристики і живе в якому будинку? Будь ласка, надайте свою "
-        "відповідь як JSON-словник. Кожен ключ має бути object_X, де X — номер "
-        "будинку. Кожне значення має бути списком характеристик з вищевказаних "
-        "категорій, які належать особі в будинку номер X.",
+        "Хто має які характеристики і живе в якому будинку?\n\n"
+        "Будь ласка, надайте свою відповідь як JSON-словник. Кожен ключ має бути "
+        "object_X, де X — номер будинку. Кожне значення має бути списком "
+        "характеристик з вищевказаних категорій, які належать особі в будинку "
+        "номер X.",
         default_prompt_label_mapping=dict(),
     ),
 }
