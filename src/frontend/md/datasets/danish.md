@@ -177,7 +177,7 @@ labelling scheme, which is more common in the NER literature. The mapping is as 
 - `LOCATION` ➡️ `LOC`
 - `FACILITY` ➡️ `LOC`
 - `GPE` ➡️ `LOC`
-- `ORGANIZATION` ➡️ `PER`
+- `ORGANIZATION` ➡️ `ORG`
 - `EVENT` ➡️ `MISC`
 - `LANGUAGE` ➡️ `MISC`
 - `PRODUCT` ➡️ `MISC`

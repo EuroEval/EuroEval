@@ -49,22 +49,22 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Hieronder staan tweets en hun sentiment, dat 'positief', 'neutraal' of 'negatief' kan zijn.
+  Hieronder volgen documenten en hun sentiment, dat 'positief' of 'negatief' kan zijn.
   ```
 
 - Base prompt template:
 
   ```text
-  Tweet: {text}
+  Document: {text}
   Sentiment: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Tweet: {text}
+  Document: {text}
 
-  Classificeer het sentiment in de tweet. Antwoord met 'positief', 'neutraal' of 'negatief'.
+  Classificeer het sentiment in het document. Antwoord met 'positief' of 'negatief', en verder niets.
   ```
 
 - Label mapping:

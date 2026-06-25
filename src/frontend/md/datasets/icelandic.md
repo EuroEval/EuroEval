@@ -1144,8 +1144,6 @@ When evaluating generative models, we use the following setup (see the
   Svarmöguleikar:
   a. {option_a}
   b. {option_b}
-  c. {option_c}
-  d. {option_d}
   Svara: {label}
   ```
 
@@ -1156,10 +1154,8 @@ When evaluating generative models, we use the following setup (see the
   Svarmöguleikar:
   a. {option_a}
   b. {option_b}
-  c. {option_c}
-  d. {option_d}
 
-  Svaraðu eftirfarandi spurningum með 'a', 'b', 'c' eða 'd', og engu öðru.
+  Svaraðu eftirfarandi spurningum með 'a' eða 'b', og engu öðru.
   ```
 
 You can evaluate this dataset directly as follows:
