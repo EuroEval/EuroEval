@@ -118,6 +118,8 @@ reach the target of 2,304 (1,024 + 256 + 1,024). The final split is:
 - Validation: 218 examples
 - Test: 874 examples
 
+Here are a few examples from the training split:
+
 ```json
 {
   "tokens": array(["Na", "Covilhã", "ainda", "não", "havia", "liceu", "nessa", "altura", "."], dtype=object),

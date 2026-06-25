@@ -292,6 +292,47 @@ Here are a few examples from the training split:
 }
 ```
 
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Følgende er sætninger og JSON-ordbøger med de navngivne enheder, som forekommer i den givne sætning.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Sætning: {text}
+  Navngivne enheder: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Sætning: {text}
+
+  Identificér de navngivne enheder i sætningen. Du skal outputte dette som en JSON-ordbog med nøglerne 'person', 'sted', 'organisation' og 'diverse'. Værdierne skal være lister over de navngivne enheder af den type, præcis som de forekommer i sætningen.
+  ```
+
+- Label mapping:
+  - `B-PER` ➡️ `person`
+  - `I-PER` ➡️ `person`
+  - `B-LOC` ➡️ `sted`
+  - `I-LOC` ➡️ `sted`
+  - `B-ORG` ➡️ `organisation`
+  - `I-ORG` ➡️ `organisation`
+  - `B-MISC` ➡️ `diverse`
+  - `I-MISC` ➡️ `diverse`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dane
+```
+
 ## Linguistic Acceptability
 
 ### ScaLA-da
@@ -1132,6 +1173,12 @@ When evaluating generative models, we use the following setup (see the
 
   Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c' eller 'd', og intet andet.
   ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset mmlu-da
+```
 
 ### Unofficial: ARC-da
 

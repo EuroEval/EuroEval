@@ -266,6 +266,42 @@ Here are a few examples from the training split:
 }
 ```
 
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+
+- Prefix prompt:
+
+  ```text
+  Hieronder staan zinnen en of ze grammaticaal correct zijn.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Zin: {text}
+  Grammaticaal correct: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Zin: {text}
+
+  Bepaal of de zin grammaticaal correct is of niet. Antwoord met 'ja' als de zin correct is en 'nee' als dat niet het geval is.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nee`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dutch-cola
+```
+
 ## Natural Language Inference
 
 ### Unofficial: The Dutch SICK-NL Entailment Dataset
