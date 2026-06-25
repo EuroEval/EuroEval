@@ -414,6 +414,7 @@ not representative of the full dataset in terms of question content to show here
 {
   "text": "Mida mõõdetakse baromeetriga?\nVastusevariandid:\na. veekogude sügavust\nb. temperatuuri\nc. jõgede voolukiirust\nd. õhurõhku",
   "label": "d"
+}
 ```
 
 When evaluating generative models, we use the following setup (see the
