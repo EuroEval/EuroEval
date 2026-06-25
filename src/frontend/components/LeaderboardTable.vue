@@ -18,8 +18,10 @@ const props = withDefaults(
     /** Human-readable leaderboard name, included in bad-evaluation issue
      *  reports. */
     leaderboardName?: string;
+    /** Last updated timestamp string for display in the pager. */
+    lastUpdated?: string | null;
   }>(),
-  { heatmapScoreCols: false, leaderboardName: "" },
+  { heatmapScoreCols: false, leaderboardName: "", lastUpdated: null },
 );
 
 type FilterValue = string;
@@ -781,6 +783,9 @@ const reportBadEval = (modelId: string) => {
     </div>
 
     <div class="lb-pager">
+      <span v-if="lastUpdated" class="lb-last-updated">
+        Last updated: {{ lastUpdated }}
+      </span>
       <button
         type="button"
         :disabled="page <= 1"
@@ -1060,11 +1065,16 @@ select.lb-filter option {
 
 .lb-pager {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
   margin-top: 0.75rem;
   font-size: 0.85rem;
+}
+
+.lb-pager .lb-last-updated {
+  color: var(--color-muted);
+  font-size: 0.8rem;
 }
 
 .lb-pager button {

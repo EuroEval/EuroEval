@@ -231,15 +231,15 @@ const downloadCsv = async () => {
 
     <div v-if="loading" class="lb-status">Loading leaderboard…</div>
     <div v-else-if="error" class="lb-status error">{{ error }}</div>
-    <template v-else>
-      <template v-if="tab === 'generative' || tab === 'all_models'">
-        <LeaderboardTable
-          v-if="activeTable"
-          :table="activeTable"
-          :heatmap-score-cols="isMultilingual"
-          :leaderboard-name="title"
-        >
-          <template #actions>
+    <template v-else>       <template v-if="tab === 'generative' || tab === 'all_models'">
+         <LeaderboardTable
+           v-if="activeTable"
+           :table="activeTable"
+           :heatmap-score-cols="isMultilingual"
+           :leaderboard-name="title"
+           :last-updated="lastUpdated"
+         >
+           <template #actions>
             <button
               class="lb-download"
               type="button"
@@ -269,27 +269,16 @@ const downloadCsv = async () => {
               </svg>
               Embed
             </button>
-          </template>
-        </LeaderboardTable>
-        <div v-if="lastUpdated" class="lb-last-updated">
-          Last updated: {{ lastUpdated }}
-        </div>
-        <div v-else class="lb-status">
-          This leaderboard variant has no data.
-        </div>
-      </template>
-      <template v-else>
-        <LeaderboardScatter
-          v-if="activeTable"
-          :table="activeTable"
-        />
-        <div v-if="lastUpdated" class="lb-last-updated">
-          Last updated: {{ lastUpdated }}
-        </div>
-        <div v-else class="lb-status">
-          This leaderboard variant has no data.
-        </div>
-      </template>
+          </template>         </LeaderboardTable>
+         <div v-else class="lb-status">
+           This leaderboard variant has no data.
+         </div>
+      </template>       <template v-else>
+         <LeaderboardScatter
+           v-if="activeTable"
+           :table="activeTable"
+         />
+       </template>
     </template>
   </div>
 </template>
@@ -551,12 +540,5 @@ const downloadCsv = async () => {
 
 .lb-status.error {
   color: var(--color-danger);
-}
-
-.lb-last-updated {
-  color: var(--color-muted);
-  font-size: 0.8rem;
-  text-align: right;
-  margin-top: 0.25rem;
 }
 </style>
