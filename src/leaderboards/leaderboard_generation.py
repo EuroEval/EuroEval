@@ -112,10 +112,13 @@ def generate_leaderboard(
 
         # Check if anything got updated
         new_records: list[str] = []
+        # Exclude rank column (ordinal position) and metadata columns (version,
+        # failures, scored) which change even when model performance doesn't.
         comparison_columns = [
             col
             for col in df.columns
-            if col.lower() != "rank" or not include_dataset_columns
+            if col.lower() != "rank"
+            and not col.endswith(("_version", "_failures", "_scored"))
         ]
         if leaderboard_path.exists():
             old_df = pd.read_csv(leaderboard_path, header=0, skiprows=1)
@@ -139,20 +142,18 @@ def generate_leaderboard(
                         new_records.append(model_id)
                         continue
 
-                    old_model_results = (
-                        old_df[comparison_columns]
-                        .query("Model == @model_id")
-                        .dropna()
-                        .map(convert_to_float)
+                    old_model_row = old_df[comparison_columns].query(
+                        "Model == @model_id"
                     )
-                    new_model_results = (
-                        df[comparison_columns]
-                        .query("Model == @model_id")
-                        .dropna()
-                        .map(convert_to_float)
-                    )
-                    model_has_new_results = not np.all(
-                        old_model_results.values == new_model_results.values
+                    new_model_row = df[comparison_columns].query("Model == @model_id")
+                    # Convert to float where possible, keeping NaN for missing scores
+                    old_model_results = old_model_row.map(convert_to_float)
+                    new_model_results = new_model_row.map(convert_to_float)
+                    # Fill NaN with sentinel for comparison (missing = missing is equal)
+                    model_has_new_results = not (
+                        old_model_results.fillna(-999).equals(
+                            new_model_results.fillna(-999)
+                        )
                     )
                     if model_has_new_results:
                         new_records.append(model_id)
