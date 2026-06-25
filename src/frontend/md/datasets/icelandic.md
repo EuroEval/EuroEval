@@ -79,14 +79,14 @@ euroeval --model <model-id> --dataset hotter-and-colder-sentiment
 
 ### MIM-GOLD-NER
 
-This dataset was published in [this
-paper](https://repository.clarin.is/repository/xmlui/handle/20.500.12537/230) and is
-based on the [Tagged Icelandic Corpus (MIM)](https://clarin.is/en/resources/mim/), which
-consists of Icelandic books, news articles, periodicals, parliament speeches, legal
-texts, adjudications and government websites. It has been annotated with named entities
-in a semi-automated fashion, where each labels has been manually verified. The entity
-types in the dataset is a superset of the CoNLL-2003 tags, with the following additional
-labels: `DATE`, `TIME`, `MONEY`, `PERCENT`. These labels have been removed.
+This dataset was published in
+[this paper](https://repository.clarin.is/repository/xmlui/handle/20.500.12537/230) and
+is based on the [Tagged Icelandic Corpus (MIM)](https://clarin.is/en/resources/mim/),
+which consists of Icelandic books, news articles, periodicals, parliament speeches,
+legal texts, adjudications and government websites. It has been annotated with named
+entities in a semi-automated fashion, where each labels has been manually verified. The
+entity types in the dataset is a superset of the CoNLL-2003 tags, with the following
+additional labels: `DATE`, `TIME`, `MONEY`, `PERCENT`. These labels have been removed.
 
 The original full dataset consists of 1,000,000 tokens. We use a 1,024 / 256 / 2,048
 split for training, validation and testing, respectively.
@@ -160,13 +160,13 @@ euroeval --model <model-id> --dataset mim-gold-ner
 ### ScaLA-is
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Icelandic Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Icelandic-Modern) by assuming that
-the documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Icelandic Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Icelandic-Modern)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original dataset consists of 3,535 samples, from which we use 1,024 / 256 / 2,048
 samples for training, validation and testing, respectively (so 3,328 samples used in
@@ -712,8 +712,8 @@ completion = client.beta.chat.completions.parse(
 )
 ```
 
-where `CandidateAnswers` is a Pydantic model that is used to ensure [structured
-outputs](https://platform.openai.com/docs/guides/structured-outputs).
+where `CandidateAnswers` is a Pydantic model that is used to ensure
+[structured outputs](https://platform.openai.com/docs/guides/structured-outputs).
 
 The original dataset has 2,000 samples, but only 1,994 unique questions, and the total
 length of this dataset is therefore 1,994. The split is given by 842 / 128 / 1024 for
@@ -785,9 +785,10 @@ euroeval --model <model-id> --dataset icelandic-knowledge
 
 ### Unofficial: ARC-is
 
-This dataset is a machine translated version of the English [ARC
-dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school science
-questions. The dataset was translated by Miðeind using the Claude 3.5 Sonnet model.
+This dataset is a machine translated version of the English
+[ARC dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school
+science questions. The dataset was translated by Miðeind using the Claude 3.5 Sonnet
+model.
 
 The original full dataset consists of 1,110 / 297 / 1,170 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for training,
@@ -860,10 +861,11 @@ euroeval --model <model-id> --dataset arc-is
 
 ### Unofficial: MMLU-is
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The dataset was
-translated using [Miðeind](https://mideind.is/english.html)'s Greynir translation model.
+This dataset is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+dataset was translated using [Miðeind](https://mideind.is/english.html)'s Greynir
+translation model.
 
 The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -949,25 +951,25 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Lestu textann um Gabba gæs og svaraðu spurningunum.\n\nHúsið mitt stendur við tjörn. Og við tjörnina býr líka gæs sem ég kalla Gabba – sem er stytting á Gabríel eins og erkiengillinn neitir. Það er komið haust og laufblöðin eru farin að roðna og falla af trjánum. Ég sit við eldhúsgluggann minn og horfi á Gabba sem vappar um í gulnuðu grasinu við tjörnina. Hann goggar í grasið og fær sér gott í gogginn. Við erum reyndar bæði að borða. Ég borða kremkex frá Kexverksmiðjunni Frón en Gabbi borðar fræ og pöddur úr ríki móður náttúru.\n\nFyrir Gabba er túnit hér fyrir utan eins og salatbar. Á sumrin leynist þar allskyns hnossgæti fyrir gæsir. Gabbi hefur tínt upp úr því fæði í allt sumar. Hann vill nefnilega fita sig – ekki af því að hann dreymir um að verða að safaríkri jólagæsasteik í brúnni sósu – heldur af því að gæsir eins og hann fljúga mörg hundruð kílómetra á haustin. Þá þurfa þær að geta blakað vængjunum stanslaust í margar vikur og á meðan geta þær ekkert étið, nema kannski eina og eina flugu. Á haustin hópa allar feitu gæsarnar sig svo saman, áður en þær hefja langt sameiginlegt oddaflug til hlýrri landa.\n\nNú kemur önnur gæs að. Hún gefur sig á tal við Gabba sem er hættur að éta. Við skulum kalla hana Sigfús. Fyrst sýnist mér Sigfús vera með stæla. Er hann að ýbba gogg? Nei, þegar betur er að gáð virðist Sigfús vera áhyggjufullur. Af hverju ætti það að sé? Ég kýngi kremkexinu og beini allri athygli minni að gæsunum. Sigfús hefur þá verið að ná í Gabba. Þeir ætla að hitta hinna gæsinar áður en þær fljúga á haf út saman. En viti menn! Gabbi hoppar um á sterklégum fótunum og blakar stórum vængjunum ákaflega en tekst ekki á loft. Ég sé að annar vængurinn er laskaður. Gabba er illt í honum. Sigfús flýgur hins vegar af stað. Hann hringsólar yfir hausamótunum á Gabba og gargar eitthvað á gæsamál, sem ég ímynda mér að hafi verið: „Vertu sæll og gangi þér vel.“ Sigfús flýgur í burtu og Gabbi stendur einn eftir væng- og niðurbrotinn í blautu grasinu. Greyið Gabbi. Ég er miður mín en man svo eftir að hafa lesið í dagblaðinu að gæsir eins og Gabbi séu sumar farnar að búa allan veturinn á Íslandi án þess að verða meint af. Ég veit að það mun ekkert slæmt henda Gabba þótt hann verði áfram á Íslandi. Ég veit það af því að ég verð líka hérna við tjörnina í vetur. Ég ætla að fylgjast með Gabba og gefa honum af kremkexinu mínu. Og kartöflur og múslí og allskonar afganga. Við Gabbi ætlum að halda áfram að borða saman hérna við tjörnina í allan vetur – og langt fram á næsta vor.\n\nUm hvað er sagan?\nSvarmöguleikar:\na. gæs í erfiðleikum\nb. heimili við tjörn\nc. oddaflug gæsa",
-    "label": "a",
-    "year": "2013"
+  "text": "Lestu textann um Gabba gæs og svaraðu spurningunum.\n\nHúsið mitt stendur við tjörn. Og við tjörnina býr líka gæs sem ég kalla Gabba – sem er stytting á Gabríel eins og erkiengillinn neitir. Það er komið haust og laufblöðin eru farin að roðna og falla af trjánum. Ég sit við eldhúsgluggann minn og horfi á Gabba sem vappar um í gulnuðu grasinu við tjörnina. Hann goggar í grasið og fær sér gott í gogginn. Við erum reyndar bæði að borða. Ég borða kremkex frá Kexverksmiðjunni Frón en Gabbi borðar fræ og pöddur úr ríki móður náttúru.\n\nFyrir Gabba er túnit hér fyrir utan eins og salatbar. Á sumrin leynist þar allskyns hnossgæti fyrir gæsir. Gabbi hefur tínt upp úr því fæði í allt sumar. Hann vill nefnilega fita sig – ekki af því að hann dreymir um að verða að safaríkri jólagæsasteik í brúnni sósu – heldur af því að gæsir eins og hann fljúga mörg hundruð kílómetra á haustin. Þá þurfa þær að geta blakað vængjunum stanslaust í margar vikur og á meðan geta þær ekkert étið, nema kannski eina og eina flugu. Á haustin hópa allar feitu gæsarnar sig svo saman, áður en þær hefja langt sameiginlegt oddaflug til hlýrri landa.\n\nNú kemur önnur gæs að. Hún gefur sig á tal við Gabba sem er hættur að éta. Við skulum kalla hana Sigfús. Fyrst sýnist mér Sigfús vera með stæla. Er hann að ýbba gogg? Nei, þegar betur er að gáð virðist Sigfús vera áhyggjufullur. Af hverju ætti það að sé? Ég kýngi kremkexinu og beini allri athygli minni að gæsunum. Sigfús hefur þá verið að ná í Gabba. Þeir ætla að hitta hinna gæsinar áður en þær fljúga á haf út saman. En viti menn! Gabbi hoppar um á sterklégum fótunum og blakar stórum vængjunum ákaflega en tekst ekki á loft. Ég sé að annar vængurinn er laskaður. Gabba er illt í honum. Sigfús flýgur hins vegar af stað. Hann hringsólar yfir hausamótunum á Gabba og gargar eitthvað á gæsamál, sem ég ímynda mér að hafi verið: „Vertu sæll og gangi þér vel.“ Sigfús flýgur í burtu og Gabbi stendur einn eftir væng- og niðurbrotinn í blautu grasinu. Greyið Gabbi. Ég er miður mín en man svo eftir að hafa lesið í dagblaðinu að gæsir eins og Gabbi séu sumar farnar að búa allan veturinn á Íslandi án þess að verða meint af. Ég veit að það mun ekkert slæmt henda Gabba þótt hann verði áfram á Íslandi. Ég veit það af því að ég verð líka hérna við tjörnina í vetur. Ég ætla að fylgjast með Gabba og gefa honum af kremkexinu mínu. Og kartöflur og múslí og allskonar afganga. Við Gabbi ætlum að halda áfram að borða saman hérna við tjörnina í allan vetur – og langt fram á næsta vor.\n\nUm hvað er sagan?\nSvarmöguleikar:\na. gæs í erfiðleikum\nb. heimili við tjörn\nc. oddaflug gæsa",
+  "label": "a",
+  "year": "2013"
 }
 ```
 
 ```json
 {
-    "text": "Lestu textabrotið úr Alfræði unga fólksins og svaraðu spurningunum.\n\nDýr með heitt blóð þurfa yfirleitt að verja umtalsverði orku til að halda á sér hita yfir kalda vetrarmánuði. Orkuna fá þau úr fæðunni sem er þó einmitt jafnan hvað minnst að vetrinum. Sum dýr komast af með því að flytja sig til hlýrri staða en önnur, til dæmis leðurblök og broddgeltir, leggjast í dvala á öruggum og skjólgóðum stað, svo sem í greni, hreiðri eða hellisskúta. Hjá dýrum sem fara í eiginlegan vetrardvala hægir mjög á allri líkamstarfsemi, hjartað slær aðeins öðru hverju og andardrátturinn verður mjög hægur. Líkamshitinn er bara nokkrum gráðum hærri en hiti umhverfisins og er til dæmis rétt um frostmark hjá hömstrum. Ef hitinn úti fer undir frostmark örvast efnskaskipti líkamans og hindra að dýrið frjósi í hel. Dýr sem leggjast í vetrardvala éta sérlega mikið á haustin og safna fituforða til vetrarins. Sá forði fleytir þeim yfir vetrarmánuðina án þess að þau þurfi að næra sig.\n\nSvartbjörn\nBirnir, skunkar og jarðíkornar sofa ekki eins föstum vetrarsvefni og leðurblökur og mýs sem leggjast í eiginlegan vetrardvala. Líkamshiti svartbjarnar lækkar nokkuð er hann leggst í híði en hjartað slær nánast jafnt hratt og í vöku. Þetta gerir það að verkum að bangsi getur rumskað af vægum svefni ef veður hlýnar svolítið um hríð. Þótt björninn vakni upp af dvalanum fer hann yfirleitt ekki á stjá til að leita sér fæðu, heldur lifir áfram á fituforða sínum. Sumar birnur fæða húna í híði sínu að vetrinum.\n\nDá\nSum dýr með heitt blóð, t.d. leðurblökur og kólibrífuglar, spara orku með því að líkamshiti þeirra lækkar og hjartslátturinn róast hluta dags eða nætur. Þetta kallast dá og er ekki sama eðlis og dvali. Stór dýr falla yfirleitt ekki í dá því að þau þyrftu svo mikla orku til að ná líkamshitanum upp aftur. Leðurblökur hjúfra sig oft hver upp að annarri til að draga úr varmatapinu þar sem þær hanga á haus. Þegar vetur gengur í garð safnast leðurblökur í vissa hella eða tré og leggjast þar í eiginlegan vetrardvala.\n\nSumardvali\nMörg eyðimerkurdýr liggja í dvala heitasta árstímann til að prauka steikjandi hitann. Þetta kallast sumardvali, andstætt vetrardvala. Margar æður, froskar, sniglar og skordýr eyðimerkunnar leggjast í sumardvala. Áður en sniglar fara í dvalann loka þeir kúðungi sínum með því að þekja opið með himnu úr slími sem harðnar síðan í hitanum.\n\n(úr: Alfræð í unga fólksins, 1994)\n\n19. Hvernig er starfsemi líkamans þegar dýr er í dvala?\nSvarmöguleikar:\na. Líkamshitinn hækkar.\nb. Orkan verður meiri.\nc. Starfsemin er hægari.",
-    "label": "b",
-    "year": "2013"
+  "text": "Lestu textabrotið úr Alfræði unga fólksins og svaraðu spurningunum.\n\nDýr með heitt blóð þurfa yfirleitt að verja umtalsverði orku til að halda á sér hita yfir kalda vetrarmánuði. Orkuna fá þau úr fæðunni sem er þó einmitt jafnan hvað minnst að vetrinum. Sum dýr komast af með því að flytja sig til hlýrri staða en önnur, til dæmis leðurblök og broddgeltir, leggjast í dvala á öruggum og skjólgóðum stað, svo sem í greni, hreiðri eða hellisskúta. Hjá dýrum sem fara í eiginlegan vetrardvala hægir mjög á allri líkamstarfsemi, hjartað slær aðeins öðru hverju og andardrátturinn verður mjög hægur. Líkamshitinn er bara nokkrum gráðum hærri en hiti umhverfisins og er til dæmis rétt um frostmark hjá hömstrum. Ef hitinn úti fer undir frostmark örvast efnskaskipti líkamans og hindra að dýrið frjósi í hel. Dýr sem leggjast í vetrardvala éta sérlega mikið á haustin og safna fituforða til vetrarins. Sá forði fleytir þeim yfir vetrarmánuðina án þess að þau þurfi að næra sig.\n\nSvartbjörn\nBirnir, skunkar og jarðíkornar sofa ekki eins föstum vetrarsvefni og leðurblökur og mýs sem leggjast í eiginlegan vetrardvala. Líkamshiti svartbjarnar lækkar nokkuð er hann leggst í híði en hjartað slær nánast jafnt hratt og í vöku. Þetta gerir það að verkum að bangsi getur rumskað af vægum svefni ef veður hlýnar svolítið um hríð. Þótt björninn vakni upp af dvalanum fer hann yfirleitt ekki á stjá til að leita sér fæðu, heldur lifir áfram á fituforða sínum. Sumar birnur fæða húna í híði sínu að vetrinum.\n\nDá\nSum dýr með heitt blóð, t.d. leðurblökur og kólibrífuglar, spara orku með því að líkamshiti þeirra lækkar og hjartslátturinn róast hluta dags eða nætur. Þetta kallast dá og er ekki sama eðlis og dvali. Stór dýr falla yfirleitt ekki í dá því að þau þyrftu svo mikla orku til að ná líkamshitanum upp aftur. Leðurblökur hjúfra sig oft hver upp að annarri til að draga úr varmatapinu þar sem þær hanga á haus. Þegar vetur gengur í garð safnast leðurblökur í vissa hella eða tré og leggjast þar í eiginlegan vetrardvala.\n\nSumardvali\nMörg eyðimerkurdýr liggja í dvala heitasta árstímann til að prauka steikjandi hitann. Þetta kallast sumardvali, andstætt vetrardvala. Margar æður, froskar, sniglar og skordýr eyðimerkunnar leggjast í sumardvala. Áður en sniglar fara í dvalann loka þeir kúðungi sínum með því að þekja opið með himnu úr slími sem harðnar síðan í hitanum.\n\n(úr: Alfræð í unga fólksins, 1994)\n\n19. Hvernig er starfsemi líkamans þegar dýr er í dvala?\nSvarmöguleikar:\na. Líkamshitinn hækkar.\nb. Orkan verður meiri.\nc. Starfsemin er hægari.",
+  "label": "b",
+  "year": "2013"
 }
 ```
 
 ```json
 {
-    "text": "Lestu textabrotið úr Alfræði unga fólksins og svaraðu spurningunum.\n\nDýr með heitt blóð þurfa yfirleitt að verja umtalsverði orku til að halda á sér hita yfir kalda vetrarmánuði. Orkuna fá þau úr fæðunni sem er þó einmitt jafnan hvað minnst að vetrinum. Sum dýr komast af með því að flytja sig til hlýrri staða en önnur, til dæmis leðurblök og broddgeltir, leggjast í dvala á öruggum og skjólgóðum stað, svo sem í greni, hreiðri eða hellisskúta. Hjá dýrum sem fara í eiginlegan vetrardvala hægir mjög á allri líkamstarfsemi, hjartað slær aðeins öðru hverju og andardrátturinn verður mjög hægur. Líkamshitinn er bara nokkrum gráðum hærri en hiti umhverfisins og er til dæmis rétt um frostmark hjá hömstrum. Ef hitinn úti fer undir frostmark örvast efnskaskipti líkamans og hindra að dýrið frjósi í hel. Dýr sem leggjast í vetrardvala éta sérlega mikið á haustin og safna fituforða til vetrarins. Sá forði fleytir þeim yfir vetrarmánuðina án þess að þau þurfi að næra sig.\n\nSvartbjörn\nBirnir, skunkar og jarðíkornar sofa ekki eins föstum vetrarsvefni og leðurblökur og mýs sem leggjast í eiginlegan vetrardvala. Líkamshiti svartbjarnar lækkar nokkuð er hann leggst í híði en hjartað slær nánast jafnt hratt og í vöku. Þetta gerir það að verkum að bangsi getur rumskað af vægum svefni ef veður hlýnar svolítið um hríð. Þótt björninn vakni upp af dvalanum fer hann yfirleitt ekki á stjá til að leita sér fæðu, heldur lifir áfram á fituforða sínum. Sumar birnur fæða húna í híði sínu að vetrinum.\n\nDá\nSum dýr með heitt blóð, t.d. leðurblökur og kólibrífuglar, spara orku með því að líkamshiti þeirra lækkar og hjartslátturinn róast hluta dags eða nætur. Þetta kallast dá og er ekki sama eðlis og dvali. Stór dýr falla yfirleitt ekki í dá því að þau þyrftu svo mikla orku til að ná líkamshitanum upp aftur. Leðurblökur hjúfra sig oft hver upp að annarri til að draga úr varmatapinu þar sem þær hanga á haus. Þegar vetur gengur í garð safnast leðurblökur í vissa hella eða tré og leggjast þar í eiginlegan vetrardvala.\n\nSumardvali\nMörg eyðimerkurdýr liggja í dvala heitasta árstímann til að prauka steikjandi hitann. Þetta kallast sumardvali, andstætt vetrardvala. Margar æður, froskar, sniglar og skordýr eyðimerkunnar leggjast í sumardvala. Áður en sniglar fara í dvalann loka þeir kúðungi sínum með því að þekja opið með himnu úr slími sem harðnar síðan í hitanum.\n\n(úr: Alfræð í unga fólksins, 1994)\n\n22. Hvað kallast dvalarstaður bjarnna á veturna?\nSvarmöguleikar:\na. greni\nb. hellir\nc. híði",
-    "label": "c",
-    "year": "2013"
+  "text": "Lestu textabrotið úr Alfræði unga fólksins og svaraðu spurningunum.\n\nDýr með heitt blóð þurfa yfirleitt að verja umtalsverði orku til að halda á sér hita yfir kalda vetrarmánuði. Orkuna fá þau úr fæðunni sem er þó einmitt jafnan hvað minnst að vetrinum. Sum dýr komast af með því að flytja sig til hlýrri staða en önnur, til dæmis leðurblök og broddgeltir, leggjast í dvala á öruggum og skjólgóðum stað, svo sem í greni, hreiðri eða hellisskúta. Hjá dýrum sem fara í eiginlegan vetrardvala hægir mjög á allri líkamstarfsemi, hjartað slær aðeins öðru hverju og andardrátturinn verður mjög hægur. Líkamshitinn er bara nokkrum gráðum hærri en hiti umhverfisins og er til dæmis rétt um frostmark hjá hömstrum. Ef hitinn úti fer undir frostmark örvast efnskaskipti líkamans og hindra að dýrið frjósi í hel. Dýr sem leggjast í vetrardvala éta sérlega mikið á haustin og safna fituforða til vetrarins. Sá forði fleytir þeim yfir vetrarmánuðina án þess að þau þurfi að næra sig.\n\nSvartbjörn\nBirnir, skunkar og jarðíkornar sofa ekki eins föstum vetrarsvefni og leðurblökur og mýs sem leggjast í eiginlegan vetrardvala. Líkamshiti svartbjarnar lækkar nokkuð er hann leggst í híði en hjartað slær nánast jafnt hratt og í vöku. Þetta gerir það að verkum að bangsi getur rumskað af vægum svefni ef veður hlýnar svolítið um hríð. Þótt björninn vakni upp af dvalanum fer hann yfirleitt ekki á stjá til að leita sér fæðu, heldur lifir áfram á fituforða sínum. Sumar birnur fæða húna í híði sínu að vetrinum.\n\nDá\nSum dýr með heitt blóð, t.d. leðurblökur og kólibrífuglar, spara orku með því að líkamshiti þeirra lækkar og hjartslátturinn róast hluta dags eða nætur. Þetta kallast dá og er ekki sama eðlis og dvali. Stór dýr falla yfirleitt ekki í dá því að þau þyrftu svo mikla orku til að ná líkamshitanum upp aftur. Leðurblökur hjúfra sig oft hver upp að annarri til að draga úr varmatapinu þar sem þær hanga á haus. Þegar vetur gengur í garð safnast leðurblökur í vissa hella eða tré og leggjast þar í eiginlegan vetrardvala.\n\nSumardvali\nMörg eyðimerkurdýr liggja í dvala heitasta árstímann til að prauka steikjandi hitann. Þetta kallast sumardvali, andstætt vetrardvala. Margar æður, froskar, sniglar og skordýr eyðimerkunnar leggjast í sumardvala. Áður en sniglar fara í dvalann loka þeir kúðungi sínum með því að þekja opið með himnu úr slími sem harðnar síðan í hitanum.\n\n(úr: Alfræð í unga fólksins, 1994)\n\n22. Hvað kallast dvalarstaður bjarnna á veturna?\nSvarmöguleikar:\na. greni\nb. hellir\nc. híði",
+  "label": "c",
+  "year": "2013"
 }
 ```
 
@@ -1026,25 +1028,25 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Hve lengi væri rútan á milli Reykjavíkur og Akureyrar ef hún keyrði á 85 km hraða á klst. að jafnaði og stoppaði hvergi?\nSvarmöguleikar:\na. 4 klst. 34 mín.\nb. 4 klst. 56 mín.\nc. 6 klst. 48 mín.\nd. 6 klst. 56 mín.",
-    "label": "a",
-    "year": "2013"
+  "text": "Hve lengi væri rútan á milli Reykjavíkur og Akureyrar ef hún keyrði á 85 km hraða á klst. að jafnaði og stoppaði hvergi?\nSvarmöguleikar:\na. 4 klst. 34 mín.\nb. 4 klst. 56 mín.\nc. 6 klst. 48 mín.\nd. 6 klst. 56 mín.",
+  "label": "a",
+  "year": "2013"
 }
 ```
 
 ```json
 {
-    "text": "Hæð og grunnlína í þríhyrningi eru 2 cm að lengd. Hve mörgum sinnum stærri verður þríhyrningurinn að flatarmáli ef hvort strik er lengt um 2 cm?\nSvarmöguleikar:\na. Tvisvar sinnum stærri.\nb. Fjórum sinnum stærri.\nc. Átta sinnum stærri.\nd. Sextán sinnum stærri.",
-    "label": "b",
-    "year": "2013"
+  "text": "Hæð og grunnlína í þríhyrningi eru 2 cm að lengd. Hve mörgum sinnum stærri verður þríhyrningurinn að flatarmáli ef hvort strik er lengt um 2 cm?\nSvarmöguleikar:\na. Tvisvar sinnum stærri.\nb. Fjórum sinnum stærri.\nc. Átta sinnum stærri.\nd. Sextán sinnum stærri.",
+  "label": "b",
+  "year": "2013"
 }
 ```
 
 ```json
 {
-    "text": "16. Fjórar handboltakempur voru að lyfta lóðum.\nÞær báru saman bækur sínar til að sjá hver lyfti mestri þyngd í einni lyftu.\n\nTóta lyfti 75 kg\nStína lyfti 77 500 g\nFreyja lyfti 765 hg\nBára lyfti 76 000 000 mg\n\nHver þeirra lyfti mestri þyngd í einni lyftu?\nSvarmöguleikar:\na. Bára\nb. Freyja\nc. Stína\nd. Tóta",
-    "label": "c",
-    "year": "2013"
+  "text": "16. Fjórar handboltakempur voru að lyfta lóðum.\nÞær báru saman bækur sínar til að sjá hver lyfti mestri þyngd í einni lyftu.\n\nTóta lyfti 75 kg\nStína lyfti 77 500 g\nFreyja lyfti 765 hg\nBára lyfti 76 000 000 mg\n\nHver þeirra lyfti mestri þyngd í einni lyftu?\nSvarmöguleikar:\na. Bára\nb. Freyja\nc. Stína\nd. Tóta",
+  "label": "c",
+  "year": "2013"
 }
 ```
 
@@ -1094,10 +1096,10 @@ euroeval --model <model-id> --dataset icelandic-math-tests
 ### Winogrande-is
 
 This dataset was published in [this paper](https://aclanthology.org/2022.lrec-1.464/)
-and is a manually translated and adapted version of the English [WinoGrande
-dataset](https://doi.org/10.1145/3474381). The samples are sentences containing two
-nouns and an ambiguous pronoun, and the task is to determine which of the two nouns the
-pronoun refers to.
+and is a manually translated and adapted version of the English
+[WinoGrande dataset](https://doi.org/10.1145/3474381). The samples are sentences
+containing two nouns and an ambiguous pronoun, and the task is to determine which of the
+two nouns the pronoun refers to.
 
 The original full dataset consists of 1,095 samples, and we use a 64 / 128 / 896 split
 for training, validation and testing, respectively.
@@ -1168,11 +1170,11 @@ euroeval --model <model-id> --dataset winogrande-is
 
 ### Unofficial: HellaSwag-is
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/). The original dataset was based on both
-video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
-was translated using [Miðeind](https://mideind.is/english.html)'s Greynir translation
-model.
+This dataset is a machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
+on both video descriptions from ActivityNet as well as how-to articles from WikiHow. The
+dataset was translated using [Miðeind](https://mideind.is/english.html)'s Greynir
+translation model.
 
 The original full dataset consists of 9,310 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).
@@ -1310,10 +1312,10 @@ euroeval --model <model-id> --dataset rrn
 
 ### ValEU-is
 
-This dataset is the official Icelandic version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official Icelandic version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU
@@ -1408,67 +1410,41 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": [
-        "þeirra",
-        "hét",
-        "annar",
-        "kleofas",
-        "en",
-        "annar",
-        "hyggja",
-        "menn",
-        "að",
-        "verið",
-        "hafi",
-        "lúkas",
-        "guðspjallamaður"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+  "tokens": [
+    "þeirra",
+    "hét",
+    "annar",
+    "kleofas",
+    "en",
+    "annar",
+    "hyggja",
+    "menn",
+    "að",
+    "verið",
+    "hafi",
+    "lúkas",
+    "guðspjallamaður"
+  ],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": [
-        "sá",
-        "réttlátur",
-        "og",
-        "siðsamur",
-        "og",
-        "heilagur",
-        "andi",
-        "með",
-        "honum",
-        "var",
-        "var"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "B-ERR",
-        "I-ERR"
-    ]
+  "tokens": [
+    "sá",
+    "réttlátur",
+    "og",
+    "siðsamur",
+    "og",
+    "heilagur",
+    "andi",
+    "með",
+    "honum",
+    "var",
+    "var"
+  ],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ERR", "I-ERR"]
 }
 ```
 
@@ -1505,4 +1481,166 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset gerlangmod-is
+```
+
+## Logical Reasoning
+
+### Unofficial: ZebraPuzzleEasy-is
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Röð húsa er númeruð frá 1 til 2 frá vinstri til hægri.\n\nÍ hverju húsi býr einstaklingur með einu einstakt einkenni í sérhverjum eftirfarandi flokka:\n\nStarf: kennari og verslunarstarfsmaður.\nÁhugamál: hekl og klifur.\nUppáhaldsávextir: epli og sólber.\n\nAð auki vitum við eftirfarandi:\n\n\n\n1. Sá sem á naggrís er með húðflúr.\n2. Sá sem siglir oft býr í húsi númer 1.\n3. Sá sem á reiðhjól býr ekki í húsi númer 1.\n4. Sá sem heldur að næstbesti ávöxturinn sé mangó er með rautt hár.\n5. Sá sem klifrar býr ekki í húsi númer 2.\n6. Sá sem heklar er góður vinur þess sem á systur.\n7. Kennarinn býr vinstra megin við þann sem elskar epli.",
+  "target_text": {
+    "object_1": ["kennari", "klifur", "sólber"],
+    "object_2": ["verslunarstarfsmaður", "hekl", "epli"]
+  }
+}
+```
+
+```json
+{
+  "text": "Röð húsa er númeruð frá 1 til 2 frá vinstri til hægri.\n\nÍ hverju húsi býr einstaklingur með einu einstakt einkenni í sérhverjum eftirfarandi flokka:\n\nGæludýr: köttur og úndúlati.\nÁhugamál: handbolti og málun.\nUppáhaldsávextir: jarðarber og sólber.\n\nAð auki vitum við eftirfarandi:\n\n\n\n1. Sá sem málar er með húðflúr.\n2. Sá sem elskar eðlisfræði á ekki kaktus.\n3. Sá sem elskar sólber er góður vinur þess sem á gæludýr sem er gamalt fyrir sína tegund.\n4. Sniglar eru lindýr.\n5. Eigandi úndúlatans býr hægra megin við þann sem elskar sólber.\n6. Sá sem spilar handbolta á naggrís.\n7. Sá sem spilar handbolta býr hægra megin við þann sem elskar sólber.",
+  "target_text": {
+    "object_1": ["köttur", "málun", "sólber"],
+    "object_2": ["úndúlati", "handbolti", "jarðarber"]
+  }
+}
+```
+
+```json
+{
+  "text": "Röð húsa er númeruð frá 1 til 2 frá vinstri til hægri.\n\nÍ hverju húsi býr einstaklingur með einu einstakt einkenni í sérhverjum eftirfarandi flokka:\n\nÞjóðerni: Færeyjar og Holland.\nUppáhalds bókategundir: hrollvekjur og ævintýrabækur.\nUppáhaldsávextir: appelsína og villijarðarber.\n\nAð auki vitum við eftirfarandi:\n\n\n\n1. Sá sem spilar á gítar á systur.\n2. Sá sem á ekki kaktus býr í húsi númer 2.\n3. Færeyingurinn les ævintýrabækur.\n4. Sá sem er með meistaragráðu í stærðfræði spilar tölvuleiki.\n5. Sá sem les ævintýrabækur býr í húsi númer 1.\n6. Sá sem les ævintýrabækur elskar appelsínur.\n7. Sá sem horfir á skíðastökk gengur með gleraugu.\n8. Síld er fiskur.",
+  "target_text": {
+    "object_1": ["Færeyjar", "ævintýrabækur", "appelsína"],
+    "object_2": ["Holland", "hrollvekjur", "villijarðarber"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Hér er ráðgáta:
+  <riddle>
+  {text}
+  </riddle>
+  Hver hefur hvaða einkenni og býr í hvaða húsi?
+
+  Vinsamlegast gefðu svarið þitt sem JSON dictionary. Hvert key ætti að vera object_X þar sem X er húsnúmerið. Hvert value ætti að vera listi með einkennum úr áðurnefndum flokkum sem tilheyra einstaklingnum í húsi nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-is
+```
+
+### Unofficial: ZebraPuzzleHard-is
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Röð húsa er númeruð frá 1 til 4 frá vinstri til hægri.\n\nÍ hverju húsi býr einstaklingur með einu einstakt einkenni í sérhverjum eftirfarandi flokka:\n\nStarf: hjúkrunarfræðingur, hugbúnaðarverkfræðingur, kennari og lögreglumaður.\nGæludýr: hundur, köttur, sebrahestur og úndúlati.\nDrykkir: kakó, mjólk, smoothie og te.\nUppáhalds bókategundir: ljóð, vísindaskáldskapur, ástarsögur og ævintýrabækur.\nÁhugamál: borðspil, fótbolti, handbolti og tennis.\n\nAð auki vitum við eftirfarandi:\n\n\n\n1. Sá sem les ástarsögur er góður vinur þess sem heldur að næstbesti ávöxturinn sé mangó.\n2. Sá sem spilar fótbolta býr í húsi númer 2.\n3. Það eru 2 hús á milli þess sem drekkur kakó og þess sem les vísindaskáldskap.\n4. Sá sem spilar borðspil býr á milli kennarans og þess sem spilar fótbolta.\n5. Sá sem horfir á skíðastökk er með rautt hár.\n6. Það eru 2 hús á milli kennarans og þess sem les vísindaskáldskap.\n7. Lögreglumaðurinn siglir oft.\n8. Hugbúnaðarverkfræðingurinn les ævintýrabækur.\n9. Sá sem les ástarsögur býr hægra megin við þann sem spilar tennis.\n10. Hundaeigandinn býr í húsi númer 3.\n11. Sá sem les ástarsögur býr ekki í húsi númer 4.\n12. Lögreglumaðurinn býr í næsta húsi til vinstri frá hugbúnaðarverkfræðingnum.\n13. Kennarinn býr ekki á milli eiganda sebrahestsins og þess sem drekkur te, og þau eru þrjár mismunandi manneskjur.\n14. Öll húsin við veginn eru með fallega garða.\n15. Sá sem les ljóð er góður vinur þess sem spilar á gítar.\n16. Sá sem drekkur mjólk býr ekki við hliðina á þeim sem les vísindaskáldskap, og þau eru ekki sama manneskjan.\n17. Hjúkrunarfræðingurinn býr í næsta húsi til hægri frá kattareigandanum.",
+  "target_text": {
+    "object_1": [
+      "lögreglumaður",
+      "sebrahestur",
+      "smoothie",
+      "vísindaskáldskapur",
+      "tennis"
+    ],
+    "object_2": [
+      "hugbúnaðarverkfræðingur",
+      "köttur",
+      "te",
+      "ævintýrabækur",
+      "fótbolti"
+    ],
+    "object_3": ["hjúkrunarfræðingur", "hundur", "mjólk", "ástarsögur", "borðspil"],
+    "object_4": ["kennari", "úndúlati", "kakó", "ljóð", "handbolti"]
+  }
+}
+```
+
+```json
+{
+  "text": "Röð húsa er númeruð frá 1 til 4 frá vinstri til hægri.\n\nÍ hverju húsi býr einstaklingur með einu einstakt einkenni í sérhverjum eftirfarandi flokka:\n\nÞjóðerni: Frakkland, Lettland, Noregur og Stóra-Bretland.\nDrykkir: kaffi, mjólk, safi og smoothie.\nUppáhalds bókategundir: ljóð, vísindaskáldskapur, ástarsögur og ævintýrabækur.\nÁhugamál: borðspil, fótbolti, hekl og málun.\nUppáhaldsávextir: appelsína, jarðarber, pera og sólber.\n\nAð auki vitum við eftirfarandi:\n\n\n\n1. Sá sem les vísindaskáldskap býr í næsta húsi til hægri frá þeim sem elskar appelsínur.\n2. Sá sem spilar fótbolta elskar jarðarber.\n3. Bretinn býr í næsta húsi til vinstri frá þeim sem drekkur smoothie.\n4. Frakkinn býr í húsi númer 2.\n5. Nokkur húsanna eru með græna hurð.\n6. Sá sem drekkur kaffi heklar.\n7. Sá sem les ævintýrabækur býr við hliðina á þeim sem spilar fótbolta.\n8. Sá sem drekkur smoothie veit að sólkerfið ferðast á um 200 km/s hraða umhverfis miðju vetrarbrautarinnar.\n9. Það er eitt hús á milli Norðmannsins og þess sem elskar jarðarber.\n10. Sá sem elskar perur veit að agúrka er ber.\n11. Sá sem les ævintýrabækur býr í næsta húsi til vinstri frá þeim sem elskar sólber.\n12. Frakkinn býr við hliðina á þeim sem spilar fótbolta.\n13. Það er eitt hús á milli Lettans og þess sem spilar borðspil.\n14. Öll húsin við veginn eru með fallega garða.\n15. Sá sem drekkur safa býr á milli Lettans og þess sem les ástarsögur.\n16. Það eru margir bílar á veginum.",
+  "target_text": {
+    "object_1": ["Stóra-Bretland", "mjólk", "ástarsögur", "fótbolti", "jarðarber"],
+    "object_2": ["Frakkland", "smoothie", "ævintýrabækur", "borðspil", "appelsína"],
+    "object_3": ["Noregur", "safi", "vísindaskáldskapur", "málun", "sólber"],
+    "object_4": ["Lettland", "kaffi", "ljóð", "hekl", "pera"]
+  }
+}
+```
+
+```json
+{
+  "text": "Röð húsa er númeruð frá 1 til 4 frá vinstri til hægri.\n\nÍ hverju húsi býr einstaklingur með einu einstakt einkenni í sérhverjum eftirfarandi flokka:\n\nÞjóðerni: Holland, Noregur, Stóra-Bretland og Svíþjóð.\nStarf: hjúkrunarfræðingur, hugbúnaðarverkfræðingur, kennari og verslunarstarfsmaður.\nGæludýr: förustafur, hundur, köttur og úndúlati.\nUppáhalds bókategundir: glæpasögur, ljóð, ástarsögur og ævintýrabækur.\nÁhugamál: borðspil, fótbolti, klifur og tennis.\n\nAð auki vitum við eftirfarandi:\n\n\n\n1. Svíinn býr við hliðina á þeim sem er með meistaragráðu í stærðfræði.\n2. Norðmaðurinn býr ekki í húsi númer 2.\n3. Það eru 2 hús á milli hjúkrunarfræðingsins og þess sem les ævintýrabækur.\n4. Hugbúnaðarverkfræðingurinn býr við hliðina á þeim sem gengur með gleraugu.\n5. Kennarinn býr vinstra megin við þann sem spilar borðspil.\n6. Bretinn er með húðflúr.\n7. Sá sem á reiðhjól býr í húsi númer 3.\n8. Hollendingurinn býr vinstra megin við þann sem klifrar.\n9. Svíinn býr við hliðina á þeim sem les glæpasögur.\n10. Hjúkrunarfræðingurinn er góður vinur þess sem siglir oft.\n11. Svíinn býr hægra megin við þann sem les ljóð.\n12. Eigandi úndúlatans býr ekki á milli þess sem spilar tennis og þess sem spilar fótbolta, og þau eru þrjár mismunandi manneskjur.\n13. Verslunarstarfsmaðurinn býr í húsi númer 1.\n14. Hollendingurinn býr ekki á milli eiganda förustafsins og þess sem spilar tennis, og þau eru þrjár mismunandi manneskjur.\n15. Eigandi förustafsins býr ekki í húsi númer 4.\n16. Hundaeigandinn býr við hliðina á þeim sem les ævintýrabækur.\n17. Það eru 2 hús á milli kattareigandans og þess sem les glæpasögur.\n18. Svíinn klifrar ekki.",
+  "target_text": {
+    "object_1": [
+      "Holland",
+      "verslunarstarfsmaður",
+      "köttur",
+      "ævintýrabækur",
+      "fótbolti"
+    ],
+    "object_2": ["Stóra-Bretland", "kennari", "hundur", "ljóð", "tennis"],
+    "object_3": [
+      "Svíþjóð",
+      "hugbúnaðarverkfræðingur",
+      "förustafur",
+      "ástarsögur",
+      "borðspil"
+    ],
+    "object_4": ["Noregur", "hjúkrunarfræðingur", "úndúlati", "glæpasögur", "klifur"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Hér er ráðgáta:
+  <riddle>
+  {text}
+  </riddle>
+  Hver hefur hvaða einkenni og býr í hvaða húsi?
+
+  Vinsamlegast gefðu svarið þitt sem JSON dictionary. Hvert key ætti að vera object_X þar sem X er húsnúmerið. Hvert value ætti að vera listi með einkennum úr áðurnefndum flokkum sem tilheyra einstaklingnum í húsi nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-is
 ```

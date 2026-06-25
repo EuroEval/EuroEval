@@ -8,6 +8,7 @@ from ..tasks import (
     GED,
     KNOW,
     LA,
+    LOGIC,
     MCRC,
     NER,
     RC,
@@ -291,6 +292,42 @@ GERLANGMOD_NN_CONFIG = DatasetConfig(
     pretty_name="GerLangMod-nn",
     source="EuroEval/gerlangmod-nn",
     task=GED,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_EASY_NB_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-nb",
+    pretty_name="ZebraPuzzlesEasy-nb",
+    source="EuroEval/zebra-puzzles-easy-nb",
+    task=LOGIC,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_NB_CONFIG = DatasetConfig(
+    name="zebra-puzzles-hard-nb",
+    pretty_name="ZebraPuzzlesHard-nb",
+    source="EuroEval/zebra-puzzles-hard-nb",
+    task=LOGIC,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_EASY_NN_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-nn",
+    pretty_name="ZebraPuzzlesEasy-nn",
+    source="EuroEval/zebra-puzzles-easy-nn",
+    task=LOGIC,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_NN_CONFIG = DatasetConfig(
+    name="zebra-puzzles-hard-nn",
+    pretty_name="ZebraPuzzlesHard-nn",
+    source="EuroEval/zebra-puzzles-hard-nn",
+    task=LOGIC,
     languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
     unofficial=True,
 )

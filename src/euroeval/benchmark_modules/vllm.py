@@ -1528,7 +1528,7 @@ def load_model(
             limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
             # runner is required for LLM.generate() to work with generative models
             runner="generate",
-            **({"hf_overrides": hf_overrides} if hf_overrides else {}),  # ty: ignore[invalid-argument-type]
+            **({"hf_overrides": hf_overrides} if hf_overrides else {}),
             **vllm_params,
         )
 

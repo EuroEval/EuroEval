@@ -8,6 +8,7 @@ from ..tasks import (
     GED,
     KNOW,
     LA,
+    LOGIC,
     MCRC,
     NER,
     RC,
@@ -195,6 +196,24 @@ GERLANGMOD_IS_CONFIG = DatasetConfig(
     pretty_name="GerLangMod-is",
     source="EuroEval/gerlangmod-is",
     task=GED,
+    languages=[ICELANDIC],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_EASY_IS_CONFIG = DatasetConfig(
+    name="zebra-puzzles-easy-is",
+    pretty_name="ZebraPuzzlesEasy-is",
+    source="EuroEval/zebra-puzzles-easy-is",
+    task=LOGIC,
+    languages=[ICELANDIC],
+    unofficial=True,
+)
+
+ZEBRA_PUZZLE_HARD_IS_CONFIG = DatasetConfig(
+    name="zebra-puzzles-hard-is",
+    pretty_name="ZebraPuzzlesHard-is",
+    source="EuroEval/zebra-puzzles-hard-is",
+    task=LOGIC,
     languages=[ICELANDIC],
     unofficial=True,
 )

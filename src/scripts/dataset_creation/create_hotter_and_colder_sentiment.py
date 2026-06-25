@@ -17,7 +17,6 @@ import datetime as dt
 import io
 import logging
 import re
-import warnings
 from time import sleep
 from zipfile import ZipFile
 
@@ -131,11 +130,7 @@ def hydrate_data(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         The DataFrame with the hydrated data.
     """
-    with warnings.catch_warnings():
-        warnings.simplefilter(
-            action="ignore", category=pd.errors.SettingWithCopyWarning
-        )
-        df.comment_datetime = pd.to_datetime(arg=df.comment_datetime)
+    df.comment_datetime = pd.to_datetime(arg=df.comment_datetime)
 
     with joblib.Parallel(n_jobs=-1, backend="threading") as parallel:
         comment_texts = parallel(
@@ -145,11 +140,7 @@ def hydrate_data(df: pd.DataFrame) -> pd.DataFrame:
             for _, row in tqdm(df.iterrows(), total=len(df), desc="Hydrating comments")
         )
 
-    with warnings.catch_warnings():
-        warnings.simplefilter(
-            action="ignore", category=pd.errors.SettingWithCopyWarning
-        )
-        df["comment_content"] = list(comment_texts)
+    df["comment_content"] = list(comment_texts)
 
     return df.dropna(subset=["comment_content"])
 

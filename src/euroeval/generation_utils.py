@@ -415,13 +415,15 @@ def apply_prompt(
         case TaskGroup.TEXT_TO_TEXT:
             few_shot_sections = [
                 create_prompt(
-                    text=example["text"].replace("\n", " ").strip(),
-                    target_text=example["target_text"].replace("\n", " ").strip(),
+                    text=re.sub(r"\n{2,}", "\n", example["text"]).strip(),
+                    target_text=re.sub(r"\n{2,}", "\n", example["target_text"]).strip(),
                 )
                 for example in few_shot_examples
             ]
             new_sections = [
-                create_prompt(text=text.replace("\n", " ").strip(), target_text="")
+                create_prompt(
+                    text=re.sub(r"\n{2,}", "\n", text).strip(), target_text=""
+                )
                 for text in examples["text"]
             ]
 

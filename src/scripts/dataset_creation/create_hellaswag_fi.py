@@ -11,7 +11,6 @@
 """Create the Finnish HellaSwag-mini dataset and upload it to the HF Hub."""
 
 import logging
-import warnings
 from collections import Counter
 
 import pandas as pd
@@ -25,12 +24,9 @@ from constants import (
 )
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from huggingface_hub import HfApi
-from pandas.errors import SettingWithCopyWarning
 
 logging.basicConfig(format="%(asctime)s ⋅ %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-warnings.filterwarnings(action="ignore", category=SettingWithCopyWarning)
 
 
 def main() -> None:

@@ -11,21 +11,15 @@
 
 """Create the Danish Citizen Tests dataset and upload it to the HF Hub."""
 
-import warnings
-
 import pandas as pd
 from constants import CHOICES_MAPPING
 from datasets import Dataset, DatasetDict, Split, load_dataset
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
-from pandas.errors import SettingWithCopyWarning
 
 from euroeval.utils import get_hf_token
 
 load_dotenv()
-
-
-warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 
 
 def main() -> None:
