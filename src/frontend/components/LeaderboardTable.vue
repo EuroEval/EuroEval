@@ -1065,16 +1065,19 @@ select.lb-filter option {
 
 .lb-pager {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   gap: 0.75rem;
   margin-top: 0.75rem;
   font-size: 0.85rem;
+  position: relative;
 }
 
 .lb-pager .lb-last-updated {
   color: var(--color-muted);
   font-size: 0.8rem;
+  position: absolute;
+  left: 0;
 }
 
 .lb-pager button {
