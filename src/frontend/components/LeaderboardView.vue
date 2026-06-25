@@ -83,7 +83,32 @@ const lastUpdated = computed<string | null>(() => {
   const notes = activeMetadata.value?.annotate?.notes;
   if (!notes) return null;
   const match = notes.match(/Last updated: (.+)$/);
-  return match ? match[1] : null;
+  if (!match) return null;
+
+  const timestampStr = match[1];
+  // Parse "2026-06-20 16:42:37 CET" format (strip timezone for simplicity)
+  const dateMatch = timestampStr.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+  if (!dateMatch) return null;
+
+  const then = new Date(dateMatch[1]).getTime();
+  const now = Date.now();
+  const diffMs = now - then;
+
+  if (diffMs < 0) return timestampStr; // Future date, show as-is
+
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffWeeks = Math.floor(diffDays / 7);
+  const diffMonths = Math.floor(diffDays / 30);
+
+  if (diffSecs < 60) return `${diffSecs} second${diffSecs !== 1 ? 's' : ''} ago`;
+  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+  if (diffWeeks < 4) return `${diffWeeks} week${diffWeeks !== 1 ? 's' : ''} ago`;
+  return `${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`;
 });
 
 const MULTILINGUAL_STEMS = new Set([
