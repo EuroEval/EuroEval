@@ -300,7 +300,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset xquad-es
+euroeval --model <model-id> --dataset mlqa-es
 ```
 
 ### Unofficial: XQuAD-es

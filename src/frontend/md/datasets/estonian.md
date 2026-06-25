@@ -228,7 +228,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset grammar-et
 ```
 
-### Unofficial: ScaLA-da
+### Unofficial: ScaLA-et
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the [Estonian Universal Dependencies

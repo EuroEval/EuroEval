@@ -165,7 +165,7 @@ euroeval --model <model-id> --dataset conll-en
 
 ## Linguistic Acceptability
 
-### ScaLA-En
+### ScaLA-en
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the
