@@ -317,7 +317,7 @@ and contains 1190 question-answer pairs from
 [SQuAD v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages
 by professional translators.
 
-The dataset is split intro 550 / 128 / 512 question-answer pairs for training,
+The dataset is split into 550 / 128 / 512 question-answer pairs for training,
 validation, and testing, respectively.
 
 Here are a few examples from the training split:
@@ -1220,7 +1220,7 @@ The dataset consists of 52 questions from the 2017-2022 wave of the European val
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {

@@ -85,9 +85,9 @@ euroeval --model <model-id> --dataset fosent
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.74/)
 and is based on news articles from [Sosialurin](http://www.sosialurin.fo/). The named
 entities were automatically tagged, but verified manually. They use a superset of the
-CoNNL-2003 dataset, with the following additional entity types: `Date`, `Money`,
+CoNLL-2003 dataset, with the following additional entity types: `Date`, `Money`,
 `Percent` and `Time`. We remove these additional entity types from our dataset and keep
-only the original CoNNL-2003 entity types (`PER`, `ORG`, `LOC`, `MISC`).
+only the original CoNLL-2003 entity types (`PER`, `ORG`, `LOC`, `MISC`).
 
 The original full dataset consists of 6,286 samples, which we split into 1,024 / 256 /
 2,048 samples for training, validation and testing, respectively.

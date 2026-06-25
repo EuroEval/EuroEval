@@ -240,7 +240,7 @@ in each language without translation.
 The original Finnish TydiQA dataset contains 6,855 training and 782 validation samples
 (we use the [secondary task
 subset](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train)).
-We created a 1,024 / 256 / 2,024 split, where the samples from the train and validation
+We created a 1,024 / 256 / 2,048 split, where the samples from the train and validation
 split are sampled from the original train and validation splits, respectively. The test
 set consists of the remaining samples from the original validation split + additional
 samples from the original train split.
@@ -950,7 +950,7 @@ The dataset consists of 52 questions from the 2017-2022 wave of the European val
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {

@@ -324,8 +324,8 @@ Albanian was done by the [Cohere Labs Community](https://cohere.com/research).
 
 The original full dataset consists of 215 / 400 samples for
 validation and testing, respectively. We use a 128 / 64 / 404 split for training,
-validation and testing, respectively (so 3,328 samples used in total).
-The train set is sample from the validation set. Remaining validation samples
+validation and testing, respectively (so 596 samples used in total).
+The train set is sampled from the validation set. Remaining validation samples
 are used in the test set.
 
 Here are a few examples from the training split:

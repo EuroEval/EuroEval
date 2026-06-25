@@ -1146,7 +1146,7 @@ The dataset consists of 52 questions from the 2017-2022 wave of the European val
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {

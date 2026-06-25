@@ -9,7 +9,7 @@ information about what these constitute.
 ### CSFD Sentiment-sk
 
 This dataset was published in [this paper](https://aclanthology.org/R13-1016/) and
-consists of reviews from the the Czech/Slovak Movie
+consists of reviews from the Czech/Slovak Movie
 Database (CSFD).
 
 The original dataset contains 25,000 / 2,500 / 2,500 samples for the training,
