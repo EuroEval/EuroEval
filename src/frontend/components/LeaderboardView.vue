@@ -5,7 +5,9 @@ import LeaderboardScatter from "@/components/LeaderboardScatter.vue";
 import {
   loadLeaderboard,
   loadLeaderboardCsv,
+  loadLeaderboardMetadata,
   type LeaderboardTable as LBTable,
+  type LeaderboardMetadata,
 } from "@/leaderboard";
 
 const props = defineProps<{
@@ -23,6 +25,8 @@ const tab = ref<TabId>("generative");
 
 const generativeTable = ref<LBTable | null>(null);
 const allModelsTable = ref<LBTable | null>(null);
+const generativeMetadata = ref<LeaderboardMetadata | null>(null);
+const allModelsMetadata = ref<LeaderboardMetadata | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
@@ -31,13 +35,19 @@ const loadFor = async (stem: string) => {
   error.value = null;
   generativeTable.value = null;
   allModelsTable.value = null;
+  generativeMetadata.value = null;
+  allModelsMetadata.value = null;
   try {
-    const [g, a] = await Promise.all([
+    const [g, a, gMeta, aMeta] = await Promise.all([
       loadLeaderboard(`${stem}_generative`),
       loadLeaderboard(`${stem}_all_models`),
+      loadLeaderboardMetadata(`${stem}_generative`),
+      loadLeaderboardMetadata(`${stem}_all_models`),
     ]);
     generativeTable.value = g ?? null;
     allModelsTable.value = a ?? null;
+    generativeMetadata.value = gMeta ?? null;
+    allModelsMetadata.value = aMeta ?? null;
     if (!g && !a) {
       error.value = `No leaderboard data found for "${stem}".`;
     }
@@ -61,6 +71,19 @@ const activeTable = computed<LBTable | null>(() => {
   if (tab.value === "generative" || tab.value === "generative-scatter")
     return generativeTable.value;
   return allModelsTable.value;
+});
+
+const activeMetadata = computed<LeaderboardMetadata | null>(() => {
+  if (tab.value === "generative" || tab.value === "generative-scatter")
+    return generativeMetadata.value;
+  return allModelsMetadata.value;
+});
+
+const lastUpdated = computed<string | null>(() => {
+  const notes = activeMetadata.value?.annotate?.notes;
+  if (!notes) return null;
+  const match = notes.match(/Last updated: (.+)$/);
+  return match ? match[1] : null;
 });
 
 const MULTILINGUAL_STEMS = new Set([
@@ -248,6 +271,9 @@ const downloadCsv = async () => {
             </button>
           </template>
         </LeaderboardTable>
+        <div v-if="lastUpdated" class="lb-last-updated">
+          Last updated: {{ lastUpdated }}
+        </div>
         <div v-else class="lb-status">
           This leaderboard variant has no data.
         </div>
@@ -257,6 +283,9 @@ const downloadCsv = async () => {
           v-if="activeTable"
           :table="activeTable"
         />
+        <div v-if="lastUpdated" class="lb-last-updated">
+          Last updated: {{ lastUpdated }}
+        </div>
         <div v-else class="lb-status">
           This leaderboard variant has no data.
         </div>
@@ -522,5 +551,12 @@ const downloadCsv = async () => {
 
 .lb-status.error {
   color: var(--color-danger);
+}
+
+.lb-last-updated {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  text-align: right;
+  margin-top: 0.25rem;
 }
 </style>

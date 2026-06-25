@@ -506,6 +506,10 @@ const csvModules = import.meta.glob("@/csv/*.csv", {
   import: "default",
 }) as Record<string, () => Promise<string>>;
 
+const jsonModules = import.meta.glob("@/csv/*.json", {
+  import: "default",
+}) as Record<string, () => Promise<unknown>>;
+
 export const csvKeys: string[] = Object.keys(csvModules).map((k) =>
   k.replace(/^.*\/csv\//, "").replace(/\.csv$/, ""),
 );
@@ -604,4 +608,26 @@ export async function loadLeaderboardCsv(
   );
   if (!entry) return undefined;
   return await loadWithRetry(entry[1], stem);
+}
+
+export interface LeaderboardMetadata {
+  annotate?: {
+    notes?: string;
+  };
+}
+
+/** Load leaderboard metadata from the companion JSON file. */
+export async function loadLeaderboardMetadata(
+  stem: string,
+): Promise<LeaderboardMetadata | undefined> {
+  const entry = Object.entries(jsonModules).find(([path]) =>
+    path.endsWith(`/${stem}.json`),
+  );
+  if (!entry) return undefined;
+  try {
+    const data = await entry[1]();
+    return data as LeaderboardMetadata;
+  } catch {
+    return undefined;
+  }
 }
