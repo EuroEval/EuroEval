@@ -286,9 +286,9 @@ When evaluating generative models, we use the following setup (see the
 - Instruction-tuned prompt template:
 
   ```text
-  Sætning: {text}
+  Lause: {text}
 
-  Bestem om sætningen er grammatisk korrekt eller ej. Svar med 'ja', hvis sætningen er korrekt, og 'nej', hvis den ikke er.
+  Otsusta, kas lause on grammatiliselt õige või mitte. Vasta {labels_str}, ja mitte midagi muud.
   ```
 
 - Label mapping:

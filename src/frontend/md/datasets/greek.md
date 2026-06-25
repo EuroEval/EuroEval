@@ -310,7 +310,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-el
 Global-MMLU is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
-Ukrainian was done by the [Cohere Labs Community](https://cohere.com/research).
+Greek was done by the [Cohere Labs Community](https://cohere.com/research).
 
 The original full dataset consists of 285 / 14,042 samples for
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,

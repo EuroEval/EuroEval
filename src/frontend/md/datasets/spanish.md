@@ -541,7 +541,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-es
 This dataset is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
-French was done by the University of Oregon as part of [this
+Spanish was done by the University of Oregon as part of [this
 paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 272 / 1,465 / 13,334 samples for training,

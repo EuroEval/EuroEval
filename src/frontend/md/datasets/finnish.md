@@ -136,14 +136,14 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `person`
-  - `I-PER` ➡️ `person`
-  - `B-LOC` ➡️ `sted`
-  - `I-LOC` ➡️ `sted`
-  - `B-ORG` ➡️ `organisation`
-  - `I-ORG` ➡️ `organisation`
-  - `B-MISC` ➡️ `diverse`
-  - `I-MISC` ➡️ `diverse`
+  - `B-PER` ➡️ `henkilö`
+  - `I-PER` ➡️ `henkilö`
+  - `B-LOC` ➡️ `paikka`
+  - `I-LOC` ➡️ `paikka`
+  - `B-ORG` ➡️ `organisaatio`
+  - `I-ORG` ➡️ `organisaatio`
+  - `B-MISC` ➡️ `muut`
+  - `I-MISC` ➡️ `muut`
 
 You can evaluate this dataset directly as follows:
 
