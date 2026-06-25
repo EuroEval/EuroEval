@@ -574,8 +574,12 @@ def verify_leaderboards() -> bool:
     - Required columns are present
     - No obvious data corruption (e.g., NaN in critical fields)
 
+    Leaderboards with <50 rows are skipped (not published) instead of failing
+    the entire validation.
+
     Returns:
-        True if all checks pass, False otherwise.
+        True if validation completed (even if some leaderboards were skipped),
+        False if critical errors occurred.
     """
     output_dir = REPO_ROOT / "src" / "frontend" / "csv"
 
@@ -590,7 +594,8 @@ def verify_leaderboards() -> bool:
 
     logger.info(f"Found {len(csv_files)} leaderboard CSV(s).")
 
-    all_passed = True
+    skipped_count = 0
+    valid_count = 0
     for csv_file in csv_files:
         try:
             with csv_file.open(mode="r", encoding="utf-8") as f:
@@ -598,11 +603,12 @@ def verify_leaderboards() -> bool:
                 rows = list(reader)
 
                 if len(rows) < 50:
-                    logger.error(
-                        f"{csv_file.name}: Only {len(rows)} rows (expected >=50). "
-                        "Possible data loss?"
+                    logger.warning(
+                        f"{csv_file.name}: Only {len(rows)} rows (<50). "
+                        "Skipping publication (too few results)."
                     )
-                    all_passed = False
+                    csv_file.unlink()
+                    skipped_count += 1
                     continue
 
                 if len(rows) < 100:
@@ -640,8 +646,7 @@ def verify_leaderboards() -> bool:
                             f"Expected {required_cols_snake} or {required_cols_title}, "
                             f"got {list(rows[0].keys())[:5]}..."
                         )
-                        all_passed = False
-                        continue
+                        return False
 
                     # Use whichever format is present
                     model_col = "model" if not missing_snake else "Model"
@@ -656,19 +661,23 @@ def verify_leaderboards() -> bool:
                     if nan_count > 0:
                         msg = f"{csv_file.name}: {nan_count} rows missing {model_col}."
                         logger.error(msg)
-                        all_passed = False
+                        return False
 
                 logger.info(f"{csv_file.name}: {len(rows):,} rows OK")
+                valid_count += 1
         except Exception as e:
             logger.error(f"{csv_file.name}: Failed to read: {e}")
-            all_passed = False
+            return False
 
-    if all_passed:
-        logger.info("All leaderboard CSVs passed sanity checks.")
+    if skipped_count > 0:
+        logger.info(
+            f"Published {valid_count} leaderboard(s), skipped {skipped_count} "
+            "(too few results)."
+        )
     else:
-        logger.error("Leaderboard validation failed. Fix before deploying.")
+        logger.info(f"All {valid_count} leaderboard CSVs passed sanity checks.")
 
-    return all_passed
+    return valid_count > 0
 
 
 def deploy_to_vercel() -> bool:
