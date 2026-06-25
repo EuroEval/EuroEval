@@ -90,7 +90,7 @@ euroeval --model <model-id> --dataset sst5
 ### CoNLL-en
 
 This dataset was published in [this paper](https://aclanthology.org/W03-0419/) and was
-part of the CoNNL-2003 shared task. The data comes from the
+part of the CoNLL-2003 shared task. The data comes from the
 [Reuters Corpus](http://www.reuters.com/researchandstandards) and consists of news
 articles between August 1996 and August 1997, labelled with named entities.
 
@@ -165,7 +165,7 @@ euroeval --model <model-id> --dataset conll-en
 
 ## Linguistic Acceptability
 
-### ScaLA-En
+### ScaLA-en
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
 and was automatically created from the
@@ -400,7 +400,7 @@ and contains 1190 question-answer pairs from
 [SQuAD v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages
 by professional translators.
 
-The dataset is split intro 550 / 128 / 512 question-answer pairs for training,
+The dataset is split into 550 / 128 / 512 question-answer pairs for training,
 validation, and testing, respectively.
 
 Here are a few examples from the training split:
@@ -1384,7 +1384,7 @@ The dataset consists of 52 questions from the 2017-2022 wave of the European val
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {

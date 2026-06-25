@@ -300,7 +300,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset xquad-es
+euroeval --model <model-id> --dataset mlqa-es
 ```
 
 ### Unofficial: XQuAD-es
@@ -310,7 +310,7 @@ and contains 1190 question-answer pairs from [SQuAD
 v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages by
 professional translators.
 
-The dataset is split intro 550 / 128 / 512 question-answer pairs for training,
+The dataset is split into 550 / 128 / 512 question-answer pairs for training,
 validation, and testing, respectively.
 
 Here are a few examples from the training split:
@@ -386,7 +386,10 @@ euroeval --model <model-id> --dataset xquad-es
 ### Unofficial: BeleBele-es
 
 This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
-and features multiple-choice reading comprehension questions across 122 languages.
+and features multiple-choice reading comprehension questions across 122 languages. The
+dataset was created by professional translators who translated 900 multiple-choice
+questions from English into other languages, with answers carefully validated by native
+speakers.
 
 The original dataset contains 900 unique multiple-choice reading comprehension passages
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
@@ -532,7 +535,7 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset multi-wiki-qa-es
-```text
+```
 
 ## Knowledge
 
@@ -541,7 +544,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-es
 This dataset is a machine translated version of the English [MMLU
 dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
 different topics, such as elementary mathematics, US history and law. The translation to
-French was done by the University of Oregon as part of [this
+Spanish was done by the University of Oregon as part of [this
 paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 272 / 1,465 / 13,334 samples for training,
@@ -1294,7 +1297,7 @@ The dataset consists of 52 questions from the 2017-2022 wave of the European val
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {

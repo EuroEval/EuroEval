@@ -49,22 +49,22 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Hieronder staan tweets en hun sentiment, dat 'positief', 'neutraal' of 'negatief' kan zijn.
+  Hieronder volgen documenten en hun sentiment, dat 'positief' of 'negatief' kan zijn.
   ```
 
 - Base prompt template:
 
   ```text
-  Tweet: {text}
+  Document: {text}
   Sentiment: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Tweet: {text}
+  Document: {text}
 
-  Classificeer het sentiment in de tweet. Antwoord met 'positief', 'neutraal' of 'negatief'.
+  Classificeer het sentiment in het document. Antwoord met 'positief' of 'negatief', en verder niets.
   ```
 
 - Label mapping:
@@ -266,6 +266,42 @@ Here are a few examples from the training split:
 }
 ```
 
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+
+- Prefix prompt:
+
+  ```text
+  Hieronder staan zinnen en of ze grammaticaal correct zijn.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Zin: {text}
+  Grammaticaal correct: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Zin: {text}
+
+  Bepaal of de zin grammaticaal correct is of niet. Antwoord met 'ja' als de zin correct is en 'nee' als dat niet het geval is.
+  ```
+
+- Label mapping:
+  - `correct` ➡️ `ja`
+  - `incorrect` ➡️ `nee`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dutch-cola
+```
+
 ## Natural Language Inference
 
 ### Unofficial: The Dutch SICK-NL Entailment Dataset
@@ -440,7 +476,10 @@ euroeval --model <model-id> --dataset squad-nl
 ### Unofficial: BeleBele-nl
 
 This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
-and features multiple-choice reading comprehension questions across 122 languages.
+and features multiple-choice reading comprehension questions across 122 languages. The
+dataset was created by professional translators who translated 900 multiple-choice
+questions from English into other languages, with answers carefully validated by native
+speakers.
 
 The original dataset contains 900 unique multiple-choice reading comprehension passages
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
@@ -1490,7 +1529,7 @@ The dataset consists of 52 questions from the 2017-2022 wave of the European val
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {

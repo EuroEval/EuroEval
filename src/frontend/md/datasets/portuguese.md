@@ -118,6 +118,8 @@ reach the target of 2,304 (1,024 + 256 + 1,024). The final split is:
 - Validation: 218 examples
 - Test: 874 examples
 
+Here are a few examples from the training split:
+
 ```json
 {
   "tokens": array(["Na", "Covilhã", "ainda", "não", "havia", "liceu", "nessa", "altura", "."], dtype=object),
@@ -959,7 +961,7 @@ The dataset consists of 52 questions from the 2017-2022 wave of the European val
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {

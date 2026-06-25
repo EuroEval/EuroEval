@@ -9,7 +9,7 @@ information about what these constitute.
 ### Cross-Domain UK Reviews
 
 The dataset can be found [here](https://huggingface.co/datasets/vkovenko/cross_domain_uk_reviews).
-The data is scrapped from [Tripadvisor](https://www.tripadvisor.com/) and [Rozetka](https://rozetka.com.ua/).
+The data is scraped from [Tripadvisor](https://www.tripadvisor.com/) and [Rozetka](https://rozetka.com.ua/).
 
 The [original dataset](https://huggingface.co/datasets/vkovenko/cross_domain_uk_reviews/blob/main/processed_data.csv)
 contains 611,863 samples. We use 1,024 / 256 / 2,048 samples for our training,
@@ -530,7 +530,7 @@ The source data is public domain newswire collected from Voice of America websit
 and the summaries are human-written.
 
 The original dataset contains 5,784 / 722 / 723 samples for the training, validation, and
-and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
+test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
 validation and test splits, respectively. The train and validation splits are subsets
 of the original splits. For the test split, we use all available test samples and
 supplement with additional samples from the training set to reach 2,048 samples in
