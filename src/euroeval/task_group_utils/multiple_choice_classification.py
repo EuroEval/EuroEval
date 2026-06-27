@@ -100,25 +100,36 @@ def prepare_examples(
     Returns:
         The prepared examples.
     """
-    doc: str = examples["text"][0]
+    # `datasets.map` hands us a batch of documents at a time, so we iterate over every
+    # document and concatenate the rows they produce. Each document is a multiple-choice
+    # question that we split into one row per answer option, framing the task as binary
+    # classification ("is this the correct option?").
+    all_texts: list[str] = []
+    all_choices: list[str] = []
+    all_labels: list[int] = []
+    all_ids: list[str] = []
+    for doc, gold_letter in zip(examples["text"], examples["label"]):
+        # Recover the bare question and the individual choice texts from the formatted
+        # prompt. This is the canonical parser shared with cloze/BPC scoring, so the two
+        # paths cannot drift in how they split the choices block out of the prompt.
+        context_and_question, choices = parse_bare_question_and_choices(doc)
+        assert len(choices) > 0, "No choices found in the document."
 
-    # Recover the bare question and the individual choice texts from the formatted
-    # prompt. This is the canonical parser shared with cloze/BPC scoring, so the two
-    # paths cannot drift in how they split the choices block out of the prompt.
-    context_and_question, choices = parse_bare_question_and_choices(doc)
-    assert len(choices) > 0, "No choices found in the document."
+        all_texts.extend([context_and_question] * len(choices))
+        all_choices.extend(choices)
+        all_labels.extend(
+            int(letter == gold_letter) for letter, _ in zip(CHOICE_LETTERS, choices)
+        )
+        all_ids.extend([hashlib.md5(string=doc.encode()).hexdigest()] * len(choices))
 
-    gold_letter = examples["label"][0]
     new_examples = tokeniser(
-        text=[context_and_question] * len(choices),
-        text_pair=choices,
+        text=all_texts,
+        text_pair=all_choices,
         padding=True,
         truncation=True,
     )
-    new_examples["label"] = [
-        int(letter == gold_letter) for letter, _ in zip(CHOICE_LETTERS, choices)
-    ]
-    new_examples["id"] = [hashlib.md5(string=doc.encode()).hexdigest()] * len(choices)
+    new_examples["label"] = all_labels
+    new_examples["id"] = all_ids
     return new_examples
 
 
