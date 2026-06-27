@@ -2637,7 +2637,7 @@ Here are a few examples from the test split:
     "target_text": {
         "instruction_id_list": [
             "keywords:letter_frequency",
-            "length_constraints:number_sentences",
+            "length_constraints:number_sentences_with_language",
             "detectable_format:number_highlighted_sections"
         ],
         "kwargs": [
@@ -2718,7 +2718,7 @@ Here are a few examples from the test split:
     "target_text": {
         "instruction_id_list": [
             "keywords:letter_frequency",
-            "length_constraints:number_sentences",
+            "length_constraints:number_sentences_with_language",
             "detectable_format:number_highlighted_sections"
         ],
         "kwargs": [
