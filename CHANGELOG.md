@@ -24,6 +24,10 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed the parameter count derived from safetensors metadata when a model has multiple
+  dtype entries. The `parameter_count` dict maps each dtype to the number of parameters
+  stored in that dtype, so the total is the sum across entries — previously only the
+  largest entry was used, undercounting models with weights split across multiple dtypes.
 - Fixed the finetuning NaN-retry not actually switching to fp32. When NaN values were
   detected under mixed precision, the retry disabled autocast but reloaded the model
   via `get_dtype`, which is hardware-driven and kept returning bf16/fp16 on CUDA — so
