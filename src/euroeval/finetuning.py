@@ -69,6 +69,10 @@ def finetune(
     bs: int = benchmark_config.finetuning_batch_size
     scores: list[dict[str, float]] = list()
     model_already_initialized = False
+    # None means "load in the hardware-derived default dtype"; set to FP32 by the
+    # NaN-retry below so the model is actually *reloaded* in fp32 rather than just
+    # having mixed-precision autocast disabled while the weights stay in bf16/fp16.
+    dtype_override: DataType | None = None
     for idx in get_pbar(
         iterable=range(benchmark_config.num_iterations),
         desc="Benchmarking",
@@ -108,6 +112,7 @@ def finetune(
                     model_config=model_config,
                     dataset_config=dataset_config,
                     benchmark_config=benchmark_config,
+                    dtype_override=dtype_override,
                 )
 
                 scores.append(itr_scores)
@@ -124,6 +129,7 @@ def finetune(
             except NaNValueInModelOutput as e:
                 if dtype != DataType.FP32:
                     dtype = DataType.FP32
+                    dtype_override = DataType.FP32
                     model_already_initialized = False
                     log(
                         "NaN value detected in model outputs while using mixed "
@@ -171,6 +177,7 @@ def finetune_single_iteration(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
+    dtype_override: "DataType | None" = None,
 ) -> dict[str, float]:
     """Run a single iteration of a benchmark.
 
@@ -187,6 +194,10 @@ def finetune_single_iteration(
             The dataset configuration.
         benchmark_config:
             The benchmark configuration.
+        dtype_override:
+            An explicit data type to load the model weights in, taking precedence over
+            the hardware-derived default. Only used when a new model is loaded (i.e.
+            ``model`` is None), to force a full fp32 reload on the NaN-retry.
 
     Returns:
         The scores for the test dataset.
@@ -205,6 +216,7 @@ def finetune_single_iteration(
             model_config=model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
+            dtype_override=dtype_override,
         )
 
     trainer = model.trainer_class(

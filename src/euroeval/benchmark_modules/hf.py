@@ -49,6 +49,7 @@ from ..constants import (
 from ..data_models import HashableDict, HFModelInfo, ModelConfig
 from ..enums import (
     BatchingPreference,
+    DataType,
     GenerativeType,
     InferenceBackend,
     ModelType,
@@ -107,6 +108,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
         dataset_config: "DatasetConfig",
         benchmark_config: "BenchmarkConfig",
         log_metadata: bool = True,
+        dtype_override: "DataType | None" = None,
     ) -> None:
         """Initialise the model.
 
@@ -119,6 +121,10 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 The benchmark configuration.
             log_metadata:
                 Whether to log the model metadata.
+            dtype_override:
+                An explicit data type to load the model weights in, taking precedence
+                over the hardware-derived default. Used by the finetuning NaN-retry to
+                force a full fp32 reload.
         """
         raise_if_wrong_params(
             model_config=model_config, allowed_params=self.allowed_params
@@ -132,6 +138,7 @@ class HuggingFaceEncoderModel(BenchmarkModule):
             model_config=model_config,
             dataset_config=dataset_config,
             benchmark_config=benchmark_config,
+            dtype_override=dtype_override,
         )
         self._model: "PreTrainedModel" = model
         self._tokeniser: "PreTrainedTokenizer | MistralCommonTokenizer" = tokeniser
@@ -565,6 +572,7 @@ def load_model_and_tokeniser(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
+    dtype_override: "DataType | None" = None,
 ) -> tuple["PreTrainedModel", Tokeniser]:
     """Load the model and tokeniser.
 
@@ -575,6 +583,10 @@ def load_model_and_tokeniser(
             The dataset configuration.
         benchmark_config:
             The benchmark configuration
+        dtype_override:
+            An explicit data type to load the model weights in, taking precedence
+            over the hardware-derived default. Used by the finetuning NaN-retry to
+            force a full fp32 reload.
 
     Returns:
         A pair (model, tokeniser), with the loaded model and tokeniser
@@ -624,6 +636,7 @@ def load_model_and_tokeniser(
             bf16_available=(
                 torch.cuda.is_available() and torch.cuda.is_bf16_supported()
             ),
+            dtype_override=dtype_override,
         ),
     )
 
@@ -1033,7 +1046,10 @@ def load_tokeniser(
 
 @cache_arguments()
 def get_dtype(
-    device: torch.device, dtype_is_set: bool, bf16_available: bool
+    device: torch.device,
+    dtype_is_set: bool,
+    bf16_available: bool,
+    dtype_override: "DataType | None" = None,
 ) -> str | torch.dtype:
     """Get the torch dtype, used for loading the model.
 
@@ -1044,10 +1060,23 @@ def get_dtype(
             Whether the data type is set in the model configuration.
         bf16_available:
             Whether bfloat16 is available.
+        dtype_override:
+            An explicit data type to load the model weights in, taking precedence
+            over both the model configuration and the hardware-derived default. Used
+            by the finetuning NaN-retry, which reloads the model in full fp32 after
+            detecting NaN values under mixed precision; without honouring the
+            override the model would be reloaded in the same (NaN-producing) dtype.
 
     Returns:
         The dtype.
     """
+    if dtype_override is not None:
+        return {
+            DataType.FP32: torch.float32,
+            DataType.FP16: torch.float16,
+            DataType.BF16: torch.bfloat16,
+        }[dtype_override]
+
     using_cuda = device == torch.device("cuda")
     if using_cuda and dtype_is_set:
         return "auto"
