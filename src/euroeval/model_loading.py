@@ -9,7 +9,7 @@ from .benchmark_modules import (
     LiteLLMModel,
     VLLMModel,
 )
-from .enums import GenerativeType, InferenceBackend, ModelType
+from .enums import DataType, GenerativeType, InferenceBackend, ModelType
 from .exceptions import InvalidModel
 from .logging_utils import log_once
 
@@ -86,6 +86,7 @@ def load_model(
     model_config: "ModelConfig",
     dataset_config: "DatasetConfig",
     benchmark_config: "BenchmarkConfig",
+    dtype_override: "DataType | None" = None,
 ) -> "BenchmarkModule":
     """Load a model.
 
@@ -96,6 +97,10 @@ def load_model(
             The dataset configuration.
         benchmark_config:
             The benchmark configuration.
+        dtype_override:
+            An explicit data type to load the model weights in, taking precedence
+            over the hardware-derived default. Only applies to encoder models loaded
+            for finetuning; used by the NaN-retry to force a full fp32 reload.
 
     Returns:
         The model.
@@ -135,11 +140,23 @@ def load_model(
         model_config=model_config, benchmark_config=benchmark_config
     )
 
-    model = model_class(
-        model_config=model_config,
-        dataset_config=dataset_config,
-        benchmark_config=benchmark_config,
-    )
+    # The dtype override is only plumbed through the plain encoder loading path (the
+    # only one that derives its dtype from the hardware via `get_dtype`), so restrict
+    # it to exactly that class -- subclasses such as `VLLMModel` and `FreshEncoderModel`
+    # neither finetune from a pretrained checkpoint nor accept this argument.
+    if dtype_override is not None and model_class is HuggingFaceEncoderModel:
+        model = HuggingFaceEncoderModel(
+            model_config=model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+            dtype_override=dtype_override,
+        )
+    else:
+        model = model_class(
+            model_config=model_config,
+            dataset_config=dataset_config,
+            benchmark_config=benchmark_config,
+        )
 
     # The generative type is only known once the model's tokeniser is loaded, so this
     # check must run after instantiation.

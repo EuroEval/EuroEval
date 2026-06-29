@@ -24,6 +24,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Fixed the finetuning NaN-retry not actually switching to fp32. When NaN values were
+  detected under mixed precision, the retry disabled autocast but reloaded the model
+  via `get_dtype`, which is hardware-driven and kept returning bf16/fp16 on CUDA — so
+  the weights stayed in the same NaN-producing dtype and the retry was a no-op (notably
+  for embedding-finetuned encoders like `intfloat/multilingual-e5-large-instruct`,
+  whose CUDA fused-attention backward NaNs in bf16). The retry now threads a
+  `dtype_override` down to model loading so the weights are genuinely reloaded in fp32.
 - Added `download()` method to `PipelineMetric` class
   - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
     Values metric)
