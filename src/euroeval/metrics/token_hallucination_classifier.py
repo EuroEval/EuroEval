@@ -140,7 +140,8 @@ def detect_hallucinations(
         prompt = id_to_context[prediction["id"]]
         predicted_text = prediction["prediction_text"]
 
-        if _answer_too_long(  # TODO: Check if it is necessary to check if the answer is too long.
+        if _answer_too_long(
+            # TODO: Check if it is necessary to check if the answer is too long.
             answer=predicted_text,
             tokenizer=tokenizer,
             max_length=DEFAULT_MAX_INPUT_LENGTH,
@@ -233,7 +234,6 @@ class TokenHallucinationMetric(Metric):
         Returns:
             The metric object itself.
         """
-        api = HfApi()
         for model_id in _hallucination_model_ids(cache_dir=cache_dir):
             snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
         return self
