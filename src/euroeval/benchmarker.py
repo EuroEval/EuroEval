@@ -3,7 +3,6 @@
 import collections.abc as c
 import contextlib
 import datetime as dt
-import json
 import logging
 import os
 import re
@@ -31,7 +30,12 @@ from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .string_utils import split_model_id
 from .tasks import SPEED
-from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
+from .utils import (
+    enforce_reproducibility,
+    get_hf_token,
+    internet_connection_available,
+    parse_jsonl_lines,
+)
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -256,31 +260,21 @@ class Benchmarker:
 
         Returns:
             A list of benchmark results.
-
-        Raises:
-            ValueError:
-                If there is an error decoding a line in the results file.
         """
         if not self.results_path.exists():
             return list()
-
-        with self.results_path.open() as f:
-            lines = [line.strip() for line in f if line.strip()]
 
         # Parsing each line (and the large raw-results blob it contains) can take a
         # while for big results files, so show a progress bar that clears once done
         # (`get_pbar` uses `leave=False`) to make clear the run is not hanging.
         benchmark_results: list[BenchmarkResult] = list()
-        for line in get_pbar(
-            iterable=lines,
+        with self.results_path.open() as f:
+            lines = f.read().splitlines()
+        for result_dict in get_pbar(
+            iterable=parse_jsonl_lines(lines, str(self.results_path)),
             desc="Loading cached results",
             disable=not self.benchmark_config.progress_bar,
         ):
-            try:
-                result_dict = json.loads(line)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Error decoding JSON line: {line}") from e
-
             # Fix for older records
             has_old_raw_results = (
                 "results" in result_dict
