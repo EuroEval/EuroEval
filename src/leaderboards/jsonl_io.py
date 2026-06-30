@@ -1,4 +1,4 @@
-"""Shared utilities for the leaderboards package."""
+"""JSONL parsing and loading utilities for result records."""
 
 from __future__ import annotations
 
