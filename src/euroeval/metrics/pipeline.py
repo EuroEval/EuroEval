@@ -92,12 +92,17 @@ class PipelineMetric(Metric):
         self.pipeline: "Pipeline | None" = None
         self.preprocessing_fn = preprocessing_fn
 
-    def download(self, cache_dir: str) -> "PipelineMetric":
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "PipelineMetric":
         """Initiates the download of the pipeline if needed.
 
         Args:
             cache_dir:
                 The directory where the pipeline will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration. Unused by this metric.
+                Defaults to None.
 
         Returns:
             The metric object itself.

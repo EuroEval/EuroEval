@@ -39,12 +39,18 @@ class Metric(abc.ABC):
             else lambda x: (100 * x, f"{x:.2%}")
         )
 
-    def download(self, cache_dir: str) -> "Metric":
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "Metric":
         """Initiates the download of the metric if needed.
 
         Args:
             cache_dir:
                 The directory where the metric will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration, passed through to metric-specific
+                download logic. Most metrics do not use this parameter.
+                Defaults to None.
 
         Returns:
             The metric object itself.
