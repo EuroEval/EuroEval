@@ -12,13 +12,10 @@ from lettucedetect import HallucinationDetector
 from ..enums import Device
 from ..exceptions import InvalidBenchmark
 from .base import Metric
+from ..constants import MAX_CONTEXT_LENGTH
 
 logger = logging.getLogger(__name__)
 
-# The underlying mmBERT-small detector models support up to 8192 positions, but
-# lettucedetect's ``TransformerDetector`` defaults to a 4096-token budget. Use the
-# model's full capacity so fewer samples are skipped for exceeding the budget.
-DEFAULT_MAX_INPUT_LENGTH = 8192
 
 if t.TYPE_CHECKING:
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
@@ -127,7 +124,7 @@ def detect_hallucinations(
     transformer_detector = detector.detector
     # ``HallucinationDetector`` does not forward ``max_length`` to the underlying
     # transformer detector, so override it directly to use the configured budget.
-    transformer_detector.max_length = DEFAULT_MAX_INPUT_LENGTH
+    transformer_detector.max_length = MAX_CONTEXT_LENGTH
     tokenizer = transformer_detector.tokenizer
 
     id_to_context = dict(zip(dataset["id"], dataset["context"]))
@@ -144,7 +141,7 @@ def detect_hallucinations(
             # TODO: Check if it is necessary to check if the answer is too long.
             answer=predicted_text,
             tokenizer=tokenizer,
-            max_length=DEFAULT_MAX_INPUT_LENGTH,
+            max_length=MAX_CONTEXT_LENGTH,
         ):
             skipped_samples += 1
             continue
@@ -159,7 +156,7 @@ def detect_hallucinations(
         logger.warning(
             f"Skipped {skipped_samples} sample(s) during hallucination detection "
             f"because the predicted answer alone exceeded the detector's maximum "
-            f"context length of {DEFAULT_MAX_INPUT_LENGTH} tokens."
+            f"context length of {MAX_CONTEXT_LENGTH} tokens."
         )
 
     if total_tokens == 0:
