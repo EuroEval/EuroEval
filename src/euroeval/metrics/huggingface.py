@@ -1,5 +1,7 @@
 """All the Hugging Face metrics used in EuroEval."""
 
+from __future__ import annotations
+
 import collections.abc as c
 import os
 import typing as t
@@ -77,12 +79,17 @@ class HuggingFaceMetric(Metric):
         )
         self.metric: "EvaluationModule | None" = None
 
-    def download(self, cache_dir: str) -> "HuggingFaceMetric":
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "HuggingFaceMetric":
         """Initiates the download of the metric if needed.
 
         Args:
             cache_dir:
                 The directory where the metric will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration. Unused by this metric.
+                Defaults to None.
 
         Returns:
             The metric object itself.

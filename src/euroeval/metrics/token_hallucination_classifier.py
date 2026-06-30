@@ -1,5 +1,7 @@
 """Hallucination metric."""
 
+from __future__ import annotations
+
 import collections.abc as c
 import logging
 import typing as t
@@ -12,6 +14,7 @@ from lettucedetect import HallucinationDetector
 from ..constants import MAX_CONTEXT_LENGTH
 from ..enums import Device
 from ..exceptions import InvalidBenchmark
+from ..logging_utils import no_terminal_output
 from .base import Metric
 
 logger = logging.getLogger(__name__)
@@ -41,23 +44,30 @@ class TokenHallucinationMetric(Metric):
             postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.4f}"),
         )
 
-    def download(self, cache_dir: str) -> "TokenHallucinationMetric":
-        """Pre-download all hallucination detection models.
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "TokenHallucinationMetric":
+        """Pre-download hallucination detection models.
 
-        The hallucination detection model is language-specific, but the dataset
-        language is not available in this method. To support offline benchmarking
-        (where only ``download`` is run and inference happens later without network
-        access), all hallucination detection models referenced by built-in dataset
-        configurations are fetched.
+        The hallucination detection model is language-specific. When a dataset
+        configuration is provided, only the model(s) for the relevant language(s)
+        are downloaded. Otherwise, all hallucination detection models referenced
+        by built-in dataset configurations are fetched for offline benchmarking.
 
         Args:
             cache_dir:
                 The directory where the models will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration, used to filter which hallucination
+                detection models to download based on language. When None, all
+                models are downloaded. Defaults to None.
 
         Returns:
             The metric object itself.
         """
-        for model_id in _hallucination_model_ids(cache_dir=cache_dir):
+        for model_id in _hallucination_model_ids(
+            cache_dir=cache_dir, dataset_config=dataset_config
+        ):
             snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
         return self
 
@@ -119,21 +129,47 @@ def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
     )
 
 
-def _hallucination_model_ids(cache_dir: str) -> set[str]:
-    """Collect the model IDs of every dataset using the hallucination metric.
+def _hallucination_model_ids(
+    cache_dir: str, dataset_config: "DatasetConfig" | None = None
+) -> set[str]:
+    """Collect the model IDs of datasets using the hallucination metric.
 
-    This enables pre-downloading all language-specific hallucination detection
-    models up front (e.g. for offline benchmarking), since the per-dataset language
-    is not known inside the metric's ``download`` method.
+    When a dataset configuration is provided, returns only the model ID(s) for
+    the relevant language(s). Otherwise, scans all built-in dataset configurations
+    and returns all hallucination detection model IDs for offline benchmarking.
 
     Args:
         cache_dir:
             The directory to store the dataset configuration cache in.
+        dataset_config (optional):
+            The dataset configuration to filter by language. When provided,
+            extracts language(s) from ``main_language`` and returns only the
+            corresponding model ID(s). Defaults to None.
 
     Returns:
-        The set of Hugging Face Hub repository IDs of all hallucination detection
-        models referenced by built-in dataset configurations.
+        The set of Hugging Face Hub repository IDs of hallucination detection
+        models. If ``dataset_config`` is provided, contains only the model for
+        the relevant language (the target language for translation tasks).
+        Otherwise, contains all models referenced by built-in dataset
+        configurations.
     """
+    if dataset_config is not None:
+        # Extract language(s) from the provided dataset configuration
+        main_language = dataset_config.main_language
+        if isinstance(main_language, tuple):
+            # Translation task: use target language (second element) since that's
+            # what the model outputs and what we check for hallucinations
+            return {
+                "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
+                f"{main_language[1].code}"
+            }
+        else:
+            # Single language
+            return {
+                "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
+                f"{main_language.code}"
+            }
+
     # Imported here rather than at module level to avoid a circular import, since
     # the dataset configurations import this metric module via the task registry.
     from ..dataset_configs import get_all_dataset_configs  # noqa: PLC0415
@@ -196,15 +232,17 @@ def detect_hallucinations(
             "Hugging Face Hub."
         )
 
-    detector = HallucinationDetector(
-        method="transformer", model_path=model, device=device, cache_dir=cache_dir
-    )
+    # Suppress the verbose "Loading weights" progress bars from transformers
+    with no_terminal_output():
+        detector = HallucinationDetector(
+            method="transformer", model_path=model, device=device, cache_dir=cache_dir
+        )
 
-    transformer_detector = detector.detector
-    # ``HallucinationDetector`` does not forward ``max_length`` to the underlying
-    # transformer detector, so override it directly to use the configured budget.
-    transformer_detector.max_length = MAX_CONTEXT_LENGTH
-    tokenizer = transformer_detector.tokenizer
+        transformer_detector = detector.detector
+        # ``HallucinationDetector`` does not forward ``max_length`` to the underlying
+        # transformer detector, so override it directly to use the configured budget.
+        transformer_detector.max_length = MAX_CONTEXT_LENGTH
+        tokenizer = transformer_detector.tokenizer
 
     id_to_context = dict(zip(dataset["id"], dataset["context"]))
 
