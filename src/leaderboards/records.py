@@ -5,24 +5,6 @@ from __future__ import annotations
 import re
 
 from .constants import ANCHOR_RE, VARIANT_SUFFIX_RE
-from .jsonl_io import load_records_from_jsonl_files, parse_jsonl_lines
-
-__all__ = [
-    "ANCHOR_RE",
-    "VARIANT_SUFFIX_RE",
-    "convert_to_float",
-    "drop_val_duplicates",
-    "extract_model_ids_from_record",
-    "get_bool_field",
-    "get_dataset",
-    "get_model_name",
-    "get_record_hash",
-    "load_records_from_jsonl_files",
-    "parse_jsonl_lines",
-    "plain_model_id",
-    "strip_anchor",
-    "strip_val_suffix",
-]
 
 
 def strip_anchor(model_id: str) -> str:
