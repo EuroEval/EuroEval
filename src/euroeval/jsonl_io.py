@@ -1,7 +1,5 @@
 """JSONL parsing utilities for benchmark results."""
 
-from __future__ import annotations
-
 import json
 
 
