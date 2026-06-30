@@ -16,7 +16,7 @@ from leaderboards.constants import (
     REQUIRED_METADATA_FIELDS,
     RESULTS_DIR,
 )
-from leaderboards.utils import parse_jsonl_lines
+from leaderboards.jsonl_io import parse_jsonl_lines
 
 
 def main() -> None:
