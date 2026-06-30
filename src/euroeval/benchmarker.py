@@ -1273,7 +1273,10 @@ def clear_model_cache_fn(cache_dir: str) -> None:
         if model_dir.is_dir():
             for sub_model_dir in model_dir.iterdir():
                 if sub_model_dir.is_dir():
-                    rmtree(sub_model_dir)
+                    try:
+                        rmtree(sub_model_dir)
+                    except FileNotFoundError:
+                        pass  # Directory already removed concurrently
 
 
 def initial_logging(
