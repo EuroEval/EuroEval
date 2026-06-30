@@ -140,7 +140,7 @@ def detect_hallucinations(
         prompt = id_to_context[prediction["id"]]
         predicted_text = prediction["prediction_text"]
 
-        if _answer_too_long(
+        if _answer_too_long(  # TODO: Check if it is necessary to check if the answer is too long.
             answer=predicted_text,
             tokenizer=tokenizer,
             max_length=DEFAULT_MAX_INPUT_LENGTH,
