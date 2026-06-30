@@ -7,6 +7,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [v17.6.0] - 2026-06-30
+
 ### Added
 
 - Added `download()` method to `PipelineMetric` class
