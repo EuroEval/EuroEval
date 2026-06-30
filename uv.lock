@@ -1075,7 +1075,7 @@ wheels = [
 
 [[package]]
 name = "euroeval"
-version = "17.6.0"
+version = "17.6.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
