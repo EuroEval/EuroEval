@@ -24,6 +24,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- The (unofficial) MultiLoko datasets had an error in their dataset configs, as they do
+  not have a validation split. The configs have now been fixed.
 - Fixed the parameter count derived from safetensors metadata when a model has multiple
   dtype entries. The `parameter_count` dict maps each dtype to the number of parameters
   stored in that dtype, so the total is the sum across entries — previously only the

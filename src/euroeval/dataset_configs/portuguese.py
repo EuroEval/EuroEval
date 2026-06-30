@@ -133,5 +133,6 @@ MULTILOKO_PT_CONFIG = DatasetConfig(
     source="EuroEval/multiloko-pt-mini",
     task=KNOW,
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    val_split=None,
     unofficial=True,
 )
