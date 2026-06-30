@@ -1027,6 +1027,50 @@ class BenchmarkResult(pydantic.BaseModel):
         with results_path.open("a") as f:
             f.write(("\n" if needs_sep else "") + json_str + "\n")
 
+    @classmethod
+    def load_from_jsonl(cls, results_path: Path) -> list["BenchmarkResult"]:
+        """Load benchmark results from a JSONL file.
+
+        Parses a JSONL file with robust handling of blank lines and concatenated
+        JSON objects (`}{`). Returns an empty list if the file does not exist.
+
+        Args:
+            results_path:
+                The path to the JSONL file containing benchmark results.
+
+        Returns:
+            A list of BenchmarkResult instances.
+
+        Raises:
+            ValueError:
+                If a line contains invalid JSON or a non-object value.
+        """
+        if not results_path.exists():
+            return []
+
+        lines = results_path.read_text(encoding="utf-8").splitlines()
+        results: list["BenchmarkResult"] = []
+        for line_idx, line in enumerate(lines, start=1):
+            if not line.strip():
+                continue
+            # Split concatenated JSON objects on the same line (e.g., `}{` -> `}\n{`)
+            for sub_line in line.replace("}{", "}\n{").splitlines():
+                if not sub_line.strip():
+                    continue
+                try:
+                    value = json.loads(sub_line)
+                except json.JSONDecodeError as exc:
+                    raise ValueError(
+                        f"Invalid JSON in {results_path} line {line_idx:,}: {sub_line}."
+                    ) from exc
+                if not isinstance(value, dict):
+                    raise ValueError(
+                        f"Invalid result in {results_path} line {line_idx:,}: "
+                        "expected object."
+                    )
+                results.append(cls.from_dict(value))
+        return results
+
 
 @dataclass
 class ModelConfig:
