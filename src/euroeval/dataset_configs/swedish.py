@@ -194,6 +194,7 @@ MULTILOKO_SV_CONFIG = DatasetConfig(
     source="EuroEval/multiloko-sv-mini",
     task=KNOW,
     languages=[SWEDISH],
+    val_split=None,
     unofficial=True,
 )
 

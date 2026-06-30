@@ -23,6 +23,7 @@ from .constants import (
 from .eee_utils import benchmark_result_from_eee_dict, benchmark_result_to_eee_dict
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
+from .jsonl_io import parse_jsonl_lines
 from .languages import (
     ENGLISH,
     EUROPEAN_PORTUGUESE,
@@ -1026,6 +1027,27 @@ class BenchmarkResult(pydantic.BaseModel):
         )
         with results_path.open("a") as f:
             f.write(("\n" if needs_sep else "") + json_str + "\n")
+
+    @classmethod
+    def from_jsonl(cls, results_path: Path) -> list["BenchmarkResult"]:
+        """Load benchmark results from a JSONL file.
+
+        Parses a JSONL file with robust handling of blank lines and concatenated
+        JSON objects (`}{`). Returns an empty list if the file does not exist.
+
+        Args:
+            results_path:
+                The path to the JSONL file containing benchmark results.
+
+        Returns:
+            A list of BenchmarkResult instances.
+        """
+        if not results_path.exists():
+            return []
+
+        lines = results_path.read_text(encoding="utf-8").splitlines()
+        records = parse_jsonl_lines(lines=lines, source=str(results_path), strict=False)
+        return [cls.from_dict(record) for record in records]
 
 
 @dataclass

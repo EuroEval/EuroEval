@@ -47,6 +47,7 @@ from leaderboards.constants import (
     RESULTS_READY_LABEL,
 )
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
+from leaderboards.jsonl_io import parse_jsonl_lines
 from leaderboards.queue_parsing import extract_model_id
 from leaderboards.record_fields import get_few_shot, get_validation_split
 from leaderboards.records import get_dataset, get_model_name
@@ -310,18 +311,14 @@ def load_existing_result_keys() -> set[tuple[str, str, str, str]]:
 
     for model_file in model_files:
         try:
-            for line in model_file.read_text(encoding="utf-8").splitlines():
-                line_str = line.strip()
-                if not line_str:
-                    continue
-                try:
-                    result = json.loads(line_str)
-                    key = build_dedup_key(result)
-                    if key is not None:
-                        existing_keys.add(key)
-                except json.JSONDecodeError:
-                    logger.debug("Skipping invalid JSON line in existing results.")
-        except OSError as e:
+            lines = model_file.read_text(encoding="utf-8").splitlines()
+            for result in parse_jsonl_lines(
+                lines, source=model_file.name, strict=False
+            ):
+                key = build_dedup_key(result)
+                if key is not None:
+                    existing_keys.add(key)
+        except (OSError, ValueError) as e:
             logger.warning(f"Failed to read {model_file.name}: {e}")
 
     logger.info(f"Loaded {len(existing_keys)} existing result keys.")
@@ -378,17 +375,15 @@ def scan_bucket_for_results() -> list[str]:
             logger.warning(f"Downloaded file not found: {local_path}")
             continue
 
-        for line in local_path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line:
-                continue
-
-            try:
-                result = json.loads(line)
+        try:
+            lines = local_path.read_text(encoding="utf-8").splitlines()
+            for result in parse_jsonl_lines(
+                lines, source=bucket_file.path, strict=False
+            ):
                 key = build_dedup_key(result)
 
                 if key is None:
-                    logger.debug(f"Skipping result with no dedup key: {line[:80]}...")
+                    logger.debug("Skipping result with no dedup key")
                     continue
 
                 if key in existing_keys or key in seen_keys:
@@ -397,9 +392,8 @@ def scan_bucket_for_results() -> list[str]:
 
                 new_results.append(json.dumps(result, ensure_ascii=False))
                 seen_keys.add(key)
-
-            except json.JSONDecodeError as e:
-                logger.debug(f"Skipping invalid JSON line: {e}")
+        except ValueError as e:
+            logger.debug(f"Skipping invalid JSON line: {e}")
 
     logger.info(f"Found {len(new_results)} new result(s) from bucket scan.")
 

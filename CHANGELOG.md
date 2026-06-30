@@ -7,6 +7,14 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed race condition in cache cleanup where `rmtree` would fail with `FileNotFoundError`
+  when checkpoint directories were removed concurrently during model benchmarking. Now
+  uses `ignore_errors=True` to handle concurrent deletions gracefully.
+
+## [v17.6.0] - 2026-06-30
+
 ### Added
 
 - Evaluation benchmark for hallucination detection, reporting a hallucination rate

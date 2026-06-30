@@ -12,6 +12,7 @@ from pathlib import Path
 from euroeval.data_models import BenchmarkResult
 from leaderboards.bucket_sync import sync_bucket, upload_results_to_bucket
 from leaderboards.constants import RESULTS_DIR
+from leaderboards.jsonl_io import parse_jsonl_lines
 
 logger = logging.getLogger(__name__)
 
@@ -50,32 +51,39 @@ def merge_results() -> int:
 
     if RESULTS_FILE.exists():
         logger.info(f"Loading existing results from {RESULTS_FILE}...")
-        with RESULTS_FILE.open(encoding="utf-8") as f:
-            for line in f:
-                if line.strip():
-                    rec = json.loads(line)
-                    result = BenchmarkResult.from_dict(config=rec)
-                    key = _extract_dedup_key(result=result)
-                    if key:
-                        existing[key] = line.strip()
+        records = parse_jsonl_lines(
+            lines=RESULTS_FILE.read_text(encoding="utf-8").splitlines(),
+            source=str(RESULTS_FILE),
+        )
+        for rec in records:
+            result = BenchmarkResult.from_dict(config=rec)
+            key = _extract_dedup_key(result=result)
+            if key:
+                # Re-serialize to ensure consistent formatting
+                existing[key] = json.dumps(rec)
         logger.info(f"Found {len(existing):,} existing results")
 
     if RESULTS_DIR.exists():
         logger.info(f"Loading results from {RESULTS_DIR}...")
         bucket_count = 0
         for jsonl_file in sorted(RESULTS_DIR.glob("*.jsonl")):
-            with jsonl_file.open(encoding="utf-8") as f:
-                for line in f:
-                    if line.strip():
-                        rec = json.loads(line)
-                        try:
-                            result = BenchmarkResult.from_dict(config=rec)
-                            key = _extract_dedup_key(result=result)
-                            if key:
-                                existing[key] = line.strip()
-                                bucket_count += 1
-                        except Exception as e:
-                            logger.debug(f"Skipping invalid record: {e}")
+            try:
+                records = parse_jsonl_lines(
+                    lines=jsonl_file.read_text(encoding="utf-8").splitlines(),
+                    source=str(jsonl_file),
+                )
+                for rec in records:
+                    try:
+                        result = BenchmarkResult.from_dict(config=rec)
+                        key = _extract_dedup_key(result=result)
+                        if key:
+                            # Re-serialize to ensure consistent formatting
+                            existing[key] = json.dumps(rec)
+                            bucket_count += 1
+                    except Exception as e:
+                        logger.debug(f"Skipping invalid record: {e}")
+            except ValueError as e:
+                logger.warning(f"Skipping malformed file {jsonl_file}: {e}")
         logger.info(f"Loaded {bucket_count:,} results from bucket")
 
     if not existing:
