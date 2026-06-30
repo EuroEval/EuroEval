@@ -14,6 +14,7 @@ from lettucedetect import HallucinationDetector
 from ..constants import MAX_CONTEXT_LENGTH
 from ..enums import Device
 from ..exceptions import InvalidBenchmark
+from ..logging_utils import no_terminal_output
 from .base import Metric
 
 logger = logging.getLogger(__name__)
@@ -231,15 +232,17 @@ def detect_hallucinations(
             "Hugging Face Hub."
         )
 
-    detector = HallucinationDetector(
-        method="transformer", model_path=model, device=device, cache_dir=cache_dir
-    )
+    # Suppress the verbose "Loading weights" progress bars from transformers
+    with no_terminal_output():
+        detector = HallucinationDetector(
+            method="transformer", model_path=model, device=device, cache_dir=cache_dir
+        )
 
-    transformer_detector = detector.detector
-    # ``HallucinationDetector`` does not forward ``max_length`` to the underlying
-    # transformer detector, so override it directly to use the configured budget.
-    transformer_detector.max_length = MAX_CONTEXT_LENGTH
-    tokenizer = transformer_detector.tokenizer
+        transformer_detector = detector.detector
+        # ``HallucinationDetector`` does not forward ``max_length`` to the underlying
+        # transformer detector, so override it directly to use the configured budget.
+        transformer_detector.max_length = MAX_CONTEXT_LENGTH
+        tokenizer = transformer_detector.tokenizer
 
     id_to_context = dict(zip(dataset["id"], dataset["context"]))
 
