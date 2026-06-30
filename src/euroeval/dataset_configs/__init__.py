@@ -13,6 +13,7 @@ from ..languages import get_all_languages
 from ..logging_utils import log_once
 from ..tasks import SPEED
 from .albanian import *  # noqa: F403
+from .belarusian import *  # noqa: F403
 from .bosnian import *  # noqa: F403
 from .bulgarian import *  # noqa: F403
 from .catalan import *  # noqa: F403

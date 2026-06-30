@@ -83,6 +83,12 @@ CORE_MODELS_CONFIG: Path = PACKAGE_DIR / "core_models.yaml"
 # results despite no URL being found, so we don't re-prompt every run.
 MODELS_WITHOUT_URLS_CACHE: Path = PACKAGE_DIR / "models_without_urls_cache.yaml"
 
+# Persistent cache of per-dataset split sizes (keyed by Hugging Face source),
+# used to turn raw failure counts into proportions on the leaderboard. Split
+# sizes effectively never change; if a dataset is ever resized, delete its
+# entry from this file to force a refetch (see `split_sizes.py`).
+DATASET_SPLIT_SIZES_CACHE: Path = PACKAGE_DIR / "dataset_split_sizes.json"
+
 # Repository root (assumes the package lives at <repo>/src/leaderboards/).
 REPO_ROOT: Path = PACKAGE_DIR.parent.parent
 
@@ -302,12 +308,11 @@ OSAI_WEIGHTS_BLOCK_RE = re.compile(
 # ---------------------------------------------------------------------------
 
 # Number of bootstrap replicates for both confidence interval estimation of rank
-# scores and tie-breaking in leaderboard generation. 50 is sufficient because
-# tie-breaking only needs to distinguish models that are statistically tied --
-# the bootstrap test is a one-sided test at alpha=0.05, and 50 replicates give a
-# reasonable resolution for the rank-difference distribution without unnecessary
-# computation.
-NUM_BOOTSTRAPS = 50
+# scores and tie-breaking in leaderboard generation. 100 gives a reasonable
+# resolution for the rank-difference distribution -- tie-breaking only needs to
+# distinguish models that are statistically tied via a one-sided test at
+# alpha=0.05 -- without unnecessary computation.
+NUM_BOOTSTRAPS = 100
 
 # z-score for a two-sided 95% confidence interval under a normal approximation.
 Z_SCORE_95 = 1.96
@@ -421,7 +426,10 @@ DTYPE_BYTES: dict[str, int] = {
 
 # Multiplier applied to weight bytes to leave room for activations, KV cache,
 # and framework overhead when judging whether a model fits in GPU memory.
-GPU_FIT_OVERHEAD = 1.2
+# Overhead multiplier for vLLM memory footprint beyond raw weights.
+# Covers KV cache, activation buffers, expert routing (MoE), and fragmentation.
+# Increased from 1.2 after GLM-4.7-Flash (58 GiB weights) crashed on 64 GiB VM.
+GPU_FIT_OVERHEAD = 1.35
 
 # ---------------------------------------------------------------------------
 # Leaderboard generation

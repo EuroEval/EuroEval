@@ -5,7 +5,9 @@ import LeaderboardScatter from "@/components/LeaderboardScatter.vue";
 import {
   loadLeaderboard,
   loadLeaderboardCsv,
+  loadLeaderboardMetadata,
   type LeaderboardTable as LBTable,
+  type LeaderboardMetadata,
 } from "@/leaderboard";
 
 const props = defineProps<{
@@ -23,6 +25,8 @@ const tab = ref<TabId>("generative");
 
 const generativeTable = ref<LBTable | null>(null);
 const allModelsTable = ref<LBTable | null>(null);
+const generativeMetadata = ref<LeaderboardMetadata | null>(null);
+const allModelsMetadata = ref<LeaderboardMetadata | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
@@ -31,13 +35,19 @@ const loadFor = async (stem: string) => {
   error.value = null;
   generativeTable.value = null;
   allModelsTable.value = null;
+  generativeMetadata.value = null;
+  allModelsMetadata.value = null;
   try {
-    const [g, a] = await Promise.all([
+    const [g, a, gMeta, aMeta] = await Promise.all([
       loadLeaderboard(`${stem}_generative`),
       loadLeaderboard(`${stem}_all_models`),
+      loadLeaderboardMetadata(`${stem}_generative`),
+      loadLeaderboardMetadata(`${stem}_all_models`),
     ]);
     generativeTable.value = g ?? null;
     allModelsTable.value = a ?? null;
+    generativeMetadata.value = gMeta ?? null;
+    allModelsMetadata.value = aMeta ?? null;
     if (!g && !a) {
       error.value = `No leaderboard data found for "${stem}".`;
     }
@@ -61,6 +71,44 @@ const activeTable = computed<LBTable | null>(() => {
   if (tab.value === "generative" || tab.value === "generative-scatter")
     return generativeTable.value;
   return allModelsTable.value;
+});
+
+const activeMetadata = computed<LeaderboardMetadata | null>(() => {
+  if (tab.value === "generative" || tab.value === "generative-scatter")
+    return generativeMetadata.value;
+  return allModelsMetadata.value;
+});
+
+const lastUpdated = computed<string | null>(() => {
+  const notes = activeMetadata.value?.annotate?.notes;
+  if (!notes) return null;
+  const match = notes.match(/Last updated: (.+)$/);
+  if (!match) return null;
+
+  const timestampStr = match[1];
+  // Parse "2026-06-20 16:42:37 CET" format (strip timezone for simplicity)
+  const dateMatch = timestampStr.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+  if (!dateMatch) return null;
+
+  const then = new Date(dateMatch[1]).getTime();
+  const now = Date.now();
+  const diffMs = now - then;
+
+  if (diffMs < 0) return timestampStr; // Future date, show as-is
+
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffWeeks = Math.floor(diffDays / 7);
+  const diffMonths = Math.floor(diffDays / 30);
+
+  if (diffSecs < 60) return `${diffSecs} second${diffSecs !== 1 ? 's' : ''} ago`;
+  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+  if (diffWeeks < 4) return `${diffWeeks} week${diffWeeks !== 1 ? 's' : ''} ago`;
+  return `${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`;
 });
 
 const MULTILINGUAL_STEMS = new Set([
@@ -155,6 +203,14 @@ const downloadCsv = async () => {
       <router-link to="/evaluation-queue">Evaluation Queue</router-link>.
     </p>
 
+    <aside class="lb-note" role="note">
+      <span class="lb-note-icon" aria-hidden="true">ℹ️</span>
+      <p>
+        Scores use fixed <strong>subsets</strong> — click a dataset for splits; hover a score for failure rates (<span class="fail-flag">*</span> = ≥10% failed).
+        <router-link to="/faq#why-do-some-model-names-end-in-val"><code>(val)</code></router-link> = validation split.
+      </p>
+    </aside>
+
     <nav class="lb-tabs" role="tablist">
       <button
         v-for="t in tabs"
@@ -200,15 +256,15 @@ const downloadCsv = async () => {
 
     <div v-if="loading" class="lb-status">Loading leaderboard…</div>
     <div v-else-if="error" class="lb-status error">{{ error }}</div>
-    <template v-else>
-      <template v-if="tab === 'generative' || tab === 'all_models'">
-        <LeaderboardTable
-          v-if="activeTable"
-          :table="activeTable"
-          :heatmap-score-cols="isMultilingual"
-          :leaderboard-name="title"
-        >
-          <template #actions>
+    <template v-else>       <template v-if="tab === 'generative' || tab === 'all_models'">
+         <LeaderboardTable
+           v-if="activeTable"
+           :table="activeTable"
+           :heatmap-score-cols="isMultilingual"
+           :leaderboard-name="title"
+           :last-updated="lastUpdated"
+         >
+           <template #actions>
             <button
               class="lb-download"
               type="button"
@@ -238,21 +294,16 @@ const downloadCsv = async () => {
               </svg>
               Embed
             </button>
-          </template>
-        </LeaderboardTable>
-        <div v-else class="lb-status">
-          This leaderboard variant has no data.
-        </div>
-      </template>
-      <template v-else>
-        <LeaderboardScatter
-          v-if="activeTable"
-          :table="activeTable"
-        />
-        <div v-else class="lb-status">
-          This leaderboard variant has no data.
-        </div>
-      </template>
+          </template>         </LeaderboardTable>
+         <div v-else class="lb-status">
+           This leaderboard variant has no data.
+         </div>
+      </template>       <template v-else>
+         <LeaderboardScatter
+           v-if="activeTable"
+           :table="activeTable"
+         />
+       </template>
     </template>
   </div>
 </template>
@@ -281,6 +332,47 @@ const downloadCsv = async () => {
   color: var(--color-muted);
   font-size: 0.9rem;
   margin: 0;
+}
+
+.lb-note {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-link);
+  border-radius: 6px;
+  padding: 0.45rem 0.7rem;
+  margin-top: 0.5rem;
+}
+
+.lb-note-icon {
+  flex: none;
+}
+
+.lb-note p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  line-height: 1.4;
+}
+
+.lb-note strong {
+  color: var(--color-text);
+}
+
+.lb-note .fail-flag {
+  color: var(--color-danger, #b00020);
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+.lb-note code {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  padding: 0 0.25rem;
+  font-size: 0.8rem;
 }
 
 .lb-tabs {

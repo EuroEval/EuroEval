@@ -80,6 +80,7 @@ def build_benchmark_config(
         gpu_memory_utilization=benchmark_config_params.gpu_memory_utilization,
         attention_backend=benchmark_config_params.attention_backend,
         generative_type=benchmark_config_params.generative_type,
+        use_bits_per_character=benchmark_config_params.use_bits_per_character,
         debug=benchmark_config_params.debug,
         run_with_cli=benchmark_config_params.run_with_cli,
         requires_safetensors=benchmark_config_params.requires_safetensors,
@@ -214,6 +215,7 @@ def prepare_dataset_configs(
 
     # Create the list of dataset tasks
     task_mapping = {cfg.task.name: cfg.task for cfg in all_dataset_configs.values()}
+
     try:
         if task is None:
             tasks = None

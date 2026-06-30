@@ -1,6 +1,6 @@
 [project]
 name = "EuroEval"
-version = "17.4.0.dev"
+version = "17.5.0.dev"
 description = "The robust European language model benchmark."
 readme = "README.md"
 authors = [
@@ -214,6 +214,8 @@ unresolved-attribute = "ignore"
 # Pandas type stub issues - these are false positives due to incomplete type stubs
 unsupported-operator = "ignore"
 no-matching-overload = "ignore"
+# vLLM types differ between macOS (0.22.0+cpu) and Linux (0.23.0), so ignore warnings
+unused-ignore-comment = "ignore"
 
 [tool.pytest.ini_options]
 minversion = "7.0"

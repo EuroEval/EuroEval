@@ -65,7 +65,6 @@ def add_missing_entries(
     if "merge" not in model_additional:
         model_additional["merge"] = is_merge(record=record, cache=cache)
 
-    model_name = get_model_name(record=record)
     if "commercially_licensed" not in model_additional:
         model_additional["commercially_licensed"] = is_commercially_licensed(
             record=record, cache=cache
@@ -80,7 +79,7 @@ def add_missing_entries(
         )
     if "model_url" not in model_additional or model_additional["model_url"] is None:
         model_additional["model_url"] = generate_model_url_with_cache(
-            model_id=model_name, cache=cache
+            model_id=plain_model_id(get_model_name(record=record)), cache=cache
         )
 
     return record
@@ -103,7 +102,7 @@ def generate_model_url_with_cache(model_id: str, cache: Cache) -> str | None:
     Returns:
         The model URL, or None if no URL could be generated.
     """
-    model_id = split_model_id(model_id=model_id).model_id
+    model_id = split_model_id(model_id=plain_model_id(model_id)).model_id
     if model_id in cache.model_url and cache.model_url[model_id] is not None:
         return cache.model_url[model_id]
 

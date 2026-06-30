@@ -17,11 +17,26 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added metadata for GPT-5.5, Claude Opus 4.8 and Claude Sonnet 4.6.
 - Added the `google-cloud-aiplatform` dependency, as it's required to run
   Gemini-3.1-pro.
+- Added the Danish zebra puzzle dataset
+  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
+  is given by 128 / 1,024 samples for train / test, respectively. It is marked as
+  `unofficial` for now. This was contributed by @sofiehb ✨
 - Evaluation benchmark for hallucination detection, reporting a hallucination rate
   (hallucinated_tokens/total_tokens).
 
 ### Fixed
 
+- Fixed the parameter count derived from safetensors metadata when a model has multiple
+  dtype entries. The `parameter_count` dict maps each dtype to the number of parameters
+  stored in that dtype, so the total is the sum across entries — previously only the
+  largest entry was used, undercounting models with weights split across multiple dtypes.
+- Fixed the finetuning NaN-retry not actually switching to fp32. When NaN values were
+  detected under mixed precision, the retry disabled autocast but reloaded the model
+  via `get_dtype`, which is hardware-driven and kept returning bf16/fp16 on CUDA — so
+  the weights stayed in the same NaN-producing dtype and the retry was a no-op (notably
+  for embedding-finetuned encoders like `intfloat/multilingual-e5-large-instruct`,
+  whose CUDA fused-attention backward NaNs in bf16). The retry now threads a
+  `dtype_override` down to model loading so the weights are genuinely reloaded in fp32.
 - Added `download()` method to `PipelineMetric` class
   - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
     Values metric)
@@ -84,10 +99,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `EMBEDDIA/litlat-bert`) that raised
   `TypeError: argument 'vocab': 'dict' object cannot be converted to 'Sequence'`. The
   tokenizer loader now falls back to `use_fast=False` when this error occurs.
-
-## [v17.3.0] - 2026-05-31
-
-### Added
 
 - Added the "Dutch Proverbs" dataset. The dataset consists of brief scenarios and two
   possible proverbs for the LLM to select from. The dataset was created manually and
@@ -478,6 +489,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Now ensures that the vLLM argument `max_num_batched_tokens` is at least as large as
   the maximum context length of the model, which gave errors with models that had a
   maximum context length of less than 8,192.
+
+>>>>>>> main
 
 ## [v16.11.0] - 2026-01-21
 

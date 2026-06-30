@@ -33,6 +33,21 @@ distribution, and report the 95% confidence interval — i.e. roughly 1.96 × st
 error around the mean. Two models are considered statistically tied on a dataset when
 their score distributions overlap in this sense.
 
+## What is bits-per-character (BPC) scoring?
+
+BPC computes the information content (in bits) of the ground-truth answer conditioned
+on the question, normalized by character length. Lower BPC = better.
+
+For multiple-choice tasks, BPC treats the benchmark like text-to-text: the model sees
+a bare question (no choice options listed) and generates the full answer text.
+We compute `sum(log P(answer_tokens | prompt))` for the correct answer.
+
+For other tasks, BPC scores the ground-truth answer directly.
+
+BPC is only supported by the vLLM backend with base decoder models. Use
+`--use-bits-per-character` or `-bpc` to enable. Official leaderboards display standard
+accuracy scores; BPC runs are excluded from rankings.
+
 ## Why do some model names end in `(val)`?
 
 The `(val)` suffix marks models that have only been evaluated on the validation splits
@@ -166,6 +181,26 @@ A question mark (`?`) means the value is unknown — typically because the infor
 isn't publicly available. For instance, a closed model's parameter count or training
 data is often undisclosed, in which case we mark the corresponding column as `?`
 rather than guessing.
+
+## Are we using the models' full context length?
+
+Yes, evaluations use the full context needed for all samples. We have ensured that all
+datasets (including few-shot examples) fit within an 8k token limit
+([`MAX_CONTEXT_LENGTH`](https://github.com/EuroEval/EuroEval/blob/main/src/euroeval/constants.py)),
+which is effectively the full context for our benchmarks. This limit is specified
+explicitly because vLLM pre-allocates GPU memory for the maximum configured context,
+even if individual samples never approach it. Without this ceiling, vLLM would attempt
+to reserve memory for 200k+ tokens and raise an OOM error. The superficial 8k
+constraint avoids this while not truncating any samples.
+
+## What reasoning mode is used?
+
+Reasoning token budgets are configuration-dependent. We use an 8k token budget for
+reasoning
+([`REASONING_MAX_TOKENS`](https://github.com/EuroEval/EuroEval/blob/main/src/euroeval/constants.py)).
+Labels like "High", "Medium", or "Low" are arbitrary thresholds that vary across
+implementations and can change over time. Our 8k token setting would roughly correspond
+to something like "high" in typical naming schemes.
 
 ## Not finding the answer that you are looking for?
 

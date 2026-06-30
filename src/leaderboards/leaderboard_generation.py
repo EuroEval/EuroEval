@@ -68,6 +68,10 @@ def generate_leaderboard(
     # Load results and set them up for the leaderboard
     results = load_raw_results()
     results = [record for record in results if get_dataset(record) in datasets]
+    # Filter out BPC runs - only standard accuracy scores go on leaderboards
+    results = [
+        record for record in results if not record.get("use_bits_per_character", False)
+    ]
     model_results: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
         group_results_by_model(results=results)
     )
@@ -108,10 +112,13 @@ def generate_leaderboard(
 
         # Check if anything got updated
         new_records: list[str] = []
+        # Exclude rank column (ordinal position) and metadata columns (version,
+        # failures, scored) which change even when model performance doesn't.
         comparison_columns = [
             col
             for col in df.columns
-            if col.lower() != "rank" or not include_dataset_columns
+            if col.lower() != "rank"
+            and not col.endswith(("_version", "_failures", "_scored"))
         ]
         if leaderboard_path.exists():
             old_df = pd.read_csv(leaderboard_path, header=0, skiprows=1)
@@ -135,20 +142,18 @@ def generate_leaderboard(
                         new_records.append(model_id)
                         continue
 
-                    old_model_results = (
-                        old_df[comparison_columns]
-                        .query("Model == @model_id")
-                        .dropna()
-                        .map(convert_to_float)
+                    old_model_row = old_df[comparison_columns].query(
+                        "Model == @model_id"
                     )
-                    new_model_results = (
-                        df[comparison_columns]
-                        .query("Model == @model_id")
-                        .dropna()
-                        .map(convert_to_float)
-                    )
-                    model_has_new_results = not np.all(
-                        old_model_results.values == new_model_results.values
+                    new_model_row = df[comparison_columns].query("Model == @model_id")
+                    # Convert to float where possible, keeping NaN for missing scores
+                    old_model_results = old_model_row.map(convert_to_float)
+                    new_model_results = new_model_row.map(convert_to_float)
+                    # Fill NaN with sentinel for comparison (missing = missing is equal)
+                    model_has_new_results = not (
+                        old_model_results.fillna(-999).equals(
+                            new_model_results.fillna(-999)
+                        )
                     )
                     if model_has_new_results:
                         new_records.append(model_id)
@@ -376,6 +381,21 @@ def generate_dataframe(
             if all(ds in r for ds in required_datasets)
         }
 
+        # Per-language required (non-orthogonal) datasets for this category. A
+        # model only earns a per-language score if it holds every one of that
+        # language's datasets, mirroring the eligibility rule used for the
+        # standalone single-language leaderboards.
+        language_to_required_datasets = {
+            language: [
+                dataset
+                for task, task_datasets in config.items()
+                for dataset in task_datasets
+                if category_includes_task(category=category, task=task)
+                and task not in ORTHOGONAL_TASKS
+            ]
+            for language, config in leaderboard_configs.items()
+        }
+
         # Bootstrap-based tie detection: walks the sorted list and tests
         # each model against the current anchor using a one-sided bootstrap
         # test (α=0.05). Models that are not significantly better share the
@@ -412,16 +432,25 @@ def generate_dataframe(
                     language_ranks[lang] = {}
 
             # Format per-language entries as "score ± margin" strings, matching
-            # the overall mean rank score column. Missing entries render as "-".
+            # the overall mean rank score column. A language only gets a score
+            # if the model holds every one of that language's datasets;
+            # otherwise it renders as "-", just like the missing-score sentinel.
             language_ranks_scores = {
                 lang: _format_rank_score(entry)
+                if all(
+                    ds in results for ds in language_to_required_datasets.get(lang, [])
+                )
+                else "-"
                 for lang, entry in language_ranks.items()
             }
 
             # Get the default values for the dataset columns
-            default_dataset_values = {
-                ds: float("nan") for ds in category_to_datasets[category]
-            } | {f"{ds}_version": "-" for ds in category_to_datasets[category]}
+            default_dataset_values = (
+                {ds: float("nan") for ds in category_to_datasets[category]}
+                | {f"{ds}_version": "-" for ds in category_to_datasets[category]}
+                | {f"{ds}_failures": "-" for ds in category_to_datasets[category]}
+                | {f"{ds}_scored": "-" for ds in category_to_datasets[category]}
+            )
             default_orthogonal_values = {
                 task: float("nan")
                 for task in category_to_orthogonal_datasets[category].values()
@@ -458,13 +487,16 @@ def generate_dataframe(
                 for task, score_list in orthogonal_scores.items()
             }
 
-            # Filter metadata dict to only keep the dataset versions belonging to the
-            # category
+            # Filter metadata dict to only keep the per-dataset companion columns
+            # (versions and failure counts) belonging to the category.
             metadata = {
                 key: value
                 for key, value in metadata_dict[model_id].items()
-                if not key.endswith("_version")
-                or key.replace("_version", "") in category_to_datasets[category]
+                if not key.endswith(("_version", "_failures", "_scored"))
+                or key.removesuffix("_version")
+                .removesuffix("_failures")
+                .removesuffix("_scored")
+                in category_to_datasets[category]
             }
 
             # Create anchor tag if model_url is available
@@ -556,6 +588,8 @@ def generate_dataframe(
         if include_dataset_columns:
             cols += dataset_cols
             cols += [f"{dataset}_version" for dataset in dataset_cols]
+            cols += [f"{dataset}_failures" for dataset in dataset_cols]
+            cols += [f"{dataset}_scored" for dataset in dataset_cols]
         df = df[cols]
 
         # If a model has only orthogonal values, we remove it from the leaderboard

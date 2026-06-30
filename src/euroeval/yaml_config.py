@@ -234,11 +234,7 @@ def load_dataset_config_from_yaml(
     kwargs.setdefault("bootstrap_samples", True)
     kwargs.setdefault("unofficial", False)
     kwargs.setdefault("input_column", "text")
-    return DatasetConfig(
-        task=task_obj,
-        languages=language_objs,
-        **kwargs,  # ty: ignore[invalid-argument-type]
-    )
+    return DatasetConfig(task=task_obj, languages=language_objs, **kwargs)  # ty: ignore[invalid-argument-type]
 
 
 def promote_field_spec_fields(raw: dict[str, object]) -> None:
@@ -374,7 +370,7 @@ def infer_task_from_inspect_ai(
                     judge_id: str | None = None
                     args = _sc.get("args") or {}
                     if isinstance(args, dict):
-                        model_val = args.get("model")  # ty: ignore[invalid-argument-type]
+                        model_val = args.get("model")
                         if isinstance(model_val, str) and model_val:
                             judge_id = model_val
                     if judge_id is not None:

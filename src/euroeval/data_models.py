@@ -320,9 +320,7 @@ class DatasetConfig:
         self.task = task
         self.languages = languages
 
-        template = self.task.template_dict.get(
-            self.main_language  # ty: ignore[invalid-argument-type]
-        )
+        template = self.task.template_dict.get(self.main_language)
         self.prompt_prefix = (
             prompt_prefix
             if prompt_prefix is not None
@@ -738,6 +736,10 @@ class BenchmarkConfig:
         vocabulary_size:
             Override for the vocabulary size of the model. If None, the value will be
             inferred automatically from the model.
+        use_bits_per_character:
+            Whether to compute bits-per-character (BPC) on the ground-truth answer.
+            For multiple-choice tasks, treats benchmark as text-to-text with bare
+            question → full answer text. Only supported for base decoder models.
     """
 
     datasets: c.Sequence[DatasetConfig]
@@ -772,6 +774,7 @@ class BenchmarkConfig:
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
+    use_bits_per_character: bool = False
 
     @property
     def tasks(self) -> c.Sequence[Task]:
@@ -827,6 +830,7 @@ class BenchmarkConfigParams(pydantic.BaseModel):
     run_with_cli: bool
     max_context_length: int | None
     vocabulary_size: int | None
+    use_bits_per_character: bool = False
 
 
 def _convert_old_raw_results_format(config: dict[str, object]) -> None:
@@ -885,6 +889,7 @@ class BenchmarkResult(pydantic.BaseModel):
     generative_type: str | None
     few_shot: bool | None
     validation_split: bool | None
+    use_bits_per_character: bool | None = None
     euroeval_version: str | None = get_package_version("euroeval")
     transformers_version: str | None = get_package_version("transformers")
     torch_version: str | None = get_package_version("torch")
@@ -932,6 +937,8 @@ class BenchmarkResult(pydantic.BaseModel):
             config["few_shot"] = zero_shot_matches is None
         if "validation_split" not in config:
             config["validation_split"] = val_matches is not None
+        if "use_bits_per_character" not in config:
+            config["use_bits_per_character"] = False
 
         # Backwards compatibility
         if "dataset_languages" in config:
@@ -1002,13 +1009,23 @@ class BenchmarkResult(pydantic.BaseModel):
     def append_to_results(self, results_path: Path) -> None:
         """Append the benchmark result to the results file.
 
+        Each record is written self-terminated with a trailing newline. If the
+        file already exists without a trailing newline (e.g. written by an older
+        version), a separating newline is added first so records can't be glued
+        onto the same line.
+
         Args:
             results_path:
                 The path to the results file.
         """
         json_str = json.dumps(self.to_eee_dict(), ensure_ascii=False)
+        needs_sep = (
+            results_path.exists()
+            and results_path.stat().st_size > 0
+            and not results_path.read_bytes().endswith(b"\n")
+        )
         with results_path.open("a") as f:
-            f.write("\n" + json_str)
+            f.write(("\n" if needs_sep else "") + json_str + "\n")
 
 
 @dataclass
@@ -1104,6 +1121,10 @@ class GenerativeModelOutput:
             A list of dictionaries, one per failed instance, each containing
             ``"sample_index"`` (the index of the sample in the batch) and ``"error"``
             (a short description of why it failed). Defaults to an empty list.
+        bpc_scores (optional):
+            Bits-per-character scores for each generated sequence. Computed as
+            ``sum(log P(answer_tokens)) / len(answer_chars)``. Lower is better.
+            Only populated when ``use_bits_per_character=True``. Defaults to None.
     """
 
     sequences: c.Sequence[str]
@@ -1111,6 +1132,7 @@ class GenerativeModelOutput:
     scores: c.Sequence[c.Sequence[c.Sequence[tuple[str, float]]]] | None = None
     metadatas: list["HashableDict | None"] = field(default_factory=list)
     failed_instances: list["FailedInstance"] = field(default_factory=list)
+    bpc_scores: c.Sequence[float] | None = None
 
     def __post_init__(self) -> None:
         """Post-initialisation."""
@@ -1135,12 +1157,17 @@ class SingleGenerativeModelOutput:
         metadata (optional):
             The metadata fields for the sample, including ground truth labels (if
             applicable). Can be None if the metadata is not available. Defaults to None.
+        bpc_score (optional):
+            Bits-per-character score for this generated sequence. Computed as
+            ``sum(log P(answer_tokens)) / len(answer_chars)``. Lower is better.
+            Only populated when ``use_bits_per_character=True``. Defaults to None.
     """
 
     sequence: str
     predicted_label: str | None = None
     scores: c.Sequence[c.Sequence[tuple[str, float]]] | None = None
     metadata: "HashableDict | None" = None
+    bpc_score: float | None = None
 
 
 @dataclass

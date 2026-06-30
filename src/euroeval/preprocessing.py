@@ -6,6 +6,7 @@ import typing as t
 
 from .enums import TaskGroup
 from .exceptions import InvalidBenchmark
+from .string_utils import CHOICE_LETTERS
 
 if t.TYPE_CHECKING:
     from datasets import DatasetDict
@@ -34,18 +35,22 @@ def merge_input_and_choices(
 
     Returns:
         The example with a new ``"text"`` key containing the merged input and formatted
-        choices.
+        choices. The original bare input text and raw choice list are also preserved
+        as ``"bare_input"`` and ``"raw_choices"`` to support BPC scoring that needs
+        bare questions without enumerated choices.
     """
     input_text = example[input_column].replace("\n", " ").strip()
     if isinstance(choices_column, list):
         choices = [example[col] for col in choices_column]
     else:
         choices = example[choices_column]
+    cleaned_choices = [choice.replace("\n", " ").strip() for choice in choices]
     options = "\n".join(
-        f"{letter}. {choice.replace('\n', ' ').strip()}"
-        for letter, choice in zip("abcdefghijklmnopqrstuvwxyz", choices)
+        f"{letter}. {choice}" for letter, choice in zip(CHOICE_LETTERS, cleaned_choices)
     )
     example["text"] = f"{input_text}\n{choices_label}:\n{options}"
+    example["bare_input"] = input_text
+    example["raw_choices"] = cleaned_choices
     return example
 
 
@@ -186,11 +191,9 @@ def build_preprocessing_func(
                         choices = example[choices_column]
                     label = example[target_column]
                     if label in choices:
-                        example[target_column] = "abcdefghijklmnopqrstuvwxyz"[
-                            choices.index(label)
-                        ]
+                        example[target_column] = CHOICE_LETTERS[choices.index(label)]
                     if isinstance(example[target_column], int):
-                        example[target_column] = "abcdefghijklmnopqrstuvwxyz"[label]
+                        example[target_column] = CHOICE_LETTERS[label]
                     if isinstance(example[target_column], str):
                         example[target_column] = example[target_column].lower()
                     return example
@@ -209,10 +212,13 @@ def build_preprocessing_func(
                     choices_label=choices_label,
                 )
                 split = split.map(merge_fn)
+                # Preserve auxiliary columns added by merge_input_and_choices
+                # (``bare_input``, ``raw_choices``) for alternative evaluation modes.
+                preserved = {"text", "bare_input", "raw_choices"}
                 cols_to_drop = [
                     col
                     for col in [input_column, *choices_cols]
-                    if col in split.column_names and col != "text"
+                    if col in split.column_names and col not in preserved
                 ]
                 if cols_to_drop:
                     split = split.remove_columns(cols_to_drop)

@@ -10,6 +10,7 @@ from .prompt_templates import (
     EMPTY_TEMPLATES,
     GED_TEMPLATES,
     LA_TEMPLATES,
+    LOGIC_TEMPLATES,
     MULTIPLE_CHOICE_TEMPLATES,
     NER_TEMPLATES,
     NLI_TEMPLATES,
@@ -150,6 +151,17 @@ SUMM = Task(
     default_max_generated_tokens=256,
     default_labels=[],
     default_allowed_model_types=[ModelType.GENERATIVE],
+)
+
+LOGIC = Task(
+    name="logical-reasoning",
+    task_group=TaskGroup.TEXT_TO_TEXT,
+    template_dict=LOGIC_TEMPLATES,
+    metrics=[m.cell_wise_accuracy_metric, m.puzzle_level_accuracy_metric],
+    default_num_few_shot_examples=8,
+    default_max_generated_tokens=256,
+    default_labels=[],
+    uses_structured_output=True,
 )
 
 

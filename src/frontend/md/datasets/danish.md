@@ -8,9 +8,9 @@ information about what these constitute.
 
 ### Angry Tweets
 
-This dataset was published in [this
-paper](https://aclanthology.org/2021.nodalida-main.53/) and was a crowd-sourcing effort
-to annotate sentiment of Danish tweets.
+This dataset was published in
+[this paper](https://aclanthology.org/2021.nodalida-main.53/) and was a crowd-sourcing
+effort to annotate sentiment of Danish tweets.
 
 The original full dataset consists of 3,458 samples, and we are using a split of 1,024 /
 256 / 2,048 samples for training, validation and testing, respectively (so 3,328 samples
@@ -80,42 +80,42 @@ euroeval --model <model-id> --dataset angry-tweets
 
 ### Unofficial: Danish Sentiment in Context
 
-This dataset was published in [this
-paper](https://doi.org/10.7146/nys.v1i65.143072) and is part of the [Danish Semantic
-Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+This dataset was published in [this paper](https://doi.org/10.7146/nys.v1i65.143072) and
+is part of the
+[Danish Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
 It differs from other sentiment datasets by measuring the sentiment of an individual
 word given its context, meaning the sentiment of the surrounding text may differ from
-the sentiment of the target word. The data is based on the semantic module of the [COR
-lexicon](https://aclanthology.org/2022.lrec-1.6.pdf), a human-curated lexical-semantic
-resource developed by the Society for Danish Language and Literature.
+the sentiment of the target word. The data is based on the semantic module of the
+[COR lexicon](https://aclanthology.org/2022.lrec-1.6.pdf), a human-curated
+lexical-semantic resource developed by the Society for Danish Language and Literature.
 
 The original dataset consists of 1,041 samples. We use a 256 / 64 / 721 split for
 training, validation and testing, respectively (so 1,041 samples used in total).
 
-The sentiment labels from the original dataset are on a scale from -3 (very negative)
-to +3 (very positive), which we map to `negative` (< 0), `neutral` (= 0), and
-`positive` (> 0).
+The sentiment labels from the original dataset are on a scale from -3 (very negative) to
++3 (very positive), which we map to `negative` (< 0), `neutral` (= 0), and `positive` (>
+0).
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Ord: vinder\nKontekst: Umiddelbart efter lodtrækningen vil vinderne få gavekortet tilsendt",
-    "label": "positive"
+  "text": "Ord: vinder\nKontekst: Umiddelbart efter lodtrækningen vil vinderne få gavekortet tilsendt",
+  "label": "positive"
 }
 ```
 
 ```json
 {
-    "text": "Ord: nervebane\nKontekst: Næsten alle nervebaner krydser i den menneskelige hjernestamme",
-    "label": "neutral"
+  "text": "Ord: nervebane\nKontekst: Næsten alle nervebaner krydser i den menneskelige hjernestamme",
+  "label": "neutral"
 }
 ```
 
 ```json
 {
-    "text": "Ord: forrykt\nKontekst: Det er en forrykt situation. Det midaldrende par har tilbragt et år i et rum på seks kvadratmeter",
-    "label": "negative"
+  "text": "Ord: forrykt\nKontekst: Det er en forrykt situation. Det midaldrende par har tilbragt et år i et rum på seks kvadratmeter",
+  "label": "negative"
 }
 ```
 
@@ -159,11 +159,11 @@ euroeval --model <model-id> --dataset danish-sentiment-in-context
 
 ### DANSK
 
-This dataset was published in [this
-paper](https://doi.org/10.3384/nejlt.2000-1533.2024.5249) and is a manually annotated
-subset of [Danish Gigaword](https://aclanthology.org/2021.nodalida-main.46/) with the 18
-different named entities, following the OntoNotes 5.0 scheme. It was annotated by 10
-different annotators.
+This dataset was published in
+[this paper](https://doi.org/10.3384/nejlt.2000-1533.2024.5249) and is a manually
+annotated subset of [Danish Gigaword](https://aclanthology.org/2021.nodalida-main.46/)
+with the 18 different named entities, following the OntoNotes 5.0 scheme. It was
+annotated by 10 different annotators.
 
 The original full dataset consists of 15,062 samples, and we are using a split of 1,024
 / 256 / 1,024 samples for training, validation and testing, respectively (so 2,304
@@ -177,7 +177,7 @@ labelling scheme, which is more common in the NER literature. The mapping is as 
 - `LOCATION` ➡️ `LOC`
 - `FACILITY` ➡️ `LOC`
 - `GPE` ➡️ `LOC`
-- `ORGANIZATION` ➡️ `PER`
+- `ORGANIZATION` ➡️ `ORG`
 - `EVENT` ➡️ `MISC`
 - `LANGUAGE` ➡️ `MISC`
 - `PRODUCT` ➡️ `MISC`
@@ -259,9 +259,9 @@ euroeval --model <model-id> --dataset dansk
 ### Unofficial: DaNE
 
 This dataset was published in [this paper](https://aclanthology.org/2020.lrec-1.565/)
-and is a manually NER annotated version of the [Danish Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master). The NER
-labels follow the CoNLL-2003 labelling scheme.
+and is a manually NER annotated version of the
+[Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master).
+The NER labels follow the CoNLL-2003 labelling scheme.
 
 The original full dataset consists of 4,383 / 564 / 565 samples for training, validation
 and testing, respectively. We use a 1,024 / 256 / 2,048 split for training, validation
@@ -292,16 +292,57 @@ Here are a few examples from the training split:
 }
 ```
 
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt:
+
+  ```text
+  Følgende er sætninger og JSON-ordbøger med de navngivne enheder, som forekommer i den givne sætning.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Sætning: {text}
+  Navngivne enheder: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Sætning: {text}
+
+  Identificér de navngivne enheder i sætningen. Du skal outputte dette som en JSON-ordbog med nøglerne 'person', 'sted', 'organisation' og 'diverse'. Værdierne skal være lister over de navngivne enheder af den type, præcis som de forekommer i sætningen.
+  ```
+
+- Label mapping:
+  - `B-PER` ➡️ `person`
+  - `I-PER` ➡️ `person`
+  - `B-LOC` ➡️ `sted`
+  - `I-LOC` ➡️ `sted`
+  - `B-ORG` ➡️ `organisation`
+  - `I-ORG` ➡️ `organisation`
+  - `B-MISC` ➡️ `diverse`
+  - `I-MISC` ➡️ `diverse`
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset dane
+```
+
 ## Linguistic Acceptability
 
 ### ScaLA-da
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Danish Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master) by
-assuming that the documents in the treebank are correct, and corrupting the samples to
-create grammatically incorrect samples. The corruptions were done by either removing a
-word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+and was automatically created from the
+[Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.
 
@@ -372,21 +413,20 @@ euroeval --model <model-id> --dataset scala-da
 This dataset was published in [this paper](https://arxiv.org/abs/2512.04799) and,
 similarly to ScaLA, was automatically created from the
 [Danish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Danish-DDT/tree/master)
-by assuming that the documents in the treebank are correct, and corrupting the
-samples to create grammatically incorrect samples.
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples.
 
-This is an extension of ScaLA-da based on an analysis of most common errors made
-by Danish speakers. It adds 12 new linguistically grounded error types on top of
-the existing 2 from ScaLA-da, the corruption type applied to each sentence is also
-indicated in the dataset (`corruption_type` column). The corruptions have been based
-on linguistic features (e.g. POS tags, morphology features etc.) so to both ground
-them on linguistic rules and ensure the unacceptability of the corrupted sentences.
-The corruption quality has been both automatically and manually validated as
-detailed in the paper.
+This is an extension of ScaLA-da based on an analysis of most common errors made by
+Danish speakers. It adds 12 new linguistically grounded error types on top of the
+existing 2 from ScaLA-da, the corruption type applied to each sentence is also indicated
+in the dataset (`corruption_type` column). The corruptions have been based on linguistic
+features (e.g. POS tags, morphology features etc.) so to both ground them on linguistic
+rules and ensure the unacceptability of the corrupted sentences. The corruption quality
+has been both automatically and manually validated as detailed in the paper.
 
-Like ScaLA-da, the original dataset consists of 5,512 samples, from which we use
-1,024 / 256 / 2,048 samples for training, validation and testing, respectively
-(so 3,328 samples used in total).
+Like ScaLA-da, the original dataset consists of 5,512 samples, from which we use 1,024 /
+256 / 2,048 samples for training, validation and testing, respectively (so 3,328 samples
+used in total).
 
 Here are a few examples from the training split:
 
@@ -453,36 +493,36 @@ euroeval --model <model-id> --dataset dala
 
 ### Unofficial: The Danish Entailment Dataset
 
-This dataset was published in [this
-paper](https://aclanthology.org/2024.lrec-main.1421/) as part of the Danish Semantic
-Reasoning Benchmark and was developed at the Centre for Language Technology at the
-University of Copenhagen. Each sample pairs two Danish statements and asks whether the
-second statement follows from the first.
+This dataset was published in
+[this paper](https://aclanthology.org/2024.lrec-main.1421/) as part of the Danish
+Semantic Reasoning Benchmark and was developed at the Centre for Language Technology at
+the University of Copenhagen. Each sample pairs two Danish statements and asks whether
+the second statement follows from the first.
 
-The original dataset contains 319 usable samples after filtering. We use a split of
-32 / 286 samples for training and testing, respectively (so 318 samples used in total
-after deduplication). The splits were created by randomly sampling from the full dataset.
+The original dataset contains 319 usable samples after filtering. We use a split of 32 /
+286 samples for training and testing, respectively (so 318 samples used in total after
+deduplication). The splits were created by randomly sampling from the full dataset.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Udsagn 1: Per forsømte sin have.\nUdsagn 2: Per holdt ikke sin have.",
-    "label": "entailment"
+  "text": "Udsagn 1: Per forsømte sin have.\nUdsagn 2: Per holdt ikke sin have.",
+  "label": "entailment"
 }
 ```
 
 ```json
 {
-    "text": "Udsagn 1: Per afbrød sine studier fordi han ikke havde råd til at fortsætte.\nUdsagn 2: Per studerede uden pause til han var færdiguddannet.",
-    "label": "contradiction"
+  "text": "Udsagn 1: Per afbrød sine studier fordi han ikke havde råd til at fortsætte.\nUdsagn 2: Per studerede uden pause til han var færdiguddannet.",
+  "label": "contradiction"
 }
 ```
 
 ```json
 {
-    "text": "Udsagn 1: Regeringen afskaffede karaktergivning på de første tre klassetrin i grundskolen.\nUdsagn 2: Der gives ikke længere karakterer til eleverne på grundskolens mellemste klassetrin.",
-    "label": "neutral"
+  "text": "Udsagn 1: Regeringen afskaffede karaktergivning på de første tre klassetrin i grundskolen.\nUdsagn 2: Der gives ikke længere karakterer til eleverne på grundskolens mellemste klassetrin.",
+  "label": "neutral"
 }
 ```
 
@@ -524,15 +564,15 @@ euroeval --model <model-id> --dataset danish-entailment
 
 ### Unofficial: Danish Lexical Inference
 
-This dataset is part of the [Danish Semantic Reasoning
-Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark). It
-measures word knowledge through lexical inference: given a context statement derived
+This dataset is part of the
+[Danish Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+It measures word knowledge through lexical inference: given a context statement derived
 from a DanNet Qualia role (Agentive, Constitutive, Formal, or Telic), a model must
 determine whether a second statement is entailed by or contradicts the context.
 
-The original dataset consists of 1,020 samples across 17 sub-datasets. We use a 128 /
-64 / 828 split for training, validation and testing, respectively (so all 1,020 samples
-are used in total).
+The original dataset consists of 1,020 samples across 17 sub-datasets. We use a 128 / 64
+/ 828 split for training, validation and testing, respectively (so all 1,020 samples are
+used in total).
 
 Here are a few examples from the training split:
 
@@ -589,8 +629,8 @@ euroeval --model <model-id> --dataset danish-lexical-inference
 
 ### Unofficial: DanWiC
 
-This dataset was published in [this
-paper](https://aclanthology.org/2024.lrec-main.1421/) and is based on the semantic
+This dataset was published in
+[this paper](https://aclanthology.org/2024.lrec-main.1421/) and is based on the semantic
 module of the [COR.SEM resource](https://corsem.dsl.dk/). The dataset measures the
 ability to distinguish word meanings/senses in context: given two sentences containing
 the same target word, the task is to determine whether the word carries the same sense
@@ -604,28 +644,28 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Ord: folkeslag\nKontekst 1: I århundreder levede arabere og jøder, to semitiske folkeslag, fredeligt side om side i Palæstina\nKontekst 2: Jeg elsker at gå i spraglet tøj inspireret af primitive folkeslag",
-    "label": "same_sense",
-    "type": "monosemous",
-    "idx": 1133
+  "text": "Ord: folkeslag\nKontekst 1: I århundreder levede arabere og jøder, to semitiske folkeslag, fredeligt side om side i Palæstina\nKontekst 2: Jeg elsker at gå i spraglet tøj inspireret af primitive folkeslag",
+  "label": "same_sense",
+  "type": "monosemous",
+  "idx": 1133
 }
 ```
 
 ```json
 {
-    "text": "Ord: uheld\nKontekst 1: På årets første snevejrsdag fredag steg antallet af uheld med bulede biler cirka en fjerdedel\nKontekst 2: Eget held er godt, andres uheld ikke at foragte",
-    "label": "different_sense",
-    "type": "polysemous",
-    "idx": 15316
+  "text": "Ord: uheld\nKontekst 1: På årets første snevejrsdag fredag steg antallet af uheld med bulede biler cirka en fjerdedel\nKontekst 2: Eget held er godt, andres uheld ikke at foragte",
+  "label": "different_sense",
+  "type": "polysemous",
+  "idx": 15316
 }
 ```
 
 ```json
 {
-    "text": "Ord: service\nKontekst 1: De fleste borgere har det jo sådan, at de både ønsker lavere skatter og bedre offentlig service. Det er uforenelige mål\nKontekst 2: isvand med to glas kom uopfordret og blev fyldt op undervejs — fin service",
-    "label": "same_sense",
-    "type": "polysemous",
-    "idx": 11195
+  "text": "Ord: service\nKontekst 1: De fleste borgere har det jo sådan, at de både ønsker lavere skatter og bedre offentlig service. Det er uforenelige mål\nKontekst 2: isvand med to glas kom uopfordret og blev fyldt op undervejs — fin service",
+  "label": "same_sense",
+  "type": "polysemous",
+  "idx": 11195
 }
 ```
 
@@ -751,21 +791,21 @@ euroeval --model <model-id> --dataset multi-wiki-qa-da
 ### Unofficial: ScandiQA-da
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the Danish part of the [MKQA
-dataset](https://aclanthology.org/2021.tacl-1.82/). The MKQA dataset is based on the
-English [Natural Questions dataset](https://aclanthology.org/Q19-1026/), based on search
-queries from the Google search engine. The questions and answers were manually
+and was automatically created from the Danish part of the
+[MKQA dataset](https://aclanthology.org/2021.tacl-1.82/). The MKQA dataset is based on
+the English [Natural Questions dataset](https://aclanthology.org/Q19-1026/), based on
+search queries from the Google search engine. The questions and answers were manually
 translated to Danish (and other languages) as part of MKQA, and the contexts were in
-ScandiQA-da machine translated using the [DeepL translation
-API](https://www.deepl.com/en/pro-api/). A rule-based approach was used to ensure that
-the translated contexts still contained the answer to the question, potentially by
-changing the answers slightly.
+ScandiQA-da machine translated using the
+[DeepL translation API](https://www.deepl.com/en/pro-api/). A rule-based approach was
+used to ensure that the translated contexts still contained the answer to the question,
+potentially by changing the answers slightly.
 
-The original full dataset consists of 6,810 / 500 / 500 samples for training,
-validation and testing, respectively (so 3,328 samples used in total).
-We use a 1,024 / 256 / 2,048 split for training, validation and testing, respectively,
-where the splits are made by randomly sampling from the full dataset without considering
-the original train/validation/test splits.
+The original full dataset consists of 6,810 / 500 / 500 samples for training, validation
+and testing, respectively (so 3,328 samples used in total). We use a 1,024 / 256 / 2,048
+split for training, validation and testing, respectively, where the splits are made by
+randomly sampling from the full dataset without considering the original
+train/validation/test splits.
 
 Here are a few examples from the training split:
 
@@ -839,7 +879,10 @@ euroeval --model <model-id> --dataset scandiqa-da
 ### Unofficial: BeleBele-da
 
 This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
-and features multiple-choice reading comprehension questions across 122 languages.
+and features multiple-choice reading comprehension questions across 122 languages. The
+dataset was created by professional translators who translated 900 multiple-choice
+questions from English into other languages, with answers carefully validated by native
+speakers.
 
 The original dataset contains 900 unique multiple-choice reading comprehension passages
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
@@ -991,8 +1034,8 @@ euroeval --model <model-id> --dataset danske-talemaader
 
 This dataset was created by scraping the Danish citizenship tests (indfødsretsprøven)
 and permanent residency tests (medborgerskabsprøven) from 2016 to 2024. These are
-available on the [official website of the Danish Ministry of International Recruitment
-and Integration](https://danskogproever.dk/).
+available on the
+[official website of the Danish Ministry of International Recruitment and Integration](https://danskogproever.dk/).
 
 The original full dataset consists of 870 samples. We use an 345 / 90 / 525 split for
 training, validation and testing, respectively. Here all the citizenship tests belong to
@@ -1064,11 +1107,11 @@ euroeval --model <model-id> --dataset danish-citizen-tests
 
 ### Unofficial: MMLU-da
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Danish was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Danish was done by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -1134,12 +1177,18 @@ When evaluating generative models, we use the following setup (see the
   Besvar ovenstående spørgsmål ved at svare med 'a', 'b', 'c' eller 'd', og intet andet.
   ```
 
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset mmlu-da
+```
+
 ### Unofficial: ARC-da
 
-This dataset is a machine translated version of the English [ARC
-dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school science
-questions. The translation to Danish was done by the University of Oregon as part of
-[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[ARC dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school
+science questions. The translation to Danish was done by the University of Oregon as
+part of [this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 1,110 / 297 / 1,170 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for training,
@@ -1206,9 +1255,9 @@ When evaluating generative models, we use the following setup (see the
 
 ### Unofficial: DAMETA
 
-This dataset is part of the [Danish Semantic Reasoning
-Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark). It is a
-metaphor interpretation dataset for Danish single word metaphors, developed as a
+This dataset is part of the
+[Danish Semantic Reasoning Benchmark](https://github.com/kuhumcst/danish-semantic-reasoning-benchmark).
+It is a metaphor interpretation dataset for Danish single word metaphors, developed as a
 multiple-choice task. Each item contains a word with a metaphoric meaning presented in
 context, along with four paraphrases: a correct paraphrase, a literal distractor
 (concrete/literal interpretation), a figurative distractor (incorrect figurative
@@ -1222,67 +1271,67 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "ID": "b049",
-    "word": "lægning",
-    "sentence": "De kan færdes uantastede blandt ellers dybt mistænksomme personager af skurkagtig lægning",
-    "A": "De kan færdes uantastede blandt ellers dybt mistænksomme personager med en skurkagtig forhistorie",
-    "B": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som har lagt mange kartofler",
-    "C": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som har mistet besindelsen",
-    "D": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som ser smukke ud",
-    "label": "a",
-    "lit_dis": "B",
-    "fig_dis": "C",
-    "con_dis": "D",
-    "type": "3",
-    "domain": "-",
-    "DDO_sense_number": "-",
-    "source": "adhoc from news",
-    "annotator": "BSP",
-    "text": "Hvad er den korrekte fortolkning af ordet 'lægning' i følgende sætning?\n'De kan færdes uantastede blandt ellers dybt mistænksomme personager af skurkagtig lægning'\nSvarmuligheder:\na. De kan færdes uantastede blandt ellers dybt mistænksomme personager med en skurkagtig forhistorie\nb. De kan færdes uantastede blandt ellers dybt mistænksomme personager som har lagt mange kartofler\nc. De kan færdes uantastede blandt ellers dybt mistænksomme personager som har mistet besindelsen\nd. De kan færdes uantastede blandt ellers dybt mistænksomme personager som ser smukke ud"
+  "ID": "b049",
+  "word": "lægning",
+  "sentence": "De kan færdes uantastede blandt ellers dybt mistænksomme personager af skurkagtig lægning",
+  "A": "De kan færdes uantastede blandt ellers dybt mistænksomme personager med en skurkagtig forhistorie",
+  "B": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som har lagt mange kartofler",
+  "C": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som har mistet besindelsen",
+  "D": "De kan færdes uantastede blandt ellers dybt mistænksomme personager som ser smukke ud",
+  "label": "a",
+  "lit_dis": "B",
+  "fig_dis": "C",
+  "con_dis": "D",
+  "type": "3",
+  "domain": "-",
+  "DDO_sense_number": "-",
+  "source": "adhoc from news",
+  "annotator": "BSP",
+  "text": "Hvad er den korrekte fortolkning af ordet 'lægning' i følgende sætning?\n'De kan færdes uantastede blandt ellers dybt mistænksomme personager af skurkagtig lægning'\nSvarmuligheder:\na. De kan færdes uantastede blandt ellers dybt mistænksomme personager med en skurkagtig forhistorie\nb. De kan færdes uantastede blandt ellers dybt mistænksomme personager som har lagt mange kartofler\nc. De kan færdes uantastede blandt ellers dybt mistænksomme personager som har mistet besindelsen\nd. De kan færdes uantastede blandt ellers dybt mistænksomme personager som ser smukke ud"
 }
 ```
 
 ```json
 {
-    "ID": "n088",
-    "word": "forhøje",
-    "sentence": "Der er tale om forhøjede niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
-    "A": "Der er tale om at fremme niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
-    "B": "Der er tale om ekstra høje niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
-    "C": "Der er tale om at øge højden på stueplan med såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
-    "D": "Der er tale om ret lave niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
-    "label": "b",
-    "lit_dis": "C",
-    "fig_dis": "A",
-    "con_dis": "D",
-    "type": "1",
-    "domain": "-",
-    "DDO_sense_number": "1a",
-    "source": "dafig",
-    "annotator": "SOL",
-    "text": "Hvad er den korrekte fortolkning af ordet 'forhøje' i følgende sætning?\n'Der er tale om forhøjede niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.'\nSvarmuligheder:\na. Der er tale om at fremme niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nb. Der er tale om ekstra høje niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nc. Der er tale om at øge højden på stueplan med såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nd. Der er tale om ret lave niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse."
+  "ID": "n088",
+  "word": "forhøje",
+  "sentence": "Der er tale om forhøjede niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+  "A": "Der er tale om at fremme niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+  "B": "Der er tale om ekstra høje niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+  "C": "Der er tale om at øge højden på stueplan med såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+  "D": "Der er tale om ret lave niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.",
+  "label": "b",
+  "lit_dis": "C",
+  "fig_dis": "A",
+  "con_dis": "D",
+  "type": "1",
+  "domain": "-",
+  "DDO_sense_number": "1a",
+  "source": "dafig",
+  "annotator": "SOL",
+  "text": "Hvad er den korrekte fortolkning af ordet 'forhøje' i følgende sætning?\n'Der er tale om forhøjede niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.'\nSvarmuligheder:\na. Der er tale om at fremme niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nb. Der er tale om ekstra høje niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nc. Der er tale om at øge højden på stueplan med såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse.\nd. Der er tale om ret lave niveauer af såkaldt PFAS, skriver Lemvig Kommune i en pressemeddelelse."
 }
 ```
 
 ```json
 {
-    "ID": "n291",
-    "word": "rulle",
-    "sentence": "Og det kan være, at der snart ruller millioner ind i statskassen fra vanvidsbilisme.",
-    "A": "Og det kan være, at der snart triller millioner af mønter ind i statskassen fra vanvidsbilisme.",
-    "B": "Og det kan være, at der snart kan spenderes millioner af statskassen fra vanvidsbilisme.",
-    "C": "Og det kan være, at der snart kommer millioner ind i statskassen fra vanvidsbilisme.",
-    "D": "Og det kan være, at der snart er millioner i omløb i statskassen fra vanvidsbilisme.",
-    "label": "c",
-    "lit_dis": "A",
-    "fig_dis": "D",
-    "con_dis": "B",
-    "type": "1",
-    "domain": "-",
-    "DDO_sense_number": "1c",
-    "source": "dafig",
-    "annotator": "SOL",
-    "text": "Hvad er den korrekte fortolkning af ordet 'rulle' i følgende sætning?\n'Og det kan være, at der snart ruller millioner ind i statskassen fra vanvidsbilisme.'\nSvarmuligheder:\na. Og det kan være, at der snart triller millioner af mønter ind i statskassen fra vanvidsbilisme.\nb. Og det kan være, at der snart kan spenderes millioner af statskassen fra vanvidsbilisme.\nc. Og det kan være, at der snart kommer millioner ind i statskassen fra vanvidsbilisme.\nd. Og det kan være, at der snart er millioner i omløb i statskassen fra vanvidsbilisme."
+  "ID": "n291",
+  "word": "rulle",
+  "sentence": "Og det kan være, at der snart ruller millioner ind i statskassen fra vanvidsbilisme.",
+  "A": "Og det kan være, at der snart triller millioner af mønter ind i statskassen fra vanvidsbilisme.",
+  "B": "Og det kan være, at der snart kan spenderes millioner af statskassen fra vanvidsbilisme.",
+  "C": "Og det kan være, at der snart kommer millioner ind i statskassen fra vanvidsbilisme.",
+  "D": "Og det kan være, at der snart er millioner i omløb i statskassen fra vanvidsbilisme.",
+  "label": "c",
+  "lit_dis": "A",
+  "fig_dis": "D",
+  "con_dis": "B",
+  "type": "1",
+  "domain": "-",
+  "DDO_sense_number": "1c",
+  "source": "dafig",
+  "annotator": "SOL",
+  "text": "Hvad er den korrekte fortolkning af ordet 'rulle' i følgende sætning?\n'Og det kan være, at der snart ruller millioner ind i statskassen fra vanvidsbilisme.'\nSvarmuligheder:\na. Og det kan være, at der snart triller millioner af mønter ind i statskassen fra vanvidsbilisme.\nb. Og det kan være, at der snart kan spenderes millioner af statskassen fra vanvidsbilisme.\nc. Og det kan være, at der snart kommer millioner ind i statskassen fra vanvidsbilisme.\nd. Og det kan være, at der snart er millioner i omløb i statskassen fra vanvidsbilisme."
 }
 ```
 
@@ -1321,11 +1370,11 @@ euroeval --model <model-id> --dataset dameta
 
 ### HellaSwag-da
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/). The original dataset was based on both
-video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
-was translated by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
+on both video descriptions from ActivityNet as well as how-to articles from WikiHow. The
+dataset was translated by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 9,310 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).
@@ -1396,13 +1445,13 @@ euroeval --model <model-id> --dataset hellaswag-da
 
 ### Unofficial: GoldenSwag-da
 
-This dataset is a filtered and machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
-ActivityNet as well as how-to articles from WikiHow. The machine translated version was
-published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
-DeepL, and the filtering was published in [this
-paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
-samples.
+This dataset is a filtered and machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video
+descriptions from ActivityNet as well as how-to articles from WikiHow. The machine
+translated version was published in
+[this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and
+the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825),
+which resulted in higher quality samples.
 
 The original full dataset consists of 1530 / 1530 samples for training and validation,
 respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
@@ -1475,8 +1524,8 @@ euroeval --model <model-id> --dataset goldenswag-da
 ### Unofficial: Winogrande-da
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -1542,12 +1591,154 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset winogrande-da
 ```
 
+## Logical Reasoning
+
+### Unofficial: ZebraPuzzleEasy-da
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nJobs: lærer og minister.\nHobbyer: brætspil og maleri.\nYndlingsfrugter: appelsin og skovjordbær.\n\nDerudover ved vi følgende:\n\n1. Ministeren sejler ofte.\n2. Personen der elsker fysik bor ikke i hus nummer 2.\n3. Læreren er gode venner med personen der synes den næstbedste frugt er mango.\n4. Personen der spiller brætspil bor til højre for personen der elsker appelsiner.\n5. Personen med en tatovering bor ikke i hus nummer 2.\n6. Personen med et marsvin bor i hus nummer 1.\n7. Ministeren bor ikke i hus nummer 1.",
+  "target_text": {
+    "object_1": ["lærer", "maleri", "appelsin"],
+    "object_2": ["minister", "brætspil", "skovjordbær"]
+  }
+}
+```
+
+```json
+{
+  "text": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nNationaliteter: Storbritannien og Sverige.\nKæledyr: hund og vandrende pind.\nYndlingsboggenrer: gyser og kærlighedsromaner.\n\nDerudover ved vi følgende:\n\n1. Ejeren af en vandrende pind læser gysere.\n2. Personen med en tatovering bor ikke i hus nummer 1.\n3. Briten har en hund.\n4. Personen med en cykel har en kandidatgrad i matematik.\n5. Gyserlæseren bor til venstre for personen der læser kærlighedsromaner.\n6. Personen der synes den næstbedste frugt er mango bor ikke i hus nummer 2.\n7. Alle husene har store vinduer.\n8. Personen der elsker fysik bor ikke i hus nummer 1.",
+  "target_text": {
+    "object_1": ["Sverige", "vandrende pind", "gyser"],
+    "object_2": ["Storbritannien", "hund", "kærlighedsromaner"]
+  }
+}
+```
+
+```json
+{
+  "text": "En række huse er nummereret fra 1 til 2 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nKæledyr: kat og zebra.\nDrikke: kaffe og sodavand.\nYndlingsfrugter: banan og jordbær.\n\nDerudover ved vi følgende:\n\n1. Personen der synes den næstbedste frugt er mango har et kæledyr som er gammelt for sin art.\n2. Sild er fisk.\n3. Personen der ikke ejer en kaktus bor ikke i hus nummer 2.\n4. Sodavandsdrikkeren bor til højre for personen der elsker bananer.\n5. Katteejeren bor ved siden af personen med en cykel.\n6. Sodavandsdrikkeren ved at solsystemet bevæger sig med en fart på ca. 200 km/s rundt om galaksens centrum.\n7. Zebraejeren bor til venstre for personen der elsker jordbær.",
+  "target_text": {
+    "object_1": ["zebra", "kaffe", "banan"],
+    "object_2": ["kat", "sodavand", "jordbær"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Her er en gåde:
+  <riddle>
+  {text}
+  </riddle>
+  Hvem har hvilke egenskaber og bor i hvilket hus?
+
+  Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er
+  husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor
+  som tilhører personen i hus nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-da
+```
+
+### Unofficial: ZebraPuzzleHard-da
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "En række huse er nummereret fra 1 til 4 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nJobs: bager, butiksassistent, politibetjent og sygeplejerske.\nKæledyr: hund, kanin, kat og snegl.\nDrikke: juice, kaffe, kakao og te.\nYndlingsboggenrer: fantasy, gyser, krimi og kærlighedsromaner.\nYndlingsfrugter: appelsin, jordbær, skovjordbær og æble.\n\nDerudover ved vi følgende:\n\n1. Butiksassistenten er gode venner med personen der spiller guitar.\n2. Kakaodrikkeren bor lige til venstre for personen der elsker skovjordbær.\n3. Personen med en søster har en kandidatgrad i matematik.\n4. Krimilæseren bor mellem personen der læser kærlighedsromaner og personen der elsker æbler.\n5. Personen der læser kærlighedsromaner er gode venner med personen med rødt hår.\n6. Katteejeren bor ved siden af juicedrikkeren.\n7. Butiksassistenten bor ikke i hus nummer 3.\n8. Hundeejeren bor ikke mellem juicedrikkeren og personen der læser kærlighedsromaner, og de er tre forskellige personer.\n9. Der er ét hus mellem kaffedrikkeren og fantasylæseren.\n10. Der er ét hus mellem sygeplejersken og bageren.\n11. Gyserlæseren bor i hus nummer 1.\n12. Fantasylæseren bor ikke ved siden af personen der elsker appelsiner, og de er ikke den samme person.\n13. Alle husene har store vinduer.\n14. Kaninejeren har et kæledyr som er gammelt for sin art.\n15. Personen der læser kærlighedsromaner bor mellem snegleejeren og gyserlæseren.\n16. Sygeplejersken bor mellem butiksassistenten og kakaodrikkeren.\n17. Kaninejeren bor i hus nummer 3.",
+  "target_text": {
+    "object_1": ["bager", "hund", "kakao", "gyser", "appelsin"],
+    "object_2": ["politibetjent", "kat", "kaffe", "kærlighedsromaner", "skovjordbær"],
+    "object_3": ["sygeplejerske", "kanin", "juice", "krimi", "jordbær"],
+    "object_4": ["butiksassistent", "snegl", "te", "fantasy", "æble"]
+  }
+}
+```
+
+```json
+{
+  "text": "En række huse er nummereret fra 1 til 4 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nNationaliteter: Frankrig, Island, Nederlandene og Sverige.\nJobs: bager, lærer, minister og softwareudvikler.\nKæledyr: hund, kat, snegl og vandrende pind.\nHobbyer: fodbold, håndbold, hækling og tennis.\nYndlingsfrugter: appelsin, jordbær, skovjordbær og æble.\n\nDerudover ved vi følgende:\n\n1. Personen der elsker æbler bor ikke i hus nummer 4.\n2. Islænderen bor ikke mellem hundeejeren og personen der elsker appelsiner, og de er tre forskellige personer.\n3. Nederlænderen og katteejeren bor med 2 huse mellem sig.\n4. Personen der hækler bor ikke i hus nummer 3.\n5. Personen der ser skihop bor ikke i hus nummer 2.\n6. Læreren bor ikke ved siden af personen der elsker skovjordbær, og de er ikke den samme person.\n7. Personen der spiller håndbold bor ved siden af personen der hækler.\n8. Katteejeren er gode venner med personen der ikke ejer en kaktus.\n9. Personen der elsker skovjordbær er gode venner med personen med rødt hår.\n10. Læreren bor til venstre for snegleejeren.\n11. Personen der hækler har en tatovering.\n12. Bageren bor ikke mellem hundeejeren og personen der elsker æbler, og de er tre forskellige personer.\n13. Svenskeren bor i hus nummer 2.\n14. Personen der elsker fysik bor i hus nummer 1.\n15. Læreren bor mellem ministeren og personen der spiller tennis.\n16. Personen der spiller håndbold bor lige til højre for personen der elsker jordbær.\n17. Personen der spiller tennis bor i hus nummer 2.",
+  "target_text": {
+    "object_1": ["Island", "bager", "kat", "fodbold", "skovjordbær"],
+    "object_2": ["Sverige", "softwareudvikler", "hund", "tennis", "jordbær"],
+    "object_3": ["Frankrig", "lærer", "vandrende pind", "håndbold", "æble"],
+    "object_4": ["Nederlandene", "minister", "snegl", "hækling", "appelsin"]
+  }
+}
+```
+
+```json
+{
+  "text": "En række huse er nummereret fra 1 til 4 fra venstre mod højre.\n\nI hvert hus bor en person med en unik egenskab i hver af de følgende kategorier:\n\nNationaliteter: Danmark, Letland, Norge og Spanien.\nJobs: bager, butiksassistent, lærer og softwareudvikler.\nKæledyr: hund, snegl, undulat og zebra.\nHobbyer: brætspil, håndbold, klatring og maleri.\nYndlingsfrugter: appelsin, banan, jordbær og æble.\n\nDerudover ved vi følgende:\n\n1. Letteren spiller brætspil.\n2. Alle vejens huse har flotte haver.\n3. Flere af husene har en grøn dør.\n4. Snegleejeren bor lige til venstre for personen der elsker æbler.\n5. Softwareudvikleren bor ved siden af personen med briller.\n6. Bageren bor til venstre for personen der klatrer.\n7. Softwareudvikleren er gode venner med personen med en søster.\n8. Der er ét hus mellem undulatejeren og personen der klatrer.\n9. Undulatejeren bor lige til venstre for hundeejeren.\n10. Personen der klatrer kan ikke lide jordbær.\n11. Nordmanden ved at kaffe indeholder koffein.\n12. Læreren bor mellem danskeren og hundeejeren.\n13. Personen der maler elsker bananer.\n14. Der er ét hus mellem spanieren og letteren.\n15. Der er ét hus mellem danskeren og softwareudvikleren.\n16. Hundeejeren bor ikke ved siden af personen der elsker bananer, og de er ikke den samme person.",
+  "target_text": {
+    "object_1": ["Danmark", "bager", "snegl", "maleri", "banan"],
+    "object_2": ["Letland", "lærer", "undulat", "brætspil", "æble"],
+    "object_3": ["Norge", "softwareudvikler", "hund", "håndbold", "jordbær"],
+    "object_4": ["Spanien", "butiksassistent", "zebra", "klatring", "appelsin"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Her er en gåde:
+  <riddle>
+  {text}
+  </riddle>
+  Hvem har hvilke egenskaber og bor i hvilket hus?
+
+  Angiv venligst dit svar som et JSON dictionary. Hver key skal være object_X hvor X er
+  husnummeret. Hver value skal være en liste med de egenskaber fra kategorierne ovenfor
+  som tilhører personen i hus nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-da
+```
+
 ## Summarisation
 
 ### Nordjylland News
 
-This dataset is based on news articles from the Danish news site [TV2
-Nord](https://www.tv2nord.dk/), where the summaries are taken as the introductory
+This dataset is based on news articles from the Danish news site
+[TV2 Nord](https://www.tv2nord.dk/), where the summaries are taken as the introductory
 paragraphs of the articles.
 
 The original full dataset consists of 75,200 samples. We use an 1,024 / 256 / 2,048
@@ -1614,10 +1805,10 @@ euroeval --model <model-id> --dataset nordjylland-news
 
 This dataset was published
 [here](https://huggingface.co/datasets/danish-foundation-models/ifeval-da) and is a
-translation of the English IFEval dataset, which was published in [this
-paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
-combination of one or more of 25 different constraints. The dataset was professionally
-translated and localised by expert native speakers.
+translation of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each
+with a combination of one or more of 25 different constraints. The dataset was
+professionally translated and localised by expert native speakers.
 
 We use the original dataset as the test split, and do not include the other splits, as
 we only evaluate models zero-shot and the size is too small to warrant an even smaller
@@ -1627,51 +1818,41 @@ Here are a few examples from the test split:
 
 ```json
 {
-    "text": "Gentag først nedenstående forespørgsel ord for ord uden ændringer, og giv derefter dit svar. Tilføj ikke noget før du gentager nedenstående forespørgsel.\n\nSkriv en historie om en mand, der forsøger at få styr på sit liv. Skriv historiens navn i dobbelte vinkelparenteser, dvs. <<historien om xyz>>.",
-    "target_text": {
-        "instruction_id_list": [
-            "detectable_format:title",
-            "combination:repeat_prompt"
-        ],
-        "kwargs": [
-            {},
-            {
-                "prompt_to_repeat": "Skriv en historie om en mand, der forsøger at få styr på sit liv. Skriv historiens navn i dobbelte vinkelparenteser, dvs. <<historien om xyz>>."
-            }
-        ]
-    }
+  "text": "Gentag først nedenstående forespørgsel ord for ord uden ændringer, og giv derefter dit svar. Tilføj ikke noget før du gentager nedenstående forespørgsel.\n\nSkriv en historie om en mand, der forsøger at få styr på sit liv. Skriv historiens navn i dobbelte vinkelparenteser, dvs. <<historien om xyz>>.",
+  "target_text": {
+    "instruction_id_list": ["detectable_format:title", "combination:repeat_prompt"],
+    "kwargs": [
+      {},
+      {
+        "prompt_to_repeat": "Skriv en historie om en mand, der forsøger at få styr på sit liv. Skriv historiens navn i dobbelte vinkelparenteser, dvs. <<historien om xyz>>."
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Skriv en mærkelig annonce for en advokat, der repræsenterer hekse og som er specialist i ophavsretskrænkelser. Brug kun små bogstaver. Dit svar skal indeholde en titel, omsluttet af dobbelte vinkelparenteser, dvs. <<titel>>.",
-    "target_text": {
-        "instruction_id_list": [
-            "detectable_format:title"
-        ],
-        "kwargs": [
-            {}
-        ]
-    }
+  "text": "Skriv en mærkelig annonce for en advokat, der repræsenterer hekse og som er specialist i ophavsretskrænkelser. Brug kun små bogstaver. Dit svar skal indeholde en titel, omsluttet af dobbelte vinkelparenteser, dvs. <<titel>>.",
+  "target_text": {
+    "instruction_id_list": ["detectable_format:title"],
+    "kwargs": [{}]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Skriv følgende sætning kun på svensk, intet andet sprog er tilladt, og undgå brug af kommaer: \"Vi kan muligvis forbedre vores model til næste år. Vi vil kunne sammenligne vores data med data fra det foregående år og se hvordan vores model har præsteret. Vi kan også sammenligne vores model med en model, der blev trænet på data fra det foregående år, og se, hvordan vores model klarer sig.\" Intet andet sprog end svensk må bruges i dit svar.",
-    "target_text": {
-        "instruction_id_list": [
-            "punctuation:no_comma",
-            "language:response_language"
-        ],
-        "kwargs": [
-            {},
-            {
-                "language": "sv"
-            }
-        ]
-    }
+  "text": "Skriv følgende sætning kun på svensk, intet andet sprog er tilladt, og undgå brug af kommaer: \"Vi kan muligvis forbedre vores model til næste år. Vi vil kunne sammenligne vores data med data fra det foregående år og se hvordan vores model har præsteret. Vi kan også sammenligne vores model med en model, der blev trænet på data fra det foregående år, og se, hvordan vores model klarer sig.\" Intet andet sprog end svensk må bruges i dit svar.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma", "language:response_language"],
+    "kwargs": [
+      {},
+      {
+        "language": "sv"
+      }
+    ]
+  }
 }
 ```
 
@@ -1699,35 +1880,35 @@ euroeval --model <model-id> --dataset ifeval-da
 
 ### ValEU-da
 
-This dataset is the official Danish version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official Danish version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {
-    "question_id": "C039",
-    "text": "Hvor enig eller uenig er du i følgende udsagn?\nDet er ens pligt over for samfundet at arbejde.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig",
+  "question_id": "C039",
+  "text": "Hvor enig eller uenig er du i følgende udsagn?\nDet er ens pligt over for samfundet at arbejde.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig"
 }
 ```
 
 ```json
 {
-    "question_id": "F122",
-    "text": "Fortæl for hver af handlingerne på dette kort, i hvilken grad du billiger handlingen. 1 betyder, at du slet ikke billiger dem, 10 betyder, at du i høj grad billiger dem\nAktiv dødshjælp\nSvarmuligheder:\na. Aldrig\nb. 2\nc. 3\nd. 4\ne. 5\nf. 6\ng. 7\nh. 8\ni. 9\nj. Altid",
+  "question_id": "F122",
+  "text": "Fortæl for hver af handlingerne på dette kort, i hvilken grad du billiger handlingen. 1 betyder, at du slet ikke billiger dem, 10 betyder, at du i høj grad billiger dem\nAktiv dødshjælp\nSvarmuligheder:\na. Aldrig\nb. 2\nc. 3\nd. 4\ne. 5\nf. 6\ng. 7\nh. 8\ni. 9\nj. Altid"
 }
 ```
 
 ```json
 {
-    "question_id": "C041",
-    "text": "Hvor enig eller uenig er du i følgende udsagn?\nArbejde kommer først, også selv om det betyder mindre fritid.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig"
+  "question_id": "C041",
+  "text": "Hvor enig eller uenig er du i følgende udsagn?\nArbejde kommer først, også selv om det betyder mindre fritid.\nSvarmuligheder:\na. Helt enig\nb. Enig\nc. Hverken enig eller uenig\nd. Uenig\ne. Helt uenig"
 }
 ```
 
@@ -1795,101 +1976,101 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": [
-        "så",
-        "er",
-        "der",
-        "en",
-        "pause",
-        "på",
-        "5",
-        "år",
-        "indtil",
-        "vivaldis",
-        "største",
-        "sucses",
-        "de",
-        "fire",
-        "årstider",
-        "kommer"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+  "tokens": [
+    "så",
+    "er",
+    "der",
+    "en",
+    "pause",
+    "på",
+    "5",
+    "år",
+    "indtil",
+    "vivaldis",
+    "største",
+    "sucses",
+    "de",
+    "fire",
+    "årstider",
+    "kommer"
+  ],
+  "labels": [
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O"
+  ]
 }
 ```
 
 ```json
 {
-    "tokens": [
-        "såfremt",
-        "virksomheden",
-        "ikke",
-        "selv",
-        "er",
-        "i",
-        "stand",
-        "til",
-        "at",
-        "krævede",
-        "de",
-        "udføre",
-        "målinger",
-        "må",
-        "den",
-        "for",
-        "egen",
-        "regning",
-        "søge",
-        "bistand",
-        "hos",
-        "private",
-        "eller",
-        "offentlige",
-        "laboratorier"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "B-ERR",
-        "O",
-        "B-ERR",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+  "tokens": [
+    "såfremt",
+    "virksomheden",
+    "ikke",
+    "selv",
+    "er",
+    "i",
+    "stand",
+    "til",
+    "at",
+    "krævede",
+    "de",
+    "udføre",
+    "målinger",
+    "må",
+    "den",
+    "for",
+    "egen",
+    "regning",
+    "søge",
+    "bistand",
+    "hos",
+    "private",
+    "eller",
+    "offentlige",
+    "laboratorier"
+  ],
+  "labels": [
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "B-ERR",
+    "O",
+    "B-ERR",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O"
+  ]
 }
 ```
 

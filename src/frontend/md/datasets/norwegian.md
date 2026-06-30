@@ -81,9 +81,9 @@ euroeval --model <model-id> --dataset norec
 ### NorNE-nb
 
 This dataset was published in [this paper](https://aclanthology.org/2020.lrec-1.559/)
-and is a manually NER annotated version of the [Bokmål Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Norwegian-Bokmaal). The NER labels
-almost follow the CoNLL-2003 standard, but with some additional labels.
+and is a manually NER annotated version of the
+[Bokmål Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Norwegian-Bokmaal).
+The NER labels almost follow the CoNLL-2003 standard, but with some additional labels.
 
 The original full dataset consists of 15,696 / 2,410 / 1,939 samples for training,
 validation and test, respectively. We use a split of 1,024 / 256 / 2,048 samples for
@@ -169,9 +169,9 @@ euroeval --model <model-id> --dataset norne-nb
 ### NorNE-nn
 
 This dataset was published in [this paper](https://aclanthology.org/2020.lrec-1.559/)
-and is a manually NER annotated version of the [Nynorsk Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Norwegian-Nynorsk). The NER labels
-almost follow the CoNLL-2003 standard, but with some additional labels.
+and is a manually NER annotated version of the
+[Nynorsk Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Norwegian-Nynorsk).
+The NER labels almost follow the CoNLL-2003 standard, but with some additional labels.
 
 The original full dataset consists of 14,174 / 1,890 / 1,511 samples for training,
 validation and test, respectively. We use a split of 1,024 / 256 / 2,048 samples for
@@ -259,11 +259,11 @@ euroeval --model <model-id> --dataset norne-nn
 ### ScaLA-nb
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Bokmål Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Norwegian-Bokmaal) by
-assuming that the documents in the treebank are correct, and corrupting the samples to
-create grammatically incorrect samples. The corruptions were done by either removing a
-word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+and was automatically created from the
+[Bokmål Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Norwegian-Bokmaal)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.
 
@@ -332,11 +332,11 @@ euroeval --model <model-id> --dataset scala-nb
 ### ScaLA-nn
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Nynorsk Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Norwegian-Nynorsk) by
-assuming that the documents in the treebank are correct, and corrupting the samples to
-create grammatically incorrect samples. The corruptions were done by either removing a
-word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+and was automatically created from the
+[Nynorsk Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Norwegian-Nynorsk)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.
 
@@ -471,13 +471,13 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset no-cola-binary
+euroeval --model <model-id> --dataset no-cola
 ```
 
 ### Unofficial: Jentoft
 
-This dataset was published in [this Master's
-thesis](https://www.duo.uio.no/handle/10852/103885) by Matias Jentoft.
+This dataset was published in
+[this Master's thesis](https://www.duo.uio.no/handle/10852/103885) by Matias Jentoft.
 
 The original dataset consists of 85,771 / 10,827 / 10487 samples for training,
 validation and test, respectively. We use a split of 1,024 / 256 / 2,048 samples for
@@ -630,8 +630,7 @@ This dataset was released in [this paper](https://doi.org/10.48550/arXiv.2312.01
 features a manually annotated reading comprehension dataset based on Norwegian news
 articles. This dataset is an _abstractive_ question answering dataset, meaning that the
 answers do not always feature in the context. To fix this, they were rephrased using
-[this
-script](https://github.com/EuroEval/EuroEval/blob/main/src/scripts/dataset_creation/create_norglm_multiqa.py),
+[this script](https://github.com/EuroEval/EuroEval/blob/main/src/scripts/dataset_creation/create_norglm_multiqa.py),
 which utilised the `gpt-4o-2024-05-13` model.
 
 The original dataset contains 2,406 samples, which we split into 1,024 / 256 / 1,126
@@ -709,7 +708,10 @@ euroeval --model <model-id> --dataset norglm-multi-qa
 ### Unofficial: BeleBele-no
 
 This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
-and features multiple-choice reading comprehension questions across 122 languages.
+and features multiple-choice reading comprehension questions across 122 languages. The
+dataset was created by professional translators who translated 900 multiple-choice
+questions from English into other languages, with answers carefully validated by native
+speakers.
 
 The original dataset contains 900 unique multiple-choice reading comprehension passages
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
@@ -855,7 +857,7 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset multi-wiki-qa-nb
-```text
+```
 
 ### Unofficial: MultiWikiQA-nn
 
@@ -1035,7 +1037,7 @@ Here are a few examples from the training split:
 ```json
 {
   "text": "Complete the Bokmål idiom:\ndet er ikke bare , _____\n\nSvaralternativer::\na. moro\nb. bare\nc. lett\nd. enkelt",
-  "label": "b",
+  "label": "b"
 }
 ```
 
@@ -1089,11 +1091,11 @@ euroeval --model <model-id> --dataset idioms-no
 
 ### Unofficial: MMLU-no
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Norwegian was conducted using the [DeepL translation
-API](https://www.deepl.com/en/products/api).
+This dataset is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Norwegian was conducted using the
+[DeepL translation API](https://www.deepl.com/en/products/api).
 
 The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -1167,10 +1169,10 @@ euroeval --model <model-id> --dataset mmlu-no
 
 ### Unofficial: ARC-no
 
-This dataset is a machine translated version of the English [ARC
-dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school science
-questions. The translation to Norwegian was conducted using the [DeepL translation
-API](https://www.deepl.com/en/products/api).
+This dataset is a machine translated version of the English
+[ARC dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school
+science questions. The translation to Norwegian was conducted using the
+[DeepL translation API](https://www.deepl.com/en/products/api).
 
 The original full dataset consists of 1,110 / 297 / 1,170 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for training,
@@ -1320,11 +1322,11 @@ euroeval --model <model-id> --dataset nor-common-sense-qa
 
 ### Unofficial: HellaSwag-no
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/). The original dataset was based on both
-video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
-was translated to Norwegian using the [DeepL translation
-API](https://www.deepl.com/en/products/api).
+This dataset is a machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
+on both video descriptions from ActivityNet as well as how-to articles from WikiHow. The
+dataset was translated to Norwegian using the
+[DeepL translation API](https://www.deepl.com/en/products/api).
 
 The original full dataset consists of 9,310 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).
@@ -1396,8 +1398,8 @@ euroeval --model <model-id> --dataset hellaswag-no
 ### Unofficial: Winogrande-no
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -1467,13 +1469,14 @@ euroeval --model <model-id> --dataset winogrande-no
 
 ### NoSammendrag
 
-This dataset is a combination of [the SNL and VG summarisation
-datasets](https://nmbu.brage.unit.no/nmbu-xmlui/handle/11250/3079868) as well as a
-translated version of the English [XSum dataset](https://aclanthology.org/D18-1206/),
-based on British BBC news articles. The SNL dataset is based on the Norwegian
-encyclopedia Store Norske Leksikon, while the VG dataset is based on the Norwegian
-articles from the newspaper VG. The translation of the XSum dataset was done using
-the [NLLB model](https://doi.org/10.48550/arXiv.2207.04672).
+This dataset is a combination of
+[the SNL and VG summarisation datasets](https://nmbu.brage.unit.no/nmbu-xmlui/handle/11250/3079868)
+as well as a translated version of the English
+[XSum dataset](https://aclanthology.org/D18-1206/), based on British BBC news articles.
+The SNL dataset is based on the Norwegian encyclopedia Store Norske Leksikon, while the
+VG dataset is based on the Norwegian articles from the newspaper VG. The translation of
+the XSum dataset was done using the
+[NLLB model](https://doi.org/10.48550/arXiv.2207.04672).
 
 The original full dataset consists of 472,000 samples, and we use a 1,024 / 256 / 2,048
 split for training, validation and testing, respectively (so 3,328 samples used in
@@ -1661,33 +1664,32 @@ euroeval --model <model-id> --dataset schibsted-no
 ### Unofficial: VG Front Title
 
 This dataset was published
-[here](https://huggingface.co/datasets/Schibsted/vg-front-title) and
-features front-page titles of news articles from Schibsted Media's Norwegian
-newsroom, VG.
+[here](https://huggingface.co/datasets/Schibsted/vg-front-title) and features front-page
+titles of news articles from Schibsted Media's Norwegian newsroom, VG.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "article_id": "jabrGq",
-    "text": "Donald Trump og co klarte ikke endre valgresultatet med sine påstander om juks i 2020-valget, men nå mener mange at de legger grunnarbeidet for å kunne klare det i 2024 – dersom «nødvendig». Fremdeles er det uvisst om Donald Trump kommer til å stille til presidentvalg igjen i 2024, men dersom han gjør det – og taper en gang til – tror de flere eksperter at han igjen vil hevde at valget har blitt stjålet fra ham. Slik han gjorde – uten å legge frem bevis for påstandene om juks – etter valget i november 2020. Noe som to måneder senere endte med stormingen av Kongressen. – Skulle han stille og tape i 2024 så vil han aldri innrømme det, sier Civita-rådgiver og USA-ekspert Eirik Løkke, som påpeker at han både i 2016 – da han vant – og i 2020 hevdet valget var rigget. Da Trump tapte i 2020 forsøkte han legge press på en rekke ulike personer i håp om å snu tapet til seier.  Som da han ringte den republikanske administrasjonsministeren i Georgia, Brad Raffensperger, og ba ham «finne» 11.780 ekstra stemmer for Trump. Men Trumps forsøk lyktes ikke. Raffensperger bøyde ikke etter for Trumps krav, men sørget for at den med flest stemmer ble erklært som vinner I Georgia. Han, og flere andre både i Georgia og i andre vippestater der Trump hevdet juks hadde pågått, var lojale til grunnloven, demokratiet og folkets vilje. Ikke til sitt eget parti og sin egen kandidat.  For det ble de først belønnet av Trump-lojalister med utskjelling og drapstrusler. Og nå med kampanjer for å få dem fjernet fra sine posisjoner. – Mye større sjanse I disse dager pågår nemlig et intenst arbeid i kulissene der Trump og hans allierte jobber med å få installert håndplukkede lojalister i de rollene ute i delstatene som har makt til å godkjenne, eller avvise, valgresultater.  Lykkes de med å få valgt inn «sine» folk i de viktige vippestatene vil det dermed være langt flere der ute som vil være villige til å gjøre det Trump ber dem om.  – Da er det grunn til å tro at Trump har mye større sjanse til å lykkes med å endre et valgresultat, sier Løkke. USA-eksperten minner om at presidentvalget i USA i realiteten er 50 forskjellige valg – alle med egne regler. Han mener det er særlig to forhold som kan gjøre det enklere for Trump å lykkes i 2024: – Det første forholdet er en endring av hvem som kan godkjenne stemmer avgitt i enkelte delstater. I Georiga er det nå flyttet fra de lokale valgdistriktene til en sentral kommisjon utnevnt av delstatens republikanske flertall. Det innebærer for eksempel at den kommisjonen har makt til å underkjenne stemmer i storbyen Atlanta, hvor demokratene henter mesteparten av sine stemmer, forklarer Løkke, som legger til at dette også har skjedd i andre delstater. – Den andre forholdet er at Trump i stor grad forsøker å få lojale folk valgt i avgjørende posisjoner hva gjelder å godkjenne valgene i viktige delstater, fortsetter han. Hadde disse personene vært i posisjon i avgjærende vippestater som Georgia, Arizona og Michigan i 2020, så kunne det blitt mye mer dramatisk enn det ble, mener Løkke. Støttet Trump - får hans støtte Ifølge Washington Post har rundt en tredjedel av de 390 republikanerne som rundt i landet har vist interesse for å stille til valg til ulike delstatsposisjoner i det kommende mellomvalget offentlig støttet at partiet bør granske valgresultatet fra 2020, bagatellisert angrepet på Kongressen for et år siden, eller beint fram stilt spørsmål ved legitimiteten av Joe Bidens seier i 2020.  Dette inkluderer 10 kandidater som stiller til den viktige rollen som administrasjonsminister i delstatene, en posisjon som i mange stater har ansvaret for å godkjenne valgresultater.  Mark Finchem, for eksempel, stiller som valg til den rollen i Arizona. I en twittermelding i høst krevde han arrestasjoner og skrev at Bidens seier i hans delstat bør erklæres ugyldig.  Trump har denne gang gitt støtteerklæringer til flere som stiller til slike valg. Noe han ikke drev med før han selv tapte et valg",
-    "target_text": "Nå får Trump-lojalister mer makt:  «Ringer i alle alarmklokker»"
+  "article_id": "jabrGq",
+  "text": "Donald Trump og co klarte ikke endre valgresultatet med sine påstander om juks i 2020-valget, men nå mener mange at de legger grunnarbeidet for å kunne klare det i 2024 – dersom «nødvendig». Fremdeles er det uvisst om Donald Trump kommer til å stille til presidentvalg igjen i 2024, men dersom han gjør det – og taper en gang til – tror de flere eksperter at han igjen vil hevde at valget har blitt stjålet fra ham. Slik han gjorde – uten å legge frem bevis for påstandene om juks – etter valget i november 2020. Noe som to måneder senere endte med stormingen av Kongressen. – Skulle han stille og tape i 2024 så vil han aldri innrømme det, sier Civita-rådgiver og USA-ekspert Eirik Løkke, som påpeker at han både i 2016 – da han vant – og i 2020 hevdet valget var rigget. Da Trump tapte i 2020 forsøkte han legge press på en rekke ulike personer i håp om å snu tapet til seier.  Som da han ringte den republikanske administrasjonsministeren i Georgia, Brad Raffensperger, og ba ham «finne» 11.780 ekstra stemmer for Trump. Men Trumps forsøk lyktes ikke. Raffensperger bøyde ikke etter for Trumps krav, men sørget for at den med flest stemmer ble erklært som vinner I Georgia. Han, og flere andre både i Georgia og i andre vippestater der Trump hevdet juks hadde pågått, var lojale til grunnloven, demokratiet og folkets vilje. Ikke til sitt eget parti og sin egen kandidat.  For det ble de først belønnet av Trump-lojalister med utskjelling og drapstrusler. Og nå med kampanjer for å få dem fjernet fra sine posisjoner. – Mye større sjanse I disse dager pågår nemlig et intenst arbeid i kulissene der Trump og hans allierte jobber med å få installert håndplukkede lojalister i de rollene ute i delstatene som har makt til å godkjenne, eller avvise, valgresultater.  Lykkes de med å få valgt inn «sine» folk i de viktige vippestatene vil det dermed være langt flere der ute som vil være villige til å gjøre det Trump ber dem om.  – Da er det grunn til å tro at Trump har mye større sjanse til å lykkes med å endre et valgresultat, sier Løkke. USA-eksperten minner om at presidentvalget i USA i realiteten er 50 forskjellige valg – alle med egne regler. Han mener det er særlig to forhold som kan gjøre det enklere for Trump å lykkes i 2024: – Det første forholdet er en endring av hvem som kan godkjenne stemmer avgitt i enkelte delstater. I Georiga er det nå flyttet fra de lokale valgdistriktene til en sentral kommisjon utnevnt av delstatens republikanske flertall. Det innebærer for eksempel at den kommisjonen har makt til å underkjenne stemmer i storbyen Atlanta, hvor demokratene henter mesteparten av sine stemmer, forklarer Løkke, som legger til at dette også har skjedd i andre delstater. – Den andre forholdet er at Trump i stor grad forsøker å få lojale folk valgt i avgjørende posisjoner hva gjelder å godkjenne valgene i viktige delstater, fortsetter han. Hadde disse personene vært i posisjon i avgjærende vippestater som Georgia, Arizona og Michigan i 2020, så kunne det blitt mye mer dramatisk enn det ble, mener Løkke. Støttet Trump - får hans støtte Ifølge Washington Post har rundt en tredjedel av de 390 republikanerne som rundt i landet har vist interesse for å stille til valg til ulike delstatsposisjoner i det kommende mellomvalget offentlig støttet at partiet bør granske valgresultatet fra 2020, bagatellisert angrepet på Kongressen for et år siden, eller beint fram stilt spørsmål ved legitimiteten av Joe Bidens seier i 2020.  Dette inkluderer 10 kandidater som stiller til den viktige rollen som administrasjonsminister i delstatene, en posisjon som i mange stater har ansvaret for å godkjenne valgresultater.  Mark Finchem, for eksempel, stiller som valg til den rollen i Arizona. I en twittermelding i høst krevde han arrestasjoner og skrev at Bidens seier i hans delstat bør erklæres ugyldig.  Trump har denne gang gitt støtteerklæringer til flere som stiller til slike valg. Noe han ikke drev med før han selv tapte et valg",
+  "target_text": "Nå får Trump-lojalister mer makt:  «Ringer i alle alarmklokker»"
 }
 ```
 
 ```json
 {
-    "article_id": "kRVOgA",
-    "text": "En pensjonert mann ble liggende død i ni år før noen fant ham. – I en storby som Oslo er det dessverre mange som lever anonyme og ofte ensomme liv, sier sosialbyråden.  – Det er veldig trist å få høre om enkeltmennesker som dør alene uten pårørende som etterlyser dem, skriver sosialbyråd i Oslo Rina Mariann Hansen (Ap) i en e-post til VG.  Lørdag publiserte NRK en sak om en eldre mann som ble liggende død i leiligheten sin i hele ni år før han ble funnet. Mannen var pensjonert og bodde i en blokk øst i Oslo.  Mannen døde i 2011 – av naturlige årsaker. I de ni årene som gikk trodde naboer ifølge NRK at han var på en institusjon eller at han hadde flyttet.  Mannen er ikke alene om å ha blitt liggende uoppdaget i lang tid etter sin død.  Ifølge NRK lå i fjor 27 mennesker i Oslo, Asker og Bærum døde i over syv dager før de ble funnet. I 2019 gjaldt det 32 mennesker – blant dem en kvinne som ble funnet død i sin leilighet på Grünerløkka i Oslo. Da hadde hun ligget der i fem måneder.  – I en storby som Oslo er det dessverre mange som lever anonyme og ofte ensomme liv, noen ganger selvvalgt. Det travle storbylivet gjør kanskje at vi som medmennesker lettere glemmer å bry oss, sier sosialbyråd Hansen.  – Jeg tror vi må bry oss mer i hverdagen, bry oss om hvem som er naboene våre og hvordan de har det. Kanskje spørre litt oftere hvordan det går med dem. Mellom 2013 og 2017 var det 140 mennesker i Oslo som lå døde i mer enn en uke, ifølge en oversikt Aftenposten lagde i 2018.  Sosialbyråden mener saken viser at alle osloborgere må bidra til å gjøre hovedstaden til en by der folk føler tilhørighet og fellesskap.  – Vi kan alle gjøre vårt for at Oslo skal bli en varmere og mer inkluderende by. – Pandemien har lært oss noe om hva mangel på menneskelig kontakt i hverdagslige settinger gjør med oss. Kanskje de erfaringene vi gjør oss nå under pandemien gjør at vi som samfunn evner å ta bedre vare på hverandre. Byråd for helse, eldre og innbyggertjenester i Oslo, Robert Steen (Ap), hadde ikke anledning til å kommentere saken lørdag. ",
-    "target_text": "Funnet død etter ni år:  - Veldig trist"
+  "article_id": "kRVOgA",
+  "text": "En pensjonert mann ble liggende død i ni år før noen fant ham. – I en storby som Oslo er det dessverre mange som lever anonyme og ofte ensomme liv, sier sosialbyråden.  – Det er veldig trist å få høre om enkeltmennesker som dør alene uten pårørende som etterlyser dem, skriver sosialbyråd i Oslo Rina Mariann Hansen (Ap) i en e-post til VG.  Lørdag publiserte NRK en sak om en eldre mann som ble liggende død i leiligheten sin i hele ni år før han ble funnet. Mannen var pensjonert og bodde i en blokk øst i Oslo.  Mannen døde i 2011 – av naturlige årsaker. I de ni årene som gikk trodde naboer ifølge NRK at han var på en institusjon eller at han hadde flyttet.  Mannen er ikke alene om å ha blitt liggende uoppdaget i lang tid etter sin død.  Ifølge NRK lå i fjor 27 mennesker i Oslo, Asker og Bærum døde i over syv dager før de ble funnet. I 2019 gjaldt det 32 mennesker – blant dem en kvinne som ble funnet død i sin leilighet på Grünerløkka i Oslo. Da hadde hun ligget der i fem måneder.  – I en storby som Oslo er det dessverre mange som lever anonyme og ofte ensomme liv, noen ganger selvvalgt. Det travle storbylivet gjør kanskje at vi som medmennesker lettere glemmer å bry oss, sier sosialbyråd Hansen.  – Jeg tror vi må bry oss mer i hverdagen, bry oss om hvem som er naboene våre og hvordan de har det. Kanskje spørre litt oftere hvordan det går med dem. Mellom 2013 og 2017 var det 140 mennesker i Oslo som lå døde i mer enn en uke, ifølge en oversikt Aftenposten lagde i 2018.  Sosialbyråden mener saken viser at alle osloborgere må bidra til å gjøre hovedstaden til en by der folk føler tilhørighet og fellesskap.  – Vi kan alle gjøre vårt for at Oslo skal bli en varmere og mer inkluderende by. – Pandemien har lært oss noe om hva mangel på menneskelig kontakt i hverdagslige settinger gjør med oss. Kanskje de erfaringene vi gjør oss nå under pandemien gjør at vi som samfunn evner å ta bedre vare på hverandre. Byråd for helse, eldre og innbyggertjenester i Oslo, Robert Steen (Ap), hadde ikke anledning til å kommentere saken lørdag. ",
+  "target_text": "Funnet død etter ni år:  - Veldig trist"
 }
 ```
 
 ```json
 {
-    "article_id": "MLe9mK",
-    "text": "Han var Russlands rikeste. Nå advarer den tidligere oligarken Mikhail Khodorkovskij (58) mot å tro at Putin vil stoppe ved Ukrainas grenser. Mikhail Khodorkovskij (58) var Russlands rikeste oligark, og posisjonen som leder for landets største oljeselskap ga han direkte tilgang til president Putin.  Det tok brått slutt da Khodorkovskij snakket høyt om korrupsjon i Russland.  Oligarken sonet ti år i fengsel for det som menneskerettsorganisasjoner betegner som en straff for å ha kritisert Kreml. Mikhael Khodorkovskij er av dem som vet best hva Putin er kapabel til. Da VG snakker med ham på videolinje fra russerens selvpålagte eksil i London, har han et klart budskap om Russlands krig i Ukraina: Ikke tro at du kan forhandle med Putin.  – Til den dag i dag ser jeg ingen andre utveier enn å vise Putin tydelig at han taper. Frem til Putin forsvinner, kommer Europa til å ha store og seriøse problemer, sier han.  Vestens misforståelse Khodorkovskij var på 90-og starten av 2000-tallet kjent som både kompromissløs og kynisk. Som mange andre oligarker har han blitt kritisert for skruppelløst å ha utnyttet den sårbare økonomiske situasjonen Russland var i ved Sovjetunionens sammenbrudd.  Han som nå er en 58 år gammel forretningsmann, har siden han slapp ut av fengsel i 2013, jobbet fra London med å forsøke å endre styret i Russland gjennom organisasjonen Åpent Russland.  Khodorkovskij mener Vesten har misforstått noe vesentlig om Putins krig. – Dere tenker at Putin fortsatt ikke har krysset over landegrensene til de vestlige landene. Men for Putin, har han allerede det. Det er krystallklart fra Putins propaganda at han allerede er i krig med Nato og USA, mener Khodorkovskij.  – Valget dere nå må ta er enten å beseire Putin på Ukrainas territorium, eller så må dere kjempe mot han på territoriet til et Nato-land. Da står vi overfor noe mye verre, sier han til VG.  Vestens «alvorlige feil» Khodorkovskij kjenner godt maktens innerste ganger i hjemlandet, fordi han eide oljeprodusenten Yukos, noe som gjorde ham til Russlands rikeste i 2003 med en formue på svimlende 120 milliarder kroner. Olje er også stikkordet når den tidligere oligarken snakker om den alvorlige feilen han mener vestlige land gjorde for ti år siden, nemlig å gjøre seg avhengig av russisk olje og gass. – Allerede da burde vestlige land sett hvilken vei Putin tok Russland, og startet en omlegging til å sikre seg energi fra andre kilder. Vel, bedre sent enn aldri. I dag betaler Vesten for å ha vært sen, mener russeren.  Vesten er nå avhengig av et autoritært regime, og Putin bruker dette som et pressmiddel, oppsummerer regimekritikeren til VG. Hvis Europa sluttet helt å kjøpe olje og gass fra Russland, hvor fort ville landets økonomi kollapse, ble Khodorkovskij nylig spurt i programmet Hard Talk. – Hvis Putin må omdirigere olje og gass til det asiatiske markedet, vil han miste halvparten av inntekten. Det er halvparten av statsbudsjettet. Ville han klart å fortsette krigen under slike omstendigheter? Det er vanskelig for meg å si, jeg er ingen militærekspert. Men det ville etter mitt syn vært et alvorlig tilbakeslag, svarte Khodorkovskij. «Ble selv lurt» av Putin Et videoopptak av president Putins umiddelbare reaksjon på korrupsjonsanklagene Khodokovskij kom med i 2003, er brukt i dokumentarfilmen Citizen K fra 2019.  Der vises Putins umiddelbare, sammenbitte reaksjon på anklagene. Ti år i fengsel i Sibir stoppet altså likevel ikke Khodorkovskij. Den tidligere oligarken sier til VG at han ikke vil refse vestligere statsledere for ikke å ha sett hvilken fare Putin var, fordi han « ble selv lurt» da han i årene fra slutten av 90-tallet til 2003 møtte presidenten mange ganger.  – Putin er dyktig til å tilpasse seg til det folk ønsker å se i han. Det vet jeg fordi jeg selv opplevde det. Jeg ville gjerne se en ung, demokratisk leder av det nye Russland, og han demonstrerte med glede dette. Har han endret seg? Jeg tror vel egentlig at han bare var god til å late som, sier han til VG",
-    "target_text": "Eks-oligark:  - Ser ingen andre utveier"
+  "article_id": "MLe9mK",
+  "text": "Han var Russlands rikeste. Nå advarer den tidligere oligarken Mikhail Khodorkovskij (58) mot å tro at Putin vil stoppe ved Ukrainas grenser. Mikhail Khodorkovskij (58) var Russlands rikeste oligark, og posisjonen som leder for landets største oljeselskap ga han direkte tilgang til president Putin.  Det tok brått slutt da Khodorkovskij snakket høyt om korrupsjon i Russland.  Oligarken sonet ti år i fengsel for det som menneskerettsorganisasjoner betegner som en straff for å ha kritisert Kreml. Mikhael Khodorkovskij er av dem som vet best hva Putin er kapabel til. Da VG snakker med ham på videolinje fra russerens selvpålagte eksil i London, har han et klart budskap om Russlands krig i Ukraina: Ikke tro at du kan forhandle med Putin.  – Til den dag i dag ser jeg ingen andre utveier enn å vise Putin tydelig at han taper. Frem til Putin forsvinner, kommer Europa til å ha store og seriøse problemer, sier han.  Vestens misforståelse Khodorkovskij var på 90-og starten av 2000-tallet kjent som både kompromissløs og kynisk. Som mange andre oligarker har han blitt kritisert for skruppelløst å ha utnyttet den sårbare økonomiske situasjonen Russland var i ved Sovjetunionens sammenbrudd.  Han som nå er en 58 år gammel forretningsmann, har siden han slapp ut av fengsel i 2013, jobbet fra London med å forsøke å endre styret i Russland gjennom organisasjonen Åpent Russland.  Khodorkovskij mener Vesten har misforstått noe vesentlig om Putins krig. – Dere tenker at Putin fortsatt ikke har krysset over landegrensene til de vestlige landene. Men for Putin, har han allerede det. Det er krystallklart fra Putins propaganda at han allerede er i krig med Nato og USA, mener Khodorkovskij.  – Valget dere nå må ta er enten å beseire Putin på Ukrainas territorium, eller så må dere kjempe mot han på territoriet til et Nato-land. Da står vi overfor noe mye verre, sier han til VG.  Vestens «alvorlige feil» Khodorkovskij kjenner godt maktens innerste ganger i hjemlandet, fordi han eide oljeprodusenten Yukos, noe som gjorde ham til Russlands rikeste i 2003 med en formue på svimlende 120 milliarder kroner. Olje er også stikkordet når den tidligere oligarken snakker om den alvorlige feilen han mener vestlige land gjorde for ti år siden, nemlig å gjøre seg avhengig av russisk olje og gass. – Allerede da burde vestlige land sett hvilken vei Putin tok Russland, og startet en omlegging til å sikre seg energi fra andre kilder. Vel, bedre sent enn aldri. I dag betaler Vesten for å ha vært sen, mener russeren.  Vesten er nå avhengig av et autoritært regime, og Putin bruker dette som et pressmiddel, oppsummerer regimekritikeren til VG. Hvis Europa sluttet helt å kjøpe olje og gass fra Russland, hvor fort ville landets økonomi kollapse, ble Khodorkovskij nylig spurt i programmet Hard Talk. – Hvis Putin må omdirigere olje og gass til det asiatiske markedet, vil han miste halvparten av inntekten. Det er halvparten av statsbudsjettet. Ville han klart å fortsette krigen under slike omstendigheter? Det er vanskelig for meg å si, jeg er ingen militærekspert. Men det ville etter mitt syn vært et alvorlig tilbakeslag, svarte Khodorkovskij. «Ble selv lurt» av Putin Et videoopptak av president Putins umiddelbare reaksjon på korrupsjonsanklagene Khodokovskij kom med i 2003, er brukt i dokumentarfilmen Citizen K fra 2019.  Der vises Putins umiddelbare, sammenbitte reaksjon på anklagene. Ti år i fengsel i Sibir stoppet altså likevel ikke Khodorkovskij. Den tidligere oligarken sier til VG at han ikke vil refse vestligere statsledere for ikke å ha sett hvilken fare Putin var, fordi han « ble selv lurt» da han i årene fra slutten av 90-tallet til 2003 møtte presidenten mange ganger.  – Putin er dyktig til å tilpasse seg til det folk ønsker å se i han. Det vet jeg fordi jeg selv opplevde det. Jeg ville gjerne se en ung, demokratisk leder av det nye Russland, og han demonstrerte med glede dette. Har han endret seg? Jeg tror vel egentlig at han bare var god til å late som, sier han til VG",
+  "target_text": "Eks-oligark:  - Ser ingen andre utveier"
 }
 ```
 
@@ -1737,25 +1739,31 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "I en ny bok forteller Abid Rajas søster Abida Raja (49) at hun over lengre tid levde i et voldelig forhold. I en pressemelding avviser eksmannen anklagene. – Min klient ønsker å påpeke at han nekter straffeskyld for partnervold og\nvoldtektsanklager. Han vedkjenner at ekteskapet har hatt sine utfordringer, og at de derfor skilte seg i 2015, skriver eksmannens advokat Javeed H. Shah i en pressemelding. I boken «Frihetens Øyeblikk», beskriver Raja at eksmannen hennes var voldelig, og at hun flere ganger forsøkte å unnslippe mannen. I boken skriver forfatter Håkon F. Høydal:«De siste tjue årene hadde vært en kamp mot seg selv: Hun ønsket å gå fra mannen. Men hun måtte bli. På grunn av barna, og på grunn av familien, på grunn av frykten for fattigdom og skam. Nå hadde hun verken barna, penger eller hus.»VG har tidligere vært i kontakt med Abida Rajas eksmann i forbindelse med bokutgivelsen, som tirsdag ikke hadde lest boken.– Jeg er i utlandet og har ikke lest boken, så kan ikke kommentere uten å lese det, skriver han i en SMS til VG.I boka skriver forfatteren at Abida etter stort press fra familien, skal ha møtt én av ektemannkandidatene, en 23 år gammel inngiftet onkel i Pakistan. Hun var 18 år og skulle gått i andre klasse på videregående hjemme i Norge.«Abida husker ikke om hun sa ja. Men hun sa heller ikke nei. Hun ville bare bort», heter det i boken.Onsdag svarer eksmannen via sin advokat, at han har levd i god tro om at Abida giftet seg av fri vilje slik hun selv uttrykte ovenfor han. – Derfor er opplysningene om tvangsekteskap noe han ble kjent med først i 2020. Boken kommer ett år etter at venstrepolitiker og tidligere statsråd Abid Raja kom med sin bok\xa0«Min skyld». Boken er skrevet av VG-journalist Håkon F. Høydal og ble lansert tirsdag morgen\xa0etter mye hemmelighold. VG har ikke hatt noe med utgivelsen å gjøre.",
-    "target_text": ["I en ny bok forteller Abid Rajas søster Abida Raja om hennes erfaringer med et voldelig ekteskap, hvor hun beskriver flere forsøk på å unnslippe. Eksmannen avviser anklagene og hevder at han levde i god tro om at ekteskapet var av fri vilje, noe han først ble klar over i 2020.",
+  "text": "I en ny bok forteller Abid Rajas søster Abida Raja (49) at hun over lengre tid levde i et voldelig forhold. I en pressemelding avviser eksmannen anklagene. – Min klient ønsker å påpeke at han nekter straffeskyld for partnervold og\nvoldtektsanklager. Han vedkjenner at ekteskapet har hatt sine utfordringer, og at de derfor skilte seg i 2015, skriver eksmannens advokat Javeed H. Shah i en pressemelding. I boken «Frihetens Øyeblikk», beskriver Raja at eksmannen hennes var voldelig, og at hun flere ganger forsøkte å unnslippe mannen. I boken skriver forfatter Håkon F. Høydal:«De siste tjue årene hadde vært en kamp mot seg selv: Hun ønsket å gå fra mannen. Men hun måtte bli. På grunn av barna, og på grunn av familien, på grunn av frykten for fattigdom og skam. Nå hadde hun verken barna, penger eller hus.»VG har tidligere vært i kontakt med Abida Rajas eksmann i forbindelse med bokutgivelsen, som tirsdag ikke hadde lest boken.– Jeg er i utlandet og har ikke lest boken, så kan ikke kommentere uten å lese det, skriver han i en SMS til VG.I boka skriver forfatteren at Abida etter stort press fra familien, skal ha møtt én av ektemannkandidatene, en 23 år gammel inngiftet onkel i Pakistan. Hun var 18 år og skulle gått i andre klasse på videregående hjemme i Norge.«Abida husker ikke om hun sa ja. Men hun sa heller ikke nei. Hun ville bare bort», heter det i boken.Onsdag svarer eksmannen via sin advokat, at han har levd i god tro om at Abida giftet seg av fri vilje slik hun selv uttrykte ovenfor han. – Derfor er opplysningene om tvangsekteskap noe han ble kjent med først i 2020. Boken kommer ett år etter at venstrepolitiker og tidligere statsråd Abid Raja kom med sin bok\xa0«Min skyld». Boken er skrevet av VG-journalist Håkon F. Høydal og ble lansert tirsdag morgen\xa0etter mye hemmelighold. VG har ikke hatt noe med utgivelsen å gjøre.",
+  "target_text": [
+    "I en ny bok forteller Abid Rajas søster Abida Raja om hennes erfaringer med et voldelig ekteskap, hvor hun beskriver flere forsøk på å unnslippe. Eksmannen avviser anklagene og hevder at han levde i god tro om at ekteskapet var av fri vilje, noe han først ble klar over i 2020.",
     "Abida Raja beskriver i en ny bok et voldelig forhold med sin eksmann, som avviser anklagene om partnervold og voldtektsanklager. Boken avslører også at Abida ble presset til å møte en ektemannkandidat i en tvangssituasjon, noe eksmannen hevder han ikke var klar over før i 2020.",
-    "I boken «Frihetens øyeblikk» forteller forfatteren Håkon F. Høydal at Rajas eksmann var voldelig og hun ønsket å forlate ham. Hun ble værende fordi hun var redd for barnas lidelser, redd for fattigdom og hun skammet seg."]
+    "I boken «Frihetens øyeblikk» forteller forfatteren Håkon F. Høydal at Rajas eksmann var voldelig og hun ønsket å forlate ham. Hun ble værende fordi hun var redd for barnas lidelser, redd for fattigdom og hun skammet seg."
+  ]
 }
 ```
 
 ```json
 {
-    "text": "Flere lakseaksjer falt igjen tungt, dagen etter at skatteforslag ga børsras for sjømatselskaper. Samtidig steg Norwegian etter anbefaling fra storbank.Det Ble en noe vinglete dag på Oslo Børs torsdag.Etter en positiv start vendte Børsen snuten nedover i tidlig handel, før den hentet seg inn igjen til forsiktig oppgang omtrent halvveis ut i handelsdagen. Utover ettermiddagen snudde Børsen så nedover igjen.Hovedindeksen endte til slutt dagen ned 1,58 prosent.Nedgangen tiltok den siste timen med handel, samtidig som Wall Street falt kraftig.Oljeprisen steg solid gjennom gårsdagen, og handles rundt én dollar høyere enn da Børsen stengte onsdag. Et fat Nordsjøolje (brent spot) koster ved stengetid torsdag 88,4 dollar, ned rundt 0,9 prosentsiden midnatt.Oljeselskapene Equinor og Aker BP falt i overkant av én prosent, mens Vår Energi endte ned 3,82 prosent.Onsdag falt Hovedindeksen 2,76 prosent etter at lakseselskapene fikk gjennomgå etter regjeringens foreslåtte grunnrenteskatt på havbruk. Verst gikk det for Salmar som stupte 30 prosent, samtidig som Lerøy Seafood falt 27,5 prosent. Torsdag fortsetter nedgangen for lakseaksjene. Sjømatindeksen endte ned 5,05 prosent.Slik så det ut for lakseaksjene ved stengetid (utvikling onsdag i parentes): Salmar falt 1,05 prosent (stupte 30,3 prosent)Grieg Seafood falt 2,75 prosent (falt 26,6 prosent)Mowi falt 3,15 prosent (falt 18,9 prosent) Lerøy Seafood falt 8,10 prosent (raste 27,5 prosent)Austevoll Seafood falt 6,28 prosent (falt 21,7 prosentNorway Royal Salmon falt 8,94 prosent (endte ned 22,9 prosent)Bakkafrost-aksjen falt samtidig 12,83 prosent.Selskapet har virksomhet på Færøyene og understreket onsdag at de ikke påvirkes av det nye norske skatteforslaget. Samtidig understreket de at det arbeides med et forslag om justeringer av skattesatsen på Færøyene.I USA peker pilene solid nedover på børsene torsdag ettermiddag.Det er kraftig nedgang på Wall Street, der den brede S&P 500-indeksen faller godt over to prosent. Teknologiindeksen Nasdaq faller samtidig mer enn tre prosent.I Europa er det også bred, kraftig nedgang på de viktigste børsene. London-børsen, Frankfurt-børsen og Paris-børsen er alle ned i overkant av to prosent rundt stengetid i Oslo.Storbanken HSBC har gjenopptatt dekning på flyselskapet Norwegian, ifølge Bloomberg. Banken anbefaler kjøp og har satt et kursmål på 14,50 kroner. Dermed ser banken for seg en oppside på hele 119 prosent i aksjen, skriver nyhetsbyrået. Norwegian-aksjen steg 6,81 prosent.– Nye Norwegian er en annen forretning enn den før pandemien, som har omstrukturert operasjonelt og økonomisk, skriver HSBC i analysen.– Den nye ledelsen har en solid strategi, en enkel og kostnadseffektiv\nforretningsmodell med en enkelt type fly, et sterkt fokus på sine nøkkelmarkeder i Norden og en solid balanse og likviditet, alt innenfor et gunstig konkurranselandskap som bør tillate ny NAS å ta markedsandeler fra sine konkurrenter, heter det videre i analysen.Storbanken begrunner også sin nye dekning på flyselskapet ved at dets konkurrenter venter mye motvind og ny etterspørsel for Norwegian kan komme ut av det. I tillegg nevnes Norges sikkerhetsnett rundt høye energi- og strømpriser.- Mens Europa står overfor høy inflasjon og lav forbrukertillit, har Norge betydelig lysere utsikter med sine omfattende energiressurser, statlig finansiering og høy inntekt per innbygger.HSBC viser også til høy reiseetterspørsel blant nordmenn.Fornybarselskapet Scatec er i fokus i forbindelse med at selskapet har kommet med nye målsetninger. Selskapet vil investere 10 milliarder kroner av egenkapitalen i nye kraftverk frem mot 2027. Investeringene har som mål å utvide kapasiteten med 1,5 gigawatt hvert år i perioden. Scatec-aksjen endte dagen ned 2,93 prosentXXL er samtidig blant børstaperne torsdag. Aksjen til sportsbutikk-kjeden falt 11,66 prosent.",
-    "target_text": ["Lakseaksjer opplever fortsatt betydelig nedgang på Oslo Børs etter regjeringens foreslåtte grunnrenteskatt på havbruk. Hovedindeksen endte ned 1,58 prosent, og sjømatindeksen falt ytterligere 5,05 prosent. Samtidig steg Norwegian-aksjen etter anbefaling fra HSBC, som gjenopptok dekning på selskapet og anbefalte kjøp med et kursmål på 14,50 kroner, med en forventet oppside på 119 prosent."]
+  "text": "Flere lakseaksjer falt igjen tungt, dagen etter at skatteforslag ga børsras for sjømatselskaper. Samtidig steg Norwegian etter anbefaling fra storbank.Det Ble en noe vinglete dag på Oslo Børs torsdag.Etter en positiv start vendte Børsen snuten nedover i tidlig handel, før den hentet seg inn igjen til forsiktig oppgang omtrent halvveis ut i handelsdagen. Utover ettermiddagen snudde Børsen så nedover igjen.Hovedindeksen endte til slutt dagen ned 1,58 prosent.Nedgangen tiltok den siste timen med handel, samtidig som Wall Street falt kraftig.Oljeprisen steg solid gjennom gårsdagen, og handles rundt én dollar høyere enn da Børsen stengte onsdag. Et fat Nordsjøolje (brent spot) koster ved stengetid torsdag 88,4 dollar, ned rundt 0,9 prosentsiden midnatt.Oljeselskapene Equinor og Aker BP falt i overkant av én prosent, mens Vår Energi endte ned 3,82 prosent.Onsdag falt Hovedindeksen 2,76 prosent etter at lakseselskapene fikk gjennomgå etter regjeringens foreslåtte grunnrenteskatt på havbruk. Verst gikk det for Salmar som stupte 30 prosent, samtidig som Lerøy Seafood falt 27,5 prosent. Torsdag fortsetter nedgangen for lakseaksjene. Sjømatindeksen endte ned 5,05 prosent.Slik så det ut for lakseaksjene ved stengetid (utvikling onsdag i parentes): Salmar falt 1,05 prosent (stupte 30,3 prosent)Grieg Seafood falt 2,75 prosent (falt 26,6 prosent)Mowi falt 3,15 prosent (falt 18,9 prosent) Lerøy Seafood falt 8,10 prosent (raste 27,5 prosent)Austevoll Seafood falt 6,28 prosent (falt 21,7 prosentNorway Royal Salmon falt 8,94 prosent (endte ned 22,9 prosent)Bakkafrost-aksjen falt samtidig 12,83 prosent.Selskapet har virksomhet på Færøyene og understreket onsdag at de ikke påvirkes av det nye norske skatteforslaget. Samtidig understreket de at det arbeides med et forslag om justeringer av skattesatsen på Færøyene.I USA peker pilene solid nedover på børsene torsdag ettermiddag.Det er kraftig nedgang på Wall Street, der den brede S&P 500-indeksen faller godt over to prosent. Teknologiindeksen Nasdaq faller samtidig mer enn tre prosent.I Europa er det også bred, kraftig nedgang på de viktigste børsene. London-børsen, Frankfurt-børsen og Paris-børsen er alle ned i overkant av to prosent rundt stengetid i Oslo.Storbanken HSBC har gjenopptatt dekning på flyselskapet Norwegian, ifølge Bloomberg. Banken anbefaler kjøp og har satt et kursmål på 14,50 kroner. Dermed ser banken for seg en oppside på hele 119 prosent i aksjen, skriver nyhetsbyrået. Norwegian-aksjen steg 6,81 prosent.– Nye Norwegian er en annen forretning enn den før pandemien, som har omstrukturert operasjonelt og økonomisk, skriver HSBC i analysen.– Den nye ledelsen har en solid strategi, en enkel og kostnadseffektiv\nforretningsmodell med en enkelt type fly, et sterkt fokus på sine nøkkelmarkeder i Norden og en solid balanse og likviditet, alt innenfor et gunstig konkurranselandskap som bør tillate ny NAS å ta markedsandeler fra sine konkurrenter, heter det videre i analysen.Storbanken begrunner også sin nye dekning på flyselskapet ved at dets konkurrenter venter mye motvind og ny etterspørsel for Norwegian kan komme ut av det. I tillegg nevnes Norges sikkerhetsnett rundt høye energi- og strømpriser.- Mens Europa står overfor høy inflasjon og lav forbrukertillit, har Norge betydelig lysere utsikter med sine omfattende energiressurser, statlig finansiering og høy inntekt per innbygger.HSBC viser også til høy reiseetterspørsel blant nordmenn.Fornybarselskapet Scatec er i fokus i forbindelse med at selskapet har kommet med nye målsetninger. Selskapet vil investere 10 milliarder kroner av egenkapitalen i nye kraftverk frem mot 2027. Investeringene har som mål å utvide kapasiteten med 1,5 gigawatt hvert år i perioden. Scatec-aksjen endte dagen ned 2,93 prosentXXL er samtidig blant børstaperne torsdag. Aksjen til sportsbutikk-kjeden falt 11,66 prosent.",
+  "target_text": [
+    "Lakseaksjer opplever fortsatt betydelig nedgang på Oslo Børs etter regjeringens foreslåtte grunnrenteskatt på havbruk. Hovedindeksen endte ned 1,58 prosent, og sjømatindeksen falt ytterligere 5,05 prosent. Samtidig steg Norwegian-aksjen etter anbefaling fra HSBC, som gjenopptok dekning på selskapet og anbefalte kjøp med et kursmål på 14,50 kroner, med en forventet oppside på 119 prosent."
+  ]
 }
 ```
 
 ```json
 {
-    "text": "(Minnesota Wild – St. Louis Blues 4–6) Mats Zuccarello (34) var svært kritisk til seg selv og lagkameratene i Minnesota Wild etter nattens tap mot St. Louis Blues i 23 minusgrader foran 38.000 tilskuere.– Jeg har egentlig ikke ord. Det er pinlig når du har 40.000 mennesker som kommer og fryser ræva av seg, og så spiller vi sånn, sa Zuccarello på pressekonferansen etter «Winter Classic»-oppgjøret på Target Field – et baseballstadion i Minneapolis. Før siste periode ledet Blues 6–2, og Zuccarello beskriver de to første periodene som at de ble «lett utspilt» av Blues. Zuccarello hadde én assist – da Ryan Hartman scoret lagets tredje mål . Wild reduserte to ganger i siste periode og fastsatte sluttresultatet til 4–6. 34-åringen mener det ikke nytter å forklare tapet med kulden, vanskelige forhold og det faktum at de ikke har spilt kamp siden 20. desember: – Det er ingen unnskyldninger ... Det er kaldt for begge lag, isen er humpete for begge lag. Vi spilte ikke smart hockey som vi har gjort i store deler av sesongen. Det var Wilds femte strake tap i en sesong der Zuccarello og laget jevnt over har levert meget bra. – Dessverre skjedde det på en stor kveld som dette. Folk forlater hjemmene sine i kulden for å støtte oss, og så serverer vi dem dette. Vi har skuffet oss selv og alle andre. Det var på forhånd varslet sprengkulde, og målingene viste 23 minusgrader. Zuccarello beskriver opplevelsen slik:– Jeg var skikkelig kald under oppvarmingen, men når kampen starter slår adrenalinet inn. Men jeg tror aldri jeg har vært så kald i hele mitt liv før sisteperioden da vi lå under 6–2, eller hva det var. Det var ingen god følelse. – Det store bildet nå er at vi har fem strake tap, og vi må finne tilbake til måten å vinne på og hvordan vi skal spille som et lag, sier Zuccarello. Zuccarello har scoret åtte mål og lagt 17 målgivende pasninger i løpet av 25 kamper denne sesongen. Det vil si ett målpoeng per kamp i snitt. I sine beste målpoengsesonger for New York Rangers – 2013/14, 2015/16 og 2016/17 – oppnådde han henholdsvis 59 målpoeng på 77 kamper, 61 målpoeng på 81 kamper og 59 på 80 kamper.PS! Natt til fredag spiller Minnesota Wild borte mot Boston Bruins. To dager senere er det hjemmekamp mot Washington Capitals.",
-    "target_text": ["Minnesota Wild led et nederlag mot St. Louis Blues under ekstreme værforhold på Target Field. Mats Zuccarello uttrykte sin skuffelse over lagets ytelse foran 38 000 tilskuere, og tilskrev tapet til dårlig spill heller enn kulden. Til tross for Zuccarellos bidrag med en assist, endte Wild med sitt femte strake tap, noe som førte til et press for å finne tilbake til seiersformen før kommende kamper mot Boston Bruins og Washington Capitals.",
-    "Det er ingen unnskyldninger for Wilds femte strake tap, til tross for at både Zuccarello og resten av laget generelt har spilt bra denne sesongen. Forholdene var like for begge lag, men laget spilte ikke smart hockey slik de har gjort tidligere i sesongen."]
+  "text": "(Minnesota Wild – St. Louis Blues 4–6) Mats Zuccarello (34) var svært kritisk til seg selv og lagkameratene i Minnesota Wild etter nattens tap mot St. Louis Blues i 23 minusgrader foran 38.000 tilskuere.– Jeg har egentlig ikke ord. Det er pinlig når du har 40.000 mennesker som kommer og fryser ræva av seg, og så spiller vi sånn, sa Zuccarello på pressekonferansen etter «Winter Classic»-oppgjøret på Target Field – et baseballstadion i Minneapolis. Før siste periode ledet Blues 6–2, og Zuccarello beskriver de to første periodene som at de ble «lett utspilt» av Blues. Zuccarello hadde én assist – da Ryan Hartman scoret lagets tredje mål . Wild reduserte to ganger i siste periode og fastsatte sluttresultatet til 4–6. 34-åringen mener det ikke nytter å forklare tapet med kulden, vanskelige forhold og det faktum at de ikke har spilt kamp siden 20. desember: – Det er ingen unnskyldninger ... Det er kaldt for begge lag, isen er humpete for begge lag. Vi spilte ikke smart hockey som vi har gjort i store deler av sesongen. Det var Wilds femte strake tap i en sesong der Zuccarello og laget jevnt over har levert meget bra. – Dessverre skjedde det på en stor kveld som dette. Folk forlater hjemmene sine i kulden for å støtte oss, og så serverer vi dem dette. Vi har skuffet oss selv og alle andre. Det var på forhånd varslet sprengkulde, og målingene viste 23 minusgrader. Zuccarello beskriver opplevelsen slik:– Jeg var skikkelig kald under oppvarmingen, men når kampen starter slår adrenalinet inn. Men jeg tror aldri jeg har vært så kald i hele mitt liv før sisteperioden da vi lå under 6–2, eller hva det var. Det var ingen god følelse. – Det store bildet nå er at vi har fem strake tap, og vi må finne tilbake til måten å vinne på og hvordan vi skal spille som et lag, sier Zuccarello. Zuccarello har scoret åtte mål og lagt 17 målgivende pasninger i løpet av 25 kamper denne sesongen. Det vil si ett målpoeng per kamp i snitt. I sine beste målpoengsesonger for New York Rangers – 2013/14, 2015/16 og 2016/17 – oppnådde han henholdsvis 59 målpoeng på 77 kamper, 61 målpoeng på 81 kamper og 59 på 80 kamper.PS! Natt til fredag spiller Minnesota Wild borte mot Boston Bruins. To dager senere er det hjemmekamp mot Washington Capitals.",
+  "target_text": [
+    "Minnesota Wild led et nederlag mot St. Louis Blues under ekstreme værforhold på Target Field. Mats Zuccarello uttrykte sin skuffelse over lagets ytelse foran 38 000 tilskuere, og tilskrev tapet til dårlig spill heller enn kulden. Til tross for Zuccarellos bidrag med en assist, endte Wild med sitt femte strake tap, noe som førte til et press for å finne tilbake til seiersformen før kommende kamper mot Boston Bruins og Washington Capitals.",
+    "Det er ingen unnskyldninger for Wilds femte strake tap, til tross for at både Zuccarello og resten av laget generelt har spilt bra denne sesongen. Forholdene var like for begge lag, men laget spilte ikke smart hockey slik de har gjort tidligere i sesongen."
+  ]
 }
 ```
 
@@ -1807,22 +1815,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Dødssyke Hannah får oppfylt sitt siste ønske likevel | Forsikringsselskapet lar henne dra til Disneyland. Får dø hjemme: Kreftsyke Hannah Jones (13) overbeviste britiske helsemyndigheter om å få slippe en hjertetransplantasjon. Hun vil heller tilbringe de siste månedene av sitt liv hjemme hos familien. Liker Disney: Hannah var i Euro Disney for flere år siden. Nå får hun oppfylt drømmen om å dra til Disneyland i USA. Overbeviste med sin modenhet: Hannah Jones fikk selv velge at hun ikke skal få et nytt hjerte. Historien om Hannah har fått stor oppmerksomhet i britiske medier, blant annet Sky News. Dødssyke Hannah Jones (13) har sagt nei til et nytt hjerte. Hun orker ikke en ny operasjon, og vil heller dø hjemme. Hannah ønsker å få tilbringe sine siste dager hjemme sammen med foreldrene og søsknene Oliver (11), Lucy (10) og Phoebe (4). Samtidig har hun en siste drøm: Å få reise til Disneyland i Orlando i USA. Fikk ikke reiseforsikring | 13-åringenes foreldre forsøkte å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av veldedige Caudwell Children. Alle barna fikk reiseforsikring. Men ikke Hannah, selv om familien prøvde hos en rekke selskaper. Det så ut til at det aldri skulle bli noe av turen. Men nå har et selskap meldt seg og sagt seg villig til å forsikre 13-åringen, melder Sky News. - Jeg er henrykt og overveldet, sier hun til TV-kanalen. - En uke vekk fra rutinene på sykehuset vil være en fin avkobling for meg og familien min, vi vil være som en vanlig familie en liten stund, sier hun. - Gleder oss | Navnet på selskapet som oppfyller Hannahs drøm er ikke kjent. Hannahs far, Andrew Jones, taker nå alle som har hjulpet familien. - Vi er veldig glade for at vi får til dette, og gleder oss til å se smilet hennes når vi kommer dit, sier han. Hannah Jones fikk konstatert leukemi da hun var fem år, og har gått på tunge medisiner i flere år. Til slutt førte medisinene til en alvorlig hjertefeil, og Hannah har i dag et hull i hjertet. Da legene foreslo en hjertetransplantasjon svarte jenta nei. Hun ville heller få lov å avslutte livet sammen med sine aller nærmeste, noe som kan bety at hun bare har seks måneder igjen å leve.",
-    "target_text": "Hannah Jones (13) fikk konstatert leukemi da hun var fem år gammel og har gått på tunge medisiner i flere år. \n\n Til slutt førte medisinene til en alvorlig hjertefeil, og Hanna har i dag et hull i hjerte. \n\n Hannah har en siste drøm om å dra til Disneyland i USA. \n\n Foreldrene prøvde å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av Caudwell Children. \n\n Alle barna fikk reiseforsikring bortsett fra Hannah og det så ut som at hun ikke kunne reise likevel. \n\n Men nå har et selskap sagt seg villig til å forsikre Hannah slik at hun og familien kan dra likevel, melder Sky News."
+  "text": "Dødssyke Hannah får oppfylt sitt siste ønske likevel | Forsikringsselskapet lar henne dra til Disneyland. Får dø hjemme: Kreftsyke Hannah Jones (13) overbeviste britiske helsemyndigheter om å få slippe en hjertetransplantasjon. Hun vil heller tilbringe de siste månedene av sitt liv hjemme hos familien. Liker Disney: Hannah var i Euro Disney for flere år siden. Nå får hun oppfylt drømmen om å dra til Disneyland i USA. Overbeviste med sin modenhet: Hannah Jones fikk selv velge at hun ikke skal få et nytt hjerte. Historien om Hannah har fått stor oppmerksomhet i britiske medier, blant annet Sky News. Dødssyke Hannah Jones (13) har sagt nei til et nytt hjerte. Hun orker ikke en ny operasjon, og vil heller dø hjemme. Hannah ønsker å få tilbringe sine siste dager hjemme sammen med foreldrene og søsknene Oliver (11), Lucy (10) og Phoebe (4). Samtidig har hun en siste drøm: Å få reise til Disneyland i Orlando i USA. Fikk ikke reiseforsikring | 13-åringenes foreldre forsøkte å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av veldedige Caudwell Children. Alle barna fikk reiseforsikring. Men ikke Hannah, selv om familien prøvde hos en rekke selskaper. Det så ut til at det aldri skulle bli noe av turen. Men nå har et selskap meldt seg og sagt seg villig til å forsikre 13-åringen, melder Sky News. - Jeg er henrykt og overveldet, sier hun til TV-kanalen. - En uke vekk fra rutinene på sykehuset vil være en fin avkobling for meg og familien min, vi vil være som en vanlig familie en liten stund, sier hun. - Gleder oss | Navnet på selskapet som oppfyller Hannahs drøm er ikke kjent. Hannahs far, Andrew Jones, taker nå alle som har hjulpet familien. - Vi er veldig glade for at vi får til dette, og gleder oss til å se smilet hennes når vi kommer dit, sier han. Hannah Jones fikk konstatert leukemi da hun var fem år, og har gått på tunge medisiner i flere år. Til slutt førte medisinene til en alvorlig hjertefeil, og Hannah har i dag et hull i hjertet. Da legene foreslo en hjertetransplantasjon svarte jenta nei. Hun ville heller få lov å avslutte livet sammen med sine aller nærmeste, noe som kan bety at hun bare har seks måneder igjen å leve.",
+  "target_text": "Hannah Jones (13) fikk konstatert leukemi da hun var fem år gammel og har gått på tunge medisiner i flere år. \n\n Til slutt førte medisinene til en alvorlig hjertefeil, og Hanna har i dag et hull i hjerte. \n\n Hannah har en siste drøm om å dra til Disneyland i USA. \n\n Foreldrene prøvde å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av Caudwell Children. \n\n Alle barna fikk reiseforsikring bortsett fra Hannah og det så ut som at hun ikke kunne reise likevel. \n\n Men nå har et selskap sagt seg villig til å forsikre Hannah slik at hun og familien kan dra likevel, melder Sky News."
 }
 ```
 
 ```json
 {
-    "text": "Tvisynt ombudsmann | Stappfulle esker. Forsvarsskrift. Ombudsmannen | Borten-biografi. Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. Ingen av Per Bortens uttalelser gjennom mer enn 50 år som lokalpolitiker, stortingsrepresentant, statsminister og politisk kårkall er blitt så legendarisk som da han ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. Men uttalelsen passet bedre på situasjonen enn på personen som kom med den. Per Borten ble valgt som statsminister etter den borgerlige valgseieren i 1965 fordi flertallet i Høyres stortingsgruppe mente at han kunne bli den mest samlende regjeringssjefen. Det varte bare noen få år. Da Regjeringen gikk i gradvis indre oppløsning etter den nye valgseieren i 1969, var statsministerens uforutsigbare og ustrukturerte arbeidsstil en del av forklaringen, men langt fra hele. Den altoverskyggende årsak var at de politiske motsetningene mellom regjeringspartiene, først og fremst i EF-saken, tæret så hardt på tillitsforholdet partiene imellom at samarbeidet ikke lenger var liv laga. Bortens tabbe med å skjule for sin regjering at han hadde vist fortrolige dokumenter til ledelsen i Folkebevegelsen mot norsk medlemskap i EEC, avgjorde bare tidspunktet for og omstendighetene rundt et regjeringssammenbrudd som ville ha kommet uansett. Historikeren Harald Berntsen konstaterer med rette at toneangivende kretser på begge sider i den uforsonlige EF-kampen mente deres sak var best tjent med at Borten-regjeringen gikk av. En koalisjon dannet som et samlende svar på et langvarig og maktfullkomment Ap-styre, møtte sin skjebne fordi det etter hvert ble tyngre saker som splittet partiene enn som bandt dem sammen. Berntsen har påtatt seg en både viktig og vanskelig oppgave. Ikke bare har det vært et problem, som han selv skriver i forordet, å bli klok på Borten. På toppen av dette kom de metodiske utfordringer. De fleste andre ledende norske politikere i de første etterkrigstiårene, som Einar Gerhardsen, John Lyng, Trygve Bratteli og Kåre Willoch, har skrevet memoarer som danner gode utgangspunkt for andres kritiske granskning. Det var en fremmed tanke for Borten. Statsministeren i Norges første brede og varige borgerlige koalisjonsregjering etterlot seg timelange radiointervjuer med tidligere Dagsnytt-redaktør Per Bøhn og 70-80 stappfulle esker med usorterte papirer på loft og i kjeller hjemme på gården i Flå. De fleste som kom i kontakt med Borten i hans tid som aktiv politiker, eller i den lange kårkallsperioden, skjønner hvorfor det ble slik. Med få unntak var Borten ingen handlingens mann. Og evnen til systematikk var ingen fremtredende egenskap ved hans personlighet. Han var mer opptatt av å lytte, filosofere og diskutere enn av å bidra til sitt eget ettermæle i form av en arbeidskrevende skriftlig fremstilling. Hans fascinerende blanding av intellektuell nysgjerrighet, bondeful folkelighet og politisk uforutsigbarhet gjorde ham til en spennende samtalepartner både for politisk interesserte og folk flest. Berntsens største fortjeneste ligger i systematiseringen av det enorme kildematerialet. Men det at han i så stor grad har måttet begynne på bar bakke, er kanskje også en del av forklaringen på at deler av boken bærer mer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand. Av og til kan leseren få inntrykk av at Berntsen analyserer Borten litt for mye i lys av sin egen politiske fortid på venstresiden. Et eksempel på det er forfatterens overraskelse over Bortens sterke engasjement mot de mange ulovlige streikene det siste året av hans statsministertid. Et annet er hans forsøk på å omtale Borten som en sannere sosialdemokrat enn Aps egne ledere. At Borten som statsminister videreførte og videreutviklet viktige sosiale reformer som Folketrygden, viser mer om verdifellesskapet over de partipolitiske skillelinjene i 1960-årenes Norge enn om Bortens eget politiske ståsted. Fra statsministertiden nevner Berntsen offentlighetsloven og oppreisningen til krigsseilerne som viktige saker for Borten. Og fra årene etterpå fremstår kampen mot politisk overvåking som den tydeligste delen av hans samfunnsvirke. Engasjementet i disse tre sakene representerer kanskje den mest konsekvente linje i Per Bortens motsetningsfylte politiske liv. Han fremsto som en ombudsmann for enkeltmennesker overfor et maktapparat det i egenskap av statsminister i fem og et halvt år falt i hans lodd å være den fremste representant for.",
-    "target_text": "Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. \n\n Tittelen refererer til da Borten ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. \n\n Berntsen skriver selv i forordet at det har vært et problem og metodiske utfordringer med å bli klok på Borten da Borten ikke hadde skrevet en memoar. \n\n Det at Berntsen i så stor grad har måttet starte på bar bakke er kanskje en del av forklaringen på at deler av boken bærer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand."
+  "text": "Tvisynt ombudsmann | Stappfulle esker. Forsvarsskrift. Ombudsmannen | Borten-biografi. Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. Ingen av Per Bortens uttalelser gjennom mer enn 50 år som lokalpolitiker, stortingsrepresentant, statsminister og politisk kårkall er blitt så legendarisk som da han ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. Men uttalelsen passet bedre på situasjonen enn på personen som kom med den. Per Borten ble valgt som statsminister etter den borgerlige valgseieren i 1965 fordi flertallet i Høyres stortingsgruppe mente at han kunne bli den mest samlende regjeringssjefen. Det varte bare noen få år. Da Regjeringen gikk i gradvis indre oppløsning etter den nye valgseieren i 1969, var statsministerens uforutsigbare og ustrukturerte arbeidsstil en del av forklaringen, men langt fra hele. Den altoverskyggende årsak var at de politiske motsetningene mellom regjeringspartiene, først og fremst i EF-saken, tæret så hardt på tillitsforholdet partiene imellom at samarbeidet ikke lenger var liv laga. Bortens tabbe med å skjule for sin regjering at han hadde vist fortrolige dokumenter til ledelsen i Folkebevegelsen mot norsk medlemskap i EEC, avgjorde bare tidspunktet for og omstendighetene rundt et regjeringssammenbrudd som ville ha kommet uansett. Historikeren Harald Berntsen konstaterer med rette at toneangivende kretser på begge sider i den uforsonlige EF-kampen mente deres sak var best tjent med at Borten-regjeringen gikk av. En koalisjon dannet som et samlende svar på et langvarig og maktfullkomment Ap-styre, møtte sin skjebne fordi det etter hvert ble tyngre saker som splittet partiene enn som bandt dem sammen. Berntsen har påtatt seg en både viktig og vanskelig oppgave. Ikke bare har det vært et problem, som han selv skriver i forordet, å bli klok på Borten. På toppen av dette kom de metodiske utfordringer. De fleste andre ledende norske politikere i de første etterkrigstiårene, som Einar Gerhardsen, John Lyng, Trygve Bratteli og Kåre Willoch, har skrevet memoarer som danner gode utgangspunkt for andres kritiske granskning. Det var en fremmed tanke for Borten. Statsministeren i Norges første brede og varige borgerlige koalisjonsregjering etterlot seg timelange radiointervjuer med tidligere Dagsnytt-redaktør Per Bøhn og 70-80 stappfulle esker med usorterte papirer på loft og i kjeller hjemme på gården i Flå. De fleste som kom i kontakt med Borten i hans tid som aktiv politiker, eller i den lange kårkallsperioden, skjønner hvorfor det ble slik. Med få unntak var Borten ingen handlingens mann. Og evnen til systematikk var ingen fremtredende egenskap ved hans personlighet. Han var mer opptatt av å lytte, filosofere og diskutere enn av å bidra til sitt eget ettermæle i form av en arbeidskrevende skriftlig fremstilling. Hans fascinerende blanding av intellektuell nysgjerrighet, bondeful folkelighet og politisk uforutsigbarhet gjorde ham til en spennende samtalepartner både for politisk interesserte og folk flest. Berntsens største fortjeneste ligger i systematiseringen av det enorme kildematerialet. Men det at han i så stor grad har måttet begynne på bar bakke, er kanskje også en del av forklaringen på at deler av boken bærer mer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand. Av og til kan leseren få inntrykk av at Berntsen analyserer Borten litt for mye i lys av sin egen politiske fortid på venstresiden. Et eksempel på det er forfatterens overraskelse over Bortens sterke engasjement mot de mange ulovlige streikene det siste året av hans statsministertid. Et annet er hans forsøk på å omtale Borten som en sannere sosialdemokrat enn Aps egne ledere. At Borten som statsminister videreførte og videreutviklet viktige sosiale reformer som Folketrygden, viser mer om verdifellesskapet over de partipolitiske skillelinjene i 1960-årenes Norge enn om Bortens eget politiske ståsted. Fra statsministertiden nevner Berntsen offentlighetsloven og oppreisningen til krigsseilerne som viktige saker for Borten. Og fra årene etterpå fremstår kampen mot politisk overvåking som den tydeligste delen av hans samfunnsvirke. Engasjementet i disse tre sakene representerer kanskje den mest konsekvente linje i Per Bortens motsetningsfylte politiske liv. Han fremsto som en ombudsmann for enkeltmennesker overfor et maktapparat det i egenskap av statsminister i fem og et halvt år falt i hans lodd å være den fremste representant for.",
+  "target_text": "Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. \n\n Tittelen refererer til da Borten ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. \n\n Berntsen skriver selv i forordet at det har vært et problem og metodiske utfordringer med å bli klok på Borten da Borten ikke hadde skrevet en memoar. \n\n Det at Berntsen i så stor grad har måttet starte på bar bakke er kanskje en del av forklaringen på at deler av boken bærer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand."
 }
 ```
 
 ```json
 {
-    "text": "Tvisynt ombudsmann | Stappfulle esker. Forsvarsskrift. Ombudsmannen | Borten-biografi. Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. Ingen av Per Bortens uttalelser gjennom mer enn 50 år som lokalpolitiker, stortingsrepresentant, statsminister og politisk kårkall er blitt så legendarisk som da han ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. Men uttalelsen passet bedre på situasjonen enn på personen som kom med den. Per Borten ble valgt som statsminister etter den borgerlige valgseieren i 1965 fordi flertallet i Høyres stortingsgruppe mente at han kunne bli den mest samlende regjeringssjefen. Det varte bare noen få år. Da Regjeringen gikk i gradvis indre oppløsning etter den nye valgseieren i 1969, var statsministerens uforutsigbare og ustrukturerte arbeidsstil en del av forklaringen, men langt fra hele. Den altoverskyggende årsak var at de politiske motsetningene mellom regjeringspartiene, først og fremst i EF-saken, tæret så hardt på tillitsforholdet partiene imellom at samarbeidet ikke lenger var liv laga. Bortens tabbe med å skjule for sin regjering at han hadde vist fortrolige dokumenter til ledelsen i Folkebevegelsen mot norsk medlemskap i EEC, avgjorde bare tidspunktet for og omstendighetene rundt et regjeringssammenbrudd som ville ha kommet uansett. Historikeren Harald Berntsen konstaterer med rette at toneangivende kretser på begge sider i den uforsonlige EF-kampen mente deres sak var best tjent med at Borten-regjeringen gikk av. En koalisjon dannet som et samlende svar på et langvarig og maktfullkomment Ap-styre, møtte sin skjebne fordi det etter hvert ble tyngre saker som splittet partiene enn som bandt dem sammen. Berntsen har påtatt seg en både viktig og vanskelig oppgave. Ikke bare har det vært et problem, som han selv skriver i forordet, å bli klok på Borten. På toppen av dette kom de metodiske utfordringer. De fleste andre ledende norske politikere i de første etterkrigstiårene, som Einar Gerhardsen, John Lyng, Trygve Bratteli og Kåre Willoch, har skrevet memoarer som danner gode utgangspunkt for andres kritiske granskning. Det var en fremmed tanke for Borten. Statsministeren i Norges første brede og varige borgerlige koalisjonsregjering etterlot seg timelange radiointervjuer med tidligere Dagsnytt-redaktør Per Bøhn og 70-80 stappfulle esker med usorterte papirer på loft og i kjeller hjemme på gården i Flå. De fleste som kom i kontakt med Borten i hans tid som aktiv politiker, eller i den lange kårkallsperioden, skjønner hvorfor det ble slik. Med få unntak var Borten ingen handlingens mann. Og evnen til systematikk var ingen fremtredende egenskap ved hans personlighet. Han var mer opptatt av å lytte, filosofere og diskutere enn av å bidra til sitt eget ettermæle i form av en arbeidskrevende skriftlig fremstilling. Hans fascinerende blanding av intellektuell nysgjerrighet, bondeful folkelighet og politisk uforutsigbarhet gjorde ham til en spennende samtalepartner både for politisk interesserte og folk flest. Berntsens største fortjeneste ligger i systematiseringen av det enorme kildematerialet. Men det at han i så stor grad har måttet begynne på bar bakke, er kanskje også en del av forklaringen på at deler av boken bærer mer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand. Av og til kan leseren få inntrykk av at Berntsen analyserer Borten litt for mye i lys av sin egen politiske fortid på venstresiden. Et eksempel på det er forfatterens overraskelse over Bortens sterke engasjement mot de mange ulovlige streikene det siste året av hans statsministertid. Et annet er hans forsøk på å omtale Borten som en sannere sosialdemokrat enn Aps egne ledere. At Borten som statsminister videreførte og videreutviklet viktige sosiale reformer som Folketrygden, viser mer om verdifellesskapet over de partipolitiske skillelinjene i 1960-årenes Norge enn om Bortens eget politiske ståsted. Fra statsministertiden nevner Berntsen offentlighetsloven og oppreisningen til krigsseilerne som viktige saker for Borten. Og fra årene etterpå fremstår kampen mot politisk overvåking som den tydeligste delen av hans samfunnsvirke. Engasjementet i disse tre sakene representerer kanskje den mest konsekvente linje i Per Bortens motsetningsfylte politiske liv. Han fremsto som en ombudsmann for enkeltmennesker overfor et maktapparat det i egenskap av statsminister i fem og et halvt år falt i hans lodd å være den fremste representant for.",
-    "target_text": "Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. \n\n Tittelen refererer til da Borten ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. \n\n Berntsen skriver selv i forordet at det har vært et problem og metodiske utfordringer med å bli klok på Borten da Borten ikke hadde skrevet en memoar. \n\n Det at Berntsen i så stor grad har måttet starte på bar bakke er kanskje en del av forklaringen på at deler av boken bærer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand."
+  "text": "Tvisynt ombudsmann | Stappfulle esker. Forsvarsskrift. Ombudsmannen | Borten-biografi. Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. Ingen av Per Bortens uttalelser gjennom mer enn 50 år som lokalpolitiker, stortingsrepresentant, statsminister og politisk kårkall er blitt så legendarisk som da han ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. Men uttalelsen passet bedre på situasjonen enn på personen som kom med den. Per Borten ble valgt som statsminister etter den borgerlige valgseieren i 1965 fordi flertallet i Høyres stortingsgruppe mente at han kunne bli den mest samlende regjeringssjefen. Det varte bare noen få år. Da Regjeringen gikk i gradvis indre oppløsning etter den nye valgseieren i 1969, var statsministerens uforutsigbare og ustrukturerte arbeidsstil en del av forklaringen, men langt fra hele. Den altoverskyggende årsak var at de politiske motsetningene mellom regjeringspartiene, først og fremst i EF-saken, tæret så hardt på tillitsforholdet partiene imellom at samarbeidet ikke lenger var liv laga. Bortens tabbe med å skjule for sin regjering at han hadde vist fortrolige dokumenter til ledelsen i Folkebevegelsen mot norsk medlemskap i EEC, avgjorde bare tidspunktet for og omstendighetene rundt et regjeringssammenbrudd som ville ha kommet uansett. Historikeren Harald Berntsen konstaterer med rette at toneangivende kretser på begge sider i den uforsonlige EF-kampen mente deres sak var best tjent med at Borten-regjeringen gikk av. En koalisjon dannet som et samlende svar på et langvarig og maktfullkomment Ap-styre, møtte sin skjebne fordi det etter hvert ble tyngre saker som splittet partiene enn som bandt dem sammen. Berntsen har påtatt seg en både viktig og vanskelig oppgave. Ikke bare har det vært et problem, som han selv skriver i forordet, å bli klok på Borten. På toppen av dette kom de metodiske utfordringer. De fleste andre ledende norske politikere i de første etterkrigstiårene, som Einar Gerhardsen, John Lyng, Trygve Bratteli og Kåre Willoch, har skrevet memoarer som danner gode utgangspunkt for andres kritiske granskning. Det var en fremmed tanke for Borten. Statsministeren i Norges første brede og varige borgerlige koalisjonsregjering etterlot seg timelange radiointervjuer med tidligere Dagsnytt-redaktør Per Bøhn og 70-80 stappfulle esker med usorterte papirer på loft og i kjeller hjemme på gården i Flå. De fleste som kom i kontakt med Borten i hans tid som aktiv politiker, eller i den lange kårkallsperioden, skjønner hvorfor det ble slik. Med få unntak var Borten ingen handlingens mann. Og evnen til systematikk var ingen fremtredende egenskap ved hans personlighet. Han var mer opptatt av å lytte, filosofere og diskutere enn av å bidra til sitt eget ettermæle i form av en arbeidskrevende skriftlig fremstilling. Hans fascinerende blanding av intellektuell nysgjerrighet, bondeful folkelighet og politisk uforutsigbarhet gjorde ham til en spennende samtalepartner både for politisk interesserte og folk flest. Berntsens største fortjeneste ligger i systematiseringen av det enorme kildematerialet. Men det at han i så stor grad har måttet begynne på bar bakke, er kanskje også en del av forklaringen på at deler av boken bærer mer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand. Av og til kan leseren få inntrykk av at Berntsen analyserer Borten litt for mye i lys av sin egen politiske fortid på venstresiden. Et eksempel på det er forfatterens overraskelse over Bortens sterke engasjement mot de mange ulovlige streikene det siste året av hans statsministertid. Et annet er hans forsøk på å omtale Borten som en sannere sosialdemokrat enn Aps egne ledere. At Borten som statsminister videreførte og videreutviklet viktige sosiale reformer som Folketrygden, viser mer om verdifellesskapet over de partipolitiske skillelinjene i 1960-årenes Norge enn om Bortens eget politiske ståsted. Fra statsministertiden nevner Berntsen offentlighetsloven og oppreisningen til krigsseilerne som viktige saker for Borten. Og fra årene etterpå fremstår kampen mot politisk overvåking som den tydeligste delen av hans samfunnsvirke. Engasjementet i disse tre sakene representerer kanskje den mest konsekvente linje i Per Bortens motsetningsfylte politiske liv. Han fremsto som en ombudsmann for enkeltmennesker overfor et maktapparat det i egenskap av statsminister i fem og et halvt år falt i hans lodd å være den fremste representant for.",
+  "target_text": "Det blir for snevert når Harald Berntsen bruker tittelen «Staurberaren» på den første store biografien om tidligere statsminister Per Borten. \n\n Tittelen refererer til da Borten ved avskjeden som statsminister i 1971 sammenlignet det å lede en koalisjonsregjering med å bære sprikende staur. \n\n Berntsen skriver selv i forordet at det har vært et problem og metodiske utfordringer med å bli klok på Borten da Borten ikke hadde skrevet en memoar. \n\n Det at Berntsen i så stor grad har måttet starte på bar bakke er kanskje en del av forklaringen på at deler av boken bærer preg av forsvarsskrift for en utradisjonell politiker enn biografi med kritisk avstand."
 }
 ```
 
@@ -1874,22 +1882,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Dødssyke Hannah får oppfylt sitt siste ønske likevel | Forsikringsselskapet lar henne dra til Disneyland. Får dø hjemme: Kreftsyke Hannah Jones (13) overbeviste britiske helsemyndigheter om å få slippe en hjertetransplantasjon. Hun vil heller tilbringe de siste månedene av sitt liv hjemme hos familien. Liker Disney: Hannah var i Euro Disney for flere år siden. Nå får hun oppfylt drømmen om å dra til Disneyland i USA. Overbeviste med sin modenhet: Hannah Jones fikk selv velge at hun ikke skal få et nytt hjerte. Historien om Hannah har fått stor oppmerksomhet i britiske medier, blant annet Sky News. Dødssyke Hannah Jones (13) har sagt nei til et nytt hjerte. Hun orker ikke en ny operasjon, og vil heller dø hjemme. Hannah ønsker å få tilbringe sine siste dager hjemme sammen med foreldrene og søsknene Oliver (11), Lucy (10) og Phoebe (4). Samtidig har hun en siste drøm: Å få reise til Disneyland i Orlando i USA. Fikk ikke reiseforsikring | 13-åringenes foreldre forsøkte å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av veldedige Caudwell Children. Alle barna fikk reiseforsikring. Men ikke Hannah, selv om familien prøvde hos en rekke selskaper. Det så ut til at det aldri skulle bli noe av turen. Men nå har et selskap meldt seg og sagt seg villig til å forsikre 13-åringen, melder Sky News. - Jeg er henrykt og overveldet, sier hun til TV-kanalen. - En uke vekk fra rutinene på sykehuset vil være en fin avkobling for meg og familien min, vi vil være som en vanlig familie en liten stund, sier hun. - Gleder oss | Navnet på selskapet som oppfyller Hannahs drøm er ikke kjent. Hannahs far, Andrew Jones, taker nå alle som har hjulpet familien. - Vi er veldig glade for at vi får til dette, og gleder oss til å se smilet hennes når vi kommer dit, sier han. Hannah Jones fikk konstatert leukemi da hun var fem år, og har gått på tunge medisiner i flere år. Til slutt førte medisinene til en alvorlig hjertefeil, og Hannah har i dag et hull i hjertet. Da legene foreslo en hjertetransplantasjon svarte jenta nei. Hun ville heller få lov å avslutte livet sammen med sine aller nærmeste, noe som kan bety at hun bare har seks måneder igjen å leve.",
-    "target_text": "Hannah Jones (13) fekk konstatert leukemi då ho var fem år gamal og har gått på tunge medisinar i fleire år. \n\n Til slutt førte medisinane til ein alvorleg hjertefeil, og Hanna har i dag et hol i hjarta. \n\n Hannah har ein siste draum om å reisa til Disneyland i USA. \n\n Foreldrene prøvde å få ho med på ein gruppetur med 40 andre sjuke eller funksjonshemma ungar, arrangert av Caudwell Children. \n\n Alle ungane fekk reiseforsikring bortsett frå Hannah og det såg ut som at ho ikkje kunne reisa likevel. \n\n Men no har et selskap sagt seg villig til å forsikra Hannah slik at ho og familien kan reisa likevel, melder Sky News."
+  "text": "Dødssyke Hannah får oppfylt sitt siste ønske likevel | Forsikringsselskapet lar henne dra til Disneyland. Får dø hjemme: Kreftsyke Hannah Jones (13) overbeviste britiske helsemyndigheter om å få slippe en hjertetransplantasjon. Hun vil heller tilbringe de siste månedene av sitt liv hjemme hos familien. Liker Disney: Hannah var i Euro Disney for flere år siden. Nå får hun oppfylt drømmen om å dra til Disneyland i USA. Overbeviste med sin modenhet: Hannah Jones fikk selv velge at hun ikke skal få et nytt hjerte. Historien om Hannah har fått stor oppmerksomhet i britiske medier, blant annet Sky News. Dødssyke Hannah Jones (13) har sagt nei til et nytt hjerte. Hun orker ikke en ny operasjon, og vil heller dø hjemme. Hannah ønsker å få tilbringe sine siste dager hjemme sammen med foreldrene og søsknene Oliver (11), Lucy (10) og Phoebe (4). Samtidig har hun en siste drøm: Å få reise til Disneyland i Orlando i USA. Fikk ikke reiseforsikring | 13-åringenes foreldre forsøkte å få henne med på en gruppetur med 40 andre syke eller funksjonshemmede barn, arrangert av veldedige Caudwell Children. Alle barna fikk reiseforsikring. Men ikke Hannah, selv om familien prøvde hos en rekke selskaper. Det så ut til at det aldri skulle bli noe av turen. Men nå har et selskap meldt seg og sagt seg villig til å forsikre 13-åringen, melder Sky News. - Jeg er henrykt og overveldet, sier hun til TV-kanalen. - En uke vekk fra rutinene på sykehuset vil være en fin avkobling for meg og familien min, vi vil være som en vanlig familie en liten stund, sier hun. - Gleder oss | Navnet på selskapet som oppfyller Hannahs drøm er ikke kjent. Hannahs far, Andrew Jones, taker nå alle som har hjulpet familien. - Vi er veldig glade for at vi får til dette, og gleder oss til å se smilet hennes når vi kommer dit, sier han. Hannah Jones fikk konstatert leukemi da hun var fem år, og har gått på tunge medisiner i flere år. Til slutt førte medisinene til en alvorlig hjertefeil, og Hannah har i dag et hull i hjertet. Da legene foreslo en hjertetransplantasjon svarte jenta nei. Hun ville heller få lov å avslutte livet sammen med sine aller nærmeste, noe som kan bety at hun bare har seks måneder igjen å leve.",
+  "target_text": "Hannah Jones (13) fekk konstatert leukemi då ho var fem år gamal og har gått på tunge medisinar i fleire år. \n\n Til slutt førte medisinane til ein alvorleg hjertefeil, og Hanna har i dag et hol i hjarta. \n\n Hannah har ein siste draum om å reisa til Disneyland i USA. \n\n Foreldrene prøvde å få ho med på ein gruppetur med 40 andre sjuke eller funksjonshemma ungar, arrangert av Caudwell Children. \n\n Alle ungane fekk reiseforsikring bortsett frå Hannah og det såg ut som at ho ikkje kunne reisa likevel. \n\n Men no har et selskap sagt seg villig til å forsikra Hannah slik at ho og familien kan reisa likevel, melder Sky News."
 }
 ```
 
 ```json
 {
-    "text": "Fordømmer pågripelsen av Malis statsminister | Brøt seg inn | Sharia | Vakuum | Skepsis | FNs sikkerhetsråd fordømmer pågripelsen av Malis statsminister Cheick Modibo Diarra, som har gått av etter å ha blitt pågrepet soldater som var sendt av den tidligere kupplederen Amadou Sanogo. I en kort tale på Malis statlige fjernsyn sa Diarra tirsdag at han går av med hele sin regjering. Sikkerhetsrådet fordømmer pågripelsen av Diarra og advarer om at hæren i landet er i ferd med å undergrave de internasjonale forsøkene på å slå ned det islamistiske opprøret nord i landet. Sikkerhetsrådet varsler også om at det kan bli aktuelt å innføre sanksjoner mot Mali. Ifølge en av Diarras livvakter var det rundt 20 soldater som mandag kom fra en militærleir utenfor hovedstaden Bamako, som er hovedkvarteret til Sanogo og de tidligere kuppmakerne. Livvakter forteller at soldatene slo inn døra for å ta seg inn i Diarras hjem, og at de hadde behandlet ham ganske røft. Ifølge en talsmann for de militære ble Diarra arrestert fordi han prøvde å reise fra landet. Diarra skulle mandag reist til Frankrike for en legeundersøkelse, men han avlyste reisen da han fikk vite at bagasjen hans var tatt av flyet han skulle reist med. Diarra har mange ganger gjort det klart at han ønsker en rask militæraksjon for å drive islamistene som har tatt kontrollen over det nordlige Mali, bort. Islamistene har innført sharialov i gamle kulturbyer som Timbuktu. Blant annet straffer de tyver ved å kappe hendene av dem, de tvinger kvinner til å dekke seg til, og de har forbudt aktiviteter som fotball. Diarra ble utnevnt til statsminister i en interimsregjering noen uker etter et kupp i mars som kastet det tidligere stabile landet ut i kaos. Dioncounda Traore sitter fortsatt som interimspresident i landet. Ifølge militærregimet vil en ny statsminister snart bli utnevnt. - Dette er ikke et statskupp, forsikrer militærtalsmann Bakary Mariko overfor fjernsynskanalen France 24. Kaptein Sanogo gjennomførte kuppet mot den sittende presidenten Amadou Toure på grunn av skuffelse over at regjeringen ikke gjorde mer for å stanse et opprør blant tuaregene i nord. Men kuppet skapte et vakuum som gjorde at tuaregene og deres islamistiske allierte kunne ta kontrollen over de nordligste to tredelene av landet. Siden kastet islamistene ut tuaregene og tok makten alene. Vestafrikanske land har lagt planer for en militær intervensjon og har bedt FN godkjenne planene, som støttes av Frankrike. Tyskland og USA har lovet å bidra med opplæring og logistisk støtte. Vesten frykter at det nordlige Mali skal bli et nytt støttepunkt for islamistiske terrorgrupper, ettersom noen av islamistene der har forbindelser til al-Qaida. Men det er fortsatt stor internasjonal skepsis mot planen om å sette inn 3.300 vestafrikanske soldater. Mange av Malis naboer foretrekker å prøve å få til en forhandlingsløsning, og både FN og USA ber om tilbakeholdenhet. USAs FN-ambassadør Susan Rice sa i forrige uke at de vestafrikanske soldatene er dårlig egnet til å krige i ørkenen mot grupper som Ansar Dine, al-Qaida i Maghreb (Aqim) og MUJAO. En bekymring er også at regjeringen i Bamako er svak og ennå ikke har begynt å planlegge nye valg for å erstatte interimsregjeringen med en demokratisk valgt regjering. Django Cissoko er utnevnt til ny statsminister i Mali etter at forgjengeren Cheick Modibo Diarra ble tvunget til å gå av. Cissoko ble utnevnt av landets midlertidige president Dioncounda Traore tirsdag kveld.",
-    "target_text": "I ein kort tale på statleg fjernsyn i landet sa Mali sin statsminister Cheick Modibo Diarra tysdag at han går av med heile sin regjering. \n\n Han har gått av etter å ha blitt pågripen av soldatar som var sendt av den tidlegare kuppleiaren Amadou Sanogo. \n\n Ifølge en talsmann for de militære blei Diarra arrestert fordi han prøva å reise frå landet. \n\n FN sitt sikkerheitsråd fordømmer pågripinga av Diarra og åtvarar om at hæren i landet er i ferd med å undergrava dei internasjonale forsøka på å slå ned det islamistiske opprøret nord i landet. \n\n Sikkerhetsrådet varslar om at det kan bli aktuelt å innføra sanksjonar mot Mali. \n\n Ifølge militærregimet vil ein ny statsminister snart bli utnemnt."
+  "text": "Fordømmer pågripelsen av Malis statsminister | Brøt seg inn | Sharia | Vakuum | Skepsis | FNs sikkerhetsråd fordømmer pågripelsen av Malis statsminister Cheick Modibo Diarra, som har gått av etter å ha blitt pågrepet soldater som var sendt av den tidligere kupplederen Amadou Sanogo. I en kort tale på Malis statlige fjernsyn sa Diarra tirsdag at han går av med hele sin regjering. Sikkerhetsrådet fordømmer pågripelsen av Diarra og advarer om at hæren i landet er i ferd med å undergrave de internasjonale forsøkene på å slå ned det islamistiske opprøret nord i landet. Sikkerhetsrådet varsler også om at det kan bli aktuelt å innføre sanksjoner mot Mali. Ifølge en av Diarras livvakter var det rundt 20 soldater som mandag kom fra en militærleir utenfor hovedstaden Bamako, som er hovedkvarteret til Sanogo og de tidligere kuppmakerne. Livvakter forteller at soldatene slo inn døra for å ta seg inn i Diarras hjem, og at de hadde behandlet ham ganske røft. Ifølge en talsmann for de militære ble Diarra arrestert fordi han prøvde å reise fra landet. Diarra skulle mandag reist til Frankrike for en legeundersøkelse, men han avlyste reisen da han fikk vite at bagasjen hans var tatt av flyet han skulle reist med. Diarra har mange ganger gjort det klart at han ønsker en rask militæraksjon for å drive islamistene som har tatt kontrollen over det nordlige Mali, bort. Islamistene har innført sharialov i gamle kulturbyer som Timbuktu. Blant annet straffer de tyver ved å kappe hendene av dem, de tvinger kvinner til å dekke seg til, og de har forbudt aktiviteter som fotball. Diarra ble utnevnt til statsminister i en interimsregjering noen uker etter et kupp i mars som kastet det tidligere stabile landet ut i kaos. Dioncounda Traore sitter fortsatt som interimspresident i landet. Ifølge militærregimet vil en ny statsminister snart bli utnevnt. - Dette er ikke et statskupp, forsikrer militærtalsmann Bakary Mariko overfor fjernsynskanalen France 24. Kaptein Sanogo gjennomførte kuppet mot den sittende presidenten Amadou Toure på grunn av skuffelse over at regjeringen ikke gjorde mer for å stanse et opprør blant tuaregene i nord. Men kuppet skapte et vakuum som gjorde at tuaregene og deres islamistiske allierte kunne ta kontrollen over de nordligste to tredelene av landet. Siden kastet islamistene ut tuaregene og tok makten alene. Vestafrikanske land har lagt planer for en militær intervensjon og har bedt FN godkjenne planene, som støttes av Frankrike. Tyskland og USA har lovet å bidra med opplæring og logistisk støtte. Vesten frykter at det nordlige Mali skal bli et nytt støttepunkt for islamistiske terrorgrupper, ettersom noen av islamistene der har forbindelser til al-Qaida. Men det er fortsatt stor internasjonal skepsis mot planen om å sette inn 3.300 vestafrikanske soldater. Mange av Malis naboer foretrekker å prøve å få til en forhandlingsløsning, og både FN og USA ber om tilbakeholdenhet. USAs FN-ambassadør Susan Rice sa i forrige uke at de vestafrikanske soldatene er dårlig egnet til å krige i ørkenen mot grupper som Ansar Dine, al-Qaida i Maghreb (Aqim) og MUJAO. En bekymring er også at regjeringen i Bamako er svak og ennå ikke har begynt å planlegge nye valg for å erstatte interimsregjeringen med en demokratisk valgt regjering. Django Cissoko er utnevnt til ny statsminister i Mali etter at forgjengeren Cheick Modibo Diarra ble tvunget til å gå av. Cissoko ble utnevnt av landets midlertidige president Dioncounda Traore tirsdag kveld.",
+  "target_text": "I ein kort tale på statleg fjernsyn i landet sa Mali sin statsminister Cheick Modibo Diarra tysdag at han går av med heile sin regjering. \n\n Han har gått av etter å ha blitt pågripen av soldatar som var sendt av den tidlegare kuppleiaren Amadou Sanogo. \n\n Ifølge en talsmann for de militære blei Diarra arrestert fordi han prøva å reise frå landet. \n\n FN sitt sikkerheitsråd fordømmer pågripinga av Diarra og åtvarar om at hæren i landet er i ferd med å undergrava dei internasjonale forsøka på å slå ned det islamistiske opprøret nord i landet. \n\n Sikkerhetsrådet varslar om at det kan bli aktuelt å innføra sanksjonar mot Mali. \n\n Ifølge militærregimet vil ein ny statsminister snart bli utnemnt."
 }
 ```
 
 ```json
 {
-    "text": "Fordømmer pågripelsen av Malis statsminister | Brøt seg inn | Sharia | Vakuum | Skepsis | FNs sikkerhetsråd fordømmer pågripelsen av Malis statsminister Cheick Modibo Diarra, som har gått av etter å ha blitt pågrepet soldater som var sendt av den tidligere kupplederen Amadou Sanogo. I en kort tale på Malis statlige fjernsyn sa Diarra tirsdag at han går av med hele sin regjering. Sikkerhetsrådet fordømmer pågripelsen av Diarra og advarer om at hæren i landet er i ferd med å undergrave de internasjonale forsøkene på å slå ned det islamistiske opprøret nord i landet. Sikkerhetsrådet varsler også om at det kan bli aktuelt å innføre sanksjoner mot Mali. Ifølge en av Diarras livvakter var det rundt 20 soldater som mandag kom fra en militærleir utenfor hovedstaden Bamako, som er hovedkvarteret til Sanogo og de tidligere kuppmakerne. Livvakter forteller at soldatene slo inn døra for å ta seg inn i Diarras hjem, og at de hadde behandlet ham ganske røft. Ifølge en talsmann for de militære ble Diarra arrestert fordi han prøvde å reise fra landet. Diarra skulle mandag reist til Frankrike for en legeundersøkelse, men han avlyste reisen da han fikk vite at bagasjen hans var tatt av flyet han skulle reist med. Diarra har mange ganger gjort det klart at han ønsker en rask militæraksjon for å drive islamistene som har tatt kontrollen over det nordlige Mali, bort. Islamistene har innført sharialov i gamle kulturbyer som Timbuktu. Blant annet straffer de tyver ved å kappe hendene av dem, de tvinger kvinner til å dekke seg til, og de har forbudt aktiviteter som fotball. Diarra ble utnevnt til statsminister i en interimsregjering noen uker etter et kupp i mars som kastet det tidligere stabile landet ut i kaos. Dioncounda Traore sitter fortsatt som interimspresident i landet. Ifølge militærregimet vil en ny statsminister snart bli utnevnt. - Dette er ikke et statskupp, forsikrer militærtalsmann Bakary Mariko overfor fjernsynskanalen France 24. Kaptein Sanogo gjennomførte kuppet mot den sittende presidenten Amadou Toure på grunn av skuffelse over at regjeringen ikke gjorde mer for å stanse et opprør blant tuaregene i nord. Men kuppet skapte et vakuum som gjorde at tuaregene og deres islamistiske allierte kunne ta kontrollen over de nordligste to tredelene av landet. Siden kastet islamistene ut tuaregene og tok makten alene. Vestafrikanske land har lagt planer for en militær intervensjon og har bedt FN godkjenne planene, som støttes av Frankrike. Tyskland og USA har lovet å bidra med opplæring og logistisk støtte. Vesten frykter at det nordlige Mali skal bli et nytt støttepunkt for islamistiske terrorgrupper, ettersom noen av islamistene der har forbindelser til al-Qaida. Men det er fortsatt stor internasjonal skepsis mot planen om å sette inn 3.300 vestafrikanske soldater. Mange av Malis naboer foretrekker å prøve å få til en forhandlingsløsning, og både FN og USA ber om tilbakeholdenhet. USAs FN-ambassadør Susan Rice sa i forrige uke at de vestafrikanske soldatene er dårlig egnet til å krige i ørkenen mot grupper som Ansar Dine, al-Qaida i Maghreb (Aqim) og MUJAO. En bekymring er også at regjeringen i Bamako er svak og ennå ikke har begynt å planlegge nye valg for å erstatte interimsregjeringen med en demokratisk valgt regjering. Django Cissoko er utnevnt til ny statsminister i Mali etter at forgjengeren Cheick Modibo Diarra ble tvunget til å gå av. Cissoko ble utnevnt av landets midlertidige president Dioncounda Traore tirsdag kveld.",
-    "target_text": "I ein kort tale på statleg fjernsyn i landet sa Mali sin statsminister Cheick Modibo Diarra tysdag at han går av med heile sin regjering. \n\n Han har gått av etter å ha blitt pågripen av soldatar som var sendt av den tidlegare kuppleiaren Amadou Sanogo. \n\n Ifølge en talsmann for de militære blei Diarra arrestert fordi han prøva å reise frå landet. \n\n FN sitt sikkerheitsråd fordømmer pågripinga av Diarra og åtvarar om at hæren i landet er i ferd med å undergrava dei internasjonale forsøka på å slå ned det islamistiske opprøret nord i landet. \n\n Sikkerhetsrådet varslar om at det kan bli aktuelt å innføra sanksjonar mot Mali. \n\n Ifølge militærregimet vil ein ny statsminister snart bli utnemnt."
+  "text": "Fordømmer pågripelsen av Malis statsminister | Brøt seg inn | Sharia | Vakuum | Skepsis | FNs sikkerhetsråd fordømmer pågripelsen av Malis statsminister Cheick Modibo Diarra, som har gått av etter å ha blitt pågrepet soldater som var sendt av den tidligere kupplederen Amadou Sanogo. I en kort tale på Malis statlige fjernsyn sa Diarra tirsdag at han går av med hele sin regjering. Sikkerhetsrådet fordømmer pågripelsen av Diarra og advarer om at hæren i landet er i ferd med å undergrave de internasjonale forsøkene på å slå ned det islamistiske opprøret nord i landet. Sikkerhetsrådet varsler også om at det kan bli aktuelt å innføre sanksjoner mot Mali. Ifølge en av Diarras livvakter var det rundt 20 soldater som mandag kom fra en militærleir utenfor hovedstaden Bamako, som er hovedkvarteret til Sanogo og de tidligere kuppmakerne. Livvakter forteller at soldatene slo inn døra for å ta seg inn i Diarras hjem, og at de hadde behandlet ham ganske røft. Ifølge en talsmann for de militære ble Diarra arrestert fordi han prøvde å reise fra landet. Diarra skulle mandag reist til Frankrike for en legeundersøkelse, men han avlyste reisen da han fikk vite at bagasjen hans var tatt av flyet han skulle reist med. Diarra har mange ganger gjort det klart at han ønsker en rask militæraksjon for å drive islamistene som har tatt kontrollen over det nordlige Mali, bort. Islamistene har innført sharialov i gamle kulturbyer som Timbuktu. Blant annet straffer de tyver ved å kappe hendene av dem, de tvinger kvinner til å dekke seg til, og de har forbudt aktiviteter som fotball. Diarra ble utnevnt til statsminister i en interimsregjering noen uker etter et kupp i mars som kastet det tidligere stabile landet ut i kaos. Dioncounda Traore sitter fortsatt som interimspresident i landet. Ifølge militærregimet vil en ny statsminister snart bli utnevnt. - Dette er ikke et statskupp, forsikrer militærtalsmann Bakary Mariko overfor fjernsynskanalen France 24. Kaptein Sanogo gjennomførte kuppet mot den sittende presidenten Amadou Toure på grunn av skuffelse over at regjeringen ikke gjorde mer for å stanse et opprør blant tuaregene i nord. Men kuppet skapte et vakuum som gjorde at tuaregene og deres islamistiske allierte kunne ta kontrollen over de nordligste to tredelene av landet. Siden kastet islamistene ut tuaregene og tok makten alene. Vestafrikanske land har lagt planer for en militær intervensjon og har bedt FN godkjenne planene, som støttes av Frankrike. Tyskland og USA har lovet å bidra med opplæring og logistisk støtte. Vesten frykter at det nordlige Mali skal bli et nytt støttepunkt for islamistiske terrorgrupper, ettersom noen av islamistene der har forbindelser til al-Qaida. Men det er fortsatt stor internasjonal skepsis mot planen om å sette inn 3.300 vestafrikanske soldater. Mange av Malis naboer foretrekker å prøve å få til en forhandlingsløsning, og både FN og USA ber om tilbakeholdenhet. USAs FN-ambassadør Susan Rice sa i forrige uke at de vestafrikanske soldatene er dårlig egnet til å krige i ørkenen mot grupper som Ansar Dine, al-Qaida i Maghreb (Aqim) og MUJAO. En bekymring er også at regjeringen i Bamako er svak og ennå ikke har begynt å planlegge nye valg for å erstatte interimsregjeringen med en demokratisk valgt regjering. Django Cissoko er utnevnt til ny statsminister i Mali etter at forgjengeren Cheick Modibo Diarra ble tvunget til å gå av. Cissoko ble utnevnt av landets midlertidige president Dioncounda Traore tirsdag kveld.",
+  "target_text": "I ein kort tale på statleg fjernsyn i landet sa Mali sin statsminister Cheick Modibo Diarra tysdag at han går av med heile sin regjering. \n\n Han har gått av etter å ha blitt pågripen av soldatar som var sendt av den tidlegare kuppleiaren Amadou Sanogo. \n\n Ifølge en talsmann for de militære blei Diarra arrestert fordi han prøva å reise frå landet. \n\n FN sitt sikkerheitsråd fordømmer pågripinga av Diarra og åtvarar om at hæren i landet er i ferd med å undergrava dei internasjonale forsøka på å slå ned det islamistiske opprøret nord i landet. \n\n Sikkerhetsrådet varslar om at det kan bli aktuelt å innføra sanksjonar mot Mali. \n\n Ifølge militærregimet vil ein ny statsminister snart bli utnemnt."
 }
 ```
 
@@ -1928,16 +1936,16 @@ euroeval --model <model-id> --dataset norsumm-nn
 
 ### ValEU-no
 
-This dataset is the official Norwegian version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official Norwegian version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {
@@ -2006,9 +2014,10 @@ euroeval --model <model-id> --dataset valeu-no
 
 ### Unofficial: NorDial
 
-This dataset was published in [this paper](https://aclanthology.org/2021.nodalida-main.51/)
-and consists of Norwegian tweets manually annotated for the writing form used: standard
-Bokmål, standard Nynorsk, dialectal Norwegian, or a mix of these.
+This dataset was published in
+[this paper](https://aclanthology.org/2021.nodalida-main.51/) and consists of Norwegian
+tweets manually annotated for the writing form used: standard Bokmål, standard Nynorsk,
+dialectal Norwegian, or a mix of these.
 
 The original full dataset consists of 848 / 106 / 110 samples for training, validation
 and test, respectively. We use all available samples, resulting in the same 848 / 106 /
@@ -2018,29 +2027,29 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "@jkBaltzersen @nitaSmartAnd @sgaarder Vi har en lokal revy (opp til flere, men en av dem har jeg sett), og de klarer hvert år å parodiere forskjellige personer som har en rolle i lokalsamfunnet eller stukket hodet frem i avisen. Ikke alle er maktpersoner, og ikke alt like morsomt. Samtidig er det humor.",
-    "label": "bokmål"
+  "text": "@jkBaltzersen @nitaSmartAnd @sgaarder Vi har en lokal revy (opp til flere, men en av dem har jeg sett), og de klarer hvert år å parodiere forskjellige personer som har en rolle i lokalsamfunnet eller stukket hodet frem i avisen. Ikke alle er maktpersoner, og ikke alt like morsomt. Samtidig er det humor.",
+  "label": "bokmål"
 }
 ```
 
 ```json
 {
-    "text": "@elfhybrid_ -Halda fram med spanskvedlikehald\n-Øva meir på andre språk eg kan litt, kanskje tysk eller russisk, og/eller byrja læra islandsk eller skotsk-gælisk som eg har hatt lyst å læra i årevis\n-Ha tantungar på overnatting oftare\n-Øva meg på å høyra etter når kroppen seier nei",
-    "label": "nynorsk"
+  "text": "@elfhybrid_ -Halda fram med spanskvedlikehald\n-Øva meir på andre språk eg kan litt, kanskje tysk eller russisk, og/eller byrja læra islandsk eller skotsk-gælisk som eg har hatt lyst å læra i årevis\n-Ha tantungar på overnatting oftare\n-Øva meg på å høyra etter når kroppen seier nei",
+  "label": "nynorsk"
 }
 ```
 
 ```json
 {
-    "text": "@FANTonsen @mimirk Æ ha egenhendig bygd to vindmøllparka.\nÅ kolles innvestorkapitaln trikse med skatt og tillskudd, imens vi gi dem våre ressursa.\nUnnskyld mæ, triksing med tall. Det by mæ imot.",
-    "label": "dialectal"
+  "text": "@FANTonsen @mimirk Æ ha egenhendig bygd to vindmøllparka.\nÅ kolles innvestorkapitaln trikse med skatt og tillskudd, imens vi gi dem våre ressursa.\nUnnskyld mæ, triksing med tall. Det by mæ imot.",
+  "label": "dialectal"
 }
 ```
 
 ```json
 {
-    "text": "@RekstadYvind Når ein har andre avvik så er det \"favorable genetic profile\", men når ei svart kvinne har det er det eit biologisk overtramp, eit hån mot sporten, og ho er eigentleg mann. Det er så dårleg skjult det dei driv med. https://t.co/fWRduJAloo",
-    "label": "mixed"
+  "text": "@RekstadYvind Når ein har andre avvik så er det \"favorable genetic profile\", men når ei svart kvinne har det er det eit biologisk overtramp, eit hån mot sporten, og ho er eigentleg mann. Det er så dårleg skjult det dei driv med. https://t.co/fWRduJAloo",
+  "label": "mixed"
 }
 ```
 
@@ -2104,33 +2113,15 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": [
-        "elva",
-        "skiller"
-    ],
-    "labels": [
-        "O",
-        "O"
-    ]
+  "tokens": ["elva", "skiller"],
+  "labels": ["O", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": [
-        "penger",
-        "aldri",
-        "et",
-        "er",
-        "problem"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "B-ERR",
-        "O"
-    ]
+  "tokens": ["penger", "aldri", "et", "er", "problem"],
+  "labels": ["O", "O", "O", "B-ERR", "O"]
 }
 ```
 
@@ -2190,89 +2181,89 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": [
-        "han",
-        "nemner",
-        "at",
-        "det",
-        "er",
-        "ledig",
-        "kapasitet",
-        "på",
-        "dyrskuplassen",
-        "både",
-        "vår",
-        "haust",
-        "og",
-        "vinter",
-        "medan",
-        "sommaren",
-        "har",
-        "godt",
-        "med",
-        "tilskipingar"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+  "tokens": [
+    "han",
+    "nemner",
+    "at",
+    "det",
+    "er",
+    "ledig",
+    "kapasitet",
+    "på",
+    "dyrskuplassen",
+    "både",
+    "vår",
+    "haust",
+    "og",
+    "vinter",
+    "medan",
+    "sommaren",
+    "har",
+    "godt",
+    "med",
+    "tilskipingar"
+  ],
+  "labels": [
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O"
+  ]
 }
 ```
 
 ```json
 {
-    "tokens": [
-        "noreg",
-        "er",
-        "på",
-        "veg",
-        "til",
-        "å",
-        "danmark",
-        "i",
-        "folketal",
-        "passere",
-        "for",
-        "første",
-        "gong",
-        "i",
-        "historia"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "B-ERR",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+  "tokens": [
+    "noreg",
+    "er",
+    "på",
+    "veg",
+    "til",
+    "å",
+    "danmark",
+    "i",
+    "folketal",
+    "passere",
+    "for",
+    "første",
+    "gong",
+    "i",
+    "historia"
+  ],
+  "labels": [
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "B-ERR",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O"
+  ]
 }
 ```
 
@@ -2309,4 +2300,280 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset gerlangmod-nn
+```
+
+## Logical Reasoning
+
+### Unofficial: ZebraPuzzleEasy-nb
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "En husrekke er nummerert fra 1 til 2 fra venstre mot høyre.\n\nI hvert hus bor en person med en unik egenskap i hver av følgende kategorier:\n\nJobber: baker og minister.\nDrikke: kaffe og smoothie.\nFavorittfrukter: eple og markjordbær.\n\nI tillegg vet vi følgende:\n\n\n\n1. Personen som elsker fysikk bor i hus nummer 1.\n2. Ministeren liker ikke epler.\n3. Smoothiedrikkeren elsker epler.\n4. Personen som ofte seiler bor ikke i hus nummer 2.\n5. Personen som mener den nest beste frukten er mango spiller gitar.\n6. Personen som elsker markjordbær bor ikke i hus nummer 1.\n7. Personen som ikke eier en kaktus bruker briller.\n8. Personen som har vært i Canada bor ikke i hus nummer 2.",
+  "target_text": {
+    "object_1": ["baker", "smoothie", "eple"],
+    "object_2": ["minister", "kaffe", "markjordbær"]
+  }
+}
+```
+
+```json
+{
+  "text": "En husrekke er nummerert fra 1 til 2 fra venstre mot høyre.\n\nI hvert hus bor en person med en unik egenskap i hver av følgende kategorier:\n\nNasjonaliteter: Latvia og Norge.\nKjæledyr: hund og vandrende pinne.\nHobbyer: brettspill og hekling.\n\nI tillegg vet vi følgende:\n\n\n\n1. Agurk er bær.\n2. Latvieren har en vandrende pinne.\n3. Eieren av en vandrende pinne bor til høyre for personen som spiller brettspill.\n4. Latvieren mener den nest beste frukten er mango.\n5. Hundeeieren vet at sild er en fisk.\n6. Alle husene på veien har fine hager.\n7. Hundeeieren bor ved siden av personen som ikke eier en kaktus.",
+  "target_text": {
+    "object_1": ["Norge", "hund", "brettspill"],
+    "object_2": ["Latvia", "vandrende pinne", "hekling"]
+  }
+}
+```
+
+```json
+{
+  "text": "En husrekke er nummerert fra 1 til 2 fra venstre mot høyre.\n\nI hvert hus bor en person med en unik egenskap i hver av følgende kategorier:\n\nJobber: minister og programvareutvikler.\nFavorittboksjangere: sakprosa og science fiction.\nFavorittfrukter: jordbær og markjordbær.\n\nI tillegg vet vi følgende:\n\n\n\n1. Personen som ofte seiler spiller dataspill.\n2. Ministeren vet at det er mange biler på veien.\n3. Personen som elsker jordbær synes det er gøy å løse gåter.\n4. Personen som mener den nest beste frukten er mango bor ikke i hus nummer 2.\n5. Programvareutvikleren bor til venstre for personen som leser science fiction.\n6. Personen som leser sakprosa bor til venstre for personen som elsker markjordbær.\n7. Programvareutvikleren er god venn av personen som har vært i Canada.",
+  "target_text": {
+    "object_1": ["programvareutvikler", "sakprosa", "jordbær"],
+    "object_2": ["minister", "science fiction", "markjordbær"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Her er et kappløp:
+  <riddle>
+  {text}
+  </riddle>
+  Hvem har hvilke egenskaper og bor i hvilket hus?
+
+  Vennligst oppgi svaret ditt som en JSON-dictionary. Hver key skal være object_X der X er husnummeret. Hver value skal være en liste over egenskapene fra nevnte kategorier som tilhører personen i hus nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-nb
+```
+
+### Unofficial: ZebraPuzzleHard-nb
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "En husrekke er nummerert fra 1 til 4 fra venstre mot høyre.\n\nI hvert hus bor en person med en unik egenskap i hver av følgende kategorier:\n\nJobber: butikkmedarbeider, lærer, minister og programvareutvikler.\nKjæledyr: hund, kanin, snegle og undulat.\nDrikke: kakao, melk, smoothie og te.\nFavorittboksjangere: krim, poesi, romantikk og science fiction.\nHobbyer: brettspill, fotball, hekling og håndball.\n\nI tillegg vet vi følgende:\n\n\n\n1. Melkedrikkeren er god venn av personen som har vært i Canada.\n2. Personen som leser science fiction bor ikke i hus nummer 3.\n3. Kanineieren bor ikke ved siden av snegleeieren, og de er ikke samme person.\n4. Personen som ser på skihopping bor i hus nummer 1.\n5. Butikkmedarbeideren bor ikke mellom krimleseren og personen som spiller fotball, og de er tre forskjellige personer.\n6. Det er ett hus mellom programvareutvikleren og undulateieren.\n7. Snegleeieren bor mellom butikkmedarbeideren og personen som spiller håndball.\n8. Ministeren bor rett til venstre for kakaodrikkeren.\n9. Personen med marsvin bor ikke i hus nummer 3.\n10. Personen som spiller fotball er god venn av personen som har en mastergrad i matematikk.\n11. Smoothiedrikkeren bor mellom programvareutvikleren og personen som leser romantikkromaner.\n12. Melkedrikkeren bor ikke mellom krimleseren og personen som spiller brettspill, og de er tre forskjellige personer.\n13. Tedrikkeren bor til venstre for personen som spiller brettspill.\n14. Krimleseren bor mellom ministeren og personen som leser romantikkromaner.\n15. Personen som elsker fysikk bor ikke i hus nummer 2.",
+  "target_text": {
+    "object_1": ["minister", "kanin", "te", "science fiction", "fotball"],
+    "object_2": ["programvareutvikler", "hund", "kakao", "krim", "håndball"],
+    "object_3": ["lærer", "snegle", "smoothie", "poesi", "brettspill"],
+    "object_4": ["butikkmedarbeider", "undulat", "melk", "romantikk", "hekling"]
+  }
+}
+```
+
+```json
+{
+  "text": "En husrekke er nummerert fra 1 til 4 fra venstre mot høyre.\n\nI hvert hus bor en person med en unik egenskap i hver av følgende kategorier:\n\nNasjonaliteter: Danmark, Frankrike, Norge og Spania.\nKjæledyr: hund, sebra, undulat og vandrende pinne.\nFavorittboksjangere: poesi, romantikk, sakprosa og science fiction.\nHobbyer: fotball, håndball, maling og tennis.\nFavorittfrukter: appelsin, banan, eple og jordbær.\n\nI tillegg vet vi følgende:\n\n\n\n1. Personen som spiller håndball bor i hus nummer 2.\n2. Personen med tatovering bor i hus nummer 4.\n3. Det er ett hus mellom spanjolen og dansken.\n4. Spanjolen spiller ikke tennis.\n5. Personen som spiller tennis elsker jordbær.\n6. Spanjolen bor rett til høyre for personen som elsker epler.\n7. Eieren av en vandrende pinne og poesileseren bor med 2 hus mellom seg.\n8. Personen som maler bor rett til venstre for personen som elsker epler.\n9. Personen som elsker bananer bor ved siden av personen som elsker jordbær.\n10. Det er gøy å løse gåter.\n11. Sebraeieren ser på skihopping.\n12. Hundeeieren bor mellom nordmannen og personen som leser romantikkromaner.\n13. Nordmannen bor rett til høyre for poesileseren.\n14. Nordmannen bor ved siden av sebraeieren.\n15. Personen som leser science fiction bor mellom dansken og personen som leser sakprosa.\n16. Undulateieren bruker briller.\n17. Kaffe inneholder koffein.",
+  "target_text": {
+    "object_1": ["Danmark", "sebra", "poesi", "maling", "appelsin"],
+    "object_2": ["Norge", "undulat", "science fiction", "håndball", "eple"],
+    "object_3": ["Spania", "hund", "sakprosa", "fotball", "banan"],
+    "object_4": ["Frankrike", "vandrende pinne", "romantikk", "tennis", "jordbær"]
+  }
+}
+```
+
+```json
+{
+  "text": "En husrekke er nummerert fra 1 til 4 fra venstre mot høyre.\n\nI hvert hus bor en person med en unik egenskap i hver av følgende kategorier:\n\nNasjonaliteter: Færøyene, Italia, Nederland og Sverige.\nJobber: butikkmedarbeider, lærer, politibetjent og sykepleier.\nKjæledyr: hund, sebra, snegle og undulat.\nDrikke: brus, juice, kaffe og kakao.\nFavorittfrukter: appelsin, eple, jordbær og solbær.\n\nI tillegg vet vi følgende:\n\n\n\n1. Personen med briller har en mastergrad i matematikk.\n2. Undulateieren bor ved siden av personen som ikke eier en kaktus.\n3. Politibetjenten bor rett til høyre for sebraeieren.\n4. Sebraeieren bor ved siden av kakaodrikkeren.\n5. Nederlenderen bor ikke mellom butikkmedarbeideren og personen som elsker appelsiner, og de er tre forskjellige personer.\n6. Nederlenderen og personen som elsker solbær bor med 2 hus mellom seg.\n7. Hundeeieren bor i hus nummer 3.\n8. Brusdrikkeren spiller dataspill.\n9. Brusdrikkeren mener den nest beste frukten er mango.\n10. Butikkmedarbeideren bor ikke ved siden av undulateieren, og de er ikke samme person.\n11. Svensken bor i hus nummer 2.\n12. Personen som elsker epler bor ved siden av personen som ser på skihopping.\n13. Personen som elsker epler bor i hus nummer 2.\n14. Italieneren bor rett til høyre for sykepleieren.\n15. Undulateieren bor ikke mellom snegleeieren og kaffedrikkeren, og de er tre forskjellige personer.\n16. Nederlenderen bor rett til venstre for brusdrikkeren.",
+  "target_text": {
+    "object_1": ["Nederland", "lærer", "undulat", "kakao", "jordbær"],
+    "object_2": ["Sverige", "sykepleier", "sebra", "brus", "eple"],
+    "object_3": ["Italia", "politibetjent", "hund", "kaffe", "appelsin"],
+    "object_4": ["Færøyene", "butikkmedarbeider", "snegle", "juice", "solbær"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Her er et kappløp:
+  <riddle>
+  {text}
+  </riddle>
+  Hvem har hvilke egenskaper og bor i hvilket hus?
+
+  Vennligst oppgi svaret ditt som en JSON-dictionary. Hver key skal være object_X der X er husnummeret. Hver value skal være en liste over egenskapene fra nevnte kategorier som tilhører personen i hus nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-nb
+```
+
+## Logical Reasoning
+
+### Unofficial: ZebraPuzzleEasy-nn
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Ei husrekkje er nummerert frå 1 til 2 frå venstre mot høgre.\n\nI kvart hus bur ein person med ein unik eigenskap i kvar av følgjande kategoriar:\n\nJobbar: butikkmedarbeidar og lærar.\nDrikk: kakao og mjølk.\nFavorittfrukter: appelsin og banan.\n\nI tillegg veit me følgjande:\n\n\n\n1. Personen som elskar bananar er god venn av personen som ser på skihopping.\n2. Personen som ofte seglar har vore i Canada.\n3. Mjølkedrikkaren bur til høgre for kakaodrikkaren.\n4. Personen som ikkje eig ein kaktus bur ikkje i hus nummer 2.\n5. Fleire av husa har ei grøn dør.\n6. Agurk er bær.\n7. Butikkmedarbeidaren bur til høgre for personen som elskar bananar.",
+  "target_text": {
+    "object_1": ["lærar", "kakao", "banan"],
+    "object_2": ["butikkmedarbeidar", "mjølk", "appelsin"]
+  }
+}
+```
+
+```json
+{
+  "text": "Ei husrekkje er nummerert frå 1 til 2 frå venstre mot høgre.\n\nI kvart hus bur ein person med ein unik eigenskap i kvar av følgjande kategoriar:\n\nJobbar: minister og politibetjent.\nDrikk: brus og mjølk.\nFavorittfrukter: jordbær og markjordbær.\n\nI tillegg veit me følgjande:\n\n\n\n1. Personen som elskar jordbær bur ved sida av personen som meiner den nest beste frukta er mango.\n2. Personen som elskar fysikk speler dataspel.\n3. Ministeren elskar markjordbær.\n4. Mjølkedrikkaren er god venn av personen som ofte seglar.\n5. Ministeren veit at alle husa har store vindauge.\n6. Politibetjenten bur til høgre for mjølkedrikkaren.\n7. Fleire av husa har ei grøn dør.",
+  "target_text": {
+    "object_1": ["minister", "mjølk", "markjordbær"],
+    "object_2": ["politibetjent", "brus", "jordbær"]
+  }
+}
+```
+
+```json
+{
+  "text": "Ei husrekkje er nummerert frå 1 til 2 frå venstre mot høgre.\n\nI kvart hus bur ein person med ein unik eigenskap i kvar av følgjande kategoriar:\n\nNasjonalitetar: Færøyene og Island.\nHobbyar: måling og tennis.\nFavorittfrukter: appelsin og pære.\n\nI tillegg veit me følgjande:\n\n\n\n1. Personen som speler tennis bur ved sida av personen som speler gitar.\n2. Personen som ofte seglar har tatovering.\n3. Personen som speler tennis liker ikkje appelsinar.\n4. Personen som speler tennis meiner den nest beste frukta er mango.\n5. Personen som speler tennis veit at alle husa har store vindauge.\n6. Islendingen bur ved sida av personen med eit kjæledyr som er gamalt for arten.\n7. Personen som elskar appelsinar bur ikkje i hus nummer 2.\n8. Færøyingen bur ikkje i hus nummer 2.",
+  "target_text": {
+    "object_1": ["Færøyene", "måling", "appelsin"],
+    "object_2": ["Island", "tennis", "pære"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Her er eit kappløp:
+  <riddle>
+  {text}
+  </riddle>
+  Kven har kva eigenskapar og bur i kva for eit hus?
+
+  Gjer vel å oppgi svaret ditt som ein JSON-dictionary. Kvar key skal vera object_X der X er husnummeret. Kvar value skal vera ei liste over eigenskapane frå nemnde kategoriar som høyrer til personen i hus nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-nn
+```
+
+### Unofficial: ZebraPuzzleHard-nn
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Ei husrekkje er nummerert frå 1 til 4 frå venstre mot høgre.\n\nI kvart hus bur ein person med ein unik eigenskap i kvar av følgjande kategoriar:\n\nNasjonalitetar: Frankrike, Færøyene, Norge og Sverige.\nJobbar: bakar, lærar, minister og sjukepleiar.\nDrikk: kaffi, kakao, mjølk og smoothie.\nFavorittboksjangrar: fantasy, krim, poesi og sakprosa.\nHobbyar: brettspel, hekling, klatring og måling.\n\nI tillegg veit me følgjande:\n\n\n\n1. Mjølkedrikkaren bur rett til høgre for personen som les sakprosa.\n2. Krimlesaren bur mellom nordmannen og personen som les sakprosa.\n3. Smoothiedrikkaren bur ikkje mellom poesilesaren og personen som les sakprosa, og dei er tre ulike personar.\n4. Færøyingen bur til høgre for ministeren.\n5. Læraren bur rett til venstre for personen som speler brettspel.\n6. Smoothiedrikkaren bur ikkje ved sida av personen som klatrar, og dei er ikkje same person.\n7. Poesilesaren har vore i Canada.\n8. Personen som målar bur i hus nummer 2.\n9. Kakaodrikkaren bur ikkje ved sida av personen som speler brettspel, og dei er ikkje same person.\n10. Personen som elskar fysikk bur ikkje i hus nummer 3.\n11. Personen som speler dataspel bur i hus nummer 2.\n12. Bakaren klatrar.\n13. Krimlesaren bur rett til høgre for personen som målar.\n14. Smoothiedrikkaren bur ved sida av personen som meiner den nest beste frukta er mango.\n15. Svensken bur ved sida av personen med ei søster.\n16. Smoothiedrikkaren bur ved sida av poesilesaren.\n17. Franskmannen er minister.",
+  "target_text": {
+    "object_1": ["Sverige", "bakar", "kakao", "sakprosa", "klatring"],
+    "object_2": ["Frankrike", "minister", "mjølk", "poesi", "måling"],
+    "object_3": ["Færøyene", "lærar", "smoothie", "krim", "hekling"],
+    "object_4": ["Norge", "sjukepleiar", "kaffi", "fantasy", "brettspel"]
+  }
+}
+```
+
+```json
+{
+  "text": "Ei husrekkje er nummerert frå 1 til 4 frå venstre mot høgre.\n\nI kvart hus bur ein person med ein unik eigenskap i kvar av følgjande kategoriar:\n\nNasjonalitetar: Danmark, Island, Spania og Sverige.\nJobbar: bakar, minister, politibetjent og sjukepleiar.\nKjæledyr: katt, sebra, undulat og vandrande pinne.\nFavorittboksjangrar: fantasy, krim, sakprosa og skrekk.\nFavorittfrukter: appelsin, eple, pære og solbær.\n\nI tillegg veit me følgjande:\n\n\n\n1. Spanjolen les krim.\n2. Det er eitt hus mellom personen som elskar solbær og personen som elskar eple.\n3. Ministeren bur mellom politibetjenten og sjukepleiaren.\n4. Det er eitt hus mellom krimlesaren og personen som elskar appelsinar.\n5. Islendingen er god venn av personen som ofte seglar.\n6. Solsystemet bevegar seg med ein fart på omtrent 200 km/s rundt sentrumet til galaksen.\n7. Personen som har ein mastergrad i matematikk bur ikkje i hus nummer 1.\n8. Dansken er ikkje sjukepleiar.\n9. Svensken har raudt hår.\n10. Sebraeigaren bur rett til høgre for skrekkleseren.\n11. Ministeren bur rett til høgre for katteeigaren.\n12. Det er eitt hus mellom undulateigaren og personen som elskar appelsinar.\n13. Bakaren bur i hus nummer 1.\n14. Islendingen veit at sild er ein fisk.\n15. Islendingen bur ikkje i hus nummer 1.\n16. Personen som elskar appelsinar bur i hus nummer 2.\n17. Fantasylesaren bur til venstre for personen som elskar solbær.\n18. Dansken bur rett til venstre for personen som elskar solbær.",
+  "target_text": {
+    "object_1": ["Sverige", "bakar", "vandrande pinne", "fantasy", "eple"],
+    "object_2": ["Danmark", "politibetjent", "katt", "skrekk", "appelsin"],
+    "object_3": ["Island", "minister", "sebra", "sakprosa", "solbær"],
+    "object_4": ["Spania", "sjukepleiar", "undulat", "krim", "pære"]
+  }
+}
+```
+
+```json
+{
+  "text": "Ei husrekkje er nummerert frå 1 til 4 frå venstre mot høgre.\n\nI kvart hus bur ein person med ein unik eigenskap i kvar av følgjande kategoriar:\n\nJobbar: bakar, lærar, minister og politibetjent.\nKjæledyr: kanin, sebra, undulat og vandrande pinne.\nDrikk: jus, kaffi, kakao og smoothie.\nFavorittboksjangrar: krim, romantikk, science fiction og skrekk.\nHobbyar: fotball, hekling, klatring og måling.\n\nI tillegg veit me følgjande:\n\n\n\n1. Kaffidrikkaren bur rett til venstre for skrekkleseren.\n2. Krimlesaren bur ved sida av personen med briller.\n3. Politibetjenten heklar ikkje.\n4. Politibetjenten speler dataspel.\n5. Personen som les romantikkromanar bur ved sida av personen med tatovering.\n6. Det er eitt hus mellom sebraeigaren og personen som les romantikkromanar.\n7. Personen som målar bur mellom sebraeigaren og personen som heklar.\n8. Læraren bur rett til venstre for undulateigaren.\n9. Personen som les science fiction bur rett til høgre for personen som les romantikkromanar.\n10. Personen som les science fiction er god venn av personen med sykkel.\n11. Ministeren og personen som les romantikkromanar bur med 2 hus mellom seg.\n12. Politibetjenten bur ikkje mellom eigaren av ein vandrande pinne og personen som klatrar, og dei er tre ulike personar.\n13. Personen med ei søster bur ikkje i hus nummer 4.\n14. Jusdrikkaren heklar ikkje.\n15. Skrekkleseren og personen som les romantikkromanar bur med 2 hus mellom seg.\n16. Smoothiedrikkaren og personen som heklar bur med 2 hus mellom seg.",
+  "target_text": {
+    "object_1": ["lærar", "kanin", "kakao", "romantikk", "hekling"],
+    "object_2": ["politibetjent", "undulat", "jus", "science fiction", "måling"],
+    "object_3": ["bakar", "sebra", "kaffi", "krim", "klatring"],
+    "object_4": ["minister", "vandrande pinne", "smoothie", "skrekk", "fotball"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Her er eit kappløp:
+  <riddle>
+  {text}
+  </riddle>
+  Kven har kva eigenskapar og bur i kva for eit hus?
+
+  Gjer vel å oppgi svaret ditt som ein JSON-dictionary. Kvar key skal vera object_X der X er husnummeret. Kvar value skal vera ei liste over eigenskapane frå nemnde kategoriar som høyrer til personen i hus nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-nn
 ```

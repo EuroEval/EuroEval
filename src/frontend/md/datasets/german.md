@@ -158,11 +158,11 @@ euroeval --model <model-id> --dataset germeval
 ### ScaLA-de
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [German Universal Dependencies
-treebank](https://raw.githubusercontent.com/UniversalDependencies/UD_German-GSD) by
-assuming that the documents in the treebank are correct, and corrupting the samples to
-create grammatically incorrect samples. The corruptions were done by either removing a
-word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+and was automatically created from the
+[German Universal Dependencies treebank](https://raw.githubusercontent.com/UniversalDependencies/UD_German-GSD)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.
 
@@ -313,11 +313,11 @@ euroeval --model <model-id> --dataset germanquad
 ### Unofficial: XQuAD-de
 
 This dataset was published in [this paper](https://aclanthology.org/2020.acl-main.421/)
-and contains 1190 question-answer pairs from [SQuAD
-v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages by
-professional translators.
+and contains 1190 question-answer pairs from
+[SQuAD v1.1](https://rajpurkar.github.io/SQuAD-explorer/) translated into ten languages
+by professional translators.
 
-The dataset is split intro 550 / 128 / 512 question-answer pairs for training,
+The dataset is split into 550 / 128 / 512 question-answer pairs for training,
 validation, and testing, respectively.
 
 Here are a few examples from the training split:
@@ -392,7 +392,10 @@ euroeval --model <model-id> --dataset xquad-de
 ### Unofficial: BeleBele-de
 
 This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
-and features multiple-choice reading comprehension questions across 122 languages.
+and features multiple-choice reading comprehension questions across 122 languages. The
+dataset was created by professional translators who translated 900 multiple-choice
+questions from English into other languages, with answers carefully validated by native
+speakers.
 
 The original dataset contains 900 unique multiple-choice reading comprehension passages
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
@@ -539,11 +542,11 @@ euroeval --model <model-id> --dataset multi-wiki-qa-de
 
 ### MMLU-de
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-German was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to German was done by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -617,10 +620,10 @@ euroeval --model <model-id> --dataset mmlu-de
 
 ### Unofficial: ARC-de
 
-This dataset is a machine translated version of the English [ARC
-dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school science
-questions. The translation to German was done by the University of Oregon as part of
-[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[ARC dataset](https://doi.org/10.48550/arXiv.1803.05457) and features US grade-school
+science questions. The translation to German was done by the University of Oregon as
+part of [this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 1,110 / 297 / 1,170 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 1,024 split for training,
@@ -637,6 +640,7 @@ Here are a few examples from the training split:
 ```
 
 ```json
+{
   "text": "Eine Frau besaß ein Land im absoluten Besitz. Die Frau übertrug das Land an einen Freund “auf Lebenszeit” und als der Freund starb, sollte das Land an den Nachbarn der Frau \"und ihre Erben\" weitergegeben werden. Der Nachbar starb und in ihrem ordnungsgemäß beglaubigten Testament vermachte sie ihre gesamte Hinterlassenschaft an eine örtliche Wohltätigkeitsorganisation. Wenn sie intestat gestorben wäre, wäre ihre Tochter ihre einzige Erbin gewesen. Ein Jahr nach dem Tod des Nachbarn übertrug dessen Tochter durch eine Quitclaims-Erklärung jegliches Interesse, das sie an dem Land haben könnte, an die Freundin der Frau. Das Common Law Rule Against Perpetuities ist in der Gerichtsbarkeit unverändert. Es gibt keine weiteren anwendbaren Gesetze. Wer hat welches Interesse an dem Land?\nAntwortmöglichkeiten:\na. Der Freund hat einen absoluten Besitz, weil sein Lebensbesitz mit dem verbleibenden Teil verschmolzen ist, den ihm die Tochter übertragen hat.\nb. Der Freund hat einen Lebensbesitz und die Wohltätigkeitsorganisation hat einen unverfallbaren Rest, weil das Interesse des Nachbarn übertragbar war.\nc. Der Freund hat einen Lebensbesitz und die Tochter hat einen unverfallbaren Rest, weil die Erklärung der Frau ein Interesse an den Erben des Nachbarn schuf.\nd. Der Freund hat einen Lebensbesitz und die Frau hat einen Rückfall, weil das Restinteresse des Nachbarn gemäß dem Rule Against Perpetuities ungültig war.",
   "label": "b"
 }
@@ -706,25 +710,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Wann dürfen Sie in einem Tunnel Ihr Fahrzeug wenden?\nAntwortmöglichkeiten:\na. Wenn Einsatzkräfte das Wenden ausdrücklich anordnen\nb. Wenn ich aus einer Gefahrensituation flüchten möchte\nc. Wenn ich unter Zeitdruck bin und sich vor mir ein Stau gebildet hat\nd. Nur wenn ich mit meinem Fahrzeug in einem Zug umkehren kann",
-    "label": "a",
-    "subject": "Driving License"
+  "text": "Wann dürfen Sie in einem Tunnel Ihr Fahrzeug wenden?\nAntwortmöglichkeiten:\na. Wenn Einsatzkräfte das Wenden ausdrücklich anordnen\nb. Wenn ich aus einer Gefahrensituation flüchten möchte\nc. Wenn ich unter Zeitdruck bin und sich vor mir ein Stau gebildet hat\nd. Nur wenn ich mit meinem Fahrzeug in einem Zug umkehren kann",
+  "label": "a",
+  "subject": "Driving License"
 }
 ```
 
 ```json
 {
-    "text": "Das Industrieland hat in einer Wirtschaftstätigkeit einen komparativen Vorteil, wenn\nAntwortmöglichkeiten:\na. in einer anderen Tätigkeit sein absoluter Vorteil größer ist.\nb. in dieser Tätigkeit sein absoluter Vorteil am größten ist.\nc. es keinen absoluten Vorteil hat.\nd. in dieser Tätigkeit sein absoluter Nachteil am geringsten ist.",
-    "label": "b",
-    "subject": "Economics"
+  "text": "Das Industrieland hat in einer Wirtschaftstätigkeit einen komparativen Vorteil, wenn\nAntwortmöglichkeiten:\na. in einer anderen Tätigkeit sein absoluter Vorteil größer ist.\nb. in dieser Tätigkeit sein absoluter Vorteil am größten ist.\nc. es keinen absoluten Vorteil hat.\nd. in dieser Tätigkeit sein absoluter Nachteil am geringsten ist.",
+  "label": "b",
+  "subject": "Economics"
 }
 ```
 
 ```json
 {
-    "text": "Ein Schiff fährt mit einer geradlinigen, gleichförmigen Bewegung auf dem offenen Meer. Zu gleicher Zeit fliegt auch ein Albatros mit einer in Bezug auf das Meer geradlinigen, gleichförmigen Bewegung in der Luft. Wie bewegt sich der Albatros in Bezug auf das Schiff?\nAntwortmöglichkeiten:\na. Die Bahn des Vogels ist geradlinig, aber seine Geschwindigkeit in Bezug auf das Schiff ist nicht konstant.\nb. Abhängig vom Winkel der zwei Geschwindigkeitsvektoren kann die Bahn des Vogels sowohl krummlinig, als auch geradlinig sein und auch seine Geschwindigkeit in Bezug auf das Schiff kann veränderlich sein.\nc. Der Vogel führt in Bezug auf das Schiff eine gleichförmige, geradlinige Bewegung aus.\nd. In bestimmten Fällen kann die Bahn des Vogels in Bezug auf das Schiff auch krummlinig sein, aber seine Geschwindigkeit hat einen konstanten Betrag.",
-    "label": "c",
-    "subject": "Physics"
+  "text": "Ein Schiff fährt mit einer geradlinigen, gleichförmigen Bewegung auf dem offenen Meer. Zu gleicher Zeit fliegt auch ein Albatros mit einer in Bezug auf das Meer geradlinigen, gleichförmigen Bewegung in der Luft. Wie bewegt sich der Albatros in Bezug auf das Schiff?\nAntwortmöglichkeiten:\na. Die Bahn des Vogels ist geradlinig, aber seine Geschwindigkeit in Bezug auf das Schiff ist nicht konstant.\nb. Abhängig vom Winkel der zwei Geschwindigkeitsvektoren kann die Bahn des Vogels sowohl krummlinig, als auch geradlinig sein und auch seine Geschwindigkeit in Bezug auf das Schiff kann veränderlich sein.\nc. Der Vogel führt in Bezug auf das Schiff eine gleichförmige, geradlinige Bewegung aus.\nd. In bestimmten Fällen kann die Bahn des Vogels in Bezug auf das Schiff auch krummlinig sein, aber seine Geschwindigkeit hat einen konstanten Betrag.",
+  "label": "c",
+  "subject": "Physics"
 }
 ```
 
@@ -767,30 +771,30 @@ questions are separately sourced and designed to target locally relevant topics 
 German-speaking populations.
 
 We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer as
-the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
-question. We create a 16 / 234 split for training and testing, respectively.
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "In welchem Bereich sammelte Reiner Calmund erste berufliche und sportliche Erfahrungen, die später für seine Tätigkeit als Manager bei Bayer 04 Leverkusen relevant wurden?\nAntwortmöglichkeiten:\na. Trainer\nb. Spielerberater\nc. Physiotherapeut\nd. Sportjournalist",
-    "label": "a"
+  "text": "In welchem Bereich sammelte Reiner Calmund erste berufliche und sportliche Erfahrungen, die später für seine Tätigkeit als Manager bei Bayer 04 Leverkusen relevant wurden?\nAntwortmöglichkeiten:\na. Trainer\nb. Spielerberater\nc. Physiotherapeut\nd. Sportjournalist",
+  "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Wie lange war Malu Dreyer Mitglied der SPD, als sie zum ersten Mal Landespräsidentin für den Wahlkreis Trier wurde?\nAntwortmöglichkeiten:\na. vierzehn Jahre\nb. elf Jahre\nc. sieben Jahre\nd. zwanzig Jahre",
-    "label": "b"
+  "text": "Wie lange war Malu Dreyer Mitglied der SPD, als sie zum ersten Mal Landespräsidentin für den Wahlkreis Trier wurde?\nAntwortmöglichkeiten:\na. vierzehn Jahre\nb. elf Jahre\nc. sieben Jahre\nd. zwanzig Jahre",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Wie lautet der Name des Jungen, der in der vierten Staffel der Fernsehserie „Bettys Diagnose“ zu sehen ist und der der Hauptfigur in der Schule das Leben schwer macht?\nAntwortmöglichkeiten:\na. Tim Weigel\nb. Lukas Kramer\nc. Frank Stern\nd. Jonas Becker",
-    "label": "c"
+  "text": "Wie lautet der Name des Jungen, der in der vierten Staffel der Fernsehserie „Bettys Diagnose“ zu sehen ist und der der Hauptfigur in der Schule das Leben schwer macht?\nAntwortmöglichkeiten:\na. Tim Weigel\nb. Lukas Kramer\nc. Frank Stern\nd. Jonas Becker",
+  "label": "c"
 }
 ```
 
@@ -829,11 +833,11 @@ euroeval --model <model-id> --dataset multiloko-de
 
 ### HellaSwag-de
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/). The original dataset was based on both
-video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
-was translated by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
+on both video descriptions from ActivityNet as well as how-to articles from WikiHow. The
+dataset was translated by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 9,310 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).
@@ -904,13 +908,13 @@ euroeval --model <model-id> --dataset hellaswag-de
 
 ### Unofficial: GoldenSwag-de
 
-This dataset is a filtered and machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
-ActivityNet as well as how-to articles from WikiHow. The machine translated version was
-published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
-DeepL, and the filtering was published in [this
-paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
-samples.
+This dataset is a filtered and machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video
+descriptions from ActivityNet as well as how-to articles from WikiHow. The machine
+translated version was published in
+[this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and
+the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825),
+which resulted in higher quality samples.
 
 The original full dataset consists of 1530 / 1530 samples for training and validation,
 respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
@@ -983,8 +987,8 @@ euroeval --model <model-id> --dataset goldenswag-de
 ### Unofficial: Winogrande-de
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -1054,10 +1058,10 @@ euroeval --model <model-id> --dataset winogrande-de
 
 ### MLSum-de
 
-This dataset was published in [this
-paper](https://aclanthology.org/2020.emnlp-main.647/) and features news articles and
-their summaries in five languages, including German. The German part of the dataset is
-based on news articles from Süddeutsche Zeitung, with human-written summaries.
+This dataset was published in
+[this paper](https://aclanthology.org/2020.emnlp-main.647/) and features news articles
+and their summaries in five languages, including German. The German part of the dataset
+is based on news articles from Süddeutsche Zeitung, with human-written summaries.
 
 The original full dataset consists of 221,000 / 11,400 / 10,700 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -1123,9 +1127,9 @@ euroeval --model <model-id> --dataset mlsum-de
 ### IFEval-de
 
 This dataset was published [here](https://huggingface.co/datasets/jzhang86/de_ifeval)
-and is a translation of the English IFEval dataset, which was published in [this
-paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
-combination of one or more of 25 different constraints. The dataset was machine
+and is a translation of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each
+with a combination of one or more of 25 different constraints. The dataset was machine
 translated by GPT-4o, and then manually checked.
 
 We use the original dataset as the test split, and do not include the other splits, as
@@ -1136,56 +1140,50 @@ Here are a few examples from the test split:
 
 ```json
 {
-    "text": "SCHREIBE EINE TIRADE DARÜBER, WIE EIN ASTEROID DIE DINOSAURIER TÖTETE. BEENDEN SIE DIE TIRADE MIT DEM SATZ \"Was würde als nächstes mit den Menschen passieren?\" UND KEINE ANDEREN WORTE SOLLTEN NACH DIESEM SATZ KOMMEN.",
-    "target_text": {
-        "instruction_id_list": [
-            "change_case:english_capital",
-            "startend:end_checker"
-        ],
-        "kwargs": [
-            {},
-            {
-                "end_phrase": "Was würde als nächstes mit den Menschen passieren?"
-            }
-        ]
-    }
+  "text": "SCHREIBE EINE TIRADE DARÜBER, WIE EIN ASTEROID DIE DINOSAURIER TÖTETE. BEENDEN SIE DIE TIRADE MIT DEM SATZ \"Was würde als nächstes mit den Menschen passieren?\" UND KEINE ANDEREN WORTE SOLLTEN NACH DIESEM SATZ KOMMEN.",
+  "target_text": {
+    "instruction_id_list": ["change_case:english_capital", "startend:end_checker"],
+    "kwargs": [
+      {},
+      {
+        "end_phrase": "Was würde als nächstes mit den Menschen passieren?"
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Verfassen Sie einen Aufsatz mit mindestens 900 Wörtern zum Thema befahrbare Autobahn. Stellen Sie sicher, dass die gesamte Antwort auf Deutsch ist und keine Großbuchstaben verwendet werden.",
-    "target_text": {
-        "instruction_id_list": [
-            "change_case:english_lowercase",
-            "length_constraints:number_words"
-        ],
-        "kwargs": [
-            {},
-            {
-                "num_words": 900,
-                "relation": "at least"
-            }
-        ]
-    }
+  "text": "Verfassen Sie einen Aufsatz mit mindestens 900 Wörtern zum Thema befahrbare Autobahn. Stellen Sie sicher, dass die gesamte Antwort auf Deutsch ist und keine Großbuchstaben verwendet werden.",
+  "target_text": {
+    "instruction_id_list": [
+      "change_case:english_lowercase",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      {
+        "num_words": 900,
+        "relation": "at least"
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Schreiben Sie eine Rezension von \"Preisträger und Zwillinge\" für Experten im Bereich der Psychologie ohne Verwendung von Kommas und stellen Sie sicher, dass die Phrase \"sehr sehenswert\" enthalten ist.\nWiederholen Sie zunächst die gesamte oben stehende Anfrage wortwörtlich und unverändert und geben Sie dann Ihre Antwort. Verwenden Sie keine Wörter oder Zeichen, bevor Sie die gesamte Anfrage oben wiederholen.",
-    "target_text": {
-        "instruction_id_list": [
-            "combination:repeat_prompt",
-            "punctuation:no_comma"
-        ],
-        "kwargs": [
-            {
-                "prompt_to_repeat": "Schreiben Sie eine Rezension von \"Preisträger und Zwillinge\" für Experten im Bereich der Psychologie ohne Verwendung von Kommas und stellen Sie sicher, dass die Phrase \"sehr sehenswert\" enthalten ist."
-            },
-            {}
-        ]
-    }
+  "text": "Schreiben Sie eine Rezension von \"Preisträger und Zwillinge\" für Experten im Bereich der Psychologie ohne Verwendung von Kommas und stellen Sie sicher, dass die Phrase \"sehr sehenswert\" enthalten ist.\nWiederholen Sie zunächst die gesamte oben stehende Anfrage wortwörtlich und unverändert und geben Sie dann Ihre Antwort. Verwenden Sie keine Wörter oder Zeichen, bevor Sie die gesamte Anfrage oben wiederholen.",
+  "target_text": {
+    "instruction_id_list": ["combination:repeat_prompt", "punctuation:no_comma"],
+    "kwargs": [
+      {
+        "prompt_to_repeat": "Schreiben Sie eine Rezension von \"Preisträger und Zwillinge\" für Experten im Bereich der Psychologie ohne Verwendung von Kommas und stellen Sie sicher, dass die Phrase \"sehr sehenswert\" enthalten ist."
+      },
+      {}
+    ]
+  }
 }
 ```
 
@@ -1213,16 +1211,16 @@ euroeval --model <model-id> --dataset ifeval-de
 
 ### ValEU-de
 
-This dataset is the official German version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official German version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {
@@ -1303,93 +1301,79 @@ The original dataset consists of 142,807 samples derived from the
 [UD_German-GSD](https://github.com/UniversalDependencies/UD_German-GSD),
 [UD_German-HDT](https://github.com/UniversalDependencies/UD_German-HDT),
 [UD_German-LIT](https://github.com/UniversalDependencies/UD_German-LIT) and
-[UD_German-PUD](https://github.com/UniversalDependencies/UD_German-PUD) treebanks.
-We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
+[UD_German-PUD](https://github.com/UniversalDependencies/UD_German-PUD) treebanks. We
+use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
 respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": [
-        "für",
-        "übersetzungen",
-        "die",
-        "beispielsweise",
-        "als",
-        "geschäftsbrief",
-        "gedacht",
-        "sind",
-        "benötigt",
-        "man",
-        "eher",
-        "ein",
-        "programm",
-        "für",
-        "500",
-        "oder",
-        "600",
-        "mark",
-        "kommt",
-        "aber",
-        "um",
-        "eine",
-        "nachbearbeitung",
-        "des",
-        "textes",
-        "nicht",
-        "herum"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+  "tokens": [
+    "für",
+    "übersetzungen",
+    "die",
+    "beispielsweise",
+    "als",
+    "geschäftsbrief",
+    "gedacht",
+    "sind",
+    "benötigt",
+    "man",
+    "eher",
+    "ein",
+    "programm",
+    "für",
+    "500",
+    "oder",
+    "600",
+    "mark",
+    "kommt",
+    "aber",
+    "um",
+    "eine",
+    "nachbearbeitung",
+    "des",
+    "textes",
+    "nicht",
+    "herum"
+  ],
+  "labels": [
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O",
+    "O"
+  ]
 }
 ```
 
 ```json
 {
-    "tokens": [
-        "die",
-        "höhe",
-        "beziffern",
-        "harisch",
-        "nicht",
-        "wollte"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "B-ERR",
-        "O",
-        "O",
-        "B-ERR"
-    ]
+  "tokens": ["die", "höhe", "beziffern", "harisch", "nicht", "wollte"],
+  "labels": ["O", "O", "B-ERR", "O", "O", "B-ERR"]
 }
 ```
 
@@ -1426,4 +1410,154 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset gerlangmod-de
+```
+
+## Logical Reasoning
+
+### Unofficial: ZebraPuzzleEasy-de
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Eine Reihe von Häusern wird von 1 bis 2 von links nach rechts nummeriert.\n\nIn jedem Haus wohnt genau eine Person. Die Bewohner haben jeweils eine Eigenschaft in jeder der folgenden Kategorien, wobei jede Eigenschaft nur einmal vorkommt:\n\nHeimtiere: Kaninchen und Katze.\nGetränke: Kaffee und Saft.\nLieblingsfrüchte: Banane und Erdbeere.\n\nDarüber hinaus wissen wir folgendes:\n\n\n\n1. Der Kaffeetrinker wohnt neben der Person, die denkt, dass Mango die zweitbeste Frucht ist.\n2. Der Erdbeerliebhaber wohnt in Haus Nummer 2.\n3. Die Person mit einem Meerschweinchen wohnt in Haus Nummer 2.\n4. Die Person mit einem Masterabschluss in Mathematik wohnt in Haus Nummer 1.\n5. Alle Häuser haben große Fenster.\n6. Der Katzenbesitzer wohnt links vom Kaffeetrinker.\n7. Es macht Spaß, Rätsel zu lösen.",
+  "target_text": {
+    "object_1": ["Katze", "Saft", "Banane"],
+    "object_2": ["Kaninchen", "Kaffee", "Erdbeere"]
+  }
+}
+```
+
+```json
+{
+  "text": "Eine Reihe von Häusern wird von 1 bis 2 von links nach rechts nummeriert.\n\nIn jedem Haus wohnt genau eine Person. Die Bewohner haben jeweils eine Eigenschaft in jeder der folgenden Kategorien, wobei jede Eigenschaft nur einmal vorkommt:\n\nJobs: Bäcker und Polizist.\nGetränke: Kakao und Saft.\nLieblingsliteratur: Liebesromane und Science-Fiction.\n\nDarüber hinaus wissen wir folgendes:\n\n\n\n1. Der Bäcker liest keine Liebesromane.\n2. Der Kakaotrinker liest keine Science-Fiction.\n3. Die Person mit einer Schwester wohnt nicht in Haus Nummer 1.\n4. Der Polizist ist gut befreundet mit der Person, die beim Skispringen zuschaut.\n5. Kaffee enthält Koffein.\n6. Der Kakaotrinker wohnt in Haus Nummer 1.\n7. Der Liebesromanleser wohnt neben der Person, die Physik liebt.\n8. Der Polizist wohnt neben der Person mit einem Haustier, dass für seine Art alt ist.",
+  "target_text": {
+    "object_1": ["Polizist", "Kakao", "Liebesromane"],
+    "object_2": ["Bäcker", "Saft", "Science-Fiction"]
+  }
+}
+```
+
+```json
+{
+  "text": "Eine Reihe von Häusern wird von 1 bis 2 von links nach rechts nummeriert.\n\nIn jedem Haus wohnt genau eine Person. Die Bewohner haben jeweils eine Eigenschaft in jeder der folgenden Kategorien, wobei jede Eigenschaft nur einmal vorkommt:\n\nJobs: Lehrer und Verkäufer.\nLieblingsliteratur: Fantasy und Poesie.\nLieblingsfrüchte: Birne und Orange.\n\nDarüber hinaus wissen wir folgendes:\n\n\n\n1. Der Fantasyleser ist gut befreundet mit der Person mit der Brille.\n2. Die Person mit einem Masterabschluss in Mathematik wohnt nicht in Haus Nummer 1.\n3. Der Fantasyleser wohnt neben der Person mit einer Schwester.\n4. Der Lehrer wohnt rechts vom Birnenliebhaber.\n5. Der Poesieleser weiß, dass mehrere Häuser eine grüne Tür haben.\n6. Der Lehrer liest keine Fantasy.\n7. Die Person mit den roten Haaren wohnt nicht in Haus Nummer 2.",
+  "target_text": {
+    "object_1": ["Verkäufer", "Fantasy", "Birne"],
+    "object_2": ["Lehrer", "Poesie", "Orange"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Hier ist ein Rätsel:
+  <riddle>
+  {text}
+  </riddle>
+  Wer hat welche Eigenschaften und wohnt in welchem Haus?
+
+  Bitte geben Sie Ihre Antwort als JSON-Dictionary an. Jeder Key sollte object_X sein, wobei X die Hausnummer ist. Jeder Value sollte eine Liste der Eigenschaften aus den aufgelisteten Kategorien sein, die zur Person in Haus Nummer X gehören.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-de
+```
+
+### Unofficial: ZebraPuzzleHard-de
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Eine Reihe von Häusern wird von 1 bis 4 von links nach rechts nummeriert.\n\nIn jedem Haus wohnt genau eine Person. Die Bewohner haben jeweils eine Eigenschaft in jeder der folgenden Kategorien, wobei jede Eigenschaft nur einmal vorkommt:\n\nJobs: Bäcker, Lehrer, Minister und Verkäufer.\nHeimtiere: Hund, Katze, Schnecke und Wellensittich.\nLieblingsliteratur: Horror, Poesie, Sachbuch und Science-Fiction.\nHobbys: Brettspiele, Fußball, Handball und Klettern.\nLieblingsfrüchte: Birne, Erdbeere, Orange und Walderdbeere.\n\nDarüber hinaus wissen wir folgendes:\n\n\n\n1. Der Bäcker weiß, dass alle Häuser große Fenster haben.\n2. Der Orangenliebhaber ist gut befreundet mit der Person mit den roten Haaren.\n3. Der Verkäufer wohnt direkt links neben dem Hundebesitzer.\n4. Der Katzenbesitzer segelt oft.\n5. Die Person mit einer Schwester wohnt nicht in Haus Nummer 4.\n6. Der Schneckenbesitzer weiß, dass Kaffee Koffein enthält.\n7. Der Verkäufer wohnt nicht zwischen dem Hundebesitzer und dem Horrorliteraturleser, und es handelt sich um drei verschiedene Personen.\n8. Der Erdbeerliebhaber wohnt zwischen dem Brettspielspieler und dem Birnenliebhaber.\n9. Der Schneckenbesitzer liebt Erdbeeren.\n10. Der Lehrer wohnt direkt rechts neben dem Wellensittichbesitzer.\n11. Der Hundebesitzer spielt keinen Handball.\n12. Zwischen der Science-Fiction-Leser und der Brettspielspieler stehen genau 2 Häuser.\n13. Der Fußballspieler wohnt direkt rechts neben dem Walderdbeerliebhaber.\n14. Der Minister wohnt direkt links neben dem Katzenbesitzer.\n15. Der Poesieleser wohnt direkt rechts neben dem Orangenliebhaber.",
+  "target_text": {
+    "object_1": ["Verkäufer", "Wellensittich", "Sachbuch", "Brettspiele", "Orange"],
+    "object_2": ["Lehrer", "Hund", "Poesie", "Klettern", "Walderdbeere"],
+    "object_3": ["Minister", "Schnecke", "Horror", "Fußball", "Erdbeere"],
+    "object_4": ["Bäcker", "Katze", "Science-Fiction", "Handball", "Birne"]
+  }
+}
+```
+
+```json
+{
+  "text": "Eine Reihe von Häusern wird von 1 bis 4 von links nach rechts nummeriert.\n\nIn jedem Haus wohnt genau eine Person. Die Bewohner haben jeweils eine Eigenschaft in jeder der folgenden Kategorien, wobei jede Eigenschaft nur einmal vorkommt:\n\nNationalitäten: Färöer-Inseln, Italien, Niederlande und Spanien.\nHeimtiere: Hund, Kaninchen, Wellensittich und Zebra.\nLieblingsliteratur: Fantasy, Krimi, Sachbuch und Science-Fiction.\nHobbys: Handball, Häkeln, Malen und Tennis.\nLieblingsfrüchte: Apfel, Banane, Orange und Walderdbeere.\n\nDarüber hinaus wissen wir folgendes:\n\n\n\n1. Die Person mit einem Meerschweinchen hat ein Haustier, dass für seine Art alt ist.\n2. Der Wellensittichbesitzer wohnt direkt links neben dem Science-Fiction-Leser.\n3. Zwischen der Kaninchenbesitzer und der Fantasyleser stehen genau 2 Häuser.\n4. Der Tennisspieler wohnt neben der Person, die beim Skispringen zuschaut.\n5. Der Walderdbeerliebhaber weiß, dass Gurken Beeren sind.\n6. Zwischen der Hundebesitzer und der Kaninchenbesitzer stehen genau 2 Häuser.\n7. Die Person mit einem Masterabschluss in Mathematik spielt Computerspiele.\n8. Der Färinger wohnt rechts vom Sachbuchleser.\n9. Der Science-Fiction-Leser wohnt neben dem Orangenliebhaber.\n10. Es gibt ein Haus zwischen dem Italiener und dem Spanier.\n11. Es gibt ein Haus zwischen dem Wellensittichbesitzer und dem Häkler.\n12. Der Maler wohnt direkt rechts neben dem Bananenliebhaber.\n13. Der Fantasyleser weiß, dass Hering ein Fisch ist.\n14. Der Hundebesitzer wohnt neben dem Wellensittichbesitzer.\n15. Der Italiener wohnt rechts vom Science-Fiction-Leser.\n16. Zwischen der Handballspieler und der Walderdbeerliebhaber stehen genau 2 Häuser.",
+  "target_text": {
+    "object_1": ["Niederlande", "Hund", "Fantasy", "Handball", "Banane"],
+    "object_2": ["Spanien", "Wellensittich", "Sachbuch", "Malen", "Orange"],
+    "object_3": ["Färöer-Inseln", "Zebra", "Science-Fiction", "Tennis", "Apfel"],
+    "object_4": ["Italien", "Kaninchen", "Krimi", "Häkeln", "Walderdbeere"]
+  }
+}
+```
+
+```json
+{
+  "text": "Eine Reihe von Häusern wird von 1 bis 4 von links nach rechts nummeriert.\n\nIn jedem Haus wohnt genau eine Person. Die Bewohner haben jeweils eine Eigenschaft in jeder der folgenden Kategorien, wobei jede Eigenschaft nur einmal vorkommt:\n\nNationalitäten: Dänemark, Frankreich, Niederlande und Norwegen.\nJobs: Lehrer, Minister, Polizist und Softwareentwickler.\nHeimtiere: Gespenstschrecke, Kaninchen, Wellensittich und Zebra.\nGetränke: Kakao, Milch, Smoothie und Tee.\nLieblingsliteratur: Liebesromane, Poesie, Sachbuch und Science-Fiction.\n\nDarüber hinaus wissen wir folgendes:\n\n\n\n1. Der Minister wohnt neben dem Kakaotrinker.\n2. Der Softwareentwickler wohnt neben dem Wellensittichbesitzer.\n3. Der Zebrabesitzer wohnt direkt links neben dem Besitzer einer Gespenstschrecke.\n4. Die Person, die Gitarre spielt, wohnt nicht in Haus Nummer 3.\n5. Gurken sind Beeren.\n6. Der Norweger wohnt nicht zwischen dem Teetrinker und dem Liebesromanleser, und es handelt sich um drei verschiedene Personen.\n7. Der Däne wohnt nicht zwischen dem Kakaotrinker und dem Science-Fiction-Leser, und es handelt sich um drei verschiedene Personen.\n8. Der Poesieleser denkt, dass Mango die zweitbeste Frucht ist.\n9. Der Norweger wohnt zwischen dem Dänen und dem Liebesromanleser.\n10. Der Kakaotrinker weiß, dass Kaffee Koffein enthält.\n11. Der Kaninchenbesitzer wohnt nicht zwischen dem Smoothietrinker und dem Sachbuchleser, und es handelt sich um drei verschiedene Personen.\n12. Der Minister wohnt direkt rechts neben dem Softwareentwickler.\n13. Zwischen der Zebrabesitzer und der Kaninchenbesitzer stehen genau 2 Häuser.\n14. Der Liebesromanleser wohnt neben der Person, die in Kanada war.\n15. Der Franzose wohnt direkt rechts neben dem Polizisten.",
+  "target_text": {
+    "object_1": ["Niederlande", "Polizist", "Zebra", "Tee", "Sachbuch"],
+    "object_2": [
+      "Frankreich",
+      "Softwareentwickler",
+      "Gespenstschrecke",
+      "Kakao",
+      "Liebesromane"
+    ],
+    "object_3": [
+      "Norwegen",
+      "Minister",
+      "Wellensittich",
+      "Smoothie",
+      "Science-Fiction"
+    ],
+    "object_4": ["Dänemark", "Lehrer", "Kaninchen", "Milch", "Poesie"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Hier ist ein Rätsel:
+  <riddle>
+  {text}
+  </riddle>
+  Wer hat welche Eigenschaften und wohnt in welchem Haus?
+
+  Bitte geben Sie Ihre Antwort als JSON-Dictionary an. Jeder Key sollte object_X sein, wobei X die Hausnummer ist. Jeder Value sollte eine Liste der Eigenschaften aus den aufgelisteten Kategorien sein, die zur Person in Haus Nummer X gehören.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-de
 ```

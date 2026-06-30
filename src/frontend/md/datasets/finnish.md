@@ -136,14 +136,14 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
-  - `B-PER` ➡️ `person`
-  - `I-PER` ➡️ `person`
-  - `B-LOC` ➡️ `sted`
-  - `I-LOC` ➡️ `sted`
-  - `B-ORG` ➡️ `organisation`
-  - `I-ORG` ➡️ `organisation`
-  - `B-MISC` ➡️ `diverse`
-  - `I-MISC` ➡️ `diverse`
+  - `B-PER` ➡️ `henkilö`
+  - `I-PER` ➡️ `henkilö`
+  - `B-LOC` ➡️ `paikka`
+  - `I-LOC` ➡️ `paikka`
+  - `B-ORG` ➡️ `organisaatio`
+  - `I-ORG` ➡️ `organisaatio`
+  - `B-MISC` ➡️ `muut`
+  - `I-MISC` ➡️ `muut`
 
 You can evaluate this dataset directly as follows:
 
@@ -240,7 +240,7 @@ in each language without translation.
 The original Finnish TydiQA dataset contains 6,855 training and 782 validation samples
 (we use the [secondary task
 subset](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train)).
-We created a 1,024 / 256 / 2,024 split, where the samples from the train and validation
+We created a 1,024 / 256 / 2,048 split, where the samples from the train and validation
 split are sampled from the original train and validation splits, respectively. The test
 set consists of the remaining samples from the original validation split + additional
 samples from the original train split.
@@ -317,7 +317,10 @@ euroeval --model <model-id> --dataset tydiqa-fi
 ### Unofficial: BeleBele-fi
 
 This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
-and features multiple-choice reading comprehension questions across 122 languages.
+and features multiple-choice reading comprehension questions across 122 languages. The
+dataset was created by professional translators who translated 900 multiple-choice
+questions from English into other languages, with answers carefully validated by native
+speakers.
 
 The original dataset contains 900 unique multiple-choice reading comprehension passages
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
@@ -947,7 +950,7 @@ The dataset consists of 52 questions from the 2017-2022 wave of the European val
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {

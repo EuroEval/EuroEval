@@ -56,8 +56,9 @@ class TestGetNumParamsFromSafetensorsMetadata:
             model_id="test/large-model", revision="main", api_key=None
         )
 
-        # Should return the maximum value
-        assert result == 1500000
+        # Should return the sum across all dtype entries, since each entry is the
+        # parameter count for a given dtype
+        assert result == 3000000
 
     @patch("euroeval.safetensors_utils.get_hf_token")
     @patch("euroeval.safetensors_utils.get_safetensors_metadata")

@@ -38,6 +38,7 @@ from .constants import (
     API_MODEL_PATTERNS,
     EXCLUDED_MODEL_PATTERNS,
     GENERATIVE_TYPE_TO_MODEL_TYPE,
+    NUM_BOOTSTRAPS,
     PARAM_SIZE_BUCKET_ORDER,
 )
 from .model_sources import eu_models, params_from_hf_safetensors, params_from_model_id
@@ -158,7 +159,7 @@ def build_core_model_list(
     model_results = group_results_by_model(results=results)
     model_results = drop_val_duplicates(model_results=model_results)
     ranks = compute_ranks(
-        model_results=model_results, configs=configs, n_bootstraps=1000
+        model_results=model_results, configs=configs, n_bootstraps=NUM_BOOTSTRAPS
     )
     metadata = extract_model_metadata(results=results)
 

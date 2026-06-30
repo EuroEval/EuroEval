@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 from dataclasses import dataclass, field
@@ -11,6 +10,8 @@ from pathlib import Path
 from tqdm.auto import tqdm
 
 from euroeval.string_utils import split_model_id
+
+from .records import load_records_from_jsonl_files
 
 logger = logging.getLogger(__name__)
 
@@ -55,27 +56,14 @@ class Cache:
             A Cache instance populated with model metadata.
 
         Raises:
-            ValueError:
-                If any JSONL file contains invalid JSON.
             FileNotFoundError:
                 If the results directory does not exist.
         """
         if not results_dir.exists():
             raise FileNotFoundError(f"Results directory {results_dir} not found.")
 
-        records: list[dict[str, object]] = []
         jsonl_files = sorted(results_dir.glob("*.jsonl"))
-        for jsonl_file in jsonl_files:
-            content = jsonl_file.read_text(encoding="utf-8")
-            for line_idx, line in enumerate(content.splitlines()):
-                if not line.strip():
-                    continue
-                try:
-                    records.append(json.loads(line))
-                except json.JSONDecodeError as e:
-                    raise ValueError(
-                        f"Invalid JSON in {jsonl_file.name} line {line_idx:,}: {line}."
-                    ) from e
+        records = load_records_from_jsonl_files(paths=jsonl_files)
 
         return cls._from_records(
             records=records, desc="Building caches from results dir"

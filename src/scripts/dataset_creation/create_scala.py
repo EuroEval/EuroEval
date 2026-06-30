@@ -24,6 +24,7 @@ from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from huggingface_hub.hf_api import HfApi
 from load_ud_pos import (
+    load_bedt_pos,
     load_bgdt_pos,
     load_cadt_pos,
     load_csdt_pos,
@@ -55,7 +56,6 @@ from load_ud_pos import (
     load_svdt_pos,
     load_ukdt_pos,
 )
-from pandas.errors import SettingWithCopyWarning
 from tqdm.auto import tqdm
 
 
@@ -93,6 +93,7 @@ def main() -> None:
         "ro": load_rodt_pos,
         "ca": load_cadt_pos,
         "sq": load_sqdt_pos,
+        "be": load_bedt_pos,
     }
 
     # Set up the progress bar and iterate over the languages
@@ -436,7 +437,6 @@ def prepare_df(df: pd.DataFrame, split: str) -> Dataset:
 
     # Add the corrupted strings to the dataframe
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=SettingWithCopyWarning)
         df["corrupted"] = [tup[0] for tup in corrupted_list]
         df["corruption_type"] = [tup[1] for tup in corrupted_list]
 

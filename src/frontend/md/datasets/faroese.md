@@ -85,9 +85,9 @@ euroeval --model <model-id> --dataset fosent
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.74/)
 and is based on news articles from [Sosialurin](http://www.sosialurin.fo/). The named
 entities were automatically tagged, but verified manually. They use a superset of the
-CoNNL-2003 dataset, with the following additional entity types: `Date`, `Money`,
+CoNLL-2003 dataset, with the following additional entity types: `Date`, `Money`,
 `Percent` and `Time`. We remove these additional entity types from our dataset and keep
-only the original CoNNL-2003 entity types (`PER`, `ORG`, `LOC`, `MISC`).
+only the original CoNLL-2003 entity types (`PER`, `ORG`, `LOC`, `MISC`).
 
 The original full dataset consists of 6,286 samples, which we split into 1,024 / 256 /
 2,048 samples for training, validation and testing, respectively.
@@ -158,9 +158,9 @@ euroeval --model <model-id> --dataset fone
 
 ### Unofficial: WikiANN-fo
 
-This dataset was part of the WikiANN dataset (also known as PAN-X), published in [this
-paper](https://aclanthology.org/P17-1178/). It is based on Wikipedia articles, and the
-labels have been automatically annotated using knowledge base mining. There are no
+This dataset was part of the WikiANN dataset (also known as PAN-X), published in
+[this paper](https://aclanthology.org/P17-1178/). It is based on Wikipedia articles, and
+the labels have been automatically annotated using knowledge base mining. There are no
 `MISC` entities in this dataset, so we only keep the `PER`, `LOC` and `ORG` entities.
 
 The original full dataset consists of an unknown amount of samples, which we split into
@@ -235,13 +235,13 @@ euroeval --model <model-id> --dataset wikiann-fo
 ### ScaLA-fo
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Faroese Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Faroese-FarPaHC) by assuming that
-the documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Faroese Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Faroese-FarPaHC)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original dataset consists of 1,621 samples, from which we use 1,024 / 256 / 1,024
 samples for training, validation and testing, respectively (so 3,328 samples used in
@@ -478,57 +478,23 @@ the first phrase of each sentence to avoid creating correct polar question synta
 
 The original dataset consists of 2,809 samples derived from the
 [UD_Faroese-FarPaHC](https://github.com/UniversalDependencies/UD_Faroese-FarPaHC) and
-[UD_Faroese-OFT](https://github.com/UniversalDependencies/UD_Faroese-OFT) treebanks.
-We use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
+[UD_Faroese-OFT](https://github.com/UniversalDependencies/UD_Faroese-OFT) treebanks. We
+use a sample of 1,024 / 256 / 2,048 of these for training, validation and testing,
 respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": [
-        "nei",
-        "til",
-        "tess",
-        "eri",
-        "eg",
-        "komin",
-        "at",
-        "hesum",
-        "tíma"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "O"
-    ]
+  "tokens": ["nei", "til", "tess", "eri", "eg", "komin", "at", "hesum", "tíma"],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": [
-        "landið",
-        "limur",
-        "í",
-        "bretska",
-        "samveldinum",
-        "er"
-    ],
-    "labels": [
-        "O",
-        "O",
-        "O",
-        "O",
-        "O",
-        "B-ERR"
-    ]
+  "tokens": ["landið", "limur", "í", "bretska", "samveldinum", "er"],
+  "labels": ["O", "O", "O", "O", "O", "B-ERR"]
 }
 ```
 
@@ -565,4 +531,154 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset gerlangmod-fo
+```
+
+## Logical Reasoning
+
+### Unofficial: ZebraPuzzleEasy-fo
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the easy variant with 2 houses and 3 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Ein røð av húsum eru talmerkt frá 1 til 2 frá vinstru til høgru.\n\nÍ hvørjum einastu húsum býr ein persónur, sum hevur ein einstakan eginleika úr hvørjum einasta flokki, sum stendur niðanfyri:\n\nTjóðskapir: Frakland og Niðurlond.\nFrítíðarítriv: hekla og tennis.\nYndisfruktir: appilsin og skógarjarðber.\n\nHarumframt vita vit fylgjandi:\n\n\n\n1. Fraklendingurin býr til vinstru fyri niðurlendingin.\n2. Persónurin, sum hevur masterútbúgving í støddfrøði, eigur ikki ein kaktus.\n3. Persónurin, sum spælir tennis, elskar appilsinir.\n4. Fraklendingurin býr við síðuna av persóninum, sum spælir gittar.\n5. Persónurin við brillum hevur súkklu.\n6. Persónurin við einari systur býr í húsi nummar 2.\n7. Persónurin, sum elskar appilsinir, spælir telduspøl.\n8. Persónurin, sum elskar appilsinir, býr ikki í húsi nummar 1.",
+  "target_text": {
+    "object_1": ["Frakland", "hekla", "skógarjarðber"],
+    "object_2": ["Niðurlond", "tennis", "appilsin"]
+  }
+}
+```
+
+```json
+{
+  "text": "Ein røð av húsum eru talmerkt frá 1 til 2 frá vinstru til høgru.\n\nÍ hvørjum einastu húsum býr ein persónur, sum hevur ein einstakan eginleika úr hvørjum einasta flokki, sum stendur niðanfyri:\n\nTjóðskapir: Noreg og Ísland.\nArbeiði: lærari og sjúkrasystir.\nYndisbókasjangrur: brotsskaldsøgu og yrkisbókmentir.\n\nHarumframt vita vit fylgjandi:\n\n\n\n1. Sjúkrasysturin býr við síðuna av persóninum við súkklu.\n2. Fleiri av húsunum hava grøna hurðar.\n3. Tað er stuttligt at loysa gátur.\n4. Persónurin, sum spælir gittar, býr ikki í húsi nummar 2.\n5. Íslendingurin býr til høgru fyri sjúkrasysturin.\n6. Norðmaðurin er góður vinur við persónin við brillum.\n7. Sjúkrasysturin býr til vinstru fyri brotsskaldsøgulesaran.",
+  "target_text": {
+    "object_1": ["Noreg", "sjúkrasystir", "yrkisbókmentir"],
+    "object_2": ["Ísland", "lærari", "brotsskaldsøgu"]
+  }
+}
+```
+
+```json
+{
+  "text": "Ein røð av húsum eru talmerkt frá 1 til 2 frá vinstru til høgru.\n\nÍ hvørjum einastu húsum býr ein persónur, sum hevur ein einstakan eginleika úr hvørjum einasta flokki, sum stendur niðanfyri:\n\nArbeiði: handilshjálpari og ritbúnaðarverkfrøðingur.\nYndisbókasjangrur: ræðuskaldsøgur og yrkingar.\nFrítíðarítriv: klintring og máling.\n\nHarumframt vita vit fylgjandi:\n\n\n\n1. Persónurin, sum málar, veit, at sild er fiskur.\n2. Ritbúnaðarverkfrøðingurin klintrar.\n3. Yrkingalesarin er góður vinur við persónin, sum ofta siglir.\n4. Persónurin, sum hyggur eftir skíðhoppi, býr í húsi nummar 1.\n5. Handilshjálparin býr til vinstru fyri ræðuskaldsøgulesaran.\n6. Yrkingalesarin býr við síðuna av persóninum við einum kelidjóri, sum er gamalt fyri sítt slag.\n7. Persónurin, sum málar, býr við síðuna av persóninum, sum ikki eigur ein kaktus.",
+  "target_text": {
+    "object_1": ["handilshjálpari", "yrkingar", "máling"],
+    "object_2": ["ritbúnaðarverkfrøðingur", "ræðuskaldsøgur", "klintring"]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Her er ein gáta:
+  <riddle>
+  {text}
+  </riddle>
+  Hvør hevur hvørjar eginleikar og býr í hvørjum húsum?
+
+  Vinarliga gev títt svar sum JSON dictionary. Hvør key skal vera object_X har X er húsanummarið. Hvør value skal vera ein listi við eginleikum úr áðurnevndu flokkunum, sum tilhoyra persóninum í húsi nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-easy-fo
+```
+
+### Unofficial: ZebraPuzzleHard-fo
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2511.03553)
+and consists of logic grid puzzles (also known as Einstein's riddles or Zebra puzzles),
+where the task is to determine which attributes belong to which house based on a set of
+clues. This is the hard variant with 4 houses and 5 attribute categories.
+
+The original full dataset consists of 128 / 128 / 1,024 samples for training, validation
+and testing, respectively (so 1,280 samples used in total). We use the same splits.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Ein røð av húsum eru talmerkt frá 1 til 4 frá vinstru til høgru.\n\nÍ hvørjum einastu húsum býr ein persónur, sum hevur ein einstakan eginleika úr hvørjum einasta flokki, sum stendur niðanfyri:\n\nTjóðskapir: Bretland, Italia, Noreg og Svøríki.\nArbeiði: bakari, kirkjutænari, løgreglumaður og sjúkrasystir.\nKelidjór: kanin, ketta, snigil og undulát.\nDrikkur: djús, kaffi, mjólk og te.\nYndisfruktir: banan, skógarjarðber, sólber og súrepli.\n\nHarumframt vita vit fylgjandi:\n\n\n\n1. Kanineigarin og kaffidrekkarin búgva við 2 húsum ímillum sín.\n2. Fleiri av húsunum hava grøna hurðar.\n3. Norðmaðurin býr ikki millum bretan og djúsdrekkaran, og tey eru trý ymisk fólk.\n4. Sjúkrasysturin eigur ikki kettu.\n5. Tað eru eini hús millum sjúkrasysturin og kaffidrekkaran.\n6. Øll húsini hava stór vindeygu.\n7. Mjólkardrekkarin býr millum kanineigaran og persónin, sum elskar súrepli.\n8. Norðmaðurin er ikki kirkjutænari.\n9. Persónurin við brillum býr ikki í húsi nummar 1.\n10. Løgreglumaðurin býr í húsi nummar 2.\n11. Kanineigarin hevur reytt hár.\n12. Kaffidrekkarin dámar ikki bananir.\n13. Italiumaðurin býr til høgru fyri unduláteigaran.\n14. Bretin býr ikki millum mjólkardrekkaran og persónin, sum elskar bananir,, og tey eru trý ymisk fólk.\n15. Persónurin, sum elskar sólber, býr til vinstru fyri persónin, sum elskar skógarjarðber.\n16. Svenskarin býr beint til høgru fyri persónin, sum elskar bananir.\n17. Kirkjutænarin býr til høgru fyri unduláteigaran.\n18. Persónurin við súkklu býr ikki í húsi nummar 1.",
+  "target_text": {
+    "object_1": ["Noreg", "bakari", "undulát", "kaffi", "súrepli"],
+    "object_2": ["Italia", "løgreglumaður", "ketta", "djús", "banan"],
+    "object_3": ["Svøríki", "sjúkrasystir", "snigil", "mjólk", "sólber"],
+    "object_4": ["Bretland", "kirkjutænari", "kanin", "te", "skógarjarðber"]
+  }
+}
+```
+
+```json
+{
+  "text": "Ein røð av húsum eru talmerkt frá 1 til 4 frá vinstru til høgru.\n\nÍ hvørjum einastu húsum býr ein persónur, sum hevur ein einstakan eginleika úr hvørjum einasta flokki, sum stendur niðanfyri:\n\nTjóðskapir: Bretland, Italia, Lettland og Noreg.\nArbeiði: handilshjálpari, kirkjutænari, lærari og løgreglumaður.\nYndisbókasjangrur: fantasi, romantiskar skaldsøgur, yrkingar og yrkisbókmentir.\nFrítíðarítriv: fótbóltur, hekla, klintring og máling.\nYndisfruktir: appilsin, jarðber, skógarjarðber og súrepli.\n\nHarumframt vita vit fylgjandi:\n\n\n\n1. Bretin býr beint til vinstru fyri løgreglumannin.\n2. Norðmaðurin býr ikki millum læraran og persónin, sum klintrar, og tey eru trý ymisk fólk.\n3. Yrkingalesarin býr beint til vinstru fyri persónin, sum heklar.\n4. Persónurin, sum málar, hevur eina systur.\n5. Italiumaðurin býr beint til vinstru fyri yrkingalesaran.\n6. Kirkjutænarin býr við síðuna av persóninum, sum heklar.\n7. Persónurin við reyðum hári heldur, at tann næstbesta fruktin er mango.\n8. Handilshjálparin elskar alisfrøði.\n9. Fantasilesarin dámar ikki appilsinir.\n10. Løgreglumaðurin og fantasilesarin búgva við 2 húsum ímillum sín.\n11. Persónurin, sum ikki eigur ein kaktus, býr í húsi nummar 2.\n12. Tað eru eini hús millum persónin, sum spælir fótbólt og persónin, sum elskar skógarjarðber.\n13. Norðmaðurin býr beint til vinstru fyri persónin, sum lesur romantiskar skaldsøgur.\n14. Persónurin, sum hyggur eftir skíðhoppi, býr í húsi nummar 4.\n15. Persónurin, sum klintrar, býr beint til høgru fyri persónin, sum elskar jarðber.\n16. Persónurin, sum málar, býr við síðuna av persóninum, sum klintrar.",
+  "target_text": {
+    "object_1": ["Noreg", "handilshjálpari", "fantasi", "fótbóltur", "súrepli"],
+    "object_2": ["Italia", "lærari", "romantiskar skaldsøgur", "máling", "jarðber"],
+    "object_3": ["Bretland", "kirkjutænari", "yrkingar", "klintring", "skógarjarðber"],
+    "object_4": ["Lettland", "løgreglumaður", "yrkisbókmentir", "hekla", "appilsin"]
+  }
+}
+```
+
+```json
+{
+  "text": "Ein røð av húsum eru talmerkt frá 1 til 4 frá vinstru til høgru.\n\nÍ hvørjum einastu húsum býr ein persónur, sum hevur ein einstakan eginleika úr hvørjum einasta flokki, sum stendur niðanfyri:\n\nTjóðskapir: Lettland, Spania, Svøríki og Ísland.\nArbeiði: bakari, handilshjálpari, kirkjutænari og sjúkrasystir.\nDrikkur: kaffi, mjólk, smoothie og sodavatn.\nYndisbókasjangrur: romantiskar skaldsøgur, vísindaskaldsøgur, yrkingar og yrkisbókmentir.\nYndisfruktir: appilsin, banan, pera og súrepli.\n\nHarumframt vita vit fylgjandi:\n\n\n\n1. Yrkisbókmentalesarin býr í húsi nummar 3.\n2. Sodavatnsdrekkarin dámar ikki súrepli.\n3. Øll húsini hava stór vindeygu.\n4. Sólskipanin flytur seg við eini ferð á umleið 200 km/s um miðjuna á stjørnubreytini.\n5. Sjúkrasysturin er góður vinur við persónin við einum kelidjóri, sum er gamalt fyri sítt slag.\n6. Íslendingurin býr beint til vinstru fyri persónin, sum elskar appilsinir.\n7. Yrkingalesarin er góður vinur við persónin, sum hevur verið í Kanada.\n8. Spaniólin býr beint til vinstru fyri lettan.\n9. Persónurin, sum elskar bananir, og persónurin, sum elskar appilsinir, búgva við 2 húsum ímillum sín.\n10. Persónurin, sum elskar perur, býr við síðuna av persóninum, sum elskar appilsinir.\n11. Tað eru eini hús millum handilshjálparan og sjúkrasysturin.\n12. Kaffidrekkarin býr beint til vinstru fyri smoothiedrekkaran.\n13. Bakarin býr beint til vinstru fyri sodavatnsdrekkaran.\n14. Sjúkrasysturin og persónurin, sum elskar bananir, búgva við 2 húsum ímillum sín.\n15. Handilshjálparin býr við síðuna av yrkingalesaranum.\n16. Mjólkardrekkarin býr ikki við síðuna av persóninum, sum lesur romantiskar skaldsøgur,, og tey eru ikki sami persónur.\n17. Persónurin, sum elskar appilsinir, býr við síðuna av persóninum, sum hevur masterútbúgving í støddfrøði.",
+  "target_text": {
+    "object_1": ["Spania", "kirkjutænari", "mjólk", "yrkingar", "banan"],
+    "object_2": [
+      "Lettland",
+      "handilshjálpari",
+      "kaffi",
+      "vísindaskaldsøgur",
+      "súrepli"
+    ],
+    "object_3": ["Ísland", "bakari", "smoothie", "yrkisbókmentir", "pera"],
+    "object_4": [
+      "Svøríki",
+      "sjúkrasystir",
+      "sodavatn",
+      "romantiskar skaldsøgur",
+      "appilsin"
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 8
+- Prefix prompt: (empty)
+- Instruction prompt:
+
+  ```text
+  Her er ein gáta:
+  <riddle>
+  {text}
+  </riddle>
+  Hvør hevur hvørjar eginleikar og býr í hvørjum húsum?
+
+  Vinarliga gev títt svar sum JSON dictionary. Hvør key skal vera object_X har X er húsanummarið. Hvør value skal vera ein listi við eginleikum úr áðurnevndu flokkunum, sum tilhoyra persóninum í húsi nr. X.
+  ```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset zebra-puzzles-hard-fo
 ```

@@ -324,7 +324,10 @@ euroeval --model <model-id> --dataset fquad
 ### Unofficial: BeleBele-fr
 
 This dataset was published in [this paper](https://aclanthology.org/2024.acl-long.44/)
-and features multiple-choice reading comprehension questions across 122 languages.
+and features multiple-choice reading comprehension questions across 122 languages. The
+dataset was created by professional translators who translated 900 multiple-choice
+questions from English into other languages, with answers carefully validated by native
+speakers.
 
 The original dataset contains 900 unique multiple-choice reading comprehension passages
 and questions. From these, we use a 256 / 64 / 580 split for training, validation and
@@ -1143,7 +1146,7 @@ The dataset consists of 52 questions from the 2017-2022 wave of the European val
 study, where the questions were chosen based on optimising against agreement within EU
 countries. We use only zero-shot evaluation on this dataset, and thus require no splits.
 
-Here are a few examples from the training split:
+Here are a few examples from the dataset:
 
 ```json
 {

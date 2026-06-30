@@ -94,11 +94,12 @@ def get_num_params_from_safetensors_metadata(
             )
             return None
         case 1:
-            return max(parameter_count_dict.values())
+            return sum(parameter_count_dict.values())
         case _:
             log_once(
                 f"The model {model_id} has multiple parameter count entries in its "
-                f"safetensors metadata: {parameter_count_dict}. Using the largest one.",
+                f"safetensors metadata: {parameter_count_dict}. Using the sum of all "
+                "entries, since each entry is the parameter count for a given dtype.",
                 level=logging.DEBUG,
             )
-            return max(parameter_count_dict.values())
+            return sum(parameter_count_dict.values())

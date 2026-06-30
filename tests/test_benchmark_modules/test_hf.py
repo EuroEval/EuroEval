@@ -1,5 +1,6 @@
 """Unit tests for the `hf` module."""
 
+import dataclasses
 import hashlib
 from unittest.mock import MagicMock, patch
 
@@ -8,7 +9,9 @@ import torch
 from huggingface_hub.hf_api import HfApi
 
 from euroeval.benchmark_modules.hf import get_dtype, get_model_repo_info
-from euroeval.data_models import BenchmarkConfig
+from euroeval.data_models import BenchmarkConfig, DatasetConfig, ModelConfig
+from euroeval.exceptions import InvalidModel
+from euroeval.model_loading import load_model
 
 
 @pytest.mark.parametrize(
@@ -86,3 +89,25 @@ def test_safetensors_check(
             run_with_cli=benchmark_config.run_with_cli,
         )
         assert (result is not None) == model_exists
+
+
+class TestBPCGating:
+    """Tests that BPC scoring is rejected for non-vLLM backends.
+
+    BPC validation happens in load_model() before backend initialization.
+    """
+
+    def test_bpc_rejected_for_hf_encoder(
+        self,
+        model_config: ModelConfig,
+        dataset_config: DatasetConfig,
+        benchmark_config: BenchmarkConfig,
+    ) -> None:
+        """BPC scoring raises InvalidModel for HF encoder backend."""
+        bpc_config = dataclasses.replace(benchmark_config, use_bits_per_character=True)
+        with pytest.raises(InvalidModel, match="vLLM backend"):
+            load_model(
+                model_config=model_config,
+                dataset_config=dataset_config,
+                benchmark_config=bpc_config,
+            )

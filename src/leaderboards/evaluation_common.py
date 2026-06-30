@@ -211,7 +211,7 @@ def estimated_model_bytes(model_id: str) -> int | None:
     components = split_model_id(model_id=model_id)
     repo = components.model_id
     revision = components.revision
-    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
+    token = os.environ.get("HF_TOKEN")
     try:
         meta = get_safetensors_metadata(repo_id=repo, revision=revision, token=token)
     except (
@@ -259,15 +259,15 @@ def _dtype_bits(dtype: str) -> int | None:
 
 
 def gpu_total_memory_bytes() -> int | None:
-    """Return the total memory available for model weights on this host.
+    """Return the memory available for model weights on this host.
 
     Honours ``EUROEVAL_GPU_MEMORY_BYTES`` for overrides. Otherwise: when CUDA
     is available and the host is not flagged as ``UNIFIED_MEMORY=1``, report
-    the largest CUDA device's total memory; otherwise report total system
+    the largest CUDA device's free memory; otherwise report available system
     RAM via ``psutil``.
 
     Returns:
-        The total memory in bytes, or None if the override is unparseable.
+        The available memory in bytes, or None if the override is unparseable.
     """
     override = os.environ.get("EUROEVAL_GPU_MEMORY_BYTES")
     if override:
@@ -282,13 +282,11 @@ def gpu_total_memory_bytes() -> int | None:
 
     unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
     if torch.cuda.is_available() and not unified:
-        sizes = [
-            torch.cuda.get_device_properties(i).total_memory
-            for i in range(torch.cuda.device_count())
-        ]
-        if sizes:
-            return max(sizes)
-    return int(psutil.virtual_memory().total)
+        # Use free memory on the largest GPU, not total capacity.
+        free, _ = torch.cuda.mem_get_info(0)
+        return free
+    # Use available (not total) system RAM for CPU-only or unified memory hosts.
+    return int(psutil.virtual_memory().available)
 
 
 @lru_cache(maxsize=1)
@@ -338,26 +336,31 @@ def extract_language_groups(body: str | None) -> list[str]:
     return selected
 
 
-def result_dataset_language_pairs(lines: c.Iterable[str]) -> set[tuple[str, str]]:
-    """Return dataset/language pairs parsed from benchmark-result JSONL lines.
+def result_dataset_language_pairs(
+    lines: c.Iterable[str],
+) -> set[tuple[str, str, bool | None]]:
+    """Return dataset/language/validation_split triples from benchmark results.
 
     Args:
         lines:
             Benchmark-result JSONL lines to parse.
 
     Returns:
-        The set of (dataset, language) pairs found in the lines.
+        The set of (dataset, language, validation_split) triples found in the lines.
     """
     # Deferred: see the module-level note on avoiding heavy euroeval import cost.
     from euroeval.data_models import BenchmarkResult  # noqa: PLC0415
 
-    pairs: set[tuple[str, str]] = set()
+    pairs: set[tuple[str, str, bool | None]] = set()
     for line in lines:
         try:
             parsed = BenchmarkResult.from_dict(config=json.loads(line))
         except (TypeError, ValueError, json.JSONDecodeError):
             continue
-        pairs.update((parsed.dataset, language) for language in parsed.languages)
+        pairs.update(
+            (parsed.dataset, language, parsed.validation_split)
+            for language in parsed.languages
+        )
     return pairs
 
 
@@ -365,6 +368,10 @@ def missing_official_dataset_language_pairs(
     lines: c.Iterable[str], requested_languages: c.Iterable[str]
 ) -> set[tuple[str, str]]:
     """Return missing official dataset/language pairs for the requested languages.
+
+    Only counts results from the validation split (or validation_split=None for
+    backwards compatibility) as "complete" for queue purposes. Test-split results
+    do not count towards completion.
 
     Args:
         lines:
@@ -379,7 +386,13 @@ def missing_official_dataset_language_pairs(
     expected_pairs = {
         pair for pair in official_dataset_language_pairs() if pair[1] in requested
     }
-    observed_pairs = result_dataset_language_pairs(lines=lines)
+    observed_triples = result_dataset_language_pairs(lines=lines)
+    # Only count validation-split (True) or None (backwards compatibility) as complete
+    observed_pairs: set[tuple[str, str]] = {
+        (dataset, lang)
+        for dataset, lang, validation_split in observed_triples
+        if validation_split is True or validation_split is None
+    }
     return expected_pairs - observed_pairs
 
 
@@ -389,8 +402,4 @@ def resolve_hf_token() -> str | None:
     Returns:
         The token string, or None if neither env nor cache yields one.
     """
-    return (
-        os.environ.get("HF_TOKEN")
-        or os.environ.get("HUGGINGFACE_API_KEY")
-        or get_token()
-    )
+    return os.environ.get("HF_TOKEN") or get_token()

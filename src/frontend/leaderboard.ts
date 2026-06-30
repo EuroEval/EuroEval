@@ -15,6 +15,8 @@ export type CellKind =
   | "icon"
   | "score"
   | "version"
+  | "failures"
+  | "scored"
   | "text";
 
 export interface ParsedCell {
@@ -44,6 +46,17 @@ export interface Column {
 
 export interface Row {
   cells: ParsedCell[];
+  /** Per-dataset failure counts, keyed by the score column's key. Sourced from
+   *  the hidden `<dataset>_failures` companion columns. */
+  failures?: Record<string, number>;
+  /** Per-dataset total scored-sample counts (num_iterations × split size),
+   *  keyed by the score column's key. Sourced from the hidden
+   *  `<dataset>_scored` companion columns. Used as the failure-rate
+   *  denominator. */
+  scored?: Record<string, number>;
+  /** Per-dataset EuroEval version that produced the result, keyed by the score
+   *  column's key. Sourced from the hidden `<dataset>_version` columns. */
+  versions?: Record<string, string>;
 }
 
 export interface LeaderboardTable {
@@ -152,6 +165,8 @@ const ICON_COLS = new Set([
 ]);
 
 const VERSION_SUFFIX = /version$/i;
+const FAILURES_SUFFIX = /_failures$/i;
+const SCORED_SUFFIX = /_scored$/i;
 
 const parseNumberSafe = (s: string): number | null => {
   if (s === "?" || s === "" || s === "-" || s === "??") return null;
@@ -299,6 +314,8 @@ function escapeAttr(s: string): string {
 function inferKind(title: string, sampleValues: string[]): CellKind {
   const t = title.toLowerCase();
   if (t === "model") return "model";
+  if (FAILURES_SUFFIX.test(t)) return "failures";
+  if (SCORED_SUFFIX.test(t)) return "scored";
   if (VERSION_SUFFIX.test(t)) return "version";
   if (ICON_COLS.has(t)) return "icon";
   if (NUMERIC_COLS.has(t)) return "number";
@@ -379,23 +396,66 @@ export function parseLeaderboard(csvText: string): LeaderboardTable {
     };
   });
 
-  // Hide trailing version columns from the visible table — they're a lot of
-  // noise and the user can still filter the rank column.
+  // Hide the per-dataset companion columns (versions and failure counts) from
+  // the visible table — they're a lot of noise. Failure counts are surfaced in
+  // the score-cell tooltips instead (see `failuresCols` below).
   const visibleColIndexes = columns
     .map((c, i) => ({ c, i }))
-    .filter(({ c }) => c.kind !== "version")
+    .filter(
+      ({ c }) =>
+        c.kind !== "version" && c.kind !== "failures" && c.kind !== "scored",
+    )
     .map(({ i }) => i);
 
   const visibleColumns = visibleColIndexes.map((i) => columns[i]);
 
+  // Map each hidden failures/scored column to the score column it annotates
+  // (e.g. "conll_nl_failures" → "conll_nl"), so its value can be attached per
+  // row and used to compute a failure rate.
+  const failuresCols = columns
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => c.kind === "failures")
+    .map(({ c, i }) => ({ i, baseKey: c.key.replace(FAILURES_SUFFIX, "") }));
+  const scoredCols = columns
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => c.kind === "scored")
+    .map(({ c, i }) => ({ i, baseKey: c.key.replace(SCORED_SUFFIX, "") }));
+  const versionCols = columns
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => c.kind === "version")
+    .map(({ c, i }) => ({ i, baseKey: c.key.replace(/_version$/i, "") }));
+
   // Parse cells. Column order follows the CSV (ground truth).
   const parsedRows: Row[] = dataRows
     .filter((r) => r.length > 1 && stripTags(r[0]).trim() !== "")
-    .map((r) => ({
-      cells: visibleColIndexes.map((i) =>
+    .map((r) => {
+      const cells = visibleColIndexes.map((i) =>
         parseCell(r[i] ?? "", columns[i].kind),
-      ),
-    }));
+      );
+      const readCompanion = (i: number): number | null =>
+        parseNumberSafe(stripTags(splitDisplaySort(r[i] ?? "").display));
+      let failures: Record<string, number> | undefined;
+      for (const { i, baseKey } of failuresCols) {
+        const n = readCompanion(i);
+        if (n !== null) (failures ??= {})[baseKey] = n;
+      }
+      let scored: Record<string, number> | undefined;
+      for (const { i, baseKey } of scoredCols) {
+        const n = readCompanion(i);
+        if (n !== null) (scored ??= {})[baseKey] = n;
+      }
+      let versions: Record<string, string> | undefined;
+      for (const { i, baseKey } of versionCols) {
+        const v = stripTags(splitDisplaySort(r[i] ?? "").display).trim();
+        if (v && v !== "-") (versions ??= {})[baseKey] = v;
+      }
+      return {
+        cells,
+        ...(failures && { failures }),
+        ...(scored && { scored }),
+        ...(versions && { versions }),
+      };
+    });
 
   // Augment columns with min/max + distinct values.
   for (let c = 0; c < visibleColumns.length; c++) {
@@ -446,9 +506,47 @@ const csvModules = import.meta.glob("@/csv/*.csv", {
   import: "default",
 }) as Record<string, () => Promise<string>>;
 
+const jsonModules = import.meta.glob("@/csv/*.json", {
+  import: "default",
+}) as Record<string, () => Promise<unknown>>;
+
 export const csvKeys: string[] = Object.keys(csvModules).map((k) =>
   k.replace(/^.*\/csv\//, "").replace(/\.csv$/, ""),
 );
+
+// Session flag guarding the stale-chunk reload, so a genuinely missing chunk
+// can't trap the user in a reload loop. Cleared on any successful load so a
+// later deploy can still trigger a fresh reload.
+const STALE_CHUNK_RELOAD_KEY = "euroeval:stale-chunk-reload";
+
+function isChunkLoadError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    error instanceof TypeError ||
+    /loading dynamically imported module/i.test(message) ||
+    /importing a module script failed/i.test(message) ||
+    /failed to fetch/i.test(message) ||
+    /network/i.test(message)
+  );
+}
+
+/**
+ * Recover from a stale hashed chunk left over from a previous deploy by
+ * triggering a one-time full page reload, which fetches a fresh index.html
+ * pointing at the current chunk hashes. Returns true if a reload was started.
+ */
+function reloadForStaleChunk(): boolean {
+  try {
+    if (sessionStorage.getItem(STALE_CHUNK_RELOAD_KEY)) return false;
+    sessionStorage.setItem(STALE_CHUNK_RELOAD_KEY, "1");
+  } catch {
+    // sessionStorage unavailable (e.g. private mode); skip the guard rather
+    // than risk a reload loop.
+    return false;
+  }
+  window.location.reload();
+  return true;
+}
 
 /** Async-load and parse a leaderboard by stem (e.g. `danish_generative`). */
 async function loadWithRetry(
@@ -459,21 +557,29 @@ async function loadWithRetry(
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return await loadFn();
+      const result = await loadFn();
+      // A successful load means chunks resolve again; reset the reload guard
+      // so a future deploy can recover the same way.
+      try {
+        sessionStorage.removeItem(STALE_CHUNK_RELOAD_KEY);
+      } catch {
+        // ignore
+      }
+      return result;
     } catch (error) {
       lastError = error;
       // Only retry on network-type errors (chunk load failures)
-      const message = error instanceof Error ? error.message : String(error);
-      const isNetworkError =
-        error instanceof TypeError ||
-        /loading dynamically imported module/i.test(message) ||
-        /failed to fetch/i.test(message) ||
-        /network/i.test(message);
-      if (!isNetworkError || attempt === maxRetries) break;
+      if (!isChunkLoadError(error) || attempt === maxRetries) break;
       // Exponential backoff: 100ms, 200ms, 400ms
       const delay = 100 * Math.pow(2, attempt - 1);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
+  }
+  // Retries are exhausted. If this looks like a stale chunk from a previous
+  // deploy, a reload (not another fetch of the dead URL) is the only fix.
+  if (isChunkLoadError(lastError) && reloadForStaleChunk()) {
+    // Keep the promise pending; the page is reloading.
+    return new Promise<string>(() => {});
   }
   const errorMessage =
     lastError instanceof Error ? lastError.message : String(lastError);
@@ -502,4 +608,26 @@ export async function loadLeaderboardCsv(
   );
   if (!entry) return undefined;
   return await loadWithRetry(entry[1], stem);
+}
+
+export interface LeaderboardMetadata {
+  annotate?: {
+    notes?: string;
+  };
+}
+
+/** Load leaderboard metadata from the companion JSON file. */
+export async function loadLeaderboardMetadata(
+  stem: string,
+): Promise<LeaderboardMetadata | undefined> {
+  const entry = Object.entries(jsonModules).find(([path]) =>
+    path.endsWith(`/${stem}.json`),
+  );
+  if (!entry) return undefined;
+  try {
+    const data = await entry[1]();
+    return data as LeaderboardMetadata;
+  } catch {
+    return undefined;
+  }
 }

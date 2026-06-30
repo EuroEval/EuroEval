@@ -20,7 +20,7 @@ issues that appeared during the run).
 Required env vars
 -----------------
 GITHUB_TOKEN        A PAT with ``issues: write`` for the EuroEval repo.
-HUGGINGFACE_API_KEY A Hugging Face token with write access to upload results.
+HF_TOKEN            A Hugging Face token with write access to upload results.
 """
 
 from __future__ import annotations
@@ -28,6 +28,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import os
 import subprocess
 import sys
 import urllib.error
@@ -84,6 +85,8 @@ def main(force: bool) -> None:
             Whether to always regenerate leaderboards, even if no new results
             are found. Defaults to False.
     """
+    check_required_env_vars()
+
     logger.info("Fetching open model evaluation request issues...")
     try:
         issues = list_open_request_issues()
@@ -208,6 +211,23 @@ def main(force: bool) -> None:
             logger.info(f"#{number}: closed.")
         except urllib.error.HTTPError as e:
             logger.error(f"#{number}: failed to close: {e}")
+
+
+def check_required_env_vars() -> None:
+    """Verify that the required tokens are set, exiting cleanly otherwise.
+
+    ``HUGGINGFACE_API_KEY`` is accepted as an alias for ``HF_TOKEN`` (it is
+    copied over when the ``leaderboards`` package is imported), so only
+    ``HF_TOKEN`` is checked here. A missing ``HF_TOKEN`` would otherwise
+    degrade silently into empty bucket reads and a failed upload.
+    """
+    missing = [var for var in ("GITHUB_TOKEN", "HF_TOKEN") if not os.environ.get(var)]
+    if missing:
+        logger.error(
+            f"Missing required env var(s): {', '.join(missing)}. "
+            "Set them (e.g. in a .env file) and re-run."
+        )
+        sys.exit(1)
 
 
 def _model_id_to_filename(model_id: str) -> str:
@@ -554,8 +574,12 @@ def verify_leaderboards() -> bool:
     - Required columns are present
     - No obvious data corruption (e.g., NaN in critical fields)
 
+    Leaderboards with <50 rows are skipped (not published) instead of failing
+    the entire validation.
+
     Returns:
-        True if all checks pass, False otherwise.
+        True if validation completed (even if some leaderboards were skipped),
+        False if critical errors occurred.
     """
     output_dir = REPO_ROOT / "src" / "frontend" / "csv"
 
@@ -570,7 +594,8 @@ def verify_leaderboards() -> bool:
 
     logger.info(f"Found {len(csv_files)} leaderboard CSV(s).")
 
-    all_passed = True
+    skipped_count = 0
+    valid_count = 0
     for csv_file in csv_files:
         try:
             with csv_file.open(mode="r", encoding="utf-8") as f:
@@ -578,11 +603,12 @@ def verify_leaderboards() -> bool:
                 rows = list(reader)
 
                 if len(rows) < 50:
-                    logger.error(
-                        f"{csv_file.name}: Only {len(rows)} rows (expected >=50). "
-                        "Possible data loss?"
+                    logger.warning(
+                        f"{csv_file.name}: Only {len(rows)} rows (<50). "
+                        "Skipping publication (too few results)."
                     )
-                    all_passed = False
+                    csv_file.unlink()
+                    skipped_count += 1
                     continue
 
                 if len(rows) < 100:
@@ -620,8 +646,7 @@ def verify_leaderboards() -> bool:
                             f"Expected {required_cols_snake} or {required_cols_title}, "
                             f"got {list(rows[0].keys())[:5]}..."
                         )
-                        all_passed = False
-                        continue
+                        return False
 
                     # Use whichever format is present
                     model_col = "model" if not missing_snake else "Model"
@@ -636,19 +661,23 @@ def verify_leaderboards() -> bool:
                     if nan_count > 0:
                         msg = f"{csv_file.name}: {nan_count} rows missing {model_col}."
                         logger.error(msg)
-                        all_passed = False
+                        return False
 
                 logger.info(f"{csv_file.name}: {len(rows):,} rows OK")
+                valid_count += 1
         except Exception as e:
             logger.error(f"{csv_file.name}: Failed to read: {e}")
-            all_passed = False
+            return False
 
-    if all_passed:
-        logger.info("All leaderboard CSVs passed sanity checks.")
+    if skipped_count > 0:
+        logger.info(
+            f"Published {valid_count} leaderboard(s), skipped {skipped_count} "
+            "(too few results)."
+        )
     else:
-        logger.error("Leaderboard validation failed. Fix before deploying.")
+        logger.info(f"All {valid_count} leaderboard CSVs passed sanity checks.")
 
-    return all_passed
+    return valid_count > 0
 
 
 def deploy_to_vercel() -> bool:
