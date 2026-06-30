@@ -3,7 +3,6 @@
 import collections.abc as c
 import contextlib
 import datetime as dt
-import json
 import logging
 import os
 import re
@@ -256,46 +255,8 @@ class Benchmarker:
 
         Returns:
             A list of benchmark results.
-
-        Raises:
-            ValueError:
-                If there is an error decoding a line in the results file.
         """
-        if not self.results_path.exists():
-            return list()
-
-        with self.results_path.open() as f:
-            lines = [line.strip() for line in f if line.strip()]
-
-        # Parsing each line (and the large raw-results blob it contains) can take a
-        # while for big results files, so show a progress bar that clears once done
-        # (`get_pbar` uses `leave=False`) to make clear the run is not hanging.
-        benchmark_results: list[BenchmarkResult] = list()
-        for line in get_pbar(
-            iterable=lines,
-            desc="Loading cached results",
-            disable=not self.benchmark_config.progress_bar,
-        ):
-            try:
-                result_dict = json.loads(line)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Error decoding JSON line: {line}") from e
-
-            # Fix for older records
-            has_old_raw_results = (
-                "results" in result_dict
-                and isinstance(result_dict["results"], dict)
-                and "raw" in result_dict["results"]
-                and isinstance(result_dict["results"]["raw"], dict)
-                and "test" in result_dict["results"]["raw"]
-            )
-            if has_old_raw_results:
-                result_dict["results"]["raw"] = result_dict["results"]["raw"]["test"]
-
-            result = BenchmarkResult.from_dict(result_dict)
-            benchmark_results.append(result)
-
-        return benchmark_results
+        return BenchmarkResult.from_jsonl(self.results_path)
 
     def _download(
         self,
