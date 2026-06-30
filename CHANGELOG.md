@@ -7,6 +7,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed race condition in cache cleanup where `rmtree` would fail with `FileNotFoundError`
+  when checkpoint directories were removed concurrently during model benchmarking. Now
+  uses `ignore_errors=True` to handle concurrent deletions gracefully.
+
 ## [v17.6.0] - 2026-06-30
 
 ### Added
@@ -26,8 +32,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Fixed race condition in cache cleanup where `rmtree` would fail if checkpoint
-  directories were removed concurrently.
 - The (unofficial) MultiLoko datasets had an error in their dataset configs, as they do
   not have a validation split. The configs have now been fixed.
 - Fixed the parameter count derived from safetensors metadata when a model has multiple
