@@ -2495,9 +2495,9 @@ name = "lettucedetect"
 version = "0.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "numpy", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "openai", version = "2.24.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "openai", version = "2.30.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
+    { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.13' and platform_machine == 'arm64') or (python_full_version < '3.13' and sys_platform != 'darwin')" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.13' and platform_machine == 'arm64') or (python_full_version >= '3.13' and sys_platform != 'darwin')" },
+    { name = "openai", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "rag-fact-checker", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "scikit-learn", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "torch", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
@@ -4990,8 +4990,7 @@ version = "0.1.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "easydict", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
-    { name = "openai", version = "2.24.0", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'arm64' and sys_platform == 'darwin'" },
-    { name = "openai", version = "2.30.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
+    { name = "openai", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
     { name = "python-dotenv", marker = "platform_machine == 'arm64' or sys_platform != 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/bd/a8/070a4dd49a3d8b919f84d691f5528ce75bd7db2ad57149e58ecf9e2a7913/rag_fact_checker-0.1.5.tar.gz", hash = "sha256:b4c449ef73751b71aec00cfa09141980dad9e7e828fd42429a4d4c51863c8ecf", size = 67405, upload-time = "2025-08-27T13:13:48.906Z" }
