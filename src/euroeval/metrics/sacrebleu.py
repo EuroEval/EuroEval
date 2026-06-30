@@ -1,5 +1,7 @@
 """Metrics from the SacreBLEU package."""
 
+from __future__ import annotations
+
 import collections.abc as c
 import typing as t
 
