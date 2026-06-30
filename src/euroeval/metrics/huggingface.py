@@ -1,5 +1,7 @@
 """All the Hugging Face metrics used in EuroEval."""
 
+from __future__ import annotations
+
 import collections.abc as c
 import os
 import typing as t
