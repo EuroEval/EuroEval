@@ -312,7 +312,9 @@ def load_existing_result_keys() -> set[tuple[str, str, str, str]]:
     for model_file in model_files:
         try:
             lines = model_file.read_text(encoding="utf-8").splitlines()
-            for result in parse_jsonl_lines(lines, source=model_file.name):
+            for result in parse_jsonl_lines(
+                lines, source=model_file.name, strict=False
+            ):
                 key = build_dedup_key(result)
                 if key is not None:
                     existing_keys.add(key)
@@ -375,7 +377,9 @@ def scan_bucket_for_results() -> list[str]:
 
         try:
             lines = local_path.read_text(encoding="utf-8").splitlines()
-            for result in parse_jsonl_lines(lines, source=bucket_file.path):
+            for result in parse_jsonl_lines(
+                lines, source=bucket_file.path, strict=False
+            ):
                 key = build_dedup_key(result)
 
                 if key is None:

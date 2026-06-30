@@ -1046,7 +1046,7 @@ class BenchmarkResult(pydantic.BaseModel):
             return []
 
         lines = results_path.read_text(encoding="utf-8").splitlines()
-        records = parse_jsonl_lines(lines=lines, source=str(results_path))
+        records = parse_jsonl_lines(lines=lines, source=str(results_path), strict=False)
         return [cls.from_dict(record) for record in records]
 
 
