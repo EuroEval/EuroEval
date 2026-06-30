@@ -137,8 +137,8 @@ def test_metric_initialization(metric: TokenHallucinationMetric) -> None:
     assert metric.pretty_name == "Hallucination rate"
     assert callable(metric.postprocessing_fn)
     score, score_str = metric.postprocessing_fn(0.25)
-    assert score == pytest.approx(0.25)
-    assert score_str == "0.2500"
+    assert score == pytest.approx(25.0)
+    assert score_str == "25.00%"
 
 
 def test_module_level_instance() -> None:
