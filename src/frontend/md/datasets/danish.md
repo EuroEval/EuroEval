@@ -2108,3 +2108,65 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset gerlangmod-da
 ```
+
+## Hallucination Detection
+
+### RAGTruth-da
+
+This dataset is a Danish translation of the
+[RAGTruth](https://aclanthology.org/2024.acl-long.585/) hallucination benchmark, which
+contains retrieval-augmented generation (RAG) prompts together with model-generated
+answers annotated for hallucinations. Rather than evaluating the correctness of the
+generated answer, this task evaluates the degree to which the model hallucinates,
+i.e., generates tokens that are not grounded in the provided context.
+
+The hallucination detection is performed using the
+[LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric
+reported is the hallucination rate, computed as the ratio of hallucinated tokens to total
+tokens in the generated answers.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "prompt": "Opsummer følgende nyhed inden for 44 ord:\nEn amerikansk statsborger blev torsdag skudt, mens hun kørte fra medicinsk skole i Karachi, Pakistan, hvor hun arbejder, siger politiet. Debra Lobo, 55, fra Californien, blev skudt i højre kind og venstre arm og er bevidstløs, men forventes at overleve, siger Karachi-politiets talsmand Mohamad Shah. Myndighederne undersøger hændelsen.\n\noutput:",
+  "answer": "Debra Lobo, en 55-årig amerikansk statsborger, blev skudt og såret i Pakistan. Angrebet skete, mens hun kørte fra det medicinske skole, hvor hun arbejder i Karachi. Flyveblade med ordlyden \"Amerika bør brændes\" blev fundet i hendes bil. Lobo forventes at overleve.",
+  "labels": []
+}
+```
+
+```json
+{
+  "prompt": "Opsummer følgende nyhed inden for 38 ord:\nFra de store sekvojatræer i Yosemite til gejserne i Yellowstone blev USA's nationale parker skabt til dig og mig. Og til lørdag og søndag er de også gratis. Selvom de fleste af National Park Service's 407 steder er gratis hele året, er de 128 parker, der normalt opkræver gebyr – som Yellowstone og Yosemite – gratis de to dage. Det er en del af National Park Week, som foregår fra 18. til 26. april, og afholdes af National Park Service og National Park Foundation. Oplev natte astronomiarrangementer, dagtidshistoriske programmer om den amerikanske uafhængighedskrig, jordens dags fejring og børnevenlige Junior Ranger-aktiviteter på nationale parker over hele landet. Ikke sikker på, hvordan du starter? Gå til FindYourPark.com for at lære mere om parker i dit område. Gå til www.nationalparkweek.org for flere idéer til udforskning. Del derefter dine historier via hashtagget #FindYourPark og på FindYourpark.com.\n\noutput:",
+  "answer": "Nationalparkerne i USA er gratis for besøgende den 18. og 19. april som del af National Park Week. Dette omfatter 128 parker, som normalt kræver betaling. Aktiviteterne inkluderer natte astronomiarrangementer, dagtidshold af Revolutionære Krigsprogrammer, jordens dags fester og børnevenlige Junior Ranger-aktiviteter. For at finde yderligere information og planlægge dit besøg, besøg FindYourPark.com eller www.nationalparkweek.org. Del dine oplevelser ved at bruge hashtagget #FindYourPark.",
+  "labels": [
+    {
+      "end": 67,
+      "label": "Evident Conflict",
+      "start": 51
+    }
+  ]
+}
+```
+
+```json
+{
+  "prompt": "Instruktion:\nSkriv et objektivt overblik over følgende lokale virksomhed baseret udelukkende på de leverede strukturerede data i JSON-format. Du skal inkludere detaljer og dække informationen nævnt i kundernes anmeldelser. Overblikket skal være 100-200 ord. Gør ikke op information. Strukturerede data:\n{'navn': 'Lure Fish House', 'adresse': '3815 State St, Ste G131', 'by': 'Santa Barbara', 'stat': 'CA', 'kategorier': 'Morgenmad og brunch, Mad, Øl, Vin og spiritus, Barer, Skal- og fisk, Restauranter, Vinbarer, Cocktailbarer, Ny amerikansk, Natliv', 'åbningstider': {'Mandag': '0:0-0:0', 'Tirsdag': '11:30-21:0', 'Onsdag': '11:30-21:0', 'Torsdag': '11:30-21:0', 'Fredag': '11:30-20:0', 'Lørdag': '11:30-22:0', 'Søndag': '11:30-21:0'}, 'attributter': {'Forretningsparkering': {'garage': False, 'gade': False, 'valideret': False, 'plads': True, 'valet': False}, 'RestauranterReservationer': True, 'UdendørsSædepladser': True, 'WiFi': 'nej', 'RestauranterTilbage': True, 'RestauranterGodtForGrupper': True, 'Musik': False, 'Ambiente': {'turistet': False, 'hipster': False, 'romantisk': False, 'dive': False, 'intimt': False, 'trendy': True, 'dyr': False, 'stilfuld': True, 'afslappet': True}}, 'virksomhedsstjerner': 4.5, 'anmeldelsesinfo': [{'anmeldelsesstjerner': 5.0, 'anmeldelsesdato': '2022-01-13 18:50:44', 'anmeldelsestekst': 'Fantastisk og vidunderlig spiseoplevelse. Servitøren, Brandon, var ekstraordinært hjælpsom og venlig. Man kunne smage, hvor frisk deres fisk var, og deres stegte calamari var fantastisk. Højt anbefalet.'}, {'anmeldelsesstjerner': 5.0, 'anmeldelsesdato': '2022-01-13 03:27:44', 'anmeldelsestekst': 'Elsker det hver gang. Østers på halve skaller, yum! Også gode drikke. Bør prøves til at tage med'}, {'anmeldelsesstjerner': 5.0, 'anmeldelsesdato': '2022-01-12 01:45:15', 'anmeldelsestekst': 'Jeg kan bare godt lide deres almindelige kaffe, og folkene er søde. Hvad mere skal jeg bruge?'}]}\nOverblik:",
+  "answer": "Selvfølgelig! Her er et objektivt overblik over Lure Fish House baseret på de angivne strukturerede data:\n\nLure Fish House er et populært fiskerestaurant beliggende i Santa Barbara, Californien. Med en bedømmelse på 4,5 stjerner og begejstrede anmeldelser er dette sted kendt for sin friske fisk og venlige service. Menuen indeholder mange forskellige muligheder, herunder morgenmad og brunchretter, øl, vin og cocktails. Ambiencen er trendy og afslappet, med mulighed for udendørs siddemuligheder. Gæster roser især friskheden på fiskene og den venlige service, hvilket gør det til et godt sted for både grupper og dates. Derudover er der mulighed for hentning og reservationer. Alt i alt er Lure Fish House et godt valg for lækker skaldyr og en livlig atmosfære i Santa Barbara.",
+  "labels": [
+    {
+      "end": 621,
+      "label": "Evident Baseless Info",
+      "start": 616
+    }
+  ]
+}
+```
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ragtruth-da
+```

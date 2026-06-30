@@ -1,5 +1,7 @@
 """Metrics from the SacreBLEU package."""
 
+from __future__ import annotations
+
 import collections.abc as c
 import typing as t
 
@@ -49,12 +51,17 @@ class ChrF(Metric):
         self.language_detector = language_detector
         self.metric = CHRF(char_order=6, word_order=self.word_order, beta=self.beta)
 
-    def download(self, cache_dir: str) -> "ChrF":
+    def download(
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
+    ) -> "ChrF":
         """Download the language detection model if needed.
 
         Args:
             cache_dir:
                 The directory where the metric will be downloaded to.
+            dataset_config (optional):
+                The dataset configuration. Unused by this metric.
+                Defaults to None.
 
         Returns:
             The metric object itself.

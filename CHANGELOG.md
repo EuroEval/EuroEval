@@ -7,11 +7,17 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Evaluation hallucination detection task, reporting a hallucination rate
+  (hallucinated_tokens/total_tokens). This includes a Danish `ragtruth-da` dataset, but
+  more coming. This was contributed by @FrejaThoresen ✨
+
 ### Fixed
 
-- Fixed race condition in cache cleanup where `rmtree` would fail with `FileNotFoundError`
-  when checkpoint directories were removed concurrently during model benchmarking. Now
-  uses `ignore_errors=True` to handle concurrent deletions gracefully.
+- Fixed race condition in cache cleanup where `rmtree` would fail with
+  `FileNotFoundError` when checkpoint directories were removed concurrently during model
+  benchmarking. Now uses `ignore_errors=True` to handle concurrent deletions gracefully.
 
 ## [v17.6.0] - 2026-06-30
 
@@ -26,8 +32,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added the `google-cloud-aiplatform` dependency, as it's required to run
   Gemini-3.1-pro.
 - Added the Danish zebra puzzle dataset
-  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
-  is given by 128 / 1,024 samples for train / test, respectively. It is marked as
+  [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The
+  split is given by 128 / 1,024 samples for train / test, respectively. It is marked as
   `unofficial` for now. This was contributed by @sofiehb ✨
 
 ### Fixed
@@ -37,7 +43,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed the parameter count derived from safetensors metadata when a model has multiple
   dtype entries. The `parameter_count` dict maps each dtype to the number of parameters
   stored in that dtype, so the total is the sum across entries — previously only the
-  largest entry was used, undercounting models with weights split across multiple dtypes.
+  largest entry was used, undercounting models with weights split across multiple
+  dtypes.
 - Fixed the finetuning NaN-retry not actually switching to fp32. When NaN values were
   detected under mixed precision, the retry disabled autocast but reloaded the model
   via `get_dtype`, which is hardware-driven and kept returning bf16/fp16 on CUDA — so

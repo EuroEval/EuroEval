@@ -6,6 +6,7 @@ from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
     GED,
+    HALLU,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -104,6 +105,15 @@ VALEU_DA_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     bootstrap_samples=False,
+)
+
+RAGTRUTH_DA_CONFIG = DatasetConfig(
+    name="ragtruth-da",
+    pretty_name="RAGTruth-da",
+    source="EuroEval/ragtruth-translated-hallucinations-da-mini",
+    task=HALLU,
+    languages=[DANISH],
+    train_split=None,
 )
 
 # Unofficial datasets ###
