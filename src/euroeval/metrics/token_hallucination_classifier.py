@@ -23,6 +23,85 @@ if t.TYPE_CHECKING:
     from ..data_models import BenchmarkConfig, DatasetConfig
 
 
+class TokenHallucinationMetric(Metric):
+    """Hallucination metric."""
+
+    def __init__(self, name: str, pretty_name: str) -> None:
+        """Initialise the token hallucination metric.
+
+        Args:
+            name:
+                The name of the metric in snake_case.
+            pretty_name:
+                The pretty name of the metric, used for display purposes.
+        """
+        super().__init__(
+            name=name,
+            pretty_name=pretty_name,
+            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.4f}"),
+        )
+
+    def download(self, cache_dir: str) -> "TokenHallucinationMetric":
+        """Pre-download all hallucination detection models.
+
+        The hallucination detection model is language-specific, but the dataset
+        language is not available in this method. To support offline benchmarking
+        (where only ``download`` is run and inference happens later without network
+        access), all hallucination detection models referenced by built-in dataset
+        configurations are fetched.
+
+        Args:
+            cache_dir:
+                The directory where the models will be downloaded to.
+
+        Returns:
+            The metric object itself.
+        """
+        for model_id in _hallucination_model_ids(cache_dir=cache_dir):
+            snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
+        return self
+
+    def __call__(
+        self,
+        predictions: c.Iterable[dict[str, t.Any]],
+        references: c.Sequence,
+        dataset: "Dataset",
+        dataset_config: "DatasetConfig",
+        benchmark_config: "BenchmarkConfig",
+    ) -> float | None:
+        """Compute the token-level hallucination rate for a set of predictions.
+
+        This method wraps `detect_hallucinations` to run a token-level
+        hallucination detector over the provided predictions and dataset contexts,
+        and returns the rate of tokens classified as hallucinated.
+
+        Args:
+            predictions:
+                The model predictions. Each prediction must provide a
+                ``"prediction_text"`` field containing the model's answer text.
+            references:
+                The ground truth references. Unused by this metric, but accepted
+                for API consistency with the base ``Metric`` interface.
+            dataset:
+                The dataset used for evaluation.
+            dataset_config:
+                The dataset configuration.
+            benchmark_config:
+                The benchmark configuration, used to determine the compute device.
+
+        Returns:
+            The hallucination rate (hallucinated_tokens/total_tokens).
+        """
+        hallucination_rate = detect_hallucinations(
+            dataset=dataset,
+            predictions=predictions,
+            model=_hallucination_model_id(dataset_config=dataset_config),
+            device=Device(benchmark_config.device.type),
+            cache_dir=benchmark_config.cache_dir,
+        )
+        return hallucination_rate
+
+
 def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
     """Build the hallucination detection model ID for a dataset.
 
@@ -195,85 +274,6 @@ def _answer_too_long(
     # Reserve room for special tokens ([CLS], two [SEP]) and at least one prompt
     # token, matching the detector's ``truncation="only_first"`` requirement.
     return answer_token_count >= max_length - 4
-
-
-class TokenHallucinationMetric(Metric):
-    """Hallucination metric."""
-
-    def __init__(self, name: str, pretty_name: str) -> None:
-        """Initialise the token hallucination metric.
-
-        Args:
-            name:
-                The name of the metric in snake_case.
-            pretty_name:
-                The pretty name of the metric, used for display purposes.
-        """
-        super().__init__(
-            name=name,
-            pretty_name=pretty_name,
-            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.4f}"),
-        )
-
-    def download(self, cache_dir: str) -> "TokenHallucinationMetric":
-        """Pre-download all hallucination detection models.
-
-        The hallucination detection model is language-specific, but the dataset
-        language is not available in this method. To support offline benchmarking
-        (where only ``download`` is run and inference happens later without network
-        access), all hallucination detection models referenced by built-in dataset
-        configurations are fetched.
-
-        Args:
-            cache_dir:
-                The directory where the models will be downloaded to.
-
-        Returns:
-            The metric object itself.
-        """
-        for model_id in _hallucination_model_ids(cache_dir=cache_dir):
-            snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
-        return self
-
-    def __call__(
-        self,
-        predictions: c.Iterable[dict[str, t.Any]],
-        references: c.Sequence,
-        dataset: "Dataset",
-        dataset_config: "DatasetConfig",
-        benchmark_config: "BenchmarkConfig",
-    ) -> float | None:
-        """Compute the token-level hallucination rate for a set of predictions.
-
-        This method wraps `detect_hallucinations` to run a token-level
-        hallucination detector over the provided predictions and dataset contexts,
-        and returns the rate of tokens classified as hallucinated.
-
-        Args:
-            predictions:
-                The model predictions. Each prediction must provide a
-                ``"prediction_text"`` field containing the model's answer text.
-            references:
-                The ground truth references. Unused by this metric, but accepted
-                for API consistency with the base ``Metric`` interface.
-            dataset:
-                The dataset used for evaluation.
-            dataset_config:
-                The dataset configuration.
-            benchmark_config:
-                The benchmark configuration, used to determine the compute device.
-
-        Returns:
-            The hallucination rate (hallucinated_tokens/total_tokens).
-        """
-        hallucination_rate = detect_hallucinations(
-            dataset=dataset,
-            predictions=predictions,
-            model=_hallucination_model_id(dataset_config=dataset_config),
-            device=Device(benchmark_config.device.type),
-            cache_dir=benchmark_config.cache_dir,
-        )
-        return hallucination_rate
 
 
 hallucination_metric = TokenHallucinationMetric(
