@@ -235,12 +235,6 @@ class TokenHallucinationMetric(Metric):
         """
         api = HfApi()
         for model_id in _hallucination_model_ids(cache_dir=cache_dir):
-            if not api.repo_exists(repo_id=model_id):
-                logger.warning(
-                    f"The hallucination detection model {model_id!r} does not exist "
-                    "on the Hugging Face Hub, skipping download."
-                )
-                continue
             snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
         return self
 
