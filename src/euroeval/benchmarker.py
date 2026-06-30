@@ -1273,7 +1273,7 @@ def clear_model_cache_fn(cache_dir: str) -> None:
         if model_dir.is_dir():
             for sub_model_dir in model_dir.iterdir():
                 if sub_model_dir.is_dir():
-                    rmtree(sub_model_dir)
+                    rmtree(sub_model_dir, ignore_errors=True)
 
 
 def initial_logging(
