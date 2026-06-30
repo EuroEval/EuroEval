@@ -30,12 +30,7 @@ from .scores import log_scores
 from .speed_benchmark import benchmark_speed
 from .string_utils import split_model_id
 from .tasks import SPEED
-from .utils import (
-    enforce_reproducibility,
-    get_hf_token,
-    internet_connection_available,
-    parse_jsonl_lines,
-)
+from .utils import enforce_reproducibility, get_hf_token, internet_connection_available
 
 if t.TYPE_CHECKING:
     from .benchmark_modules import BenchmarkModule
@@ -261,35 +256,7 @@ class Benchmarker:
         Returns:
             A list of benchmark results.
         """
-        if not self.results_path.exists():
-            return list()
-
-        # Parsing each line (and the large raw-results blob it contains) can take a
-        # while for big results files, so show a progress bar that clears once done
-        # (`get_pbar` uses `leave=False`) to make clear the run is not hanging.
-        benchmark_results: list[BenchmarkResult] = list()
-        with self.results_path.open() as f:
-            lines = f.read().splitlines()
-        for result_dict in get_pbar(
-            iterable=parse_jsonl_lines(lines, str(self.results_path)),
-            desc="Loading cached results",
-            disable=not self.benchmark_config.progress_bar,
-        ):
-            # Fix for older records
-            has_old_raw_results = (
-                "results" in result_dict
-                and isinstance(result_dict["results"], dict)
-                and "raw" in result_dict["results"]
-                and isinstance(result_dict["results"]["raw"], dict)
-                and "test" in result_dict["results"]["raw"]
-            )
-            if has_old_raw_results:
-                result_dict["results"]["raw"] = result_dict["results"]["raw"]["test"]
-
-            result = BenchmarkResult.from_dict(result_dict)
-            benchmark_results.append(result)
-
-        return benchmark_results
+        return BenchmarkResult.load_from_jsonl(self.results_path)
 
     def _download(
         self,
