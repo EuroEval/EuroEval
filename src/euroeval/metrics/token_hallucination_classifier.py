@@ -9,10 +9,10 @@ from datasets import Dataset
 from huggingface_hub import HfApi, snapshot_download
 from lettucedetect import HallucinationDetector
 
+from ..constants import MAX_CONTEXT_LENGTH
 from ..enums import Device
 from ..exceptions import InvalidBenchmark
 from .base import Metric
-from ..constants import MAX_CONTEXT_LENGTH
 
 logger = logging.getLogger(__name__)
 
