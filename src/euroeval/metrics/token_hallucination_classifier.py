@@ -38,7 +38,11 @@ class TokenHallucinationMetric(Metric):
             pretty_name:
                 The pretty name of the metric, used for display purposes.
         """
-        super().__init__(name=name, pretty_name=pretty_name, postprocessing_fn=None)
+        super().__init__(
+            name=name,
+            pretty_name=pretty_name,
+            postprocessing_fn=lambda raw_score: (raw_score, f"{raw_score:,.4f}"),
+        )
 
     def download(
         self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
