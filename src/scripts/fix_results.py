@@ -16,6 +16,7 @@ from leaderboards.constants import (
     REQUIRED_METADATA_FIELDS,
     RESULTS_DIR,
 )
+from leaderboards.utils import parse_jsonl_lines
 
 
 def main() -> None:
@@ -26,19 +27,15 @@ def main() -> None:
     ):
         model_results: list[dict] = []
         skip_model = False
-        with jsonl_path.open("r") as jsonl_file:
-            # Validate JSON
-            for json_line in jsonl_file:
-                try:
-                    result_dict = json.loads(json_line)
-                    model_results.append(result_dict)
-                except json.decoder.JSONDecodeError:
-                    print(f"Error decoding JSON line in {jsonl_path}: {json_line}")
-                    skip_model = True
-                    files_to_remove.append(jsonl_path)
-                    break
-            if skip_model:
-                continue
+        try:
+            lines = jsonl_path.read_text(encoding="utf-8").splitlines()
+            model_results = parse_jsonl_lines(lines=lines, source=str(jsonl_path))
+        except ValueError as exc:
+            print(f"Error parsing {jsonl_path}: {exc}")
+            skip_model = True
+            files_to_remove.append(jsonl_path)
+        if skip_model:
+            continue
 
         # Enforce EEE
         model_results = [
@@ -88,12 +85,9 @@ def main() -> None:
                         value
                     )
 
-        with jsonl_path.open("w") as jsonl_file:
-            for i, result_dict in enumerate(model_results):
-                line = json.dumps(result_dict)
-                if i < len(model_results) - 1:
-                    line += "\n"
-                jsonl_file.write(line)
+        with jsonl_path.open("w", encoding="utf-8") as jsonl_file:
+            for result_dict in model_results:
+                jsonl_file.write(json.dumps(result_dict) + "\n")
 
     for path in files_to_remove:
         path.unlink()
