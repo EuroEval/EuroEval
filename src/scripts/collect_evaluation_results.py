@@ -47,10 +47,10 @@ from leaderboards.constants import (
     RESULTS_READY_LABEL,
 )
 from leaderboards.github_api import close_issue, comment_on_issue, gh_request
+from leaderboards.jsonl_io import parse_jsonl_lines
 from leaderboards.queue_parsing import extract_model_id
 from leaderboards.record_fields import get_few_shot, get_validation_split
 from leaderboards.records import get_dataset, get_model_name
-from leaderboards.utils import parse_jsonl_lines
 
 load_dotenv()
 

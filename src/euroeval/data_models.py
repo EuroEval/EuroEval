@@ -23,6 +23,7 @@ from .constants import (
 from .eee_utils import benchmark_result_from_eee_dict, benchmark_result_to_eee_dict
 from .enums import Device, GenerativeType, ModelType, TaskGroup
 from .exceptions import InvalidBenchmark
+from .jsonl_io import parse_jsonl_lines
 from .languages import (
     ENGLISH,
     EUROPEAN_PORTUGUESE,
@@ -1040,36 +1041,13 @@ class BenchmarkResult(pydantic.BaseModel):
 
         Returns:
             A list of BenchmarkResult instances.
-
-        Raises:
-            ValueError:
-                If a line contains invalid JSON or a non-object value.
         """
         if not results_path.exists():
             return []
 
         lines = results_path.read_text(encoding="utf-8").splitlines()
-        results: list["BenchmarkResult"] = []
-        for line_idx, line in enumerate(lines, start=1):
-            if not line.strip():
-                continue
-            # Split concatenated JSON objects on the same line (e.g., `}{` -> `}\n{`)
-            for sub_line in line.replace("}{", "}\n{").splitlines():
-                if not sub_line.strip():
-                    continue
-                try:
-                    value = json.loads(sub_line)
-                except json.JSONDecodeError as exc:
-                    raise ValueError(
-                        f"Invalid JSON in {results_path} line {line_idx:,}: {sub_line}."
-                    ) from exc
-                if not isinstance(value, dict):
-                    raise ValueError(
-                        f"Invalid result in {results_path} line {line_idx:,}: "
-                        "expected object."
-                    )
-                results.append(cls.from_dict(value))
-        return results
+        records = parse_jsonl_lines(lines=lines, source=str(results_path))
+        return [cls.from_dict(record) for record in records]
 
 
 @dataclass
