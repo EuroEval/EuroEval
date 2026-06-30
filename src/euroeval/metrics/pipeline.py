@@ -1,5 +1,7 @@
 """Metrics based on a scikit-learn Pipeline."""
 
+from __future__ import annotations
+
 import collections.abc as c
 import logging
 import typing as t
