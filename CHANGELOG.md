@@ -9,6 +9,19 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Evaluation benchmark for hallucination detection, reporting a hallucination rate
+  (hallucinated_tokens/total_tokens).
+
+### Fixed
+
+- Fixed race condition in cache cleanup where `rmtree` would fail with `FileNotFoundError`
+  when checkpoint directories were removed concurrently during model benchmarking. Now
+  uses `ignore_errors=True` to handle concurrent deletions gracefully.
+
+## [v17.6.0] - 2026-06-30
+
+### Added
+
 - Added `download()` method to `PipelineMetric` class
   - Enables offline mode for metrics that use scikit-learn pipelines (e.g., European
     Values metric)
@@ -21,11 +34,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   [zebra_puzzles](https://huggingface.co/datasets/alexandrainst/zebra_puzzles). The split
   is given by 128 / 1,024 samples for train / test, respectively. It is marked as
   `unofficial` for now. This was contributed by @sofiehb ✨
-- Evaluation benchmark for hallucination detection, reporting a hallucination rate
-  (hallucinated_tokens/total_tokens).
 
 ### Fixed
 
+- The (unofficial) MultiLoko datasets had an error in their dataset configs, as they do
+  not have a validation split. The configs have now been fixed.
 - Fixed the parameter count derived from safetensors metadata when a model has multiple
   dtype entries. The `parameter_count` dict maps each dtype to the number of parameters
   stored in that dtype, so the total is the sum across entries — previously only the

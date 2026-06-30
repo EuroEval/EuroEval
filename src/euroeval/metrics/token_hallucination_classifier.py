@@ -217,10 +217,7 @@ def detect_hallucinations(
         predicted_text = prediction["prediction_text"]
 
         if _answer_too_long(
-            # TODO: Check if it is necessary to check if the answer is too long.
-            answer=predicted_text,
-            tokenizer=tokenizer,
-            max_length=MAX_CONTEXT_LENGTH,
+            answer=predicted_text, tokenizer=tokenizer, max_length=MAX_CONTEXT_LENGTH
         ):
             skipped_samples += 1
             continue
