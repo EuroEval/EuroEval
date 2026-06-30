@@ -2122,9 +2122,10 @@ i.e., generates tokens that are not grounded in the provided context.
 
 The hallucination detection is performed using the
 [LettuceDetect](https://github.com/KRLabsOrg/LettuceDetect) library, which uses a
-transformer-based classifier to predict hallucination at the token level. The metric
+[transformer-based classifier](https://arxiv.org/abs/2605.02504) to predict
+hallucination at the token level. The metric
 reported is the hallucination rate, computed as the ratio of hallucinated tokens to total
-tokens in the generated answers.
+tokens in the generated answers. 
 
 Here are a few examples from the training split:
 
