@@ -1,5 +1,7 @@
 """The abstract base class for all metrics."""
 
+from __future__ import annotations
+
 import abc
 import collections.abc as c
 import typing as t

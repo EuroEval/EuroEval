@@ -44,9 +44,7 @@ class TokenHallucinationMetric(Metric):
         )
 
     def download(
-        self,
-        cache_dir: str,
-        dataset_config: "DatasetConfig" | None = None,
+        self, cache_dir: str, dataset_config: "DatasetConfig" | None = None
     ) -> "TokenHallucinationMetric":
         """Pre-download hallucination detection models.
 
@@ -67,8 +65,7 @@ class TokenHallucinationMetric(Metric):
             The metric object itself.
         """
         for model_id in _hallucination_model_ids(
-            cache_dir=cache_dir,
-            dataset_config=dataset_config,
+            cache_dir=cache_dir, dataset_config=dataset_config
         ):
             snapshot_download(repo_id=model_id, repo_type="model", cache_dir=cache_dir)
         return self
@@ -132,8 +129,7 @@ def _hallucination_model_id(dataset_config: "DatasetConfig") -> str:
 
 
 def _hallucination_model_ids(
-    cache_dir: str,
-    dataset_config: "DatasetConfig" | None = None,
+    cache_dir: str, dataset_config: "DatasetConfig" | None = None
 ) -> set[str]:
     """Collect the model IDs of datasets using the hallucination metric.
 
@@ -151,21 +147,20 @@ def _hallucination_model_ids(
 
     Returns:
         The set of Hugging Face Hub repository IDs of hallucination detection
-        models. If ``dataset_config`` is provided, contains only the model(s)
-        for the relevant language(s). Otherwise, contains all models referenced
-        by built-in dataset configurations.
+        models. If ``dataset_config`` is provided, contains only the model for
+        the relevant language (the target language for translation tasks).
+        Otherwise, contains all models referenced by built-in dataset
+        configurations.
     """
     if dataset_config is not None:
         # Extract language(s) from the provided dataset configuration
         main_language = dataset_config.main_language
         if isinstance(main_language, tuple):
-            # Translation task with source and target languages
+            # Translation task: use target language (second element) since that's
+            # what the model outputs and what we check for hallucinations
             return {
-                (
-                    "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
-                    f"{lang.code}"
-                )
-                for lang in main_language
+                "EuroEval/mmBERT-small-multi-wiki-qa-synthetic-hallucinations-with-ragtruth-"
+                f"{main_language[1].code}"
             }
         else:
             # Single language
