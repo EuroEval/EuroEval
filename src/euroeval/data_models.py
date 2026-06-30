@@ -1029,7 +1029,7 @@ class BenchmarkResult(pydantic.BaseModel):
             f.write(("\n" if needs_sep else "") + json_str + "\n")
 
     @classmethod
-    def load_from_jsonl(cls, results_path: Path) -> list["BenchmarkResult"]:
+    def from_jsonl(cls, results_path: Path) -> list["BenchmarkResult"]:
         """Load benchmark results from a JSONL file.
 
         Parses a JSONL file with robust handling of blank lines and concatenated

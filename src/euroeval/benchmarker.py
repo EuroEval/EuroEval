@@ -256,7 +256,7 @@ class Benchmarker:
         Returns:
             A list of benchmark results.
         """
-        return BenchmarkResult.load_from_jsonl(self.results_path)
+        return BenchmarkResult.from_jsonl(self.results_path)
 
     def _download(
         self,
