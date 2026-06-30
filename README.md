@@ -13,7 +13,8 @@
 
 (formerly known as ScandEval)
 
-______________________________________________________________________
+---
+
 [![Documentation](https://img.shields.io/badge/docs-passing-green)](https://euroeval.com)
 [![PyPI Status](https://badge.fury.io/py/euroeval.svg)](https://pypi.org/project/euroeval/)
 [![First paper](https://img.shields.io/badge/arXiv-2304.00906-b31b1b.svg)](https://arxiv.org/abs/2304.00906)
@@ -25,7 +26,8 @@ ______________________________________________________________________
 
 ## Maintainer
 
-- Dan Saattrup Smart ([@saattrupdan](https://github.com/saattrupdan), <dan.smart@alexandra.dk>)
+- Dan Saattrup Smart ([@saattrupdan](https://github.com/saattrupdan),
+  <dan.smart@alexandra.dk>)
 
 ## Installation and usage
 
@@ -233,6 +235,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for lardinator"
     />
 </a>
+<a href="https://github.com/lswiers">
+    <img
+        src="https://avatars.githubusercontent.com/u/104838843"
+        width=50
+        alt="Contributor avatar for lswiers"
+    />
+</a>
 
 ### Contribute to EuroEval
 
@@ -252,13 +261,13 @@ contributing new datasets, your help makes this project better for everyone.
   models on the leaderboards.
 - Thanks to [OpenAI](https://openai.com/) for sponsoring OpenAI credits as part of their
   [Researcher Access Program](https://openai.com/form/researcher-access-program/).
-- Thanks to [UWV](https://www.uwv.nl/) and [KU
-  Leuven](https://www.arts.kuleuven.be/ling/ccl) for sponsoring the Azure OpenAI
+- Thanks to [UWV](https://www.uwv.nl/) and
+  [KU Leuven](https://www.arts.kuleuven.be/ling/ccl) for sponsoring the Azure OpenAI
   credits used to evaluate GPT-4-turbo in Dutch.
-- Thanks to [Miðeind](https://mideind.is/en) for sponsoring the OpenAI
-  credits used to evaluate GPT-4-turbo in Icelandic and Faroese.
-- Thanks to [CHC](https://chc.au.dk/) for sponsoring the OpenAI credits used to
-  evaluate GPT-4-turbo in German.
+- Thanks to [Miðeind](https://mideind.is/en) for sponsoring the OpenAI credits used to
+  evaluate GPT-4-turbo in Icelandic and Faroese.
+- Thanks to [CHC](https://chc.au.dk/) for sponsoring the OpenAI credits used to evaluate
+  GPT-4-turbo in German.
 
 ## Citing EuroEval
 
