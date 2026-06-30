@@ -12,7 +12,7 @@ from pathlib import Path
 from euroeval.data_models import BenchmarkResult
 from leaderboards.bucket_sync import sync_bucket, upload_results_to_bucket
 from leaderboards.constants import RESULTS_DIR
-from leaderboards.utils import parse_jsonl_lines
+from leaderboards.jsonl_io import parse_jsonl_lines
 
 logger = logging.getLogger(__name__)
 
