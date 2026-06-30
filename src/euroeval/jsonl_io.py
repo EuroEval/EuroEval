@@ -6,7 +6,7 @@ import json
 
 
 def parse_jsonl_lines(lines: list[str], source: str) -> list[dict[str, object]]:
-    r"""Parse JSONL lines into record dictionaries with robust `}{` handling.
+    """Parse JSONL lines into record dictionaries with robust `}{` handling.
 
     Blank lines are skipped and concatenated objects (``}{``) on a single line
     are split apart before parsing. This handles malformed JSONL where multiple
