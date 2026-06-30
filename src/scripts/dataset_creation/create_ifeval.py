@@ -23,11 +23,25 @@ LANGUAGES = {
     "et": "tartuNLP/ifeval_et",
     "fi": "LumiOpen/ifeval_mt::fi",
     "fr": "json:https://raw.githubusercontent.com/lightblue-tech/M-IFEval/refs/heads/main/data/fr_input_data.jsonl",
+    "nb": "danish-foundation-models/multi-ifeval::no",
+    "nn": "danish-foundation-models/multi-ifeval::nn",
     "pt": "facebook/Multi-IF?language=Portuguese",
     "sv": "LumiOpen/ifeval_mt::sv",
     "uk": "INSAIT-Institute/ifeval_ukr",
 }
 TARGET_REPO = "EuroEval/ifeval-{language}"
+
+# Datasets whose language needs a non-default NLTK Punkt sentence tokenizer remap
+# their `length_constraints:number_sentences` constraint to
+# `length_constraints:number_sentences_with_language`, carrying the NLTK language
+# name in a `language` kwarg. The default English tokenizer over-counts languages
+# whose abbreviations it does not know (e.g. Norwegian `f.eks.`, `bl.a.`).
+# Languages without an entry here keep the original constraint and data unchanged.
+NUMBER_SENTENCES_CONSTRAINT = "length_constraints:number_sentences"
+NUMBER_SENTENCES_WITH_LANGUAGE_CONSTRAINT = (
+    "length_constraints:number_sentences_with_language"
+)
+SENTENCE_TOKENIZER_LANGUAGE = {"nb": "norwegian", "nn": "norwegian"}
 
 PROMPT_COLUMN_CANDIDATES = ["prompt", "promptly", "turn_1_prompt"]
 INSTRUCTION_ID_LIST_COLUMN_CANDIDATES = [
@@ -145,6 +159,23 @@ def main() -> None:
                 kwargs = [json.loads(kwarg) for kwarg in kwargs]
             if isinstance(kwargs, dict):
                 kwargs = [kwargs] * len(instruction_id_list)
+
+            # For languages that need a non-default sentence tokenizer, remap the
+            # number_sentences constraint to its language-aware variant and carry
+            # the NLTK language name. Other languages keep the original id and
+            # data unchanged, so existing datasets need no regeneration.
+            sentence_language = SENTENCE_TOKENIZER_LANGUAGE.get(language)
+            if sentence_language is not None:
+                remapped_ids = []
+                remapped_kwargs = []
+                for instruction_id, kwarg in zip(instruction_id_list, kwargs):
+                    if instruction_id == NUMBER_SENTENCES_CONSTRAINT:
+                        remapped_ids.append(NUMBER_SENTENCES_WITH_LANGUAGE_CONSTRAINT)
+                        remapped_kwargs.append({**kwarg, "language": sentence_language})
+                    else:
+                        remapped_ids.append(instruction_id)
+                        remapped_kwargs.append(kwarg)
+                instruction_id_list, kwargs = remapped_ids, remapped_kwargs
 
             return dict(
                 text=prompt,
