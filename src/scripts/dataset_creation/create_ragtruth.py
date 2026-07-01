@@ -118,8 +118,8 @@ TARGET_LANGS: list[Language] = [
 # prompt + answer). BATCH_SIZE is kept well above MAX_WORKERS so the worker pool
 # stays saturated between the per-batch save points instead of draining to zero at
 # every batch boundary. Raise MAX_WORKERS further if your rate-limit tier allows.
-BATCH_SIZE = 200
-MAX_WORKERS = 50
+BATCH_SIZE = 1600
+MAX_WORKERS = 400
 
 # Retry settings for transient API errors (HTTP 429/5xx and network blips).
 MAX_TRANSLATION_RETRIES = 5
