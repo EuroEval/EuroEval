@@ -14,8 +14,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   European languages (Danish, Albanian, Belarusian, Bosnian, Bulgarian, Catalan,
   Croatian, Czech, Dutch, Estonian, Faroese, Finnish, French, German, Greek, Hungarian,
   Icelandic, Italian, Latvian, Lithuanian, Norwegian, Polish, Portuguese, Romanian,
-  Serbian, Slovak, Slovene, Spanish, Swedish, Ukrainian). All non-Danish datasets
-  are marked `unofficial` as the published Hugging Face versions are placeholder
+  Serbian, Slovak, Slovene, Spanish, Swedish, Ukrainian). All are marked
+  `unofficial` as the published Hugging Face versions are placeholder
   test-split-only snapshots awaiting full regeneration. This was contributed by
   @FrejaThoresen ✨
 
