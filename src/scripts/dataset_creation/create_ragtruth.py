@@ -120,10 +120,10 @@ TARGET_LANGS: list[Language] = [
 # every batch boundary. The practical ceiling here is network egress, not the API
 # rate limit: on the inference-server host ~400 workers caused escalating
 # connection retries, and even 100 occasionally exhausted the retry budget on a
-# request (losing that sample). 50 keeps sample loss to a minimum there. Tune via
-# --max-workers per environment.
+# request (losing that sample). 75 is the chosen balance of throughput vs sample
+# loss there. Tune via --max-workers per environment.
 BATCH_SIZE = 400
-MAX_WORKERS = 50
+MAX_WORKERS = 75
 
 # Retry settings for transient API errors (HTTP 429/5xx and network blips).
 MAX_TRANSLATION_RETRIES = 5
