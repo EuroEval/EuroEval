@@ -5,9 +5,7 @@
 #     "huggingface-hub==0.31.0",
 #     "httpx==0.28.0",
 #     "python-dotenv==1.1.0",
-#     "lettucedetect==1.0.0",
-#     "tenacity==9.0.0",
-#     "tqdm==4.67.0",
+#     "lettucedetect==1.0.0",  # Only used if resume/progress needed
 # ]
 # ///
 
@@ -24,8 +22,8 @@ import os
 import random
 import re
 import time
+import typing as t
 from pathlib import Path
-from typing import Any, cast
 
 import httpx
 import tqdm
@@ -177,7 +175,7 @@ def setup_logging(output_dir: Path) -> None:
     logger.addHandler(file_handler)
 
 
-def get_openai_client() -> dict[str, Any]:
+def get_openai_client() -> dict[str, t.Any]:
     """Get HTTP client configuration from environment variables.
 
     Returns:
@@ -202,8 +200,8 @@ def get_openai_client() -> dict[str, Any]:
     }
 
 
-def download_jsonl(url: str) -> list[dict[str, Any]]:
-    """Download a JSONL file from a URL.
+def download_jsonl(url: str) -> list[dict[str, t.Any]]:
+    """Download a JSONL file from a URL with streaming to reduce memory usage.
 
     Args:
         url: URL to the JSONL file.
@@ -212,12 +210,15 @@ def download_jsonl(url: str) -> list[dict[str, Any]]:
         List of parsed JSON objects from each line.
     """
     logger.info(f"Downloading {url}...")
-    with httpx.Client() as client:
-        response = client.get(url)
-        response.raise_for_status()
-
-        lines = response.text.strip().split("\n")
-        return [json.loads(line) for line in lines if line.strip()]
+    with httpx.Client(timeout=300.0) as client:
+        with client.stream("GET", url) as response:
+            response.raise_for_status()
+            lines = []
+            for line in response.iter_lines():
+                line = line.strip()
+                if line:
+                    lines.append(json.loads(line))
+            return lines
 
 
 def load_ragtruth_data() -> HallucinationData:
@@ -232,7 +233,7 @@ def load_ragtruth_data() -> HallucinationData:
     logger.info(f"Downloaded {len(source_info_list)} source records")
     logger.info(f"Downloaded {len(response_list)} response records")
 
-    source_lookup: dict[str, dict[str, Any]] = {
+    source_lookup: dict[str, dict[str, t.Any]] = {
         src["source_id"]: src for src in source_info_list
     }
 
@@ -402,7 +403,7 @@ async def translate_text(
         raise TranslationError(f"Failed to translate text: {e!s}") from e
 
 
-def merge_overlapping_spans(labels: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def merge_overlapping_spans(labels: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
     """Merge overlapping hallucination spans into a single span.
 
     Args:
@@ -431,7 +432,7 @@ def merge_overlapping_spans(labels: list[dict[str, Any]]) -> list[dict[str, Any]
 
 def put_hallucination_tags(
     sample: HallucinationSample, answer: str
-) -> tuple[str, list[dict[str, Any]]]:
+) -> tuple[str, list[dict[str, t.Any]]]:
     """Add hallucination tags to the text.
 
     Args:
@@ -465,7 +466,7 @@ def put_hallucination_tags(
 
 
 def find_hallucination_tags(
-    text: str, labels: list[dict[str, Any]], sample_index: int
+    text: str, labels: list[dict[str, t.Any]], sample_index: int
 ) -> tuple[list[tuple[int, int, str]], str]:
     """Find hallucination tags in the translated text and remove them.
 
@@ -624,8 +625,8 @@ async def translate_sample(
             labels=labels,
             split=sample.split,
             task_type=sample.task_type,
-            dataset=cast(Any, dataset),
-            language=cast(Any, target_lang.lower()),
+            dataset=t.cast(t.Any, dataset),
+            language=t.cast(t.Any, target_lang.lower()),
         )
     except Exception as e:
         logger.error(f"Error translating sample {sample_index}: {e!s}")
@@ -736,7 +737,7 @@ async def run_translation(
     max_workers: int,
     test: bool,
     log_file: Path,
-    client_config: dict[str, Any],
+    client_config: dict[str, t.Any],
 ) -> None:
     """Run batched async translation with connection pooling.
 
@@ -844,11 +845,11 @@ def save_progress(
         last_processed_index: Index of last processed source sample (for resume).
     """
     # Wrap samples in dict structure expected by from_json
-    data_dict: dict[str, Any] = {"samples": translated_data.to_json()}
+    data_dict: dict[str, t.Any] = {"samples": translated_data.to_json()}
     if last_processed_index is not None:
         data_dict["_metadata"] = {"last_processed_index": last_processed_index}
     try:
-        output_file.write_text(json.dumps(data_dict, indent=2))
+        output_file.write_text(json.dumps(data_dict))
     except Exception as e:
         logger.error(f"Error saving progress: {e!s}")
         # Try to save to a backup file
@@ -857,7 +858,7 @@ def save_progress(
             / f"{dataset}_data_{target_lang.lower()}_backup_{int(time.time())}.json"
         )
         try:
-            backup_file.write_text(json.dumps(data_dict, indent=2))
+            backup_file.write_text(json.dumps(data_dict))
             logger.info(f"Saved backup to {backup_file}")
         except Exception as e2:
             logger.error(f"Error saving backup: {e2!s}")
@@ -919,7 +920,7 @@ def push_test_subset_to_hub(
     samples = translated_data.samples[:]
     random.shuffle(samples)
 
-    def _to_rows(items: list[HallucinationSample]) -> list[dict[str, Any]]:
+    def _to_rows(items: list[HallucinationSample]) -> list[dict[str, t.Any]]:
         # Preprocess the samples so they are ready for the hallucination
         # (question-answering) task: the task group expects ``id``, ``context``,
         # ``question`` and ``answers`` columns, derived here from the RAG ``prompt``
