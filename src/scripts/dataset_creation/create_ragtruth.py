@@ -276,8 +276,11 @@ def main() -> None:
     # Get OpenAI client once (shared across all languages)
     client = get_openai_client()
 
+    # In test mode we only smoke-test a single language (Danish).
+    target_langs = [DANISH] if args.test_mode else TARGET_LANGS
+
     # Translate to each target language
-    for target_lang in TARGET_LANGS:
+    for target_lang in target_langs:
         logger.info(f"\n{'=' * 60}")
         logger.info(f"Translating to {target_lang.name} ({target_lang.code})")
         logger.info(f"{'=' * 60}")
@@ -1291,6 +1294,10 @@ def _translate_to_language(
         f"Translation complete. Translated {len(translated_data.samples)} samples."
     )
     logger.info(f"Output saved to {output_file}")
+
+    if test_mode:
+        logger.info("Test mode: skipping Hub uploads.")
+        return
 
     if PUSH_TO_HUB:
         push_translated_data_to_hub(
