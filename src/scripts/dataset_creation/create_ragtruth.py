@@ -268,16 +268,6 @@ def main() -> None:
         _translate_to_language(
             source_data=data,
             target_lang=target_lang,
-            model=MODEL,
-            batch_size=BATCH_SIZE,
-            max_workers=MAX_WORKERS,
-            test=TEST_MODE,
-            push_to_hub=PUSH_TO_HUB,
-            hub_repo_id=HUB_REPO_ID,
-            private=PRIVATE_UPLOAD,
-            push_test_subset=PUSH_TEST_SUBSET,
-            test_subset_size=TEST_SUBSET_SIZE,
-            validation_subset_size=VALIDATION_SUBSET_SIZE,
             client_config=client,
         )
 
@@ -381,70 +371,65 @@ async def run_translation(
     remaining_samples: list[HallucinationSample],
     translated_data: HallucinationData,
     output_file: Path,
-    dataset: str,
     target_lang: Language,
-    output_dir: Path,
-    model: str,
-    source_lang: Language,
-    total_samples: int,
     num_processed: int,
-    batch_size: int,
-    max_workers: int,
-    test: bool,
-    log_file: Path,
+    last_processed_index: int | None,
     client_config: ClientConfig,
 ) -> None:
     """Run batched async translation with connection pooling.
 
+    Uses global configuration constants for model, batch size, and workers.
+
     Args:
-        remaining_samples: Samples that still need translation.
-        translated_data: Existing translated data to append to.
-        output_file: Output JSON file path.
-        dataset: Dataset name.
-        target_lang: Target language code.
-        output_dir: Output directory.
-        model: Model to use.
-        source_lang: Source language code.
-        total_samples: Number of remaining samples.
-        num_processed: Number of already translated samples from cache.
-        batch_size: Number of samples per batch.
-        max_workers: Maximum concurrent API requests.
-        test: Whether to run in test mode.
-        log_file: Path to error log.
-        client_config: API URL and headers.
+        remaining_samples:
+            Samples that still need translation.
+        translated_data:
+            Existing translated data to append to.
+        output_file:
+            Output JSON file path.
+        target_lang:
+            Target language code.
+        num_processed:
+            Number of already translated samples from cache.
+        last_processed_index:
+            Index of last processed sample in source data.
+        client_config:
+            API URL and headers.
     """
+    total_samples = len(remaining_samples)
+    log_file = OUTPUT_DIR / "error_log.txt"
+
     progress_bar = tqdm.tqdm(total=total_samples, desc="Translating")
     start_time = time.time()
     save_interval = 60
     last_save_time = start_time
-    last_processed_index = num_processed  # Track source index including failures
 
     limits = httpx.Limits(
-        max_connections=max_workers * 2, max_keepalive_connections=max_workers
+        max_connections=MAX_WORKERS * 2, max_keepalive_connections=MAX_WORKERS
     )
     timeout = httpx.Timeout(60.0)
-    semaphore = asyncio.Semaphore(max_workers)
+    semaphore = asyncio.Semaphore(MAX_WORKERS)
 
     try:
         async with httpx.AsyncClient(
             headers=client_config["headers"], timeout=timeout, limits=limits
         ) as http_client:
-            for i in range(0, total_samples, batch_size):
-                if test and i > 0:
+            for i in range(0, total_samples, BATCH_SIZE):
+                if TEST_MODE and i > 0:
                     break
 
-                batch = remaining_samples[i : i + batch_size]
+                batch = remaining_samples[i : i + BATCH_SIZE]
                 batch_results = await process_batch(
                     batch,
                     http_client,
                     client_config["url"],
                     semaphore,
-                    model,
+                    MODEL,
                     num_processed + i,
                     log_file,
-                    source_lang,
+                    SOURCE_LANG,
                     target_lang,
-                    dataset,
+                    DATASET_NAME,
                 )
 
                 translated_data.samples.extend(batch_results)
@@ -456,15 +441,13 @@ async def run_translation(
                 current_time = time.time()
                 if (
                     current_time - last_save_time > save_interval
-                    or i + batch_size >= total_samples
+                    or i + BATCH_SIZE >= total_samples
                 ):
                     save_progress(
-                        translated_data,
-                        output_file,
-                        dataset,
-                        target_lang,
-                        output_dir,
-                        last_processed_index,
+                        translated_data=translated_data,
+                        output_file=output_file,
+                        target_lang=target_lang,
+                        last_processed_index=last_processed_index,
                     )
                     last_save_time = current_time
 
@@ -476,7 +459,7 @@ async def run_translation(
 
                 logger.info(
                     f"Processed {current_count}/{num_processed + total_samples} "
-                    f"samples ({samples_per_sec:.2f} samples/sec)"
+                    f"samples ({samples_per_sec:.2f} samples/sec)"  # noqa: E501
                 )
     finally:
         progress_bar.close()
@@ -914,20 +897,22 @@ async def translate_text(
 def save_progress(
     translated_data: HallucinationData,
     output_file: Path,
-    dataset: str,
     target_lang: Language,
-    output_dir: Path,
     last_processed_index: int | None = None,
 ) -> None:
     """Save progress to file with backup handling.
 
+    Uses global configuration constants for dataset name and output directory.
+
     Args:
-        translated_data: Data to save.
-        output_file: Primary output file.
-        dataset: Dataset name for backup file.
-        target_lang: Target language for backup file.
-        output_dir: Output directory for backup file.
-        last_processed_index: Index of last processed source sample (for caching).
+        translated_data:
+            Data to save.
+        output_file:
+            Primary output file.
+        target_lang:
+            Target language for backup file.
+        last_processed_index:
+            Index of last processed source sample (for caching).
     """
     # Wrap samples in dict structure expected by from_json
     data_dict: dict[str, t.Any] = {"samples": translated_data.to_json()}
@@ -940,8 +925,8 @@ def save_progress(
 
         # Try to save to a backup file
         backup_file = (
-            output_dir
-            / f"{dataset}_data_{target_lang.code}_backup_{int(time.time())}.json"
+            OUTPUT_DIR
+            / f"{DATASET_NAME}_data_{target_lang.code}_backup_{int(time.time())}.json"
         )
         try:
             backup_file.write_text(json.dumps(data_dict))
@@ -1086,45 +1071,18 @@ def setup_logging(output_dir: Path) -> None:
 def _translate_to_language(
     source_data: HallucinationData | None,
     target_lang: Language,
-    model: str,
-    batch_size: int,
-    max_workers: int,
-    test: bool,
-    push_to_hub: bool,
-    hub_repo_id: str | None,
-    private: bool,
-    push_test_subset: bool,
-    test_subset_size: int,
-    validation_subset_size: int,
     client_config: ClientConfig,
 ) -> None:
     """Translate RAGTruth data to a single target language.
+
+    Uses global configuration constants for model, batch size, workers, and Hub
+    settings.
 
     Args:
         source_data:
             Source hallucination data (None if resuming without source).
         target_lang:
             Target language to translate to.
-        model:
-            Model to use for translation.
-        batch_size:
-            Number of samples per batch.
-        max_workers:
-            Maximum concurrent API requests.
-        test:
-            Whether to run in test mode.
-        push_to_hub:
-            Whether to push translated data to Hugging Face Hub.
-        hub_repo_id:
-            Hub repository ID for full dataset.
-        private:
-            Whether to upload as private.
-        push_test_subset:
-            Whether to push test subset.
-        test_subset_size:
-            Size of test subset.
-        validation_subset_size:
-            Size of validation subset.
         client_config:
             OpenAI client configuration.
 
@@ -1132,13 +1090,8 @@ def _translate_to_language(
         FileNotFoundError:
             If source data is not available and no cached translation exists.
     """
-    dataset = DATASET_NAME
-    source_lang: Language = SOURCE_LANG
-
     # Set up files for this language
-    output_dir = OUTPUT_DIR
-    output_file = output_dir / f"{dataset}_data_{target_lang.code}.json"
-    log_file = output_dir / "error_log.txt"
+    output_file = OUTPUT_DIR / f"{DATASET_NAME}_data_{target_lang.code}.json"
 
     # Load existing translated data if output file exists (cache)
     last_processed_index: int | None = None
@@ -1177,35 +1130,30 @@ def _translate_to_language(
 
     if total_samples == 0:
         logger.info("No samples to translate. Exiting.")
-        if push_to_hub:
-            resolved_repo_id = (
-                hub_repo_id
-                if hub_repo_id
-                else f"EuroEval/{dataset}-translated-hallucinations"
-            )
+        if PUSH_TO_HUB:
             push_translated_data_to_hub(
                 translated_data=translated_data,
-                repo_id=resolved_repo_id,
+                repo_id=HUB_REPO_ID,
                 config_name=target_lang.code,
-                private=private,
+                private=PRIVATE_UPLOAD,
             )
-        if push_test_subset:
+        if PUSH_TEST_SUBSET:
             resolved_test_repo_id = (
-                f"EuroEval/{dataset}-translated-hallucinations-{target_lang.code}-mini"
+                f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang.code}-mini"
             )
             push_test_subset_to_hub(
                 translated_data=translated_data,
                 repo_id=resolved_test_repo_id,
                 config_name=target_lang.code,
-                private=private,
-                n=test_subset_size,
-                validation_n=validation_subset_size,
+                private=PRIVATE_UPLOAD,
+                n=TEST_SUBSET_SIZE,
+                validation_n=VALIDATION_SUBSET_SIZE,
             )
         return
 
-    logger.info(f"Using model: {model}")
+    logger.info(f"Using model: {MODEL}")
     logger.info(f"Total samples to process: {total_samples}")
-    logger.info(f"Batch size: {batch_size}, Max workers: {max_workers}")
+    logger.info(f"Batch size: {BATCH_SIZE}, Max workers: {MAX_WORKERS}")
 
     try:
         asyncio.run(
@@ -1213,17 +1161,9 @@ def _translate_to_language(
                 remaining_samples=remaining_samples,
                 translated_data=translated_data,
                 output_file=output_file,
-                dataset=t.cast(t.Literal["ragtruth", "ragbench"], dataset),
                 target_lang=target_lang,
-                output_dir=output_dir,
-                model=model,
-                source_lang=source_lang,
-                total_samples=total_samples,
                 num_processed=num_processed,
-                batch_size=batch_size,
-                max_workers=max_workers,
-                test=test,
-                log_file=log_file,
+                last_processed_index=last_processed_index,
                 client_config=client_config,
             )
         )
@@ -1231,12 +1171,10 @@ def _translate_to_language(
     except KeyboardInterrupt:
         logger.info("Translation interrupted by user. Saving progress...")
         save_progress(
-            translated_data,
-            output_file,
-            dataset,
-            target_lang,
-            output_dir,
-            last_processed_index,
+            translated_data=translated_data,
+            output_file=output_file,
+            target_lang=target_lang,
+            last_processed_index=last_processed_index,
         )
         logger.info(
             f"Saved {len(translated_data.samples)} translated samples to {output_file}"
@@ -1246,12 +1184,10 @@ def _translate_to_language(
     except Exception as e:
         logger.error(f"Unexpected error: {e!s}")
         save_progress(
-            translated_data,
-            output_file,
-            dataset,
-            target_lang,
-            output_dir,
-            last_processed_index,
+            translated_data=translated_data,
+            output_file=output_file,
+            target_lang=target_lang,
+            last_processed_index=last_processed_index,
         )
         raise
 
@@ -1260,30 +1196,25 @@ def _translate_to_language(
     )
     logger.info(f"Output saved to {output_file}")
 
-    if push_to_hub:
-        resolved_repo_id = (
-            hub_repo_id
-            if hub_repo_id
-            else f"EuroEval/{dataset}-translated-hallucinations"
-        )
+    if PUSH_TO_HUB:
         push_translated_data_to_hub(
             translated_data=translated_data,
-            repo_id=resolved_repo_id,
+            repo_id=HUB_REPO_ID,
             config_name=target_lang.code,
-            private=private,
+            private=PRIVATE_UPLOAD,
         )
 
-    if push_test_subset:
+    if PUSH_TEST_SUBSET:
         resolved_test_repo_id = (
-            f"EuroEval/{dataset}-translated-hallucinations-{target_lang.code}-mini"
+            f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang.code}-mini"
         )
         push_test_subset_to_hub(
             translated_data=translated_data,
             repo_id=resolved_test_repo_id,
             config_name=target_lang.code,
-            private=private,
-            n=test_subset_size,
-            validation_n=validation_subset_size,
+            private=PRIVATE_UPLOAD,
+            n=TEST_SUBSET_SIZE,
+            validation_n=VALIDATION_SUBSET_SIZE,
         )
 
 
