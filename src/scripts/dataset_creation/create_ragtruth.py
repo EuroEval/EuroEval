@@ -34,7 +34,40 @@ from lettucedetect.datasets.hallucination_dataset import (
     HallucinationSample,
 )
 
-from euroeval.languages import DANISH, ENGLISH, Language
+from euroeval.languages import (
+    ALBANIAN,
+    BELARUSIAN,
+    BOSNIAN,
+    BULGARIAN,
+    CATALAN,
+    CROATIAN,
+    CZECH,
+    DANISH,
+    DUTCH,
+    ENGLISH,
+    ESTONIAN,
+    FAROESE,
+    FINNISH,
+    FRENCH,
+    GERMAN,
+    GREEK,
+    HUNGARIAN,
+    ICELANDIC,
+    ITALIAN,
+    LATVIAN,
+    LITHUANIAN,
+    NORWEGIAN,
+    POLISH,
+    PORTUGUESE,
+    ROMANIAN,
+    SERBIAN,
+    SLOVAK,
+    SLOVENE,
+    SPANISH,
+    SWEDISH,
+    UKRAINIAN,
+    Language,
+)
 
 # =============================================================================
 # Configuration constants
@@ -47,7 +80,39 @@ RESPONSE_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/he
 # Translation settings
 MODEL = "gpt-4o-mini"
 SOURCE_LANG: Language = ENGLISH
-TARGET_LANG: Language = DANISH
+# Translates to all major European languages
+TARGET_LANGS: list[Language] = [
+    ALBANIAN,
+    BELARUSIAN,
+    BOSNIAN,
+    BULGARIAN,
+    CATALAN,
+    CROATIAN,
+    CZECH,
+    DANISH,
+    DUTCH,
+    ESTONIAN,
+    FAROESE,
+    FINNISH,
+    FRENCH,
+    GERMAN,
+    GREEK,
+    HUNGARIAN,
+    ICELANDIC,
+    ITALIAN,
+    LATVIAN,
+    LITHUANIAN,
+    NORWEGIAN,
+    POLISH,
+    PORTUGUESE,
+    ROMANIAN,
+    SERBIAN,
+    SLOVAK,
+    SLOVENE,
+    SPANISH,
+    SWEDISH,
+    UKRAINIAN,
+]
 BATCH_SIZE = 30
 MAX_WORKERS = 30
 
@@ -60,9 +125,7 @@ PUSH_TO_HUB = True
 HUB_REPO_ID = "EuroEval/ragtruth-translated-hallucinations"
 PRIVATE_UPLOAD = True
 PUSH_TEST_SUBSET = True
-TEST_SUBSET_REPO_ID = (
-    f"EuroEval/ragtruth-translated-hallucinations-{TARGET_LANG.code}-mini"
-)
+TEST_SUBSET_REPO_ID = "EuroEval/ragtruth-translated-hallucinations-{lang}-mini"
 TEST_SUBSET_SIZE = 1000
 VALIDATION_SUBSET_SIZE = 256
 
@@ -158,203 +221,63 @@ class RetryableTranslationError(Exception):
 
 
 def main() -> None:
-    """Download RAGTruth data, translate, and upload to Hub.
+    """Download RAGTruth data, translate to all target languages, and upload to Hub.
 
     Raises:
         FileNotFoundError: If the input file does not exist and no resume data
             available.
     """
-    # Set up directories and extract constants to local variables
-    input_dir = OUTPUT_DIR
-    output_dir = OUTPUT_DIR
-    model = MODEL
-    source_lang: Language = SOURCE_LANG
-    target_lang: Language = TARGET_LANG
-    dataset = DATASET_NAME
-    batch_size = BATCH_SIZE
-    max_workers = MAX_WORKERS
-    resume = RESUME
-    test = TEST_MODE
-    push_to_hub = PUSH_TO_HUB
-    hub_repo_id = HUB_REPO_ID
-    private = PRIVATE_UPLOAD
-    push_test_subset = PUSH_TEST_SUBSET
-    test_subset_repo_id = TEST_SUBSET_REPO_ID
-    test_subset_size = TEST_SUBSET_SIZE
-    validation_subset_size = VALIDATION_SUBSET_SIZE
-
     # Set up directories
+    input_dir = OUTPUT_DIR
     output_dir = OUTPUT_DIR
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Set up logging
     setup_logging(output_dir)
 
-    # Set up files
-    input_file = input_dir / f"{dataset}_data.json"
-    output_file = output_dir / f"{dataset}_data_{target_lang.code}.json"
-    log_file = output_dir / "error_log.txt"
-
-    # Load existing translated data if resume is enabled
-    if resume and output_file.exists():
-        translated_data, last_processed_index = load_check_existing_data(
-            output_file=output_file
-        )
-        # Use metadata index if available, fall back to sample count
-        num_processed = (
-            last_processed_index
-            if last_processed_index is not None
-            else len(translated_data.samples)
-        )
-        logger.info(f"Resuming from index {num_processed}")
-    else:
-        translated_data = HallucinationData(samples=[])
-        num_processed = 0
-
-    # Load source data. If we already have a complete translated output and the
-    # source file is missing, allow push-only mode without requiring the input.
+    # Load source data once
+    input_file = input_dir / f"{DATASET_NAME}_data.json"
+    data: HallucinationData | None = None
     if input_file.exists():
         try:
             data = HallucinationData.from_json(json.loads(input_file.read_text()))
         except Exception as e:
             logger.error(f"Error loading input data: {e!s}")
             raise
-        remaining_samples = data.samples[num_processed:]
-    elif num_processed > 0:
+    elif RESUME:
+        # In resume mode, we might have translated files but no source
         logger.warning(
             f"Input file not found: {input_file}. "
-            f"Proceeding in push-only mode with {num_processed} existing "
-            "translated samples."
+            "Proceeding in push-only mode if translated files exist."
         )
-        remaining_samples = []
     else:
         logger.error(f"Input file not found: {input_file}")
         raise FileNotFoundError(f"Input file not found: {input_file}")
 
-    total_samples = len(remaining_samples)
-
-    if total_samples == 0:
-        logger.info("No samples to translate. Exiting.")
-        if push_to_hub:
-            resolved_repo_id = (
-                hub_repo_id
-                if hub_repo_id
-                else f"EuroEval/{dataset}-translated-hallucinations"
-            )
-            push_translated_data_to_hub(
-                translated_data=translated_data,
-                repo_id=resolved_repo_id,
-                config_name=target_lang.code,
-                private=private,
-            )
-        if push_test_subset:
-            resolved_test_repo_id = (
-                test_subset_repo_id
-                if test_subset_repo_id
-                else (
-                    f"EuroEval/{dataset}-translated-hallucinations-"
-                    f"{target_lang.code}-mini"
-                )
-            )
-            push_test_subset_to_hub(
-                translated_data=translated_data,
-                repo_id=resolved_test_repo_id,
-                config_name=target_lang.code,
-                private=private,
-                n=test_subset_size,
-                validation_n=validation_subset_size,
-            )
-        return
-
-    # Get OpenAI client
+    # Get OpenAI client once (shared across all languages)
     client = get_openai_client()
 
-    logger.info(f"Translating {dataset} from {source_lang.name} to {target_lang.name}")
-    logger.info(f"Using model: {model}")
-    logger.info(f"Total samples to process: {total_samples}")
-    logger.info(f"Batch size: {batch_size}, Max workers: {max_workers}")
+    # Translate to each target language
+    for target_lang in TARGET_LANGS:
+        logger.info(f"\n{'=' * 60}")
+        logger.info(f"Translating to {target_lang.name} ({target_lang.code})")
+        logger.info(f"{'=' * 60}")
 
-    try:
-        asyncio.run(
-            run_translation(
-                remaining_samples=remaining_samples,
-                translated_data=translated_data,
-                output_file=output_file,
-                dataset=dataset,
-                target_lang=target_lang,
-                output_dir=output_dir,
-                model=model,
-                source_lang=source_lang,
-                total_samples=total_samples,
-                num_processed=num_processed,
-                batch_size=batch_size,
-                max_workers=max_workers,
-                test=test,
-                log_file=log_file,
-                client_config=client,
-            )
-        )
-
-    except KeyboardInterrupt:
-        logger.info("Translation interrupted by user. Saving progress...")
-        save_progress(
-            translated_data,
-            output_file,
-            dataset,
-            target_lang,
-            output_dir,
-            last_processed_index,
-        )
-        logger.info(
-            f"Saved {len(translated_data.samples)} translated samples to {output_file}"
-        )
-        return
-
-    except Exception as e:
-        logger.error(f"Unexpected error: {e!s}")
-        save_progress(
-            translated_data,
-            output_file,
-            dataset,
-            target_lang,
-            output_dir,
-            last_processed_index,
-        )
-        raise
-
-    logger.info(
-        f"Translation complete. Translated {len(translated_data.samples)} samples."
-    )
-    logger.info(f"Output saved to {output_file}")
-
-    if push_to_hub:
-        resolved_repo_id = (
-            hub_repo_id
-            if hub_repo_id
-            else f"EuroEval/{dataset}-translated-hallucinations"
-        )
-        push_translated_data_to_hub(
-            translated_data=translated_data,
-            repo_id=resolved_repo_id,
-            config_name=target_lang.code,
-            private=private,
-        )
-
-    if push_test_subset:
-        resolved_test_repo_id = (
-            test_subset_repo_id
-            if test_subset_repo_id
-            else (
-                f"EuroEval/{dataset}-translated-hallucinations-{target_lang.code}-mini"
-            )
-        )
-        push_test_subset_to_hub(
-            translated_data=translated_data,
-            repo_id=resolved_test_repo_id,
-            config_name=target_lang.code,
-            private=private,
-            n=test_subset_size,
-            validation_n=validation_subset_size,
+        _translate_to_language(
+            source_data=data,
+            target_lang=target_lang,
+            model=MODEL,
+            batch_size=BATCH_SIZE,
+            max_workers=MAX_WORKERS,
+            resume=RESUME,
+            test=TEST_MODE,
+            push_to_hub=PUSH_TO_HUB,
+            hub_repo_id=HUB_REPO_ID,
+            private=PRIVATE_UPLOAD,
+            push_test_subset=PUSH_TEST_SUBSET,
+            test_subset_size=TEST_SUBSET_SIZE,
+            validation_subset_size=VALIDATION_SUBSET_SIZE,
+            client_config=client,
         )
 
 
@@ -1136,6 +1059,212 @@ def setup_logging(output_dir: Path) -> None:
         logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     )
     logger.addHandler(file_handler)
+
+
+def _translate_to_language(
+    source_data: HallucinationData | None,
+    target_lang: Language,
+    model: str,
+    batch_size: int,
+    max_workers: int,
+    resume: bool,
+    test: bool,
+    push_to_hub: bool,
+    hub_repo_id: str | None,
+    private: bool,
+    push_test_subset: bool,
+    test_subset_size: int,
+    validation_subset_size: int,
+    client_config: dict[str, t.Any],
+) -> None:
+    """Translate RAGTruth data to a single target language.
+
+    Args:
+        source_data:
+            Source hallucination data (None if resuming without source).
+        target_lang:
+            Target language to translate to.
+        model:
+            Model to use for translation.
+        batch_size:
+            Number of samples per batch.
+        max_workers:
+            Maximum concurrent API requests.
+        resume:
+            Whether to resume from existing output.
+        test:
+            Whether to run in test mode.
+        push_to_hub:
+            Whether to push translated data to Hugging Face Hub.
+        hub_repo_id:
+            Hub repository ID for full dataset.
+        private:
+            Whether to upload as private.
+        push_test_subset:
+            Whether to push test subset.
+        test_subset_size:
+            Size of test subset.
+        validation_subset_size:
+            Size of validation subset.
+        client_config:
+            OpenAI client configuration.
+
+    Raises:
+        FileNotFoundError:
+            If source data is not available and cannot resume from existing
+            translation.
+    """
+    dataset = DATASET_NAME
+    source_lang: Language = SOURCE_LANG
+
+    # Set up files for this language
+    output_dir = OUTPUT_DIR
+    output_file = output_dir / f"{dataset}_data_{target_lang.code}.json"
+    log_file = output_dir / "error_log.txt"
+
+    # Load existing translated data if resume is enabled
+    if resume and output_file.exists():
+        translated_data, last_processed_index = load_check_existing_data(
+            output_file=output_file
+        )
+        # Use metadata index if available, fall back to sample count
+        num_processed = (
+            last_processed_index
+            if last_processed_index is not None
+            else len(translated_data.samples)
+        )
+        logger.info(f"Resuming from index {num_processed}")
+    else:
+        translated_data = HallucinationData(samples=[])
+        num_processed = 0
+
+    # Get remaining samples to translate
+    remaining_samples: list[HallucinationSample] = []
+    if source_data is not None:
+        remaining_samples = source_data.samples[num_processed:]
+    elif num_processed > 0:
+        logger.warning(
+            f"Proceeding in push-only mode with {num_processed} existing "
+            "translated samples."
+        )
+    else:
+        logger.error("No source data available and nothing to resume")
+        raise FileNotFoundError(
+            "Source data not found and no existing translation to resume"
+        )
+
+    total_samples = len(remaining_samples)
+
+    if total_samples == 0:
+        logger.info("No samples to translate. Exiting.")
+        if push_to_hub:
+            resolved_repo_id = (
+                hub_repo_id
+                if hub_repo_id
+                else f"EuroEval/{dataset}-translated-hallucinations"
+            )
+            push_translated_data_to_hub(
+                translated_data=translated_data,
+                repo_id=resolved_repo_id,
+                config_name=target_lang.code,
+                private=private,
+            )
+        if push_test_subset:
+            resolved_test_repo_id = (
+                f"EuroEval/{dataset}-translated-hallucinations-{target_lang.code}-mini"
+            )
+            push_test_subset_to_hub(
+                translated_data=translated_data,
+                repo_id=resolved_test_repo_id,
+                config_name=target_lang.code,
+                private=private,
+                n=test_subset_size,
+                validation_n=validation_subset_size,
+            )
+        return
+
+    logger.info(f"Using model: {model}")
+    logger.info(f"Total samples to process: {total_samples}")
+    logger.info(f"Batch size: {batch_size}, Max workers: {max_workers}")
+
+    try:
+        asyncio.run(
+            run_translation(
+                remaining_samples=remaining_samples,
+                translated_data=translated_data,
+                output_file=output_file,
+                dataset=dataset,
+                target_lang=target_lang,
+                output_dir=output_dir,
+                model=model,
+                source_lang=source_lang,
+                total_samples=total_samples,
+                num_processed=num_processed,
+                batch_size=batch_size,
+                max_workers=max_workers,
+                test=test,
+                log_file=log_file,
+                client_config=client_config,
+            )
+        )
+
+    except KeyboardInterrupt:
+        logger.info("Translation interrupted by user. Saving progress...")
+        save_progress(
+            translated_data,
+            output_file,
+            dataset,
+            target_lang,
+            output_dir,
+            last_processed_index,
+        )
+        logger.info(
+            f"Saved {len(translated_data.samples)} translated samples to {output_file}"
+        )
+        return
+
+    except Exception as e:
+        logger.error(f"Unexpected error: {e!s}")
+        save_progress(
+            translated_data,
+            output_file,
+            dataset,
+            target_lang,
+            output_dir,
+            last_processed_index,
+        )
+        raise
+
+    logger.info(
+        f"Translation complete. Translated {len(translated_data.samples)} samples."
+    )
+    logger.info(f"Output saved to {output_file}")
+
+    if push_to_hub:
+        resolved_repo_id = (
+            hub_repo_id
+            if hub_repo_id
+            else f"EuroEval/{dataset}-translated-hallucinations"
+        )
+        push_translated_data_to_hub(
+            translated_data=translated_data,
+            repo_id=resolved_repo_id,
+            config_name=target_lang.code,
+            private=private,
+        )
+
+    if push_test_subset:
+        resolved_test_repo_id = (
+            f"EuroEval/{dataset}-translated-hallucinations-{target_lang.code}-mini"
+        )
+        push_test_subset_to_hub(
+            translated_data=translated_data,
+            repo_id=resolved_test_repo_id,
+            config_name=target_lang.code,
+            private=private,
+            n=test_subset_size,
+            validation_n=validation_subset_size,
+        )
 
 
 def get_openai_client() -> dict[str, t.Any]:
