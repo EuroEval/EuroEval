@@ -117,9 +117,11 @@ TARGET_LANGS: list[Language] = [
 # MAX_WORKERS bounds the number of in-flight API requests (each sample issues two:
 # prompt + answer). BATCH_SIZE is kept well above MAX_WORKERS so the worker pool
 # stays saturated between the per-batch save points instead of draining to zero at
-# every batch boundary. Raise MAX_WORKERS further if your rate-limit tier allows.
-BATCH_SIZE = 1600
-MAX_WORKERS = 400
+# every batch boundary. The practical ceiling here is network egress, not the API
+# rate limit: on the inference-server host ~400 workers caused escalating
+# connection retries, while 100 ran cleanly. Tune via --max-workers per environment.
+BATCH_SIZE = 400
+MAX_WORKERS = 100
 
 # Retry settings for transient API errors (HTTP 429/5xx and network blips).
 MAX_TRANSLATION_RETRIES = 5
