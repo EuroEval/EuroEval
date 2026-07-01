@@ -118,6 +118,25 @@ TARGET_LANGS: list[Language] = [
 BATCH_SIZE = 30
 MAX_WORKERS = 30
 
+# Retry settings for transient API errors (HTTP 429/5xx and network blips).
+MAX_TRANSLATION_RETRIES = 5
+RETRY_BASE_DELAY_SECONDS = 2.0
+RETRY_MAX_DELAY_SECONDS = 60.0
+
+# API pricing in USD per 1M tokens as (input_price, output_price), keyed by model
+# ID, used only for cost estimation. Full pricing:
+# https://developers.openai.com/api/docs/pricing
+MODEL_PRICING: dict[str, tuple[float, float]] = {"gpt-4o-mini": (0.15, 0.60)}
+
+# Running tally of measured token usage, populated by translate_text /
+# translate_sample. Used in test mode to extrapolate full-dataset cost.
+TOKEN_USAGE: dict[str, int] = {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "api_calls": 0,
+    "samples": 0,
+}
+
 # Output settings
 OUTPUT_DIR = Path("data/ragtruth")
 DATASET_NAME = "ragtruth"
@@ -223,7 +242,17 @@ class TranslationError(Exception):
 class RetryableTranslationError(Exception):
     """Exception raised for transient translation/API errors that should be retried."""
 
-    pass
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
+        """Initialise the error.
+
+        Args:
+            message:
+                The error message.
+            retry_after:
+                Server-provided number of seconds to wait before retrying, if any.
+        """
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 class ClientConfig(t.TypedDict):
@@ -237,6 +266,12 @@ def main() -> None:
     """Download RAGTruth data, translate to all target languages, and upload to Hub."""
     parser = argparse.ArgumentParser(
         description="Download and translate the RAGTruth hallucination dataset."
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=MODEL,
+        help=f"Model ID to use for translation (default: {MODEL}).",
     )
     parser.add_argument(
         "--test-mode",
@@ -255,6 +290,7 @@ def main() -> None:
         help="In test mode, translate all target languages instead of only Danish.",
     )
     args = parser.parse_args()
+    model = args.model
 
     # Set up directories
     input_dir = OUTPUT_DIR
@@ -304,9 +340,14 @@ def main() -> None:
             source_data=data,
             target_lang=target_lang,
             client_config=client,
+            model=model,
             test_mode=args.test_mode,
             test_num_samples=args.test_num_samples,
         )
+
+    # In test mode, report measured token usage and extrapolate to the full run.
+    if args.test_mode:
+        _report_token_estimate(total_source_samples=len(data.samples), model=model)
 
 
 def download_jsonl(url: str) -> list[dict[str, t.Any]]:
@@ -448,16 +489,19 @@ async def run_translation(
     target_lang: Language,
     num_processed: int,
     client_config: ClientConfig,
+    model: str,
 ) -> None:
     """Run batched async translation with connection pooling.
 
-    Uses global configuration constants for model, batch size, and workers.
+    Uses global configuration constants for batch size and workers.
 
     Args:
         remaining_samples:
             Samples that still need translation.
         translated_data:
             Existing translated data to append to.
+        model:
+            Model ID to use for translation.
         output_file:
             Output JSON file path.
         target_lang:
@@ -488,7 +532,7 @@ async def run_translation(
                     http_client=http_client,
                     url=client_config["url"],
                     semaphore=semaphore,
-                    model=MODEL,
+                    model=model,
                     start_idx=num_processed + i,
                     log_file=log_file,
                     source_lang=SOURCE_LANG,
@@ -669,6 +713,8 @@ async def translate_sample(
             # This sample has no hallucination spans, so it should carry no tags.
             # Strip any (possibly malformed) tags the model added regardless.
             cleaned_answer = re.sub(r"(?:</?HAL)+>+", "", translated_answer)
+
+        TOKEN_USAGE["samples"] += 1
 
         return HallucinationSample(
             prompt=translated_prompt,
@@ -894,96 +940,131 @@ async def translate_text(
     if not text.strip():
         return ""
 
-    try:
-        translation_prompt = (
-            TRANSLATION_ANSWER
-            if prompt
-            else TRANSLATION_PROMPT_DATA2TXT
-            if task_type == "Data2txt"
-            else TRANSLATION_PROMPT
-        )
-        translation_prompt = translation_prompt.format(
-            source_lang=source_lang.name, target_lang=target_lang.name, text=text
-        )
+    translation_prompt = (
+        TRANSLATION_ANSWER
+        if prompt
+        else TRANSLATION_PROMPT_DATA2TXT
+        if task_type == "Data2txt"
+        else TRANSLATION_PROMPT
+    )
+    translation_prompt = translation_prompt.format(
+        source_lang=source_lang.name, target_lang=target_lang.name, text=text
+    )
 
-        # Cap output tokens to prevent runaway repetition loops.
-        # len(text)/3 overestimates token count (~3 chars/token); 1.5x margin for
-        # expansion in translation; min 256 buffer for safety.
-        max_tokens = min(4096, int(len(text) / 3 * 1.5) + 256)
-        payload = {
-            "model": model,
-            "messages": [{"role": "user", "content": translation_prompt}],
-            "temperature": 0.4,
-            "max_tokens": max_tokens,
-        }
+    # Cap output tokens to prevent runaway repetition loops.
+    # len(text)/3 overestimates token count (~3 chars/token); 1.5x margin for
+    # expansion in translation; min 256 buffer for safety. The 8192 ceiling is a
+    # backstop that still leaves headroom for long RAG contexts / summaries so
+    # their trailing </HAL> tags are not truncated away.
+    max_tokens = min(8192, int(len(text) / 3 * 1.5) + 256)
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": translation_prompt}],
+        "temperature": 0.4,
+        "max_tokens": max_tokens,
+    }
 
-        async with semaphore:
-            response = await http_client.post(url, json=payload)
+    last_error: Exception | None = None
+    for attempt in range(MAX_TRANSLATION_RETRIES):
+        try:
+            async with semaphore:
+                response = await http_client.post(url, json=payload)
 
-        if response.status_code >= 400:
-            try:
-                error_obj = response.json().get("error", {})
-                error_message = error_obj.get("message") or response.text
-                error_type = error_obj.get("type")
-                error_code = error_obj.get("code")
-            except Exception:
-                error_message = response.text
-                error_type = None
-                error_code = None
+            if response.status_code >= 400:
+                try:
+                    error_obj = response.json().get("error", {})
+                    error_message = error_obj.get("message") or response.text
+                    error_type = error_obj.get("type")
+                    error_code = error_obj.get("code")
+                except Exception:
+                    error_message = response.text
+                    error_type = None
+                    error_code = None
 
-            message = (
-                f"API error {response.status_code}"
-                f" (type={error_type}, code={error_code}): {error_message}"
+                message = (
+                    f"API error {response.status_code}"
+                    f" (type={error_type}, code={error_code}): {error_message}"
+                )
+
+                # Retry transient errors only.
+                if response.status_code == 429 or response.status_code >= 500:
+                    retry_after: float | None = None
+                    if response.status_code == 429:
+                        retry_after_header = response.headers.get("retry-after")
+                        if retry_after_header:
+                            try:
+                                retry_after = float(retry_after_header)
+                            except ValueError:
+                                retry_after = None
+                    raise RetryableTranslationError(message, retry_after=retry_after)
+
+                # Do not retry non-transient client errors (e.g., bad request /
+                # context too long).
+                raise TranslationError(message)
+
+            response_json = response.json()
+            choice = response_json["choices"][0]
+
+            # Tally token usage for cost estimation.
+            usage = response_json.get("usage") or {}
+            TOKEN_USAGE["input_tokens"] += int(usage.get("prompt_tokens", 0) or 0)
+            TOKEN_USAGE["output_tokens"] += int(usage.get("completion_tokens", 0) or 0)
+            TOKEN_USAGE["api_calls"] += 1
+
+            # Log finish_reason to detect truncation or other issues.
+            finish_reason = choice.get("finish_reason")
+            if finish_reason == "length":
+                logger.warning(
+                    f"Translation truncated (finish_reason='length') for sample "
+                    f"with input length {len(text)} chars (max_tokens={max_tokens})"
+                )
+
+            # Strip lines starting with the character '='
+            content = "\n".join(
+                [
+                    line
+                    for line in choice["message"]["content"].split("\n")
+                    if not line.strip().startswith("=")
+                ]
             )
 
-            # Retry transient errors only.
-            if response.status_code == 429 or response.status_code >= 500:
-                logger.warning(message)
-                if response.status_code == 429:
-                    retry_after = response.headers.get("retry-after")
-                    if retry_after:
-                        try:
-                            await asyncio.sleep(float(retry_after))
-                        except ValueError:
-                            pass
-                raise RetryableTranslationError(message)
+            return content.strip()
 
-            # Do not retry non-transient client errors (e.g., bad request /
-            # context too long).
-            raise TranslationError(message)
-
-        response_json = response.json()
-        choice = response_json["choices"][0]
-
-        # Log finish_reason to detect truncation or other issues.
-        finish_reason = choice.get("finish_reason")
-        if finish_reason == "length":
+        except RetryableTranslationError as e:
+            last_error = e
+            logger.warning(f"{e!s} (attempt {attempt + 1}/{MAX_TRANSLATION_RETRIES})")
+            if attempt < MAX_TRANSLATION_RETRIES - 1:
+                # Honour a server-provided Retry-After, else exponential backoff
+                # with full jitter to avoid synchronised retry stampedes.
+                if e.retry_after is not None:
+                    delay = e.retry_after
+                else:
+                    ceiling = min(
+                        RETRY_MAX_DELAY_SECONDS, RETRY_BASE_DELAY_SECONDS * (2**attempt)
+                    )
+                    delay = random.uniform(0, ceiling)
+                await asyncio.sleep(delay)
+        except TranslationError:
+            raise
+        except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
+            last_error = e
             logger.warning(
-                f"Translation truncated (finish_reason='length') for sample "
-                f"with input length {len(text)} chars (max_tokens={max_tokens})"
+                f"Transient network error: {e!s} "
+                f"(attempt {attempt + 1}/{MAX_TRANSLATION_RETRIES})"
             )
+            if attempt < MAX_TRANSLATION_RETRIES - 1:
+                ceiling = min(
+                    RETRY_MAX_DELAY_SECONDS, RETRY_BASE_DELAY_SECONDS * (2**attempt)
+                )
+                await asyncio.sleep(random.uniform(0, ceiling))
+        except Exception as e:
+            logger.error(f"Translation error: {e!s}")
+            raise TranslationError(f"Failed to translate text: {e!s}") from e
 
-        # Strip lines starting with the character '='
-        content = "\n".join(
-            [
-                line
-                for line in choice["message"]["content"].split("\n")
-                if not line.strip().startswith("=")
-            ]
-        )
-
-        return content.strip()
-    except RetryableTranslationError:
-        raise
-    except TranslationError:
-        raise
-    except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
-        message = f"Transient network error: {e!s}"
-        logger.warning(message)
-        raise RetryableTranslationError(message) from e
-    except Exception as e:
-        logger.error(f"Translation error: {e!s}")
-        raise TranslationError(f"Failed to translate text: {e!s}") from e
+    raise TranslationError(
+        f"Failed to translate text after {MAX_TRANSLATION_RETRIES} attempts: "
+        f"{last_error!s}"
+    )
 
 
 def save_progress(
@@ -1197,12 +1278,13 @@ def _translate_to_language(
     source_data: HallucinationData | None,
     target_lang: Language,
     client_config: ClientConfig,
+    model: str,
     test_mode: bool = False,
     test_num_samples: int = 10,
 ) -> None:
     """Translate RAGTruth data to a single target language.
 
-    Uses global configuration constants for model, batch size, workers, and Hub
+    Uses global configuration constants for batch size, workers, and Hub
     settings.
 
     Args:
@@ -1212,6 +1294,8 @@ def _translate_to_language(
             Target language to translate to.
         client_config:
             OpenAI client configuration.
+        model:
+            Model ID to use for translation.
         test_mode:
             If True, run a limited smoke test and skip Hub uploads.
         test_num_samples:
@@ -1257,9 +1341,15 @@ def _translate_to_language(
             "Source data not found and no cached translation to resume"
         )
 
-    # In test mode, only translate a small number of samples per language.
-    if test_mode:
-        remaining_samples = remaining_samples[:test_num_samples]
+    # In test mode, translate a small number of samples per language. Spread the
+    # picks evenly across the whole source rather than taking the first N, so the
+    # measured token usage covers the different task types (QA / Summary /
+    # Data2txt) and yields a representative full-dataset estimate.
+    if test_mode and len(remaining_samples) > test_num_samples > 0:
+        step = len(remaining_samples) / test_num_samples
+        remaining_samples = [
+            remaining_samples[int(i * step)] for i in range(test_num_samples)
+        ]
 
     total_samples = len(remaining_samples)
 
@@ -1267,7 +1357,7 @@ def _translate_to_language(
         _push_if_no_samples(translated_data, target_lang)
         return
 
-    logger.info(f"Using model: {MODEL}")
+    logger.info(f"Using model: {model}")
     logger.info(f"Total samples to process: {total_samples}")
     logger.info(f"Batch size: {BATCH_SIZE}, Max workers: {MAX_WORKERS}")
 
@@ -1280,6 +1370,7 @@ def _translate_to_language(
                 target_lang=target_lang,
                 num_processed=num_processed,
                 client_config=client_config,
+                model=model,
             )
         )
 
@@ -1335,6 +1426,61 @@ def _translate_to_language(
             n=TEST_SUBSET_SIZE,
             validation_n=VALIDATION_SUBSET_SIZE,
         )
+
+
+def _report_token_estimate(total_source_samples: int, model: str) -> None:
+    """Log measured token usage and extrapolate it to the full dataset.
+
+    The estimate multiplies the average per-sample token usage measured during
+    this (test) run by the full dataset size (all source samples x all target
+    languages). It is only as representative as the sampled subset, so scale up
+    ``--test-num-samples`` for a tighter estimate.
+
+    Args:
+        total_source_samples:
+            Number of source samples in the full (untranslated) dataset.
+        model:
+            Model ID used for translation, for the pricing lookup.
+    """
+    measured = TOKEN_USAGE["samples"]
+    if measured == 0 or total_source_samples == 0:
+        logger.warning("No samples measured; skipping token-usage estimate.")
+        return
+
+    in_tok = TOKEN_USAGE["input_tokens"]
+    out_tok = TOKEN_USAGE["output_tokens"]
+    avg_in = in_tok / measured
+    avg_out = out_tok / measured
+
+    full_samples = total_source_samples * len(TARGET_LANGS)
+    est_in = avg_in * full_samples
+    est_out = avg_out * full_samples
+
+    logger.info("=" * 60)
+    logger.info("TOKEN USAGE")
+    logger.info(
+        f"Measured over {measured} translated samples "
+        f"({TOKEN_USAGE['api_calls']} API calls):"
+    )
+    logger.info(f"  input : {in_tok:,} tokens (avg {avg_in:,.1f}/sample)")
+    logger.info(f"  output: {out_tok:,} tokens (avg {avg_out:,.1f}/sample)")
+    logger.info(
+        f"Full-dataset estimate ({total_source_samples:,} source samples x "
+        f"{len(TARGET_LANGS)} languages = {full_samples:,} samples):"
+    )
+    logger.info(f"  est. input : {est_in / 1e6:,.1f}M tokens")
+    logger.info(f"  est. output: {est_out / 1e6:,.1f}M tokens")
+
+    pricing = MODEL_PRICING.get(model)
+    if pricing is not None:
+        input_price, output_price = pricing
+        measured_cost = in_tok / 1e6 * input_price + out_tok / 1e6 * output_price
+        est_cost = est_in / 1e6 * input_price + est_out / 1e6 * output_price
+        logger.info(f"  measured cost so far: ${measured_cost:,.4f}")
+        logger.info(f"  est. full-dataset cost ({model}): ${est_cost:,.2f}")
+    else:
+        logger.info(f"  (no pricing configured for model '{model}'; cost omitted)")
+    logger.info("=" * 60)
 
 
 def get_openai_client() -> ClientConfig:
