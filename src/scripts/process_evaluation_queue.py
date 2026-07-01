@@ -403,12 +403,16 @@ def age_sort_value(issue: dict) -> float:
 def process_queue_once() -> None:
     """Process every unassigned model-evaluation-request issue once.
 
-    Issues are sorted by (slow priority asc, status priority asc,
-    parameter bucket asc, age asc). Parameter buckets match the
+    Issues are sorted by (slow priority asc, type priority asc, status
+    priority asc, parameter bucket asc, age asc). Parameter buckets match the
     leaderboards: tiny (<2B), small (2-10B), medium (10-40B),
     large (40-80B), xlarge (>=80B).
     Slow priority is 0 for normal issues and 1 for issues with the 'slow'
     label, pushing slow evaluations to the end of the queue.
+    Type priority is 0 for generative models and 1 for encoder models, so the
+    vLLM-based generative workload is drained before the slower encoder
+    finetuning (gated repos and legacy cache entries whose type is unknown are
+    treated as generative).
     Status priority is 0 for gated repos (cheap marker refresh),
     1 for retries of previously errored evaluations (issues with the
     ``evaluation-failed`` label), and 2 for fresh issues, so that gated repos
@@ -423,7 +427,7 @@ def process_queue_once() -> None:
         logger.error(f"Failed to list issues: {e}")
         return
 
-    candidates: list[tuple[int, int, int, float, dict, str, list[str]]] = []
+    candidates: list[tuple[int, int, int, int, float, dict, str, list[str]]] = []
     for issue in issues:
         number = issue["number"]
         title = issue.get("title", "")
@@ -462,11 +466,16 @@ def process_queue_once() -> None:
             if any(label["name"] == "slow" for label in issue.get("labels", []))
             else 0
         )
+        # Generative models (0) are drained before encoder models (1), so the
+        # vLLM-based leaderboard workload runs ahead of the slower encoder
+        # finetuning. Ranked below the 'slow' label but above status/size/age.
+        type_priority = 0 if summary.get("generative", True) else 1
 
         param_bucket_idx = _param_bucket(param_count)
         candidates.append(
             (
                 slow_priority,
+                type_priority,
                 status_priority,
                 param_bucket_idx,
                 age_sort_value(issue=issue),
@@ -476,7 +485,7 @@ def process_queue_once() -> None:
             )
         )
 
-    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3]))
+    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4]))
     logger.info(f"Found {len(candidates)} processable issue(s).")
 
     gpu_bytes = gpu_total_memory_bytes()
@@ -489,6 +498,7 @@ def process_queue_once() -> None:
 
     for (
         slow_priority,
+        type_priority,
         status_priority,
         param_count,
         _age,
@@ -497,10 +507,11 @@ def process_queue_once() -> None:
         groups,
     ) in candidates:
         status = {0: "gated", 1: "retry of errored eval", 2: "fresh"}[status_priority]
+        model_type = "generative" if type_priority == 0 else "encoder"
         slow_tag = ", slow" if slow_priority else ""
         logger.info(
             f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
-            f"{status}{slow_tag})."
+            f"{model_type}, {status}{slow_tag})."
         )
         if gpu_bytes is not None:
             needed = estimated_model_bytes(model_id=model_id)
