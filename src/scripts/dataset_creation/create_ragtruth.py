@@ -119,9 +119,11 @@ TARGET_LANGS: list[Language] = [
 # stays saturated between the per-batch save points instead of draining to zero at
 # every batch boundary. The practical ceiling here is network egress, not the API
 # rate limit: on the inference-server host ~400 workers caused escalating
-# connection retries, while 100 ran cleanly. Tune via --max-workers per environment.
+# connection retries, and even 100 occasionally exhausted the retry budget on a
+# request (losing that sample). 50 keeps sample loss to a minimum there. Tune via
+# --max-workers per environment.
 BATCH_SIZE = 400
-MAX_WORKERS = 100
+MAX_WORKERS = 50
 
 # Retry settings for transient API errors (HTTP 429/5xx and network blips).
 MAX_TRANSLATION_RETRIES = 5
@@ -153,6 +155,7 @@ TOKEN_USAGE: dict[str, int] = {
     "output_tokens": 0,
     "api_calls": 0,
     "samples": 0,
+    "discarded": 0,
 }
 
 # Output settings
@@ -255,6 +258,16 @@ load_dotenv()
 
 class TranslationError(Exception):
     """Exception raised for errors during translation."""
+
+    pass
+
+
+class TruncatedTranslationError(TranslationError):
+    """Raised when the model's output hit the token cap and was truncated.
+
+    Treated as non-retryable: the affected sample is discarded rather than saved
+    with an incomplete translation (which would corrupt its hallucination spans).
+    """
 
     pass
 
@@ -773,6 +786,15 @@ async def translate_sample(
             dataset=t.cast(t.Literal["ragtruth", "ragbench"], dataset),
             language=target_lang.code,  # ty:ignore[invalid-argument-type]
         )
+    except TruncatedTranslationError as e:
+        # Discard the sample. The batch watermark (last_processed_index advances by
+        # batch size, not result count) means it is not re-attempted on resume, so
+        # the discard decision is cached and we never pay to translate it again.
+        TOKEN_USAGE["discarded"] += 1
+        logger.warning(f"Discarding sample {sample_index} (truncated): {e!s}")
+        with open(log_file, "a") as log:
+            log.write(f"Discarded sample {sample_index} (truncated): {e!s}\n")
+        return None
     except Exception as e:
         logger.error(f"Error translating sample {sample_index}: {e!s}")
         with open(log_file, "a") as log:
@@ -983,6 +1005,7 @@ async def translate_text(
 
     Raises:
         RetryableTranslationError: If a transient error occurs.
+        TruncatedTranslationError: If the output hit the token cap (sample discarded).
         TranslationError: If translation fails after retries.
     """
     if not text.strip():
@@ -1000,11 +1023,13 @@ async def translate_text(
     )
 
     # Cap output tokens to prevent runaway repetition loops.
-    # len(text)/3 overestimates token count (~3 chars/token); 1.5x margin for
-    # expansion in translation; min 256 buffer for safety. The 8192 ceiling is a
-    # backstop that still leaves headroom for long RAG contexts / summaries so
-    # their trailing </HAL> tags are not truncated away.
-    max_tokens = min(8192, int(len(text) / 3 * 1.5) + 256)
+    # len(text)/3 approximates the (English) input token count (~3 chars/token).
+    # A 3x margin covers translation expansion into token-inefficient scripts
+    # (e.g. Cyrillic, where the same text needs far more tokens than English),
+    # plus a 512 buffer so trailing </HAL> tags are never clipped. The 8192
+    # ceiling is a hard backstop; any sample that would still truncate is
+    # discarded rather than saved incomplete (see TruncatedTranslationError).
+    max_tokens = min(8192, int(len(text) / 3 * 3) + 512)
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": translation_prompt}],
@@ -1059,10 +1084,11 @@ async def translate_text(
             TOKEN_USAGE["output_tokens"] += int(usage.get("completion_tokens", 0) or 0)
             TOKEN_USAGE["api_calls"] += 1
 
-            # Log finish_reason to detect truncation or other issues.
+            # Discard truncated outputs rather than persisting an incomplete
+            # translation (which would drop hallucination spans past the cut-off).
             finish_reason = choice.get("finish_reason")
             if finish_reason == "length":
-                logger.warning(
+                raise TruncatedTranslationError(
                     f"Translation truncated (finish_reason='length') for sample "
                     f"with input length {len(text)} chars (max_tokens={max_tokens})"
                 )
