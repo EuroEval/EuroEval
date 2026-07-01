@@ -51,6 +51,31 @@ class TestSummariseEvaluationError:
         assert "Traceback (most recent call last):" in summary
         assert "httpx.ReadTimeout: The read operation timed out" in summary
 
+    def test_suppresses_vllm_boilerplate_when_traceback_present(self) -> None:
+        """The vLLM 'did not mention' boilerplate is dropped when a traceback exists."""
+        output = (
+            "Benchmarking model on CoNLL-en...\n"
+            "Traceback (most recent call last):\n"
+            '  File "/euroeval/src/euroeval/benchmark_modules/vllm.py", '
+            "line 1547, in load_model\n"
+            "    model = _create_llm()\n"
+            '  File "/vllm/engine/llm.py", line 102, in LLM.__init__\n'
+            "    self._verify_kv_cache()\n"
+            "ValueError: the configured KV-cache size is too small for "
+            "sliding-window attention, increase gpu_memory_utilization\n"
+            "The model 'CohereLabs/aya-23-35B' could not be loaded, but vLLM did "
+            "not mention exactly what happened. Since you're running in verbose "
+            "mode, you might see a descriptive error above already. \n"
+            "re-running the benchmark with the environment variable `FULL_LOG` "
+            "set to `1` to see the full stack trace.\n"
+            "Completed 4 benchmarks, and errored 6 benchmarks\n"
+        )
+        summary = summarise_evaluation_error(output=output)
+        assert "configured KV-cache size is too small" in summary
+        assert "did not mention exactly what" not in summary
+        assert "could not be loaded, but vLLM did" not in summary
+        assert "errored 6 benchmarks" in summary
+
     def test_includes_errored_summary_line(self) -> None:
         """The euroeval `errored N benchmarks` summary line is included."""
         output = (
