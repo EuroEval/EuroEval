@@ -82,7 +82,6 @@ RESPONSE_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/he
 MODEL = "gpt-4o-mini"
 SOURCE_LANG: Language = ENGLISH
 
-# Translates to all major European languages
 TARGET_LANGS: list[Language] = [
     ALBANIAN,
     BELARUSIAN,
@@ -573,7 +572,6 @@ async def translate_sample(
     """
     try:
 
-        # Skip processing if we have an empty sample
         if not sample.prompt.strip() or not sample.answer.strip():
             logger.warning(
                 f"Sample {sample_index} has empty prompt or answer. Skipping."
@@ -613,14 +611,11 @@ async def translate_sample(
             prompt_task, answer_task
         )
 
-        # Default to the translated answer (will be replaced if there are
-        # hallucination spans)
         cleaned_answer = translated_answer
 
         labels = []
         if merged_labels:
 
-            # Extract spans from HAL tags, preserving tags in output
             # Use merged labels from put_hallucination_tags to ensure alignment
             hal_spans, cleaned_answer = find_hallucination_tags(
                 text=translated_answer, labels=merged_labels, sample_index=sample_index
@@ -733,7 +728,6 @@ def find_hallucination_tags(
 
     hal_spans = []
 
-    # Find all opening and closing tag positions
     # Clean up mangled tags like "<HAL<HAL>>" -> "<HAL>"
     text = re.sub(r"<HAL<HAL>>", "<HAL>", text)
     text = re.sub(r"</HAL></HAL>", "</HAL>", text)
@@ -1017,11 +1011,15 @@ def push_test_subset_to_hub(
     random.shuffle(samples)
 
     def _to_rows(items: list[HallucinationSample]) -> list[dict[str, t.Any]]:
+        """Preprocess samples for the hallucination (question-answering) task.
 
-        # Preprocess the samples so they are ready for the hallucination
-        # (question-answering) task: the task group expects ``id``, ``context``,
-        # ``question`` and ``answers`` columns, derived here from the RAG ``prompt``
-        # and reference ``answer`` while keeping the original columns intact.
+        The task group expects ``id``, ``context``, ``question`` and ``answers``
+        columns, derived here from the RAG ``prompt`` and reference ``answer``
+        while keeping the original columns intact.
+
+        Returns:
+            List of dictionaries with the required columns for the QA task.
+        """
         return [
             {
                 "id": str(index),
