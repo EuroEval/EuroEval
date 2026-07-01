@@ -3,7 +3,6 @@
 Copied from https://github.com/KRLabsOrg/LettuceDetect/blob/main/scripts/translate/translate.py.
 """
 
-import argparse
 import asyncio
 import json
 import logging
@@ -14,6 +13,7 @@ import time
 from pathlib import Path
 from typing import Any, cast
 
+import click
 import httpx
 import tqdm
 from datasets import Dataset, DatasetDict
@@ -26,7 +26,7 @@ from tenacity import (
     retry,
     retry_if_exception_type,
     stop_after_attempt,
-    wait_exponential,
+    wait_random_exponential,
 )
 
 TRANSLATION_ANSWER = (
@@ -153,7 +153,7 @@ def get_openai_client() -> dict[str, Any]:
 @retry(
     retry=retry_if_exception_type((RetryableTranslationError)),
     stop=stop_after_attempt(5),
-    wait=wait_exponential(multiplier=1, min=2, max=60),
+    wait=wait_random_exponential(multiplier=1, max=60),
     reraise=True,
     before_sleep=lambda retry_state: logger.warning(
         "API call failed. Retrying in "
@@ -207,10 +207,15 @@ async def translate_text(
             source_lang=source_lang, target_lang=target_lang, text=text
         )
 
+        # Cap output tokens to prevent runaway repetition loops.
+        # len(text)/3 overestimates token count (~3 chars/token); 1.5x margin for
+        # expansion in translation; min 256 buffer for safety.
+        max_tokens = min(4096, int(len(text) / 3 * 1.5) + 256)
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": translation_prompt}],
             "temperature": 0.4,
+            "max_tokens": max_tokens,
         }
 
         async with semaphore:
@@ -249,14 +254,21 @@ async def translate_text(
             raise TranslationError(message)
 
         response_json = response.json()
+        choice = response_json["choices"][0]
+
+        # Log finish_reason to detect truncation or other issues.
+        finish_reason = choice.get("finish_reason")
+        if finish_reason == "length":
+            logger.warning(
+                f"Translation truncated (finish_reason='length') for sample "
+                f"with input length {len(text)} chars (max_tokens={max_tokens})"
+            )
 
         # Strip lines starting with the character '='
         content = "\n".join(
             [
                 line
-                for line in response_json["choices"][0]["message"]["content"].split(
-                    "\n"
-                )
+                for line in choice["message"]["content"].split("\n")
                 if not line.strip().startswith("=")
             ]
         )
@@ -507,25 +519,33 @@ async def translate_sample(
         return None
 
 
-def load_check_existing_data(output_file: Path) -> HallucinationData:
+def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int | None]:
     """Load existing data or create new data.
 
     Args:
         output_file: Path to the output file.
 
     Returns:
-        Existing HallucinationData or new empty HallucinationData.
+        Tuple of (HallucinationData, last_processed_index). last_processed_index
+        is None if the file doesn't exist or has no metadata.
     """
     if output_file.exists():
         try:
-            return HallucinationData.from_json(json.loads(output_file.read_text()))
+            data_dict = json.loads(output_file.read_text())
+            last_processed_index = None
+            if "_metadata" in data_dict:
+                last_processed_index = data_dict["_metadata"].get(
+                    "last_processed_index"
+                )
+                del data_dict["_metadata"]
+            return HallucinationData.from_json(data_dict), last_processed_index
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(
                 f"Error loading existing data: {e!s}. Starting with empty dataset."
             )
-            return HallucinationData(samples=[])
+            return HallucinationData(samples=[]), None
     else:
-        return HallucinationData(samples=[])
+        return HallucinationData(samples=[]), None
 
 
 async def process_batch(
@@ -626,6 +646,7 @@ async def run_translation(
     start_time = time.time()
     save_interval = 60
     last_save_time = start_time
+    last_processed_index = num_processed  # Track source index including failures
 
     limits = httpx.Limits(
         max_connections=max_workers * 2, max_keepalive_connections=max_workers
@@ -657,6 +678,8 @@ async def run_translation(
 
                 translated_data.samples.extend(batch_results)
                 progress_bar.update(len(batch_results))
+                # Update last_processed_index by batch size (not results count)
+                last_processed_index = num_processed + i + len(batch)
 
                 current_time = time.time()
                 if (
@@ -664,7 +687,12 @@ async def run_translation(
                     or i + batch_size >= total_samples
                 ):
                     save_progress(
-                        translated_data, output_file, dataset, target_lang, output_dir
+                        translated_data,
+                        output_file,
+                        dataset,
+                        target_lang,
+                        output_dir,
+                        last_processed_index,
                     )
                     last_save_time = current_time
 
@@ -688,6 +716,7 @@ def save_progress(
     dataset: str,
     target_lang: str,
     output_dir: Path,
+    last_processed_index: int | None = None,
 ) -> None:
     """Save progress to file with backup handling.
 
@@ -697,9 +726,14 @@ def save_progress(
         dataset: Dataset name for backup file.
         target_lang: Target language for backup file.
         output_dir: Output directory for backup file.
+        last_processed_index: Index of last processed source sample (for resume).
     """
+    # Wrap samples in dict structure expected by from_json
+    data_dict: dict[str, Any] = {"samples": translated_data.to_json()}
+    if last_processed_index is not None:
+        data_dict["_metadata"] = {"last_processed_index": last_processed_index}
     try:
-        output_file.write_text(json.dumps(translated_data.to_json(), indent=2))
+        output_file.write_text(json.dumps(data_dict, indent=2))
     except Exception as e:
         logger.error(f"Error saving progress: {e!s}")
         # Try to save to a backup file
@@ -708,7 +742,7 @@ def save_progress(
             / f"{dataset}_data_{target_lang.lower()}_backup_{int(time.time())}.json"
         )
         try:
-            backup_file.write_text(json.dumps(translated_data.to_json(), indent=2))
+            backup_file.write_text(json.dumps(data_dict, indent=2))
             logger.info(f"Saved backup to {backup_file}")
         except Exception as e2:
             logger.error(f"Error saving backup: {e2!s}")
@@ -887,9 +921,16 @@ def main(
 
     # Load existing translated data if resume is enabled
     if resume and output_file.exists():
-        translated_data = load_check_existing_data(output_file=output_file)
-        num_processed = len(translated_data.samples)
-        logger.info(f"Resuming from {num_processed} previously translated samples")
+        translated_data, last_processed_index = load_check_existing_data(
+            output_file=output_file
+        )
+        # Use metadata index if available, fall back to sample count
+        num_processed = (
+            last_processed_index
+            if last_processed_index is not None
+            else len(translated_data.samples)
+        )
+        logger.info(f"Resuming from index {num_processed}")
     else:
         translated_data = HallucinationData(samples=[])
         num_processed = 0
@@ -980,7 +1021,14 @@ def main(
 
     except KeyboardInterrupt:
         logger.info("Translation interrupted by user. Saving progress...")
-        save_progress(translated_data, output_file, dataset, target_lang, output_dir)
+        save_progress(
+            translated_data,
+            output_file,
+            dataset,
+            target_lang,
+            output_dir,
+            last_processed_index,
+        )
         logger.info(
             f"Saved {len(translated_data.samples)} translated samples to {output_file}"
         )
@@ -988,7 +1036,14 @@ def main(
 
     except Exception as e:
         logger.error(f"Unexpected error: {e!s}")
-        save_progress(translated_data, output_file, dataset, target_lang, output_dir)
+        save_progress(
+            translated_data,
+            output_file,
+            dataset,
+            target_lang,
+            output_dir,
+            last_processed_index,
+        )
         raise
 
     logger.info(
@@ -1028,131 +1083,146 @@ def main(
         )
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Translate hallucination dataset to another language"
-    )
-    parser.add_argument(
-        "--input_dir",
-        type=str,
-        required=True,
-        help="Directory containing input data files",
-    )
-    parser.add_argument(
-        "--output_dir", type=str, required=True, help="Directory to save output files"
-    )
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="gpt-4o-mini",
-        help="OpenAI model to use for translation",
-    )
-    parser.add_argument(
-        "--source-lang",
-        type=str,
-        default="EN",
-        help="Source language code (e.g., EN, DE, FR, etc.)",
-    )
-    parser.add_argument(
-        "--target-lang",
-        type=str,
-        default="DA",
-        help="Target language code (e.g., EN, DE, FR, etc.)",
-    )
-    parser.add_argument(
-        "--dataset",
-        type=str,
-        default="ragtruth",
-        help="Dataset name (ragtruth, ragbench, etc.)",
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=30,
-        help="Number of samples to process in each batch",
-    )
-    parser.add_argument(
-        "--max-workers", type=int, default=30, help="Maximum number of worker threads"
-    )
-    parser.add_argument(
-        "--no-resume",
-        action="store_true",
-        help="Don't resume from previous run, start fresh",
-    )
-    parser.add_argument(
-        "--test", action="store_true", help="Test mode, only translate 1 sample"
-    )
-    parser.add_argument(
-        "--push-to-hub",
-        action="store_true",
-        help="Push translated dataset to Hugging Face Hub after translation",
-    )
-    parser.add_argument(
-        "--hub-repo-id",
-        type=str,
-        default=None,
-        help=(
-            "Target Hugging Face dataset repo id. "
-            "Default: EuroEval/<dataset>-translated-hallucinations"
-        ),
-    )
-    parser.add_argument(
-        "--private",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Whether uploaded Hub dataset should be private",
-    )
-    parser.add_argument(
-        "--push-test-subset",
-        action="store_true",
-        help=(
-            "Also push a test-only subset (up to --test-subset-size samples) to the Hub"
-        ),
-    )
-    parser.add_argument(
-        "--test-subset-repo-id",
-        type=str,
-        default=None,
-        help=(
-            "Target Hugging Face dataset repo id for the test subset. "
-            "Default: EuroEval/<dataset>-translated-hallucinations-<lang>-mini"
-        ),
-    )
-    parser.add_argument(
-        "--test-subset-size",
-        type=int,
-        default=1000,
-        help=(
-            "Maximum number of test samples to include in the test subset "
-            "(default: 1000)"
-        ),
-    )
-    parser.add_argument(
-        "--validation-subset-size",
-        type=int,
-        default=256,
-        help=(
-            "Maximum number of validation samples to include in the test subset "
-            "(default: 256)"
-        ),
-    )
-    args = parser.parse_args()
+@click.command()
+@click.option(
+    "--input-dir",
+    type=click.Path(path_type=Path),
+    required=True,
+    help="Directory containing input data files",
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(path_type=Path),
+    required=True,
+    help="Directory to save output files",
+)
+@click.option(
+    "--model",
+    type=str,
+    default="gpt-4o-mini",
+    help="OpenAI model to use for translation",
+)
+@click.option(
+    "--source-lang",
+    type=str,
+    default="EN",
+    help="Source language code (e.g., EN, DE, FR, etc.)",
+)
+@click.option(
+    "--target-lang",
+    type=str,
+    default="DA",
+    help="Target language code (e.g., EN, DE, FR, etc.)",
+)
+@click.option(
+    "--dataset",
+    type=str,
+    default="ragtruth",
+    help="Dataset name (ragtruth, ragbench, etc.)",
+)
+@click.option(
+    "--batch-size",
+    type=int,
+    default=30,
+    help="Number of samples to process in each batch",
+)
+@click.option(
+    "--max-workers",
+    type=int,
+    default=30,
+    help="Maximum number of concurrent API requests",
+)
+@click.option("--resume/--no-resume", default=True, help="Resume from previous run")
+@click.option(
+    "--test", is_flag=True, default=False, help="Test mode, only translate 1 sample"
+)
+@click.option(
+    "--push-to-hub",
+    is_flag=True,
+    default=False,
+    help="Push translated dataset to Hugging Face Hub after translation",
+)
+@click.option(
+    "--hub-repo-id",
+    type=str,
+    default=None,
+    help=(
+        "Target Hugging Face dataset repo id. Default: "
+        "EuroEval/<dataset>-translated-hallucinations"
+    ),
+)
+@click.option(
+    "--private/--no-private",
+    default=True,
+    help="Whether uploaded Hub dataset should be private",
+)
+@click.option(
+    "--push-test-subset",
+    is_flag=True,
+    default=False,
+    help="Also push a test-only subset (up to --test-subset-size samples) to the Hub",
+)
+@click.option(
+    "--test-subset-repo-id",
+    type=str,
+    default=None,
+    help=(
+        "Target Hugging Face dataset repo id for the test subset. Default: "
+        "EuroEval/<dataset>-translated-hallucinations-<lang>-mini"
+    ),
+)
+@click.option(
+    "--test-subset-size",
+    type=int,
+    default=1000,
+    help="Maximum number of test samples to include in the test subset (default: 1000)",
+)
+@click.option(
+    "--validation-subset-size",
+    type=int,
+    default=256,
+    help="Maximum number of validation samples in test subset (default: 256)",
+)
+def main_cli(
+    input_dir: Path,
+    output_dir: Path,
+    model: str,
+    source_lang: str,
+    target_lang: str,
+    dataset: str,
+    batch_size: int,
+    max_workers: int,
+    resume: bool,
+    test: bool,
+    push_to_hub: bool,
+    hub_repo_id: str | None,
+    private: bool,
+    push_test_subset: bool,
+    test_subset_repo_id: str | None,
+    test_subset_size: int,
+    validation_subset_size: int,
+) -> None:
+    """Translate hallucination dataset to another language."""
     main(
-        Path(args.input_dir),
-        Path(args.output_dir),
-        args.model,
-        args.source_lang,
-        args.target_lang,
-        args.dataset,
-        args.batch_size,
-        args.max_workers,
-        not args.no_resume,
-        args.test,
-        args.push_to_hub,
-        args.hub_repo_id,
-        args.private,
-        args.push_test_subset,
-        args.test_subset_repo_id,
-        args.test_subset_size,
-        args.validation_subset_size,
+        input_dir=input_dir,
+        output_dir=output_dir,
+        model=model,
+        source_lang=source_lang,
+        target_lang=target_lang,
+        dataset=dataset,
+        batch_size=batch_size,
+        max_workers=max_workers,
+        resume=resume,
+        test=test,
+        push_to_hub=push_to_hub,
+        hub_repo_id=hub_repo_id,
+        private=private,
+        push_test_subset=push_test_subset,
+        test_subset_repo_id=test_subset_repo_id,
+        test_subset_size=test_subset_size,
+        validation_subset_size=validation_subset_size,
     )
+
+
+if __name__ == "__main__":
+    main_cli()
