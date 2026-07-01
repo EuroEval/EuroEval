@@ -222,12 +222,7 @@ class RetryableTranslationError(Exception):
 
 
 def main() -> None:
-    """Download RAGTruth data, translate to all target languages, and upload to Hub.
-
-    Raises:
-        FileNotFoundError: If the input file does not exist and no resume data
-            available.
-    """
+    """Download RAGTruth data, translate to all target languages, and upload to Hub."""
     # Set up directories
     input_dir = OUTPUT_DIR
     output_dir = OUTPUT_DIR
@@ -237,6 +232,7 @@ def main() -> None:
     setup_logging(output_dir)
 
     # Load source data once
+    # Load source data if available
     input_file = input_dir / f"{DATASET_NAME}_data.json"
     data: HallucinationData | None = None
     if input_file.exists():
@@ -245,15 +241,12 @@ def main() -> None:
         except Exception as e:
             logger.error(f"Error loading input data: {e!s}")
             raise
-    elif RESUME:
+    else:
         # In resume mode, we might have translated files but no source
         logger.warning(
             f"Input file not found: {input_file}. "
             "Proceeding in push-only mode if translated files exist."
         )
-    else:
-        logger.error(f"Input file not found: {input_file}")
-        raise FileNotFoundError(f"Input file not found: {input_file}")
 
     # Get OpenAI client once (shared across all languages)
     client = get_openai_client()
