@@ -5,7 +5,7 @@
 #     "huggingface-hub==0.31.0",
 #     "httpx==0.28.0",
 #     "python-dotenv==1.1.0",
-#     "lettucedetect==1.0.0",  # Only used if resume/progress needed
+#     "lettucedetect==1.0.0",
 # ]
 # ///
 
@@ -88,7 +88,7 @@ TRANSLATION_ANSWER = (
     "- If the original text do not contain <HAL> tags, just translate the text.\n"
     "- Do NOT add any <HAL> tags if they were not in the original text.\n"
     "- Do NOT remove any <HAL> tags that were in the original text.\n"
-    "- Do not include any additional sentences summarizing or explaining the "
+    "- Do not include any additional sentences summarising or explaining the "
     "translation.\n"
     "- Your output should be just the translated text, nothing else.\n"
     "\n"
@@ -104,7 +104,7 @@ TRANSLATION_PROMPT = (
     "\n"
     "Translate the following prompt from {source_lang} to {target_lang}.\n"
     "- Translate only the given prompt.\n"
-    "- Do not include any additional sentences summarizing or explaining the "
+    "- Do not include any additional sentences summarising or explaining the "
     "translation.\n"
     "- Your output should be just the translated prompt, nothing else.\n"
     "- Structured JSON objects should be translated as well by translating both "
@@ -123,7 +123,7 @@ TRANSLATION_PROMPT_DATA2TXT = (
     "\n"
     "Translate the following prompt from {source_lang} to {target_lang}.\n"
     "- Translate only the given prompt.\n"
-    "- Do not include any additional sentences summarizing or explaining the "
+    "- Do not include any additional sentences summarising or explaining the "
     "translation.\n"
     "- Your output should be just the translated prompt, nothing else.\n"
     "- Always translate JSON object as well by translating both the keys and "
