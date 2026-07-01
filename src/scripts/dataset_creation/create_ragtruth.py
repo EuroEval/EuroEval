@@ -1,11 +1,11 @@
 # /// script
 # requires-python = ">=3.10,<4.0"
 # dependencies = [
-#     "datasets==3.5.0",
-#     "huggingface-hub==0.31.0",
-#     "httpx==0.28.0",
-#     "python-dotenv==1.1.0",
-#     "lettucedetect==1.0.0",
+#     "datasets==5.0.0",
+#     "huggingface-hub==1.20.1",
+#     "httpx==0.28.1",
+#     "python-dotenv==1.0.1",
+#     "lettucedetect==0.1.8",
 # ]
 # ///
 
@@ -606,7 +606,7 @@ async def translate_sample(
 
         labels = []
         if merged_labels:
-            # Get hallucination spans and cleaned text (without HAL tags)
+            # Extract spans from HAL tags, preserving tags in output
             # Use merged labels from put_hallucination_tags to ensure alignment
             hal_spans, cleaned_answer = find_hallucination_tags(
                 translated_answer, merged_labels, sample_index
@@ -697,72 +697,59 @@ def put_hallucination_tags(
 def find_hallucination_tags(
     text: str, labels: list[dict[str, t.Any]], sample_index: int
 ) -> tuple[list[tuple[int, int, str]], str]:
-    """Find hallucination tags in the translated text and remove them.
+    """Find hallucination tags and extract span positions inside tags.
+
+    Preserves <HAL> and </HAL> tags in output. Label spans point to the
+    text INSIDE the tags (not including the tags themselves).
 
     Args:
-        text: Text to search for tags.
-        labels: Original labels.
-        sample_index: Index of the sample.
+        text:
+            Text containing <HAL>...</HAL> tags.
+        labels:
+            Original labels for each span.
+        sample_index:
+            Index of the sample for logging.
 
     Returns:
-        Tuple of (list of (start, end, label) tuples, cleaned text without HAL
-        tags).
+        Tuple of (list of (start, end, label) tuples for text inside tags,
+        text with HAL tags preserved).
     """
     if not labels:
         return [], text
 
-    # Find all <HAL> and </HAL> tags
-    pattern = r"<(/?HAL)>"
+    hal_spans = []
+    len("<HAL>")  # 5 characters
 
-    cleaned_text = ""
-    open_tags = {}  # Maps an index to the starting position in cleaned text
-    hal_spans = []  # List to store (start, end, label) tuples
+    # Find all opening and closing tag positions
+    open_positions = [m.end() for m in re.finditer(r"<HAL>", text)]
+    close_positions = [m.start() for m in re.finditer(r"</HAL>", text)]
 
-    last_index = 0
-    tag_count = 0
+    for i, (open_pos, close_pos) in enumerate(zip(open_positions, close_positions)):
+        label_text = "Unknown"
+        if i < len(labels):
+            label_text = labels[i].get("label", "Unknown")
+        else:
+            logger.warning(
+                f"IndexError: No label for hallucinated text at sample "
+                f"({sample_index}), span {i}"
+            )
 
-    for match in re.finditer(pattern, text):
-        start, end = match.span()
-        tag_type = match.group(1)
+        # Span points to text INSIDE the tags (after <HAL>, before </HAL>)
+        hal_spans.append((open_pos, close_pos, label_text))
 
-        cleaned_text += text[last_index:start]
-
-        if tag_type == "HAL":  # Opening tag
-            open_tags[tag_count] = len(cleaned_text)
-        elif tag_type == "/HAL":  # Closing tag
-            if tag_count in open_tags:
-                label_text = "Unknown"
-                if tag_count < len(labels):
-                    label_text = labels[tag_count].get("label", "Unknown")
-                else:
-                    message = (
-                        "IndexError: No label for hallucinated text at sample "
-                        f"({sample_index}), span {tag_count}"
-                    )
-                    logger.warning(message)
-
-                hal_spans.append((open_tags[tag_count], len(cleaned_text), label_text))
-                tag_count += 1
-            else:
-                message = (
-                    "Warning: Found closing HAL tag without matching opening tag "
-                    f"in sample {sample_index}"
-                )
-                logger.warning(message)
-
-        last_index = end
-
-    # Add remaining text
-    cleaned_text += text[last_index:]
-
-    if tag_count < len(labels):
-        message = (
+    if len(hal_spans) < len(labels):
+        logger.warning(
             f"Warning: Not all hallucination spans were found in sample "
-            f"{sample_index}. Found {tag_count}, expected {len(labels)}"
+            f"{sample_index}. Found {len(hal_spans)}, expected {len(labels)}"
         )
-        logger.warning(message)
+    if len(open_positions) != len(close_positions):
+        logger.warning(
+            f"Mismatched HAL tags in sample {sample_index}: "
+            f"{len(open_positions)} opening, {len(close_positions)} closing"
+        )
 
-    return hal_spans, cleaned_text
+    # Return text with tags preserved
+    return hal_spans, text
 
 
 async def translate_text(
