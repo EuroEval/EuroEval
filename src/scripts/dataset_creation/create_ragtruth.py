@@ -322,7 +322,7 @@ async def translate_text(
             else TRANSLATION_PROMPT
         )
         translation_prompt = translation_prompt.format(
-            source_lang=source_lang.code, target_lang=target_lang.code, text=text
+            source_lang=source_lang.name, target_lang=target_lang.name, text=text
         )
 
         # Cap output tokens to prevent runaway repetition loops.
