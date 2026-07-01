@@ -81,6 +81,7 @@ RESPONSE_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/he
 # Translation settings
 MODEL = "gpt-4o-mini"
 SOURCE_LANG: Language = ENGLISH
+
 # Translates to all major European languages
 TARGET_LANGS: list[Language] = [
     ALBANIAN,
@@ -247,11 +248,13 @@ def main() -> None:
             logger.error(f"Error loading input data: {e!s}")
             raise
     if data is None:
+
         # Download and join RAGTruth dataset from GitHub
         logger.info(
             f"Source data not found locally. Downloading from GitHub: {input_file}"
         )
         data = load_ragtruth_data()
+
         # Cache the downloaded data for future runs
         input_file.write_text(json.dumps(data.to_json(), separators=(",", ":")))
         logger.info(f"Cached source data to {input_file}")
@@ -449,6 +452,7 @@ async def run_translation(
 
                 translated_data.samples.extend(batch_results)
                 progress_bar.update(len(batch_results))
+
                 # Update last_processed_index by batch size (not results count)
                 last_processed_index = num_processed + i + len(batch)
 
@@ -615,6 +619,7 @@ async def translate_sample(
 
         labels = []
         if merged_labels:
+
             # Extract spans from HAL tags, preserving tags in output
             # Use merged labels from put_hallucination_tags to ensure alignment
             hal_spans, cleaned_answer = find_hallucination_tags(
@@ -730,8 +735,8 @@ def find_hallucination_tags(
 
     # Find all opening and closing tag positions
     # Clean up mangled tags like "<HAL<HAL>>" -> "<HAL>"
-    text = re.sub(r"<HAL\\s*<[^>]*>", "<HAL>", text)
-    text = re.sub(r"</HAL\\s*</[^>]*>", "</HAL>", text)
+    text = re.sub(r"<HAL<HAL>>", "<HAL>", text)
+    text = re.sub(r"</HAL></HAL>", "</HAL>", text)
     text = re.sub(r"</HAL>\s*</HAL>", "</HAL>", text)
 
     open_positions = [m.end() for m in re.finditer(r"<HAL>", text)]
@@ -742,14 +747,16 @@ def find_hallucination_tags(
         text = text.rstrip() + "</HAL>" * (len(open_positions) - len(close_positions))
         close_positions = [m.start() for m in re.finditer(r"</HAL>", text)]
         logger.warning(
-            f"Added {len(open_positions) - len(close_positions) + 1} missing "
+            f"Added {len(open_positions) - len(close_positions)} missing "
             f"</HAL> tag(s) to sample {sample_index}"
         )
 
     # Remove extra closing tags if more closing than opening
     if len(close_positions) > len(open_positions):
+
         # Keep only the first N closing tags where N = number of opening tags
         extra_close = len(close_positions) - len(open_positions)
+
         # Remove the last N closing tags from text
         for _ in range(extra_close):
             last_close = text.rfind("</HAL>")
@@ -940,6 +947,7 @@ def save_progress(
         output_file.write_text(json.dumps(data_dict))
     except Exception as e:
         logger.error(f"Error saving progress: {e!s}")
+
         # Try to save to a backup file
         backup_file = (
             output_dir
@@ -1009,6 +1017,7 @@ def push_test_subset_to_hub(
     random.shuffle(samples)
 
     def _to_rows(items: list[HallucinationSample]) -> list[dict[str, t.Any]]:
+
         # Preprocess the samples so they are ready for the hallucination
         # (question-answering) task: the task group expects ``id``, ``context``,
         # ``question`` and ``answers`` columns, derived here from the RAG ``prompt``
@@ -1031,6 +1040,7 @@ def push_test_subset_to_hub(
         ]
 
     test_samples = [s for s in samples if s.split == "test"][:n]
+
     # RAGTruth only ships train/test splits, so carve the validation split from train.
     validation_samples = [s for s in samples if s.split == "train"][:validation_n]
 
@@ -1142,6 +1152,7 @@ def _translate_to_language(
         translated_data, last_processed_index = load_check_existing_data(
             output_file=output_file
         )
+
         # Use metadata index if available, fall back to sample count
         num_processed = (
             last_processed_index
