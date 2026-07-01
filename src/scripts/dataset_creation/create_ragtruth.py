@@ -230,7 +230,6 @@ def main() -> None:
     # Set up logging
     setup_logging(output_dir)
 
-    # Load source data once
     # Load source data if available
     input_file = input_dir / f"{DATASET_NAME}_data.json"
     data: HallucinationData | None = None
@@ -240,12 +239,15 @@ def main() -> None:
         except Exception as e:
             logger.error(f"Error loading input data: {e!s}")
             raise
-    else:
-        # Output file missing, will start fresh
-        logger.warning(
-            f"Input file not found: {input_file}. "
-            "Proceeding in push-only mode if translated files exist."
+    if data is None:
+        # Download and join RAGTruth dataset from GitHub
+        logger.info(
+            f"Source data not found locally. Downloading from GitHub: {input_file}"
         )
+        data = load_ragtruth_data()
+        # Cache the downloaded data for future runs
+        input_file.write_text(json.dumps(data.to_json(), separators=(",", ":")))
+        logger.info(f"Cached source data to {input_file}")
 
     # Get OpenAI client once (shared across all languages)
     client = get_openai_client()
@@ -567,7 +569,7 @@ async def translate_sample(
             )
             return None
 
-        tagged_answer, labels = put_hallucination_tags(sample, sample.answer)
+        tagged_answer, merged_labels = put_hallucination_tags(sample, sample.answer)
 
         prompt_task = asyncio.create_task(
             translate_text(
@@ -603,10 +605,11 @@ async def translate_sample(
         cleaned_answer = translated_answer
 
         labels = []
-        if sample.labels:
+        if merged_labels:
             # Get hallucination spans and cleaned text (without HAL tags)
+            # Use merged labels from put_hallucination_tags to ensure alignment
             hal_spans, cleaned_answer = find_hallucination_tags(
-                translated_answer, sample.labels, sample_index
+                translated_answer, merged_labels, sample_index
             )
 
             for span in hal_spans:
@@ -1111,6 +1114,7 @@ def _translate_to_language(
     log_file = output_dir / "error_log.txt"
 
     # Load existing translated data if output file exists (cache)
+    last_processed_index: int | None = None
     if output_file.exists():
         translated_data, last_processed_index = load_check_existing_data(
             output_file=output_file
