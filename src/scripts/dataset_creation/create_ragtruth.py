@@ -576,30 +576,32 @@ async def translate_sample(
             )
             return None
 
-        tagged_answer, merged_labels = put_hallucination_tags(sample, sample.answer)
+        tagged_answer, merged_labels = put_hallucination_tags(
+            sample=sample, answer=sample.answer
+        )
 
         prompt_task = asyncio.create_task(
             translate_text(
-                sample.prompt,
-                http_client,
-                url,
-                semaphore,
-                model,
-                sample.task_type,
-                source_lang,
-                target_lang,
+                text=sample.prompt,
+                http_client=http_client,
+                url=url,
+                semaphore=semaphore,
+                model=model,
+                task_type=sample.task_type,
+                source_lang=source_lang,
+                target_lang=target_lang,
             )
         )
         answer_task = asyncio.create_task(
             translate_text(
-                tagged_answer,
-                http_client,
-                url,
-                semaphore,
-                model,
-                sample.task_type,
-                source_lang,
-                target_lang,
+                text=tagged_answer,
+                http_client=http_client,
+                url=url,
+                semaphore=semaphore,
+                model=model,
+                task_type=sample.task_type,
+                source_lang=source_lang,
+                target_lang=target_lang,
                 prompt=True,
             )
         )
@@ -616,7 +618,7 @@ async def translate_sample(
             # Extract spans from HAL tags, preserving tags in output
             # Use merged labels from put_hallucination_tags to ensure alignment
             hal_spans, cleaned_answer = find_hallucination_tags(
-                translated_answer, merged_labels, sample_index
+                text=translated_answer, labels=merged_labels, sample_index=sample_index
             )
 
             for span in hal_spans:
