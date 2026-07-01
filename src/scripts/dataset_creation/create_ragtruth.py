@@ -582,6 +582,12 @@ async def run_translation(
     save_interval = 60
     last_save_time = start_time
 
+    # Track the resume watermark here so it is always persisted with the correct
+    # value on the way out (see the finally block), even on interrupt/crash. This
+    # index counts source samples *processed* (advancing by batch size, not result
+    # count), so discarded samples stay cached and are never re-translated.
+    last_processed_index = num_processed
+
     try:
         async with httpx.AsyncClient(
             headers=client_config["headers"], timeout=timeout, limits=limits
@@ -629,6 +635,15 @@ async def run_translation(
                 )
     finally:
         progress_bar.close()
+        # Persist the correct watermark on every exit path (normal completion,
+        # interrupt or crash) so a resume never falls back to len(samples), which
+        # would ignore discards and re-translate/duplicate boundary samples.
+        save_progress(
+            translated_data=translated_data,
+            output_file=output_file,
+            target_lang=target_lang,
+            last_processed_index=last_processed_index,
+        )
 
 
 async def process_batch(
@@ -1459,26 +1474,19 @@ def _translate_to_language(
         )
 
     except KeyboardInterrupt:
-        logger.info("Translation interrupted by user. Saving progress...")
-        save_progress(
-            translated_data=translated_data,
-            output_file=output_file,
-            target_lang=target_lang,
-            last_processed_index=last_processed_index,
-        )
+        # run_translation's finally block already saved progress with the correct
+        # watermark; do not re-save here with this scope's stale index (which would
+        # reset the metadata and break discard-aware resume).
         logger.info(
-            f"Saved {len(translated_data.samples)} translated samples to {output_file}"
+            f"Translation interrupted by user. Saved "
+            f"{len(translated_data.samples)} translated samples to {output_file}"
         )
         return
 
     except Exception as e:
+        # Progress was persisted by run_translation's finally block with the
+        # correct watermark; just surface the error.
         logger.error(f"Unexpected error: {e!s}")
-        save_progress(
-            translated_data=translated_data,
-            output_file=output_file,
-            target_lang=target_lang,
-            last_processed_index=last_processed_index,
-        )
         raise
 
     logger.info(
