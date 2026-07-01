@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BULGARIAN
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT
 
 # Official datasets ###
 
@@ -65,4 +65,13 @@ INCLUDE_BG_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[BULGARIAN],
     unofficial=True,
+)
+
+RAGTRUTH_BG_CONFIG = DatasetConfig(
+    name="ragtruth-bg",
+    pretty_name="RAGTruth-bg",
+    source="EuroEval/ragtruth-translated-hallucinations-bg-mini",
+    task=HALLU,
+    languages=[BULGARIAN],
+    train_split=None,
 )

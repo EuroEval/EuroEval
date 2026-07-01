@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BOSNIAN
-from ..tasks import NER, RC, SENT, SUMM
+from ..tasks import HALLU, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -36,4 +36,13 @@ LR_SUM_BS_CONFIG = DatasetConfig(
     source="EuroEval/lr-sum-bs-mini",
     task=SUMM,
     languages=[BOSNIAN],
+)
+
+RAGTRUTH_BS_CONFIG = DatasetConfig(
+    name="ragtruth-bs",
+    pretty_name="RAGTruth-bs",
+    source="EuroEval/ragtruth-translated-hallucinations-bs-mini",
+    task=HALLU,
+    languages=[BOSNIAN],
+    train_split=None,
 )

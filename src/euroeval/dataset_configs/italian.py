@@ -5,6 +5,7 @@ from ..languages import ITALIAN
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    HALLU,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -171,4 +172,13 @@ WIC_ITA_CONFIG = DatasetConfig(
     task=WIC,
     languages=[ITALIAN],
     unofficial=True,
+)
+
+RAGTRUTH_IT_CONFIG = DatasetConfig(
+    name="ragtruth-it",
+    pretty_name="RAGTruth-it",
+    source="EuroEval/ragtruth-translated-hallucinations-it-mini",
+    task=HALLU,
+    languages=[ITALIAN],
+    train_split=None,
 )

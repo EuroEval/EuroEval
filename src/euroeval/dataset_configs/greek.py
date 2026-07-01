@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import GREEK
-from ..tasks import COMMON_SENSE, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -92,4 +102,13 @@ GREEK_MMLU_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[GREEK],
     unofficial=True,
+)
+
+RAGTRUTH_EL_CONFIG = DatasetConfig(
+    name="ragtruth-el",
+    pretty_name="RAGTruth-el",
+    source="EuroEval/ragtruth-translated-hallucinations-el-mini",
+    task=HALLU,
+    languages=[GREEK],
+    train_split=None,
 )

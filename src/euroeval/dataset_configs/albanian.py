@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ALBANIAN
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -73,4 +73,13 @@ INCLUDE_SQ_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[ALBANIAN],
     unofficial=True,
+)
+
+RAGTRUTH_AL_CONFIG = DatasetConfig(
+    name="ragtruth-al",
+    pretty_name="RAGTruth-al",
+    source="EuroEval/ragtruth-translated-hallucinations-al-mini",
+    task=HALLU,
+    languages=[ALBANIAN],
+    train_split=None,
 )

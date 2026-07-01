@@ -5,6 +5,7 @@ from ..languages import SPANISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    HALLU,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -179,4 +180,13 @@ MULTINRC_ES_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[SPANISH],
     unofficial=True,
+)
+
+RAGTRUTH_ES_CONFIG = DatasetConfig(
+    name="ragtruth-es",
+    pretty_name="RAGTruth-es",
+    source="EuroEval/ragtruth-translated-hallucinations-es-mini",
+    task=HALLU,
+    languages=[SPANISH],
+    train_split=None,
 )

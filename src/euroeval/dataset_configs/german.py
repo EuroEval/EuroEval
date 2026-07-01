@@ -6,6 +6,7 @@ from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
     GED,
+    HALLU,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -199,4 +200,13 @@ ZEBRA_PUZZLE_HARD_DE_CONFIG = DatasetConfig(
     task=LOGIC,
     languages=[GERMAN],
     unofficial=True,
+)
+
+RAGTRUTH_DE_CONFIG = DatasetConfig(
+    name="ragtruth-de",
+    pretty_name="RAGTruth-de",
+    source="EuroEval/ragtruth-translated-hallucinations-de-mini",
+    task=HALLU,
+    languages=[GERMAN],
+    train_split=None,
 )

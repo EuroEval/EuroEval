@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SLOVENE
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT
 
 # Official datasets ###
 
@@ -53,4 +53,13 @@ WINOGRANDE_SL_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[SLOVENE],
     labels=["a", "b"],
+)
+
+RAGTRUTH_SL_CONFIG = DatasetConfig(
+    name="ragtruth-sl",
+    pretty_name="RAGTruth-sl",
+    source="EuroEval/ragtruth-translated-hallucinations-sl-mini",
+    task=HALLU,
+    languages=[SLOVENE],
+    train_split=None,
 )

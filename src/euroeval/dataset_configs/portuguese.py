@@ -5,6 +5,7 @@ from ..languages import EUROPEAN_PORTUGUESE, PORTUGUESE
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    HALLU,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -135,4 +136,13 @@ MULTILOKO_PT_CONFIG = DatasetConfig(
     languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
     val_split=None,
     unofficial=True,
+)
+
+RAGTRUTH_PT_CONFIG = DatasetConfig(
+    name="ragtruth-pt",
+    pretty_name="RAGTruth-pt",
+    source="EuroEval/ragtruth-translated-hallucinations-pt-mini",
+    task=HALLU,
+    languages=[PORTUGUESE],
+    train_split=None,
 )

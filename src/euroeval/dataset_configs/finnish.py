@@ -5,6 +5,7 @@ from ..languages import FINNISH
 from ..tasks import (
     COMMON_SENSE,
     EUROPEAN_VALUES,
+    HALLU,
     INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
@@ -135,4 +136,13 @@ INCLUDE_FI_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[FINNISH],
     unofficial=True,
+)
+
+RAGTRUTH_FI_CONFIG = DatasetConfig(
+    name="ragtruth-fi",
+    pretty_name="RAGTruth-fi",
+    source="EuroEval/ragtruth-translated-hallucinations-fi-mini",
+    task=HALLU,
+    languages=[FINNISH],
+    train_split=None,
 )

@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import POLISH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, HALLU, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -103,4 +103,13 @@ INCLUDE_PL_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[POLISH],
     unofficial=True,
+)
+
+RAGTRUTH_PL_CONFIG = DatasetConfig(
+    name="ragtruth-pl",
+    pretty_name="RAGTruth-pl",
+    source="EuroEval/ragtruth-translated-hallucinations-pl-mini",
+    task=HALLU,
+    languages=[POLISH],
+    train_split=None,
 )

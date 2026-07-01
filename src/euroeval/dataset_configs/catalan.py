@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import CATALAN
-from ..tasks import COMMON_SENSE, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -71,4 +81,13 @@ IFEVAL_CA_CONFIG = DatasetConfig(
     languages=[CATALAN],
     train_split=None,
     val_split=None,
+)
+
+RAGTRUTH_CA_CONFIG = DatasetConfig(
+    name="ragtruth-ca",
+    pretty_name="RAGTruth-ca",
+    source="EuroEval/ragtruth-translated-hallucinations-ca-mini",
+    task=HALLU,
+    languages=[CATALAN],
+    train_split=None,
 )

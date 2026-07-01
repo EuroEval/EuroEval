@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LITHUANIAN
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -81,4 +81,13 @@ INCLUDE_LT_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[LITHUANIAN],
     unofficial=True,
+)
+
+RAGTRUTH_LT_CONFIG = DatasetConfig(
+    name="ragtruth-lt",
+    pretty_name="RAGTruth-lt",
+    source="EuroEval/ragtruth-translated-hallucinations-lt-mini",
+    task=HALLU,
+    languages=[LITHUANIAN],
+    train_split=None,
 )

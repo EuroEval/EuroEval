@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ROMANIAN
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -62,4 +62,13 @@ WINOGRANDE_RO_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[ROMANIAN],
     labels=["a", "b"],
+)
+
+RAGTRUTH_RO_CONFIG = DatasetConfig(
+    name="ragtruth-ro",
+    pretty_name="RAGTruth-ro",
+    source="EuroEval/ragtruth-translated-hallucinations-ro-mini",
+    task=HALLU,
+    languages=[ROMANIAN],
+    train_split=None,
 )

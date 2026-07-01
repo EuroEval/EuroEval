@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import UKRAINIAN
-from ..tasks import COMMON_SENSE, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -83,4 +93,13 @@ INCLUDE_UK_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[UKRAINIAN],
     unofficial=True,
+)
+
+RAGTRUTH_UK_CONFIG = DatasetConfig(
+    name="ragtruth-uk",
+    pretty_name="RAGTruth-uk",
+    source="EuroEval/ragtruth-translated-hallucinations-uk-mini",
+    task=HALLU,
+    languages=[UKRAINIAN],
+    train_split=None,
 )

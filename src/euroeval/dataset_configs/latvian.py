@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LATVIAN
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -84,4 +84,13 @@ WINOGRANDE_LV_CONFIG = DatasetConfig(
     languages=[LATVIAN],
     labels=["a", "b"],
     unofficial=True,
+)
+
+RAGTRUTH_LV_CONFIG = DatasetConfig(
+    name="ragtruth-lv",
+    pretty_name="RAGTruth-lv",
+    source="EuroEval/ragtruth-translated-hallucinations-lv-mini",
+    task=HALLU,
+    languages=[LATVIAN],
+    train_split=None,
 )

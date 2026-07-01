@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BELARUSIAN
-from ..tasks import COMMON_SENSE, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, HALLU, LA, NER, RC, SENT
 
 # Official datasets ###
 
@@ -44,4 +44,13 @@ BE_WSC_CONFIG = DatasetConfig(
     source="EuroEval/be-wsc",
     task=COMMON_SENSE,
     languages=[BELARUSIAN],
+)
+
+RAGTRUTH_BE_CONFIG = DatasetConfig(
+    name="ragtruth-be",
+    pretty_name="RAGTruth-be",
+    source="EuroEval/ragtruth-translated-hallucinations-be-mini",
+    task=HALLU,
+    languages=[BELARUSIAN],
+    train_split=None,
 )

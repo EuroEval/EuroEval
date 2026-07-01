@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import CZECH
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -72,4 +72,13 @@ SCALA_CS_CONFIG = DatasetConfig(
     task=LA,
     languages=[CZECH],
     unofficial=True,
+)
+
+RAGTRUTH_CS_CONFIG = DatasetConfig(
+    name="ragtruth-cs",
+    pretty_name="RAGTruth-cs",
+    source="EuroEval/ragtruth-translated-hallucinations-cs-mini",
+    task=HALLU,
+    languages=[CZECH],
+    train_split=None,
 )

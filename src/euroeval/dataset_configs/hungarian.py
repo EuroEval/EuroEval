@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import HUNGARIAN
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
 
 # Official datasets ###
 
@@ -73,4 +73,13 @@ INCLUDE_HU_CONFIG = DatasetConfig(
     task=KNOW,
     languages=[HUNGARIAN],
     unofficial=True,
+)
+
+RAGTRUTH_HU_CONFIG = DatasetConfig(
+    name="ragtruth-hu",
+    pretty_name="RAGTruth-hu",
+    source="EuroEval/ragtruth-translated-hallucinations-hu-mini",
+    task=HALLU,
+    languages=[HUNGARIAN],
+    train_split=None,
 )

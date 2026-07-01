@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SLOVAK
-from ..tasks import COMMON_SENSE, KNOW, LA, NER, RC, SENT
+from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT
 
 # Official datasets ###
 
@@ -52,4 +52,13 @@ WINOGRANDE_SK_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-sk",
     task=COMMON_SENSE,
     languages=[SLOVAK],
+)
+
+RAGTRUTH_SK_CONFIG = DatasetConfig(
+    name="ragtruth-sk",
+    pretty_name="RAGTruth-sk",
+    source="EuroEval/ragtruth-translated-hallucinations-sk-mini",
+    task=HALLU,
+    languages=[SLOVAK],
+    train_split=None,
 )
