@@ -241,7 +241,18 @@ def main() -> None:
     parser.add_argument(
         "--test-mode",
         action="store_true",
-        help="Translate only the first batch per language, for quick smoke tests.",
+        help="Run a limited smoke test (few samples, no Hub uploads).",
+    )
+    parser.add_argument(
+        "--test-num-samples",
+        type=int,
+        default=10,
+        help="Number of samples to translate per language in test mode.",
+    )
+    parser.add_argument(
+        "--test-all-languages",
+        action="store_true",
+        help="In test mode, translate all target languages instead of only Danish.",
     )
     args = parser.parse_args()
 
@@ -276,8 +287,12 @@ def main() -> None:
     # Get OpenAI client once (shared across all languages)
     client = get_openai_client()
 
-    # In test mode we only smoke-test a single language (Danish).
-    target_langs = [DANISH] if args.test_mode else TARGET_LANGS
+    # In test mode we smoke-test a single language (Danish) unless the caller asks
+    # for all languages.
+    if args.test_mode and not args.test_all_languages:
+        target_langs = [DANISH]
+    else:
+        target_langs = TARGET_LANGS
 
     # Translate to each target language
     for target_lang in target_langs:
@@ -290,6 +305,7 @@ def main() -> None:
             target_lang=target_lang,
             client_config=client,
             test_mode=args.test_mode,
+            test_num_samples=args.test_num_samples,
         )
 
 
@@ -432,7 +448,6 @@ async def run_translation(
     target_lang: Language,
     num_processed: int,
     client_config: ClientConfig,
-    test_mode: bool,
 ) -> None:
     """Run batched async translation with connection pooling.
 
@@ -451,8 +466,6 @@ async def run_translation(
             Number of already translated samples from cache.
         client_config:
             API URL and headers.
-        test_mode:
-            If True, only the first batch is translated (for quick smoke tests).
     """
     total_samples = len(remaining_samples)
     log_file = OUTPUT_DIR / "error_log.txt"
@@ -469,9 +482,6 @@ async def run_translation(
             headers=client_config["headers"], timeout=timeout, limits=limits
         ) as http_client:
             for i in range(0, total_samples, BATCH_SIZE):
-                if test_mode and i > 0:
-                    break
-
                 batch = remaining_samples[i : i + BATCH_SIZE]
                 batch_results = await process_batch(
                     samples=batch,
@@ -1188,6 +1198,7 @@ def _translate_to_language(
     target_lang: Language,
     client_config: ClientConfig,
     test_mode: bool = False,
+    test_num_samples: int = 10,
 ) -> None:
     """Translate RAGTruth data to a single target language.
 
@@ -1202,7 +1213,9 @@ def _translate_to_language(
         client_config:
             OpenAI client configuration.
         test_mode:
-            If True, only the first batch is translated (for quick smoke tests).
+            If True, run a limited smoke test and skip Hub uploads.
+        test_num_samples:
+            Number of samples to translate per language in test mode.
 
     Raises:
         FileNotFoundError:
@@ -1244,6 +1257,10 @@ def _translate_to_language(
             "Source data not found and no cached translation to resume"
         )
 
+    # In test mode, only translate a small number of samples per language.
+    if test_mode:
+        remaining_samples = remaining_samples[:test_num_samples]
+
     total_samples = len(remaining_samples)
 
     if total_samples == 0:
@@ -1263,7 +1280,6 @@ def _translate_to_language(
                 target_lang=target_lang,
                 num_processed=num_processed,
                 client_config=client_config,
-                test_mode=test_mode,
             )
         )
 
