@@ -1459,6 +1459,17 @@ def load_model(
     else:
         download_dir = str(model_config.model_cache_dir)
 
+    # Keep vLLM's own caches (compiled graphs, model-info registry) under the
+    # euroeval cache directory alongside the downloaded weights, rather than the
+    # shared ``~/.cache/vllm`` default. On shared machines the latter can end up
+    # owned by another user (e.g. from a past ``sudo`` run), which makes vLLM fail
+    # with a ``PermissionError`` when it tries to write there. ``setdefault`` so an
+    # explicit ``VLLM_CACHE_ROOT`` from the environment still wins. vLLM reads this
+    # variable lazily, so setting it before the engine is created is sufficient.
+    os.environ.setdefault(
+        "VLLM_CACHE_ROOT", str((Path(benchmark_config.cache_dir) / "vllm").resolve())
+    )
+
     vllm_params = get_vllm_tokenisation_params(
         tokeniser=tokeniser, model_config=model_config
     )
