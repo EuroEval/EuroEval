@@ -96,6 +96,7 @@ from leaderboards.queue_parsing import (
     num_skipped_benchmarks,
     read_jsonl_lines,
     result_lines_for_model,
+    summarise_evaluation_error,
 )
 from leaderboards.queue_runtime import (
     ThermalConfig,
@@ -813,19 +814,19 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
         # Handle gating.
         if gated_in_lang:
             gated_detected = True
-            failure_output_tail = output[-6000:].strip() or "(no output captured)"
+            failure_output_tail = summarise_evaluation_error(output=output)
             failed.append(lang)
             break
 
         # Handle errors.
         if returncode != 0:
             failure_reason = f"euroeval exited with code {returncode}"
-            failure_output_tail = output[-6000:].strip() or "(no output captured)"
+            failure_output_tail = summarise_evaluation_error(output=output)
             failed.append(lang)
             break
         elif num_errored > 0:
             failure_reason = f"euroeval reported {num_errored} errored benchmark(s)"
-            failure_output_tail = output[-6000:].strip() or "(no output captured)"
+            failure_output_tail = summarise_evaluation_error(output=output)
             failed.append(lang)
             break
 
@@ -852,7 +853,7 @@ def _run_claimed_issue(issue: dict, model_id: str, languages: list[str]) -> None
                 f"missing official dataset-language pair(s): "
                 f"{format_dataset_language_pairs(dataset_language_pairs=missing)}"
             )
-            failure_output_tail = last_output[-6000:].strip() or "(no output captured)"
+            failure_output_tail = summarise_evaluation_error(output=last_output)
             failed.extend([lang for lang in pending if lang not in done])
         elif missing:
             logger.info(
