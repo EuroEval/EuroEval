@@ -1,9 +1,21 @@
-"""Translate hallucination datasets between languages while preserving span labels.
+# /// script
+# requires-python = ">=3.10,<4.0"
+# dependencies = [
+#     "datasets==3.5.0",
+#     "huggingface-hub==0.31.0",
+#     "httpx==0.28.0",
+#     "python-dotenv==1.1.0",
+#     "lettucedetect==1.0.0",
+# ]
+# ///
 
-Copied from https://github.com/KRLabsOrg/LettuceDetect/blob/main/scripts/translate/translate.py.
+"""Download and translate RAGTruth hallucination dataset.
+
+Downloads source_info.jsonl and response.jsonl from RAGTruth GitHub repository,
+joins them, and translates to all 30 European target languages while preserving
+hallucination spans.
 """
 
-import argparse
 import asyncio
 import json
 import logging
@@ -11,8 +23,8 @@ import os
 import random
 import re
 import time
+import typing as t
 from pathlib import Path
-from typing import Any, cast
 
 import httpx
 import tqdm
@@ -22,12 +34,109 @@ from lettucedetect.datasets.hallucination_dataset import (
     HallucinationData,
     HallucinationSample,
 )
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
+
+from euroeval.languages import (
+    ALBANIAN,
+    BELARUSIAN,
+    BOSNIAN,
+    BULGARIAN,
+    CATALAN,
+    CROATIAN,
+    CZECH,
+    DANISH,
+    DUTCH,
+    ENGLISH,
+    ESTONIAN,
+    FAROESE,
+    FINNISH,
+    FRENCH,
+    GERMAN,
+    GREEK,
+    HUNGARIAN,
+    ICELANDIC,
+    ITALIAN,
+    LATVIAN,
+    LITHUANIAN,
+    NORWEGIAN,
+    POLISH,
+    PORTUGUESE,
+    ROMANIAN,
+    SERBIAN,
+    SLOVAK,
+    SLOVENE,
+    SPANISH,
+    SWEDISH,
+    UKRAINIAN,
+    Language,
 )
+
+# =============================================================================
+# Configuration constants
+# =============================================================================
+
+# RAGTruth data source
+SOURCE_INFO_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/heads/main/dataset/source_info.jsonl"
+RESPONSE_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/heads/main/dataset/response.jsonl"
+
+# Translation settings
+MODEL = "gpt-4o-mini"
+SOURCE_LANG: Language = ENGLISH
+# Translates to all major European languages
+TARGET_LANGS: list[Language] = [
+    ALBANIAN,
+    BELARUSIAN,
+    BOSNIAN,
+    BULGARIAN,
+    CATALAN,
+    CROATIAN,
+    CZECH,
+    DANISH,
+    DUTCH,
+    ESTONIAN,
+    FAROESE,
+    FINNISH,
+    FRENCH,
+    GERMAN,
+    GREEK,
+    HUNGARIAN,
+    ICELANDIC,
+    ITALIAN,
+    LATVIAN,
+    LITHUANIAN,
+    NORWEGIAN,
+    POLISH,
+    PORTUGUESE,
+    ROMANIAN,
+    SERBIAN,
+    SLOVAK,
+    SLOVENE,
+    SPANISH,
+    SWEDISH,
+    UKRAINIAN,
+]
+BATCH_SIZE = 30
+MAX_WORKERS = 30
+
+# Output settings
+OUTPUT_DIR = Path("data/ragtruth")
+DATASET_NAME = "ragtruth"
+
+# HF Hub settings
+PUSH_TO_HUB = True
+HUB_REPO_ID = "EuroEval/ragtruth-translated-hallucinations"
+PRIVATE_UPLOAD = True
+PUSH_TEST_SUBSET = True
+TEST_SUBSET_REPO_ID = "EuroEval/ragtruth-translated-hallucinations-{lang}-mini"
+TEST_SUBSET_SIZE = 1000
+VALIDATION_SUBSET_SIZE = 256
+
+# Execution settings
+TEST_MODE = False
+
+
+# =============================================================================
+# Translation prompts
+# =============================================================================
 
 TRANSLATION_ANSWER = (
     "\n"
@@ -38,7 +147,7 @@ TRANSLATION_ANSWER = (
     "- If the original text do not contain <HAL> tags, just translate the text.\n"
     "- Do NOT add any <HAL> tags if they were not in the original text.\n"
     "- Do NOT remove any <HAL> tags that were in the original text.\n"
-    "- Do not include any additional sentences summarizing or explaining the "
+    "- Do not include any additional sentences summarising or explaining the "
     "translation.\n"
     "- Your output should be just the translated text, nothing else.\n"
     "\n"
@@ -54,7 +163,7 @@ TRANSLATION_PROMPT = (
     "\n"
     "Translate the following prompt from {source_lang} to {target_lang}.\n"
     "- Translate only the given prompt.\n"
-    "- Do not include any additional sentences summarizing or explaining the "
+    "- Do not include any additional sentences summarising or explaining the "
     "translation.\n"
     "- Your output should be just the translated prompt, nothing else.\n"
     "- Structured JSON objects should be translated as well by translating both "
@@ -73,7 +182,7 @@ TRANSLATION_PROMPT_DATA2TXT = (
     "\n"
     "Translate the following prompt from {source_lang} to {target_lang}.\n"
     "- Translate only the given prompt.\n"
-    "- Do not include any additional sentences summarizing or explaining the "
+    "- Do not include any additional sentences summarising or explaining the "
     "translation.\n"
     "- Your output should be just the translated prompt, nothing else.\n"
     "- Always translate JSON object as well by translating both the keys and "
@@ -111,301 +220,314 @@ class RetryableTranslationError(Exception):
     pass
 
 
-def setup_logging(output_dir: Path) -> None:
-    """Set up logging to file in the output directory.
+def main() -> None:
+    """Download RAGTruth data, translate to all target languages, and upload to Hub."""
+    # Set up directories
+    input_dir = OUTPUT_DIR
+    output_dir = OUTPUT_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Set up logging
+    setup_logging(output_dir)
+
+    # Load source data once
+    # Load source data if available
+    input_file = input_dir / f"{DATASET_NAME}_data.json"
+    data: HallucinationData | None = None
+    if input_file.exists():
+        try:
+            data = HallucinationData.from_json(json.loads(input_file.read_text()))
+        except Exception as e:
+            logger.error(f"Error loading input data: {e!s}")
+            raise
+    else:
+        # Output file missing, will start fresh
+        logger.warning(
+            f"Input file not found: {input_file}. "
+            "Proceeding in push-only mode if translated files exist."
+        )
+
+    # Get OpenAI client once (shared across all languages)
+    client = get_openai_client()
+
+    # Translate to each target language
+    for target_lang in TARGET_LANGS:
+        logger.info(f"\n{'=' * 60}")
+        logger.info(f"Translating to {target_lang.name} ({target_lang.code})")
+        logger.info(f"{'=' * 60}")
+
+        _translate_to_language(
+            source_data=data,
+            target_lang=target_lang,
+            model=MODEL,
+            batch_size=BATCH_SIZE,
+            max_workers=MAX_WORKERS,
+            test=TEST_MODE,
+            push_to_hub=PUSH_TO_HUB,
+            hub_repo_id=HUB_REPO_ID,
+            private=PRIVATE_UPLOAD,
+            push_test_subset=PUSH_TEST_SUBSET,
+            test_subset_size=TEST_SUBSET_SIZE,
+            validation_subset_size=VALIDATION_SUBSET_SIZE,
+            client_config=client,
+        )
+
+
+def download_jsonl(url: str) -> list[dict[str, t.Any]]:
+    """Download a JSONL file from a URL with streaming to reduce memory usage.
 
     Args:
-        output_dir: Directory to save log file.
-    """
-    log_file = output_dir / "translation.log"
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setFormatter(
-        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    )
-    logger.addHandler(file_handler)
-
-
-def get_openai_client() -> dict[str, Any]:
-    """Get HTTP client configuration from environment variables.
+        url: URL to the JSONL file.
 
     Returns:
-        Dict with `url` and `headers` for chat completion requests.
-
-    Raises:
-        ValueError: If API key is not set.
+        List of parsed JSON objects from each line.
     """
-    api_key = os.getenv("OPENAI_API_KEY")
-    base_url = os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"
-    if not api_key:
-        raise ValueError(
-            "OPENAI_API_KEY is not set. Export it in your shell or load it from .env "
-            "before running translation."
-        )
-    return {
-        "url": f"{base_url.rstrip('/')}/chat/completions",
-        "headers": {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
+    logger.info(f"Downloading {url}...")
+    with httpx.Client(timeout=300.0) as client:
+        with client.stream("GET", url) as response:
+            response.raise_for_status()
+            lines = []
+            for line in response.iter_lines():
+                line = line.strip()
+                if line:
+                    lines.append(json.loads(line))
+            return lines
+
+
+def load_ragtruth_data() -> HallucinationData:
+    """Download and join RAGTruth dataset from GitHub.
+
+    Returns:
+        HallucinationData with joined samples.
+    """
+    source_info_list = download_jsonl(SOURCE_INFO_URL)
+    response_list = download_jsonl(RESPONSE_URL)
+
+    logger.info(f"Downloaded {len(source_info_list)} source records")
+    logger.info(f"Downloaded {len(response_list)} response records")
+
+    source_lookup: dict[str, dict[str, t.Any]] = {
+        src["source_id"]: src for src in source_info_list
     }
 
+    samples: list[HallucinationSample] = []
+    for resp in response_list:
+        source_id = resp.get("source_id")
+        if source_id not in source_lookup:
+            logger.warning(f"No source info for response {resp.get('id')}")
+            continue
 
-@retry(
-    retry=retry_if_exception_type((RetryableTranslationError)),
-    stop=stop_after_attempt(5),
-    wait=wait_exponential(multiplier=1, min=2, max=60),
-    reraise=True,
-    before_sleep=lambda retry_state: logger.warning(
-        "API call failed. Retrying in "
-        f"{retry_state.next_action.sleep if retry_state.next_action else 0} "
-        f"seconds... (Attempt {retry_state.attempt_number}/5)"
-    ),
-)
-async def translate_text(
-    text: str,
+        src = source_lookup[source_id]
+        labels = [
+            {"start": lbl["start"], "end": lbl["end"], "label": lbl["label_type"]}
+            for lbl in resp.get("labels", [])
+        ]
+
+        samples.append(
+            HallucinationSample(
+                prompt=src.get("prompt", ""),
+                answer=resp.get("response", ""),
+                labels=labels,
+                split=resp.get("split", "train"),
+                task_type=src.get("task_type", "unknown"),
+                dataset="ragtruth",
+                language="en",
+            )
+        )
+
+    logger.info(f"Created {len(samples)} samples from RAGTruth dataset")
+    return HallucinationData(samples=samples)
+
+
+def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int | None]:
+    """Load existing data or create new data.
+
+    Args:
+        output_file: Path to the output file.
+
+    Returns:
+        Tuple of (HallucinationData, last_processed_index). last_processed_index
+        is None if the file doesn't exist or has no metadata.
+    """
+    if output_file.exists():
+        try:
+            data_dict = json.loads(output_file.read_text())
+            last_processed_index = None
+            if "_metadata" in data_dict:
+                last_processed_index = data_dict["_metadata"].get(
+                    "last_processed_index"
+                )
+                del data_dict["_metadata"]
+            return HallucinationData.from_json(data_dict), last_processed_index
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.error(
+                f"Error loading existing data: {e!s}. Starting with empty dataset."
+            )
+            return HallucinationData(samples=[]), None
+    else:
+        return HallucinationData(samples=[]), None
+
+
+async def run_translation(
+    remaining_samples: list[HallucinationSample],
+    translated_data: HallucinationData,
+    output_file: Path,
+    dataset: str,
+    target_lang: Language,
+    output_dir: Path,
+    model: str,
+    source_lang: Language,
+    total_samples: int,
+    num_processed: int,
+    batch_size: int,
+    max_workers: int,
+    test: bool,
+    log_file: Path,
+    client_config: dict[str, t.Any],
+) -> None:
+    """Run batched async translation with connection pooling.
+
+    Args:
+        remaining_samples: Samples that still need translation.
+        translated_data: Existing translated data to append to.
+        output_file: Output JSON file path.
+        dataset: Dataset name.
+        target_lang: Target language code.
+        output_dir: Output directory.
+        model: Model to use.
+        source_lang: Source language code.
+        total_samples: Number of remaining samples.
+        num_processed: Number of already translated samples from cache.
+        batch_size: Number of samples per batch.
+        max_workers: Maximum concurrent API requests.
+        test: Whether to run in test mode.
+        log_file: Path to error log.
+        client_config: API URL and headers.
+    """
+    progress_bar = tqdm.tqdm(total=total_samples, desc="Translating")
+    start_time = time.time()
+    save_interval = 60
+    last_save_time = start_time
+    last_processed_index = num_processed  # Track source index including failures
+
+    limits = httpx.Limits(
+        max_connections=max_workers * 2, max_keepalive_connections=max_workers
+    )
+    timeout = httpx.Timeout(60.0)
+    semaphore = asyncio.Semaphore(max_workers)
+
+    try:
+        async with httpx.AsyncClient(
+            headers=client_config["headers"], timeout=timeout, limits=limits
+        ) as http_client:
+            for i in range(0, total_samples, batch_size):
+                if test and i > 0:
+                    break
+
+                batch = remaining_samples[i : i + batch_size]
+                batch_results = await process_batch(
+                    batch,
+                    http_client,
+                    client_config["url"],
+                    semaphore,
+                    model,
+                    num_processed + i,
+                    log_file,
+                    source_lang,
+                    target_lang,
+                    dataset,
+                )
+
+                translated_data.samples.extend(batch_results)
+                progress_bar.update(len(batch_results))
+                # Update last_processed_index by batch size (not results count)
+                last_processed_index = num_processed + i + len(batch)
+
+                current_time = time.time()
+                if (
+                    current_time - last_save_time > save_interval
+                    or i + batch_size >= total_samples
+                ):
+                    save_progress(
+                        translated_data,
+                        output_file,
+                        dataset,
+                        target_lang,
+                        output_dir,
+                        last_processed_index,
+                    )
+                    last_save_time = current_time
+
+                current_count = len(translated_data.samples)
+                elapsed_time = current_time - start_time
+                samples_per_sec = (
+                    current_count / elapsed_time if elapsed_time > 0 else 0
+                )
+
+                logger.info(
+                    f"Processed {current_count}/{num_processed + total_samples} "
+                    f"samples ({samples_per_sec:.2f} samples/sec)"
+                )
+    finally:
+        progress_bar.close()
+
+
+async def process_batch(
+    samples: list[HallucinationSample],
     http_client: httpx.AsyncClient,
     url: str,
     semaphore: asyncio.Semaphore,
     model: str,
-    task_type: str,
-    source_lang: str = "EN",
-    target_lang: str = "DE",
-    prompt: bool = False,
-) -> str:
-    """Translate text using OpenAI-compatible HTTP API with automatic retries.
+    start_idx: int,
+    log_file: Path,
+    source_lang: Language,
+    target_lang: Language,
+    dataset: str,
+) -> list[HallucinationSample]:
+    """Process a batch of samples concurrently using asyncio.
 
     Args:
-        text: Text to translate.
+        samples: List of samples to process.
         http_client: Shared async HTTP client.
         url: API endpoint URL.
         semaphore: Concurrency limiter.
-        model: Model to use for translation.
-        task_type: Type of the translation task.
+        model: Model to use.
+        start_idx: Starting index for the batch.
+        log_file: Path to log file.
         source_lang: Source language code.
         target_lang: Target language code.
-        prompt: Whether the text is a prompt.
+        dataset: Dataset name.
 
     Returns:
-        Translated text.
-
-    Raises:
-        RetryableTranslationError: If a transient error occurs.
-        TranslationError: If translation fails after retries.
+        List of translated samples (excluding failed translations).
     """
-    if not text.strip():
-        return ""
-
-    try:
-        translation_prompt = (
-            TRANSLATION_ANSWER
-            if prompt
-            else TRANSLATION_PROMPT_DATA2TXT
-            if task_type == "Data2txt"
-            else TRANSLATION_PROMPT
-        )
-        translation_prompt = translation_prompt.format(
-            source_lang=source_lang, target_lang=target_lang, text=text
-        )
-
-        payload = {
-            "model": model,
-            "messages": [{"role": "user", "content": translation_prompt}],
-            "temperature": 0.4,
-        }
-
-        async with semaphore:
-            response = await http_client.post(url, json=payload)
-
-        if response.status_code >= 400:
-            try:
-                error_obj = response.json().get("error", {})
-                error_message = error_obj.get("message") or response.text
-                error_type = error_obj.get("type")
-                error_code = error_obj.get("code")
-            except Exception:
-                error_message = response.text
-                error_type = None
-                error_code = None
-
-            message = (
-                f"API error {response.status_code}"
-                f" (type={error_type}, code={error_code}): {error_message}"
+    tasks = []
+    for i, sample in enumerate(samples, start=start_idx):
+        task = asyncio.create_task(
+            translate_sample(
+                sample,
+                http_client,
+                url,
+                semaphore,
+                model,
+                i,
+                log_file,
+                source_lang,
+                target_lang,
+                dataset,
             )
-
-            # Retry transient errors only.
-            if response.status_code == 429 or response.status_code >= 500:
-                logger.warning(message)
-                if response.status_code == 429:
-                    retry_after = response.headers.get("retry-after")
-                    if retry_after:
-                        try:
-                            await asyncio.sleep(float(retry_after))
-                        except ValueError:
-                            pass
-                raise RetryableTranslationError(message)
-
-            # Do not retry non-transient client errors (e.g., bad request /
-            # context too long).
-            raise TranslationError(message)
-
-        response_json = response.json()
-
-        # Strip lines starting with the character '='
-        content = "\n".join(
-            [
-                line
-                for line in response_json["choices"][0]["message"]["content"].split(
-                    "\n"
-                )
-                if not line.strip().startswith("=")
-            ]
         )
+        tasks.append(task)
 
-        return content.strip()
-    except RetryableTranslationError:
-        raise
-    except TranslationError:
-        raise
-    except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
-        message = f"Transient network error: {e!s}"
-        logger.warning(message)
-        raise RetryableTranslationError(message) from e
-    except Exception as e:
-        logger.error(f"Translation error: {e!s}")
-        raise TranslationError(f"Failed to translate text: {e!s}") from e
+    results = []
+    batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+    for result in batch_results:
+        if isinstance(result, BaseException):
+            logger.error(f"Error in sample processing: {result!s}")
+        elif result:
+            results.append(result)
 
-
-def merge_overlapping_spans(labels: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Merge overlapping hallucination spans into a single span.
-
-    Args:
-        labels: List of label spans to merge.
-
-    Returns:
-        List of merged spans.
-    """
-    if not labels:
-        return []
-
-    labels_copy = sorted(labels, key=lambda x: x["start"])
-    new_labels = []
-    current_span = labels_copy[0].copy()
-
-    for span in labels_copy[1:]:
-        if span["start"] <= current_span["end"]:
-            current_span["end"] = max(current_span["end"], span["end"])
-        else:
-            new_labels.append(current_span)
-            current_span = span.copy()
-
-    new_labels.append(current_span)
-    return new_labels
-
-
-def put_hallucination_tags(
-    sample: HallucinationSample, answer: str
-) -> tuple[str, list[dict[str, Any]]]:
-    """Add hallucination tags to the text.
-
-    Args:
-        sample: Sample containing labels.
-        answer: Text to add tags to.
-
-    Returns:
-        Tuple of (tagged text, merged labels).
-    """
-    # Skip the process if there are no labels
-    if not sample.labels:
-        return answer, []
-
-    labels = merge_overlapping_spans(sample.labels)
-    labels = sorted(labels, key=lambda x: (x["end"], x["start"]), reverse=True)
-    tagged_answer = answer
-
-    for label in labels:
-        start, end = label["start"], label["end"]
-        if start < 0 or end > len(tagged_answer) or start >= end:
-            logger.warning(
-                f"Invalid span: {start}-{end} for text of length "
-                f"{len(tagged_answer)}. Skipping."
-            )
-            continue
-
-        tagged_answer = tagged_answer[:end] + "</HAL>" + tagged_answer[end:]
-        tagged_answer = tagged_answer[:start] + "<HAL>" + tagged_answer[start:]
-
-    return tagged_answer, labels
-
-
-def find_hallucination_tags(
-    text: str, labels: list[dict[str, Any]], sample_index: int
-) -> tuple[list[tuple[int, int, str]], str]:
-    """Find hallucination tags in the translated text and remove them.
-
-    Args:
-        text: Text to search for tags.
-        labels: Original labels.
-        sample_index: Index of the sample.
-
-    Returns:
-        Tuple of (list of (start, end, label) tuples, cleaned text without HAL
-        tags).
-    """
-    if not labels:
-        return [], text
-
-    # Find all <HAL> and </HAL> tags
-    pattern = r"<(/?HAL)>"
-
-    cleaned_text = ""
-    open_tags = {}  # Maps an index to the starting position in cleaned text
-    hal_spans = []  # List to store (start, end, label) tuples
-
-    last_index = 0
-    tag_count = 0
-
-    for match in re.finditer(pattern, text):
-        start, end = match.span()
-        tag_type = match.group(1)
-
-        cleaned_text += text[last_index:start]
-
-        if tag_type == "HAL":  # Opening tag
-            open_tags[tag_count] = len(cleaned_text)
-        elif tag_type == "/HAL":  # Closing tag
-            if tag_count in open_tags:
-                label_text = "Unknown"
-                if tag_count < len(labels):
-                    label_text = labels[tag_count].get("label", "Unknown")
-                else:
-                    message = (
-                        "IndexError: No label for hallucinated text at sample "
-                        f"({sample_index}), span {tag_count}"
-                    )
-                    logger.warning(message)
-
-                hal_spans.append((open_tags[tag_count], len(cleaned_text), label_text))
-                tag_count += 1
-            else:
-                message = (
-                    "Warning: Found closing HAL tag without matching opening tag "
-                    f"in sample {sample_index}"
-                )
-                logger.warning(message)
-
-        last_index = end
-
-    # Add remaining text
-    cleaned_text += text[last_index:]
-
-    if tag_count < len(labels):
-        message = (
-            f"Warning: Not all hallucination spans were found in sample "
-            f"{sample_index}. Found {tag_count}, expected {len(labels)}"
-        )
-        logger.warning(message)
-
-    return hal_spans, cleaned_text
+    return results
 
 
 async def translate_sample(
@@ -416,8 +538,8 @@ async def translate_sample(
     model: str,
     sample_index: int,
     log_file: Path,
-    source_lang: str,
-    target_lang: str,
+    source_lang: Language,
+    target_lang: Language,
     dataset: str,
 ) -> HallucinationSample | None:
     """Translate a single sample.
@@ -497,8 +619,8 @@ async def translate_sample(
             labels=labels,
             split=sample.split,
             task_type=sample.task_type,
-            dataset=cast(Any, dataset),
-            language=cast(Any, target_lang.lower()),
+            dataset=t.cast(t.Any, dataset),
+            language=t.cast(t.Any, target_lang.code),
         )
     except Exception as e:
         logger.error(f"Error translating sample {sample_index}: {e!s}")
@@ -507,187 +629,272 @@ async def translate_sample(
         return None
 
 
-def load_check_existing_data(output_file: Path) -> HallucinationData:
-    """Load existing data or create new data.
+def merge_overlapping_spans(labels: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
+    """Merge overlapping hallucination spans into a single span.
 
     Args:
-        output_file: Path to the output file.
+        labels: List of label spans to merge.
 
     Returns:
-        Existing HallucinationData or new empty HallucinationData.
+        List of merged spans.
     """
-    if output_file.exists():
-        try:
-            return HallucinationData.from_json(json.loads(output_file.read_text()))
-        except (json.JSONDecodeError, KeyError) as e:
-            logger.error(
-                f"Error loading existing data: {e!s}. Starting with empty dataset."
+    if not labels:
+        return []
+
+    labels_copy = sorted(labels, key=lambda x: x["start"])
+    new_labels = []
+    current_span = labels_copy[0].copy()
+
+    for span in labels_copy[1:]:
+        if span["start"] <= current_span["end"]:
+            current_span["end"] = max(current_span["end"], span["end"])
+        else:
+            new_labels.append(current_span)
+            current_span = span.copy()
+
+    new_labels.append(current_span)
+    return new_labels
+
+
+def put_hallucination_tags(
+    sample: HallucinationSample, answer: str
+) -> tuple[str, list[dict[str, t.Any]]]:
+    """Add hallucination tags to the text.
+
+    Args:
+        sample: Sample containing labels.
+        answer: Text to add tags to.
+
+    Returns:
+        Tuple of (tagged text, merged labels).
+    """
+    # Skip the process if there are no labels
+    if not sample.labels:
+        return answer, []
+
+    labels = merge_overlapping_spans(sample.labels)
+    labels = sorted(labels, key=lambda x: (x["end"], x["start"]), reverse=True)
+    tagged_answer = answer
+
+    for label in labels:
+        start, end = label["start"], label["end"]
+        if start < 0 or end > len(tagged_answer) or start >= end:
+            logger.warning(
+                f"Invalid span: {start}-{end} for text of length "
+                f"{len(tagged_answer)}. Skipping."
             )
-            return HallucinationData(samples=[])
-    else:
-        return HallucinationData(samples=[])
+            continue
+
+        tagged_answer = tagged_answer[:end] + "</HAL>" + tagged_answer[end:]
+        tagged_answer = tagged_answer[:start] + "<HAL>" + tagged_answer[start:]
+
+    return tagged_answer, labels
 
 
-async def process_batch(
-    samples: list[HallucinationSample],
+def find_hallucination_tags(
+    text: str, labels: list[dict[str, t.Any]], sample_index: int
+) -> tuple[list[tuple[int, int, str]], str]:
+    """Find hallucination tags in the translated text and remove them.
+
+    Args:
+        text: Text to search for tags.
+        labels: Original labels.
+        sample_index: Index of the sample.
+
+    Returns:
+        Tuple of (list of (start, end, label) tuples, cleaned text without HAL
+        tags).
+    """
+    if not labels:
+        return [], text
+
+    # Find all <HAL> and </HAL> tags
+    pattern = r"<(/?HAL)>"
+
+    cleaned_text = ""
+    open_tags = {}  # Maps an index to the starting position in cleaned text
+    hal_spans = []  # List to store (start, end, label) tuples
+
+    last_index = 0
+    tag_count = 0
+
+    for match in re.finditer(pattern, text):
+        start, end = match.span()
+        tag_type = match.group(1)
+
+        cleaned_text += text[last_index:start]
+
+        if tag_type == "HAL":  # Opening tag
+            open_tags[tag_count] = len(cleaned_text)
+        elif tag_type == "/HAL":  # Closing tag
+            if tag_count in open_tags:
+                label_text = "Unknown"
+                if tag_count < len(labels):
+                    label_text = labels[tag_count].get("label", "Unknown")
+                else:
+                    message = (
+                        "IndexError: No label for hallucinated text at sample "
+                        f"({sample_index}), span {tag_count}"
+                    )
+                    logger.warning(message)
+
+                hal_spans.append((open_tags[tag_count], len(cleaned_text), label_text))
+                tag_count += 1
+            else:
+                message = (
+                    "Warning: Found closing HAL tag without matching opening tag "
+                    f"in sample {sample_index}"
+                )
+                logger.warning(message)
+
+        last_index = end
+
+    # Add remaining text
+    cleaned_text += text[last_index:]
+
+    if tag_count < len(labels):
+        message = (
+            f"Warning: Not all hallucination spans were found in sample "
+            f"{sample_index}. Found {tag_count}, expected {len(labels)}"
+        )
+        logger.warning(message)
+
+    return hal_spans, cleaned_text
+
+
+async def translate_text(
+    text: str,
     http_client: httpx.AsyncClient,
     url: str,
     semaphore: asyncio.Semaphore,
     model: str,
-    start_idx: int,
-    log_file: Path,
-    source_lang: str,
-    target_lang: str,
-    dataset: str,
-) -> list[HallucinationSample]:
-    """Process a batch of samples concurrently using asyncio.
+    task_type: str,
+    source_lang: Language = ENGLISH,
+    target_lang: Language = DANISH,
+    prompt: bool = False,
+) -> str:
+    """Translate text using OpenAI-compatible HTTP API with automatic retries.
 
     Args:
-        samples: List of samples to process.
+        text: Text to translate.
         http_client: Shared async HTTP client.
         url: API endpoint URL.
         semaphore: Concurrency limiter.
-        model: Model to use.
-        start_idx: Starting index for the batch.
-        log_file: Path to log file.
+        model: Model to use for translation.
+        task_type: Type of the translation task.
         source_lang: Source language code.
         target_lang: Target language code.
-        dataset: Dataset name.
+        prompt: Whether the text is a prompt.
 
     Returns:
-        List of translated samples (excluding failed translations).
+        Translated text.
+
+    Raises:
+        RetryableTranslationError: If a transient error occurs.
+        TranslationError: If translation fails after retries.
     """
-    tasks = []
-    for i, sample in enumerate(samples, start=start_idx):
-        task = asyncio.create_task(
-            translate_sample(
-                sample,
-                http_client,
-                url,
-                semaphore,
-                model,
-                i,
-                log_file,
-                source_lang,
-                target_lang,
-                dataset,
-            )
-        )
-        tasks.append(task)
-
-    results = []
-    batch_results = await asyncio.gather(*tasks, return_exceptions=True)
-    for result in batch_results:
-        if isinstance(result, BaseException):
-            logger.error(f"Error in sample processing: {result!s}")
-        elif result:
-            results.append(result)
-
-    return results
-
-
-async def run_translation(
-    remaining_samples: list[HallucinationSample],
-    translated_data: HallucinationData,
-    output_file: Path,
-    dataset: str,
-    target_lang: str,
-    output_dir: Path,
-    model: str,
-    source_lang: str,
-    total_samples: int,
-    num_processed: int,
-    batch_size: int,
-    max_workers: int,
-    test: bool,
-    log_file: Path,
-    client_config: dict[str, Any],
-) -> None:
-    """Run batched async translation with connection pooling.
-
-    Args:
-        remaining_samples: Samples that still need translation.
-        translated_data: Existing translated data to append to.
-        output_file: Output JSON file path.
-        dataset: Dataset name.
-        target_lang: Target language code.
-        output_dir: Output directory.
-        model: Model to use.
-        source_lang: Source language code.
-        total_samples: Number of remaining samples.
-        num_processed: Number of already translated samples from resume.
-        batch_size: Number of samples per batch.
-        max_workers: Maximum concurrent API requests.
-        test: Whether to run in test mode.
-        log_file: Path to error log.
-        client_config: API URL and headers.
-    """
-    progress_bar = tqdm.tqdm(total=total_samples, desc="Translating")
-    start_time = time.time()
-    save_interval = 60
-    last_save_time = start_time
-
-    limits = httpx.Limits(
-        max_connections=max_workers * 2, max_keepalive_connections=max_workers
-    )
-    timeout = httpx.Timeout(60.0)
-    semaphore = asyncio.Semaphore(max_workers)
+    if not text.strip():
+        return ""
 
     try:
-        async with httpx.AsyncClient(
-            headers=client_config["headers"], timeout=timeout, limits=limits
-        ) as http_client:
-            for i in range(0, total_samples, batch_size):
-                if test and i > 0:
-                    break
+        translation_prompt = (
+            TRANSLATION_ANSWER
+            if prompt
+            else TRANSLATION_PROMPT_DATA2TXT
+            if task_type == "Data2txt"
+            else TRANSLATION_PROMPT
+        )
+        translation_prompt = translation_prompt.format(
+            source_lang=source_lang.name, target_lang=target_lang.name, text=text
+        )
 
-                batch = remaining_samples[i : i + batch_size]
-                batch_results = await process_batch(
-                    batch,
-                    http_client,
-                    client_config["url"],
-                    semaphore,
-                    model,
-                    num_processed + i,
-                    log_file,
-                    source_lang,
-                    target_lang,
-                    dataset,
-                )
+        # Cap output tokens to prevent runaway repetition loops.
+        # len(text)/3 overestimates token count (~3 chars/token); 1.5x margin for
+        # expansion in translation; min 256 buffer for safety.
+        max_tokens = min(4096, int(len(text) / 3 * 1.5) + 256)
+        payload = {
+            "model": model,
+            "messages": [{"role": "user", "content": translation_prompt}],
+            "temperature": 0.4,
+            "max_tokens": max_tokens,
+        }
 
-                translated_data.samples.extend(batch_results)
-                progress_bar.update(len(batch_results))
+        async with semaphore:
+            response = await http_client.post(url, json=payload)
 
-                current_time = time.time()
-                if (
-                    current_time - last_save_time > save_interval
-                    or i + batch_size >= total_samples
-                ):
-                    save_progress(
-                        translated_data, output_file, dataset, target_lang, output_dir
-                    )
-                    last_save_time = current_time
+        if response.status_code >= 400:
+            try:
+                error_obj = response.json().get("error", {})
+                error_message = error_obj.get("message") or response.text
+                error_type = error_obj.get("type")
+                error_code = error_obj.get("code")
+            except Exception:
+                error_message = response.text
+                error_type = None
+                error_code = None
 
-                current_count = len(translated_data.samples)
-                elapsed_time = current_time - start_time
-                samples_per_sec = (
-                    current_count / elapsed_time if elapsed_time > 0 else 0
-                )
+            message = (
+                f"API error {response.status_code}"
+                f" (type={error_type}, code={error_code}): {error_message}"
+            )
 
-                logger.info(
-                    f"Processed {current_count}/{num_processed + total_samples} "
-                    f"samples ({samples_per_sec:.2f} samples/sec)"
-                )
-    finally:
-        progress_bar.close()
+            # Retry transient errors only.
+            if response.status_code == 429 or response.status_code >= 500:
+                logger.warning(message)
+                if response.status_code == 429:
+                    retry_after = response.headers.get("retry-after")
+                    if retry_after:
+                        try:
+                            await asyncio.sleep(float(retry_after))
+                        except ValueError:
+                            pass
+                raise RetryableTranslationError(message)
+
+            # Do not retry non-transient client errors (e.g., bad request /
+            # context too long).
+            raise TranslationError(message)
+
+        response_json = response.json()
+        choice = response_json["choices"][0]
+
+        # Log finish_reason to detect truncation or other issues.
+        finish_reason = choice.get("finish_reason")
+        if finish_reason == "length":
+            logger.warning(
+                f"Translation truncated (finish_reason='length') for sample "
+                f"with input length {len(text)} chars (max_tokens={max_tokens})"
+            )
+
+        # Strip lines starting with the character '='
+        content = "\n".join(
+            [
+                line
+                for line in choice["message"]["content"].split("\n")
+                if not line.strip().startswith("=")
+            ]
+        )
+
+        return content.strip()
+    except RetryableTranslationError:
+        raise
+    except TranslationError:
+        raise
+    except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
+        message = f"Transient network error: {e!s}"
+        logger.warning(message)
+        raise RetryableTranslationError(message) from e
+    except Exception as e:
+        logger.error(f"Translation error: {e!s}")
+        raise TranslationError(f"Failed to translate text: {e!s}") from e
 
 
 def save_progress(
     translated_data: HallucinationData,
     output_file: Path,
     dataset: str,
-    target_lang: str,
+    target_lang: Language,
     output_dir: Path,
+    last_processed_index: int | None = None,
 ) -> None:
     """Save progress to file with backup handling.
 
@@ -697,18 +904,23 @@ def save_progress(
         dataset: Dataset name for backup file.
         target_lang: Target language for backup file.
         output_dir: Output directory for backup file.
+        last_processed_index: Index of last processed source sample (for caching).
     """
+    # Wrap samples in dict structure expected by from_json
+    data_dict: dict[str, t.Any] = {"samples": translated_data.to_json()}
+    if last_processed_index is not None:
+        data_dict["_metadata"] = {"last_processed_index": last_processed_index}
     try:
-        output_file.write_text(json.dumps(translated_data.to_json(), indent=2))
+        output_file.write_text(json.dumps(data_dict))
     except Exception as e:
         logger.error(f"Error saving progress: {e!s}")
         # Try to save to a backup file
         backup_file = (
             output_dir
-            / f"{dataset}_data_{target_lang.lower()}_backup_{int(time.time())}.json"
+            / f"{dataset}_data_{target_lang.code}_backup_{int(time.time())}.json"
         )
         try:
-            backup_file.write_text(json.dumps(translated_data.to_json(), indent=2))
+            backup_file.write_text(json.dumps(data_dict))
             logger.info(f"Saved backup to {backup_file}")
         except Exception as e2:
             logger.error(f"Error saving backup: {e2!s}")
@@ -770,7 +982,7 @@ def push_test_subset_to_hub(
     samples = translated_data.samples[:]
     random.shuffle(samples)
 
-    def _to_rows(items: list[HallucinationSample]) -> list[dict[str, Any]]:
+    def _to_rows(items: list[HallucinationSample]) -> list[dict[str, t.Any]]:
         # Preprocess the samples so they are ready for the hallucination
         # (question-answering) task: the task group expects ``id``, ``context``,
         # ``question`` and ``answers`` columns, derived here from the RAG ``prompt``
@@ -827,92 +1039,107 @@ def push_test_subset_to_hub(
         )
 
 
-def main(
-    input_dir: Path,
-    output_dir: Path,
-    model: str,
-    source_lang: str,
-    target_lang: str,
-    dataset: str = "ragtruth",
-    batch_size: int = 5,
-    max_workers: int = 5,
-    resume: bool = True,
-    test: bool = False,
-    push_to_hub: bool = False,
-    hub_repo_id: str | None = None,
-    private: bool = True,
-    push_test_subset: bool = False,
-    test_subset_repo_id: str | None = None,
-    test_subset_size: int = 2048,
-    validation_subset_size: int = 256,
-) -> None:
-    """Translates the preprocessed data using parallel processing.
+def setup_logging(output_dir: Path) -> None:
+    """Set up logging to file in the output directory.
 
     Args:
-        input_dir: Path to the input directory.
-        output_dir: Path to the output directory.
-        model: OpenAI model to use.
-        source_lang: Source language code.
-        target_lang: Target language code.
-        dataset: Dataset name (ragtruth, ragbench, etc.).
-        batch_size: Number of samples to process in each batch.
-        max_workers: Maximum number of concurrent API requests.
-        resume: Whether to resume from previous run.
-        test: Test mode, only translate 1 sample.
-        push_to_hub: Whether to push translated output to Hugging Face Hub.
-        hub_repo_id: Optional explicit Hugging Face dataset repo id.
-        private: Whether pushed dataset should be private.
-        push_test_subset: Whether to also push a test-only subset to the Hub.
-        test_subset_repo_id: Optional explicit repo id for the test subset.
-        test_subset_size: Maximum number of test samples in the subset.
-        validation_subset_size: Maximum number of validation samples in the
-            subset.
+        output_dir: Directory to save log file.
+    """
+    log_file = output_dir / "translation.log"
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
+    logger.addHandler(file_handler)
+
+
+def _translate_to_language(
+    source_data: HallucinationData | None,
+    target_lang: Language,
+    model: str,
+    batch_size: int,
+    max_workers: int,
+    test: bool,
+    push_to_hub: bool,
+    hub_repo_id: str | None,
+    private: bool,
+    push_test_subset: bool,
+    test_subset_size: int,
+    validation_subset_size: int,
+    client_config: dict[str, t.Any],
+) -> None:
+    """Translate RAGTruth data to a single target language.
+
+    Args:
+        source_data:
+            Source hallucination data (None if resuming without source).
+        target_lang:
+            Target language to translate to.
+        model:
+            Model to use for translation.
+        batch_size:
+            Number of samples per batch.
+        max_workers:
+            Maximum concurrent API requests.
+        test:
+            Whether to run in test mode.
+        push_to_hub:
+            Whether to push translated data to Hugging Face Hub.
+        hub_repo_id:
+            Hub repository ID for full dataset.
+        private:
+            Whether to upload as private.
+        push_test_subset:
+            Whether to push test subset.
+        test_subset_size:
+            Size of test subset.
+        validation_subset_size:
+            Size of validation subset.
+        client_config:
+            OpenAI client configuration.
 
     Raises:
-        FileNotFoundError: If the input file does not exist and there are no
-            existing translated samples.
+        FileNotFoundError:
+            If source data is not available and no cached translation exists.
     """
-    # Set up directories
-    input_dir = Path(input_dir)
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    dataset = DATASET_NAME
+    source_lang: Language = SOURCE_LANG
 
-    # Set up logging
-    setup_logging(output_dir)
-
-    # Set up files
-    input_file = input_dir / f"{dataset}_data.json"
-    output_file = output_dir / f"{dataset}_data_{target_lang.lower()}.json"
+    # Set up files for this language
+    output_dir = OUTPUT_DIR
+    output_file = output_dir / f"{dataset}_data_{target_lang.code}.json"
     log_file = output_dir / "error_log.txt"
 
-    # Load existing translated data if resume is enabled
-    if resume and output_file.exists():
-        translated_data = load_check_existing_data(output_file=output_file)
-        num_processed = len(translated_data.samples)
-        logger.info(f"Resuming from {num_processed} previously translated samples")
+    # Load existing translated data if output file exists (cache)
+    if output_file.exists():
+        translated_data, last_processed_index = load_check_existing_data(
+            output_file=output_file
+        )
+        # Use metadata index if available, fall back to sample count
+        num_processed = (
+            last_processed_index
+            if last_processed_index is not None
+            else len(translated_data.samples)
+        )
+        logger.info(f"Resuming from index {num_processed}")
     else:
         translated_data = HallucinationData(samples=[])
         num_processed = 0
 
-    # Load source data. If we already have a complete translated output and the
-    # source file is missing, allow push-only mode without requiring the input.
-    if input_file.exists():
-        try:
-            data = HallucinationData.from_json(json.loads(input_file.read_text()))
-        except Exception as e:
-            logger.error(f"Error loading input data: {e!s}")
-            raise
-        remaining_samples = data.samples[num_processed:]
+    # Get remaining samples to translate
+    remaining_samples: list[HallucinationSample] = []
+    if source_data is not None:
+        remaining_samples = source_data.samples[num_processed:]
     elif num_processed > 0:
         logger.warning(
-            f"Input file not found: {input_file}. "
             f"Proceeding in push-only mode with {num_processed} existing "
             "translated samples."
         )
-        remaining_samples = []
     else:
-        logger.error(f"Input file not found: {input_file}")
-        raise FileNotFoundError(f"Input file not found: {input_file}")
+        logger.error("No source data available and no cached translation exists")
+        raise FileNotFoundError(
+            "Source data not found and no cached translation to resume"
+        )
 
     total_samples = len(remaining_samples)
 
@@ -927,32 +1154,23 @@ def main(
             push_translated_data_to_hub(
                 translated_data=translated_data,
                 repo_id=resolved_repo_id,
-                config_name=target_lang.lower(),
+                config_name=target_lang.code,
                 private=private,
             )
         if push_test_subset:
             resolved_test_repo_id = (
-                test_subset_repo_id
-                if test_subset_repo_id
-                else (
-                    f"EuroEval/{dataset}-translated-hallucinations-"
-                    f"{target_lang.lower()}-mini"
-                )
+                f"EuroEval/{dataset}-translated-hallucinations-{target_lang.code}-mini"
             )
             push_test_subset_to_hub(
                 translated_data=translated_data,
                 repo_id=resolved_test_repo_id,
-                config_name=target_lang.lower(),
+                config_name=target_lang.code,
                 private=private,
                 n=test_subset_size,
                 validation_n=validation_subset_size,
             )
         return
 
-    # Get OpenAI client
-    client = get_openai_client()
-
-    logger.info(f"Translating {dataset} from {source_lang} to {target_lang}")
     logger.info(f"Using model: {model}")
     logger.info(f"Total samples to process: {total_samples}")
     logger.info(f"Batch size: {batch_size}, Max workers: {max_workers}")
@@ -974,13 +1192,20 @@ def main(
                 max_workers=max_workers,
                 test=test,
                 log_file=log_file,
-                client_config=client,
+                client_config=client_config,
             )
         )
 
     except KeyboardInterrupt:
         logger.info("Translation interrupted by user. Saving progress...")
-        save_progress(translated_data, output_file, dataset, target_lang, output_dir)
+        save_progress(
+            translated_data,
+            output_file,
+            dataset,
+            target_lang,
+            output_dir,
+            last_processed_index,
+        )
         logger.info(
             f"Saved {len(translated_data.samples)} translated samples to {output_file}"
         )
@@ -988,7 +1213,14 @@ def main(
 
     except Exception as e:
         logger.error(f"Unexpected error: {e!s}")
-        save_progress(translated_data, output_file, dataset, target_lang, output_dir)
+        save_progress(
+            translated_data,
+            output_file,
+            dataset,
+            target_lang,
+            output_dir,
+            last_processed_index,
+        )
         raise
 
     logger.info(
@@ -1005,154 +1237,48 @@ def main(
         push_translated_data_to_hub(
             translated_data=translated_data,
             repo_id=resolved_repo_id,
-            config_name=target_lang.lower(),
+            config_name=target_lang.code,
             private=private,
         )
 
     if push_test_subset:
         resolved_test_repo_id = (
-            test_subset_repo_id
-            if test_subset_repo_id
-            else (
-                f"EuroEval/{dataset}-translated-hallucinations-"
-                f"{target_lang.lower()}-mini"
-            )
+            f"EuroEval/{dataset}-translated-hallucinations-{target_lang.code}-mini"
         )
         push_test_subset_to_hub(
             translated_data=translated_data,
             repo_id=resolved_test_repo_id,
-            config_name=target_lang.lower(),
+            config_name=target_lang.code,
             private=private,
             n=test_subset_size,
             validation_n=validation_subset_size,
         )
 
 
+def get_openai_client() -> dict[str, t.Any]:
+    """Get HTTP client configuration from environment variables.
+
+    Returns:
+        Dict with `url` and `headers` for chat completion requests.
+
+    Raises:
+        ValueError: If API key is not set.
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    base_url = os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"
+    if not api_key:
+        raise ValueError(
+            "OPENAI_API_KEY is not set. Export it in your shell or load it from .env "
+            "before running translation."
+        )
+    return {
+        "url": f"{base_url.rstrip('/')}/chat/completions",
+        "headers": {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+    }
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Translate hallucination dataset to another language"
-    )
-    parser.add_argument(
-        "--input_dir",
-        type=str,
-        required=True,
-        help="Directory containing input data files",
-    )
-    parser.add_argument(
-        "--output_dir", type=str, required=True, help="Directory to save output files"
-    )
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="gpt-4o-mini",
-        help="OpenAI model to use for translation",
-    )
-    parser.add_argument(
-        "--source-lang",
-        type=str,
-        default="EN",
-        help="Source language code (e.g., EN, DE, FR, etc.)",
-    )
-    parser.add_argument(
-        "--target-lang",
-        type=str,
-        default="DA",
-        help="Target language code (e.g., EN, DE, FR, etc.)",
-    )
-    parser.add_argument(
-        "--dataset",
-        type=str,
-        default="ragtruth",
-        help="Dataset name (ragtruth, ragbench, etc.)",
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=30,
-        help="Number of samples to process in each batch",
-    )
-    parser.add_argument(
-        "--max-workers", type=int, default=30, help="Maximum number of worker threads"
-    )
-    parser.add_argument(
-        "--no-resume",
-        action="store_true",
-        help="Don't resume from previous run, start fresh",
-    )
-    parser.add_argument(
-        "--test", action="store_true", help="Test mode, only translate 1 sample"
-    )
-    parser.add_argument(
-        "--push-to-hub",
-        action="store_true",
-        help="Push translated dataset to Hugging Face Hub after translation",
-    )
-    parser.add_argument(
-        "--hub-repo-id",
-        type=str,
-        default=None,
-        help=(
-            "Target Hugging Face dataset repo id. "
-            "Default: EuroEval/<dataset>-translated-hallucinations"
-        ),
-    )
-    parser.add_argument(
-        "--private",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Whether uploaded Hub dataset should be private",
-    )
-    parser.add_argument(
-        "--push-test-subset",
-        action="store_true",
-        help=(
-            "Also push a test-only subset (up to --test-subset-size samples) to the Hub"
-        ),
-    )
-    parser.add_argument(
-        "--test-subset-repo-id",
-        type=str,
-        default=None,
-        help=(
-            "Target Hugging Face dataset repo id for the test subset. "
-            "Default: EuroEval/<dataset>-translated-hallucinations-<lang>-mini"
-        ),
-    )
-    parser.add_argument(
-        "--test-subset-size",
-        type=int,
-        default=1000,
-        help=(
-            "Maximum number of test samples to include in the test subset "
-            "(default: 1000)"
-        ),
-    )
-    parser.add_argument(
-        "--validation-subset-size",
-        type=int,
-        default=256,
-        help=(
-            "Maximum number of validation samples to include in the test subset "
-            "(default: 256)"
-        ),
-    )
-    args = parser.parse_args()
-    main(
-        Path(args.input_dir),
-        Path(args.output_dir),
-        args.model,
-        args.source_lang,
-        args.target_lang,
-        args.dataset,
-        args.batch_size,
-        args.max_workers,
-        not args.no_resume,
-        args.test,
-        args.push_to_hub,
-        args.hub_repo_id,
-        args.private,
-        args.push_test_subset,
-        args.test_subset_repo_id,
-        args.test_subset_size,
-        args.validation_subset_size,
-    )
+    main()
