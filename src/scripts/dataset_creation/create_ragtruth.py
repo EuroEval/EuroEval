@@ -40,6 +40,8 @@ from tenacity import (
     wait_random_exponential,
 )
 
+from euroeval.languages import DANISH, ENGLISH, Language
+
 # =============================================================================
 # Configuration constants
 # =============================================================================
@@ -50,8 +52,8 @@ RESPONSE_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/he
 
 # Translation settings
 MODEL = "gpt-4o-mini"
-SOURCE_LANG = "EN"
-TARGET_LANG = "DA"  # Danish
+SOURCE_LANG: Language = ENGLISH
+TARGET_LANG: Language = DANISH
 BATCH_SIZE = 30
 MAX_WORKERS = 30
 
@@ -65,7 +67,7 @@ HUB_REPO_ID = "EuroEval/ragtruth-translated-hallucinations"
 PRIVATE_UPLOAD = True
 PUSH_TEST_SUBSET = True
 TEST_SUBSET_REPO_ID = (
-    f"EuroEval/ragtruth-translated-hallucinations-{TARGET_LANG.lower()}-mini"
+    f"EuroEval/ragtruth-translated-hallucinations-{TARGET_LANG.code}-mini"
 )
 TEST_SUBSET_SIZE = 1000
 VALIDATION_SUBSET_SIZE = 256
@@ -284,8 +286,8 @@ async def translate_text(
     semaphore: asyncio.Semaphore,
     model: str,
     task_type: str,
-    source_lang: str = "EN",
-    target_lang: str = "DE",
+    source_lang: Language = ENGLISH,
+    target_lang: Language = DANISH,
     prompt: bool = False,
 ) -> str:
     """Translate text using OpenAI-compatible HTTP API with automatic retries.
@@ -320,7 +322,7 @@ async def translate_text(
             else TRANSLATION_PROMPT
         )
         translation_prompt = translation_prompt.format(
-            source_lang=source_lang, target_lang=target_lang, text=text
+            source_lang=source_lang.code, target_lang=target_lang.code, text=text
         )
 
         # Cap output tokens to prevent runaway repetition loops.
@@ -544,8 +546,8 @@ async def translate_sample(
     model: str,
     sample_index: int,
     log_file: Path,
-    source_lang: str,
-    target_lang: str,
+    source_lang: Language,
+    target_lang: Language,
     dataset: str,
 ) -> HallucinationSample | None:
     """Translate a single sample.
@@ -626,7 +628,7 @@ async def translate_sample(
             split=sample.split,
             task_type=sample.task_type,
             dataset=t.cast(t.Any, dataset),
-            language=t.cast(t.Any, target_lang.lower()),
+            language=t.cast(t.Any, target_lang.code),
         )
     except Exception as e:
         logger.error(f"Error translating sample {sample_index}: {e!s}")
@@ -672,8 +674,8 @@ async def process_batch(
     model: str,
     start_idx: int,
     log_file: Path,
-    source_lang: str,
-    target_lang: str,
+    source_lang: Language,
+    target_lang: Language,
     dataset: str,
 ) -> list[HallucinationSample]:
     """Process a batch of samples concurrently using asyncio.
@@ -727,10 +729,10 @@ async def run_translation(
     translated_data: HallucinationData,
     output_file: Path,
     dataset: str,
-    target_lang: str,
+    target_lang: Language,
     output_dir: Path,
     model: str,
-    source_lang: str,
+    source_lang: Language,
     total_samples: int,
     num_processed: int,
     batch_size: int,
@@ -830,7 +832,7 @@ def save_progress(
     translated_data: HallucinationData,
     output_file: Path,
     dataset: str,
-    target_lang: str,
+    target_lang: Language,
     output_dir: Path,
     last_processed_index: int | None = None,
 ) -> None:
@@ -855,7 +857,7 @@ def save_progress(
         # Try to save to a backup file
         backup_file = (
             output_dir
-            / f"{dataset}_data_{target_lang.lower()}_backup_{int(time.time())}.json"
+            / f"{dataset}_data_{target_lang.code}_backup_{int(time.time())}.json"
         )
         try:
             backup_file.write_text(json.dumps(data_dict))
@@ -981,14 +983,15 @@ def main() -> None:
     """Download RAGTruth data, translate, and upload to Hub.
 
     Raises:
-        FileNotFoundError: If input file does not exist and no resume data available.
+        FileNotFoundError: If the input file does not exist and no resume data
+            available.
     """
     # Set up directories and extract constants to local variables
     input_dir = OUTPUT_DIR
     output_dir = OUTPUT_DIR
     model = MODEL
-    source_lang = SOURCE_LANG
-    target_lang = TARGET_LANG
+    source_lang: Language = SOURCE_LANG
+    target_lang: Language = TARGET_LANG
     dataset = DATASET_NAME
     batch_size = BATCH_SIZE
     max_workers = MAX_WORKERS
@@ -1011,7 +1014,7 @@ def main() -> None:
 
     # Set up files
     input_file = input_dir / f"{dataset}_data.json"
-    output_file = output_dir / f"{dataset}_data_{target_lang.lower()}.json"
+    output_file = output_dir / f"{dataset}_data_{target_lang.code}.json"
     log_file = output_dir / "error_log.txt"
 
     # Load existing translated data if resume is enabled
@@ -1063,7 +1066,7 @@ def main() -> None:
             push_translated_data_to_hub(
                 translated_data=translated_data,
                 repo_id=resolved_repo_id,
-                config_name=target_lang.lower(),
+                config_name=target_lang.code,
                 private=private,
             )
         if push_test_subset:
@@ -1072,13 +1075,13 @@ def main() -> None:
                 if test_subset_repo_id
                 else (
                     f"EuroEval/{dataset}-translated-hallucinations-"
-                    f"{target_lang.lower()}-mini"
+                    f"{target_lang.code}-mini"
                 )
             )
             push_test_subset_to_hub(
                 translated_data=translated_data,
                 repo_id=resolved_test_repo_id,
-                config_name=target_lang.lower(),
+                config_name=target_lang.code,
                 private=private,
                 n=test_subset_size,
                 validation_n=validation_subset_size,
@@ -1088,7 +1091,7 @@ def main() -> None:
     # Get OpenAI client
     client = get_openai_client()
 
-    logger.info(f"Translating {dataset} from {source_lang} to {target_lang}")
+    logger.info(f"Translating {dataset} from {source_lang.name} to {target_lang.name}")
     logger.info(f"Using model: {model}")
     logger.info(f"Total samples to process: {total_samples}")
     logger.info(f"Batch size: {batch_size}, Max workers: {max_workers}")
@@ -1155,7 +1158,7 @@ def main() -> None:
         push_translated_data_to_hub(
             translated_data=translated_data,
             repo_id=resolved_repo_id,
-            config_name=target_lang.lower(),
+            config_name=target_lang.code,
             private=private,
         )
 
@@ -1164,14 +1167,13 @@ def main() -> None:
             test_subset_repo_id
             if test_subset_repo_id
             else (
-                f"EuroEval/{dataset}-translated-hallucinations-"
-                f"{target_lang.lower()}-mini"
+                f"EuroEval/{dataset}-translated-hallucinations-{target_lang.code}-mini"
             )
         )
         push_test_subset_to_hub(
             translated_data=translated_data,
             repo_id=resolved_test_repo_id,
-            config_name=target_lang.lower(),
+            config_name=target_lang.code,
             private=private,
             n=test_subset_size,
             validation_n=validation_subset_size,
