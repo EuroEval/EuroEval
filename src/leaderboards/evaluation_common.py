@@ -15,14 +15,17 @@ sync.
 from __future__ import annotations
 
 import collections.abc as c
+import fcntl
 import json
 import logging
 import os
 import pty
 import re
 import select
+import struct
 import subprocess
 import sys
+import termios
 from functools import lru_cache
 from pathlib import Path
 
@@ -114,6 +117,7 @@ def run_euroeval(
         env.setdefault("HUGGINGFACE_API_KEY", token)
 
     parent_fd, child_fd = pty.openpty()
+    _set_pty_window_size(fd=child_fd)
     try:
         # Safe: ``cmd`` is a fixed argument list run without a shell; only the
         # known euroeval CLI flags and operator-controlled model/language ids
@@ -164,6 +168,41 @@ def run_euroeval(
     proc.wait()
     output = b"".join(captured).decode("utf-8", errors="replace")
     return proc.returncode, output
+
+
+def _set_pty_window_size(fd: int) -> None:
+    """Give a freshly-opened pty a sensible window size.
+
+    ``pty.openpty()`` creates the slave with a default window size of 0 rows by
+    0 columns. Progress bars (tqdm, driven by vLLM) can't render a bar in 0
+    columns, so they fall back to emitting a bare newline on every refresh --
+    flooding the captured output and the tmux panes with blank lines. Setting a
+    real window size makes tqdm render a single in-place-updating line instead.
+
+    The size is inherited from this process's own controlling terminal when it
+    has one (so the bar matches the operator's pane), falling back to a roomy
+    80x200 default for non-interactive runs (cron, redirected output).
+
+    Args:
+        fd:
+            The pty file descriptor whose window size should be set.
+    """
+    rows, cols = 50, 200
+    for stream in (sys.stderr, sys.stdout, sys.stdin):
+        try:
+            packed = fcntl.ioctl(
+                stream.fileno(), termios.TIOCGWINSZ, struct.pack("HHHH", 0, 0, 0, 0)
+            )
+            src_rows, src_cols, _, _ = struct.unpack("HHHH", packed)
+        except (OSError, ValueError, AttributeError):
+            continue
+        if src_rows > 0 and src_cols > 0:
+            rows, cols = src_rows, src_cols
+            break
+    try:
+        fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", rows, cols, 0, 0))
+    except OSError as e:
+        logger.debug(f"Could not set pty window size: {e}")
 
 
 def model_fits_locally(model_id: str, gpu_bytes: int | None) -> tuple[bool, int | None]:
