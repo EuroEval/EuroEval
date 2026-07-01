@@ -912,7 +912,7 @@ class VLLMModel(HuggingFaceEncoderModel):
                 case _:
                     raise InvalidBenchmark("The model type is not set!")
         else:
-            log(
+            log_once(
                 f"Truncation of prompts for model {self.model_config.model_id!r} is "
                 "not needed, so skipping truncation.",
                 level=logging.DEBUG,
