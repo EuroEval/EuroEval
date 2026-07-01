@@ -366,7 +366,7 @@ def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int 
 
 
 def _setup_http_client(
-    max_workers: int
+    max_workers: int,
 ) -> tuple[httpx.Limits, httpx.Timeout, asyncio.Semaphore]:
     """Set up HTTP client configuration.
 
