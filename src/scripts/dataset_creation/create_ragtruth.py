@@ -367,6 +367,45 @@ def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int 
         return HallucinationData(samples=[]), None
 
 
+def _setup_http_client(
+    client_config: ClientConfig, max_workers: int
+) -> tuple[httpx.Limits, httpx.Timeout, asyncio.Semaphore]:
+    """Set up HTTP client configuration.
+
+    Args:
+        client_config:
+            Client configuration dict.
+        max_workers:
+            Maximum number of concurrent workers.
+
+    Returns:
+        Tuple of (limits, timeout, semaphore).
+    """
+    limits = httpx.Limits(
+        max_connections=max_workers * 2, max_keepalive_connections=max_workers
+    )
+    timeout = httpx.Timeout(60.0)
+    semaphore = asyncio.Semaphore(max_workers)
+    return limits, timeout, semaphore
+
+
+def _log_translation_progress(current_count: int, total: int, elapsed: float) -> None:
+    """Log translation progress.
+
+    Args:
+        current_count:
+            Number of samples processed so far.
+        total:
+            Total number of samples.
+        elapsed:
+            Elapsed time in seconds.
+    """
+    samples_per_sec = current_count / elapsed if elapsed > 0 else 0
+    logger.info(
+        f"Processed {current_count}/{total} samples ({samples_per_sec:.2f} samples/sec)"
+    )
+
+
 async def run_translation(
     remaining_samples: list[HallucinationSample],
     translated_data: HallucinationData,
@@ -399,16 +438,12 @@ async def run_translation(
     total_samples = len(remaining_samples)
     log_file = OUTPUT_DIR / "error_log.txt"
 
+    limits, timeout, semaphore = _setup_http_client(client_config, MAX_WORKERS)
+
     progress_bar = tqdm.tqdm(total=total_samples, desc="Translating")
     start_time = time.time()
     save_interval = 60
     last_save_time = start_time
-
-    limits = httpx.Limits(
-        max_connections=MAX_WORKERS * 2, max_keepalive_connections=MAX_WORKERS
-    )
-    timeout = httpx.Timeout(60.0)
-    semaphore = asyncio.Semaphore(MAX_WORKERS)
 
     try:
         async with httpx.AsyncClient(
@@ -420,16 +455,16 @@ async def run_translation(
 
                 batch = remaining_samples[i : i + BATCH_SIZE]
                 batch_results = await process_batch(
-                    batch,
-                    http_client,
-                    client_config["url"],
-                    semaphore,
-                    MODEL,
-                    num_processed + i,
-                    log_file,
-                    SOURCE_LANG,
-                    target_lang,
-                    DATASET_NAME,
+                    samples=batch,
+                    http_client=http_client,
+                    url=client_config["url"],
+                    semaphore=semaphore,
+                    model=MODEL,
+                    start_idx=num_processed + i,
+                    log_file=log_file,
+                    source_lang=SOURCE_LANG,
+                    target_lang=target_lang,
+                    dataset=DATASET_NAME,
                 )
 
                 translated_data.samples.extend(batch_results)
@@ -453,13 +488,10 @@ async def run_translation(
 
                 current_count = len(translated_data.samples)
                 elapsed_time = current_time - start_time
-                samples_per_sec = (
-                    current_count / elapsed_time if elapsed_time > 0 else 0
-                )
-
-                logger.info(
-                    f"Processed {current_count}/{num_processed + total_samples} "
-                    f"samples ({samples_per_sec:.2f} samples/sec)"  # noqa: E501
+                _log_translation_progress(
+                    current_count=current_count,
+                    total=num_processed + total_samples,
+                    elapsed=elapsed_time,
                 )
     finally:
         progress_bar.close()
@@ -498,16 +530,16 @@ async def process_batch(
     for i, sample in enumerate(samples, start=start_idx):
         task = asyncio.create_task(
             translate_sample(
-                sample,
-                http_client,
-                url,
-                semaphore,
-                model,
-                i,
-                log_file,
-                source_lang,
-                target_lang,
-                dataset,
+                sample=sample,
+                http_client=http_client,
+                url=url,
+                semaphore=semaphore,
+                model=model,
+                sample_index=i,
+                log_file=log_file,
+                source_lang=source_lang,
+                target_lang=target_lang,
+                dataset=dataset,
             )
         )
         tasks.append(task)
@@ -1068,6 +1100,39 @@ def setup_logging(output_dir: Path) -> None:
     logger.addHandler(file_handler)
 
 
+def _push_if_no_samples(
+    translated_data: HallucinationData, target_lang: Language
+) -> None:
+    """Push data to hub when there are no samples to translate.
+
+    Args:
+        translated_data:
+            Translated data to push.
+        target_lang:
+            Target language code.
+    """
+    logger.info("No samples to translate. Exiting.")
+    if PUSH_TO_HUB:
+        push_translated_data_to_hub(
+            translated_data=translated_data,
+            repo_id=HUB_REPO_ID,
+            config_name=target_lang.code,
+            private=PRIVATE_UPLOAD,
+        )
+    if PUSH_TEST_SUBSET:
+        resolved_test_repo_id = (
+            f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang.code}-mini"
+        )
+        push_test_subset_to_hub(
+            translated_data=translated_data,
+            repo_id=resolved_test_repo_id,
+            config_name=target_lang.code,
+            private=PRIVATE_UPLOAD,
+            n=TEST_SUBSET_SIZE,
+            validation_n=VALIDATION_SUBSET_SIZE,
+        )
+
+
 def _translate_to_language(
     source_data: HallucinationData | None,
     target_lang: Language,
@@ -1129,26 +1194,7 @@ def _translate_to_language(
     total_samples = len(remaining_samples)
 
     if total_samples == 0:
-        logger.info("No samples to translate. Exiting.")
-        if PUSH_TO_HUB:
-            push_translated_data_to_hub(
-                translated_data=translated_data,
-                repo_id=HUB_REPO_ID,
-                config_name=target_lang.code,
-                private=PRIVATE_UPLOAD,
-            )
-        if PUSH_TEST_SUBSET:
-            resolved_test_repo_id = (
-                f"EuroEval/{DATASET_NAME}-translated-hallucinations-{target_lang.code}-mini"
-            )
-            push_test_subset_to_hub(
-                translated_data=translated_data,
-                repo_id=resolved_test_repo_id,
-                config_name=target_lang.code,
-                private=PRIVATE_UPLOAD,
-                n=TEST_SUBSET_SIZE,
-                validation_n=VALIDATION_SUBSET_SIZE,
-            )
+        _push_if_no_samples(translated_data, target_lang)
         return
 
     logger.info(f"Using model: {MODEL}")
