@@ -366,13 +366,11 @@ def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int 
 
 
 def _setup_http_client(
-    client_config: ClientConfig, max_workers: int
+    max_workers: int
 ) -> tuple[httpx.Limits, httpx.Timeout, asyncio.Semaphore]:
     """Set up HTTP client configuration.
 
     Args:
-        client_config:
-            Client configuration dict.
         max_workers:
             Maximum number of concurrent workers.
 
@@ -410,7 +408,6 @@ async def run_translation(
     output_file: Path,
     target_lang: Language,
     num_processed: int,
-    last_processed_index: int | None,
     client_config: ClientConfig,
 ) -> None:
     """Run batched async translation with connection pooling.
@@ -428,15 +425,13 @@ async def run_translation(
             Target language code.
         num_processed:
             Number of already translated samples from cache.
-        last_processed_index:
-            Index of last processed sample in source data.
         client_config:
             API URL and headers.
     """
     total_samples = len(remaining_samples)
     log_file = OUTPUT_DIR / "error_log.txt"
 
-    limits, timeout, semaphore = _setup_http_client(client_config, MAX_WORKERS)
+    limits, timeout, semaphore = _setup_http_client(MAX_WORKERS)
 
     progress_bar = tqdm.tqdm(total=total_samples, desc="Translating")
     start_time = time.time()
@@ -1207,7 +1202,6 @@ def _translate_to_language(
                 output_file=output_file,
                 target_lang=target_lang,
                 num_processed=num_processed,
-                last_processed_index=last_processed_index,
                 client_config=client_config,
             )
         )
