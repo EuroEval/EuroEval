@@ -1290,3 +1290,7 @@ def get_openai_client() -> dict[str, t.Any]:
             "Content-Type": "application/json",
         },
     }
+
+
+if __name__ == "__main__":
+    main()
