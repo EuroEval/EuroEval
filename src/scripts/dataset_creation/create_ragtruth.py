@@ -117,6 +117,11 @@ TARGET_LANGS: list[Language] = [
 BATCH_SIZE = 30
 MAX_WORKERS = 30
 
+# Retry settings for transient API errors (HTTP 429/5xx and network blips).
+MAX_TRANSLATION_RETRIES = 5
+RETRY_BASE_DELAY_SECONDS = 2.0
+RETRY_MAX_DELAY_SECONDS = 60.0
+
 # Output settings
 OUTPUT_DIR = Path("data/ragtruth")
 DATASET_NAME = "ragtruth"
@@ -217,7 +222,17 @@ class TranslationError(Exception):
 class RetryableTranslationError(Exception):
     """Exception raised for transient translation/API errors that should be retried."""
 
-    pass
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
+        """Initialise the error.
+
+        Args:
+            message:
+                The error message.
+            retry_after:
+                Server-provided number of seconds to wait before retrying, if any.
+        """
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 def main() -> None:
@@ -591,7 +606,7 @@ async def translate_sample(
                 sample.task_type,
                 source_lang,
                 target_lang,
-                prompt=True,
+                is_answer=True,
             )
         )
         translated_prompt, translated_answer = await asyncio.gather(
@@ -771,7 +786,7 @@ async def translate_text(
     task_type: str,
     source_lang: Language = ENGLISH,
     target_lang: Language = DANISH,
-    prompt: bool = False,
+    is_answer: bool = False,
 ) -> str:
     """Translate text using OpenAI-compatible HTTP API with automatic retries.
 
@@ -784,7 +799,7 @@ async def translate_text(
         task_type: Type of the translation task.
         source_lang: Source language code.
         target_lang: Target language code.
-        prompt: Whether the text is a prompt.
+        is_answer: Whether the text is an answer (which may contain <HAL> tags).
 
     Returns:
         Translated text.
@@ -796,96 +811,121 @@ async def translate_text(
     if not text.strip():
         return ""
 
-    try:
-        translation_prompt = (
-            TRANSLATION_ANSWER
-            if prompt
-            else TRANSLATION_PROMPT_DATA2TXT
-            if task_type == "Data2txt"
-            else TRANSLATION_PROMPT
-        )
-        translation_prompt = translation_prompt.format(
-            source_lang=source_lang.name, target_lang=target_lang.name, text=text
-        )
+    # Select the template: answers may carry <HAL> tags and use the HAL-aware
+    # template, while prompts use the plain (or Data2txt-specific) prompt template.
+    translation_prompt = (
+        TRANSLATION_ANSWER
+        if is_answer
+        else TRANSLATION_PROMPT_DATA2TXT
+        if task_type == "Data2txt"
+        else TRANSLATION_PROMPT
+    )
+    translation_prompt = translation_prompt.format(
+        source_lang=source_lang.name, target_lang=target_lang.name, text=text
+    )
 
-        # Cap output tokens to prevent runaway repetition loops.
-        # len(text)/3 overestimates token count (~3 chars/token); 1.5x margin for
-        # expansion in translation; min 256 buffer for safety.
-        max_tokens = min(4096, int(len(text) / 3 * 1.5) + 256)
-        payload = {
-            "model": model,
-            "messages": [{"role": "user", "content": translation_prompt}],
-            "temperature": 0.4,
-            "max_tokens": max_tokens,
-        }
+    # Cap output tokens to prevent runaway repetition loops. len(text)/3
+    # overestimates the token count (~3 chars/token) and the 1.5x margin covers
+    # expansion during translation, so short inputs are bounded tightly. The 8192
+    # ceiling is only a backstop for pathological loops: a lower cap truncated
+    # legitimately long RAG contexts / summaries, which dropped trailing </HAL>
+    # tags and corrupted the labels.
+    max_tokens = min(8192, int(len(text) / 3 * 1.5) + 256)
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": translation_prompt}],
+        "temperature": 0.4,
+        "max_tokens": max_tokens,
+    }
 
-        async with semaphore:
-            response = await http_client.post(url, json=payload)
-
-        if response.status_code >= 400:
+    last_error: RetryableTranslationError | None = None
+    for attempt in range(MAX_TRANSLATION_RETRIES):
+        try:
             try:
-                error_obj = response.json().get("error", {})
-                error_message = error_obj.get("message") or response.text
-                error_type = error_obj.get("type")
-                error_code = error_obj.get("code")
-            except Exception:
-                error_message = response.text
-                error_type = None
-                error_code = None
+                async with semaphore:
+                    response = await http_client.post(url, json=payload)
+            except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
+                raise RetryableTranslationError(
+                    f"Transient network error: {e!s}"
+                ) from e
 
-            message = (
-                f"API error {response.status_code}"
-                f" (type={error_type}, code={error_code}): {error_message}"
-            )
+            if response.status_code >= 400:
+                try:
+                    error_obj = response.json().get("error", {})
+                    error_message = error_obj.get("message") or response.text
+                    error_type = error_obj.get("type")
+                    error_code = error_obj.get("code")
+                except Exception:
+                    error_message = response.text
+                    error_type = None
+                    error_code = None
 
-            # Retry transient errors only.
-            if response.status_code == 429 or response.status_code >= 500:
-                logger.warning(message)
-                if response.status_code == 429:
-                    retry_after = response.headers.get("retry-after")
-                    if retry_after:
-                        try:
-                            await asyncio.sleep(float(retry_after))
-                        except ValueError:
-                            pass
-                raise RetryableTranslationError(message)
+                message = (
+                    f"API error {response.status_code}"
+                    f" (type={error_type}, code={error_code}): {error_message}"
+                )
 
-            # Do not retry non-transient client errors (e.g., bad request /
-            # context too long).
-            raise TranslationError(message)
+                # Retry transient errors only.
+                if response.status_code == 429 or response.status_code >= 500:
+                    retry_after: float | None = None
+                    if response.status_code == 429:
+                        header_value = response.headers.get("retry-after")
+                        if header_value:
+                            try:
+                                retry_after = float(header_value)
+                            except ValueError:
+                                retry_after = None
+                    raise RetryableTranslationError(message, retry_after=retry_after)
 
-        response_json = response.json()
-        choice = response_json["choices"][0]
+                # Do not retry non-transient client errors (e.g., bad request /
+                # context too long).
+                raise TranslationError(message)
 
-        # Log finish_reason to detect truncation or other issues.
-        finish_reason = choice.get("finish_reason")
-        if finish_reason == "length":
-            logger.warning(
-                f"Translation truncated (finish_reason='length') for sample "
-                f"with input length {len(text)} chars (max_tokens={max_tokens})"
-            )
+            response_json = response.json()
+            choice = response_json["choices"][0]
 
-        # Strip lines starting with the character '='
-        content = "\n".join(
-            [
+            # Log finish_reason to detect truncation or other issues.
+            finish_reason = choice.get("finish_reason")
+            if finish_reason == "length":
+                logger.warning(
+                    f"Translation truncated (finish_reason='length') for sample "
+                    f"with input length {len(text)} chars (max_tokens={max_tokens})"
+                )
+
+            # Strip lines starting with the character '='
+            content = "\n".join(
                 line
                 for line in choice["message"]["content"].split("\n")
                 if not line.strip().startswith("=")
-            ]
-        )
+            )
 
-        return content.strip()
-    except RetryableTranslationError:
-        raise
-    except TranslationError:
-        raise
-    except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
-        message = f"Transient network error: {e!s}"
-        logger.warning(message)
-        raise RetryableTranslationError(message) from e
-    except Exception as e:
-        logger.error(f"Translation error: {e!s}")
-        raise TranslationError(f"Failed to translate text: {e!s}") from e
+            return content.strip()
+
+        except RetryableTranslationError as e:
+            last_error = e
+            logger.warning(f"{e!s} (attempt {attempt + 1}/{MAX_TRANSLATION_RETRIES})")
+            if attempt < MAX_TRANSLATION_RETRIES - 1:
+                # Honour a server-provided Retry-After, else exponential backoff
+                # with full jitter to avoid synchronised retry stampedes.
+                if e.retry_after is not None:
+                    delay = e.retry_after
+                else:
+                    ceiling = min(
+                        RETRY_MAX_DELAY_SECONDS, RETRY_BASE_DELAY_SECONDS * (2**attempt)
+                    )
+                    delay = random.uniform(0, ceiling)
+                await asyncio.sleep(delay)
+        except TranslationError:
+            raise
+        except Exception as e:
+            logger.error(f"Translation error: {e!s}")
+            raise TranslationError(f"Failed to translate text: {e!s}") from e
+
+    # All retries were exhausted on transient errors.
+    raise TranslationError(
+        f"Failed to translate text after {MAX_TRANSLATION_RETRIES} attempts: "
+        f"{last_error!s}"
+    )
 
 
 def save_progress(
