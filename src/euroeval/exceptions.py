@@ -17,6 +17,39 @@ class InvalidBenchmark(Exception):
         super().__init__(self.message)
 
 
+class UnsupportedModelTask(InvalidBenchmark):
+    """The model's architecture does not support the task's required head.
+
+    Raised when a model can be loaded for some tasks but not the specific task
+    being benchmarked, because the model architecture has no head registered
+    for the corresponding ``AutoModel`` class (e.g. a Gemma3-based encoder that
+    supports sequence classification but not token classification). This is a
+    per-task limitation rather than a fatal model error, so the affected
+    benchmark is skipped rather than errored.
+    """
+
+    def __init__(self, model_id: str, task_name: str, auto_model_class: str) -> None:
+        """Initialise the exception.
+
+        Args:
+            model_id:
+                The model that could not be loaded for the task.
+            task_name:
+                The name of the task whose head is unsupported.
+            auto_model_class:
+                The ``AutoModel`` class the model could not be loaded as.
+        """
+        self.model_id = model_id
+        self.task_name = task_name
+        self.auto_model_class = auto_model_class
+        self.message = (
+            f"The model {model_id!r} does not support the {task_name!r} task, as its "
+            f"architecture has no head registered for `{auto_model_class}`. Skipping "
+            "this benchmark."
+        )
+        super().__init__(self.message)
+
+
 class InvalidModel(Exception):
     """The model cannot be benchmarked on any datasets."""
 

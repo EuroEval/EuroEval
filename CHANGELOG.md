@@ -15,6 +15,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Encoder models whose architecture supports some tasks but not others (e.g.
+  Gemma3-based models such as `google/embeddinggemma-300m`, which support sequence
+  classification but have no token-classification head registered in `transformers`)
+  now skip the unsupported benchmarks instead of erroring the entire evaluation. The
+  model is still benchmarked on every task it does support. Models whose architecture
+  has no supported head at all (e.g. `jinaai/jina-embeddings-v5-*`) now skip all
+  benchmarks cleanly rather than reporting them as errors.
 - Fixed race condition in cache cleanup where `rmtree` would fail with
   `FileNotFoundError` when checkpoint directories were removed concurrently during model
   benchmarking. Now uses `ignore_errors=True` to handle concurrent deletions gracefully.

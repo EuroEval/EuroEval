@@ -19,7 +19,12 @@ from .constants import ATTENTION_BACKENDS, GENERATIVE_PIPELINE_TAGS, ORTHOGONAL_
 from .data_loading import load_data, load_raw_data
 from .data_models import BenchmarkConfigParams, BenchmarkResult, get_package_version
 from .enums import Device, GenerativeType, InferenceBackend, ModelType
-from .exceptions import HuggingFaceHubDown, InvalidBenchmark, InvalidModel
+from .exceptions import (
+    HuggingFaceHubDown,
+    InvalidBenchmark,
+    InvalidModel,
+    UnsupportedModelTask,
+)
 from .finetuning import finetune
 from .generation import generate
 from .logging_utils import adjust_logging_level, get_pbar, log, log_once
@@ -901,8 +906,13 @@ class Benchmarker:
 
                 elif isinstance(benchmark_output_or_err, InvalidBenchmark):
                     log(benchmark_output_or_err.message, level=logging.WARNING)
-                    # Orthogonal task failures count as skipped, not errored
-                    if dataset_config.task.name in ORTHOGONAL_TASKS:
+                    # Task-incompatibility (the model architecture has no head for this
+                    # task) and orthogonal task failures count as skipped, not errored:
+                    # the model can still be evaluated on the tasks it does support.
+                    if (
+                        isinstance(benchmark_output_or_err, UnsupportedModelTask)
+                        or dataset_config.task.name in ORTHOGONAL_TASKS
+                    ):
                         num_skipped_benchmarks += 1
                     else:
                         num_errored_benchmarks += 1

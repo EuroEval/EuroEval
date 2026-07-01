@@ -61,6 +61,7 @@ from ..exceptions import (
     NeedsAdditionalArgument,
     NeedsEnvironmentVariable,
     NeedsExtraInstalled,
+    UnsupportedModelTask,
 )
 from ..generation_utils import raise_if_wrong_params
 from ..languages import get_all_languages
@@ -596,6 +597,9 @@ def load_model_and_tokeniser(
             If the model could not be loaded.
         InvalidBenchmark:
             If the model could not be loaded for this particular dataset.
+        UnsupportedModelTask:
+            If the model's architecture has no head registered for the task's
+            ``AutoModel`` class, so the benchmark should be skipped.
     """
     config: "PretrainedConfig"
     block_terminal_output()
@@ -695,6 +699,19 @@ def load_model_and_tokeniser(
             if "checkpoint seems to be incorrect" in str(e):
                 raise InvalidModel(
                     f"The model {model_id!r} has an incorrect checkpoint."
+                ) from e
+            # The model loads fine for other tasks, but its architecture has no head
+            # registered for this task's `AutoModel` class (e.g. a Gemma3-based encoder
+            # that supports sequence classification but not token classification). This
+            # is a per-task limitation, so the benchmark is skipped rather than counted
+            # as a hard error that fails the whole model.
+            if "Unrecognized configuration class" in str(e) and (
+                "for this kind of AutoModel" in str(e)
+            ):
+                raise UnsupportedModelTask(
+                    model_id=model_id,
+                    task_name=dataset_config.task.name,
+                    auto_model_class=task_group_to_class_name(task_group=task_group),
                 ) from e
             if "trust_remote_code" in str(e):
                 raise InvalidModel(

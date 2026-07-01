@@ -105,6 +105,33 @@ class TestNeedsEnvironmentVariable:
         assert exc.env_var == env_var
 
 
+class TestUnsupportedModelTask:
+    """Tests for the UnsupportedModelTask exception."""
+
+    def test_message_contains_details(self) -> None:
+        """Test that the message contains the model, task and AutoModel class."""
+        exc = exceptions.UnsupportedModelTask(
+            model_id="some/model",
+            task_name="named-entity-recognition",
+            auto_model_class="AutoModelForTokenClassification",
+        )
+        assert "some/model" in exc.message
+        assert "named-entity-recognition" in exc.message
+        assert "AutoModelForTokenClassification" in exc.message
+        assert exc.model_id == "some/model"
+        assert exc.task_name == "named-entity-recognition"
+        assert exc.auto_model_class == "AutoModelForTokenClassification"
+
+    def test_is_invalid_benchmark_subclass(self) -> None:
+        """Test that it is a subclass of InvalidBenchmark so it is skippable."""
+        exc = exceptions.UnsupportedModelTask(
+            model_id="some/model",
+            task_name="named-entity-recognition",
+            auto_model_class="AutoModelForTokenClassification",
+        )
+        assert isinstance(exc, exceptions.InvalidBenchmark)
+
+
 class TestBaseExceptions:
     """Tests for base exception classes."""
 
