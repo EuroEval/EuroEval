@@ -25,6 +25,7 @@ import re
 import time
 import typing as t
 from pathlib import Path
+from typing import TypedDict
 
 import httpx
 import tqdm
@@ -220,6 +221,13 @@ class RetryableTranslationError(Exception):
     pass
 
 
+class ClientConfig(t.TypedDict):
+    """Configuration for OpenAI client."""
+
+    url: str
+    headers: dict[str, str]
+
+
 def main() -> None:
     """Download RAGTruth data, translate to all target languages, and upload to Hub."""
     # Set up directories
@@ -385,7 +393,7 @@ async def run_translation(
     max_workers: int,
     test: bool,
     log_file: Path,
-    client_config: dict[str, t.Any],
+    client_config: ClientConfig,
 ) -> None:
     """Run batched async translation with connection pooling.
 
@@ -1083,7 +1091,7 @@ def _translate_to_language(
     push_test_subset: bool,
     test_subset_size: int,
     validation_subset_size: int,
-    client_config: dict[str, t.Any],
+    client_config: ClientConfig,
 ) -> None:
     """Translate RAGTruth data to a single target language.
 
@@ -1273,7 +1281,7 @@ def _translate_to_language(
         )
 
 
-def get_openai_client() -> dict[str, t.Any]:
+def get_openai_client() -> ClientConfig:
     """Get HTTP client configuration from environment variables.
 
     Returns:
