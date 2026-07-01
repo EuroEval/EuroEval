@@ -266,9 +266,7 @@ def main() -> None:
         logger.info(f"{'=' * 60}")
 
         _translate_to_language(
-            source_data=data,
-            target_lang=target_lang,
-            client_config=client,
+            source_data=data, target_lang=target_lang, client_config=client
         )
 
 
