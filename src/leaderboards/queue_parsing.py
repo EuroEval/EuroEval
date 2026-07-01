@@ -207,6 +207,12 @@ def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
         parts.append(traceback)
     for line in reversed(lines):
         if _LOAD_ERROR_RE.search(line):
+            # When a real traceback was already surfaced, the vLLM generic
+            # "could not be loaded, but vLLM did not mention exactly what
+            # happened" excuse line only buries the actual exception, so skip
+            # it rather than appending it on top of the traceback.
+            if traceback and "did not mention exactly what" in line:
+                break
             parts.append(line.strip())
             break
     for line in reversed(lines):
