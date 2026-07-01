@@ -718,7 +718,6 @@ def find_hallucination_tags(
         return [], text
 
     hal_spans = []
-    len("<HAL>")  # 5 characters
 
     # Find all opening and closing tag positions
     open_positions = [m.end() for m in re.finditer(r"<HAL>", text)]
