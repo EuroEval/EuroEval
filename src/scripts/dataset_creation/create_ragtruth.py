@@ -25,7 +25,6 @@ import re
 import time
 import typing as t
 from pathlib import Path
-from typing import TypedDict
 
 import httpx
 import tqdm
