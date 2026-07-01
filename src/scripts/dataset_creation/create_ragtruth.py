@@ -230,6 +230,7 @@ class ClientConfig(t.TypedDict):
 
 def main() -> None:
     """Download RAGTruth data, translate to all target languages, and upload to Hub."""
+
     # Set up directories
     input_dir = OUTPUT_DIR
     output_dir = OUTPUT_DIR
@@ -573,6 +574,7 @@ async def translate_sample(
         Translated sample or None if translation failed.
     """
     try:
+
         # Skip processing if we have an empty sample
         if not sample.prompt.strip() or not sample.answer.strip():
             logger.warning(
@@ -685,6 +687,7 @@ def put_hallucination_tags(
     Returns:
         Tuple of (tagged text, merged labels).
     """
+
     # Skip the process if there are no labels
     if not sample.labels:
         return answer, []
