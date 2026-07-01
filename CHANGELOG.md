@@ -17,6 +17,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   Serbian, Slovak, Slovene, Spanish, Swedish, Ukrainian). This was contributed by
   @FrejaThoresen ✨
 
+### Changed
+
+- The RAGTruth hallucination datasets for all non-Danish European languages are
+  now marked as `unofficial` for now, as the published Hugging Face versions are
+  placeholder test-split-only snapshots awaiting full regeneration. The Danish
+  RAGTruth dataset remains `official`.
+
 ### Fixed
 
 - vLLM's own caches (compiled graphs and the model-info registry) are now stored under

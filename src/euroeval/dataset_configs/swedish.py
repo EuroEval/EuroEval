@@ -233,4 +233,5 @@ RAGTRUTH_SV_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[SWEDISH],
     train_split=None,
+    unofficial=True,
 )

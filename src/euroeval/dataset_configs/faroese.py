@@ -94,4 +94,5 @@ RAGTRUTH_FO_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[FAROESE],
     train_split=None,
+    unofficial=True,
 )

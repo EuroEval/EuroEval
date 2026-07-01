@@ -111,4 +111,5 @@ RAGTRUTH_EL_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[GREEK],
     train_split=None,
+    unofficial=True,
 )

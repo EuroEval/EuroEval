@@ -148,4 +148,5 @@ RAGTRUTH_ET_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[ESTONIAN],
     train_split=None,
+    unofficial=True,
 )

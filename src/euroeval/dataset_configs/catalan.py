@@ -90,4 +90,5 @@ RAGTRUTH_CA_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[CATALAN],
     train_split=None,
+    unofficial=True,
 )

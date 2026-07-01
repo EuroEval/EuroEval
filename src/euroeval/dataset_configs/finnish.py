@@ -145,4 +145,5 @@ RAGTRUTH_FI_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[FINNISH],
     train_split=None,
+    unofficial=True,
 )
