@@ -130,8 +130,7 @@ TEST_SUBSET_REPO_ID = "EuroEval/ragtruth-translated-hallucinations-{lang}-mini"
 TEST_SUBSET_SIZE = 1000
 VALIDATION_SUBSET_SIZE = 256
 
-# Resume settings
-RESUME = True
+# Execution settings
 TEST_MODE = False
 
 
@@ -242,7 +241,7 @@ def main() -> None:
             logger.error(f"Error loading input data: {e!s}")
             raise
     else:
-        # In resume mode, we might have translated files but no source
+        # Output file missing, will start fresh
         logger.warning(
             f"Input file not found: {input_file}. "
             "Proceeding in push-only mode if translated files exist."
@@ -263,7 +262,6 @@ def main() -> None:
             model=MODEL,
             batch_size=BATCH_SIZE,
             max_workers=MAX_WORKERS,
-            resume=RESUME,
             test=TEST_MODE,
             push_to_hub=PUSH_TO_HUB,
             hub_repo_id=HUB_REPO_ID,
@@ -399,7 +397,7 @@ async def run_translation(
         model: Model to use.
         source_lang: Source language code.
         total_samples: Number of remaining samples.
-        num_processed: Number of already translated samples from resume.
+        num_processed: Number of already translated samples from cache.
         batch_size: Number of samples per batch.
         max_workers: Maximum concurrent API requests.
         test: Whether to run in test mode.
@@ -906,7 +904,7 @@ def save_progress(
         dataset: Dataset name for backup file.
         target_lang: Target language for backup file.
         output_dir: Output directory for backup file.
-        last_processed_index: Index of last processed source sample (for resume).
+        last_processed_index: Index of last processed source sample (for caching).
     """
     # Wrap samples in dict structure expected by from_json
     data_dict: dict[str, t.Any] = {"samples": translated_data.to_json()}
@@ -1061,7 +1059,6 @@ def _translate_to_language(
     model: str,
     batch_size: int,
     max_workers: int,
-    resume: bool,
     test: bool,
     push_to_hub: bool,
     hub_repo_id: str | None,
@@ -1084,8 +1081,6 @@ def _translate_to_language(
             Number of samples per batch.
         max_workers:
             Maximum concurrent API requests.
-        resume:
-            Whether to resume from existing output.
         test:
             Whether to run in test mode.
         push_to_hub:
@@ -1105,8 +1100,7 @@ def _translate_to_language(
 
     Raises:
         FileNotFoundError:
-            If source data is not available and cannot resume from existing
-            translation.
+            If source data is not available and no cached translation exists.
     """
     dataset = DATASET_NAME
     source_lang: Language = SOURCE_LANG
@@ -1116,8 +1110,8 @@ def _translate_to_language(
     output_file = output_dir / f"{dataset}_data_{target_lang.code}.json"
     log_file = output_dir / "error_log.txt"
 
-    # Load existing translated data if resume is enabled
-    if resume and output_file.exists():
+    # Load existing translated data if output file exists (cache)
+    if output_file.exists():
         translated_data, last_processed_index = load_check_existing_data(
             output_file=output_file
         )
@@ -1142,9 +1136,9 @@ def _translate_to_language(
             "translated samples."
         )
     else:
-        logger.error("No source data available and nothing to resume")
+        logger.error("No source data available and no cached translation exists")
         raise FileNotFoundError(
-            "Source data not found and no existing translation to resume"
+            "Source data not found and no cached translation to resume"
         )
 
     total_samples = len(remaining_samples)
