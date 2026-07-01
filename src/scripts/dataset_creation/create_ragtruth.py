@@ -733,9 +733,9 @@ def find_hallucination_tags(
 
     hal_spans = []
 
-    # Clean up mangled tags like "<HAL<HAL>>" -> "<HAL>"
-    text = re.sub(r"<HAL<HAL>>", "<HAL>", text)
-    text = re.sub(r"</HAL></HAL>", "</HAL>", text)
+    # Clean up mangled tags like "<HAL<HL>>" -> "<HAL>"
+    text = re.sub(r"<HAL\s*<[^>]*>", "<HAL>", text)
+    text = re.sub(r"</HAL\s*</[^>]*>", "</HAL>", text)
     text = re.sub(r"</HAL>\s*</HAL>", "</HAL>", text)
 
     open_positions = [m.end() for m in re.finditer(r"<HAL>", text)]
