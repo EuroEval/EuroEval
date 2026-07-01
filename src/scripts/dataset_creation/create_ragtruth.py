@@ -622,8 +622,8 @@ async def translate_sample(
             labels=labels,
             split=sample.split,
             task_type=sample.task_type,
-            dataset=t.cast(t.Any, dataset),
-            language=t.cast(t.Any, target_lang.code),
+            dataset=t.cast(t.Literal["ragtruth", "ragbench"], dataset),
+            language=t.cast(t.Literal["en", "de"], target_lang.code),
         )
     except Exception as e:
         logger.error(f"Error translating sample {sample_index}: {e!s}")
@@ -720,8 +720,36 @@ def find_hallucination_tags(
     hal_spans = []
 
     # Find all opening and closing tag positions
+    # Clean up mangled tags like "<HAL<HAL>>" -> "<HAL>"
+    text = re.sub(r"<HAL\\s*<[^>]*>", "<HAL>", text)
+    text = re.sub(r"</HAL\\s*</[^>]*>", "</HAL>", text)
+    text = re.sub(r"</HAL>\s*</HAL>", "</HAL>", text)
+
     open_positions = [m.end() for m in re.finditer(r"<HAL>", text)]
     close_positions = [m.start() for m in re.finditer(r"</HAL>", text)]
+
+    # Add missing </HAL> tags at the end if there are unclosed <HAL> tags
+    if len(open_positions) > len(close_positions):
+        text = text.rstrip() + "</HAL>" * (len(open_positions) - len(close_positions))
+        close_positions = [m.start() for m in re.finditer(r"</HAL>", text)]
+        logger.warning(
+            f"Added {len(open_positions) - len(close_positions) + 1} missing "
+            f"</HAL> tag(s) to sample {sample_index}"
+        )
+
+    # Remove extra closing tags if more closing than opening
+    if len(close_positions) > len(open_positions):
+        # Keep only the first N closing tags where N = number of opening tags
+        extra_close = len(close_positions) - len(open_positions)
+        # Remove the last N closing tags from text
+        for _ in range(extra_close):
+            last_close = text.rfind("</HAL>")
+            if last_close > 0:
+                text = text[:last_close] + text[last_close + len("</HAL>") :]
+        close_positions = [m.start() for m in re.finditer(r"</HAL>", text)]
+        logger.warning(
+            f"Removed {extra_close} extra </HAL> tag(s) from sample {sample_index}"
+        )
 
     for i, (open_pos, close_pos) in enumerate(zip(open_positions, close_positions)):
         label_text = "Unknown"
@@ -1171,7 +1199,7 @@ def _translate_to_language(
                 remaining_samples=remaining_samples,
                 translated_data=translated_data,
                 output_file=output_file,
-                dataset=dataset,
+                dataset=t.cast(t.Literal["ragtruth", "ragbench"], dataset),
                 target_lang=target_lang,
                 output_dir=output_dir,
                 model=model,
