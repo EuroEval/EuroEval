@@ -162,6 +162,8 @@ DATASET_NAME = "ragtruth"
 # HF Hub settings
 PUSH_TO_HUB = True
 HUB_REPO_ID = "alexandrainst/ragtruth-translated-hallucinations"
+# The full dataset is published publicly; the -mini evaluation subsets stay private.
+HUB_REPO_PRIVATE = False
 PRIVATE_UPLOAD = True
 PUSH_TEST_SUBSET = True
 TEST_SUBSET_REPO_ID = "EuroEval/ragtruth-translated-hallucinations-{lang}-mini"
@@ -1304,7 +1306,7 @@ def _push_if_no_samples(
             translated_data=translated_data,
             repo_id=HUB_REPO_ID,
             config_name=target_lang.code,
-            private=PRIVATE_UPLOAD,
+            private=HUB_REPO_PRIVATE,
         )
     if PUSH_TEST_SUBSET:
         resolved_test_repo_id = (
@@ -1467,7 +1469,7 @@ def _translate_to_language(
             translated_data=translated_data,
             repo_id=HUB_REPO_ID,
             config_name=target_lang.code,
-            private=PRIVATE_UPLOAD,
+            private=HUB_REPO_PRIVATE,
         )
 
     if PUSH_TEST_SUBSET:
