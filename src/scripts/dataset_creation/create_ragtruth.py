@@ -16,6 +16,7 @@ joins them, and translates to all 30 European target languages while preserving
 hallucination spans.
 """
 
+import argparse
 import asyncio
 import json
 import logging
@@ -130,9 +131,6 @@ TEST_SUBSET_REPO_ID = "EuroEval/ragtruth-translated-hallucinations-{lang}-mini"
 TEST_SUBSET_SIZE = 1000
 VALIDATION_SUBSET_SIZE = 256
 
-# Execution settings
-TEST_MODE = False
-
 
 # =============================================================================
 # Translation prompts
@@ -141,15 +139,24 @@ TEST_MODE = False
 TRANSLATION_ANSWER = (
     "\n"
     "Translate the following text from {source_lang} to {target_lang}.\n"
-    "- If the original text contains <HAL> tags, translate the content inside "
-    "<HAL> tags and ensure the number of the <HAL> tags remain exactly the same "
-    "in the output.\n"
-    "- If the original text do not contain <HAL> tags, just translate the text.\n"
-    "- Do NOT add any <HAL> tags if they were not in the original text.\n"
-    "- Do NOT remove any <HAL> tags that were in the original text.\n"
+    "- The text may contain <HAL> ... </HAL> tags. Translate the text (including "
+    "the words inside the tags) and keep each pair of tags around the translation "
+    "of the same content it surrounded in the original.\n"
+    "- Copy the tags EXACTLY as the two tokens `<HAL>` and `</HAL>`. NEVER write "
+    "variants such as `<HAL<HAL>>`, `<<HAL>>`, `< HAL >`, `<HAL></HAL><HAL>` or "
+    "`</HAL</HAL>>`.\n"
+    "- NEVER nest or duplicate tags: every `<HAL>` must be closed by exactly one "
+    "matching `</HAL>`, tags may not appear inside other tags, and the output must "
+    "contain the same number of `<HAL>...</HAL>` pairs as the input.\n"
+    "- If the original text does not contain any <HAL> tags, just translate the "
+    "text and do NOT add any tags.\n"
     "- Do not include any additional sentences summarising or explaining the "
     "translation.\n"
     "- Your output should be just the translated text, nothing else.\n"
+    "\n"
+    "Example (English to German):\n"
+    "Input: The capital <HAL>and largest city</HAL> of France is Paris.\n"
+    "Output: Die Hauptstadt <HAL>und größte Stadt</HAL> von Frankreich ist Paris.\n"
     "\n"
     "{source_lang}:\n"
     "======START======\n"
@@ -228,6 +235,16 @@ class ClientConfig(t.TypedDict):
 
 def main() -> None:
     """Download RAGTruth data, translate to all target languages, and upload to Hub."""
+    parser = argparse.ArgumentParser(
+        description="Download and translate the RAGTruth hallucination dataset."
+    )
+    parser.add_argument(
+        "--test-mode",
+        action="store_true",
+        help="Translate only the first batch per language, for quick smoke tests.",
+    )
+    args = parser.parse_args()
+
     # Set up directories
     input_dir = OUTPUT_DIR
     output_dir = OUTPUT_DIR
@@ -266,7 +283,10 @@ def main() -> None:
         logger.info(f"{'=' * 60}")
 
         _translate_to_language(
-            source_data=data, target_lang=target_lang, client_config=client
+            source_data=data,
+            target_lang=target_lang,
+            client_config=client,
+            test_mode=args.test_mode,
         )
 
 
@@ -409,6 +429,7 @@ async def run_translation(
     target_lang: Language,
     num_processed: int,
     client_config: ClientConfig,
+    test_mode: bool,
 ) -> None:
     """Run batched async translation with connection pooling.
 
@@ -427,6 +448,8 @@ async def run_translation(
             Number of already translated samples from cache.
         client_config:
             API URL and headers.
+        test_mode:
+            If True, only the first batch is translated (for quick smoke tests).
     """
     total_samples = len(remaining_samples)
     log_file = OUTPUT_DIR / "error_log.txt"
@@ -443,7 +466,7 @@ async def run_translation(
             headers=client_config["headers"], timeout=timeout, limits=limits
         ) as http_client:
             for i in range(0, total_samples, BATCH_SIZE):
-                if TEST_MODE and i > 0:
+                if test_mode and i > 0:
                     break
 
                 batch = remaining_samples[i : i + BATCH_SIZE]
@@ -629,6 +652,10 @@ async def translate_sample(
             for span in hal_spans:
                 start, end, label = span
                 labels.append({"start": start, "end": end, "label": label})
+        else:
+            # This sample has no hallucination spans, so it should carry no tags.
+            # Strip any (possibly malformed) tags the model added regardless.
+            cleaned_answer = re.sub(r"(?:</?HAL)+>+", "", translated_answer)
 
         return HallucinationSample(
             prompt=translated_prompt,
@@ -708,6 +735,58 @@ def put_hallucination_tags(
     return tagged_answer, labels
 
 
+def normalize_hallucination_tags(text: str) -> str:
+    """Repair malformed <HAL>/</HAL> tags emitted by the translation model.
+
+    The model occasionally duplicates, nests or glues tags together (e.g.
+    ``<HAL<HAL>>``, ``<HAL<HAL<HAL>>>``, ``<HAL><HAL>`` or ``</HAL></HAL>``).
+    This flattens any such structure to a single, well-formed, non-nested level
+    of tags: glued/nested tags are first un-glued into standalone tokens, then a
+    left-to-right scan keeps only the outermost ``<HAL>`` and its matching
+    ``</HAL>``, drops stray unbalanced tags, and closes any tag left open at the
+    end so the spans are always balanced.
+
+    Args:
+        text:
+            Translated text that may contain malformed <HAL>/</HAL> tags.
+
+    Returns:
+        Text with well-formed, non-nested, balanced <HAL>...</HAL> tags.
+    """
+    # Collapse glued/nested tag markers into a single canonical token. The model
+    # writes nested openings as "<HAL" repeated k times followed by k ">", e.g.
+    # "<HAL<HAL>>" or "<HAL<HAL<HAL>>>"; likewise for closings. A single regex
+    # pass handles arbitrary depth because the whole run is matched at once.
+    text = re.sub(r"(?:<HAL)+>+", "<HAL>", text)
+    text = re.sub(r"(?:</HAL)+>+", "</HAL>", text)
+
+    # Scan tokens, flattening nesting to a single level and dropping stray tags.
+    result: list[str] = []
+    depth = 0
+    pos = 0
+    for match in re.finditer(r"<HAL>|</HAL>", text):
+        result.append(text[pos : match.start()])
+        pos = match.end()
+        if match.group() == "<HAL>":
+            if depth == 0:
+                result.append("<HAL>")
+            depth += 1
+        else:  # "</HAL>"
+            if depth > 0:
+                depth -= 1
+                if depth == 0:
+                    result.append("</HAL>")
+            # A stray closing tag with no matching opening is dropped.
+    result.append(text[pos:])
+    normalized = "".join(result)
+
+    # Close any tag left open at the end so spans stay balanced.
+    if depth > 0:
+        normalized = normalized.rstrip() + "</HAL>"
+
+    return normalized
+
+
 def find_hallucination_tags(
     text: str, labels: list[dict[str, t.Any]], sample_index: int
 ) -> tuple[list[tuple[int, int, str]], str]:
@@ -733,37 +812,12 @@ def find_hallucination_tags(
 
     hal_spans = []
 
-    # Clean up mangled tags like "<HAL<HL>>" -> "<HAL>"
-    text = re.sub(r"<HAL\s*<[^>]*>", "<HAL>", text)
-    text = re.sub(r"</HAL\s*</[^>]*>", "</HAL>", text)
-    text = re.sub(r"</HAL>\s*</HAL>", "</HAL>", text)
+    # Repair any malformed tags the model produced (nested/duplicated/unbalanced)
+    # so the spans below are well-formed, non-nested and balanced.
+    text = normalize_hallucination_tags(text)
 
     open_positions = [m.end() for m in re.finditer(r"<HAL>", text)]
     close_positions = [m.start() for m in re.finditer(r"</HAL>", text)]
-
-    # Add missing </HAL> tags at the end if there are unclosed <HAL> tags
-    if len(open_positions) > len(close_positions):
-        text = text.rstrip() + "</HAL>" * (len(open_positions) - len(close_positions))
-        close_positions = [m.start() for m in re.finditer(r"</HAL>", text)]
-        logger.warning(
-            f"Added {len(open_positions) - len(close_positions)} missing "
-            f"</HAL> tag(s) to sample {sample_index}"
-        )
-
-    # Remove extra closing tags if more closing than opening
-    if len(close_positions) > len(open_positions):
-        # Keep only the first N closing tags where N = number of opening tags
-        extra_close = len(close_positions) - len(open_positions)
-
-        # Remove the last N closing tags from text
-        for _ in range(extra_close):
-            last_close = text.rfind("</HAL>")
-            if last_close > 0:
-                text = text[:last_close] + text[last_close + len("</HAL>") :]
-        close_positions = [m.start() for m in re.finditer(r"</HAL>", text)]
-        logger.warning(
-            f"Removed {extra_close} extra </HAL> tag(s) from sample {sample_index}"
-        )
 
     for i, (open_pos, close_pos) in enumerate(zip(open_positions, close_positions)):
         label_text = "Unknown"
@@ -1130,6 +1184,7 @@ def _translate_to_language(
     source_data: HallucinationData | None,
     target_lang: Language,
     client_config: ClientConfig,
+    test_mode: bool = False,
 ) -> None:
     """Translate RAGTruth data to a single target language.
 
@@ -1143,6 +1198,8 @@ def _translate_to_language(
             Target language to translate to.
         client_config:
             OpenAI client configuration.
+        test_mode:
+            If True, only the first batch is translated (for quick smoke tests).
 
     Raises:
         FileNotFoundError:
@@ -1203,6 +1260,7 @@ def _translate_to_language(
                 target_lang=target_lang,
                 num_processed=num_processed,
                 client_config=client_config,
+                test_mode=test_mode,
             )
         )
 
