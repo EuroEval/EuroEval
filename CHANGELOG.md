@@ -10,8 +10,12 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Evaluation hallucination detection task, reporting a hallucination rate
-  (hallucinated_tokens/total_tokens). This includes a Danish `ragtruth-da` dataset, but
-  more coming. This was contributed by @FrejaThoresen ✨
+  (hallucinated_tokens/total_tokens). This includes RAGTruth-based datasets for 30
+  European languages (Danish, Albanian, Belarusian, Bosnian, Bulgarian, Catalan,
+  Croatian, Czech, Dutch, Estonian, Faroese, Finnish, French, German, Greek, Hungarian,
+  Icelandic, Italian, Latvian, Lithuanian, Norwegian, Polish, Portuguese, Romanian,
+  Serbian, Slovak, Slovene, Spanish, Swedish, Ukrainian). This was contributed by
+  @FrejaThoresen ✨
 
 ### Fixed
 
