@@ -80,7 +80,6 @@ SOURCE_INFO_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs
 RESPONSE_URL = "https://raw.githubusercontent.com/ParticleMedia/RAGTruth/refs/heads/main/dataset/response.jsonl"
 
 # Translation settings
-MODEL = "gpt-4o-mini"
 SOURCE_LANG: Language = ENGLISH
 
 TARGET_LANGS: list[Language] = [
@@ -115,8 +114,12 @@ TARGET_LANGS: list[Language] = [
     SWEDISH,
     UKRAINIAN,
 ]
-BATCH_SIZE = 30
-MAX_WORKERS = 30
+# MAX_WORKERS bounds the number of in-flight API requests (each sample issues two:
+# prompt + answer). BATCH_SIZE is kept well above MAX_WORKERS so the worker pool
+# stays saturated between the per-batch save points instead of draining to zero at
+# every batch boundary. Raise MAX_WORKERS further if your rate-limit tier allows.
+BATCH_SIZE = 200
+MAX_WORKERS = 50
 
 # Retry settings for transient API errors (HTTP 429/5xx and network blips).
 MAX_TRANSLATION_RETRIES = 5
@@ -124,9 +127,22 @@ RETRY_BASE_DELAY_SECONDS = 2.0
 RETRY_MAX_DELAY_SECONDS = 60.0
 
 # API pricing in USD per 1M tokens as (input_price, output_price), keyed by model
-# ID, used only for cost estimation. Full pricing:
-# https://developers.openai.com/api/docs/pricing
-MODEL_PRICING: dict[str, tuple[float, float]] = {"gpt-4o-mini": (0.15, 0.60)}
+# ID, used only for cost estimation. Values as listed on the OpenAI pricing page
+# (https://developers.openai.com/api/docs/pricing); update as prices change.
+MODEL_PRICING: dict[str, tuple[float, float]] = {
+    "gpt-4o-mini": (0.15, 0.60),
+    # gpt-4.1 series (legacy; standard published rates, no longer on the page).
+    "gpt-4.1-nano": (0.10, 0.40),
+    "gpt-4.1-mini": (0.40, 1.60),
+    "gpt-4.1": (2.00, 8.00),
+    # gpt-5.4 / gpt-5.5 series (current page).
+    "gpt-5.4-nano": (0.20, 1.25),
+    "gpt-5.4-mini": (0.75, 4.50),
+    "gpt-5.4": (2.50, 15.00),
+    "gpt-5.4-pro": (30.00, 180.00),
+    "gpt-5.5": (5.00, 30.00),
+    "gpt-5.5-pro": (30.00, 180.00),
+}
 
 # Running tally of measured token usage, populated by translate_text /
 # translate_sample. Used in test mode to extrapolate full-dataset cost.
@@ -270,8 +286,8 @@ def main() -> None:
     parser.add_argument(
         "--model",
         type=str,
-        default=MODEL,
-        help=f"Model ID to use for translation (default: {MODEL}).",
+        default="gpt-4o-mini",
+        help="Model ID to use for translation (default: gpt-4o-mini).",
     )
     parser.add_argument(
         "--test-mode",
@@ -428,14 +444,18 @@ def load_check_existing_data(output_file: Path) -> tuple[HallucinationData, int 
     """
     if output_file.exists():
         try:
-            data_dict = json.loads(output_file.read_text())
+            saved = json.loads(output_file.read_text())
+            # save_progress writes {"samples": [...], "_metadata": {...}}, but
+            # HallucinationData.from_json expects the bare list of samples. Also
+            # tolerate an older bare-list format.
             last_processed_index = None
-            if "_metadata" in data_dict:
-                last_processed_index = data_dict["_metadata"].get(
-                    "last_processed_index"
-                )
-                del data_dict["_metadata"]
-            return HallucinationData.from_json(data_dict), last_processed_index
+            if isinstance(saved, dict):
+                metadata = saved.get("_metadata") or {}
+                last_processed_index = metadata.get("last_processed_index")
+                samples_json = saved.get("samples", [])
+            else:
+                samples_json = saved
+            return HallucinationData.from_json(samples_json), last_processed_index
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(
                 f"Error loading existing data: {e!s}. Starting with empty dataset."
@@ -1354,7 +1374,10 @@ def _translate_to_language(
     total_samples = len(remaining_samples)
 
     if total_samples == 0:
-        _push_if_no_samples(translated_data, target_lang)
+        if test_mode:
+            logger.info("No samples to translate (test mode); skipping Hub uploads.")
+        else:
+            _push_if_no_samples(translated_data, target_lang)
         return
 
     logger.info(f"Using model: {model}")
