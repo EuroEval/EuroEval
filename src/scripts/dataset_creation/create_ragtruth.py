@@ -12,7 +12,8 @@
 """Download and translate RAGTruth hallucination dataset.
 
 Downloads source_info.jsonl and response.jsonl from RAGTruth GitHub repository,
-joins them, and translates to target language while preserving hallucination spans.
+joins them, and translates to all 30 European target languages while preserving
+hallucination spans.
 """
 
 import asyncio
