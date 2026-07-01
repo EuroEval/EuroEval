@@ -205,7 +205,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("translator")
 
-# Match repo convention: load .env into process env for API credentials.
 load_dotenv()
 
 
@@ -230,7 +229,6 @@ class ClientConfig(t.TypedDict):
 
 def main() -> None:
     """Download RAGTruth data, translate to all target languages, and upload to Hub."""
-
     # Set up directories
     input_dir = OUTPUT_DIR
     output_dir = OUTPUT_DIR
@@ -687,7 +685,6 @@ def put_hallucination_tags(
     Returns:
         Tuple of (tagged text, merged labels).
     """
-
     # Skip the process if there are no labels
     if not sample.labels:
         return answer, []
