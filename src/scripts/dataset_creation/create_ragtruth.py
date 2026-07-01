@@ -642,7 +642,7 @@ async def translate_sample(
             split=sample.split,
             task_type=sample.task_type,
             dataset=t.cast(t.Literal["ragtruth", "ragbench"], dataset),
-            language=t.cast(t.Literal["en", "de"], target_lang.code),
+            language=target_lang.code,  # ty:ignore[invalid-argument-type]
         )
     except Exception as e:
         logger.error(f"Error translating sample {sample_index}: {e!s}")
