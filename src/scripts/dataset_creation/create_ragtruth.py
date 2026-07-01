@@ -246,7 +246,6 @@ def main() -> None:
             logger.error(f"Error loading input data: {e!s}")
             raise
     if data is None:
-
         # Download and join RAGTruth dataset from GitHub
         logger.info(
             f"Source data not found locally. Downloading from GitHub: {input_file}"
@@ -571,7 +570,6 @@ async def translate_sample(
         Translated sample or None if translation failed.
     """
     try:
-
         if not sample.prompt.strip() or not sample.answer.strip():
             logger.warning(
                 f"Sample {sample_index} has empty prompt or answer. Skipping."
@@ -615,7 +613,6 @@ async def translate_sample(
 
         labels = []
         if merged_labels:
-
             # Use merged labels from put_hallucination_tags to ensure alignment
             hal_spans, cleaned_answer = find_hallucination_tags(
                 text=translated_answer, labels=merged_labels, sample_index=sample_index
@@ -747,7 +744,6 @@ def find_hallucination_tags(
 
     # Remove extra closing tags if more closing than opening
     if len(close_positions) > len(open_positions):
-
         # Keep only the first N closing tags where N = number of opening tags
         extra_close = len(close_positions) - len(open_positions)
 
