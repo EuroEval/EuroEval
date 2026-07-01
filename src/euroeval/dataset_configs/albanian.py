@@ -75,10 +75,10 @@ INCLUDE_SQ_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-RAGTRUTH_AL_CONFIG = DatasetConfig(
-    name="ragtruth-al",
-    pretty_name="RAGTruth-al",
-    source="EuroEval/ragtruth-translated-hallucinations-al-mini",
+RAGTRUTH_SQ_CONFIG = DatasetConfig(
+    name="ragtruth-sq",
+    pretty_name="RAGTruth-sq",
+    source="EuroEval/ragtruth-translated-hallucinations-sq-mini",
     task=HALLU,
     languages=[ALBANIAN],
     train_split=None,
