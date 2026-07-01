@@ -62,4 +62,5 @@ RAGTRUTH_SL_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[SLOVENE],
     train_split=None,
+    unofficial=True,
 )

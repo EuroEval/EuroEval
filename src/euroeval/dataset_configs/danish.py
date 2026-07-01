@@ -114,6 +114,7 @@ RAGTRUTH_DA_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[DANISH],
     train_split=None,
+    unofficial=True,
 )
 
 # Unofficial datasets ###

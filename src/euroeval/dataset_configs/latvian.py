@@ -93,4 +93,5 @@ RAGTRUTH_LV_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[LATVIAN],
     train_split=None,
+    unofficial=True,
 )

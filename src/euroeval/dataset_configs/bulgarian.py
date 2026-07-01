@@ -74,4 +74,5 @@ RAGTRUTH_BG_CONFIG = DatasetConfig(
     task=HALLU,
     languages=[BULGARIAN],
     train_split=None,
+    unofficial=True,
 )
