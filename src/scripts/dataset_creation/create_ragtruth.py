@@ -159,7 +159,7 @@ DATASET_NAME = "ragtruth"
 
 # HF Hub settings
 PUSH_TO_HUB = True
-HUB_REPO_ID = "EuroEval/ragtruth-translated-hallucinations"
+HUB_REPO_ID = "alexandrainst/ragtruth-translated-hallucinations"
 PRIVATE_UPLOAD = True
 PUSH_TEST_SUBSET = True
 TEST_SUBSET_REPO_ID = "EuroEval/ragtruth-translated-hallucinations-{lang}-mini"
@@ -290,6 +290,24 @@ def main() -> None:
         help="Model ID to use for translation (default: gpt-4o-mini).",
     )
     parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=MAX_WORKERS,
+        help=(
+            "Max concurrent in-flight API requests. Raise it if your rate-limit "
+            f"tier allows (default: {MAX_WORKERS})."
+        ),
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=BATCH_SIZE,
+        help=(
+            "Number of samples processed between save points; keep it well above "
+            f"--max-workers to keep the worker pool saturated (default: {BATCH_SIZE})."
+        ),
+    )
+    parser.add_argument(
         "--test-mode",
         action="store_true",
         help="Run a limited smoke test (few samples, no Hub uploads).",
@@ -357,6 +375,8 @@ def main() -> None:
             target_lang=target_lang,
             client_config=client,
             model=model,
+            max_workers=args.max_workers,
+            batch_size=args.batch_size,
             test_mode=args.test_mode,
             test_num_samples=args.test_num_samples,
         )
@@ -510,10 +530,10 @@ async def run_translation(
     num_processed: int,
     client_config: ClientConfig,
     model: str,
+    max_workers: int,
+    batch_size: int,
 ) -> None:
     """Run batched async translation with connection pooling.
-
-    Uses global configuration constants for batch size and workers.
 
     Args:
         remaining_samples:
@@ -530,11 +550,15 @@ async def run_translation(
             Number of already translated samples from cache.
         client_config:
             API URL and headers.
+        max_workers:
+            Maximum number of concurrent in-flight API requests.
+        batch_size:
+            Number of samples processed between save points.
     """
     total_samples = len(remaining_samples)
     log_file = OUTPUT_DIR / "error_log.txt"
 
-    limits, timeout, semaphore = _setup_http_client(MAX_WORKERS)
+    limits, timeout, semaphore = _setup_http_client(max_workers)
 
     progress_bar = tqdm.tqdm(total=total_samples, desc="Translating")
     start_time = time.time()
@@ -545,8 +569,8 @@ async def run_translation(
         async with httpx.AsyncClient(
             headers=client_config["headers"], timeout=timeout, limits=limits
         ) as http_client:
-            for i in range(0, total_samples, BATCH_SIZE):
-                batch = remaining_samples[i : i + BATCH_SIZE]
+            for i in range(0, total_samples, batch_size):
+                batch = remaining_samples[i : i + batch_size]
                 batch_results = await process_batch(
                     samples=batch,
                     http_client=http_client,
@@ -569,7 +593,7 @@ async def run_translation(
                 current_time = time.time()
                 if (
                     current_time - last_save_time > save_interval
-                    or i + BATCH_SIZE >= total_samples
+                    or i + batch_size >= total_samples
                 ):
                     save_progress(
                         translated_data=translated_data,
@@ -1299,13 +1323,14 @@ def _translate_to_language(
     target_lang: Language,
     client_config: ClientConfig,
     model: str,
+    max_workers: int,
+    batch_size: int,
     test_mode: bool = False,
     test_num_samples: int = 10,
 ) -> None:
     """Translate RAGTruth data to a single target language.
 
-    Uses global configuration constants for batch size, workers, and Hub
-    settings.
+    Uses global configuration constants for Hub settings.
 
     Args:
         source_data:
@@ -1316,6 +1341,10 @@ def _translate_to_language(
             OpenAI client configuration.
         model:
             Model ID to use for translation.
+        max_workers:
+            Maximum number of concurrent in-flight API requests.
+        batch_size:
+            Number of samples processed between save points.
         test_mode:
             If True, run a limited smoke test and skip Hub uploads.
         test_num_samples:
@@ -1382,7 +1411,7 @@ def _translate_to_language(
 
     logger.info(f"Using model: {model}")
     logger.info(f"Total samples to process: {total_samples}")
-    logger.info(f"Batch size: {BATCH_SIZE}, Max workers: {MAX_WORKERS}")
+    logger.info(f"Batch size: {batch_size}, Max workers: {max_workers}")
 
     try:
         asyncio.run(
@@ -1394,6 +1423,8 @@ def _translate_to_language(
                 num_processed=num_processed,
                 client_config=client_config,
                 model=model,
+                max_workers=max_workers,
+                batch_size=batch_size,
             )
         )
 
