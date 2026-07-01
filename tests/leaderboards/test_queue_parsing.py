@@ -73,6 +73,7 @@ class TestSummariseEvaluationError:
         summary = summarise_evaluation_error(output=output)
         assert "configured KV-cache size is too small" in summary
         assert "did not mention exactly what" not in summary
+        assert "could not be loaded, but vLLM did" not in summary
         assert "errored 6 benchmarks" in summary
 
     def test_includes_errored_summary_line(self) -> None:
