@@ -22,6 +22,7 @@ import os
 import pty
 import re
 import select
+import signal
 import struct
 import subprocess
 import sys
@@ -167,7 +168,43 @@ def run_euroeval(
         os.close(parent_fd)
     proc.wait()
     output = b"".join(captured).decode("utf-8", errors="replace")
+    note = _killed_by_signal_note(proc.returncode)
+    if note:
+        output += f"\n{note}\n"
     return proc.returncode, output
+
+
+def _killed_by_signal_note(returncode: int | None) -> str | None:
+    """Return a diagnostic note when a subprocess was killed by a signal.
+
+    A negative ``returncode`` (as reported by ``subprocess.Popen``) means the
+    process was terminated by a signal rather than exiting normally. Such
+    deaths leave no Python traceback, so without this note the failure
+    comment falls back to "(no output captured)". Resolving the signal to a
+    name gives the operator a cause; SIGKILL is flagged as a likely
+    out-of-memory kill, the common failure mode for large model evaluations.
+
+    Args:
+        returncode:
+            The ``Popen.returncode`` to interpret.
+
+    Returns:
+        A diagnostic line, or None when ``returncode`` is not a signal death.
+    """
+    if returncode is None or returncode >= 0:
+        return None
+    signum = abs(returncode)
+    try:
+        name = signal.Signals(signum).name
+    except ValueError:
+        return (
+            f"Process was killed by signal {signum} - likely out of memory."
+            if signum == signal.SIGKILL
+            else f"Process was killed by signal {signum}."
+        )
+    if signum == signal.SIGKILL:
+        return f"Process was killed by signal {signum} ({name}) - likely out of memory."
+    return f"Process was killed by signal {signum} ({name})."
 
 
 def _set_pty_window_size(fd: int) -> None:
