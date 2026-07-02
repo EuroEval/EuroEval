@@ -50,6 +50,14 @@ _TRACEBACK_START = "Traceback (most recent call last):"
 _EXCEPTION_LINE_RE = re.compile(r"^[\w.]*(Error|Exception|Timeout|Interrupt)\b.*")
 _SUMMARY_LINE_RE = re.compile(r"errored\s+\d+\s+benchmarks?", re.IGNORECASE)
 
+# vLLM's ``WorkerProc`` runs in a subprocess that logs to stderr with a
+# ``(Worker_TP* pid=*)`` prefix. When initialisation fails the main process only
+# re-raises a generic ``WorkerProc initialization failed`` exception, while the
+# real cause is in the worker-prefixed ``ERROR`` lines that precede it.
+_WORKER_PREFIX_RE = re.compile(r"^\(Worker_TP\d+\s+pid=\d+\)")
+_WORKER_ERROR_RE = re.compile(r"^\(Worker_TP\d+\s+pid=\d+\)\s+ERROR\b", re.IGNORECASE)
+_WORKERPROC_FAILED_RE = re.compile(r"WorkerProc initialization failed", re.IGNORECASE)
+
 # Individual lines longer than this are truncated so a single giant JSON/param
 # dump line can't swamp the summary; the informative head is kept.
 _MAX_LINE_CHARS = 600
@@ -168,6 +176,40 @@ def _last_traceback(lines: list[str]) -> str | None:
     return "\n".join(lines[start : end + 1]).strip()
 
 
+def _worker_errors(lines: list[str]) -> str | None:
+    """Return the first worker-prefixed error block in ``lines``, or None.
+
+    vLLM's ``WorkerProc`` logs the real cause of an initialisation failure from
+    the worker subprocess, prefixing every line with ``(Worker_TP* pid=*)``.
+    The main process only re-raises a generic ``WorkerProc initialization
+    failed`` exception, so without this helper the actual error -- buried in
+    worker-prefixed ``ERROR`` lines -- is never surfaced.
+
+    Args:
+        lines:
+            The cleaned, noise-filtered output lines.
+
+    Returns:
+        The first worker ``ERROR`` line together with the consecutive
+        worker-prefixed lines that follow it (typically the worker's
+        traceback), joined with newlines, or None when no worker error is
+        present.
+    """
+    start = None
+    for i, line in enumerate(lines):
+        if _WORKER_ERROR_RE.match(line.strip()):
+            start = i
+            break
+    if start is None:
+        return None
+    end = start
+    for i in range(start + 1, len(lines)):
+        if not _WORKER_PREFIX_RE.match(lines[i].strip()):
+            break
+        end = i
+    return "\n".join(lines[start : end + 1]).strip()
+
+
 def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
     """Extract the meaningful error from a euroeval subprocess's output.
 
@@ -201,9 +243,15 @@ def summarise_evaluation_error(output: str, max_chars: int = 4000) -> str:
     if not lines:
         return "(no output captured)"
 
-    parts: list[str] = []
+    worker_block = _worker_errors(lines=lines)
     traceback = _last_traceback(lines=lines)
-    if traceback:
+    parts: list[str] = []
+    # The main process only re-raises a generic "WorkerProc initialization
+    # failed" exception; the real cause is in the worker-prefixed ERROR lines,
+    # so prefer the worker block unless a genuine traceback was captured.
+    if worker_block and (traceback is None or _WORKERPROC_FAILED_RE.search(traceback)):
+        parts.append(worker_block)
+    elif traceback:
         parts.append(traceback)
     for line in reversed(lines):
         if _LOAD_ERROR_RE.search(line):
