@@ -981,7 +981,6 @@ def load_tokeniser(
     """
     loading_kwargs: dict[str, bool | str] = dict(
         use_fast=False if model_config.param == "slow-tokenizer" else True,
-        verbose=False,
         trust_remote_code=trust_remote_code,
         padding_side="right",
         truncation_side="right",

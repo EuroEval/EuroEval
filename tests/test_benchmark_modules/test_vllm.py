@@ -11,6 +11,7 @@ from transformers.models.auto.image_processing_auto import AutoImageProcessor
 
 from euroeval.benchmark_modules.vllm import (
     VLLMModel,
+    _is_mistral_tokeniser_model,
     _safe_batch_decode,
     _skip_image_processor_context,
     compute_token_budget,
@@ -976,3 +977,52 @@ class TestSafeBatchDecode:
         assert result == ["decoded_[1, 2, 3]", "decoded_[4, 5, 6]"]
         mock_tokeniser.decode.assert_any_call([1, 2, 3], skip_special_tokens=False)
         mock_tokeniser.decode.assert_any_call([4, 5, 6], skip_special_tokens=False)
+
+
+class TestIsMistralTokeniserModel:
+    """Tests for the `_is_mistral_tokeniser_model` helper function."""
+
+    def test_mistralai_instruct_model_returns_true(self) -> None:
+        """A mistralai instruction-tuned model is identified as Mistral."""
+        config = MagicMock()
+        config.model_type = "llama"
+        config.architectures = ["LlamaForCausalLM"]
+        assert _is_mistral_tokeniser_model(
+            model_id="mistralai/Mistral-7B-Instruct-v0.3", hf_model_config=config
+        )
+
+    def test_mistralai_base_model_returns_false(self) -> None:
+        """A mistralai base model is not routed to the Mistral common tokeniser."""
+        config = MagicMock()
+        config.model_type = "mistral"
+        config.architectures = ["MistralForCausalLM"]
+        assert not _is_mistral_tokeniser_model(
+            model_id="mistralai/Mistral-7B-Base-2412", hf_model_config=config
+        )
+
+    def test_model_type_mistral_returns_true(self) -> None:
+        """A non-mistralai model with model_type 'mistral' is identified as Mistral."""
+        config = MagicMock()
+        config.model_type = "mistral"
+        config.architectures = None
+        assert _is_mistral_tokeniser_model(
+            model_id="some-user/MyMistralModel", hf_model_config=config
+        )
+
+    def test_mistral_architecture_returns_true(self) -> None:
+        """A model with a Mistral architecture is identified as Mistral."""
+        config = MagicMock()
+        config.model_type = "llama"
+        config.architectures = ["MistralForCausalLM"]
+        assert _is_mistral_tokeniser_model(
+            model_id="some-user/MyModel", hf_model_config=config
+        )
+
+    def test_non_mistral_community_model_returns_false(self) -> None:
+        """A non-Mistral community model is not identified as Mistral."""
+        config = MagicMock()
+        config.model_type = "gpt2"
+        config.architectures = ["GPT2LMHeadModel"]
+        assert not _is_mistral_tokeniser_model(
+            model_id="gordicaleksa/SlovenianGPT", hf_model_config=config
+        )
