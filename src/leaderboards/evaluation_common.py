@@ -197,7 +197,11 @@ def _killed_by_signal_note(returncode: int | None) -> str | None:
     try:
         name = signal.Signals(signum).name
     except ValueError:
-        name = f"signal {signum}"
+        return (
+            f"Process was killed by signal {signum} - likely out of memory."
+            if signum == signal.SIGKILL
+            else f"Process was killed by signal {signum}."
+        )
     if signum == signal.SIGKILL:
         return f"Process was killed by signal {signum} ({name}) - likely out of memory."
     return f"Process was killed by signal {signum} ({name})."
