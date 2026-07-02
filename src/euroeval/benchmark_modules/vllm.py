@@ -1725,7 +1725,6 @@ def load_tokeniser(
                 model_id,
                 revision=revision,
                 use_fast=False if model_config.param == "slow-tokenizer" else True,
-                verbose=False,
                 trust_remote_code=trust_remote_code,
                 padding_side="left",
                 truncation_side="left",
@@ -1756,7 +1755,9 @@ def load_tokeniser(
             sleep(5)
             continue
         except (KeyError, ValueError) as e:
-            if "mistral" in str(e).lower():
+            if _is_mistral_tokeniser_model(
+                model_id=model_id, hf_model_config=hf_model_config
+            ):
                 tokeniser = MistralCommonTokenizer.from_pretrained(
                     model_id,
                     padding_side="left",
@@ -1789,6 +1790,44 @@ def load_tokeniser(
         tokeniser.pad_token, tokeniser.pad_token_id = get_pad_token(tokeniser=tokeniser)
 
     return tokeniser
+
+
+def _is_mistral_tokeniser_model(
+    model_id: str, hf_model_config: "PretrainedConfig"
+) -> bool:
+    """Determine whether a model should use the Mistral common tokeniser.
+
+    Used as a fallback when ``AutoTokenizer.from_pretrained`` fails, to decide whether
+    to retry with ``MistralCommonTokenizer``. The decision is based on the model's
+    identity rather than the error message, since the error raised by
+    ``MistralCommonBackend.from_pretrained`` mentions "MistralCommonBackend", which
+    would otherwise match non-Mistral models whose tokeniser loading happens to fail.
+
+    Args:
+        model_id:
+            The model identifier.
+        hf_model_config:
+            The Hugging Face model configuration.
+
+    Returns:
+        Whether the model should be loaded with the Mistral common tokeniser.
+    """
+    # Base models do not use the mistral-common tokeniser, so we never fall back
+    # to it for them regardless of their model type or architectures. This
+    # includes IDs containing "base" and versioned base models like
+    # mistralai/Mistral-7B-v0.1 which lack a chat template. Instruction-tuned
+    # models are exempt from this check.
+    model_name = model_id.rsplit("/", 1)[-1].lower()
+    if "instruct" not in model_name and (
+        "base" in model_name or re.search(r"-v\d+\.\d+$", model_name)
+    ):
+        return False
+    if model_id.startswith("mistralai/"):
+        return True
+    if getattr(hf_model_config, "model_type", None) == "mistral":
+        return True
+    architectures = getattr(hf_model_config, "architectures", None) or []
+    return any("Mistral" in architecture for architecture in architectures)
 
 
 def clear_vllm() -> None:
