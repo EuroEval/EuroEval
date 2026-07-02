@@ -107,3 +107,57 @@ class TestSummariseEvaluationError:
         )
         summary = summarise_evaluation_error(output=output, max_chars=200)
         assert len(summary) <= 200
+
+    def test_extracts_worker_prefixed_errors(self) -> None:
+        """Worker-prefixed vLLM ``ERROR`` lines are surfaced as the summary."""
+        output = (
+            "Loading model 'm'...\n"
+            "(Worker_TP0 pid=123) ERROR 03-14 12:34:56 -- "
+            "RuntimeError: CUDA error: out of memory\n"
+            '(Worker_TP0 pid=123)   File "/vllm/worker.py", line 100, in run\n'
+            "(Worker_TP0 pid=123)     torch.cuda.empty_cache()\n"
+            "Completed 1 benchmarks, and errored 1 benchmarks\n"
+        )
+        summary = summarise_evaluation_error(output=output)
+        assert "CUDA error: out of memory" in summary
+        assert "(Worker_TP0 pid=123)" in summary
+        assert "errored 1 benchmarks" in summary
+
+    def test_worker_errors_preferred_over_generic_workerproc(self) -> None:
+        """The worker block wins over a generic ``WorkerProc`` traceback."""
+        output = (
+            "Starting vLLM engine...\n"
+            "(Worker_TP0 pid=123) ERROR 03-14 12:34:56 -- "
+            "CUDA out of memory. Tried to allocate 2.00 GiB.\n"
+            '(Worker_TP0 pid=123)   File "/vllm/worker/worker.py", '
+            "line 321, in init_worker\n"
+            "(Worker_TP0 pid=123)     torch.cuda.empty_cache()\n"
+            "Traceback (most recent call last):\n"
+            '  File "/vllm/engine/llm.py", line 102, in LLM.__init__\n'
+            "    self._init_workers()\n"
+            '  File "/vllm/worker/worker.py", line 200, in WorkerProc.__init__\n'
+            "    raise RuntimeError('init failed')\n"
+            "Exception: WorkerProc initialization failed. "
+            "See stack trace for root cause.\n"
+            "Completed 1 benchmarks, and errored 1 benchmarks\n"
+        )
+        summary = summarise_evaluation_error(output=output)
+        assert "CUDA out of memory" in summary
+        assert "WorkerProc initialization failed" not in summary
+
+    def test_real_traceback_still_wins(self) -> None:
+        """A genuine non-generic traceback is not clobbered by worker lines."""
+        output = (
+            "Benchmarking model on CoNLL-en...\n"
+            "(Worker_TP0 pid=123) ERROR 03-14 12:34:56 -- "
+            "some worker noise here\n"
+            '(Worker_TP0 pid=123)   File "/vllm/x.py", line 1, in fn\n'
+            "Traceback (most recent call last):\n"
+            '  File "/x/euroeval.py", line 10, in <module>\n'
+            "    sys.exit(benchmark())\n"
+            "ValueError: the configured KV-cache size is too small for "
+            "sliding-window attention\n"
+        )
+        summary = summarise_evaluation_error(output=output)
+        assert "the configured KV-cache size is too small" in summary
+        assert "some worker noise here" not in summary
