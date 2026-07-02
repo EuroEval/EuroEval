@@ -1018,6 +1018,15 @@ class TestIsMistralTokeniserModel:
             model_id="some-user/MyModel", hf_model_config=config
         )
 
+    def test_mistralai_versioned_base_model_returns_false(self) -> None:
+        """A versioned base model like Mistral-7B-v0.1 is not identified as Mistral."""
+        config = MagicMock()
+        config.model_type = "mistral"
+        config.architectures = ["MistralForCausalLM"]
+        assert not _is_mistral_tokeniser_model(
+            model_id="mistralai/Mistral-7B-v0.1", hf_model_config=config
+        )
+
     def test_non_mistral_community_model_returns_false(self) -> None:
         """A non-Mistral community model is not identified as Mistral."""
         config = MagicMock()

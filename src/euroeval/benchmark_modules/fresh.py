@@ -310,7 +310,6 @@ def load_model_and_tokeniser(
             add_prefix_space=prefix,
             cache_dir=model_config.model_cache_dir,
             use_fast=False if model_config.param == "slow-tokenizer" else True,
-            verbose=False,
             trust_remote_code=benchmark_config.trust_remote_code,
         )
     except (JSONDecodeError, OSError) as e:

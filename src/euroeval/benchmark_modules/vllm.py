@@ -1812,9 +1812,15 @@ def _is_mistral_tokeniser_model(
     Returns:
         Whether the model should be loaded with the Mistral common tokeniser.
     """
-    # Base models do not use the mistral-common tokeniser, so we never fall back to it
-    # for them regardless of their model type or architectures.
-    if "base" in model_id.lower():
+    # Base models do not use the mistral-common tokeniser, so we never fall back
+    # to it for them regardless of their model type or architectures. This
+    # includes IDs containing "base" and versioned base models like
+    # mistralai/Mistral-7B-v0.1 which lack a chat template. Instruction-tuned
+    # models are exempt from this check.
+    model_name = model_id.rsplit("/", 1)[-1].lower()
+    if "instruct" not in model_name and (
+        "base" in model_name or re.search(r"-v\d+\.\d+$", model_name)
+    ):
         return False
     if model_id.startswith("mistralai/"):
         return True

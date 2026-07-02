@@ -29,13 +29,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Fixed race condition in cache cleanup where `rmtree` would fail with
   `FileNotFoundError` when checkpoint directories were removed concurrently during model
   benchmarking. Now uses `ignore_errors=True` to handle concurrent deletions gracefully.
-- The tokeniser loader no longer passes `verbose=False` to
+- The HF, vLLM and fresh model tokeniser loaders no longer pass `verbose=False` to
   `AutoTokenizer.from_pretrained`, since the `MistralCommonBackend` rejects this
-  argument, which raised an error for non-Mistral models such as
-  `gordicaleksa/SlovenianGPT`. The vLLM mistral tokeniser fallback is now gated on
-  model identity (model ID and/or model config) rather than the error string, which
-  previously matched the `MistralCommonBackend` message for unrelated models. Fixes
-  #1775.
+  argument. The vLLM mistral tokeniser fallback is now gated on model identity (model
+  ID and/or model config) rather than the error string, which previously matched the
+  `MistralCommonBackend` message for unrelated models.
 
 ## [v17.6.0] - 2026-06-30
 
