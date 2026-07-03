@@ -135,7 +135,13 @@ def get_record_hash(record: dict) -> str:
         ValueError:
             If no dataset is found in the record.
     """
-    model = get_model_name(record)
+    # Strip any anchor tag so a record stored with an already-anchored name
+    # (``<a ...>org/repo</a>``) and one stored with the plain ``org/repo`` name
+    # hash to the same value. This must mirror ``extract_model_ids_from_record``,
+    # which also strips the anchor when building the leaderboard row — otherwise
+    # the two records survive deduplication yet collapse onto a single row,
+    # showing multiple scores for one model+benchmark combination.
+    model = strip_anchor(get_model_name(record))
     dataset = get_dataset(record)
     if dataset is None:
         raise ValueError(f"No dataset found in record: {record}")
