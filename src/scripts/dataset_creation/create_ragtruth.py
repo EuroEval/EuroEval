@@ -272,6 +272,20 @@ class TruncatedTranslationError(TranslationError):
     pass
 
 
+class TagMismatchError(TranslationError):
+    """Raised when translated <HAL> tags don't align with the annotated spans.
+
+    The translation model sometimes invents extra ``<HAL>...</HAL>`` pairs or
+    drops annotated ones. When the number of translated tag pairs differs from
+    the number of annotated spans (or the opening/closing tags are unbalanced),
+    the span alignment is unreliable, so the sample is discarded rather than
+    saved with fabricated or missing hallucination spans — either of which would
+    corrupt the benchmark's gold labels.
+    """
+
+    pass
+
+
 class RetryableTranslationError(Exception):
     """Exception raised for transient translation/API errors that should be retried."""
 
@@ -810,6 +824,16 @@ async def translate_sample(
         with open(log_file, "a") as log:
             log.write(f"Discarded sample {sample_index} (truncated): {e!s}\n")
         return None
+    except TagMismatchError as e:
+        # Discard the sample: the translated <HAL> tags don't line up with the
+        # annotated spans, so keeping it would inject fabricated or missing gold
+        # hallucination spans. Cached like the truncation case above, so we never
+        # re-translate it on resume.
+        TOKEN_USAGE["discarded"] += 1
+        logger.warning(f"Discarding sample {sample_index} (tag mismatch): {e!s}")
+        with open(log_file, "a") as log:
+            log.write(f"Discarded sample {sample_index} (tag mismatch): {e!s}\n")
+        return None
     except Exception as e:
         logger.error(f"Error translating sample {sample_index}: {e!s}")
         with open(log_file, "a") as log:
@@ -950,11 +974,16 @@ def find_hallucination_tags(
     Returns:
         Tuple of (list of (start, end, label) tuples for text inside tags,
         text with HAL tags preserved).
+
+    Raises:
+        TagMismatchError:
+            If the number of translated tag pairs doesn't match the number of
+            annotated spans, or the opening/closing tags are unbalanced. In
+            either case the span alignment is unreliable, so the caller discards
+            the sample rather than saving fabricated or missing spans.
     """
     if not labels:
         return [], text
-
-    hal_spans = []
 
     # Repair any malformed tags the model produced (nested/duplicated/unbalanced)
     # so the spans below are well-formed, non-nested and balanced.
@@ -963,29 +992,33 @@ def find_hallucination_tags(
     open_positions = [m.end() for m in re.finditer(r"<HAL>", text)]
     close_positions = [m.start() for m in re.finditer(r"</HAL>", text)]
 
-    for i, (open_pos, close_pos) in enumerate(zip(open_positions, close_positions)):
-        label_text = "Unknown"
-        if i < len(labels):
-            label_text = labels[i].get("label", "Unknown")
-        else:
-            logger.warning(
-                f"IndexError: No label for hallucinated text at sample "
-                f"({sample_index}), span {i}"
-            )
-
-        # Span points to text INSIDE the tags (after <HAL>, before </HAL>)
-        hal_spans.append((open_pos, close_pos, label_text))
-
-    if len(hal_spans) < len(labels):
-        logger.warning(
-            f"Warning: Not all hallucination spans were found in sample "
-            f"{sample_index}. Found {len(hal_spans)}, expected {len(labels)}"
-        )
+    # The model must reproduce exactly one balanced tag pair per annotated span.
+    # If it invented extra pairs, dropped some, or left tags unbalanced, the
+    # pairing below would misalign labels or fabricate/lose spans, so we bail out
+    # and let the caller discard the sample instead of corrupting the gold labels.
     if len(open_positions) != len(close_positions):
-        logger.warning(
-            f"Mismatched HAL tags in sample {sample_index}: "
-            f"{len(open_positions)} opening, {len(close_positions)} closing"
+        raise TagMismatchError(
+            f"Unbalanced HAL tags in sample {sample_index}: "
+            f"{len(open_positions)} opening, {len(close_positions)} closing."
         )
+    if len(open_positions) != len(labels):
+        raise TagMismatchError(
+            f"Tag/label count mismatch in sample {sample_index}: found "
+            f"{len(open_positions)} tag pairs, expected {len(labels)} spans."
+        )
+
+    # Match tag pairs to labels in document order. The tags above are in
+    # left-to-right document order, so the labels must be too — but the caller
+    # passes them sorted by end (descending, for safe tag insertion), so re-sort
+    # ascending by (start, end) here to keep each span's label type aligned.
+    ordered_labels = sorted(labels, key=lambda x: (x["start"], x["end"]))
+
+    hal_spans = []
+    for (open_pos, close_pos), label in zip(
+        zip(open_positions, close_positions), ordered_labels
+    ):
+        # Span points to text INSIDE the tags (after <HAL>, before </HAL>).
+        hal_spans.append((open_pos, close_pos, label.get("label", "Unknown")))
 
     # Return text with tags preserved
     return hal_spans, text
