@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 
 from euroeval.string_utils import split_model_id
 
-from .records import load_records_from_jsonl_files
+from .jsonl_io import load_records_from_jsonl_files
 
 logger = logging.getLogger(__name__)
 
