@@ -11,6 +11,7 @@ from euroeval.logging_utils import log_once
 
 from .link_generation import generate_model_url
 from .record_fields import (
+    deduplicate_records,
     get_num_failed_instances,
     get_raw_results,
     get_task,
@@ -43,6 +44,11 @@ def group_results_by_model(
         The results grouped by model ID. The dict structure is
         model_id -> dataset -> list of (raw_scores, total_score, std_err).
     """
+    # Deduplicate up front so each leaderboard row shows one score per metric.
+    # `load_raw_results` is cached and populated before `process_results`
+    # rewrites the per-model files, so the records reaching here can still
+    # contain the pre-dedup duplicates; collapse them by hash regardless.
+    results = deduplicate_records(records=results)
     model_scores: dict[str, dict[str, list[tuple[list[float], float, float]]]] = (
         defaultdict(lambda: defaultdict(list))
     )

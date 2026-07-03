@@ -333,6 +333,11 @@ def generate_dataframe(
     Returns:
         A list of pairs (df, df_simplified), where df is the full leaderboard DataFrame
         and df_simplified is the simplified version.
+
+    Raises:
+        ValueError:
+            If a model has more than two scores for a single dataset, which
+            indicates that duplicate records survived deduplication.
     """
     if model_results == {}:
         logger.error("No model results found, skipping leaderboard generation.")
@@ -462,6 +467,17 @@ def generate_dataframe(
             for dataset in category_to_datasets[category]:
                 if dataset in results:
                     scores = results[dataset]
+                    # A dataset cell holds at most the primary and secondary
+                    # metric (rendered "primary / secondary"), so anything beyond
+                    # two entries means duplicate records survived deduplication —
+                    # fail loudly rather than emit a garbled multi-slash cell.
+                    if len(scores) > 2:
+                        raise ValueError(
+                            f"Model {model_id!r} has {len(scores)} scores for "
+                            f"dataset {dataset!r} (expected at most 2, one per "
+                            f"metric): {[score for _, score, _ in scores]}. This "
+                            "indicates duplicate records survived deduplication."
+                        )
                 else:
                     scores = [(list(), float("nan"), 0)]
                 main_score = scores[0][1]

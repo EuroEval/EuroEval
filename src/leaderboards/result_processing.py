@@ -20,8 +20,8 @@ from .cache import Cache
 from .constants import HF_RESULTS_BUCKET, RESULTS_DIR
 from .eee_validation import dump_jsonl_records
 from .model_metadata import add_missing_entries, fix_metadata, record_is_valid
-from .record_fields import get_version
-from .records import get_model_name, get_record_hash, plain_model_id
+from .record_fields import deduplicate_records
+from .records import get_model_name, plain_model_id
 from .result_loading import load_raw_results
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ def process_results(
     records = load_raw_results()
     num_raw_records = len(records)
 
-    records = _deduplicate_records(records=records)
+    records = deduplicate_records(records=records)
     num_duplicates = num_raw_records - len(records)
     if num_duplicates:
         logger.info(f"Removed {num_duplicates:,} duplicates.")
@@ -102,39 +102,6 @@ def process_results(
     ]
 
     _upload_per_model_files(processed_records=processed_records)
-
-
-def _deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
-    """Deduplicate records by hash, keeping the newest EuroEval version per hash.
-
-    Args:
-        records:
-            The raw records.
-
-    Returns:
-        The deduplicated records.
-    """
-    all_hash_values = [get_record_hash(record=dct) for dct in records]
-    unique_hash_values = sorted(set(all_hash_values))
-    new_records = []
-    for unique_hash_value in tqdm(unique_hash_values, desc="Processing records"):
-        matches = [
-            record
-            for record, hash_value in zip(records, all_hash_values)
-            if hash_value == unique_hash_value
-        ]
-        versions = [
-            list(map(int, (get_version(record=match) or "0.0.0").split(".")))
-            for match in matches
-        ]
-        newest_version = max(versions)
-        matches_with_newest_version = [
-            match
-            for match, version in zip(matches, versions)
-            if version == newest_version
-        ]
-        new_records.append(matches_with_newest_version[-1])
-    return new_records
 
 
 def _upload_per_model_files(processed_records: list[dict[str, t.Any]]) -> None:

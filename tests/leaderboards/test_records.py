@@ -3,21 +3,41 @@
 from leaderboards.records import extract_model_ids_from_record, get_record_hash
 
 
-def _record(name: str, dataset: str = "angry-tweets") -> dict[str, object]:
-    """Build a minimal EEE-style record with the given model name and dataset.
+def _record(
+    name: str,
+    dataset: str = "angry-tweets",
+    *,
+    generative: bool | None = None,
+    few_shot: bool = True,
+    validation_split: bool = False,
+) -> dict[str, object]:
+    """Build a minimal EEE-style record.
 
     Args:
         name:
             The model name to store in ``model_info.name``.
         dataset:
             The dataset name to store in the record.
+        generative:
+            Value for the ``generative`` flag, or None to omit it entirely.
+        few_shot:
+            Value for the ``few_shot`` flag.
+        validation_split:
+            Value for the ``validation_split`` flag.
 
     Returns:
         A minimal EEE-style record.
     """
+    additional: dict[str, object] = {
+        "dataset": dataset,
+        "few_shot": few_shot,
+        "validation_split": validation_split,
+    }
+    if generative is not None:
+        additional["generative"] = generative
     return {
         "model_info": {"name": name},
-        "eval_library": {"additional_details": {"dataset": dataset}},
+        "eval_library": {"additional_details": additional},
     }
 
 
@@ -45,3 +65,38 @@ def test_distinct_datasets_hash_differently() -> None:
     assert get_record_hash(
         record=_record(name="org/model", dataset="angry-tweets")
     ) != get_record_hash(record=_record(name="org/model", dataset="dansk"))
+
+
+def test_generative_flag_does_not_split_hash() -> None:
+    """A differing (or missing) ``generative`` flag must not defeat dedup.
+
+    Two records for the same model+dataset+split that differ only in the
+    ``generative`` flag render on the same leaderboard row, so they must hash
+    identically — otherwise both survive deduplication and the row shows the
+    metric twice (issue #1970, Apertus v1.1).
+    """
+    with_flag = _record(name="org/model", generative=True)
+    without_flag = _record(name="org/model", generative=None)
+
+    assert get_record_hash(record=with_flag) == get_record_hash(record=without_flag)
+    assert extract_model_ids_from_record(record=with_flag) == (
+        extract_model_ids_from_record(record=without_flag)
+    )
+
+
+def test_few_shot_and_validation_split_change_hash() -> None:
+    """Zero-shot and validation-split variants must remain distinct.
+
+    These map to distinct leaderboard rows (``(zero-shot)`` / ``(val)`` notes),
+    so their hashes must differ to avoid collapsing genuinely separate rows.
+    """
+    base = _record(name="org/model", few_shot=True, validation_split=False)
+    zero_shot = _record(name="org/model", few_shot=False, validation_split=False)
+    val = _record(name="org/model", few_shot=True, validation_split=True)
+
+    hashes = {
+        get_record_hash(record=base),
+        get_record_hash(record=zero_shot),
+        get_record_hash(record=val),
+    }
+    assert len(hashes) == 3
