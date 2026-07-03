@@ -45,6 +45,7 @@ from huggingface_hub.errors import HfHubHTTPError
 
 from euroeval import __version__
 from leaderboards.constants import (
+    DEFAULT_GPU_MEMORY_UTILIZATION,
     FAILED_LABEL,
     GATED_LABEL,
     GATED_OUTPUT_RE,
@@ -489,12 +490,27 @@ def process_queue_once() -> None:
     logger.info(f"Found {len(candidates)} processable issue(s).")
 
     gpu_bytes = gpu_total_memory_bytes()
+    # vLLM can only allocate `gpu_memory_utilization * total GPU memory`, so the
+    # fit pre-check must budget against that fraction rather than the whole card;
+    # otherwise a model whose weights fit but whose KV cache does not still slips
+    # through and OOMs at runtime.
+    usable_bytes: int | None = None
     if gpu_bytes is None:
         logger.info(
             "Could not determine local memory budget; skipping the fit pre-check."
         )
     else:
-        logger.info(f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB.")
+        utilization = (
+            GPU_MEMORY_UTILIZATION
+            if GPU_MEMORY_UTILIZATION is not None
+            else DEFAULT_GPU_MEMORY_UTILIZATION
+        )
+        usable_bytes = int(gpu_bytes * utilization)
+        logger.info(
+            f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB total, "
+            f"{usable_bytes / (1024**3):.1f} GiB usable at "
+            f"gpu_memory_utilization={utilization}."
+        )
 
     for (
         slow_priority,
@@ -513,15 +529,16 @@ def process_queue_once() -> None:
             f"#{issue['number']}: queueing {model_id!r} ({param_count} params, "
             f"{model_type}, {status}{slow_tag})."
         )
-        if gpu_bytes is not None:
+        if usable_bytes is not None:
             needed = estimated_model_bytes(model_id=model_id)
-            if needed is not None and int(needed * GPU_FIT_OVERHEAD) > gpu_bytes:
+            if needed is not None and int(needed * GPU_FIT_OVERHEAD) > usable_bytes:
                 logger.info(
                     f"#{issue['number']}: skipping -- model {model_id!r} needs "
                     f"~{needed / (1024**3):.1f} GiB of weights "
-                    f"(x {GPU_FIT_OVERHEAD} overhead), which exceeds the local "
-                    f"GPU memory of {gpu_bytes / (1024**3):.1f} GiB. Leaving the "
-                    "issue unassigned so a larger machine can pick it up."
+                    f"(x {GPU_FIT_OVERHEAD} overhead), which exceeds the usable "
+                    f"vLLM budget of {usable_bytes / (1024**3):.1f} GiB. Leaving "
+                    "the issue unassigned so a larger or multi-GPU machine can "
+                    "pick it up."
                 )
                 continue
         try:
