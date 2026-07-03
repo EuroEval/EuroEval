@@ -431,6 +431,15 @@ DTYPE_BYTES: dict[str, int] = {
 # Increased from 1.2 after GLM-4.7-Flash (58 GiB weights) crashed on 64 GiB VM.
 GPU_FIT_OVERHEAD = 1.35
 
+# Default vLLM GPU memory utilization assumed by the fit pre-check when the
+# queue does not override it. Mirrors euroeval's own default (see
+# euroeval.benchmarker, gpu_memory_utilization=0.8). vLLM can only allocate
+# `gpu_memory_utilization * total GPU memory` at runtime, so the pre-check must
+# budget against that fraction -- otherwise a model whose weights fit the card
+# but not the utilization-capped budget passes the gate and then OOMs on the KV
+# cache. Kept in sync with euroeval's default manually.
+DEFAULT_GPU_MEMORY_UTILIZATION = 0.8
+
 # ---------------------------------------------------------------------------
 # Leaderboard generation
 # ---------------------------------------------------------------------------
