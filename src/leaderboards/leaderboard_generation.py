@@ -112,12 +112,26 @@ def generate_leaderboard(
 
         # Check if anything got updated
         new_records: list[str] = []
-        # Exclude rank column (ordinal position) and metadata columns (version,
-        # failures, scored) which change even when model performance doesn't.
+        # Exclude columns that change even when a model's own performance does
+        # not, so that adding one new model doesn't flag nearly every existing
+        # model as "updated":
+        #   * the ordinal "Rank" column (a position relative to the pool);
+        #   * the "Rank score" column and the per-language rank columns
+        #     (bootstrap scores computed over the whole pool, so they shift for
+        #     everyone when the set of models changes);
+        #   * the per-dataset "_version"/"_failures"/"_scored" companion columns.
+        # The remaining columns are the per-dataset scores, which only change
+        # when the model itself is re-evaluated — and additions/removals are
+        # still caught by the membership check below, so the CSV is always
+        # rewritten when it genuinely needs to be.
+        rank_score_columns = {"Rank score"}
+        if len(configs) > 1:
+            rank_score_columns |= {language.title() for language in configs}
         comparison_columns = [
             col
             for col in df.columns
             if col.lower() != "rank"
+            and col not in rank_score_columns
             and not col.endswith(("_version", "_failures", "_scored"))
         ]
         if leaderboard_path.exists():
