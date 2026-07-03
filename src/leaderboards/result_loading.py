@@ -10,7 +10,7 @@ from .backup import backup_results
 from .bucket_sync import sync_bucket
 from .constants import NEW_RESULTS_PATH, RESULTS_DIR
 from .eee_validation import is_eee_record
-from .records import load_records_from_jsonl_files
+from .jsonl_io import load_records_from_jsonl_files
 
 logger = logging.getLogger(__name__)
 
