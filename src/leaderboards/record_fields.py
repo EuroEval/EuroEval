@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import re
+import typing as t
 
-from .records import get_bool_field
+from .records import get_bool_field, get_record_hash
 
 
 def get_task(record: dict) -> str | None:
@@ -125,6 +126,33 @@ def get_version(record: dict) -> str | None:
     if version:
         return re.sub(r"\.dev\d+", "", version)
     return None
+
+
+def deduplicate_records(records: list[dict[str, t.Any]]) -> list[dict[str, t.Any]]:
+    """Deduplicate records by hash, keeping the newest EuroEval version per hash.
+
+    Records sharing a :func:`~leaderboards.records.get_record_hash` value render
+    on the same leaderboard row, so only one should survive. Among records with
+    an equal (newest) version, the last one in input order wins. Output is
+    ordered by hash for stable, diff-friendly downstream files.
+
+    Args:
+        records:
+            The records to deduplicate. Every record must carry a dataset (so
+            that hashing succeeds).
+
+    Returns:
+        The deduplicated records, ordered by hash. Note that
+        ``get_record_hash`` raises ``ValueError`` if any record has no dataset.
+    """
+    best: dict[str, tuple[list[int], dict[str, t.Any]]] = {}
+    for record in records:
+        hash_value = get_record_hash(record=record)
+        version = list(map(int, (get_version(record=record) or "0.0.0").split(".")))
+        existing = best.get(hash_value)
+        if existing is None or version >= existing[0]:
+            best[hash_value] = (version, record)
+    return [record for _, (_, record) in sorted(best.items())]
 
 
 def get_few_shot(record: dict) -> bool:

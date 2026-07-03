@@ -135,18 +135,26 @@ def get_record_hash(record: dict) -> str:
         ValueError:
             If no dataset is found in the record.
     """
-    model = get_model_name(record)
+    # The hash must identify records that render on the same leaderboard row, so
+    # that duplicates collapse during deduplication. A row is identified by
+    # ``extract_model_ids_from_record`` (the stripped model name plus its
+    # zero-shot/val note) and the dataset — nothing else. We therefore hash
+    # exactly those components:
+    #
+    # * strip the anchor tag, so an already-anchored name (``<a ...>org/repo</a>``)
+    #   and the plain ``org/repo`` collapse together;
+    # * include ``validation_split`` and ``few_shot``, which the row note encodes;
+    # * do NOT include ``generative`` — the row label ignores it, so hashing it
+    #   would let two records (e.g. one tagged ``generative: true`` and one
+    #   missing the flag) survive deduplication yet land on the same row, showing
+    #   multiple scores for a single model+benchmark combination.
+    model = strip_anchor(get_model_name(record))
     dataset = get_dataset(record)
     if dataset is None:
         raise ValueError(f"No dataset found in record: {record}")
     validation_split = get_bool_field(record, "validation_split", False)
     few_shot = get_bool_field(record, "few_shot", True)
-    additional = record.get("eval_library", {}).get("additional_details", {})
-    generative_val = additional.get("generative", False)
-    if isinstance(generative_val, str):
-        generative_val = generative_val.lower() == "true"
-    generative = int(generative_val)
-    return f"{model}{dataset}{int(validation_split)}{generative * (int(few_shot) + 1)}"
+    return f"{model}{dataset}{int(validation_split)}{int(few_shot)}"
 
 
 def get_bool_field(record: dict, field: str, default: bool) -> bool:
