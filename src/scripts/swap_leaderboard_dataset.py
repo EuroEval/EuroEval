@@ -13,7 +13,7 @@ from the current official one, three things have to happen:
    incoming one promoted to official, in both the ``euroeval`` dataset configs
    and the frontend dataset documentation, keeping the official-first grouping
    each file uses.
-3. **Open a PR** (optional) with the config/doc changes.
+3. **Open a PR** with the config/doc changes.
 
 Everything happens on a dedicated branch -- ``--branch`` is required and may
 not be the default branch.
@@ -21,7 +21,7 @@ not be the default branch.
 Invoke as::
 
     uv run src/scripts/swap_leaderboard_dataset.py \\
-        --old-dataset scala-da --new-dataset dala --branch swap-scala-dala [--pr]
+        --old-dataset scala-da --new-dataset dala --branch swap-scala-dala
 
 Required env vars (open-weight models)
 --------------------------------------
@@ -78,7 +78,6 @@ DATASET_DOC_DIR = REPO_ROOT / "src" / "frontend" / "md" / "datasets"
 UNOFFICIAL_MARKER = "# Unofficial datasets ###"
 UNOFFICIAL_LINE_RE = re.compile(r"^\s*unofficial\s*=\s*True\s*,\s*$")
 DOC_UNOFFICIAL_PREFIX = "Unofficial: "
-DEFAULT_REVIEWER = "saattrupdan"
 
 
 @click.command()
@@ -98,13 +97,6 @@ DEFAULT_REVIEWER = "saattrupdan"
     "--branch",
     required=True,
     help="Branch to do the work on. May not be the default branch (e.g. main).",
-)
-@click.option(
-    "--language",
-    "languages",
-    multiple=True,
-    help="Restrict re-evaluation to these language codes. When omitted, defaults "
-    "to the languages both datasets cover.",
 )
 @click.option(
     "--include-api",
@@ -137,8 +129,15 @@ DEFAULT_REVIEWER = "saattrupdan"
 @click.option(
     "--pr",
     is_flag=True,
-    default=False,
-    help="After swapping, commit and push the branch and open a pull request.",
+    default=True,
+    help="After swapping, commit and push the branch and open a pull request. "
+    "Default is True; pass --no-pr to skip.",
+)
+@click.option(
+    "--reviewer",
+    "reviewer",
+    default="saattrupdan",
+    help="GitHub username to request as reviewer. Default is saattrupdan.",
 )
 @click.option(
     "--force",
@@ -158,12 +157,12 @@ def main(
     old_dataset: str,
     new_dataset: str,
     branch: str,
-    languages: tuple[str, ...],
     include_api: bool,
     api_providers: str | None,
     gpu_memory_utilization: float | None,
     skip_eval: bool,
     pr: bool,
+    reviewer: str,
     force: bool,
     dry_run: bool,
 ) -> None:
@@ -176,9 +175,6 @@ def main(
             The unofficial candidate being promoted.
         branch:
             The branch to do the work on; may not be the default branch.
-        languages:
-            Language codes to restrict evaluation to; empty means the codes
-            both datasets cover.
         include_api:
             Whether to evaluate API models.
         api_providers:
@@ -188,7 +184,10 @@ def main(
         skip_eval:
             When True, only perform the config/doc swap.
         pr:
-            When True, commit, push, and open a pull request after swapping.
+            When True (default), commit, push, and open a pull request after
+            swapping.
+        reviewer:
+            GitHub username to request as reviewer.
         force:
             When True, re-run pairs that already have a new-dataset result.
         dry_run:
@@ -207,9 +206,7 @@ def main(
     )
     validate_branch(branch=branch)
 
-    target_codes = resolve_languages(
-        old_config=old_config, new_config=new_config, requested=languages
-    )
+    target_codes = resolve_languages(old_config=old_config, new_config=new_config)
     logger.info(
         f"Swap {old_dataset!r} -> {new_dataset!r} (task {old_config.task.name!r}) "
         f"on language(s): {', '.join(sorted(target_codes))}."
@@ -247,6 +244,7 @@ def main(
             new_dataset=new_dataset,
             branch=branch,
             changed_paths=changed,
+            reviewer=reviewer,
         )
     else:
         logger.info(
@@ -324,9 +322,7 @@ def validate_branch(branch: str) -> None:
         )
 
 
-def resolve_languages(
-    old_config: DatasetConfig, new_config: DatasetConfig, requested: tuple[str, ...]
-) -> set[str]:
+def resolve_languages(old_config: DatasetConfig, new_config: DatasetConfig) -> set[str]:
     """Resolve the language codes whose leaderboards are affected.
 
     Args:
@@ -334,8 +330,6 @@ def resolve_languages(
             The outgoing dataset config.
         new_config:
             The incoming dataset config.
-        requested:
-            Language codes passed via ``--language``; empty means "both".
 
     Returns:
         The language codes to operate on.
@@ -346,14 +340,9 @@ def resolve_languages(
     """
     old_codes = {language.code for language in old_config.languages}
     new_codes = {language.code for language in new_config.languages}
-    if requested:
-        target = set(requested)
-    else:
-        target = old_codes & new_codes
+    target = old_codes & new_codes
     if not target:
-        raise click.ClickException(
-            "The two datasets share no languages; pass --language explicitly."
-        )
+        raise click.ClickException("The two datasets share no languages.")
     return target
 
 
@@ -1317,12 +1306,16 @@ def checkout_branch(branch: str) -> None:
 
 
 def open_pull_request(
-    old_dataset: str, new_dataset: str, branch: str, changed_paths: list[Path]
+    old_dataset: str,
+    new_dataset: str,
+    branch: str,
+    changed_paths: list[Path],
+    reviewer: str = "saattrupdan",
 ) -> None:
     """Commit the swap, push the branch, and open a pull request.
 
-    Assigns the logged-in GitHub user, requests ``saattrupdan`` as a reviewer,
-    and best-effort requests a Copilot review.
+    Assigns the logged-in GitHub user, requests a reviewer, and best-effort
+    requests a Copilot review. CODEOWNERS are assigned automatically by GitHub.
 
     Args:
         old_dataset:
@@ -1333,6 +1326,8 @@ def open_pull_request(
             The branch to push.
         changed_paths:
             The files that were changed (staged explicitly).
+        reviewer:
+            GitHub username to request as reviewer.
     """
     for path in changed_paths:
         _git("add", str(path))
@@ -1351,7 +1346,7 @@ def open_pull_request(
         "--assignee",
         "@me",
         "--reviewer",
-        DEFAULT_REVIEWER,
+        reviewer,
     )
     _request_copilot_review()
     logger.info("Opened pull request.")
