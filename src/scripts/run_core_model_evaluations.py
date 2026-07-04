@@ -129,7 +129,7 @@ logger = logging.getLogger("run_core_model_evaluations")
 @click.option(
     "--gpu-memory-utilization",
     "gpu_memory_utilization",
-    type=float,
+    type=click.FloatRange(min=0.0, max=1.0, min_open=True),
     default=None,
     help="vLLM GPU memory utilization fraction (0.0-1.0) the fit pre-check should "
     f"budget against. When omitted, defaults to {DEFAULT_GPU_MEMORY_UTILIZATION}.",
@@ -494,8 +494,8 @@ def load_existing_observations() -> ObservedCorpus:
                 observations.add(key)
                 existing = eval_configs.get(key)
                 if existing is None or (
-                    config.validation_split is True
-                    and existing.validation_split is not True
+                    _is_validation_split(config.validation_split)
+                    and not _is_validation_split(existing.validation_split)
                 ):
                     eval_configs[key] = config
     logger.info(
@@ -534,6 +534,24 @@ def _as_bool(value: object) -> bool | None:
         if lowered == "false":
             return False
     return None
+
+
+def _is_validation_split(validation_split: bool | None) -> bool:
+    """Return whether a recorded ``validation_split`` value means the val split.
+
+    Follows the repo-wide convention (see
+    :func:`leaderboards.evaluation_common.missing_official_dataset_language_pairs`):
+    ``True`` and ``None`` (the backwards-compatible sentinel) both denote a
+    validation-split result; only an explicit ``False`` denotes the test split.
+
+    Args:
+        validation_split:
+            The recorded value, or None when the record didn't say.
+
+    Returns:
+        True when the value denotes the validation split.
+    """
+    return validation_split is not False
 
 
 def _record_is_api(model_info: dict[str, object]) -> bool:
@@ -806,8 +824,9 @@ def _mirror_eval_config(config: _ObsConfig | None, is_api: bool) -> tuple[bool, 
     """
     if config is None:
         return (not is_api), is_api
-    # Validation split only when the record explicitly says so; otherwise test.
-    evaluate_test_split = config.validation_split is not True
+    # Test split only when the record explicitly says so; True/None mean val,
+    # following the repo-wide backwards-compatibility convention.
+    evaluate_test_split = not _is_validation_split(config.validation_split)
     # Zero-shot only for generative models whose record used zero-shot.
     zero_shot = config.generative and config.few_shot is False
     return evaluate_test_split, zero_shot
@@ -867,10 +886,13 @@ def ranked_model_language_pairs(
         )
         return set()
 
-    # Index observed datasets by (model, language) for O(1) subset checks.
-    datasets_by_model_language: dict[tuple[str, str], set[str]] = defaultdict(set)
+    # Index observed datasets by language, then model, so each leaderboard
+    # language only scans the models actually evaluated in it.
+    datasets_by_language: dict[str, dict[str, set[str]]] = defaultdict(
+        lambda: defaultdict(set)
+    )
     for model_id, dataset, code in observations:
-        datasets_by_model_language[(model_id, code)].add(dataset)
+        datasets_by_language[code][model_id].add(dataset)
 
     ranked: set[tuple[str, str]] = set()
     for code in sorted(language_codes):
@@ -891,6 +913,7 @@ def ranked_model_language_pairs(
             logger.warning(f"No leaderboard datasets for {name!r}; skipping.")
             continue
 
+        models_in_language = datasets_by_language.get(code, {})
         # A model is ranked in this language if it is eligible in any affected
         # category, i.e. holds every required dataset of that category.
         for category in affected_categories:
@@ -905,8 +928,8 @@ def ranked_model_language_pairs(
             required.add(old_dataset)
             if not required:
                 continue
-            for (model_id, obs_code), datasets in datasets_by_model_language.items():
-                if obs_code == code and required <= datasets:
+            for model_id, datasets in models_in_language.items():
+                if required <= datasets:
                     ranked.add((model_id, code))
     return ranked
 
