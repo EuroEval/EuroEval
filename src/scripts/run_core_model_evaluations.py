@@ -1,15 +1,9 @@
 """Run EuroEval for the core model list.
 
-Two related workflows live in this script:
-
-1. **Dataset-replacement mode** (``--dataset <id>`` [repeatable]) -- re-run
-   every core model whose language coverage overlaps a dataset's languages
-   on that dataset.
-2. **Backfill mode** (default) -- for every core model, run every official
-   ``(dataset, language)`` pair that the model has no result line for yet.
-
-Both modes share model selection, size-check, results lookup, and the API-
-provider prompt.
+For every core model, run every official ``(dataset, language)`` pair that
+the model has no result line for yet -- i.e. backfill the core-model results
+on the full test split. Model selection, size-check, results lookup, and the
+API-provider prompt are all handled here.
 
 Invoke as::
 
@@ -41,12 +35,10 @@ import os
 import re
 import sys
 from dataclasses import dataclass
-from pathlib import Path
 
 import click
 from update_core_models import refresh_core_models
 
-from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
 from leaderboards.constants import NEW_RESULTS_PATH, RESULTS_DIR
 from leaderboards.core_models import CoreModel
@@ -64,14 +56,6 @@ logger = logging.getLogger("run_core_model_evaluations")
 
 
 @click.command()
-@click.option(
-    "--dataset",
-    "datasets",
-    multiple=True,
-    help="Dataset id to run in dataset-replacement mode. Repeatable. When omitted, "
-    "the script runs in backfill mode against every official (dataset, language) "
-    "pair.",
-)
 @click.option(
     "--include-api",
     is_flag=True,
@@ -99,19 +83,11 @@ logger = logging.getLogger("run_core_model_evaluations")
     "result line.",
 )
 def main(
-    datasets: tuple[str, ...],
-    include_api: bool,
-    api_providers: str | None,
-    dry_run: bool,
-    force: bool,
+    include_api: bool, api_providers: str | None, dry_run: bool, force: bool
 ) -> None:
     """Run EuroEval for the core model list.
 
     Args:
-        datasets:
-            Dataset ids passed via ``--dataset``. When non-empty, the
-            script runs in dataset-replacement mode against exactly those
-            datasets; otherwise it runs in backfill mode.
         include_api:
             Whether to consider ``api: true`` entries at all.
         api_providers:
@@ -132,11 +108,7 @@ def main(
             "--api-providers requires --include-api; pass both or neither."
         )
 
-    target_datasets = list(datasets) or None
-    mode = "dataset-replacement" if target_datasets else "backfill"
-    logger.info(f"Mode: {mode}.")
-    if target_datasets:
-        logger.info(f"Target dataset(s): {', '.join(target_datasets)}.")
+    logger.info("Mode: backfill.")
 
     models = refresh_core_models()
     logger.info(f"Refreshed core-model list: {len(models)} entries.")
@@ -158,7 +130,6 @@ def main(
 
     jobs = build_jobs(
         models=models,
-        target_datasets=target_datasets,
         selected_providers=selected_providers,
         observations=observations,
         force=force,
@@ -333,7 +304,6 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
 
 def build_jobs(
     models: list[CoreModel],
-    target_datasets: list[str] | None,
     selected_providers: set[str],
     observations: set[tuple[str, str, str]],
     force: bool,
@@ -343,8 +313,6 @@ def build_jobs(
     Args:
         models:
             Parsed core-model entries.
-        target_datasets:
-            Dataset ids for dataset-replacement mode, or None for backfill.
         selected_providers:
             Provider names that survived the env-var check; API models
             belonging to other providers are silently skipped.
@@ -364,12 +332,6 @@ def build_jobs(
     for dataset, language in official_pairs:
         official_by_dataset.setdefault(dataset, set()).add(language)
 
-    target_dataset_codes: dict[str, set[str]] | None = None
-    if target_datasets:
-        target_dataset_codes = {
-            d: dataset_language_codes(dataset_id=d) for d in target_datasets
-        }
-
     for model in models:
         if model.api:
             provider = provider_for_model_id(model_id=model.model_id)
@@ -380,29 +342,6 @@ def build_jobs(
             logger.info(
                 f"{model.model_id}: skipping -- no resolvable language coverage."
             )
-            continue
-
-        if target_dataset_codes is not None:
-            for dataset, dataset_langs in target_dataset_codes.items():
-                langs = sorted(model_languages & dataset_langs)
-                if not langs:
-                    continue
-                if not force:
-                    langs = [
-                        lang
-                        for lang in langs
-                        if (model.model_id, dataset, lang) not in observations
-                    ]
-                if not langs:
-                    continue
-                jobs.append(
-                    Job(
-                        model_id=model.model_id,
-                        dataset=dataset,
-                        languages=tuple(langs),
-                        is_api=model.api,
-                    )
-                )
             continue
 
         for dataset, dataset_langs in official_by_dataset.items():
@@ -527,32 +466,6 @@ def codes_for_model(model: CoreModel) -> set[str]:
             continue
         codes.add(code)
     return codes
-
-
-def dataset_language_codes(dataset_id: str) -> set[str]:
-    """Return ISO codes for a dataset, or an empty set if the dataset is unknown.
-
-    Args:
-        dataset_id:
-            The dataset id to look up.
-
-    Returns:
-        The ISO codes the dataset covers, or an empty set when the id is
-        not a known dataset (logged at ERROR level).
-    """
-    configs = get_all_dataset_configs(
-        custom_datasets_file=Path(""),
-        dataset_ids=[dataset_id],
-        api_key=None,
-        cache_dir=Path(".cache"),
-        trust_remote_code=False,
-        run_with_cli=False,
-    )
-    config = configs.get(dataset_id)
-    if config is None:
-        logger.error(f"Unknown dataset id {dataset_id!r}; skipping.")
-        return set()
-    return {language.code for language in config.languages}
 
 
 def provider_for_model_id(model_id: str) -> _Provider | None:
