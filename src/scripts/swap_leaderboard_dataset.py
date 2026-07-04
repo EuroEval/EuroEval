@@ -1,19 +1,22 @@
 r"""Replace an official leaderboard dataset with a new one, end to end.
 
 When a new dataset should take over a task slot on a language's leaderboard
-from the current official one, three things have to happen:
+from the current official one, four things have to happen:
 
-1. **Evaluate.** Every model that currently holds a full rank score on the
+1. **Sync results.** Download all results from the HF bucket and consolidate
+   into ``new_results.jsonl`` so already-completed evaluations are detected
+   and skipped. This is read-only for the bucket.
+2. **Evaluate.** Every model that currently holds a full rank score on the
    affected leaderboard(s) must be evaluated on the new (still unofficial)
    dataset -- mirroring exactly how each model appears on the leaderboard
    (validation vs test split, zero-shot vs few-shot). This runs *before* the
    official flags are flipped, so the live leaderboard stays intact while the
    data is gathered.
-2. **Swap the configs.** The outgoing dataset is demoted to unofficial and the
+3. **Swap the configs.** The outgoing dataset is demoted to unofficial and the
    incoming one promoted to official, in both the ``euroeval`` dataset configs
    and the frontend dataset documentation, keeping the official-first grouping
    each file uses.
-3. **Open a PR** with the config/doc changes.
+4. **Open a PR** with the config/doc changes.
 
 Everything happens on a dedicated branch -- ``--branch`` is required and may
 not be the default branch.
@@ -67,12 +70,63 @@ from leaderboards.task_metadata import (
     official_datasets_for_language,
 )
 
+HF_RESULTS_BUCKET = "EuroEval/results"
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
 )
 logger = logging.getLogger("swap_leaderboard_dataset")
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+HF_RESULTS_BUCKET = "EuroEval/results"
+
+
+def sync_results_from_bucket() -> None:
+    """Sync results from the HF bucket and consolidate into NEW_RESULTS_PATH.
+
+    Downloads all .jsonl files from the EuroEval/results bucket to RESULTS_DIR,
+    then merges them into NEW_RESULTS_PATH (appending, not overwriting) so
+    subsequent evaluations can detect and skip already-completed runs.
+    """
+    logger.info("Syncing results from HF bucket %s...", HF_RESULTS_BUCKET)
+
+    # Sync bucket files to local RESULTS_DIR
+    subprocess.run(
+        ["hf", "buckets", "sync", HF_RESULTS_BUCKET, str(RESULTS_DIR), "--verbose"],
+        check=True,
+    )
+
+    # Consolidate all results into NEW_RESULTS_PATH (append mode)
+    all_lines: list[str] = []
+    for model_file in sorted(RESULTS_DIR.glob("*.jsonl")):
+        all_lines.extend(model_file.read_text(encoding="utf-8").splitlines())
+
+    if all_lines:
+        # Read existing lines from NEW_RESULTS_PATH if it exists
+        existing_lines: set[str] = set()
+        if NEW_RESULTS_PATH.exists():
+            existing_lines = set(
+                NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines()
+            )
+
+        # Append only new lines
+        new_lines = [line for line in all_lines if line not in existing_lines]
+        if new_lines:
+            logger.info(
+                "Consolidating %s result lines into %s (%s new).",
+                len(all_lines),
+                NEW_RESULTS_PATH,
+                len(new_lines),
+            )
+            with NEW_RESULTS_PATH.open("a", encoding="utf-8") as f:
+                for line in new_lines:
+                    f.write(line + "\n")
+        else:
+            logger.info("No new result lines to consolidate.")
+    else:
+        logger.warning("No results found in bucket.")
+
+
 DATASET_CONFIG_DIR = REPO_ROOT / "src" / "euroeval" / "dataset_configs"
 DATASET_DOC_DIR = REPO_ROOT / "src" / "frontend" / "md" / "datasets"
 UNOFFICIAL_MARKER = "# Unofficial datasets ###"
@@ -214,6 +268,8 @@ def main(
 
     if not dry_run:
         checkout_branch(branch=branch)
+        # Sync latest results from bucket to avoid re-running evaluations
+        sync_results_from_bucket()
 
     if skip_eval:
         logger.info("--skip-eval set; skipping the evaluation phase.")
