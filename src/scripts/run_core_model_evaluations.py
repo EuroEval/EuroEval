@@ -60,6 +60,7 @@ from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
 from leaderboards.constants import (
     DEFAULT_GPU_MEMORY_UTILIZATION,
+    LEADERBOARD_CATEGORIES,
     NEW_RESULTS_PATH,
     RESULTS_DIR,
 )
@@ -70,7 +71,10 @@ from leaderboards.evaluation_common import (
     official_dataset_language_pairs,
     run_euroeval,
 )
-from leaderboards.task_metadata import official_datasets_for_language
+from leaderboards.task_metadata import (
+    category_includes_task,
+    official_datasets_for_language,
+)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
@@ -219,10 +223,9 @@ def main(
     if reeval:
         validate_reeval_datasets(old_dataset=reeval_old, new_dataset=reeval_new)
 
-    observations: set[tuple[str, str, str]] = set()
-    api_model_ids: set[str] = set()
+    corpus = ObservedCorpus(observations=set(), api_model_ids=set(), eval_configs={})
     try:
-        observations, api_model_ids = load_existing_observations()
+        corpus = load_existing_observations()
     except FileNotFoundError as e:
         if reeval:
             raise click.ClickException(
@@ -238,8 +241,7 @@ def main(
             old_dataset=reeval_old,
             new_dataset=reeval_new,
             requested_languages=languages,
-            observations=observations,
-            api_model_ids=api_model_ids,
+            corpus=corpus,
             include_api=include_api,
             api_providers_arg=api_providers,
             force=force,
@@ -258,7 +260,7 @@ def main(
             models=models,
             target_datasets=target_datasets,
             selected_providers=selected_providers,
-            observations=observations if not force else set(),
+            observations=corpus.observations if not force else set(),
             force=force,
         )
     logger.info(f"Planned {len(jobs)} job(s) before size check.")
@@ -269,8 +271,11 @@ def main(
     if dry_run:
         for job in jobs:
             tag = "api" if job.is_api else "open"
+            split = "test" if job.evaluate_test_split else "val"
+            shots = "zero-shot" if job.zero_shot else "few-shot"
             click.echo(
-                f"[{tag}] {job.model_id} :: {job.dataset} :: {', '.join(job.languages)}"
+                f"[{tag}] {job.model_id} :: {job.dataset} :: "
+                f"{', '.join(job.languages)} :: {split}, {shots}"
             )
         return
 
@@ -279,12 +284,61 @@ def main(
 
 @dataclass(frozen=True)
 class Job:
-    """A single (model, dataset, languages) evaluation job."""
+    """A single (model, dataset, languages) evaluation job.
+
+    ``evaluate_test_split`` and ``zero_shot`` capture how the model should
+    be run, so :func:`execute_jobs` doesn't have to re-derive them: in
+    re-eval mode they mirror how the model was evaluated on the outgoing
+    dataset; in the core-model modes they follow the split/prompting default
+    for the model type.
+    """
 
     model_id: str
     dataset: str
     languages: tuple[str, ...]
     is_api: bool
+    evaluate_test_split: bool
+    zero_shot: bool
+
+
+@dataclass(frozen=True)
+class _ObsConfig:
+    """How a model was evaluated on a given (dataset, language).
+
+    Args:
+        validation_split:
+            True when the recorded result used the validation split, False
+            for the test split, None when the record didn't say.
+        few_shot:
+            True when few-shot prompting was used, False for zero-shot, None
+            when the record didn't say.
+        generative:
+            Whether the model is generative (few-shot/zero-shot only applies
+            to generative models).
+    """
+
+    validation_split: bool | None
+    few_shot: bool | None
+    generative: bool
+
+
+@dataclass(frozen=True)
+class ObservedCorpus:
+    """The recorded results, indexed for re-eval planning.
+
+    Args:
+        observations:
+            Every ``(model_id, dataset, language)`` triple in the corpus.
+        api_model_ids:
+            Model ids the corpus shows were evaluated via an API.
+        eval_configs:
+            The evaluation config used for each ``(model, dataset, language)``
+            triple, so a re-eval can mirror the split and prompting.
+    """
+
+    observations: set[tuple[str, str, str]]
+    api_model_ids: set[str]
+    eval_configs: dict[tuple[str, str, str], _ObsConfig]
 
 
 @dataclass(frozen=True)
@@ -353,8 +407,8 @@ def select_api_providers(
     return selected
 
 
-def load_existing_observations() -> tuple[set[tuple[str, str, str]], set[str]]:
-    """Return benchmarked triples and the set of API-model ids in the corpus.
+def load_existing_observations() -> ObservedCorpus:
+    """Return the recorded results indexed for backfill and re-eval planning.
 
     Reads the merged result corpus the same way the leaderboard pipeline
     does -- the per-model files in ``RESULTS_DIR`` plus the optional
@@ -366,12 +420,15 @@ def load_existing_observations() -> tuple[set[tuple[str, str, str]], set[str]]:
     more reliable than id-prefix matching because historical API results are
     stored under bare ids (e.g. ``gpt-5.5``) that carry no ``openai/`` prefix.
 
+    Each ``(model, dataset, language)`` triple also records how it was
+    evaluated (split, few-shot, generative) so a re-eval can mirror it. When
+    a triple appears more than once, a validation-split config is preferred,
+    matching the completeness rule the queue uses.
+
     Returns:
-        A ``(observations, api_model_ids)`` pair. ``observations`` is every
-        ``(model_id, dataset, language)`` triple in the corpus, with model
-        ids unwrapped from any leaderboard HTML anchor so the keys line up
-        with the canonical ids in ``core_models.yaml``. ``api_model_ids`` is
-        the subset of those model ids evaluated via an API.
+        The parsed corpus. Model ids are unwrapped from any leaderboard HTML
+        anchor so the keys line up with the canonical ids in
+        ``core_models.yaml``.
     """
     lines: list[str] = []
     for model_file in sorted(RESULTS_DIR.glob("*.jsonl")):
@@ -381,6 +438,7 @@ def load_existing_observations() -> tuple[set[tuple[str, str, str]], set[str]]:
 
     observations: set[tuple[str, str, str]] = set()
     api_model_ids: set[str] = set()
+    eval_configs: dict[tuple[str, str, str], _ObsConfig] = {}
     parse_failures = 0
     for line_idx, line in enumerate(lines):
         line = line.strip()
@@ -423,8 +481,23 @@ def load_existing_observations() -> tuple[set[tuple[str, str, str]], set[str]]:
                 continue
             if _record_is_api(model_info=model_info):
                 api_model_ids.add(model)
+            config = _ObsConfig(
+                validation_split=_as_bool(eval_additional.get("validation_split")),
+                few_shot=_as_bool(eval_additional.get("few_shot")),
+                generative=_as_bool(
+                    model_info.get("additional_details", {}).get("generative")
+                )
+                is True,
+            )
             for language in languages:
-                observations.add((model, str(dataset), str(language)))
+                key = (model, str(dataset), str(language))
+                observations.add(key)
+                existing = eval_configs.get(key)
+                if existing is None or (
+                    config.validation_split is True
+                    and existing.validation_split is not True
+                ):
+                    eval_configs[key] = config
     logger.info(
         f"Loaded {len(observations):,} (model, dataset, language) observations "
         f"({len(api_model_ids):,} API model(s))."
@@ -434,7 +507,33 @@ def load_existing_observations() -> tuple[set[tuple[str, str, str]], set[str]]:
             f"Skipped {parse_failures:,} unparseable result record(s); see "
             "earlier warnings for details."
         )
-    return observations, api_model_ids
+    return ObservedCorpus(
+        observations=observations,
+        api_model_ids=api_model_ids,
+        eval_configs=eval_configs,
+    )
+
+
+def _as_bool(value: object) -> bool | None:
+    """Coerce a JSON-ish truthy/falsy value to a tri-state bool.
+
+    Args:
+        value:
+            A value that may be a bool, the strings ``"true"``/``"false"``
+            (any case), or None/absent.
+
+    Returns:
+        True, False, or None when the value is missing or unrecognised.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered == "true":
+            return True
+        if lowered == "false":
+            return False
+    return None
 
 
 def _record_is_api(model_info: dict[str, object]) -> bool:
@@ -527,6 +626,8 @@ def build_jobs(
                         dataset=dataset,
                         languages=tuple(langs),
                         is_api=model.api,
+                        evaluate_test_split=not model.api,
+                        zero_shot=model.api,
                     )
                 )
             continue
@@ -549,6 +650,8 @@ def build_jobs(
                     dataset=dataset,
                     languages=tuple(langs),
                     is_api=model.api,
+                    evaluate_test_split=not model.api,
+                    zero_shot=model.api,
                 )
             )
     return jobs
@@ -558,19 +661,21 @@ def plan_reeval_jobs(
     old_dataset: str,
     new_dataset: str,
     requested_languages: tuple[str, ...],
-    observations: set[tuple[str, str, str]],
-    api_model_ids: set[str],
+    corpus: ObservedCorpus,
     include_api: bool,
     api_providers_arg: str | None,
     force: bool,
 ) -> list[Job]:
     """Plan the jobs for leaderboard re-eval mode.
 
-    Selects the language(s) whose leaderboard is affected by the swap,
-    finds every model that held a full rank score under the pre-swap
-    config, and schedules the new dataset for each such model in the
-    languages it was ranked in. API models are excluded unless the user
-    opts in with ``--include-api``, so a plain re-eval never spends money.
+    Selects the language(s) whose leaderboard is affected by the swap, finds
+    every model that held a full rank score under the pre-swap config (in the
+    generative *or* the NLU/all-models category, so encoder models are
+    included when the task supports them), and schedules the new dataset for
+    each such model in the languages it was ranked in. Every job mirrors the
+    split and prompting the model used on the outgoing dataset. API models are
+    excluded unless the user opts in with ``--include-api``, so a plain
+    re-eval never spends money.
 
     Args:
         old_dataset:
@@ -580,10 +685,9 @@ def plan_reeval_jobs(
         requested_languages:
             Language codes to restrict to; empty means the codes covered by
             both the old and new datasets.
-        observations:
-            Recorded ``(model, dataset, language)`` triples.
-        api_model_ids:
-            Model ids the corpus shows were evaluated via an API.
+        corpus:
+            The parsed results corpus (observations, API-model ids, and the
+            per-triple evaluation configs to mirror).
         include_api:
             Whether the user opted in to running API models.
         api_providers_arg:
@@ -616,16 +720,22 @@ def plan_reeval_jobs(
         f"{', '.join(sorted(target_codes))}."
     )
 
+    old_config = dataset_config(dataset_id=old_dataset)
+    swapped_task = old_config.task.name if old_config is not None else ""
     ranked_pairs = ranked_model_language_pairs(
         old_dataset=old_dataset,
         new_dataset=new_dataset,
+        swapped_task=swapped_task,
         language_codes=target_codes,
-        observations=observations,
+        observations=corpus.observations,
     )
     logger.info(f"Found {len(ranked_pairs)} ranked (model, language) pair(s).")
 
     def is_api_model(model_id: str) -> bool:
-        return model_id in api_model_ids or provider_for_model_id(model_id) is not None
+        return (
+            model_id in corpus.api_model_ids
+            or provider_for_model_id(model_id) is not None
+        )
 
     ranked_api = sorted({m for m, _ in ranked_pairs if is_api_model(m)})
     selected_providers = select_api_providers(
@@ -657,19 +767,56 @@ def plan_reeval_jobs(
             provider = provider_for_model_id(model_id=model_id)
             if provider is not None and provider.name not in selected_providers:
                 continue
-        if not force and (model_id, new_dataset, code) in observations:
+        if not force and (model_id, new_dataset, code) in corpus.observations:
             continue
+        evaluate_test_split, zero_shot = _mirror_eval_config(
+            config=corpus.eval_configs.get((model_id, old_dataset, code)), is_api=is_api
+        )
         jobs.append(
             Job(
-                model_id=model_id, dataset=new_dataset, languages=(code,), is_api=is_api
+                model_id=model_id,
+                dataset=new_dataset,
+                languages=(code,),
+                is_api=is_api,
+                evaluate_test_split=evaluate_test_split,
+                zero_shot=zero_shot,
             )
         )
     return jobs
 
 
+def _mirror_eval_config(config: _ObsConfig | None, is_api: bool) -> tuple[bool, bool]:
+    """Return ``(evaluate_test_split, zero_shot)`` mirroring the old dataset.
+
+    The re-eval must reproduce how the model was evaluated on the outgoing
+    dataset: the same split, and -- for generative models only -- the same
+    zero-shot/few-shot prompting. Encoder models never get ``--zero-shot``.
+    When no recorded config is available, fall back to the split/prompting
+    default for the model type (API: validation split, zero-shot;
+    open-weight: test split, few-shot).
+
+    Args:
+        config:
+            The recorded evaluation config for the outgoing dataset, or None.
+        is_api:
+            Whether the model is an API model, used only for the fallback.
+
+    Returns:
+        The ``(evaluate_test_split, zero_shot)`` flags for the new job.
+    """
+    if config is None:
+        return (not is_api), is_api
+    # Validation split only when the record explicitly says so; otherwise test.
+    evaluate_test_split = config.validation_split is not True
+    # Zero-shot only for generative models whose record used zero-shot.
+    zero_shot = config.generative and config.few_shot is False
+    return evaluate_test_split, zero_shot
+
+
 def ranked_model_language_pairs(
     old_dataset: str,
     new_dataset: str,
+    swapped_task: str,
     language_codes: set[str],
     observations: set[tuple[str, str, str]],
 ) -> set[tuple[str, str]]:
@@ -678,18 +825,28 @@ def ranked_model_language_pairs(
     A model is "ranked" in a language when it holds a result for every
     required (non-orthogonal) dataset of that language's single-language
     leaderboard -- the same eligibility rule the leaderboard generator uses
-    to award a rank score. The required set is normalised so it always
-    reflects the pre-swap leaderboard: the outgoing dataset is added and the
-    incoming candidate removed. Because the re-eval runs before the flags are
-    flipped this is normally a no-op (the outgoing dataset is already
-    official and the incoming one already excluded), but it keeps the
-    selection correct even if the configs have already been edited.
+    to award a rank score. Eligibility is checked in every leaderboard
+    category the swapped task belongs to: the ``generative`` category scores
+    all tasks, while the ``all_models`` category scores only NLU tasks so
+    encoder models can be compared. A model ranked in *either* category is
+    selected, so encoder models are re-evaluated whenever the swapped task is
+    an NLU task they can run.
+
+    The required set is normalised so it always reflects the pre-swap
+    leaderboard: the outgoing dataset is added and the incoming candidate
+    removed. Because the re-eval runs before the flags are flipped this is
+    normally a no-op (the outgoing dataset is already official and the
+    incoming one already excluded), but it keeps the selection correct even
+    if the configs have already been edited.
 
     Args:
         old_dataset:
             The outgoing dataset id being replaced (kept in the required set).
         new_dataset:
             The incoming candidate dataset id (kept out of the required set).
+        swapped_task:
+            The task both datasets belong to; determines which leaderboard
+            categories are affected.
         language_codes:
             The language codes whose leaderboards are being re-evaluated.
         observations:
@@ -699,6 +856,16 @@ def ranked_model_language_pairs(
         The ``(model_id, language_code)`` pairs that were ranked pre-swap.
     """
     languages = get_all_languages()
+    affected_categories = [
+        category
+        for category in LEADERBOARD_CATEGORIES
+        if category_includes_task(category=category, task=swapped_task)
+    ]
+    if not affected_categories:
+        logger.warning(
+            f"Task {swapped_task!r} is in no leaderboard category; nothing to do."
+        )
+        return set()
 
     # Index observed datasets by (model, language) for O(1) subset checks.
     datasets_by_model_language: dict[tuple[str, str], set[str]] = defaultdict(set)
@@ -724,21 +891,23 @@ def ranked_model_language_pairs(
             logger.warning(f"No leaderboard datasets for {name!r}; skipping.")
             continue
 
-        required = {
-            dataset
-            for task, task_datasets in by_task.items()
-            if task not in ORTHOGONAL_TASKS
-            for dataset in task_datasets
-        }
-        required.discard(new_dataset)
-        required.add(old_dataset)
-        if not required:
-            logger.warning(f"No required datasets for {name!r}; skipping.")
-            continue
-
-        for (model_id, obs_code), datasets in datasets_by_model_language.items():
-            if obs_code == code and required <= datasets:
-                ranked.add((model_id, code))
+        # A model is ranked in this language if it is eligible in any affected
+        # category, i.e. holds every required dataset of that category.
+        for category in affected_categories:
+            required = {
+                dataset
+                for task, task_datasets in by_task.items()
+                if task not in ORTHOGONAL_TASKS
+                and category_includes_task(category=category, task=task)
+                for dataset in task_datasets
+            }
+            required.discard(new_dataset)
+            required.add(old_dataset)
+            if not required:
+                continue
+            for (model_id, obs_code), datasets in datasets_by_model_language.items():
+                if obs_code == code and required <= datasets:
+                    ranked.add((model_id, code))
     return ranked
 
 
@@ -808,8 +977,9 @@ def apply_size_filter(
 def execute_jobs(jobs: list[Job], gpu_memory_utilization: float | None) -> None:
     """Run each job in sequence via the shared euroeval runner.
 
-    API jobs are run on the validation split with zero-shot prompting;
-    open-weight jobs use the defaults (test split, few-shot).
+    Each job carries its own split and prompting flags (mirrored from the
+    outgoing dataset in re-eval mode, or the model-type default otherwise),
+    so they are forwarded to euroeval verbatim.
 
     Args:
         jobs:
@@ -820,17 +990,19 @@ def execute_jobs(jobs: list[Job], gpu_memory_utilization: float | None) -> None:
             fit pre-check budgeted against keeps the two consistent.
     """
     for index, job in enumerate(jobs, start=1):
+        split = "test" if job.evaluate_test_split else "val"
+        shots = "zero-shot" if job.zero_shot else "few-shot"
         logger.info(
             f"[{index}/{len(jobs)}] euroeval --model {job.model_id} "
-            f"--dataset {job.dataset} --language {' --language '.join(job.languages)}"
-            f"{' (api, val, zero-shot)' if job.is_api else ''}"
+            f"--dataset {job.dataset} --language {' --language '.join(job.languages)} "
+            f"({split}, {shots})"
         )
         returncode, _ = run_euroeval(
             model_id=job.model_id,
             languages=job.languages,
             datasets=[job.dataset],
-            evaluate_test_split=not job.is_api,
-            zero_shot=job.is_api,
+            evaluate_test_split=job.evaluate_test_split,
+            zero_shot=job.zero_shot,
             gpu_memory_utilization=gpu_memory_utilization,
         )
         if returncode != 0:
