@@ -512,6 +512,9 @@ def load_corpus() -> _Corpus:
             try:
                 record = json.loads(record_text)
             except json.JSONDecodeError:
+                logger.warning(
+                    "Skipping malformed JSON record: %s...", record_text[:80]
+                )
                 continue
             model = plain_model_id(str(record.get("model_info", {}).get("name", "")))
             dataset = get_dataset(record=record)
@@ -920,7 +923,7 @@ def record_is_api(model_info: dict[str, object]) -> bool:
     return str(open_flag).lower() == "false"
 
 
-def _record_languages(record: dict) -> list[str]:
+def _record_languages(record: dict[str, object]) -> list[str]:
     """Return the language codes a result record covers.
 
     Args:
@@ -1331,6 +1334,11 @@ def open_pull_request(
     """
     for path in changed_paths:
         _git("add", str(path))
+    # Check if there are any actual changes to commit
+    diff_result = _git("diff", "--cached", "--quiet", check=False)
+    if diff_result.returncode == 0:
+        logger.info("No changes to commit; skipping PR creation.")
+        return
     title = f"feat: swap official dataset {old_dataset} -> {new_dataset}"
     body = _pr_body(old_dataset=old_dataset, new_dataset=new_dataset)
     _git("commit", "-m", title, "-m", body)
