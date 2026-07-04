@@ -8,11 +8,13 @@ Three related workflows live in this script:
 2. **Backfill mode** (default) -- for every core model, run every official
    ``(dataset, language)`` pair that the model has no result line for yet.
 3. **Leaderboard re-eval mode** (``--reeval-old <ds> --reeval-new <ds>``) --
-   after an official dataset is swapped for another on a language's
-   leaderboard, re-run the *new* dataset for every model that currently
-   holds a full rank score on that leaderboard (i.e. held every required
-   dataset under the pre-swap config). Unlike the other two modes the model
-   set is drawn from the recorded results, not from ``core_models.yaml``.
+   when a new (still unofficial) dataset is going to replace an official one
+   on a language's leaderboard, evaluate that candidate on every model that
+   currently holds a full rank score there (i.e. holds every required
+   dataset). Run this *before* flipping the official flags so the
+   leaderboard stays intact while the data is gathered. Unlike the other two
+   modes the model set is drawn from the recorded results, not from
+   ``core_models.yaml``.
 
 All modes share the size-check, results lookup, and the API-provider prompt.
 
@@ -89,15 +91,15 @@ logger = logging.getLogger("run_core_model_evaluations")
     "--reeval-old",
     "reeval_old",
     default=None,
-    help="Leaderboard re-eval mode: the outgoing dataset id whose ranked models "
-    "should be re-run. Requires --reeval-new.",
+    help="Leaderboard re-eval mode: the official dataset being replaced, whose "
+    "ranked models define the set to evaluate. Requires --reeval-new.",
 )
 @click.option(
     "--reeval-new",
     "reeval_new",
     default=None,
-    help="Leaderboard re-eval mode: the incoming dataset id to run for every model "
-    "that was ranked under the pre-swap config. Requires --reeval-old.",
+    help="Leaderboard re-eval mode: the unofficial candidate dataset to evaluate on "
+    "every model ranked under --reeval-old. Requires --reeval-old.",
 )
 @click.option(
     "--language",
@@ -218,8 +220,9 @@ def main(
         validate_reeval_datasets(old_dataset=reeval_old, new_dataset=reeval_new)
 
     observations: set[tuple[str, str, str]] = set()
+    api_model_ids: set[str] = set()
     try:
-        observations = load_existing_observations()
+        observations, api_model_ids = load_existing_observations()
     except FileNotFoundError as e:
         if reeval:
             raise click.ClickException(
@@ -236,6 +239,7 @@ def main(
             new_dataset=reeval_new,
             requested_languages=languages,
             observations=observations,
+            api_model_ids=api_model_ids,
             include_api=include_api,
             api_providers_arg=api_providers,
             force=force,
@@ -349,19 +353,25 @@ def select_api_providers(
     return selected
 
 
-def load_existing_observations() -> set[tuple[str, str, str]]:
-    """Return the ``(model_id, dataset, language)`` triples already benchmarked.
+def load_existing_observations() -> tuple[set[tuple[str, str, str]], set[str]]:
+    """Return benchmarked triples and the set of API-model ids in the corpus.
 
     Reads the merged result corpus the same way the leaderboard pipeline
     does -- the per-model files in ``RESULTS_DIR`` plus the optional
     ``new_results.jsonl`` -- but without the destructive unlink that
     :func:`leaderboards.result_loading.load_raw_results` performs.
 
+    A model is treated as an API model when its record was produced by the
+    ``litellm`` inference engine or is flagged as not open-weight. This is
+    more reliable than id-prefix matching because historical API results are
+    stored under bare ids (e.g. ``gpt-5.5``) that carry no ``openai/`` prefix.
+
     Returns:
-        Every ``(model_id, dataset, language)`` triple in the merged
-        result corpus, with model ids unwrapped from any leaderboard
-        HTML anchor so the keys line up with the canonical ids in
-        ``core_models.yaml``.
+        A ``(observations, api_model_ids)`` pair. ``observations`` is every
+        ``(model_id, dataset, language)`` triple in the corpus, with model
+        ids unwrapped from any leaderboard HTML anchor so the keys line up
+        with the canonical ids in ``core_models.yaml``. ``api_model_ids`` is
+        the subset of those model ids evaluated via an API.
     """
     lines: list[str] = []
     for model_file in sorted(RESULTS_DIR.glob("*.jsonl")):
@@ -370,6 +380,7 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
         lines.extend(NEW_RESULTS_PATH.read_text(encoding="utf-8").splitlines())
 
     observations: set[tuple[str, str, str]] = set()
+    api_model_ids: set[str] = set()
     parse_failures = 0
     for line_idx, line in enumerate(lines):
         line = line.strip()
@@ -391,7 +402,8 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
                 continue
 
             # EEE: model_info.name, eval_library.additional_details.dataset/languages
-            model = raw_record.get("model_info", {}).get("name", "")
+            model_info = raw_record.get("model_info", {})
+            model = model_info.get("name", "")
             eval_additional = raw_record.get("eval_library", {}).get(
                 "additional_details", {}
             )
@@ -409,17 +421,40 @@ def load_existing_observations() -> set[tuple[str, str, str]]:
             model = _strip_anchor(model_id=str(model))
             if not model or not dataset:
                 continue
+            if _record_is_api(model_info=model_info):
+                api_model_ids.add(model)
             for language in languages:
                 observations.add((model, str(dataset), str(language)))
     logger.info(
-        f"Loaded {len(observations):,} (model, dataset, language) observations."
+        f"Loaded {len(observations):,} (model, dataset, language) observations "
+        f"({len(api_model_ids):,} API model(s))."
     )
     if parse_failures:
         logger.warning(
             f"Skipped {parse_failures:,} unparseable result record(s); see "
             "earlier warnings for details."
         )
-    return observations
+    return observations, api_model_ids
+
+
+def _record_is_api(model_info: dict[str, object]) -> bool:
+    """Return whether a result record's model was evaluated via an API.
+
+    Args:
+        model_info:
+            The ``model_info`` object of an EEE result record.
+
+    Returns:
+        True when the record was produced by the ``litellm`` inference
+        engine or is flagged as not open-weight.
+    """
+    engine = model_info.get("inference_engine", {})
+    engine_name = engine.get("name", "") if isinstance(engine, dict) else ""
+    if str(engine_name).lower() == "litellm":
+        return True
+    details = model_info.get("additional_details", {})
+    open_flag = details.get("open") if isinstance(details, dict) else None
+    return str(open_flag).lower() == "false"
 
 
 def build_jobs(
@@ -524,6 +559,7 @@ def plan_reeval_jobs(
     new_dataset: str,
     requested_languages: tuple[str, ...],
     observations: set[tuple[str, str, str]],
+    api_model_ids: set[str],
     include_api: bool,
     api_providers_arg: str | None,
     force: bool,
@@ -533,7 +569,8 @@ def plan_reeval_jobs(
     Selects the language(s) whose leaderboard is affected by the swap,
     finds every model that held a full rank score under the pre-swap
     config, and schedules the new dataset for each such model in the
-    languages it was ranked in.
+    languages it was ranked in. API models are excluded unless the user
+    opts in with ``--include-api``, so a plain re-eval never spends money.
 
     Args:
         old_dataset:
@@ -545,6 +582,8 @@ def plan_reeval_jobs(
             both the old and new datasets.
         observations:
             Recorded ``(model, dataset, language)`` triples.
+        api_model_ids:
+            Model ids the corpus shows were evaluated via an API.
         include_api:
             Whether the user opted in to running API models.
         api_providers_arg:
@@ -585,15 +624,20 @@ def plan_reeval_jobs(
     )
     logger.info(f"Found {len(ranked_pairs)} ranked (model, language) pair(s).")
 
-    has_any_api = any(
-        provider_for_model_id(model_id=model_id) is not None
-        for model_id, _ in ranked_pairs
-    )
+    def is_api_model(model_id: str) -> bool:
+        return model_id in api_model_ids or provider_for_model_id(model_id) is not None
+
+    ranked_api = sorted({m for m, _ in ranked_pairs if is_api_model(m)})
     selected_providers = select_api_providers(
-        has_any_api=has_any_api,
+        has_any_api=bool(ranked_api),
         include_api=include_api,
         api_providers_arg=api_providers_arg,
     )
+    if ranked_api and not include_api:
+        logger.info(
+            f"Excluding {len(ranked_api)} ranked API model(s); pass --include-api "
+            "to evaluate them."
+        )
 
     jobs: list[Job] = []
     for model_id, code in sorted(ranked_pairs):
@@ -603,10 +647,16 @@ def plan_reeval_jobs(
                 f"not cover it."
             )
             continue
-        provider = provider_for_model_id(model_id=model_id)
-        is_api = provider is not None
-        if is_api and provider.name not in selected_providers:
-            continue
+        is_api = is_api_model(model_id=model_id)
+        if is_api:
+            if not include_api:
+                continue
+            # Known-provider API models are gated on the provider selection; a
+            # bare-id API model whose provider we can't classify is included
+            # once the operator has opted in with --include-api.
+            provider = provider_for_model_id(model_id=model_id)
+            if provider is not None and provider.name not in selected_providers:
+                continue
         if not force and (model_id, new_dataset, code) in observations:
             continue
         jobs.append(
@@ -628,17 +678,18 @@ def ranked_model_language_pairs(
     A model is "ranked" in a language when it holds a result for every
     required (non-orthogonal) dataset of that language's single-language
     leaderboard -- the same eligibility rule the leaderboard generator uses
-    to award a rank score. The swap has already been applied to the configs
-    (validated by :func:`validate_reeval_datasets`), so the pre-swap required
-    set is reconstructed from the *current* official datasets by removing the
-    now-official incoming dataset and adding the now-unofficial outgoing one
-    back.
+    to award a rank score. The required set is normalised so it always
+    reflects the pre-swap leaderboard: the outgoing dataset is added and the
+    incoming candidate removed. Because the re-eval runs before the flags are
+    flipped this is normally a no-op (the outgoing dataset is already
+    official and the incoming one already excluded), but it keeps the
+    selection correct even if the configs have already been edited.
 
     Args:
         old_dataset:
-            The outgoing dataset id (added back into the required set).
+            The outgoing dataset id being replaced (kept in the required set).
         new_dataset:
-            The incoming dataset id (removed from the required set).
+            The incoming candidate dataset id (kept out of the required set).
         language_codes:
             The language codes whose leaderboards are being re-evaluated.
         observations:
@@ -860,16 +911,20 @@ def dataset_language_codes(dataset_id: str) -> set[str]:
 def validate_reeval_datasets(old_dataset: str, new_dataset: str) -> None:
     """Validate the old/new dataset pair for leaderboard re-eval mode.
 
-    Enforces that the config edit has already happened and describes a
-    genuine within-task swap: the outgoing dataset must now be unofficial,
-    the incoming dataset must be official, both must have dataset configs,
-    and both must belong to the same task.
+    The re-eval runs *before* the config flags are flipped: the candidate
+    replacement is still unofficial and the dataset it will replace is still
+    official, so the leaderboard stays intact while the new dataset is
+    evaluated on every ranked model. Enforces a genuine within-task swap:
+    the outgoing dataset must be official, the incoming (candidate) dataset
+    must be unofficial, both must have dataset configs, and both must belong
+    to the same task.
 
     Args:
         old_dataset:
-            The outgoing dataset id (expected to be unofficial).
+            The outgoing dataset id being replaced (expected to be official).
         new_dataset:
-            The incoming dataset id (expected to be official).
+            The incoming candidate dataset id to evaluate (expected to be
+            unofficial).
 
     Raises:
         click.ClickException:
@@ -888,17 +943,18 @@ def validate_reeval_datasets(old_dataset: str, new_dataset: str) -> None:
             f"--reeval-new {new_dataset!r} has no dataset config; both datasets "
             "must already be configured."
         )
-    if not old_config.unofficial:
+    if old_config.unofficial:
         raise click.ClickException(
-            f"--reeval-old {old_dataset!r} must be UNofficial (the dataset being "
-            "replaced); it is currently official. Demote it in its dataset config "
-            "before running the re-eval."
+            f"--reeval-old {old_dataset!r} must be official (the dataset being "
+            "replaced); it is currently unofficial. Only an official dataset can "
+            "be replaced."
         )
-    if new_config.unofficial:
+    if not new_config.unofficial:
         raise click.ClickException(
-            f"--reeval-new {new_dataset!r} must be official (the replacement); it "
-            "is currently unofficial. Promote it in its dataset config before "
-            "running the re-eval."
+            f"--reeval-new {new_dataset!r} must be UNofficial (the candidate "
+            "replacement to evaluate); it is currently official. Keep it "
+            "unofficial until every ranked model has been evaluated on it, then "
+            "flip the flags."
         )
     if old_config.task.name != new_config.task.name:
         raise click.ClickException(
