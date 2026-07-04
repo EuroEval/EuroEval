@@ -1,10 +1,14 @@
 """Tests for the swap_leaderboard_dataset script."""
 
+import logging
 import subprocess
 from pathlib import Path
 
 import pytest
 
+from euroeval.data_models import DatasetConfig
+from euroeval.languages import DANISH, SWEDISH
+from euroeval.tasks import LA
 from src.scripts import swap_leaderboard_dataset
 
 
@@ -87,9 +91,7 @@ class TestValidation:
     ) -> None:
         """Should reject the default branch name."""
         monkeypatch.setattr(
-            target=swap_leaderboard_dataset,
-            name="default_branch",
-            value=lambda: "main",
+            target=swap_leaderboard_dataset, name="default_branch", value=lambda: "main"
         )
 
         with pytest.raises(Exception):
@@ -100,9 +102,7 @@ class TestValidation:
     ) -> None:
         """Should accept non-default branch names."""
         monkeypatch.setattr(
-            target=swap_leaderboard_dataset,
-            name="default_branch",
-            value=lambda: "main",
+            target=swap_leaderboard_dataset, name="default_branch", value=lambda: "main"
         )
 
         # Should not raise
@@ -110,10 +110,6 @@ class TestValidation:
 
     def test_resolve_languages_returns_intersection(self) -> None:
         """Should return the intersection of languages from both datasets."""
-        from euroeval.data_models import DatasetConfig
-        from euroeval.languages import DANISH, SWEDISH
-        from euroeval.tasks import LA
-
         old_config = DatasetConfig(
             name="scala-da",
             pretty_name="ScaLA-da",
@@ -167,8 +163,6 @@ class TestSyncResults:
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Should handle empty bucket gracefully."""
-        import logging
-
         monkeypatch.setattr(
             target=swap_leaderboard_dataset,
             name="RESULTS_DIR",
@@ -228,10 +222,9 @@ DANSK_CONFIG = DatasetConfig(
         config_file = tmp_path / "test_config.py"
         config_file.write_text(config_content)
 
+        lines = list[str](config_content.split("\n"))
         start, end = swap_leaderboard_dataset._config_block_span(
-            lines=config_content.split("\n"),
-            dataset_id="dansk",
-            path=config_file,
+            lines=lines, dataset_id="dansk", path=config_file
         )
 
         # Should find DANSK_CONFIG block
