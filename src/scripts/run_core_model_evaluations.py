@@ -56,7 +56,11 @@ from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
 from euroeval.dataset_configs import get_all_dataset_configs
 from euroeval.languages import get_all_languages
-from leaderboards.constants import NEW_RESULTS_PATH, RESULTS_DIR
+from leaderboards.constants import (
+    DEFAULT_GPU_MEMORY_UTILIZATION,
+    NEW_RESULTS_PATH,
+    RESULTS_DIR,
+)
 from leaderboards.core_models import CoreModel
 from leaderboards.evaluation_common import (
     gpu_total_memory_bytes,
@@ -117,6 +121,14 @@ logger = logging.getLogger("run_core_model_evaluations")
     "Skips the interactive prompt. Requires --include-api.",
 )
 @click.option(
+    "--gpu-memory-utilization",
+    "gpu_memory_utilization",
+    type=float,
+    default=None,
+    help="vLLM GPU memory utilization fraction (0.0-1.0) the fit pre-check should "
+    f"budget against. When omitted, defaults to {DEFAULT_GPU_MEMORY_UTILIZATION}.",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
@@ -136,6 +148,7 @@ def main(
     languages: tuple[str, ...],
     include_api: bool,
     api_providers: str | None,
+    gpu_memory_utilization: float | None,
     dry_run: bool,
     force: bool,
 ) -> None:
@@ -157,6 +170,9 @@ def main(
             Whether to consider ``api: true`` entries at all.
         api_providers:
             Optional comma-separated provider filter; bypasses the prompt.
+        gpu_memory_utilization:
+            vLLM GPU memory utilization fraction the fit pre-check budgets
+            against, or None to use the default.
         dry_run:
             When True, print the planned jobs and return without running.
         force:
@@ -243,7 +259,7 @@ def main(
         )
     logger.info(f"Planned {len(jobs)} job(s) before size check.")
 
-    jobs = apply_size_filter(jobs=jobs)
+    jobs = apply_size_filter(jobs=jobs, gpu_memory_utilization=gpu_memory_utilization)
     logger.info(f"{len(jobs)} job(s) survive the size check.")
 
     if dry_run:
@@ -254,7 +270,7 @@ def main(
             )
         return
 
-    execute_jobs(jobs=jobs)
+    execute_jobs(jobs=jobs, gpu_memory_utilization=gpu_memory_utilization)
 
 
 @dataclass(frozen=True)
@@ -675,8 +691,16 @@ def ranked_model_language_pairs(
     return ranked
 
 
-def apply_size_filter(jobs: list[Job]) -> list[Job]:
+def apply_size_filter(
+    jobs: list[Job], gpu_memory_utilization: float | None
+) -> list[Job]:
     """Drop open-weight jobs whose model can't fit on the local GPU.
+
+    Mirrors the queue script's fit pre-check: vLLM can only allocate
+    ``gpu_memory_utilization * total GPU memory``, so the budget is that
+    fraction of the card rather than the whole card -- otherwise a model
+    whose weights fit but whose KV cache does not still slips through and
+    OOMs at runtime.
 
     API jobs are passed through untouched (we cannot size-check them).
     Open-weight models whose safetensors footprint cannot be measured
@@ -685,6 +709,9 @@ def apply_size_filter(jobs: list[Job]) -> list[Job]:
     Args:
         jobs:
             The full job list before the size check.
+        gpu_memory_utilization:
+            The vLLM GPU memory utilization fraction the eval will run at,
+            or None to use :data:`DEFAULT_GPU_MEMORY_UTILIZATION`.
 
     Returns:
         The jobs that should still be scheduled.
@@ -693,7 +720,17 @@ def apply_size_filter(jobs: list[Job]) -> list[Job]:
     if gpu_bytes is None:
         logger.info("Local memory budget unknown; skipping size pre-check.")
         return jobs
-    logger.info(f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB.")
+    utilization = (
+        gpu_memory_utilization
+        if gpu_memory_utilization is not None
+        else DEFAULT_GPU_MEMORY_UTILIZATION
+    )
+    usable_bytes = int(gpu_bytes * utilization)
+    logger.info(
+        f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB total, "
+        f"{usable_bytes / (1024**3):.1f} GiB usable at "
+        f"gpu_memory_utilization={utilization}."
+    )
 
     sized_cache: dict[str, bool] = {}
     kept: list[Job] = []
@@ -703,21 +740,21 @@ def apply_size_filter(jobs: list[Job]) -> list[Job]:
             continue
         if job.model_id not in sized_cache:
             fits, needed = model_fits_locally(
-                model_id=job.model_id, gpu_bytes=gpu_bytes
+                model_id=job.model_id, gpu_bytes=usable_bytes
             )
             sized_cache[job.model_id] = fits
             if not fits and needed is not None:
                 logger.info(
                     f"{job.model_id}: skipping -- needs "
-                    f"~{needed / (1024**3):.1f} GiB of weights, exceeds local "
-                    f"budget of {gpu_bytes / (1024**3):.1f} GiB."
+                    f"~{needed / (1024**3):.1f} GiB of weights, exceeds the usable "
+                    f"vLLM budget of {usable_bytes / (1024**3):.1f} GiB."
                 )
         if sized_cache[job.model_id]:
             kept.append(job)
     return kept
 
 
-def execute_jobs(jobs: list[Job]) -> None:
+def execute_jobs(jobs: list[Job], gpu_memory_utilization: float | None) -> None:
     """Run each job in sequence via the shared euroeval runner.
 
     API jobs are run on the validation split with zero-shot prompting;
@@ -726,6 +763,10 @@ def execute_jobs(jobs: list[Job]) -> None:
     Args:
         jobs:
             The jobs to execute.
+        gpu_memory_utilization:
+            vLLM GPU memory utilization fraction to pass to euroeval, or
+            None to let the CLI default apply. Passing the same value the
+            fit pre-check budgeted against keeps the two consistent.
     """
     for index, job in enumerate(jobs, start=1):
         logger.info(
@@ -739,6 +780,7 @@ def execute_jobs(jobs: list[Job]) -> None:
             datasets=[job.dataset],
             evaluate_test_split=not job.is_api,
             zero_shot=job.is_api,
+            gpu_memory_utilization=gpu_memory_utilization,
         )
         if returncode != 0:
             logger.warning(
