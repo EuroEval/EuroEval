@@ -11,11 +11,13 @@ from transformers.models.electra import (
     ElectraForQuestionAnswering,
     ElectraForSequenceClassification,
     ElectraForTokenClassification,
+    ElectraForMultipleChoice
 )
 from transformers.models.xlm_roberta import (
     XLMRobertaForQuestionAnswering,
     XLMRobertaForSequenceClassification,
     XLMRobertaForTokenClassification,
+    XLMRobertaForMultipleChoice
 )
 
 from ..data_models import ModelConfig
@@ -250,15 +252,29 @@ def load_model_and_tokeniser(
     )
     real_model_id = fresh_to_real_model_id_mapping[model_id]
 
+    # TODO (DONE): Port this to the proper MC head alongside `HuggingFaceEncoderModel`. Since
+    # `FreshEncoderModel` inherits prepare_dataset/data_collator/trainer_class/
+    # compute_metrics from that class, the fresh-model delta is small:
+    #   1. Import `XLMRobertaForMultipleChoice` / `ElectraForMultipleChoice`.
+    #   2. Give MC its own `case` below mapping to those classes (keep SEQUENCE/SPEED
+    #      on the sequence-classification classes).
+    #   3. Drop the `{0: "0", 1: "1"}` id2label patch further down (fall through to
+    #      `dataset_config.id2label`).
     match dataset_config.task.task_group:
         case (
             TaskGroup.SEQUENCE_CLASSIFICATION
-            | TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
             | TaskGroup.SPEED
         ):
             model_cls_mapping = dict(
                 fresh_xlm_roberta_base=XLMRobertaForSequenceClassification,
                 fresh_electra_small=ElectraForSequenceClassification,
+            )
+        case (
+            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        ):
+            model_cls_mapping = dict(
+                fresh_xlm_roberta_base=XLMRobertaForMultipleChoice,
+                fresh_electra_small=ElectraForMultipleChoice,
             )
         case TaskGroup.TOKEN_CLASSIFICATION:
             model_cls_mapping = dict(
@@ -279,10 +295,7 @@ def load_model_and_tokeniser(
 
     # Special case where there is a mismatch between the labels during training and
     # testing
-    if dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-        id2label = {0: "0", 1: "1"}
-    else:
-        id2label = dataset_config.id2label
+    id2label = dataset_config.id2label
 
     config = AutoConfig.from_pretrained(
         real_model_id,

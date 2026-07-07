@@ -9,6 +9,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Added support for evaluating encoder models on multiple-choice tasks. Encoder models
+  now use the native `AutoModelForMultipleChoice` head (with
+  `DataCollatorForMultipleChoice`) instead of the previous approach, which reframed each
+  choice as an independent binary classification and only combined them into a single
+  prediction across the `num_choices` options at evaluation time.
 - Evaluation hallucination detection task, reporting a hallucination rate
   (hallucinated_tokens/total_tokens). This includes RAGTruth-based datasets for 30
   European languages (Danish, Albanian, Belarusian, Bosnian, Bulgarian, Catalan,
