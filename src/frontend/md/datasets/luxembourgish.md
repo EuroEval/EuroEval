@@ -9,7 +9,7 @@ Binary linguistic acceptability task from the ltzGLUE benchmark, introduced in
 classified as grammatically correct or incorrect. The dataset includes naturally
 occurring text as well as systematically corrupted examples.
 
-The original ltzGLUE-LA dataset is processed into 1,024 / 256 / ~2,000 samples
+The original ltzGLUE-LA dataset contains 14,678 / 2,094 / 4,045 samples
 for training, validation and testing, with balanced classes.
 
 Here are a few examples from the training split:
@@ -64,8 +64,9 @@ euroeval --model <model-id> --dataset ltzglue-la-binary
 ### Unofficial: ltzGLUE-LA (Multi-class)
 
 Multi-class version of the ltzGLUE linguistic acceptability task, where
-grammatical errors are classified by error type. This provides more fine-grained
-evaluation of Luxembourgish language understanding.
+grammatical errors are classified by error type. The dataset contains
+14,678 / 2,094 / 4,045 samples for training, validation and testing.
+This provides more fine-grained evaluation of Luxembourgish language understanding.
 
 The error types include various categories such as word order violations, agreement
 errors, and morphological errors.
@@ -102,7 +103,7 @@ Annotated with standard entity types following CoNLL-2003 format:
 - `ORG` (Organization)
 - `MISC` (Miscellaneous)
 
-The dataset is sampled into 1,024 / 256 / ~2,000 samples for training, validation
+The dataset contains 27,245 / 3,327 / 3,821 samples for training, validation
 and testing.
 
 Here are a few examples from the training split:
@@ -159,7 +160,7 @@ determining if a hypothesis follows from a premise:
 - `entailment` (0): The hypothesis follows from the premise
 - `contradiction` (1): The hypothesis does not follow / contradicts the premise
 
-The dataset is sampled into 1,024 / 256 / ~2,000 samples for training, validation
+The dataset contains 1,877 / 197 / 626 samples for training, validation
 and testing with stratified sampling.
 
 Here are a few examples from the training split:
@@ -219,7 +220,7 @@ Sentiment analysis dataset from the ltzGLUE benchmark, introduced in
 annotated with sentiment labels (negative, neutral, positive), covering various
 domains including social media posts and news comments.
 
-The original ltzGLUE-SA dataset is processed into 1,024 / 256 / ~2,000 samples
+The original ltzGLUE-SA dataset contains 3,022 / 597 / 926 samples
 for training, validation and testing, respectively, with stratified sampling to
 maintain label balance.
 
@@ -363,7 +364,7 @@ Target format:
 - `text`: Full Luxembourgish article or document
 - `summary`: Human-written Luxembourgish summary
 
-Target splits: 1,024 / 256 / 2,048 samples for train, validation and test.
+This is a placeholder dataset pending creation from the LuxGen benchmark.
 
 ```bash
 euroeval --model <model-id> --dataset luxgen-summ
@@ -378,7 +379,8 @@ is appropriate for a given news article. Tests the model's ability to
 understand document-level semantics and headline-article coherence.
 
 The dataset consists of article-headline pairs with binary labels (yes/no for
-appropriateness), sampled into 1,024 / 256 / ~2,000 samples.
+appropriateness). The dataset contains 20,716 / 2,960 / 5,919 samples
+for training, validation and testing.
 
 Here are a few examples:
 
@@ -403,7 +405,8 @@ euroeval --model <model-id> --dataset ltzglue-hc
 ### Unofficial: ltzGLUE-ID
 
 Intent Detection from ltzGLUE. Multi-class classification of sentence intent,
-testing pragmatic understanding. Intent categories include:
+testing pragmatic understanding. The dataset contains 53 / 66 samples for
+validation and testing (no training data provided). Intent categories include:
 
 - `question`: Asking for information
 - `statement`: Making a declarative statement
@@ -418,7 +421,8 @@ euroeval --model <model-id> --dataset ltzglue-id
 
 Topic Classification from ltzGLUE. Multi-class classification of news articles
 into topic categories such as politics, sports, culture, economy, and technology.
-Tests the model's ability to identify document-level topics.
+The dataset contains 9,932 / 1,240 / 1,245 samples for training, validation and
+testing. Tests the model's ability to identify document-level topics.
 
 ```bash
 euroeval --model <model-id> --dataset ltzglue-tc
