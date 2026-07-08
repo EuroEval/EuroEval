@@ -454,7 +454,7 @@ are sourced from major Luxembourgish news outlets including Luxemburger Wort,
 RTL Lëtzebuerg, and other local news websites, with human-written summaries covering
 various domains including politics, economy, and culture.
 
-The original dataset consists of approximately 5,000 samples. We use a
+The original dataset consists of 5,003 samples. We use a
 1,024 / 256 / 2,048 split for training, validation and testing, respectively
 (so 3,328 samples used in total). All the new splits are subsets of the original data.
 
