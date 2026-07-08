@@ -381,13 +381,12 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Text: {text}
 
-  Bestëmmt ob déi zweet Aussag aus der éischter follegt, hir widersprécht, oder keng logesch Verbindung mat
-  hir huet. Äntwert mat 'folgerung', 'neutral', oder 'widdersträit'.
+  Bestëmmt ob déi zweet Aussag aus der éischter follegt oder hir widersprécht.
+  Äntwert mat 'folgerung' oder 'widdersträit'.
   ```
 
 - Label mapping:
   - `entailment` ➡️ `folgerung`
-  - `neutral` ➡️ `neutral`
   - `contradiction` ➡️ `widdersträit`
 
 You can evaluate this dataset directly as follows:
