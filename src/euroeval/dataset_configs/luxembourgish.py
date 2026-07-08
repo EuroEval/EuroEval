@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LUXEMBOURGISH
-from ..tasks import LA, NER, NLI, RC, SENT, TEXT_CLASSIFICATION
+from ..tasks import LA, NER, NLI, RC, SENT, SUMM, TEXT_CLASSIFICATION
 
 # Official datasets ###
 
@@ -13,6 +13,27 @@ MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
     subset="lb",
     task=RC,
     languages=[LUXEMBOURGISH],
+)
+
+LUXGEN_SUMM_CONFIG = DatasetConfig(
+    name="luxgen-summ",
+    pretty_name="LuxGen-Summ",
+    source="EuroEval/luxgen-summ",
+    task=SUMM,
+    languages=[LUXEMBOURGISH],
+    unofficial=False,
+)
+
+# Unofficial datasets ###
+
+SCALA_LB_CONFIG = DatasetConfig(
+    name="scala-lb",
+    pretty_name="ScaLA-lb",
+    source="EuroEval/scala-lb",
+    task=LA,
+    languages=[LUXEMBOURGISH],
+    unofficial=True,
+    labels=["incorrect", "correct"],
 )
 
 # Unofficial datasets from ltzGLUE (plumaj/ltzGLUE) ###

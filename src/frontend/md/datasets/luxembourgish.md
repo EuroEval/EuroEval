@@ -85,9 +85,20 @@ euroeval --model <model-id> --dataset ltzglue-la-multi
 
 ### Unofficial: ScaLA-lb
 
-⏳ **To be created** — Linguistic acceptability dataset from the
+Linguistic acceptability dataset created from the
 [UD Luxembourgish-LuxBank treebank](https://github.com/UniversalDependencies/UD_Luxembourgish-LuxBank)
-using the ScaLA algorithm (different from ltzGLUE-LA).
+using the ScaLA algorithm. Sentences are corrupted by word swaps or deletions
+to create grammatically incorrect examples.
+
+**Note:** The current UD Luxembourgish treebank only contains ~100 sentences
+(translated Cairo Cycling examples). A proper ScaLA-lb dataset requires
+additional Luxembourgish text sources.
+
+Uploaded to `EuroEval/scala-lb` on Hugging Face (pending).
+
+```bash
+euroeval --model <model-id> --dataset scala-lb
+```
 
 ## Named Entity Recognition
 
@@ -151,10 +162,19 @@ euroeval --model <model-id> --dataset ltzglue-tc
 
 ## Summarisation
 
-### Unofficial: LuxGen-Summ
+### LuxGen-Summ
 
-⏳ **To be created** — Summarisation dataset from the
+Luxembourgish summarisation dataset from the
 [LuxGen benchmark](https://arxiv.org/abs/2412.09415).
+
+**Note:** Dataset creation script is a placeholder - actual dataset needs to be
+extracted from LuxGen or created from Luxembourgish articles with summaries.
+
+To be uploaded to `EuroEval/luxgen-summ` on Hugging Face.
+
+```bash
+euroeval --model <model-id> --dataset luxgen-summ
+```
 
 ## Knowledge
 
