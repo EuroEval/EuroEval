@@ -584,25 +584,6 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ltzglue-hc
 ```
 
-### Unofficial: ltzGLUE-ID
-
-Intent detection dataset from the ltzGLUE benchmark, containing Luxembourgish
-queries annotated with intent categories such as weather lookup, restaurant booking,
-music playback, alarm setting, and creative work search. The queries are synthetically
-generated to cover common voice assistant and search engine intents.
-
-The original dataset only provides validation and test splits (53 and 66 samples
-respectively) with no training data. The dataset contains 10 intent classes, some
-with only 1-2 samples, making stratified splitting impossible.
-
-Due to the extremely limited size and lack of training data, this dataset is marked
-as **unofficial** and is intended for diagnostic purposes only. It is not suitable
-for leaderboard inclusion.
-
-Example categories include: `weather/find`, `BookRestaurant`, `SearchCreativeWork`,
-`PlayMusic`, `alarm/set_alarm`, `SearchScreeningEvent`, `reminder/set_reminder`,
-`RateBook`, `AddToPlaylist`, `alarm/cancel_alarm`.
-
 ### ltzGLUE-TC
 
 This dataset was published in
@@ -671,3 +652,22 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset ltzglue-tc
 ```
+
+### Unofficial: ltzGLUE-ID
+
+Intent detection dataset from the ltzGLUE benchmark, containing Luxembourgish
+queries annotated with intent categories such as weather lookup, restaurant booking,
+music playback, alarm setting, and creative work search. The queries are synthetically
+generated to cover common voice assistant and search engine intents.
+
+The original dataset only provides validation and test splits (53 and 66 samples
+respectively) with no training data. The dataset contains 10 intent classes, some
+with only 1-2 samples, making stratified splitting impossible.
+
+Due to the extremely limited size and lack of training data, this dataset is marked
+as **unofficial** and is intended for diagnostic purposes only. It is not suitable
+for leaderboard inclusion.
+
+Example categories include: `weather/find`, `BookRestaurant`, `SearchCreativeWork`,
+`PlayMusic`, `alarm/set_alarm`, `SearchScreeningEvent`, `reminder/set_reminder`,
+`RateBook`, `AddToPlaylist`, `alarm/cancel_alarm`.
