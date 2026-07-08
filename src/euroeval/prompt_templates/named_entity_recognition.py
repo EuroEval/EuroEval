@@ -25,6 +25,7 @@ from ..languages import (
     ITALIAN,
     LATVIAN,
     LITHUANIAN,
+    LUXEMBOURGISH,
     NORWEGIAN,
     NORWEGIAN_BOKMÅL,
     NORWEGIAN_NYNORSK,
@@ -656,8 +657,8 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "enheterna i meningen. Du ska outputta detta som en JSON-ordbok med nycklarna "
         "{labels_str}. Värdena ska vara listor över de namngivna enheterna av den "
         "typen, precis som de förekommer i meningen.",
-    ),
-    UKRAINIAN: PromptConfig(
+    ), UKRAINIAN:
+    PromptConfig(
         default_prompt_label_mapping={
             "b-per": "особа",
             "i-per": "особа",
@@ -676,5 +677,25 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "реченні. Ви повинні вивести це як JSON-словник з ключами {labels_str}. "
         "Значення мають бути списками іменованих сутностей цього типу, точно "
         "такими, як вони з'являються у реченні.",
+    ),
+    LUXEMBOURGISH:
+    PromptConfig(
+        default_prompt_label_mapping={
+            "b-per": "persoun",
+            "i-per": "persoun",
+            "b-loc": "plaz",
+            "i-loc": "plaz",
+            "b-org": "organisatioun",
+            "i-org": "organisatioun",
+            "b-misc": "divers",
+            "i-misc": "divers",
+        },
+        default_prompt_prefix="Folgend si Sätz a JSON-Wierderbicher mat den "
+        "benannten Entitéiten, déi am Satz virkommen.",
+        default_prompt_template="Saz: {text}\nBenannt Entitéiten: {label}",
+        default_instruction_prompt="Saz: {text}\n\nIdentifizéiert déi benannt "
+        "Entitéiten am Saz. Dir sollt dës als JSON-Wierderbuch mat de Schlësselen "
+        "{labels_str} ausginn. D'Wäerter solle Lëschte vun de benannten Entitéite "
+        "vun deem Typ sinn, genee sou wéi se am Saz virkommen.",
     ),
 }

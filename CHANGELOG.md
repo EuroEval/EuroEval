@@ -9,7 +9,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Added support for Luxembourgish 🇱🇺! This includes the ltzGLUE benchmark datasets for
+- Added support for Luxembourgish! This includes the ltzGLUE benchmark datasets for
   headline classification, intent detection, linguistic acceptability (binary and
   multi-class), named entity recognition, textual entailment, sentiment analysis, and
   topic classification. In addition, the ScaLA-lb linguistic acceptability dataset and

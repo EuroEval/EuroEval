@@ -86,6 +86,7 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     task=LA,
     languages=[LUXEMBOURGISH],
     unofficial=True,
+    labels=["correct", "word_order", "agreement", "morphology", "other"],
 )
 
 LTZGLUE_ID_CONFIG = DatasetConfig(
@@ -95,6 +96,7 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
     unofficial=True,
+    labels=["question", "statement", "command", "exclamation"],
 )
 
 LTZGLUE_TC_CONFIG = DatasetConfig(
@@ -104,4 +106,5 @@ LTZGLUE_TC_CONFIG = DatasetConfig(
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
     unofficial=True,
+    labels=["politics", "sports", "culture", "economy", "technology"],
 )

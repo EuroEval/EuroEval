@@ -25,6 +25,7 @@ from ..languages import (
     ITALIAN,
     LATVIAN,
     LITHUANIAN,
+    LUXEMBOURGISH,
     NORWEGIAN,
     NORWEGIAN_BOKMÅL,
     NORWEGIAN_NYNORSK,
@@ -393,8 +394,8 @@ NLI_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="{text}\n\nBestäm om det andra påståendet följer "
         "av det första, motsäger det eller saknar logiskt samband med det. Svara med "
         "{labels_str}, och inget annat.",
-    ),
-    UKRAINIAN: PromptConfig(
+    ), UKRAINIAN:
+    PromptConfig(
         default_prompt_label_mapping=dict(
             entailment="правда", neutral="нейтрально", contradiction="неправда"
         ),
@@ -404,5 +405,17 @@ NLI_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="{text}\n\nВизначте, чи друге твердження "
         "випливає з першого, суперечить йому або не має логічного зв'язку з ним. "
         "Відповідайте {labels_str}, і нічого більше.",
+    ),
+    LUXEMBOURGISH:
+    PromptConfig(
+        default_prompt_label_mapping=dict(
+            entailment="folgerung", neutral="neutral", contradiction="widdersträit"
+        ),
+        default_prompt_prefix="Folgend si Pueren vun Aussoen an hir logesch Relatioun, "
+        "déi {labels_str} ka sinn.",
+        default_prompt_template="{text}\nImplikatioun: {label}",
+        default_instruction_prompt="{text}\n\nBestëmmt ob déi zweet Aussag aus der "
+        "éischter follegt, hir widersprécht, oder keng logesch Verbindung mat hir huet. "
+        "Äntwert mat {labels_str}, an näischt anescht.",
     ),
 }
