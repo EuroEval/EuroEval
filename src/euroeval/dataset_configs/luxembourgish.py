@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LUXEMBOURGISH
-from ..tasks import LA, NER, NLI, SENT, TEXT_CLASSIFICATION
+from ..tasks import LA, NER, NLI, RC, SENT, TEXT_CLASSIFICATION
+
+# Official datasets ###
+
+MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
+    name="multi-wiki-qa-lb",
+    pretty_name="MultiWikiQA-lb",
+    source="alexandrainst/multi-wiki-qa",
+    subset="lb",
+    task=RC,
+    languages=[LUXEMBOURGISH],
+)
 
 # Unofficial datasets from ltzGLUE (plumaj/ltzGLUE) ###
 
