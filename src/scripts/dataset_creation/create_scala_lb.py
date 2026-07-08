@@ -15,12 +15,16 @@ UD Luxembourgish-LuxBank treebank by corrupting sentences.
 """
 
 import random
+
+import requests
 from pathlib import Path
 
 import pandas as pd
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
+
+UD_LB_URL = "https://raw.githubusercontent.com/UniversalDependencies/UD_Luxembourgish-LuxBank/main/lb_luxbank-ud-train.conllu"
 
 
 def parse_conllu(file_path: Path) -> list[dict]:
@@ -41,7 +45,6 @@ def parse_conllu(file_path: Path) -> list[dict]:
             line = line.strip()
             if not line or line.startswith("#"):
                 if current_sentence:
-                    # Reconstruct sentence text
                     words = [
                         w["form"] for w in current_sentence if isinstance(w["id"], int)
                     ]
@@ -85,16 +88,13 @@ def corrupt_sentence(tokens: list) -> tuple[str, str, str] | None:
 
     correct_text = " ".join(words)
 
-    # Randomly choose corruption type
     corruption_type = random.choice(["swap", "delete"])
 
     if corruption_type == "swap" and len(words) >= 2:
-        # Swap two adjacent words
         idx = random.randint(0, len(words) - 2)
         words[idx], words[idx + 1] = words[idx + 1], words[idx]
     elif len(words) >= 2:
-        # Delete a random word
-        idx = random.randint(1, len(words) - 2)  # Don't delete first/last
+        idx = random.randint(1, len(words) - 2)
         del words[idx]
 
     corrupted_text = " ".join(words)
@@ -140,7 +140,6 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
     Returns:
         Tuple of (train, val, test) DataFrames.
     """
-    # Remove corruption_type column for final dataset
     df = df[["text", "label"]]
 
     n = len(df)
@@ -162,51 +161,35 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
 
 def main() -> None:
     """Create ScaLA-lb dataset."""
-    # Note: UD Luxembourgish only has test.conllu with ~100 sentences
-    # This is too small for a proper ScaLA dataset
-    # Script documents the process but dataset needs more data
+    print("Downloading UD Luxembourgish treebank...")
+    response = requests.get(UD_LB_URL, timeout=30)
+    response.raise_for_status()
 
-    ltzbank_path = Path(__file__).parent.parent.parent / "UD_Luxembourgish-LuxBank"
-    conllu_file = ltzbank_path / "lb_luxbank-ud-test.conllu"
+    cache_dir = Path.home() / ".cache" / "euroeval" / "scala-lb"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    conllu_path = cache_dir / "lb_luxbank-ud-train.conllu"
+    conllu_path.write_text(response.text)
 
-    if not conllu_file.exists():
-        print(f"ERROR: {conllu_file} not found")
-        print(
-            "Clone UD_Luxembourgish-LuxBank first: git clone https://github.com/UniversalDependencies/UD_Luxembourgish-LuxBank.git"
-        )
-        return
-
-    print("Parsing UD Luxembourgish treebank...")
-    sentences = parse_conllu(conllu_file)
+    print("Parsing CoNLL-U file...")
+    sentences = parse_conllu(conllu_path)
     print(f"Found {len(sentences)} sentences")
 
-    if len(sentences) < 200:
-        print(f"\nWARNING: Only {len(sentences)} sentences available.")
-        print("ScaLA-lb needs more data. Consider:")
-        print("  1. Waiting for expanded treebank")
-        print("  2. Adding more Luxembourgish text sources")
-        print("  3. Using ltzGLUE-LA instead for now")
-        return
-
-    print("Creating corrupted samples...")
+    print("Creating dataset...")
     df = create_scala_dataset(sentences)
-    print(f"Created {len(df)} samples (correct + corrupted)")
+    print(f"Created {len(df)} samples")
 
     print("Creating splits...")
     train, val, test = make_splits(df)
+    print(f"Splits: {len(train)} train, {len(val)} val, {len(test)} test")
 
-    print(f"\nSplits: train={len(train)}, val={len(val)}, test={len(test)}")
-
-    dataset = DatasetDict(
-        {
-            "train": Dataset.from_pandas(train),
-            "val": Dataset.from_pandas(val),
-            "test": Dataset.from_pandas(test),
-        }
-    )
+    dataset = DatasetDict({
+        "train": Dataset.from_pandas(train),
+        "val": Dataset.from_pandas(val),
+        "test": Dataset.from_pandas(test),
+    })
 
     dataset_id = "EuroEval/scala-lb"
-    print(f"\nUploading to {dataset_id}...")
+    print(f"Uploading to {dataset_id}...")
 
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
