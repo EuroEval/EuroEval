@@ -4,35 +4,43 @@
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
+#     "requests==2.32.3",
 #     "scikit-learn==1.6.1",
 # ]
 # ///
 
-"""Create the ltzGLUE Intent Detection (ID) dataset and upload to HF Hub."""
+"""Create the ltzGLUE ID dataset and upload to HF Hub."""
 
 import json
-from pathlib import Path
 
 import pandas as pd
+import requests
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 
-def load_id_split(file_path: Path) -> pd.DataFrame:
-    """Load intent detection data."""
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+BASE_URL = "https://raw.githubusercontent.com/plumaj/ltzGLUE/refs/heads/main/data/id"
 
-    df = pd.DataFrame([
+
+def download_split(split: str) -> list[dict]:
+    """Download a single split from GitHub."""
+    url = f"{BASE_URL}/{split}.json"
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+
+def load_id_split(data: list[dict]) -> pd.DataFrame:
+    """Load intent detection data."""
+    return pd.DataFrame([
         {"text": item["text"], "label": str(item["label"])}
         for item in data
     ])
-    return df
 
 
 def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create train/val/test splits.
+    """Create train/val/test splits without stratification.
     
     Note: Does not use stratification as ID has classes with very few samples.
     """
@@ -40,12 +48,8 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
     n_train = min(1024, int(n * 0.5))
     n_val = min(256, int(n * 0.15))
 
-    train, temp = train_test_split(
-        df, train_size=n_train, random_state=42
-    )
-    val, test = train_test_split(
-        temp, train_size=n_val / len(temp), random_state=42
-    )
+    train, temp = train_test_split(df, train_size=n_train, random_state=42)
+    val, test = train_test_split(temp, train_size=n_val / len(temp), random_state=42)
 
     for d in [train, val, test]:
         d.reset_index(drop=True, inplace=True)
@@ -54,20 +58,23 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
 
 def main() -> None:
     """Create the ltzGLUE-ID dataset.
-
-    Note: ltzGLUE ID only provides lb.test.json and lb.valid.json.
-    We combine them and create standard splits.
+    
+    Note: ltzGLUE ID only provides lb.valid.json and lb.test.json.
     """
-    ltzglue_root = Path(__file__).parent.parent.parent / "ltzGLUE"
-    data_dir = ltzglue_root / "data" / "id"
+    print("Downloading ltzGLUE-ID data from GitHub...")
+    val_data = download_split("lb.valid")
+    test_data = download_split("lb.test")
 
-    test_df = load_id_split(data_dir / "lb.test.json")
-    val_df = load_id_split(data_dir / "lb.valid.json")
+    print(f"Downloaded: {len(val_data)} val, {len(test_data)} test (no training data)")
 
-    print(f"Loaded ID: {len(test_df)} test, {len(val_df)} val (no training data)")
+    combined = pd.concat([
+        load_id_split(val_data),
+        load_id_split(test_data),
+    ], ignore_index=True)
 
-    combined = pd.concat([val_df, test_df], ignore_index=True)
     final_train, final_val, final_test = make_splits(combined)
+
+    print(f"Created splits: {len(final_train)} train, {len(final_val)} val, {len(final_test)} test")
 
     dataset = DatasetDict({
         "train": Dataset.from_pandas(final_train[["text", "label"]]),

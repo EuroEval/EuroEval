@@ -4,68 +4,88 @@
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
+#     "requests==2.32.3",
 #     "scikit-learn==1.6.1",
 # ]
 # ///
 
-"""Create the ltzGLUE Named Entity Recognition (NER) dataset and upload to HF Hub."""
+"""Create the ltzGLUE NER dataset and upload to HF Hub."""
 
 import json
-from pathlib import Path
 
 import pandas as pd
+import requests
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 
-def load_ltzglue_split(file_path: Path) -> pd.DataFrame:
+BASE_URL = "https://raw.githubusercontent.com/plumaj/ltzGLUE/refs/heads/main/data/ner"
+
+
+def download_split(split: str) -> list[dict]:
+    """Download a single split from GitHub."""
+    url = f"{BASE_URL}/{split}.json"
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+
+def load_ltzglue_split(data: list[dict]) -> pd.DataFrame:
     """Load NER data and convert to token-label format."""
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    # NER data typically has tokens and tags
-    rows = []
-    for item in data:
-        tokens = item.get("tokens", item.get("text", "").split())
-        tags = item.get("tags", item.get("ner_tags", []))
-        rows.append({"tokens": tokens, "ner_tags": tags})
-
-    return pd.DataFrame(rows)
+    return pd.DataFrame([
+        {"tokens": item["tokens"], "labels": item["ner_tags"]}
+        for item in data
+    ])
 
 
-def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create train/val/test splits."""
-    n = len(df)
-    n_train = min(1024, int(n * 0.5))
-    n_val = min(256, int(n * 0.15))
+def create_splits(
+    train_df: pd.DataFrame,
+    val_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Create standardized EuroEval splits (1024/256/2048)."""
+    all_data = pd.concat([train_df, val_df, test_df], ignore_index=True)
 
-    train, temp = train_test_split(df, train_size=n_train, random_state=42)
-    val, test = train_test_split(temp, train_size=n_val / len(temp), random_state=42)
+    n_train = min(1024, int(len(all_data) * 0.5))
+    n_val = min(256, int(len(all_data) * 0.15))
 
-    for d in [train, val, test]:
-        d.reset_index(drop=True, inplace=True)
-    return train, val, test
+    train_data, temp = train_test_split(
+        all_data, train_size=n_train, random_state=42
+    )
+    val_data, test_data = train_test_split(
+        temp,
+        train_size=n_val / len(temp),
+        random_state=42,
+    )
+
+    for df in [train_data, val_data, test_data]:
+        df.reset_index(drop=True, inplace=True)
+
+    return train_data, val_data, test_data
 
 
 def main() -> None:
-    """Create the ltzGLUE-NER dataset."""
-    ltzglue_root = Path(__file__).parent.parent.parent / "ltzGLUE"
-    data_dir = ltzglue_root / "data" / "ner"
+    """Create the ltzGLUE-NER dataset and upload to HF Hub."""
+    print("Downloading ltzGLUE-NER data from GitHub...")
+    train_data = download_split("train")
+    val_data = download_split("dev")
+    test_data = download_split("test")
 
-    train_df = load_ltzglue_split(data_dir / "train.json")
-    val_df = load_ltzglue_split(data_dir / "dev.json")
-    test_df = load_ltzglue_split(data_dir / "test.json")
+    print(f"Downloaded: {len(train_data)} train, {len(val_data)} val, {len(test_data)} test")
 
-    print(f"Loaded NER: {len(train_df)} train, {len(val_df)} dev, {len(test_df)} test")
+    train_df = load_ltzglue_split(train_data)
+    val_df = load_ltzglue_split(val_data)
+    test_df = load_ltzglue_split(test_data)
 
-    combined = pd.concat([train_df, val_df, test_df], ignore_index=True)
-    final_train, final_val, final_test = make_splits(combined)
+    final_train, final_val, final_test = create_splits(train_df, val_df, test_df)
+
+    print(f"Created splits: {len(final_train)} train, {len(final_val)} val, {len(final_test)} test")
 
     dataset = DatasetDict({
-        "train": Dataset.from_pandas(final_train[["tokens", "ner_tags"]]),
-        "val": Dataset.from_pandas(final_val[["tokens", "ner_tags"]]),
-        "test": Dataset.from_pandas(final_test[["tokens", "ner_tags"]]),
+        "train": Dataset.from_pandas(final_train[["tokens", "labels"]]),
+        "val": Dataset.from_pandas(final_val[["tokens", "labels"]]),
+        "test": Dataset.from_pandas(final_test[["tokens", "labels"]]),
     })
 
     dataset_id = "EuroEval/ltzglue-ner"

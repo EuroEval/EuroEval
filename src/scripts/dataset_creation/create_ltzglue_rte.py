@@ -4,60 +4,74 @@
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
+#     "requests==2.32.3",
 #     "scikit-learn==1.6.1",
 # ]
 # ///
 
-"""Create the ltzGLUE RTE (Recognising Textual Entailment) dataset and upload to HF Hub."""
-
-from pathlib import Path
+"""Create the ltzGLUE RTE dataset and upload to HF Hub."""
 
 import pandas as pd
+import requests
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 
-def load_rte_split(file_path: Path) -> pd.DataFrame:
-    """Load RTE data from TSV file with premise/hypothesis pairs."""
-    df = pd.read_csv(file_path, sep="\t")
+BASE_URL = "https://raw.githubusercontent.com/plumaj/ltzGLUE/refs/heads/main/data/rte"
+
+
+def download_split(split: str) -> pd.DataFrame:
+    """Download a single split from GitHub."""
+    url = f"{BASE_URL}/{split}.tsv"
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    df = pd.read_csv(pd.io.StringIO(response.text), sep="\t")
     label_map = {0: "entailment", 1: "contradiction"}
     df["label"] = df["label"].map(label_map)
     df = df.rename(columns={"sentence1": "premise", "sentence2": "hypothesis"})
     return df[["premise", "hypothesis", "label"]]
 
 
-def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create train/val/test splits with stratification."""
-    n = len(df)
-    n_train = min(1024, int(n * 0.5))
-    n_val = min(256, int(n * 0.15))
+def create_splits(
+    train_df: pd.DataFrame,
+    val_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Create standardized EuroEval splits (1024/256/2048)."""
+    all_data = pd.concat([train_df, val_df, test_df], ignore_index=True)
 
-    train, temp = train_test_split(
-        df, train_size=n_train, random_state=42, stratify=df["label"]
+    n_train = min(1024, int(len(all_data) * 0.5))
+    n_val = min(256, int(len(all_data) * 0.15))
+
+    train_data, temp = train_test_split(
+        all_data, train_size=n_train, random_state=42, stratify=all_data["label"]
     )
-    val, test = train_test_split(
-        temp, train_size=n_val / len(temp), random_state=42, stratify=temp["label"]
+    val_data, test_data = train_test_split(
+        temp,
+        train_size=n_val / len(temp),
+        random_state=42,
+        stratify=temp["label"],
     )
 
-    for d in [train, val, test]:
-        d.reset_index(drop=True, inplace=True)
-    return train, val, test
+    for df in [train_data, val_data, test_data]:
+        df.reset_index(drop=True, inplace=True)
+
+    return train_data, val_data, test_data
 
 
 def main() -> None:
-    """Create the ltzGLUE-RTE dataset."""
-    ltzglue_root = Path(__file__).parent.parent.parent / "ltzGLUE"
-    data_dir = ltzglue_root / "data" / "rte"
+    """Create the ltzGLUE-RTE dataset and upload to HF Hub."""
+    print("Downloading ltzGLUE-RTE data from GitHub...")
+    train_df = download_split("train")
+    val_df = download_split("dev")
+    test_df = download_split("test")
 
-    train_df = load_rte_split(data_dir / "train.tsv")
-    val_df = load_rte_split(data_dir / "dev.tsv")
-    test_df = load_rte_split(data_dir / "test.tsv")
+    print(f"Downloaded: {len(train_df)} train, {len(val_df)} val, {len(test_df)} test")
 
-    print(f"Loaded RTE: {len(train_df)} train, {len(val_df)} dev, {len(test_df)} test")
+    final_train, final_val, final_test = create_splits(train_df, val_df, test_df)
 
-    combined = pd.concat([train_df, val_df, test_df], ignore_index=True)
-    final_train, final_val, final_test = make_splits(combined)
+    print(f"Created splits: {len(final_train)} train, {len(final_val)} val, {len(final_test)} test")
 
     dataset = DatasetDict({
         "train": Dataset.from_pandas(final_train[["premise", "hypothesis", "label"]]),
