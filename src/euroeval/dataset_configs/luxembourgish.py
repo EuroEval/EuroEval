@@ -48,8 +48,7 @@ LTZGLUE_HC_CONFIG = DatasetConfig(
     languages=[LUXEMBOURGISH],
     labels=["no", "yes"],
     prompt_prefix=(
-        "Folgend sinn Iwwerschrëften an ob den Artikel "
-        "dës Behaaptung bestätegt."
+        "Folgend sinn Iwwerschrëften an ob den Artikel dës Behaaptung bestätegt."
     ),
     prompt_template="Iwwerschrëft: {text}\nBestätegt: {label}",
     instruction_prompt="Iwwerschrëft: {text}\n\nBestëmmt ob den Artikel d'Behaaptung "
