@@ -187,7 +187,11 @@ def _create_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Dat
         df, train_size=n_train, random_state=42, stratify=df["label"]
     )
     val, test = train_test_split(
-        temp, train_size=n_val, test_size=n_test, random_state=42, stratify=temp["label"]
+        temp,
+        train_size=n_val,
+        test_size=n_test,
+        random_state=42,
+        stratify=temp["label"],
     )
 
     for d in [train, val, test]:
