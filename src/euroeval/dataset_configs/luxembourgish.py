@@ -68,16 +68,6 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
 
 # Unofficial datasets ###
 
-SCALA_LB_CONFIG = DatasetConfig(
-    name="scala-lb",
-    pretty_name="ScaLA-lb",
-    source="EuroEval/scala-lb",
-    task=LA,
-    languages=[LUXEMBOURGISH],
-    unofficial=True,
-    labels=["incorrect", "correct"],
-)
-
 LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     name="ltzglue-la-multi",
     pretty_name="ltzGLUE-LA (Multi-class)",

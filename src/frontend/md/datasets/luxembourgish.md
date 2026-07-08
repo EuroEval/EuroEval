@@ -295,16 +295,6 @@ This dataset is marked as **unofficial** and is used for diagnostic purposes onl
 euroeval --model <model-id> --dataset ltzglue-la-multi
 ```
 
-### Unofficial: ScaLA-lb
-
-Luxembourgish subset of [ScaLA](https://github.com/UniversalDependencies/UD_Luxembourgish-LuxBank),
-derived from the Universal Dependencies Luxembourgish-LuxBank treebank. Contains
-sentences from the Cairo Cycling corpus with grammaticality judgments.
-
-The UD Luxembourgish-LuxBank treebank contains only ~100 sentences, which is
-insufficient for proper evaluation. This dataset is marked as **unofficial** and
-requires expansion before it can be used for benchmarking.
-
 ## Natural Language Inference
 
 ### ltzGLUE-RTE
