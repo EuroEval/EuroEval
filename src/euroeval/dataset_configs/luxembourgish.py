@@ -47,7 +47,10 @@ LTZGLUE_HC_CONFIG = DatasetConfig(
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
     labels=["no", "yes"],
-    prompt_prefix="Folgend sinn Iwwerschrëften an ob den Artikel dës Behaaptung bestätegt.",
+    prompt_prefix=(
+        "Folgend sinn Iwwerschrëften an ob den Artikel "
+        "dës Behaaptung bestätegt."
+    ),
     prompt_template="Iwwerschrëft: {text}\nBestätegt: {label}",
     instruction_prompt="Iwwerschrëft: {text}\n\nBestëmmt ob den Artikel d'Behaaptung "
     "an der Iwwerschrëft bestätegt. Äntwert nëmme mat 'yes' oder 'no'.",
