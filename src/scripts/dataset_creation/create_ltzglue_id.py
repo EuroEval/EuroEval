@@ -36,27 +36,27 @@ def main() -> None:
     test_data = _download_split("lb.test")
 
     logger.info(
-        f"Downloaded: {len(val_data)} val, {len(test_data)} test "
-        f"(no training data)",
+        f"Downloaded: {len(val_data)} val, {len(test_data)} test (no training data)"
     )
 
-    combined = pd.concat([
-        _load_split(val_data),
-        _load_split(test_data),
-    ], ignore_index=True)
+    combined = pd.concat(
+        [_load_split(val_data), _load_split(test_data)], ignore_index=True
+    )
 
     final_train, final_val, final_test = _make_splits(combined)
 
     logger.info(
         f"Created splits: {len(final_train)} train, {len(final_val)} val, "
-        f"{len(final_test)} test",
+        f"{len(final_test)} test"
     )
 
-    dataset = DatasetDict({
-        "train": Dataset.from_pandas(final_train[["text", "label"]]),
-        "val": Dataset.from_pandas(final_val[["text", "label"]]),
-        "test": Dataset.from_pandas(final_test[["text", "label"]]),
-    })
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_pandas(final_train[["text", "label"]]),
+            "val": Dataset.from_pandas(final_val[["text", "label"]]),
+            "test": Dataset.from_pandas(final_test[["text", "label"]]),
+        }
+    )
 
     dataset_id = "EuroEval/ltzglue-id"
     logger.info(f"Uploading to {dataset_id}...")
@@ -92,10 +92,9 @@ def _load_split(data: list[dict]) -> pd.DataFrame:
     Returns:
         DataFrame with text and label columns.
     """
-    return pd.DataFrame([
-        {"text": item["text"], "label": str(item["label"])}
-        for item in data
-    ])
+    return pd.DataFrame(
+        [{"text": item["text"], "label": str(item["label"])} for item in data]
+    )
 
 
 def _make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -116,9 +115,7 @@ def _make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataF
     n_val = min(256, int(n * 0.15))
 
     train, temp = train_test_split(df, train_size=n_train, random_state=42)
-    val, test = train_test_split(
-        temp, train_size=n_val / len(temp), random_state=42,
-    )
+    val, test = train_test_split(temp, train_size=n_val / len(temp), random_state=42)
 
     for d in [train, val, test]:
         d.reset_index(drop=True, inplace=True)

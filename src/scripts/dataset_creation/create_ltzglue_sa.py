@@ -11,9 +11,7 @@
 
 """Create the ltzGLUE Sentiment Analysis (SA) dataset and upload to HF Hub."""
 
-import io
 import logging
-from pathlib import Path
 
 import pandas as pd
 import requests
@@ -36,7 +34,7 @@ def main() -> None:
 
     logger.info(
         f"Downloaded: {len(train_data)} train, {len(val_data)} val, "
-        f"{len(test_data)} test",
+        f"{len(test_data)} test"
     )
 
     train_df = _load_split(train_data)
@@ -47,14 +45,16 @@ def main() -> None:
 
     logger.info(
         f"Created splits: {len(final_train)} train, {len(final_val)} val, "
-        f"{len(final_test)} test",
+        f"{len(final_test)} test"
     )
 
-    dataset = DatasetDict({
-        "train": Dataset.from_pandas(final_train[["text", "label"]]),
-        "val": Dataset.from_pandas(final_val[["text", "label"]]),
-        "test": Dataset.from_pandas(final_test[["text", "label"]]),
-    })
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_pandas(final_train[["text", "label"]]),
+            "val": Dataset.from_pandas(final_val[["text", "label"]]),
+            "test": Dataset.from_pandas(final_test[["text", "label"]]),
+        }
+    )
 
     dataset_id = "EuroEval/ltzglue-sa"
     logger.info(f"Uploading to {dataset_id}...")
@@ -90,16 +90,13 @@ def _load_split(data: list[dict]) -> pd.DataFrame:
     Returns:
         DataFrame with text and label columns.
     """
-    return pd.DataFrame([
-        {"text": item["sentence"], "label": str(item["label"])}
-        for item in data
-    ])
+    return pd.DataFrame(
+        [{"text": item["sentence"], "label": str(item["label"])} for item in data]
+    )
 
 
 def _create_splits(
-    train_df: pd.DataFrame,
-    val_df: pd.DataFrame,
-    test_df: pd.DataFrame,
+    train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Create standardized EuroEval splits (1024/256/2048).
 
@@ -121,13 +118,10 @@ def _create_splits(
     n_val = min(256, int(len(all_data) * 0.15))
 
     train_data, temp = train_test_split(
-        all_data, train_size=n_train, random_state=42, stratify=all_data["label"],
+        all_data, train_size=n_train, random_state=42, stratify=all_data["label"]
     )
     val_data, test_data = train_test_split(
-        temp,
-        train_size=n_val / len(temp),
-        random_state=42,
-        stratify=temp["label"],
+        temp, train_size=n_val / len(temp), random_state=42, stratify=temp["label"]
     )
 
     for df in [train_data, val_data, test_data]:

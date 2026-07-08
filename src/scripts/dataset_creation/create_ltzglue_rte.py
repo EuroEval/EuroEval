@@ -34,22 +34,25 @@ def main() -> None:
     test_df = _download_split("test")
 
     logger.info(
-        f"Downloaded: {len(train_df)} train, {len(val_df)} val, "
-        f"{len(test_df)} test",
+        f"Downloaded: {len(train_df)} train, {len(val_df)} val, {len(test_df)} test"
     )
 
     final_train, final_val, final_test = _create_splits(train_df, val_df, test_df)
 
     logger.info(
         f"Created splits: {len(final_train)} train, {len(final_val)} val, "
-        f"{len(final_test)} test",
+        f"{len(final_test)} test"
     )
 
-    dataset = DatasetDict({
-        "train": Dataset.from_pandas(final_train[["premise", "hypothesis", "label"]]),
-        "val": Dataset.from_pandas(final_val[["premise", "hypothesis", "label"]]),
-        "test": Dataset.from_pandas(final_test[["premise", "hypothesis", "label"]]),
-    })
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_pandas(
+                final_train[["premise", "hypothesis", "label"]]
+            ),
+            "val": Dataset.from_pandas(final_val[["premise", "hypothesis", "label"]]),
+            "test": Dataset.from_pandas(final_test[["premise", "hypothesis", "label"]]),
+        }
+    )
 
     dataset_id = "EuroEval/ltzglue-rte"
     logger.info(f"Uploading to {dataset_id}...")
@@ -80,9 +83,7 @@ def _download_split(split: str) -> pd.DataFrame:
 
 
 def _create_splits(
-    train_df: pd.DataFrame,
-    val_df: pd.DataFrame,
-    test_df: pd.DataFrame,
+    train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Create standardized EuroEval splits (1024/256/2048).
 
@@ -103,13 +104,10 @@ def _create_splits(
     n_val = min(256, int(len(all_data) * 0.15))
 
     train_data, temp = train_test_split(
-        all_data, train_size=n_train, random_state=42, stratify=all_data["label"],
+        all_data, train_size=n_train, random_state=42, stratify=all_data["label"]
     )
     val_data, test_data = train_test_split(
-        temp,
-        train_size=n_val / len(temp),
-        random_state=42,
-        stratify=temp["label"],
+        temp, train_size=n_val / len(temp), random_state=42, stratify=temp["label"]
     )
 
     for df in [train_data, val_data, test_data]:
