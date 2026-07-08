@@ -102,16 +102,15 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-rte",
     task=NLI,
     languages=[LUXEMBOURGISH],
-    labels=["entailment", "neutral", "contradiction"],
+    labels=["entailment", "contradiction"],
     prompt_prefix="Fir dës Puer ass uginn ob d'Hypothees d'Premisse follegt "
     "oder widderleet.",
     prompt_template="Text: {text}\nRelatioun: {label}",
     instruction_prompt="Text: {text}\n\nBestëmmt ob déi zweet Aussag aus der "
-    "éischter follegt, hir widdersträit, oder keng logesch Verbindung mat hir huet. "
-    "Äntwert mat 'folgerung', 'neutral', oder 'widdersträit'.",
+    "éischter follegt oder hir widdersträit. Äntwert mat 'folgerung' oder "
+    "'widdersträit'.",
     prompt_label_mapping={
         "entailment": "folgerung",
-        "neutral": "neutral",
         "contradiction": "widdersträit",
     },
 )
