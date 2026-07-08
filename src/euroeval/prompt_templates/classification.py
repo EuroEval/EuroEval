@@ -207,10 +207,8 @@ CLASSIFICATION_TEMPLATES: dict["Language", PromptConfig] = {
     LUXEMBOURGISH: PromptConfig(
         default_prompt_prefix="Folgend sinn Texter an hir Etiketten.",
         default_prompt_template="Text: {text}\nEtikett: {label}",
-        default_instruction_prompt=(
-            "Hei ass en Text:\n'{text}'.\n\nKlassifizéiert den Text an d'Kategorien "
-            "{labels_str} an äntwert nëmme mat dem Etikett."
-        ),
+        default_instruction_prompt="Hei ass en Text:\n'{text}'.\n\nKlassifizéiert "
+        "den Text an d'Kategorien {labels_str} an äntwert nëmme mat dem Etikett.",
         default_prompt_label_mapping="auto",
     ),
 }
