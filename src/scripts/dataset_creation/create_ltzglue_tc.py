@@ -25,7 +25,7 @@ def load_tc_split(file_path: Path) -> pd.DataFrame:
         data = json.load(f)
 
     df = pd.DataFrame([
-        {"text": item["text"], "label": str(item["label"])}
+        {"text": f"{item['title']}: {item['text']}", "label": str(item["category_name"])}
         for item in data
     ])
     return df

@@ -50,17 +50,20 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
 
 
 def main() -> None:
-    """Create the ltzGLUE-ID dataset."""
+    """Create the ltzGLUE-ID dataset.
+
+    Note: ltzGLUE ID only provides lb.test.json and lb.valid.json.
+    We combine them and create standard splits.
+    """
     ltzglue_root = Path(__file__).parent.parent.parent / "ltzGLUE"
     data_dir = ltzglue_root / "data" / "id"
 
-    train_df = load_id_split(data_dir / "train.json")
-    val_df = load_id_split(data_dir / "dev.json")
-    test_df = load_id_split(data_dir / "test.json")
+    test_df = load_id_split(data_dir / "lb.test.json")
+    val_df = load_id_split(data_dir / "lb.valid.json")
 
-    print(f"Loaded ID: {len(train_df)} train, {len(val_df)} dev, {len(test_df)} test")
+    print(f"Loaded ID: {len(test_df)} test, {len(val_df)} val (no training data)")
 
-    combined = pd.concat([train_df, val_df, test_df], ignore_index=True)
+    combined = pd.concat([val_df, test_df], ignore_index=True)
     final_train, final_val, final_test = make_splits(combined)
 
     dataset = DatasetDict({

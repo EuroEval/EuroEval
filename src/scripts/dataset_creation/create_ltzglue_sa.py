@@ -25,7 +25,7 @@ def load_ltzglue_split(file_path: Path) -> pd.DataFrame:
         data = json.load(f)
 
     df = pd.DataFrame([
-        {"text": item["text"], "label": str(item["label"])}
+        {"text": item["sentence"], "label": str(item["label"])}
         for item in data
     ])
     return df
