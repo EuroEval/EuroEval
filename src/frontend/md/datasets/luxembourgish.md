@@ -9,10 +9,11 @@ resources compared to other European languages.
 
 ### ltzGLUE-SA
 
-Sentiment analysis dataset from the ltzGLUE benchmark, introduced in
-[this paper](https://arxiv.org/abs/2604.17976). Contains Luxembourgish texts
-annotated with sentiment labels (negative, neutral, positive), covering various
-domains including social media posts and news comments.
+This dataset was published in
+[this paper](https://arxiv.org/abs/2604.17976) and contains Luxembourgish texts
+annotated with sentiment labels (negative, neutral, positive). The data is collected
+from Luxembourgish social media posts and news website comments, covering various
+domains including politics, culture, and daily life.
 
 The original ltzGLUE-SA dataset contains 3,022 / 597 / 926 samples
 for training, validation and testing, respectively, with stratified sampling to
@@ -82,10 +83,11 @@ euroeval --model <model-id> --dataset ltzglue-sa
 
 ### ltzGLUE-NER
 
-Named entity recognition dataset from the ltzGLUE benchmark, introduced in
-[this paper](https://arxiv.org/abs/2604.17976). Contains Luxembourgish news articles
+This dataset was published in
+[this paper](https://arxiv.org/abs/2604.17976) and contains Luxembourgish news articles
 annotated with BIO-formatted entity tags for person, location, organization, and
-miscellaneous entities.
+miscellaneous entities. The articles are sourced from major Luxembourgish news outlets
+including Luxemburger Wort, RTL Lëtzebuerg, and other local news websites.
 
 The original ltzGLUE-NER dataset contains 27,245 / 3,327 / 3,821 samples
 for training, validation and testing, respectively. We apply the standard EuroEval
@@ -160,11 +162,11 @@ euroeval --model <model-id> --dataset ltzglue-ner
 
 ### ltzGLUE-LA
 
-Binary linguistic acceptability task from the ltzGLUE benchmark, introduced in
+This dataset was published in
 [this paper](https://arxiv.org/abs/2604.17976). Luxembourgish sentences must be
 classified as grammatically correct or incorrect. The dataset includes naturally
-occurring text as well as systematically corrupted examples with various error types
-(word order, agreement, case, etc.).
+occurring text from various Luxembourgish sources as well as systematically corrupted
+examples with various error types (word order, agreement, case, etc.).
 
 The original ltzGLUE-LA dataset contains 14,678 / 2,094 / 4,045 samples
 for training, validation and testing, with balanced classes. We apply the standard
@@ -230,10 +232,13 @@ euroeval --model <model-id> --dataset ltzglue-la
 
 ### Unofficial: ltzGLUE-LA (Multi-class)
 
-Multi-class variant of the linguistic acceptability task where models must identify
-the specific error type in addition to detecting incorrectness. Error categories
-include word order, subject-verb agreement, case marking, determiner-noun agreement,
-and other grammatical violations.
+This dataset was published in
+[this paper](https://arxiv.org/abs/2604.17976). Multi-class variant of the linguistic
+acceptability task where models must identify the specific error type in addition to
+detecting incorrectness. Error categories include word order, subject-verb agreement,
+case marking, determiner-noun agreement, and other grammatical violations. The data
+includes naturally occurring text from various Luxembourgish sources as well as
+systematically corrupted examples.
 
 The original dataset contains 14,678 / 2,094 / 4,045 samples
 for training, validation and testing. We apply the standard EuroEval cap of
@@ -299,9 +304,10 @@ euroeval --model <model-id> --dataset ltzglue-la-multi
 
 ### ltzGLUE-RTE
 
-Recognizing textual entailment dataset from the ltzGLUE benchmark, introduced in
-[this paper](https://arxiv.org/abs/2604.17976). Given a premise and hypothesis pair,
-models must determine if the hypothesis is entailed by or contradicts the premise.
+This dataset was published in
+[this paper](https://arxiv.org/abs/2604.17976). Given a premise and hypothesis pair
+from Luxembourgish text sources, models must determine if the hypothesis is entailed
+by or contradicts the premise.
 
 The original ltzGLUE-RTE dataset contains 1,877 / 197 / 626 samples
 for training, validation and testing, respectively. Due to limited validation and
@@ -375,9 +381,11 @@ euroeval --model <model-id> --dataset ltzglue-rte
 
 ### MultiWikiQA-lb
 
-Reading comprehension dataset based on the MultiWikiQA framework, adapted for
-Luxembourgish. Contains question-answer pairs derived from Wikipedia articles
-about Luxembourg and Luxembourgish culture, history, and geography.
+This dataset was published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111) and contains question-answer
+pairs derived from [Luxembourgish Wikipedia](https://lb.wikipedia.org/) articles about
+Luxembourg and Luxembourgish culture, history, and geography. The questions and answers
+are generated using large language models based on the Wikipedia content.
 
 The dataset is extracted from the
 [alexandrainst/multi-wiki-qa](https://huggingface.co/datasets/alexandrainst/multi-wiki-qa)
@@ -441,9 +449,10 @@ euroeval --model <model-id> --dataset multiwikiqa-lb
 
 This dataset was published in
 ["Text Generation Models for Luxembourgish with Limited Data: A Balanced Multilingual Strategy"](https://arxiv.org/abs/2412.09415)
-and is based on Luxembourgish news articles from the LuxGen benchmark, with the
-summaries being human-written abstracts covering various domains including politics,
-economy, and culture.
+and is based on Luxembourgish news articles from the LuxGen benchmark. The articles
+are sourced from major Luxembourgish news outlets including Luxemburger Wort,
+RTL Lëtzebuerg, and other local news websites, with human-written summaries covering
+various domains including politics, economy, and culture.
 
 The original dataset consists of approximately 5,000 samples. We use a
 1,024 / 256 / 2,048 split for training, validation and testing, respectively
@@ -508,10 +517,11 @@ euroeval --model <model-id> --dataset luxgen-summ
 
 ### ltzGLUE-HC
 
-Headline classification task from the ltzGLUE benchmark, introduced in
+This dataset was published in
 [this paper](https://arxiv.org/abs/2604.17976). Given a news headline and its
-article text, models must predict whether the headline correctly represents the
-article content.
+article text from Luxembourgish news outlets (including Luxemburger Wort, RTL Lëtzebuerg,
+and other local sources), models must predict whether the headline correctly represents
+the article content.
 
 The original ltzGLUE-HC dataset contains 20,716 / 2,960 / 5,919 samples
 for training, validation and testing, respectively. We apply the standard EuroEval
@@ -574,7 +584,8 @@ euroeval --model <model-id> --dataset ltzglue-hc
 
 Intent detection dataset from the ltzGLUE benchmark, containing Luxembourgish
 queries annotated with intent categories such as weather lookup, restaurant booking,
-music playback, alarm setting, and creative work search.
+music playback, alarm setting, and creative work search. The queries are synthetically
+generated to cover common voice assistant and search engine intents.
 
 The original dataset only provides validation and test splits (53 and 66 samples
 respectively) with no training data. The dataset contains 10 intent classes, some
@@ -590,9 +601,11 @@ Example categories include: `weather/find`, `BookRestaurant`, `SearchCreativeWor
 
 ### ltzGLUE-TC
 
-Topic classification dataset from the ltzGLUE benchmark, containing Luxembourgish
-news articles categorized by topic. The dataset includes articles from various
-domains such as politics, economy, sports, and culture.
+This dataset was published in
+[this paper](https://arxiv.org/abs/2604.17976) and contains Luxembourgish news
+articles categorized by topic. The articles are sourced from major Luxembourgish
+news outlets including Luxemburger Wort, RTL Lëtzebuerg, and other local news websites,
+covering various domains such as politics, economy, sports, and culture.
 
 The original dataset contains 9,932 / 1,240 / 1,245 samples
 for training, validation and testing. We cap training at 1,024 samples and use
