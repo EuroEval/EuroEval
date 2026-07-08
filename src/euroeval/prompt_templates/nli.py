@@ -394,8 +394,8 @@ NLI_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="{text}\n\nBestäm om det andra påståendet följer "
         "av det första, motsäger det eller saknar logiskt samband med det. Svara med "
         "{labels_str}, och inget annat.",
-    ), UKRAINIAN:
-    PromptConfig(
+    ),
+    UKRAINIAN: PromptConfig(
         default_prompt_label_mapping=dict(
             entailment="правда", neutral="нейтрально", contradiction="неправда"
         ),
@@ -406,8 +406,7 @@ NLI_TEMPLATES: dict["Language", PromptConfig] = {
         "випливає з першого, суперечить йому або не має логічного зв'язку з ним. "
         "Відповідайте {labels_str}, і нічого більше.",
     ),
-    LUXEMBOURGISH:
-    PromptConfig(
+    LUXEMBOURGISH: PromptConfig(
         default_prompt_label_mapping=dict(
             entailment="folgerung", neutral="neutral", contradiction="widdersträit"
         ),

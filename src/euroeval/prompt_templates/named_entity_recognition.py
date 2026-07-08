@@ -678,8 +678,7 @@ NER_TEMPLATES: dict["Language", PromptConfig] = {
         "Значення мають бути списками іменованих сутностей цього типу, точно "
         "такими, як вони з'являються у реченні.",
     ),
-    LUXEMBOURGISH:
-    PromptConfig(
+    LUXEMBOURGISH: PromptConfig(
         default_prompt_label_mapping={
             "b-per": "persoun",
             "i-per": "persoun",

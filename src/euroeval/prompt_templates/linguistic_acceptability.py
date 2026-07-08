@@ -284,16 +284,15 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Mening: {text}\nGrammatisk korrekt: {label}",
         default_instruction_prompt="Mening: {text}\n\nBestäm om meningen är "
         "grammatiskt korrekt eller inte. Svara med {labels_str}, och inget annat.",
-    ), UKRAINIAN:
-    PromptConfig(
+    ),
+    UKRAINIAN: PromptConfig(
         default_prompt_label_mapping=dict(correct="так", incorrect="ні"),
         default_prompt_prefix="Нижче наведені речення і їхня граматична правильність.",
         default_prompt_template="Речення: {text}\nГраматично правильно: {label}",
         default_instruction_prompt="Речення: {text}\n\nВизначте, чи речення "
         "граматично правильне чи ні. Відповідайте {labels_str}, і нічого більше.",
     ),
-    LUXEMBOURGISH:
-    PromptConfig(
+    LUXEMBOURGISH: PromptConfig(
         default_prompt_label_mapping=dict(correct="jo", incorrect="nee"),
         default_prompt_prefix="Folgend sinn Sätz an ob se grammatesch korrekt sinn.",
         default_prompt_template="Saz: {text}\nGrammatesch korrekt: {label}",

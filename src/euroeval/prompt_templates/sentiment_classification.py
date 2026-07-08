@@ -364,8 +364,8 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Dokument: {text}\nSentiment: {label}",
         default_instruction_prompt="Dokument: {text}\n\nKlassificera känslan i "
         "dokumentet. Svara med {labels_str}, och inget annat.",
-    ), UKRAINIAN:
-    PromptConfig(
+    ),
+    UKRAINIAN: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="позитивний", neutral="нейтральний", negative="негативний"
         ),
@@ -375,8 +375,7 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_instruction_prompt="Документ: {text}\n\nКласифікуйте настрій у "
         "документі. Відповідайте {labels_str}, і нічого більше.",
     ),
-    LUXEMBOURGISH:
-    PromptConfig(
+    LUXEMBOURGISH: PromptConfig(
         default_prompt_label_mapping=dict(
             positive="positiv", neutral="neutral", negative="negativ"
         ),
