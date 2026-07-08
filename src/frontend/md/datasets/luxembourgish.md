@@ -109,22 +109,15 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["De", "Max", "ass", "zu", "Lëtzebuerg", "gebuer", "."],
-  "labels": ["O", "B-PER", "O", "O", "B-LOC", "O", "O"]
+  "tokens": ["Hien", "dozéiert", "op", "der", "Universitéit", "vun", "Innsbruck", "an", "Éisträich", ",", "a", "praktizéiert", "do", "am", "Fraendepartement", "vun", "den", "Universitéitskliniken", "."],
+  "labels": ["O", "O", "O", "O", "B-ORG", "O", "B-LOC", "O", "B-LOC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
 ```json
 {
-  "tokens": ["D'", "CSV", "huet", "d'", "Walen", "gewonnen", "."],
-  "labels": ["O", "B-ORG", "O", "O", "O", "O", "O"]
-}
-```
-
-```json
-{
-  "tokens": ["D'", "Sauer", "fléisst", "duerch", "Lëtzebuerg", "an", "Däitschland", "."],
-  "labels": ["O", "B-LOC", "O", "O", "B-LOC", "O", "B-LOC", "O"]
+  "tokens": ["De", "Roland", "Meyer", "ass", "bestuet", "a", "Papp", "vun", "zwéi", "Jongen", "."],
+  "labels": ["O", "B-PER", "I-PER", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
 
@@ -160,12 +153,11 @@ euroeval --model <model-id> --dataset ltzglue-ner
 
 ### ltzglue-rte
 
-Recognising Textual Entailment from ltzGLUE. Three-way classification task
-determining the logical relationship between a premise and hypothesis:
+Recognising Textual Entailment from ltzGLUE. Binary classification task
+determining if a hypothesis follows from a premise:
 
-- `entailment`: The hypothesis follows from the premise
-- `contradiction`: The hypothesis contradicts the premise
-- `neutral`: Neither entailment nor contradiction
+- `entailment` (0): The hypothesis follows from the premise
+- `contradiction` (1): The hypothesis does not follow / contradicts the premise
 
 The dataset is sampled into 1,024 / 256 / ~2,000 samples for training, validation
 and testing with stratified sampling.
@@ -174,25 +166,17 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "premise": "De Premierminister huet eng Ried an der Chamber gehalen.",
-  "hypothesis": "Eng Ried gouf an der Chamber gehalen.",
+  "premise": "Keng Massenzerstéierungswaffen am Irak fonnt.",
+  "hypothesis": "Massenzerstéierungswaffen am Irak fonnt.",
   "label": "entailment"
 }
 ```
 
 ```json
 {
-  "premise": "D'Chamber ass an de grousse Vakanz gefuer.",
-  "hypothesis": "D'Chamber schafft weiderhin.",
+  "premise": "Eng Plaz vu Trauer, nodeems de Poopst Johannes Paul II gestuerwen ass, ass eng Plaz fir ze feieren ginn, wéi réimesch-kathoulesch Gleeweger sech am Zentrum vu Chicago versammelt hunn, fir d'Installatioun vum neie Poopst Benedikt XVI ze markéieren.",
+  "hypothesis": "De Poopst Benedikt XVI. ass den neie Leader vun der réimesch-kathoulescher Kierch.",
   "label": "contradiction"
-}
-```
-
-```json
-{
-  "premise": "Lëtzebuerg ass e Member vun der EU.",
-  "hypothesis": "Lëtzebuerg huet den Euro als Wärung.",
-  "label": "neutral"
 }
 ```
 
@@ -243,21 +227,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Dat ass wierklech eng fantastesch Noriicht!",
+  "text": "En klengen Cadeau fir den Patron: Wann no der Proufzäit en CDI ënnerschriwwen gëtt kritt en Soziallaaschten vun der Proufzäit erëm.",
   "label": "positive"
 }
 ```
 
 ```json
 {
-  "text": "Ech sinn net d'accord mat dëser Meenung.",
+  "text": "A bis Oktober kënnt do och net méi vill no. Jidder Politiker weess, datt een an engem Land vun iwwerduerchschnëttlech ville Proprietären mat enger Hausse vun der Grondsteier kee Walkampf gewanne kann.",
   "label": "negative"
 }
 ```
 
 ```json
 {
-  "text": "De rechten ass fir muer um 14 Auer festgeluecht.",
+  "text": "E Politmonitor, an deem bal d'Hallschent vun de Leit, 43% fir genee ze sinn, awer zum Ausdrock bruecht hunn, datt si den Zoustand vun der Lëtzebuerger Gesellschaft als ongerecht empfannen.",
   "label": "neutral"
 }
 ```
