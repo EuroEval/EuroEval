@@ -14,6 +14,7 @@ Uses the ScaLA algorithm to create grammaticality judgments from the
 UD Luxembourgish-LuxBank treebank by corrupting sentences.
 """
 
+import logging
 import random
 from pathlib import Path
 
@@ -22,6 +23,9 @@ import requests
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 UD_LB_URL = "https://raw.githubusercontent.com/UniversalDependencies/UD_Luxembourgish-LuxBank/main/lb_luxbank-ud-train.conllu"
 
@@ -160,7 +164,7 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
 
 def main() -> None:
     """Create ScaLA-lb dataset."""
-    print("Downloading UD Luxembourgish treebank...")
+    logger.info("Downloading UD Luxembourgish treebank...")
     response = requests.get(UD_LB_URL, timeout=30)
     response.raise_for_status()
 
@@ -169,17 +173,17 @@ def main() -> None:
     conllu_path = cache_dir / "lb_luxbank-ud-train.conllu"
     conllu_path.write_text(response.text)
 
-    print("Parsing CoNLL-U file...")
+    logger.info("Parsing CoNLL-U file...")
     sentences = parse_conllu(conllu_path)
-    print(f"Found {len(sentences)} sentences")
+    logger.info(f"Found {len(sentences)} sentences")
 
-    print("Creating dataset...")
+    logger.info("Creating dataset...")
     df = create_scala_dataset(sentences)
-    print(f"Created {len(df)} samples")
+    logger.info(f"Created {len(df)} samples")
 
-    print("Creating splits...")
+    logger.info("Creating splits...")
     train, val, test = make_splits(df)
-    print(f"Splits: {len(train)} train, {len(val)} val, {len(test)} test")
+    logger.info(f"Splits: {len(train)} train, {len(val)} val, {len(test)} test")
 
     dataset = DatasetDict(
         {
@@ -190,11 +194,11 @@ def main() -> None:
     )
 
     dataset_id = "EuroEval/scala-lb"
-    print(f"Uploading to {dataset_id}...")
+    logger.info(f"Uploading to {dataset_id}...")
 
     HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
-    print(f"✓ Uploaded {dataset_id}")
+    logger.info(f"✓ Uploaded {dataset_id}")
 
 
 if __name__ == "__main__":
