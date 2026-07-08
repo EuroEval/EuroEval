@@ -1,147 +1,16 @@
 # 🇱🇺 Luxembourgish
 
-## Sentiment Classification
-
-### Unofficial: ltzGLUE-SA
-
-This dataset is part of the ltzGLUE benchmark for Luxembourgish, introduced in
-[this paper](https://arxiv.org/abs/2604.17976). It contains Luxembourgish texts
-annotated with sentiment labels (negative, neutral, positive), covering various
-domains including social media posts and news comments.
-
-The original ltzGLUE-SA dataset is processed into 1,024 / 256 / ~2,000 samples
-for training, validation and testing, respectively, with stratified sampling to
-maintain label balance.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "text": "Dat ass wierklech eng fantastesch Noriicht!",
-  "label": "positive"
-}
-```
-
-```json
-{
-  "text": "Ech sinn net d'accord mat dëser Meenung.",
-  "label": "negative"
-}
-```
-
-```json
-{
-  "text": "De rechten ass fir muer um 14 Auer festgeluecht.",
-  "label": "neutral"
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information):
-
-- Number of few-shot examples: 12
-- Prefix prompt:
-  ```text
-  Fir dësen Text ass d'Sentiment uginn, a kann 'negativ', 'neutral' oder 'positiv' sinn.
-  ```
-- Base prompt template:
-  ```text
-  Text: {text}
-  Sentiment: {label}
-  ```
-- Instruction-tuned prompt template:
-  ```text
-  Text: {text}
-  
-  Klassifizéiert d'Sentiment vum Text. Äntwert nëmme mat 'negativ', 'neutral' oder 'positiv'.
-  ```
-- Label mapping:
-  - `negative` ➡️ `negativ`
-  - `neutral` ➡️ `neutral`
-  - `positive` ➡️ `positiv`
-
-You can evaluate this dataset directly as follows:
-
-```bash
-euroeval --model <model-id> --dataset ltzglue-sa
-```
-
-## Named Entity Recognition
-
-### Unofficial: ltzGLUE-NER
-
-Luxembourgish Named Entity Recognition dataset from the ltzGLUE benchmark.
-Annotated with standard entity types following CoNLL-2003 format:
-
-- `PER` (Person)
-- `LOC` (Location)
-- `ORG` (Organization)
-- `MISC` (Miscellaneous)
-
-The dataset is sampled into 1,024 / 256 / ~2,000 samples for training, validation
-and testing.
-
-Here are a few examples from the training split:
-
-```json
-{
-  "tokens": ["De", "Max", "ass", "zu", "Lëtzebuerg", "gebuer", "."],
-  "labels": ["O", "B-PER", "O", "O", "B-LOC", "O", "O"]
-}
-```
-
-```json
-{
-  "tokens": ["D'", "CSV", "huet", "d'", "Walen", "gewonnen", "."],
-  "labels": ["O", "B-ORG", "O", "O", "O", "O", "O"]
-}
-```
-
-```json
-{
-  "tokens": ["D'", "Sauer", "fléisst", "duerch", "Lëtzebuerg", "an", "Däitschland", "."],
-  "labels": ["O", "B-LOC", "O", "O", "B-LOC", "O", "B-LOC", "O"]
-}
-```
-
-When evaluating generative models:
-
-- Number of few-shot examples: 8
-- Prefix prompt:
-  ```text
-  Fir de Saz ass eng JSON-Tabell mat den enthalte Entitéiten.
-  ```
-- Base prompt template:
-  ```text
-  Saz: {text}
-  Entitéiten: {label}
-  ```
-- Instruction-tuned prompt template:
-  ```text
-  Saz: {text}
-  
-  Identifizéiert déi genannt Entitéiten am Saz. Output als JSON-Tabell mat de Schlësselen 'persoun', 'plaz', 'organisatioun' an 'divers'.
-  ```
-- Label mapping:
-  - `B-PER` / `I-PER` ➡️ `persoun`
-  - `B-LOC` / `I-LOC` ➡️ `plaz`
-  - `B-ORG` / `I-ORG` ➡️ `organisatioun`
-  - `B-MISC` / `I-MISC` ➡️ `divers`
-
-```bash
-euroeval --model <model-id> --dataset ltzglue-ner
-```
-
 ## Linguistic Acceptability
 
-### Unofficial: ltzGLUE-LA (Binary)
+### ltzGLUE-LA
 
-Part of the ltzGLUE benchmark. Binary classification task where Luxembourgish
-sentences must be classified as grammatically correct or incorrect. The dataset
-includes naturally occurring text as well as artificially corrupted examples.
+Binary linguistic acceptability task from the ltzGLUE benchmark, introduced in
+[this paper](https://arxiv.org/abs/2604.17976). Luxembourgish sentences must be
+classified as grammatically correct or incorrect. The dataset includes naturally
+occurring text as well as systematically corrupted examples.
 
-The dataset is sampled into 1,024 / 256 / ~2,000 samples for training, validation
-and testing, with balanced classes.
+The original ltzGLUE-LA dataset is processed into 1,024 / 256 / ~2,000 samples
+for training, validation and testing, with balanced classes.
 
 Here are a few examples from the training split:
 
@@ -217,32 +86,79 @@ grammatically incorrect examples.
 sentences (translated Cairo Cycling examples). A comprehensive ScaLA-lb dataset
 requires additional Luxembourgish text sources or expansion of the treebank.
 
+```bash
+euroeval --model <model-id> --dataset scala-lb
+```
+
+## Named Entity Recognition
+
+### ltzGLUE-NER
+
+Luxembourgish Named Entity Recognition dataset from the ltzGLUE benchmark.
+Annotated with standard entity types following CoNLL-2003 format:
+
+- `PER` (Person)
+- `LOC` (Location)
+- `ORG` (Organization)
+- `MISC` (Miscellaneous)
+
+The dataset is sampled into 1,024 / 256 / ~2,000 samples for training, validation
+and testing.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "tokens": ["De", "Max", "ass", "zu", "Lëtzebuerg", "gebuer", "."],
+  "labels": ["O", "B-PER", "O", "O", "B-LOC", "O", "O"]
+}
+```
+
+```json
+{
+  "tokens": ["D'", "CSV", "huet", "d'", "Walen", "gewonnen", "."],
+  "labels": ["O", "B-ORG", "O", "O", "O", "O", "O"]
+}
+```
+
+```json
+{
+  "tokens": ["D'", "Sauer", "fléisst", "duerch", "Lëtzebuerg", "an", "Däitschland", "."],
+  "labels": ["O", "B-LOC", "O", "O", "B-LOC", "O", "B-LOC", "O"]
+}
+```
+
 When evaluating generative models:
 
-- Number of few-shot examples: 12
+- Number of few-shot examples: 8
 - Prefix prompt:
   ```text
-  Fir dëse Satz ass uginn ob e grammatesch korrekt oder net ass.
+  Fir de Saz ass eng JSON-Tabell mat den enthalte Entitéiten.
   ```
 - Base prompt template:
   ```text
   Saz: {text}
-  Grammatesch korrekt: {label}
+  Entitéiten: {label}
   ```
 - Instruction-tuned prompt template:
   ```text
   Saz: {text}
   
-  Bestëmmt ob de Saz grammatesch korrekt ass. Äntwert mat 'jo' fir korrekt, 'nee' fir net korrekt.
+  Identifizéiert déi genannt Entitéiten am Saz. Output als JSON-Tabell mat de Schlësselen 'persoun', 'plaz', 'organisatioun' an 'divers'.
   ```
+- Label mapping:
+  - `B-PER` / `I-PER` ➡️ `persoun`
+  - `B-LOC` / `I-LOC` ➡️ `plaz`
+  - `B-ORG` / `I-ORG` ➡️ `organisatioun`
+  - `B-MISC` / `I-MISC` ➡️ `divers`
 
 ```bash
-euroeval --model <model-id> --dataset scala-lb
+euroeval --model <model-id> --dataset ltzglue-ner
 ```
 
 ## Natural Language Inference
 
-### Unofficial: ltzGLUE-RTE
+### ltzGLUE-RTE
 
 Recognising Textual Entailment from ltzGLUE. Three-way classification task
 determining the logical relationship between a premise and hypothesis:
@@ -310,13 +226,77 @@ When evaluating generative models:
 euroeval --model <model-id> --dataset ltzglue-rte
 ```
 
+## Sentiment Classification
+
+### ltzGLUE-SA
+
+Sentiment analysis dataset from the ltzGLUE benchmark, introduced in
+[this paper](https://arxiv.org/abs/2604.17976). Contains Luxembourgish texts
+annotated with sentiment labels (negative, neutral, positive), covering various
+domains including social media posts and news comments.
+
+The original ltzGLUE-SA dataset is processed into 1,024 / 256 / ~2,000 samples
+for training, validation and testing, respectively, with stratified sampling to
+maintain label balance.
+
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Dat ass wierklech eng fantastesch Noriicht!",
+  "label": "positive"
+}
+```
+
+```json
+{
+  "text": "Ech sinn net d'accord mat dëser Meenung.",
+  "label": "negative"
+}
+```
+
+```json
+{
+  "text": "De rechten ass fir muer um 14 Auer festgeluecht.",
+  "label": "neutral"
+}
+```
+
+When evaluating generative models:
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+  ```text
+  Fir dësen Text ass d'Sentiment uginn, a kann 'negativ', 'neutral' oder 'positiv' sinn.
+  ```
+- Base prompt template:
+  ```text
+  Text: {text}
+  Sentiment: {label}
+  ```
+- Instruction-tuned prompt template:
+  ```text
+  Text: {text}
+  
+  Klassifizéiert d'Sentiment vum Text. Äntwert nëmme mat 'negativ', 'neutral' oder 'positiv'.
+  ```
+- Label mapping:
+  - `negative` ➡️ `negativ`
+  - `neutral` ➡️ `neutral`
+  - `positive` ➡️ `positiv`
+
+```bash
+euroeval --model <model-id> --dataset ltzglue-sa
+```
+
 ## Reading Comprehension
 
 ### MultiWikiQA-lb
 
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2509.04111)
-and contains Wikipedia articles with LLM-generated questions and answers in 300+
-languages, including Luxembourgish.
+This dataset was published in
+[this paper](https://doi.org/10.48550/arXiv.2509.04111) and contains Wikipedia
+articles with LLM-generated questions and answers in 300+ languages, including
+Luxembourgish.
 
 The original dataset consists of 5,003 samples in a single train split. We use the
 entire split for test evaluation, as no validation split was provided in the original
@@ -379,26 +359,8 @@ When evaluating generative models:
   Fro: {question}
   ```
 
-You can evaluate this dataset directly as follows:
-
 ```bash
 euroeval --model <model-id> --dataset multi-wiki-qa-lb
-```
-
-## Knowledge
-
-### Unofficial: Luxembourgish Citizenship Tests
-
-Luxembourgish knowledge dataset based on citizenship test questions from
-[vivre-ensemble.lu](https://old.vivre-ensemble.lu/). Multiple-choice questions
-test knowledge about Luxembourgish society, history, geography, and civic
-institutions.
-
-**TODO:** Dataset creation pending - requires extraction and curation from
-the citizenship test materials.
-
-```bash
-euroeval --model <model-id> --dataset lux-citizenship
 ```
 
 ## Summarisation
@@ -406,13 +368,12 @@ euroeval --model <model-id> --dataset lux-citizenship
 ### LuxGen-Summ
 
 Luxembourgish summarisation dataset from the
-[LuxGen benchmark](https://arxiv.org/abs/2412.09415). The dataset contains
-Luxembourgish documents with human-written summaries, testing the model's
-ability to condense information while preserving key content.
+[LuxGen benchmark](https://arxiv.org/abs/2412.09415). Contains Luxembourgish
+documents with human-written summaries, testing the model's ability to condense
+information while preserving key content.
 
-**TODO:** This dataset documentation needs to be completed once the LuxGen
-benchmark dataset is extracted and processed. Final split sizes and examples
-will be added when the dataset is created.
+**TODO:** Dataset creation pending - requires extraction from the LuxGen benchmark
+or creation from Luxembourgish articles with summaries.
 
 Target format:
 - `text`: Full Luxembourgish article or document
@@ -426,14 +387,14 @@ euroeval --model <model-id> --dataset luxgen-summ
 
 ## Text Classification
 
-### Unofficial: ltzGLUE-HC
+### ltzGLUE-HC
 
 Headline Classification from ltzGLUE. Binary task determining if a headline
-is appropriate for a given news article. This tests the model's ability to
+is appropriate for a given news article. Tests the model's ability to
 understand document-level semantics and headline-article coherence.
 
 The dataset consists of article-headline pairs with binary labels (yes/no for
-appropriateness).
+appropriateness), sampled into 1,024 / 256 / ~2,000 samples.
 
 Here are a few examples:
 
@@ -458,7 +419,7 @@ euroeval --model <model-id> --dataset ltzglue-hc
 ### Unofficial: ltzGLUE-ID
 
 Intent Detection from ltzGLUE. Multi-class classification of sentence intent,
-testing the model's pragmatic understanding. Intent categories include:
+testing pragmatic understanding. Intent categories include:
 
 - `question`: Asking for information
 - `statement`: Making a declarative statement
@@ -473,15 +434,32 @@ euroeval --model <model-id> --dataset ltzglue-id
 
 Topic Classification from ltzGLUE. Multi-class classification of news articles
 into topic categories such as politics, sports, culture, economy, and technology.
-The dataset tests the model's ability to identify document-level topics.
+Tests the model's ability to identify document-level topics.
 
 ```bash
 euroeval --model <model-id> --dataset ltzglue-tc
 ```
 
+## Knowledge
+
+### Unofficial: Luxembourgish Citizenship Tests
+
+Luxembourgish knowledge dataset based on citizenship test questions from
+[vivre-ensemble.lu](https://old.vivre-ensemble.lu/). Multiple-choice questions
+test knowledge about Luxembourgish society, history, geography, and civic
+institutions.
+
+**TODO:** Dataset creation pending - requires extraction and curation from
+the citizenship test materials.
+
+```bash
+euroeval --model <model-id> --dataset lux-citizenship
+```
+
 ---
 
 **Note:** All ltzGLUE datasets are sourced from the ltzGLUE benchmark
-(arxiv.org/abs/2604.17976). Dataset creation scripts are available in
-`src/scripts/dataset_creation/`. To upload the datasets, clone the ltzGLUE
-repository with LFS support and run the scripts with uv.
+(arxiv.org/abs/2604.17976). Primary datasets (ltzGLUE-LA, ltzGLUE-NER, ltzGLUE-RTE,
+ltzGLUE-SA, ltzGLUE-HC) are marked as official. Dataset creation scripts are
+available in `src/scripts/dataset_creation/`. To upload the datasets, clone the
+ltzGLUE repository with LFS support and run the scripts with uv.

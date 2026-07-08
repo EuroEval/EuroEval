@@ -28,6 +28,18 @@ LUXGEN_SUMM_CONFIG = DatasetConfig(
 
 SCALA_LB_CONFIG = DatasetConfig(
     name="scala-lb",
+    pretty_name="ScaLA-lb (Unofficial)",
+    source="EuroEval/scala-lb",
+    task=LA,
+    languages=[LUXEMBOURGISH],
+    unofficial=True,
+    labels=["incorrect", "correct"],
+)
+
+# Unofficial ltzGLUE variants ###
+
+LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
+    name="scala-lb",
     pretty_name="ScaLA-lb",
     source="EuroEval/scala-lb",
     task=LA,
@@ -36,7 +48,7 @@ SCALA_LB_CONFIG = DatasetConfig(
     labels=["incorrect", "correct"],
 )
 
-# Unofficial datasets from ltzGLUE (plumaj/ltzGLUE) ###
+# Official datasets from ltzGLUE ###
 
 LTZGLUE_HC_CONFIG = DatasetConfig(
     name="ltzglue-hc",
@@ -44,26 +56,19 @@ LTZGLUE_HC_CONFIG = DatasetConfig(
     source="plumaj/ltzglue-hc",
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
-    unofficial=True,
+    unofficial=False,
     labels=["no", "yes"],
 )
 
-LTZGLUE_ID_CONFIG = DatasetConfig(
-    name="ltzglue-id",
-    pretty_name="ltzGLUE-ID",
-    source="plumaj/ltzglue-id",
-    task=TEXT_CLASSIFICATION,
-    languages=[LUXEMBOURGISH],
-    unofficial=True,
-)
+
 
 LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
     name="ltzglue-la-binary",
-    pretty_name="ltzGLUE-LA (Binary)",
+    pretty_name="ltzGLUE-LA",
     source="plumaj/ltzglue-lab",
     task=LA,
     languages=[LUXEMBOURGISH],
-    unofficial=True,
+    unofficial=False,
     labels=["incorrect", "correct"],
 )
 
@@ -76,13 +81,31 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+LTZGLUE_ID_CONFIG = DatasetConfig(
+    name="ltzglue-id",
+    pretty_name="ltzGLUE-ID (Unofficial)",
+    source="plumaj/ltzglue-id",
+    task=TEXT_CLASSIFICATION,
+    languages=[LUXEMBOURGISH],
+    unofficial=True,
+)
+
+LTZGLUE_TC_CONFIG = DatasetConfig(
+    name="ltzglue-tc",
+    pretty_name="ltzGLUE-TC (Unofficial)",
+    source="plumaj/ltzglue-tc",
+    task=TEXT_CLASSIFICATION,
+    languages=[LUXEMBOURGISH],
+    unofficial=True,
+)
+
 LTZGLUE_NER_CONFIG = DatasetConfig(
     name="ltzglue-ner",
     pretty_name="ltzGLUE-NER",
     source="plumaj/ltzglue-ner",
     task=NER,
     languages=[LUXEMBOURGISH],
-    unofficial=True,
+    unofficial=False,
 )
 
 LTZGLUE_RTE_CONFIG = DatasetConfig(
@@ -91,7 +114,7 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
     source="plumaj/ltzglue-rte",
     task=NLI,
     languages=[LUXEMBOURGISH],
-    unofficial=True,
+    unofficial=False,
     labels=["entailment", "neutral", "contradiction"],
 )
 
@@ -101,15 +124,8 @@ LTZGLUE_SA_CONFIG = DatasetConfig(
     source="plumaj/ltzglue-sa",
     task=SENT,
     languages=[LUXEMBOURGISH],
-    unofficial=True,
+    unofficial=False,
     labels=["negative", "neutral", "positive"],
 )
 
-LTZGLUE_TC_CONFIG = DatasetConfig(
-    name="ltzglue-tc",
-    pretty_name="ltzGLUE-TC",
-    source="plumaj/ltzglue-tc",
-    task=TEXT_CLASSIFICATION,
-    languages=[LUXEMBOURGISH],
-    unofficial=True,
-)
+
