@@ -584,6 +584,7 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset ltzglue-tc
+```
 
 ### ltzGLUE-ID
 
