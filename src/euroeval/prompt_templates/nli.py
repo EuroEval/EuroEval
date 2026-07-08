@@ -408,7 +408,7 @@ NLI_TEMPLATES: dict["Language", PromptConfig] = {
     ),
     LUXEMBOURGISH: PromptConfig(
         default_prompt_label_mapping=dict(
-            entailment="folgerung", contradiction="widdersträit"
+            entailment="folgerung", neutral="neutral", contradiction="widdersträit"
         ),
         default_prompt_prefix="Folgend si Pueren vun Aussoen an hir logesch Relatioun, "
         "déi {labels_str} ka sinn.",
