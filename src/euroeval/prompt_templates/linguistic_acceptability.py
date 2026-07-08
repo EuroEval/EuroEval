@@ -293,20 +293,10 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         "граматично правильне чи ні. Відповідайте {labels_str}, і нічого більше.",
     ),
     LUXEMBOURGISH: PromptConfig(
-        default_prompt_label_mapping=dict(
-            correct="jo",
-            incorrect="nee",
-            word_order="Wuertuerdnung",
-            agreement="Iwwereneestëmmung",
-            morphology="Morphologie",
-            other="anescht",
-        ),
-        default_prompt_prefix="Folgend sinn Sätz an ob se grammatesch korrekt sinn, "
-        "oder de Feeler Typ.",
+        default_prompt_label_mapping=dict(correct="jo", incorrect="nee"),
+        default_prompt_prefix="Folgend sinn Sätz an ob se grammatesch korrekt sinn.",
         default_prompt_template="Saz: {text}\nGrammatesch korrekt: {label}",
         default_instruction_prompt="Saz: {text}\n\nBestëmmt ob de Saz grammatesch "
-        "korrekt ass, oder identifizéiert de Feeler Typ (Wuertuerdnung, "
-        "Iwwereneestëmmung, Morphologie, oder anescht). Äntwert mat {labels_str}, "
-        "an näischt anescht.",
+        "korrekt oder net ass. Äntwert mat {labels_str}, an näischt anescht.",
     ),
 }

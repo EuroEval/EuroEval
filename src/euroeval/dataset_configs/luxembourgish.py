@@ -47,6 +47,11 @@ LTZGLUE_HC_CONFIG = DatasetConfig(
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
     labels=["no", "yes"],
+    prompt_prefix="Folgend sinn Iwwerschrëften an ob den Artikel dës Behaaptung bestätegt.",
+    prompt_template="Iwwerschrëft: {text}\nBestätegt: {label}",
+    instruction_prompt="Iwwerschrëft: {text}\n\nBestëmmt ob den Artikel d'Behaaptung "
+    "an der Iwwerschrëft bestätegt. Äntwert nëmme mat 'yes' oder 'no'.",
+    prompt_label_mapping="auto",
 )
 
 LTZGLUE_RTE_CONFIG = DatasetConfig(
@@ -65,6 +70,11 @@ LTZGLUE_TC_CONFIG = DatasetConfig(
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
     labels=["technology", "business", "culture", "animals", "sports"],
+    prompt_prefix="Folgend sinn Noriichten-Artikelen an hir Themen.",
+    prompt_template="Artikel: {text}\nThema: {label}",
+    instruction_prompt="Artikel: {text}\n\nKlassifizéiert d'Thema vum Artikel. "
+    "Äntwert nëmme mat engem vun dësen Etiketten: {labels_str}.",
+    prompt_label_mapping="auto",
 )
 
 # Unofficial datasets ###
@@ -77,6 +87,15 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     languages=[LUXEMBOURGISH],
     unofficial=True,
     labels=["correct", "word_order", "agreement", "morphology", "other"],
+    prompt_prefix="Folgend sinn Sätz. Bestëmmt ob se grammatesch korrekt "
+    "sinn, oder identifizéiert de Feeler Typ.",
+    prompt_template="Saz: {text}\nÄntwert: {label}",
+    instruction_prompt="Saz: {text}\n\nBestëmmt ob de Saz grammatesch korrekt ass "
+    "(äntwert 'correct'), oder identifizéiert de Feeler Typ: 'word_order' (falsch "
+    "Wuert-Reiefolleg), 'agreement' (Subject-Verb oder Determiner-Noun Stëmmung net "
+    "korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem "
+    "vun dësen Etiketten: {labels_str}.",
+    prompt_label_mapping="auto",
 )
 
 LTZGLUE_ID_CONFIG = DatasetConfig(
@@ -99,4 +118,9 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
         "searchscreeningevent",
         "weather find",
     ],
+    prompt_prefix="Folgend si Benotzerufruffen an hir Intentiounen.",
+    prompt_template="Ufruff: {text}\nIntentioun: {label}",
+    instruction_prompt="Ufruff: {text}\n\nIdentifizéiert d'Intentioun vum Benotzer. "
+    "Äntwert nëmme mat engem vun dësen Etiketten: {labels_str}.",
+    prompt_label_mapping="auto",
 )
