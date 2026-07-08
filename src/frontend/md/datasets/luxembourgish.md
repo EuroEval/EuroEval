@@ -232,7 +232,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ltzglue-la
 ```
 
-### Unofficial: ltzGLUE-LA (Multi-class)
+### ltzGLUE-LA-multi
 
 This dataset was published in
 [this paper](https://arxiv.org/abs/2604.17976). Multi-class variant of the linguistic
