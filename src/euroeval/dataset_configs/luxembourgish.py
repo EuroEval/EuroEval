@@ -47,11 +47,13 @@ LTZGLUE_NER_CONFIG = DatasetConfig(
         "b-misc",
         "i-misc",
     ],
-    prompt_prefix="Fir dëse Satz gëtt et eng JSON-Liste mat den Entitéiten.",
-    prompt_template="Saz: {text}\nEntitéiten: {label}",
-    instruction_prompt="Saz: {text}\n\nIdentifizéiert déi benannt Entitéiten am Satz. "
-    "Output als JSON-Liste mat den Schlësselen 'persoun', 'plaz', "
-    "'organisatioun' an 'divers'.",
+    prompt_prefix="Folgend si Sätz a JSON-Wierderbicher mat den benannten Entitéiten, "
+    "déi am Satz virkommen.",
+    prompt_template="Saz: {text}\nBenannt Entitéiten: {label}",
+    instruction_prompt="Saz: {text}\n\nIdentifizéiert déi benannt "
+    "Entitéiten am Saz. Dir sollt dës als JSON-Wierderbuch mat de Schlësselen "
+    "{labels_str} ausginn. D'Wäerter solle Lëschte vun de benannten Entitéite "
+    "vun deem Typ sinn, genee sou wéi se am Saz virkommen.",
     prompt_label_mapping={
         "b-per": "persoun",
         "i-per": "persoun",
