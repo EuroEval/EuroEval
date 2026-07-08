@@ -121,7 +121,7 @@ def _create_splits(
         all_data, train_size=n_train, random_state=42, stratify=all_data["label"]
     )
     val_data, test_data = train_test_split(
-        temp, train_size=n_val / len(temp), random_state=42, stratify=temp["label"]
+        temp, train_size=n_val, test_size=2048, random_state=42, stratify=temp["label"]
     )
 
     for df in [train_data, val_data, test_data]:
