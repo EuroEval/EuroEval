@@ -145,7 +145,7 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Fir dëse Satz gëtt et eng JSON-Liste mat den Entitéiten.
+  Fir dëse Satz gëtt et e JSON-Objekt mat den Entitéiten.
   ```
 
 - Base prompt template:
@@ -160,7 +160,9 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Saz: {text}
 
-  Identifizéiert déi benannt Entitéiten am Satz. Output als JSON-Liste mat den Schlësselen 'persoun', 'plaz', 'organisatioun' an 'divers'.
+  Identifizéiert déi benannt Entitéiten am Satz. Output als
+  JSON-Objekt mat den Schlësselen 'persoun', 'plaz',
+  'organisatioun' an 'divers'.
   ```
 
 - Label mapping:
