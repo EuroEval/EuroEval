@@ -442,18 +442,18 @@ When evaluating generative models, we use the following setup (see the
 - Base prompt template:
 
   ```text
-  Kontext: {context}
+  Text: {text}
   Fro: {question}
-  Äntwert: {answer}
+  Label: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Kontext: {context}
+  Text: {text}
   Fro: {question}
 
-  Beäntwert d'Fro baséiert op dem Kontext.
+  Beäntwert d'Fro baséiert op dem Text.
   ```
 
 You can evaluate this dataset directly as follows:
