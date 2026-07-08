@@ -12,8 +12,8 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 - Added support for Luxembourgish! This includes the ltzGLUE benchmark datasets for
   headline classification, intent detection, linguistic acceptability (binary and
   multi-class), named entity recognition, textual entailment, sentiment analysis, and
-  topic classification. The LuxGen-Summ summarisation dataset and MultiWikiQA-lb reading
-  comprehension dataset are also included.
+  topic classification. The MultiWikiQA-lb reading comprehension dataset is also
+  included.
 - Evaluation hallucination detection task, reporting a hallucination rate
   (hallucinated_tokens/total_tokens). This includes RAGTruth-based datasets for 30
   European languages (Danish, Albanian, Belarusian, Bosnian, Bulgarian, Catalan,

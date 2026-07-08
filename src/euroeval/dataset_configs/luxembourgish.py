@@ -13,6 +13,12 @@ LTZGLUE_SA_CONFIG = DatasetConfig(
     task=SENT,
     languages=[LUXEMBOURGISH],
     labels=["negative", "neutral", "positive"],
+    prompt_prefix="Fir dësen Text ass uginn ob de Sentiment negativ, neutral oder "
+    "positiv ass.",
+    prompt_template="Text: {text}\nSentiment: {label}",
+    instruction_prompt="Text: {text}\n\nBestëmmt de Sentiment vum Text. Äntwert "
+    "nëmme mat 'negativ', 'neutral' oder 'positiv'.",
+    prompt_label_mapping="auto",
 )
 
 LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
@@ -21,7 +27,7 @@ LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-la",
     task=LA,
     languages=[LUXEMBOURGISH],
-    labels=["incorrect", "correct"],
+    labels=["correct", "incorrect"],
 )
 
 LTZGLUE_NER_CONFIG = DatasetConfig(
@@ -30,6 +36,32 @@ LTZGLUE_NER_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-ner",
     task=NER,
     languages=[LUXEMBOURGISH],
+    labels=[
+        "o",
+        "b-per",
+        "i-per",
+        "b-loc",
+        "i-loc",
+        "b-org",
+        "i-org",
+        "b-misc",
+        "i-misc",
+    ],
+    prompt_prefix="Fir dëse Satz gëtt et eng JSON-Liste mat den Entitéiten.",
+    prompt_template="Saz: {text}\nEntitéiten: {label}",
+    instruction_prompt="Saz: {text}\n\nIdentifizéiert déi benannt Entitéiten am Satz. "
+    "Output als JSON-Liste mat den Schlësselen 'persoun', 'plaz', "
+    "'organisatioun' an 'divers'.",
+    prompt_label_mapping={
+        "b-per": "persoun",
+        "i-per": "persoun",
+        "b-loc": "plaz",
+        "i-loc": "plaz",
+        "b-org": "organisatioun",
+        "i-org": "organisatioun",
+        "b-misc": "divers",
+        "i-misc": "divers",
+    },
 )
 
 MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
@@ -38,6 +70,12 @@ MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
     source="EuroEval/multi-wiki-qa-lb",
     task=RC,
     languages=[LUXEMBOURGISH],
+    labels=["answer"],
+    prompt_prefix="Fir dës Fro gëtt et eng Äntwert.",
+    prompt_template="Kontext: {context}\nFro: {question}\nÄntwert: {answer}",
+    instruction_prompt="Kontext: {context}\nFro: {question}\n\nBeäntwert d'Fro "
+    "baséiert op dem Kontext.",
+    prompt_label_mapping="auto",
 )
 
 LTZGLUE_HC_CONFIG = DatasetConfig(
@@ -62,7 +100,18 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-rte",
     task=NLI,
     languages=[LUXEMBOURGISH],
-    labels=["entailment", "contradiction"],
+    labels=["entailment", "neutral", "contradiction"],
+    prompt_prefix="Fir dës Puer ass uginn ob d'Hypothees d'Premisse follegt "
+    "oder widderleet.",
+    prompt_template="Text: {text}\nRelatioun: {label}",
+    instruction_prompt="Text: {text}\n\nBestëmmt ob déi zweet Aussag aus der "
+    "éischter follegt, hir widdersträit, oder keng logesch Verbindung mat hir huet. "
+    "Äntwert mat 'folgerung', 'neutral', oder 'widdersträit'.",
+    prompt_label_mapping={
+        "entailment": "folgerung",
+        "neutral": "neutral",
+        "contradiction": "widdersträit",
+    },
 )
 
 LTZGLUE_TC_CONFIG = DatasetConfig(
@@ -111,7 +160,7 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     name="ltzglue-la-multi",
     pretty_name="ltzGLUE-LA (Multi-class)",
     source="EuroEval/ltzglue-la-multi",
-    task=LA,
+    task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
     unofficial=True,
     labels=["correct", "word_order", "agreement", "morphology", "other"],
