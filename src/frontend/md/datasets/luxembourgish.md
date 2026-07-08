@@ -87,7 +87,7 @@ This dataset was published in
 [this paper](https://arxiv.org/abs/2604.17976) and contains Luxembourgish news articles
 annotated with BIO-formatted entity tags for person, location, organization, and
 miscellaneous entities. The articles are sourced from major Luxembourgish news outlets
-including Luxemburger Wort, RTL Lëtzebuerg, and other local news websites.
+including Luxemburger Wort, RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu.
 
 The original ltzGLUE-NER dataset contains 27,245 / 3,327 / 3,821 samples
 for training, validation and testing, respectively. We apply the standard EuroEval
@@ -165,8 +165,9 @@ euroeval --model <model-id> --dataset ltzglue-ner
 This dataset was published in
 [this paper](https://arxiv.org/abs/2604.17976). Luxembourgish sentences must be
 classified as grammatically correct or incorrect. The dataset includes naturally
-occurring text from various Luxembourgish sources as well as systematically corrupted
-examples with various error types (word order, agreement, case, etc.).
+occurring text from Luxembourgish news outlets (Luxemburger Wort, RTL Lëtzebuerg,
+paperjam.lu, today.lu, and wort.lu) as well as systematically corrupted examples
+with various error types (word order, agreement, case, etc.).
 
 The original ltzGLUE-LA dataset contains 14,678 / 2,094 / 4,045 samples
 for training, validation and testing, with balanced classes. We apply the standard
@@ -237,8 +238,9 @@ This dataset was published in
 acceptability task where models must identify the specific error type in addition to
 detecting incorrectness. Error categories include word order, subject-verb agreement,
 case marking, determiner-noun agreement, and other grammatical violations. The data
-includes naturally occurring text from various Luxembourgish sources as well as
-systematically corrupted examples.
+includes naturally occurring text from Luxembourgish news outlets (Luxemburger Wort,
+RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu) as well as systematically corrupted
+examples.
 
 The original dataset contains 14,678 / 2,094 / 4,045 samples
 for training, validation and testing. We apply the standard EuroEval cap of
@@ -451,8 +453,8 @@ This dataset was published in
 ["Text Generation Models for Luxembourgish with Limited Data: A Balanced Multilingual Strategy"](https://arxiv.org/abs/2412.09415)
 and is based on Luxembourgish news articles from the LuxGen benchmark. The articles
 are sourced from major Luxembourgish news outlets including Luxemburger Wort,
-RTL Lëtzebuerg, and other local news websites, with human-written summaries covering
-various domains including politics, economy, and culture.
+RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu, with human-written summaries
+covering politics, economy, culture, and sports.
 
 The original dataset consists of 5,003 samples. We use a
 1,024 / 256 / 2,048 split for training, validation and testing, respectively
@@ -519,9 +521,9 @@ euroeval --model <model-id> --dataset luxgen-summ
 
 This dataset was published in
 [this paper](https://arxiv.org/abs/2604.17976). Given a news headline and its
-article text from Luxembourgish news outlets (including Luxemburger Wort, RTL Lëtzebuerg,
-and other local sources), models must predict whether the headline correctly represents
-the article content.
+article text from Luxembourgish news outlets (Luxemburger Wort, RTL Lëtzebuerg,
+paperjam.lu, today.lu, and wort.lu), models must predict whether the headline
+correctly represents the article content.
 
 The original ltzGLUE-HC dataset contains 20,716 / 2,960 / 5,919 samples
 for training, validation and testing, respectively. We apply the standard EuroEval
@@ -604,8 +606,8 @@ Example categories include: `weather/find`, `BookRestaurant`, `SearchCreativeWor
 This dataset was published in
 [this paper](https://arxiv.org/abs/2604.17976) and contains Luxembourgish news
 articles categorized by topic. The articles are sourced from major Luxembourgish
-news outlets including Luxemburger Wort, RTL Lëtzebuerg, and other local news websites,
-covering various domains such as politics, economy, sports, and culture.
+news outlets including Luxemburger Wort, RTL Lëtzebuerg, paperjam.lu, today.lu, and
+wort.lu, covering politics, economy, sports, and culture.
 
 The original dataset contains 9,932 / 1,240 / 1,245 samples
 for training, validation and testing. We cap training at 1,024 samples and use
