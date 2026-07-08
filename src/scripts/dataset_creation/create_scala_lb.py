@@ -15,11 +15,10 @@ UD Luxembourgish-LuxBank treebank by corrupting sentences.
 """
 
 import random
-
-import requests
 from pathlib import Path
 
 import pandas as pd
+import requests
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
@@ -182,11 +181,13 @@ def main() -> None:
     train, val, test = make_splits(df)
     print(f"Splits: {len(train)} train, {len(val)} val, {len(test)} test")
 
-    dataset = DatasetDict({
-        "train": Dataset.from_pandas(train),
-        "val": Dataset.from_pandas(val),
-        "test": Dataset.from_pandas(test),
-    })
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_pandas(train),
+            "val": Dataset.from_pandas(val),
+            "test": Dataset.from_pandas(test),
+        }
+    )
 
     dataset_id = "EuroEval/scala-lb"
     print(f"Uploading to {dataset_id}...")
