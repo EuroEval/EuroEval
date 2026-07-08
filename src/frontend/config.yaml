@@ -37,6 +37,7 @@ sections:
       - { group: Monolingual, csv: hungarian, title: "🇭🇺 Hungarian" }
       - { group: Monolingual, csv: icelandic, title: "🇮🇸 Icelandic" }
       - { group: Monolingual, csv: italian, title: "🇮🇹 Italian" }
+      - { group: Monolingual, csv: luxembourgish, title: "🇱🇺 Luxembourgish" }
       - { group: Monolingual, csv: latvian, title: "🇱🇻 Latvian" }
       - { group: Monolingual, csv: lithuanian, title: "🇱🇹 Lithuanian" }
       - { group: Monolingual, csv: norwegian, title: "🇳🇴 Norwegian" }
@@ -99,6 +100,7 @@ sections:
       - { path: datasets/hungarian.md, title: "🇭🇺 Hungarian" }
       - { path: datasets/icelandic.md, title: "🇮🇸 Icelandic" }
       - { path: datasets/italian.md, title: "🇮🇹 Italian" }
+      - { path: datasets/luxembourgish.md, title: "🇱🇺 Luxembourgish" }
       - { path: datasets/latvian.md, title: "🇱🇻 Latvian" }
       - { path: datasets/lithuanian.md, title: "🇱🇹 Lithuanian" }
       - { path: datasets/norwegian.md, title: "🇳🇴 Norwegian" }
