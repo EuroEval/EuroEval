@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LUXEMBOURGISH
-from ..tasks import LA, NER, NLI, RC, SENT, SUMM, TEXT_CLASSIFICATION
+from ..tasks import LA, NER, NLI, RC, SENT, TEXT_CLASSIFICATION
 
 # Official datasets ###
 

@@ -76,7 +76,9 @@ def create_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
     n_test = min(2048, n - n_train - n_val)
 
     train, temp = train_test_split(df, train_size=n_train, random_state=42)
-    val, test = train_test_split(temp, train_size=n_val, test_size=n_test, random_state=42)
+    val, test = train_test_split(
+        temp, train_size=n_val, test_size=n_test, random_state=42
+    )
 
     for d in [train, val, test]:
         d.reset_index(drop=True, inplace=True)
