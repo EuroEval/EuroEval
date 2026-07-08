@@ -20,8 +20,8 @@ from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 
-BASE_URL_BIN = "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/la/binary"
-BASE_URL_MULTI = "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/la/multi"
+BASE_URL_BIN = "https://raw.githubusercontent.com/plumaj/ltzGLUE/main/data/la/binary"
+BASE_URL_MULTI = "https://raw.githubusercontent.com/plumaj/ltzGLUE/main/data/la/multi"
 
 
 def download_split(base_url: str, split: str) -> list[dict]:
