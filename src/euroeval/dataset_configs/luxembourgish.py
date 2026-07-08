@@ -6,6 +6,32 @@ from ..tasks import LA, NER, NLI, RC, SENT, SUMM, TEXT_CLASSIFICATION
 
 # Official datasets ###
 
+LTZGLUE_SA_CONFIG = DatasetConfig(
+    name="ltzglue-sa",
+    pretty_name="ltzGLUE-SA",
+    source="plumaj/ltzglue-sa",
+    task=SENT,
+    languages=[LUXEMBOURGISH],
+    labels=["negative", "neutral", "positive"],
+)
+
+LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
+    name="ltzglue-la-binary",
+    pretty_name="ltzGLUE-LA",
+    source="plumaj/ltzglue-lab",
+    task=LA,
+    languages=[LUXEMBOURGISH],
+    labels=["incorrect", "correct"],
+)
+
+LTZGLUE_NER_CONFIG = DatasetConfig(
+    name="ltzglue-ner",
+    pretty_name="ltzGLUE-NER",
+    source="plumaj/ltzglue-ner",
+    task=NER,
+    languages=[LUXEMBOURGISH],
+)
+
 MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
     name="multi-wiki-qa-lb",
     pretty_name="MultiWikiQA-lb",
@@ -32,23 +58,6 @@ LTZGLUE_HC_CONFIG = DatasetConfig(
     labels=["no", "yes"],
 )
 
-LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
-    name="ltzglue-la-binary",
-    pretty_name="ltzGLUE-LA",
-    source="plumaj/ltzglue-lab",
-    task=LA,
-    languages=[LUXEMBOURGISH],
-    labels=["incorrect", "correct"],
-)
-
-LTZGLUE_NER_CONFIG = DatasetConfig(
-    name="ltzglue-ner",
-    pretty_name="ltzGLUE-NER",
-    source="plumaj/ltzglue-ner",
-    task=NER,
-    languages=[LUXEMBOURGISH],
-)
-
 LTZGLUE_RTE_CONFIG = DatasetConfig(
     name="ltzglue-rte",
     pretty_name="ltzGLUE-RTE",
@@ -56,15 +65,6 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
     task=NLI,
     languages=[LUXEMBOURGISH],
     labels=["entailment", "neutral", "contradiction"],
-)
-
-LTZGLUE_SA_CONFIG = DatasetConfig(
-    name="ltzglue-sa",
-    pretty_name="ltzGLUE-SA",
-    source="plumaj/ltzglue-sa",
-    task=SENT,
-    languages=[LUXEMBOURGISH],
-    labels=["negative", "neutral", "positive"],
 )
 
 # Unofficial datasets ###
