@@ -93,7 +93,7 @@ def _load_split(data: list[dict]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             {
-                "text": f"{item['text_long']} | {item['title']}",
+                "text": f"{item['title']} | {item['text_long']}",
                 "label": "yes" if item["is_correct"] == "True" else "no",
             }
             for item in data
