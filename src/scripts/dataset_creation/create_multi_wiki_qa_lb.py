@@ -4,6 +4,7 @@
 #     "datasets==3.5.0",
 #     "huggingface-hub==0.24.0",
 #     "pandas==2.2.0",
+#     "scikit-learn==1.6.1",
 # ]
 # ///
 
@@ -18,11 +19,9 @@ from datasets import load_dataset
 
 def main() -> None:
     """Load and verify the MultiWikiQA-lb dataset exists."""
-    # The dataset already exists on Hugging Face
     repo_id = "alexandrainst/multi-wiki-qa"
     subset = "lb"
 
-    # Load the dataset to verify it's accessible
     dataset = load_dataset(repo_id, subset, split="train")
 
     print(f"✓ MultiWikiQA-lb loaded successfully")
