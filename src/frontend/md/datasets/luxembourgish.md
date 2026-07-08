@@ -582,23 +582,70 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset ltzglue-tc
-```
 
-### Unofficial: ltzGLUE-ID
+### ltzGLUE-ID
 
 Intent detection dataset from the ltzGLUE benchmark, containing Luxembourgish
 queries annotated with intent categories such as weather lookup, restaurant booking,
 music playback, alarm setting, and creative work search. The queries are synthetically
 generated to cover common voice assistant and search engine intents.
 
-The original dataset only provides validation and test splits (53 and 66 samples
-respectively) with no training data. The dataset contains 10 intent classes, some
-with only 1-2 samples, making stratified splitting impossible.
+The original dataset contains 53 validation and 66 test samples with no training data.
+We combine these and create train/val/test splits (59/17/41 samples) without
+stratification due to some classes having very few samples.
 
-Due to the extremely limited size and lack of training data, this dataset is marked
-as **unofficial** and is intended for diagnostic purposes only. It is not suitable
-for leaderboard inclusion.
+Here are a few examples from the training split:
 
-Example categories include: `weather/find`, `BookRestaurant`, `SearchCreativeWork`,
-`PlayMusic`, `alarm/set_alarm`, `SearchScreeningEvent`, `reminder/set_reminder`,
-`RateBook`, `AddToPlaylist`, `alarm/cancel_alarm`.
+```json
+{
+  "text": "Wéi ass d'Wieder zu Lëtzebuerg?",
+  "label": "weather find"
+}
+```
+
+```json
+{
+  "text": "Spill mir e Lidd vun den Beatles.",
+  "label": "playmusic"
+}
+```
+
+```json
+{
+  "text": "Reservéier en Dësch an engem Restaurant.",
+  "label": "bookrestaurant"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Fir dës Ufro ass d'Intentioun uginn.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Ufro: {text}
+  Intentioun: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Ufro: {text}
+
+  Identifizéiert d'Intentioun vum Benotzer. Äntwert nëmme mat enger vun dësen Intentiounen: addtoplaylist, alarm cancel alarm, alarm set alarm, alarm show alarms, bookrestaurant, playmusic, ratebook, reminder set reminder, searchcreativework, searchscreeningevent, weather find.
+  ```
+
+- Label mapping: (direct mapping to intent names)
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ltzglue-id
+```
