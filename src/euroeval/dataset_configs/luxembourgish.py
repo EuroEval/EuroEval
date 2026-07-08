@@ -72,9 +72,9 @@ MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
     languages=[LUXEMBOURGISH],
     labels=["answer"],
     prompt_prefix="Fir dës Fro gëtt et eng Äntwert.",
-    prompt_template="Kontext: {context}\nFro: {question}\nÄntwert: {answer}",
-    instruction_prompt="Kontext: {context}\nFro: {question}\n\nBeäntwert d'Fro "
-    "baséiert op dem Kontext.",
+    prompt_template="Text: {text}\nFro: {question}\nÄntwert: {label}",
+    instruction_prompt="Text: {text}\nFro: {question}\n\nBeäntwert d'Fro "
+    "baséiert op dem Text.",
     prompt_label_mapping="auto",
 )
 
