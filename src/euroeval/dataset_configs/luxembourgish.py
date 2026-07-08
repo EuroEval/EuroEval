@@ -40,13 +40,14 @@ MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
     languages=[LUXEMBOURGISH],
 )
 
-LUXGEN_SUMM_CONFIG = DatasetConfig(
-    name="luxgen-summ",
-    pretty_name="LuxGen-Summ",
-    source="EuroEval/luxgen-summ",
-    task=SUMM,
-    languages=[LUXEMBOURGISH],
-)
+# Placeholder dataset - not ready for evaluation
+# LUXGEN_SUMM_CONFIG = DatasetConfig(
+#     name="luxgen-summ",
+#     pretty_name="LuxGen-Summ",
+#     source="EuroEval/luxgen-summ",
+#     task=SUMM,
+#     languages=[LUXEMBOURGISH],
+# )
 
 LTZGLUE_HC_CONFIG = DatasetConfig(
     name="ltzglue-hc",
@@ -72,7 +73,7 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     name="ltzglue-la-multi",
     pretty_name="ltzGLUE-LA (Multi-class)",
     source="EuroEval/ltzglue-la-multi",
-    task=LA,
+    task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
     unofficial=True,
     labels=["correct", "word_order", "agreement", "morphology", "other"],
@@ -85,7 +86,18 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
     unofficial=True,
-    labels=["question", "statement", "command", "exclamation"],
+    labels=[
+        "weather/find",
+        "BookRestaurant",
+        "SearchCreativeWork",
+        "PlayMusic",
+        "alarm/set_alarm",
+        "SearchScreeningEvent",
+        "reminder/set_reminder",
+        "RateBook",
+        "AddToPlaylist",
+        "alarm/cancel_alarm",
+    ],
 )
 
 LTZGLUE_TC_CONFIG = DatasetConfig(
