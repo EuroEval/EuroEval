@@ -181,16 +181,14 @@ def _create_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Dat
     n = len(df)
     n_train = min(1024, int(n * 0.5))
     n_val = min(256, int(n * 0.15))
+    n_test = min(2048, int(n * 0.35))
 
     train, temp = train_test_split(
         df, train_size=n_train, random_state=42, stratify=df["label"]
     )
     val, test = train_test_split(
-        temp, train_size=n_val, random_state=42, stratify=temp["label"]
+        temp, train_size=n_val, test_size=n_test, random_state=42, stratify=temp["label"]
     )
-    # Cap test split at 2,048 samples
-    if len(test) > 2048:
-        test = test.sample(n=2048, random_state=42)
 
     for d in [train, val, test]:
         d.reset_index(drop=True, inplace=True)
