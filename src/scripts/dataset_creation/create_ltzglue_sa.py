@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-BASE_URL = Path("https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/sa")
+BASE_URL = "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/sa"
 
 
 def main() -> None:
@@ -74,7 +74,7 @@ def _download_split(split: str) -> list[dict]:
     Returns:
         List of records from the JSON file.
     """
-    url = BASE_URL / f"{split}.json"
+    url = f"{BASE_URL}/{split}.json"
     response = requests.get(str(url), timeout=30)
     response.raise_for_status()
     return response.json()
