@@ -260,8 +260,8 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Ech hunn dem Mann d'Buch ginn.",
-  "label": "case_error"
+  "text": "D'Kand spillt am Gaart.",
+  "label": "agreement"
 }
 ```
 
@@ -279,14 +279,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Fir dëse Satz ass de FeelerTyp uginn, oder 'correct' wann keng Feeler.
+  Folgend sinn Sätz. Bestëmmt ob se grammatesch korrekt sinn, oder identifizéiert de Feeler Typ.
   ```
 
 - Base prompt template:
 
   ```text
   Saz: {text}
-  FeelerTyp: {label}
+  Äntwert: {label}
   ```
 
 - Instruction-tuned prompt template:
@@ -294,7 +294,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Saz: {text}
 
-  Identifizéiert de FeelerTyp am Saz. Äntwert mat 'correct', 'word_order', 'agreement', 'case', 'determiner', oder 'other'.
+  Bestëmmt ob de Saz grammatesch korrekt ass (äntwert 'correct'), oder identifizéiert de Feeler Typ: 'word_order' (falsch Wuert-Reiefolleg), 'agreement' (Subject-Verb oder Determiner-Noun Stëmmung net korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem vun dësen Etiketten: correct, word_order, agreement, morphology, other.
   ```
 
 - Label mapping: (direct mapping to Luxembourgish error type names)
@@ -487,29 +487,25 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Fir dësen Titel an Text ass uginn ob den Titel korrekt ass.
+  Folgend sinn Iwwerschrëften an ob den Artikel dës Behaaptung bestätegt.
   ```
 
 - Base prompt template:
 
   ```text
-  Titel: {title}
-  Text: {text}
-  Korrekt: {label}
+  Iwwerschrëft: {text}
+  Bestätegt: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Titel: {title}
-  Text: {text}
+  Iwwerschrëft: {text}
 
-  Ass den Titel eng korrekt Zesummefaassung vum Text? Äntwert mat 'jo' oder 'nee'.
+  Bestëmmt ob den Artikel d'Behaaptung an der Iwwerschrëft bestätegt. Äntwert nëmme mat 'yes' oder 'no'.
   ```
 
-- Label mapping:
-  - `yes` ➡️ `jo`
-  - `no` ➡️ `nee`
+- Label mapping: (direct mapping, no translation)
 
 You can evaluate this dataset directly as follows:
 
@@ -534,21 +530,21 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "text": "Politik: D'Regierung huet e neie Plang presentéiert.",
-  "label": "politics"
+  "text": "Technologie: D'Firma huet e neie Smartphone presentéiert.",
+  "label": "technology"
 }
 ```
 
 ```json
 {
-  "text": "Sport: D'Lëtzebuerger Ekipp huet de Match gewonnen.",
-  "label": "sports"
+  "text": "Business: D'Bourse hannertléisst Rekuerdresultater.",
+  "label": "business"
 }
 ```
 
 ```json
 {
-  "text": "Kultur: Den neie Festival ass e groussen Erfolleg.",
+  "text": "Kultur: Den Jazzfestival lockt Dausende vu Visiteur un.",
   "label": "culture"
 }
 ```
@@ -560,7 +556,7 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Fir dësen Artikel ass d'Thema uginn.
+  Folgend sinn Noriichten-Artikelen an hir Themen.
   ```
 
 - Base prompt template:
@@ -575,10 +571,10 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Artikel: {text}
 
-  Klassifizéiert d'Thema vum Artikel. Äntwert nëmme mat 'politics', 'sports', 'culture', 'economy' oder 'technology'.
+  Klassifizéiert d'Thema vum Artikel. Äntwert nëmme mat engem vun dësen Etiketten: technology, business, culture, animals, sports.
   ```
 
-- Label mapping: (direct mapping to Luxembourgish category names)
+- Label mapping: (direct mapping)
 
 You can evaluate this dataset directly as follows:
 
@@ -627,22 +623,22 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Fir dës Ufro ass d'Intentioun uginn.
+  Folgend si Benotzerufruffen an hir Intentiounen.
   ```
 
 - Base prompt template:
 
   ```text
-  Ufro: {text}
+  Ufruff: {text}
   Intentioun: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Ufro: {text}
+  Ufruff: {text}
 
-  Identifizéiert d'Intentioun vum Benotzer. Äntwert nëmme mat enger vun dësen Intentiounen: addtoplaylist, alarm cancel alarm, alarm set alarm, alarm show alarms, bookrestaurant, playmusic, ratebook, reminder set reminder, searchcreativework, searchscreeningevent, weather find.
+  Identifizéiert d'Intentioun vum Benotzer. Äntwert nëmme mat engem vun dësen Etiketten: addtoplaylist, alarm cancel alarm, alarm set alarm, alarm show alarms, bookrestaurant, playmusic, ratebook, reminder set reminder, searchcreativework, searchscreeningevent, weather find.
   ```
 
 - Label mapping: (direct mapping to intent names)
