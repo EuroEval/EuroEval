@@ -23,8 +23,8 @@ Before beginning:
 
 ## Step 1: Create the Dataset Processing Script
 
-Create a script in the `src/scripts` directory that processes your dataset into the
-EuroEval format.
+Create a script in the `src/scripts/dataset_creation` directory that processes your
+dataset into the EuroEval format.
 
 The dataset creation script roughly follows this pattern:
 
