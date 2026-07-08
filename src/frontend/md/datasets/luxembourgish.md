@@ -147,8 +147,8 @@ When evaluating generative models, we use the following setup (see the
   - `I-PER` ➡️ `persoun`
   - `B-LOC` ➡️ `plaz`
   - `I-LOC` ➡️ `plaz`
-  - `B-ORG` ➡️ `organesatioun`
-  - `I-ORG` ➡️ `organesatioun`
+  - `B-ORG` ➡️ `organisatioun`
+  - `I-ORG` ➡️ `organisatioun`
   - `B-MISC` ➡️ `divers`
   - `I-MISC` ➡️ `divers`
 
@@ -229,7 +229,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset ltzglue-la
+euroeval --model <model-id> --dataset ltzglue-la-binary
 ```
 
 ### ltzGLUE-LA-multi
@@ -367,12 +367,14 @@ When evaluating generative models, we use the following setup (see the
   Premisse: {premise}
   Hypothees: {hypothesis}
 
-  Bestëmmt ob d'Hypothees d'Premisse follegt oder widderleet. Äntwert mat 'entailment' oder 'contradiction'.
+  Bestëmmt ob déi zweet Aussag aus der éischter follegt, hir widersprécht, oder keng logesch Verbindung mat
+  hir huet. Äntwert mat 'folgerung', 'neutral', oder 'widdersträit'.
   ```
 
 - Label mapping:
-  - `entailment` ➡️ `entailment`
-  - `contradiction` ➡️ `contradiction`
+  - `entailment` ➡️ `folgerung`
+  - `neutral` ➡️ `neutral`
+  - `contradiction` ➡️ `widdersträit`
 
 You can evaluate this dataset directly as follows:
 
@@ -443,7 +445,7 @@ When evaluating generative models, we use the following setup (see the
 You can evaluate this dataset directly as follows:
 
 ```bash
-euroeval --model <model-id> --dataset multiwikiqa-lb
+euroeval --model <model-id> --dataset multi-wiki-qa-lb
 ```
 
 ## Summarisation
