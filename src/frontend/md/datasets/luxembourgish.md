@@ -2,7 +2,7 @@
 
 ## Linguistic Acceptability
 
-### ltzGLUE-LA
+### ltzglue-la-binary
 
 Binary linguistic acceptability task from the ltzGLUE benchmark, introduced in
 [this paper](https://arxiv.org/abs/2604.17976). Luxembourgish sentences must be
@@ -61,7 +61,7 @@ When evaluating generative models:
 euroeval --model <model-id> --dataset ltzglue-la-binary
 ```
 
-### Unofficial: ltzGLUE-LA (Multi-class)
+### Unofficial: ltzglue-la-multi
 
 Multi-class version of the ltzGLUE linguistic acceptability task, where
 grammatical errors are classified by error type. This provides more fine-grained
@@ -74,7 +74,7 @@ errors, and morphological errors.
 euroeval --model <model-id> --dataset ltzglue-la-multi
 ```
 
-### Unofficial: ScaLA-lb
+### Unofficial: scala-lb
 
 Linguistic acceptability dataset created from the
 [UD Luxembourgish-LuxBank treebank](https://github.com/UniversalDependencies/UD_Luxembourgish-LuxBank)
@@ -92,7 +92,7 @@ euroeval --model <model-id> --dataset scala-lb
 
 ## Named Entity Recognition
 
-### ltzGLUE-NER
+### ltzglue-ner
 
 Luxembourgish Named Entity Recognition dataset from the ltzGLUE benchmark.
 Annotated with standard entity types following CoNLL-2003 format:
@@ -158,7 +158,7 @@ euroeval --model <model-id> --dataset ltzglue-ner
 
 ## Natural Language Inference
 
-### ltzGLUE-RTE
+### ltzglue-rte
 
 Recognising Textual Entailment from ltzGLUE. Three-way classification task
 determining the logical relationship between a premise and hypothesis:
@@ -228,7 +228,7 @@ euroeval --model <model-id> --dataset ltzglue-rte
 
 ## Sentiment Classification
 
-### ltzGLUE-SA
+### ltzglue-sa
 
 Sentiment analysis dataset from the ltzGLUE benchmark, introduced in
 [this paper](https://arxiv.org/abs/2604.17976). Contains Luxembourgish texts
@@ -291,7 +291,7 @@ euroeval --model <model-id> --dataset ltzglue-sa
 
 ## Reading Comprehension
 
-### MultiWikiQA-lb
+### multi-wiki-qa-lb
 
 This dataset was published in
 [this paper](https://doi.org/10.48550/arXiv.2509.04111) and contains Wikipedia
@@ -365,7 +365,7 @@ euroeval --model <model-id> --dataset multi-wiki-qa-lb
 
 ## Summarisation
 
-### LuxGen-Summ
+### luxgen-summ
 
 Luxembourgish summarisation dataset from the
 [LuxGen benchmark](https://arxiv.org/abs/2412.09415). Contains Luxembourgish
@@ -387,7 +387,7 @@ euroeval --model <model-id> --dataset luxgen-summ
 
 ## Text Classification
 
-### ltzGLUE-HC
+### ltzglue-hc
 
 Headline Classification from ltzGLUE. Binary task determining if a headline
 is appropriate for a given news article. Tests the model's ability to
@@ -416,7 +416,7 @@ Here are a few examples:
 euroeval --model <model-id> --dataset ltzglue-hc
 ```
 
-### Unofficial: ltzGLUE-ID
+### Unofficial: ltzglue-id
 
 Intent Detection from ltzGLUE. Multi-class classification of sentence intent,
 testing pragmatic understanding. Intent categories include:
@@ -430,7 +430,7 @@ testing pragmatic understanding. Intent categories include:
 euroeval --model <model-id> --dataset ltzglue-id
 ```
 
-### Unofficial: ltzGLUE-TC
+### Unofficial: ltzglue-tc
 
 Topic Classification from ltzGLUE. Multi-class classification of news articles
 into topic categories such as politics, sports, culture, economy, and technology.
