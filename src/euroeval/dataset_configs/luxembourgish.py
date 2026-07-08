@@ -109,10 +109,7 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
     instruction_prompt="Text: {text}\n\nBestëmmt ob déi zweet Aussag aus der "
     "éischter follegt oder hir widdersträit. Äntwert mat 'folgerung' oder "
     "'widdersträit'.",
-    prompt_label_mapping={
-        "entailment": "folgerung",
-        "contradiction": "widdersträit",
-    },
+    prompt_label_mapping={"entailment": "folgerung", "contradiction": "widdersträit"},
 )
 
 LTZGLUE_TC_CONFIG = DatasetConfig(
