@@ -112,7 +112,7 @@ Here are a few examples from the training split:
 
 ```json
 {
-  "tokens": ["D'", "EU", "huet", "neie", "Regelen", "fir", "d'", "Land", " agesat", "."],
+  "tokens": ["D'", "EU", "huet", "neie", "Regelen", "fir", "d'", "Land", "agesat", "."],
   "labels": ["O", "B-ORG", "O", "O", "O", "O", "O", "O", "O", "O"]
 }
 ```
@@ -139,7 +139,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Saz: {text}
 
-  Identifizéiert déi benannt Entitéiten am Satz. Output als JSON-Liste mat den Schlësselen 'persoun', 'plaz', 'organesatioun' an 'divers'.
+  Identifizéiert déi benannt Entitéiten am Satz. Output als JSON-Liste mat den Schlësselen 'persoun', 'plaz', 'organisatioun' an 'divers'.
   ```
 
 - Label mapping:
@@ -312,35 +312,33 @@ euroeval --model <model-id> --dataset ltzglue-la-multi
 This dataset was published in
 [this paper](https://arxiv.org/abs/2604.17976). Given a premise and hypothesis pair
 from Luxembourgish text sources, models must determine if the hypothesis is entailed
-by or contradicts the premise.
+by, contradicts, or is neutral with respect to the premise.
 
 The original ltzGLUE-RTE dataset contains 1,877 / 197 / 626 samples
 for training, validation and testing, respectively. Due to limited validation and
 test data, we use all available samples (197 validation, 626 test) and cap training
-at 1,024 samples using stratified sampling on the entailment/contradiction labels.
+at 1,024 samples using stratified sampling on the entailment/neutral/contradiction
+labels.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "premise": "D'Regierung huet e neie Plang presentéiert.",
-  "hypothesis": "Et gëtt eng nei Presentatioun vun der Regierung.",
+  "text": "Premise: D'Regierung huet e neie Plang presentéiert.\nHypothesis: Et gëtt eng nei Presentatioun vun der Regierung.",
   "label": "entailment"
 }
 ```
 
 ```json
 {
-  "premise": "Et regnet zu Lëtzebuerg.",
-  "hypothesis": "D'Sonn scheint zu Lëtzebuerg.",
+  "text": "Premise: Et regnet zu Lëtzebuerg.\nHypothesis: D'Sonn scheint zu Lëtzebuerg.",
   "label": "contradiction"
 }
 ```
 
 ```json
 {
-  "premise": "De Premierminister huet eng Rede gehalen.",
-  "hypothesis": "De Xavier Bettel huet e Virdrag gehalen.",
+  "text": "Premise: De Premierminister huet eng Rede gehalen.\nHypothesis: De Xavier Bettel huet e Virdrag gehalen.",
   "label": "entailment"
 }
 ```
@@ -358,16 +356,14 @@ When evaluating generative models, we use the following setup (see the
 - Base prompt template:
 
   ```text
-  Premisse: {premise}
-  Hypothees: {hypothesis}
+  Text: {text}
   Relatioun: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
-  Premisse: {premise}
-  Hypothees: {hypothesis}
+  Text: {text}
 
   Bestëmmt ob déi zweet Aussag aus der éischter follegt, hir widersprécht, oder keng logesch Verbindung mat
   hir huet. Äntwert mat 'folgerung', 'neutral', oder 'widdersträit'.
