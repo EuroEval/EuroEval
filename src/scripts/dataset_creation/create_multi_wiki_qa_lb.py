@@ -25,12 +25,12 @@ def main() -> None:
 
     dataset = load_dataset(repo_id, subset, split="train")
 
-    print(f"✓ MultiWikiQA-lb loaded successfully")
+    print("✓ MultiWikiQA-lb loaded successfully")
     print(f"  Total samples: {len(dataset)}")
     print(f"  Columns: {dataset.column_names}")
     print(f"  Sample: {dataset[0]}")
     print(f"\nTarget dataset: {target_id}")
-    print(f"For EuroEval, use: scandeval -m <model_id> -d multi-wiki-qa-lb")
+    print("For EuroEval, use: scandeval -m <model_id> -d multi-wiki-qa-lb")
 
 
 if __name__ == "__main__":

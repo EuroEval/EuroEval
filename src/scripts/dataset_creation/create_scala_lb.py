@@ -24,50 +24,71 @@ from sklearn.model_selection import train_test_split
 
 
 def parse_conllu(file_path: Path) -> list[dict]:
-    """Parse CoNLL-U file and extract sentences."""
+    """Parse CoNLL-U file and extract sentences.
+
+    Args:
+        file_path:
+            Path to the CoNLL-U file.
+
+    Returns:
+        List of sentence dictionaries with text and tokens.
+    """
     sentences = []
     current_sentence = []
 
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 if current_sentence:
                     # Reconstruct sentence text
-                    words = [w['form'] for w in current_sentence if isinstance(w['id'], int)]
-                    sentences.append({'text': ' '.join(words), 'tokens': current_sentence})
+                    words = [
+                        w["form"] for w in current_sentence if isinstance(w["id"], int)
+                    ]
+                    sentences.append(
+                        {"text": " ".join(words), "tokens": current_sentence}
+                    )
                     current_sentence = []
-            elif '\t' in line:
-                parts = line.split('\t')
+            elif "\t" in line:
+                parts = line.split("\t")
                 if not parts[0].isdigit():
                     continue
                 token = {
-                    'id': int(parts[0]),
-                    'form': parts[1],
-                    'lemma': parts[2],
-                    'upos': parts[3],
-                    'xpos': parts[4],
-                    'feats': parts[5],
-                    'head': int(parts[6]) if parts[6] != '_' else 0,
-                    'deprel': parts[7],
+                    "id": int(parts[0]),
+                    "form": parts[1],
+                    "lemma": parts[2],
+                    "upos": parts[3],
+                    "xpos": parts[4],
+                    "feats": parts[5],
+                    "head": int(parts[6]) if parts[6] != "_" else 0,
+                    "deprel": parts[7],
                 }
                 current_sentence.append(token)
 
     return sentences
 
 
-def corrupt_sentence(tokens: list) -> tuple[str, str, str]:
-    """Create correct and corrupted versions of a sentence."""
-    words = [t['form'] for t in tokens if isinstance(t['id'], int)]
+def corrupt_sentence(tokens: list) -> tuple[str, str, str] | None:
+    """Create correct and corrupted versions of a sentence.
+
+    Args:
+        tokens:
+            List of token dictionaries from CoNLL-U.
+
+    Returns:
+        Tuple of (correct_text, corrupted_text, corruption_type) or None if
+        sentence is too short.
+    """
+    words = [t["form"] for t in tokens if isinstance(t["id"], int)]
     if len(words) < 3:
         return None
 
-    correct_text = ' '.join(words)
+    correct_text = " ".join(words)
 
     # Randomly choose corruption type
-    corruption_type = random.choice(['swap', 'delete'])
+    corruption_type = random.choice(["swap", "delete"])
 
-    if corruption_type == 'swap' and len(words) >= 2:
+    if corruption_type == "swap" and len(words) >= 2:
         # Swap two adjacent words
         idx = random.randint(0, len(words) - 2)
         words[idx], words[idx + 1] = words[idx + 1], words[idx]
@@ -76,39 +97,61 @@ def corrupt_sentence(tokens: list) -> tuple[str, str, str]:
         idx = random.randint(1, len(words) - 2)  # Don't delete first/last
         del words[idx]
 
-    corrupted_text = ' '.join(words)
+    corrupted_text = " ".join(words)
     return correct_text, corrupted_text, corruption_type
 
 
 def create_scala_dataset(sentences: list) -> pd.DataFrame:
-    """Create ScaLA dataset with correct/corrupted pairs."""
+    """Create ScaLA dataset with correct/corrupted pairs.
+
+    Args:
+        sentences:
+            List of sentence dictionaries with text and tokens.
+
+    Returns:
+        DataFrame with text and label columns.
+    """
     data = []
     random.seed(42)
 
     for sent in sentences:
-        result = corrupt_sentence(sent['tokens'])
+        result = corrupt_sentence(sent["tokens"])
         if result:
             correct_text, corrupted_text, corruption_type = result
-            data.append({'text': correct_text, 'label': 'correct'})
-            data.append({'text': corrupted_text, 'label': 'incorrect', 'corruption_type': corruption_type})
+            data.append({"text": correct_text, "label": "correct"})
+            data.append(
+                {
+                    "text": corrupted_text,
+                    "label": "incorrect",
+                    "corruption_type": corruption_type,
+                }
+            )
 
     return pd.DataFrame(data)
 
 
 def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Create train/val/test splits."""
+    """Create train/val/test splits.
+
+    Args:
+        df:
+            Full dataset.
+
+    Returns:
+        Tuple of (train, val, test) DataFrames.
+    """
     # Remove corruption_type column for final dataset
-    df = df[['text', 'label']]
+    df = df[["text", "label"]]
 
     n = len(df)
     n_train = min(1024, int(n * 0.5))
     n_val = min(256, int(n * 0.15))
 
     train, temp = train_test_split(
-        df, train_size=n_train, random_state=42, stratify=df['label']
+        df, train_size=n_train, random_state=42, stratify=df["label"]
     )
     val, test = train_test_split(
-        temp, train_size=n_val / len(temp), random_state=42, stratify=temp['label']
+        temp, train_size=n_val / len(temp), random_state=42, stratify=temp["label"]
     )
 
     for d in [train, val, test]:
@@ -123,12 +166,14 @@ def main() -> None:
     # This is too small for a proper ScaLA dataset
     # Script documents the process but dataset needs more data
 
-    ltzbank_path = Path(__file__).parent.parent.parent / 'UD_Luxembourgish-LuxBank'
-    conllu_file = ltzbank_path / 'lb_luxbank-ud-test.conllu'
+    ltzbank_path = Path(__file__).parent.parent.parent / "UD_Luxembourgish-LuxBank"
+    conllu_file = ltzbank_path / "lb_luxbank-ud-test.conllu"
 
     if not conllu_file.exists():
         print(f"ERROR: {conllu_file} not found")
-        print("Clone UD_Luxembourgish-LuxBank first: git clone https://github.com/UniversalDependencies/UD_Luxembourgish-LuxBank.git")
+        print(
+            "Clone UD_Luxembourgish-LuxBank first: git clone https://github.com/UniversalDependencies/UD_Luxembourgish-LuxBank.git"
+        )
         return
 
     print("Parsing UD Luxembourgish treebank...")
@@ -152,19 +197,21 @@ def main() -> None:
 
     print(f"\nSplits: train={len(train)}, val={len(val)}, test={len(test)}")
 
-    dataset = DatasetDict({
-        'train': Dataset.from_pandas(train),
-        'val': Dataset.from_pandas(val),
-        'test': Dataset.from_pandas(test),
-    })
+    dataset = DatasetDict(
+        {
+            "train": Dataset.from_pandas(train),
+            "val": Dataset.from_pandas(val),
+            "test": Dataset.from_pandas(test),
+        }
+    )
 
-    dataset_id = 'EuroEval/scala-lb'
+    dataset_id = "EuroEval/scala-lb"
     print(f"\nUploading to {dataset_id}...")
 
-    HfApi().delete_repo(dataset_id, repo_type='dataset', missing_ok=True)
+    HfApi().delete_repo(dataset_id, repo_type="dataset", missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
     print(f"✓ Uploaded {dataset_id}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
