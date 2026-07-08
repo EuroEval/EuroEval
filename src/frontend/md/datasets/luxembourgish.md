@@ -439,38 +439,43 @@ euroeval --model <model-id> --dataset multiwikiqa-lb
 
 ### LuxGen-Summ
 
-Summarisation dataset from the LuxGen benchmark, introduced in
-[this paper](https://arxiv.org/abs/2412.09415). Contains Luxembourgish news articles
-paired with human-written summaries, covering various domains including politics,
+This dataset was published in
+["Text Generation Models for Luxembourgish with Limited Data: A Balanced Multilingual Strategy"](https://arxiv.org/abs/2412.09415)
+and is based on Luxembourgish news articles from the LuxGen benchmark, with the
+summaries being human-written abstracts covering various domains including politics,
 economy, and culture.
 
-The dataset is extracted from the
-[alexandrainst/luxgen-benchmark](https://github.com/alexandrainst/luxgen-benchmark)
-and uploaded to the EuroEval organization on Hugging Face. We apply the standard
-EuroEval cap of 1,024 / 256 / 2,048 samples for evaluation splits.
+The original dataset consists of approximately 5,000 samples. We use a
+1,024 / 256 / 2,048 split for training, validation and testing, respectively
+(so 3,328 samples used in total). All the new splits are subsets of the original data.
 
 Here are a few examples from the training split:
 
 ```json
 {
-  "text": "D'Regierung huet e neie Plang fir d'Wirtschaft presentéiert. D'Mesure sollen den imprese hëllefen an Akommes kreéieren.",
-  "summary": "Neie Wirtschaftsplang presentéiert.",
-  "language": "lb"
+  "text": "D'Regierung huet e neie Plang fir d'Wirtschaft presentéiert. D'Mesure sollen den imprese hëllefen an Akommes kreéieren. D'Oppositioun kritiséiert de Plang awer als net genuch.",
+  "target_text": "Neie Wirtschaftsplang presentéiert."
 }
 ```
 
 ```json
 {
-  "text": "D'Walen am Land stinn virun der Dier. Verschidde Parteie hunn hir Programmer presentéiert. D'Themen sinn Educatioun, Santé an Ekologie.",
-  "summary": "Wahlprogrammer presentéiert.",
-  "language": "lb"
+  "text": "D'Walen am Land stinn virun der Dier. Verschidde Parteie hunn hir Programmer presentéiert. D'Themen sinn Educatioun, Santé an Ekologie. D'Parteie verspriechen Reformen.",
+  "target_text": "Wahlprogrammer presentéiert."
+}
+```
+
+```json
+{
+  "text": "De Lëtzebuerger Sportler huet d'Goldmedail bei den Olympesche Spiller gewonnen. Et ass déi éischt Medail fir d'Land an dëser Disziplin. De Gewinner ass frou iwwer de Success.",
+  "target_text": "Goldmedail fir Lëtzebuerg."
 }
 ```
 
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-- Number of few-shot examples: 8
+- Number of few-shot examples: 1
 - Evaluation metric: ROUGE-L
 - Prefix prompt:
 
@@ -482,7 +487,7 @@ When evaluating generative models, we use the following setup (see the
 
   ```text
   Artikel: {text}
-  Zesummefaassung: {summary}
+  Zesummefaassung: {target_text}
   ```
 
 - Instruction-tuned prompt template:
