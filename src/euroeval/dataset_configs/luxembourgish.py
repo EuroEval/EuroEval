@@ -73,11 +73,6 @@ MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
     task=RC,
     languages=[LUXEMBOURGISH],
     labels=["answer"],
-    prompt_prefix="Fir dës Fro gëtt et eng Äntwert.",
-    prompt_template="Text: {text}\nFro: {question}\nÄntwert: {label}",
-    instruction_prompt="Text: {text}\nFro: {question}\n\nBeäntwert d'Fro "
-    "baséiert op dem Text.",
-    prompt_label_mapping="auto",
 )
 
 LTZGLUE_HC_CONFIG = DatasetConfig(
