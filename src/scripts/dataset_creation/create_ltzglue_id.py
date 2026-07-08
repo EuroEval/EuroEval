@@ -91,9 +91,20 @@ def _load_split(data: list[dict]) -> pd.DataFrame:
 
     Returns:
         DataFrame with text and label columns.
+
+    Note:
+        Labels are normalized to lowercase with special chars removed for consistency.
     """
+
+    def normalize_label(label: str) -> str:
+        """Normalize label: lowercase, replace / with space, remove special chars."""
+        return str(label).lower().replace("/", " ").replace("_", " ")
+
     return pd.DataFrame(
-        [{"text": item["text"], "label": str(item["label"])} for item in data]
+        [
+            {"text": item["text"], "label": normalize_label(item["label"])}
+            for item in data
+        ]
     )
 
 
