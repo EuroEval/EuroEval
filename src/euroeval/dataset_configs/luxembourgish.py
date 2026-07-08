@@ -18,7 +18,9 @@ LTZGLUE_SA_CONFIG = DatasetConfig(
     prompt_template="Text: {text}\nSentiment: {label}",
     instruction_prompt="Text: {text}\n\nBestëmmt de Sentiment vum Text. Äntwert "
     "nëmme mat 'negativ', 'neutral' oder 'positiv'.",
-    prompt_label_mapping=dict(negative="negativ", neutral="neutral", positive="positiv"),
+    prompt_label_mapping=dict(
+        negative="negativ", neutral="neutral", positive="positiv"
+    ),
 )
 
 LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
