@@ -107,8 +107,8 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
     "oder widderleet.",
     prompt_template="Text: {text}\nRelatioun: {label}",
     instruction_prompt="Text: {text}\n\nBestëmmt ob déi zweet Aussag aus der "
-    "éischter follegt oder hir widdersträit. Äntwert mat 'folgerung' oder "
-    "'widdersträit'.",
+    "éischter follegt oder hir widdersträit. "
+    "Äntwert nëmme mat 'folgerung' oder 'widdersträit'.",
     prompt_label_mapping={"entailment": "folgerung", "contradiction": "widdersträit"},
 )
 

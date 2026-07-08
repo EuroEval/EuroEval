@@ -145,14 +145,14 @@ When evaluating generative models, we use the following setup (see the
 - Prefix prompt:
 
   ```text
-  Fir dëse Satz gëtt et e JSON-Objekt mat den Entitéiten.
+  Folgend si Sätz a JSON-Wierderbicher mat den benannten Entitéiten, déi am Satz virkommen.
   ```
 
 - Base prompt template:
 
   ```text
   Saz: {text}
-  Entitéiten: {label}
+  Benannt Entitéiten: {label}
   ```
 
 - Instruction-tuned prompt template:
@@ -160,9 +160,7 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Saz: {text}
 
-  Identifizéiert déi benannt Entitéiten am Satz. Output als
-  JSON-Objekt mat den Schlësselen 'persoun', 'plaz',
-  'organisatioun' an 'divers'.
+  Identifizéiert déi benannt Entitéiten am Saz. Dir sollt dës als JSON-Wierderbuch mat de Schlësselen 'persoun', 'plaz', 'organisatioun' an 'divers' ausginn. D'Wäerter solle Lëschte vun de benannten Entitéite vun deem Typ sinn, genee sou wéi se am Saz virkommen.
   ```
 
 - Label mapping:
@@ -383,8 +381,8 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Text: {text}
 
-  Bestëmmt ob déi zweet Aussag aus der éischter follegt oder hir widersprécht.
-  Äntwert mat 'folgerung' oder 'widdersträit'.
+  Bestëmmt ob déi zweet Aussag aus der éischter follegt oder hir widdersträit.
+  Äntwert nëmme mat 'folgerung' oder 'widdersträit'.
   ```
 
 - Label mapping:
@@ -433,11 +431,11 @@ Here are a few examples from the training split:
 When evaluating generative models, we use the following setup (see the
 [methodology](/methodology) for more information on how these are used):
 
-- Number of few-shot examples: 8
+- Number of few-shot examples: 4
 - Prefix prompt:
 
   ```text
-  Fir dës Fro gëtt et eng Äntwert.
+  Folgend sinn Texter mat dozou gehéiereg Froen an Äntwerten.
   ```
 
 - Base prompt template:
@@ -445,16 +443,17 @@ When evaluating generative models, we use the following setup (see the
   ```text
   Text: {text}
   Fro: {question}
-  Label: {label}
+  Äntwert mat maximal 3 Wierder: {label}
   ```
 
 - Instruction-tuned prompt template:
 
   ```text
   Text: {text}
-  Fro: {question}
 
-  Beäntwert d'Fro baséiert op dem Text.
+  Äntwert d'Fro iwwer den Text hei uewen mat maximal 3 Wierder.
+
+  Fro: {question}
   ```
 
 You can evaluate this dataset directly as follows:
