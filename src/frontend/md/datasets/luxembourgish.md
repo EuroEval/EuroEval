@@ -583,7 +583,7 @@ Example categories include: `weather/find`, `BookRestaurant`, `SearchCreativeWor
 `PlayMusic`, `alarm/set_alarm`, `SearchScreeningEvent`, `reminder/set_reminder`,
 `RateBook`, `AddToPlaylist`, `alarm/cancel_alarm`.
 
-### Unofficial: ltzglue-tc
+### ltzGLUE-TC
 
 Topic classification dataset from the ltzGLUE benchmark, containing Luxembourgish
 news articles categorized by topic. The dataset includes articles from various
@@ -593,5 +593,58 @@ The original dataset contains 9,932 / 1,240 / 1,245 samples
 for training, validation and testing. We cap training at 1,024 samples and use
 all available test data (1,245 samples, below the 2,048 target).
 
-Due to the limited test split size, this dataset is marked as **unofficial** for
-now and may be upgraded once more data becomes available.
+Here are a few examples from the training split:
+
+```json
+{
+  "text": "Politik: D'Regierung huet e neie Plang presentéiert.",
+  "label": "politics"
+}
+```
+
+```json
+{
+  "text": "Sport: D'Lëtzebuerger Ekipp huet de Match gewonnen.",
+  "label": "sports"
+}
+```
+
+```json
+{
+  "text": "Kultur: Den neie Festival ass e groussen Erfolleg.",
+  "label": "culture"
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 12
+- Prefix prompt:
+
+  ```text
+  Fir dësen Artikel ass d'Thema uginn.
+  ```
+
+- Base prompt template:
+
+  ```text
+  Artikel: {text}
+  Thema: {label}
+  ```
+
+- Instruction-tuned prompt template:
+
+  ```text
+  Artikel: {text}
+
+  Klassifizéiert d'Thema vum Artikel. Äntwert nëmme mat 'politics', 'sports', 'culture', 'economy' oder 'technology'.
+  ```
+
+- Label mapping: (direct mapping to Luxembourgish category names)
+
+You can evaluate this dataset directly as follows:
+
+```bash
+euroeval --model <model-id> --dataset ltzglue-tc
+```

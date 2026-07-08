@@ -94,6 +94,5 @@ LTZGLUE_TC_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-tc",
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
-    unofficial=True,
     labels=["politics", "sports", "culture", "economy", "technology"],
 )
