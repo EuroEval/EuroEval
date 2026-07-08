@@ -2,7 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LUXEMBOURGISH
-from ..tasks import LA, NER, NLI, RC, SENT, SUMM, TEXT_CLASSIFICATION
+from ..tasks import LA, NER, NLI, RC, SENT, TEXT_CLASSIFICATION
 
 # Official datasets ###
 
@@ -39,15 +39,6 @@ MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
     task=RC,
     languages=[LUXEMBOURGISH],
 )
-
-# Placeholder dataset - not ready for evaluation
-# LUXGEN_SUMM_CONFIG = DatasetConfig(
-#     name="luxgen-summ",
-#     pretty_name="LuxGen-Summ",
-#     source="EuroEval/luxgen-summ",
-#     task=SUMM,
-#     languages=[LUXEMBOURGISH],
-# )
 
 LTZGLUE_HC_CONFIG = DatasetConfig(
     name="ltzglue-hc",
