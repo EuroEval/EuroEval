@@ -117,8 +117,9 @@ def _create_splits(
     n_val = min(256, int(len(all_data) * 0.15))
 
     train_data, temp = train_test_split(all_data, train_size=n_train, random_state=42)
+    n_test = min(2048, len(temp) - n_val)
     val_data, test_data = train_test_split(
-        temp, train_size=n_val / len(temp), random_state=42
+        temp, test_size=n_test, random_state=42
     )
 
     for df in [train_data, val_data, test_data]:
