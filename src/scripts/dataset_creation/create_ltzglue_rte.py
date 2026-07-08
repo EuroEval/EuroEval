@@ -18,7 +18,7 @@ from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
 
 
-BASE_URL = "https://raw.githubusercontent.com/plumaj/ltzGLUE/refs/heads/main/data/rte"
+BASE_URL = "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/rte"
 
 
 def download_split(split: str) -> pd.DataFrame:
