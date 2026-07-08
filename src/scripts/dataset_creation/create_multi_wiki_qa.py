@@ -122,11 +122,8 @@ def main() -> None:
             }
         )
 
-        # Create dataset ID (Luxembourgish uses non-mini naming convention)
-        if language == "lb":
-            target_dataset_id = f"EuroEval/multi-wiki-qa-{language}"
-        else:
-            target_dataset_id = f"EuroEval/multi-wiki-qa-{language}-mini"
+        # Create dataset ID with -mini suffix
+        target_dataset_id = f"EuroEval/multi-wiki-qa-{language}-mini"
 
         # Remove the dataset from Hugging Face Hub if it already exists
         HfApi().delete_repo(target_dataset_id, repo_type="dataset", missing_ok=True)
