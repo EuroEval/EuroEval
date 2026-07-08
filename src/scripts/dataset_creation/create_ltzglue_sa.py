@@ -11,8 +11,9 @@
 """Create the ltzGLUE Sentiment Analysis (SA) dataset and upload to HF Hub."""
 
 import json
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
@@ -41,7 +42,7 @@ def create_splits(
 
     n_train = min(1024, int(len(all_data) * 0.5))
     n_val = min(256, int(len(all_data) * 0.15))
-    n_test = len(all_data) - n_train - n_val
+    len(all_data) - n_train - n_val
 
     train_data, temp = train_test_split(
         all_data, train_size=n_train, random_state=42, stratify=all_data["label"]

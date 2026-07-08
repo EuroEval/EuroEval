@@ -15,8 +15,9 @@ UD Luxembourgish-LuxBank treebank by corrupting sentences.
 """
 
 import random
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
@@ -26,7 +27,7 @@ def parse_conllu(file_path: Path) -> list[dict]:
     """Parse CoNLL-U file and extract sentences."""
     sentences = []
     current_sentence = []
-    
+
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
@@ -51,7 +52,7 @@ def parse_conllu(file_path: Path) -> list[dict]:
                     'deprel': parts[7],
                 }
                 current_sentence.append(token)
-    
+
     return sentences
 
 
@@ -60,12 +61,12 @@ def corrupt_sentence(tokens: list) -> tuple[str, str, str]:
     words = [t['form'] for t in tokens if isinstance(t['id'], int)]
     if len(words) < 3:
         return None
-    
+
     correct_text = ' '.join(words)
-    
+
     # Randomly choose corruption type
     corruption_type = random.choice(['swap', 'delete'])
-    
+
     if corruption_type == 'swap' and len(words) >= 2:
         # Swap two adjacent words
         idx = random.randint(0, len(words) - 2)
@@ -74,7 +75,7 @@ def corrupt_sentence(tokens: list) -> tuple[str, str, str]:
         # Delete a random word
         idx = random.randint(1, len(words) - 2)  # Don't delete first/last
         del words[idx]
-    
+
     corrupted_text = ' '.join(words)
     return correct_text, corrupted_text, corruption_type
 
@@ -83,14 +84,14 @@ def create_scala_dataset(sentences: list) -> pd.DataFrame:
     """Create ScaLA dataset with correct/corrupted pairs."""
     data = []
     random.seed(42)
-    
+
     for sent in sentences:
         result = corrupt_sentence(sent['tokens'])
         if result:
             correct_text, corrupted_text, corruption_type = result
             data.append({'text': correct_text, 'label': 'correct'})
             data.append({'text': corrupted_text, 'label': 'incorrect', 'corruption_type': corruption_type})
-    
+
     return pd.DataFrame(data)
 
 
@@ -98,21 +99,21 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
     """Create train/val/test splits."""
     # Remove corruption_type column for final dataset
     df = df[['text', 'label']]
-    
+
     n = len(df)
     n_train = min(1024, int(n * 0.5))
     n_val = min(256, int(n * 0.15))
-    
+
     train, temp = train_test_split(
         df, train_size=n_train, random_state=42, stratify=df['label']
     )
     val, test = train_test_split(
         temp, train_size=n_val / len(temp), random_state=42, stratify=temp['label']
     )
-    
+
     for d in [train, val, test]:
         d.reset_index(drop=True, inplace=True)
-    
+
     return train, val, test
 
 
@@ -121,19 +122,19 @@ def main() -> None:
     # Note: UD Luxembourgish only has test.conllu with ~100 sentences
     # This is too small for a proper ScaLA dataset
     # Script documents the process but dataset needs more data
-    
+
     ltzbank_path = Path(__file__).parent.parent.parent / 'UD_Luxembourgish-LuxBank'
     conllu_file = ltzbank_path / 'lb_luxbank-ud-test.conllu'
-    
+
     if not conllu_file.exists():
         print(f"ERROR: {conllu_file} not found")
         print("Clone UD_Luxembourgish-LuxBank first: git clone https://github.com/UniversalDependencies/UD_Luxembourgish-LuxBank.git")
         return
-    
+
     print("Parsing UD Luxembourgish treebank...")
     sentences = parse_conllu(conllu_file)
     print(f"Found {len(sentences)} sentences")
-    
+
     if len(sentences) < 200:
         print(f"\nWARNING: Only {len(sentences)} sentences available.")
         print("ScaLA-lb needs more data. Consider:")
@@ -141,25 +142,25 @@ def main() -> None:
         print("  2. Adding more Luxembourgish text sources")
         print("  3. Using ltzGLUE-LA instead for now")
         return
-    
+
     print("Creating corrupted samples...")
     df = create_scala_dataset(sentences)
     print(f"Created {len(df)} samples (correct + corrupted)")
-    
+
     print("Creating splits...")
     train, val, test = make_splits(df)
-    
+
     print(f"\nSplits: train={len(train)}, val={len(val)}, test={len(test)}")
-    
+
     dataset = DatasetDict({
         'train': Dataset.from_pandas(train),
         'val': Dataset.from_pandas(val),
         'test': Dataset.from_pandas(test),
     })
-    
+
     dataset_id = 'EuroEval/scala-lb'
     print(f"\nUploading to {dataset_id}...")
-    
+
     HfApi().delete_repo(dataset_id, repo_type='dataset', missing_ok=True)
     dataset.push_to_hub(dataset_id, private=True)
     print(f"✓ Uploaded {dataset_id}")

@@ -13,15 +13,10 @@ Based on the LuxGen benchmark from arxiv.org/abs/2412.09415.
 This script processes Luxembourgish text-generation data into summarisation format.
 """
 
-import pandas as pd
-from pathlib import Path
-from datasets import Dataset, DatasetDict
-from huggingface_hub import HfApi
-
 
 def main() -> None:
     """Create LuxGen-Summ dataset.
-    
+
     TODO: This script is a placeholder. The LuxGen benchmark paper needs to be
     reviewed to extract the summarisation component, or a new dataset needs to
     be created from Luxembourgish news/articles with human-written summaries.

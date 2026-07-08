@@ -11,8 +11,9 @@
 """Create the ltzGLUE Intent Detection (ID) dataset and upload to HF Hub."""
 
 import json
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split

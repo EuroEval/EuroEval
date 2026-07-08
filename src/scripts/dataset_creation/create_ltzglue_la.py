@@ -14,8 +14,9 @@ Creates both binary (correct/incorrect) and multi-class (error type) versions.
 """
 
 import json
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 from datasets import Dataset, DatasetDict
 from huggingface_hub import HfApi
 from sklearn.model_selection import train_test_split
@@ -83,7 +84,7 @@ def main() -> None:
 
     HfApi().delete_repo("EuroEval/ltzglue-lab", repo_type="dataset", missing_ok=True)
     bin_dataset.push_to_hub("EuroEval/ltzglue-lab", private=True)
-    print(f"✓ Uploaded EuroEval/ltzglue-lab (binary)")
+    print("✓ Uploaded EuroEval/ltzglue-lab (binary)")
 
     # Multi-class version
     print("\nCreating multi-class LA dataset...")
@@ -102,7 +103,7 @@ def main() -> None:
 
     HfApi().delete_repo("EuroEval/ltzglue-lam", repo_type="dataset", missing_ok=True)
     mul_dataset.push_to_hub("EuroEval/ltzglue-lam", private=True)
-    print(f"✓ Uploaded EuroEval/ltzglue-lam (multi-class)")
+    print("✓ Uploaded EuroEval/ltzglue-lam (multi-class)")
 
 
 if __name__ == "__main__":

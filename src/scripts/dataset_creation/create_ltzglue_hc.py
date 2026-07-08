@@ -117,14 +117,14 @@ def main() -> None:
     val_df = load_ltzglue_split(str(data_dir / "dev.json"))
     test_df = load_ltzglue_split(str(data_dir / "test.json"))
 
-    print(f"Loaded ltzGLUE-HC:")
+    print("Loaded ltzGLUE-HC:")
     print(f"  Train: {len(train_df)} samples")
     print(f"  Dev: {len(val_df)} samples")
     print(f"  Test: {len(test_df)} samples")
 
     final_train, final_val, final_test = create_splits(train_df, val_df, test_df)
 
-    print(f"\nCreated standardised splits:")
+    print("\nCreated standardised splits:")
     print(f"  Train: {len(final_train)} samples")
     print(f"  Val: {len(final_val)} samples")
     print(f"  Test: {len(final_test)} samples")
