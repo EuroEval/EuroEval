@@ -61,49 +61,56 @@ def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
 def main() -> None:
     """Create both LA binary and multi-class datasets."""
     ltzglue_root = Path(__file__).parent.parent.parent / "ltzGLUE"
-    data_dir = ltzglue_root / "data" / "la"
+    binary_dir = ltzglue_root / "data" / "la" / "binary"
+    multi_dir = ltzglue_root / "data" / "la" / "multi"
 
-    train_data = load_ltzglue_split(data_dir / "train.json")
-    val_data = load_ltzglue_split(data_dir / "dev.json")
-    test_data = load_ltzglue_split(data_dir / "test.json")
+    # Binary version
+    binary_train = load_ltzglue_split(binary_dir / "train.json")
+    binary_val = load_ltzglue_split(binary_dir / "dev.json")
+    binary_test = load_ltzglue_split(binary_dir / "test.json")
+
+    # Multi-class version  
+    multi_train = load_ltzglue_split(multi_dir / "train.json")
+    multi_val = load_ltzglue_split(multi_dir / "dev.json")
+    multi_test = load_ltzglue_split(multi_dir / "test.json")
 
     # Binary version
     print("Creating binary LA dataset...")
     binary_df = pd.concat([
-        create_binary_split(train_data),
-        create_binary_split(val_data),
-        create_binary_split(test_data),
+        create_binary_split(binary_train),
+        create_binary_split(binary_val),
+        create_binary_split(binary_test),
     ], ignore_index=True)
     bin_train, bin_val, bin_test = make_splits(binary_df)
 
     bin_dataset = DatasetDict({
-        "train": Dataset.from_pandas(bin_train),
-        "val": Dataset.from_pandas(bin_val),
-        "test": Dataset.from_pandas(bin_test),
+        "train": Dataset.from_pandas(bin_train[["text", "label"]]),
+        "val": Dataset.from_pandas(bin_val[["text", "label"]]),
+        "test": Dataset.from_pandas(bin_test[["text", "label"]]),
     })
 
-    HfApi().delete_repo("EuroEval/ltzglue-lab", repo_type="dataset", missing_ok=True)
-    bin_dataset.push_to_hub("EuroEval/ltzglue-lab", private=True)
-    print("✓ Uploaded EuroEval/ltzglue-lab (binary)")
+    HfApi().delete_repo("EuroEval/ltzglue-la", repo_type="dataset", missing_ok=True)
+    bin_dataset.push_to_hub("EuroEval/ltzglue-la", private=True)
+    print("✓ Uploaded EuroEval/ltzglue-la (binary)")
 
     # Multi-class version
     print("\nCreating multi-class LA dataset...")
     multi_df = pd.concat([
-        create_multi_split(train_data),
-        create_multi_split(val_data),
-        create_multi_split(test_data),
+        create_multi_split(multi_train),
+        create_multi_split(multi_val),
+        create_multi_split(multi_test),
     ], ignore_index=True)
     mul_train, mul_val, mul_test = make_splits(multi_df)
 
     mul_dataset = DatasetDict({
-        "train": Dataset.from_pandas(mul_train),
-        "val": Dataset.from_pandas(mul_val),
-        "test": Dataset.from_pandas(mul_test),
+        "train": Dataset.from_pandas(mul_train[["text", "label"]]),
+        "val": Dataset.from_pandas(mul_val[["text", "label"]]),
+        "test": Dataset.from_pandas(mul_test[["text", "label"]]),
     })
 
-    HfApi().delete_repo("EuroEval/ltzglue-lam", repo_type="dataset", missing_ok=True)
-    mul_dataset.push_to_hub("EuroEval/ltzglue-lam", private=True)
-    print("✓ Uploaded EuroEval/ltzglue-lam (multi-class)")
+    HfApi().delete_repo("EuroEval/ltzglue-la-multi", repo_type="dataset", missing_ok=True)
+    mul_dataset.push_to_hub("EuroEval/ltzglue-la-multi", private=True)
+    print("✓ Uploaded EuroEval/ltzglue-la-multi (multi-class)")
 
 
 if __name__ == "__main__":

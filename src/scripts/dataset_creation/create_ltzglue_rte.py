@@ -10,7 +10,6 @@
 
 """Create the ltzGLUE RTE (Recognising Textual Entailment) dataset and upload to HF Hub."""
 
-import json
 from pathlib import Path
 
 import pandas as pd
@@ -20,19 +19,12 @@ from sklearn.model_selection import train_test_split
 
 
 def load_rte_split(file_path: Path) -> pd.DataFrame:
-    """Load RTE data with premise/hypothesis pairs."""
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    rows = []
-    for item in data:
-        rows.append({
-            "premise": item.get("premise", item.get("sentence1", "")),
-            "hypothesis": item.get("hypothesis", item.get("sentence2", "")),
-            "label": str(item.get("label", item.get("gold_label", ""))),
-        })
-
-    return pd.DataFrame(rows)
+    """Load RTE data from TSV file with premise/hypothesis pairs."""
+    df = pd.read_csv(file_path, sep="\t")
+    label_map = {0: "entailment", 1: "contradiction"}
+    df["label"] = df["label"].map(label_map)
+    df = df.rename(columns={"sentence1": "premise", "sentence2": "hypothesis"})
+    return df[["premise", "hypothesis", "label"]]
 
 
 def make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -58,9 +50,9 @@ def main() -> None:
     ltzglue_root = Path(__file__).parent.parent.parent / "ltzGLUE"
     data_dir = ltzglue_root / "data" / "rte"
 
-    train_df = load_rte_split(data_dir / "train.json")
-    val_df = load_rte_split(data_dir / "dev.json")
-    test_df = load_rte_split(data_dir / "test.json")
+    train_df = load_rte_split(data_dir / "train.tsv")
+    val_df = load_rte_split(data_dir / "dev.tsv")
+    test_df = load_rte_split(data_dir / "test.tsv")
 
     print(f"Loaded RTE: {len(train_df)} train, {len(val_df)} dev, {len(test_df)} test")
 
