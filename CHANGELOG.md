@@ -22,7 +22,7 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   Serbian, Slovak, Slovene, Spanish, Swedish, Ukrainian). All are marked
   `unofficial` as the published Hugging Face versions are placeholder
   test-split-only snapshots awaiting full regeneration. This was contributed by
-  @FrejaThoresen ✨
+  @FrejaThoresen
 
 ### Fixed
 
