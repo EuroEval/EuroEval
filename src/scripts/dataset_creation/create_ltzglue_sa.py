@@ -120,8 +120,15 @@ def _create_splits(
     train_data, temp = train_test_split(
         all_data, train_size=n_train, random_state=42, stratify=all_data["label"]
     )
+
+    # Cap test split at 2,048 samples
+    n_test = min(2048, len(temp) - n_val)
     val_data, test_data = train_test_split(
-        temp, train_size=n_val / len(temp), random_state=42, stratify=temp["label"]
+        temp,
+        train_size=n_val,
+        test_size=n_test,
+        random_state=42,
+        stratify=temp["label"],
     )
 
     for df in [train_data, val_data, test_data]:
