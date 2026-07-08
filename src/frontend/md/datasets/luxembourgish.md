@@ -251,7 +251,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ltzglue-la-binary
 ```
 
-### Unofficial: ltzGLUE-LA-multi
+### ltzGLUE-LA (Multi-class)
 
 Multi-class variant of the ltzGLUE-LA linguistic acceptability task where models must
 identify the specific error type in addition to detecting incorrectness. This dataset is

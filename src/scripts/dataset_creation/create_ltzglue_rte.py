@@ -23,7 +23,7 @@ from sklearn.model_selection import train_test_split
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-BASE_URL = "https://raw.githubusercontent.com/plumaj/ltzGLUE/main/data/rte"
+BASE_URL = "https://media.githubusercontent.com/media/plumaj/ltzGLUE/main/data/rte"
 
 
 def main() -> None:
