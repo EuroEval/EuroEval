@@ -58,6 +58,15 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
     labels=["entailment", "contradiction"],
 )
 
+LTZGLUE_TC_CONFIG = DatasetConfig(
+    name="ltzglue-tc",
+    pretty_name="ltzGLUE-TC",
+    source="EuroEval/ltzglue-tc",
+    task=TEXT_CLASSIFICATION,
+    languages=[LUXEMBOURGISH],
+    labels=["technology", "business", "culture", "animals", "sports"],
+)
+
 # Unofficial datasets ###
 
 LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
@@ -89,13 +98,4 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
         "AddToPlaylist",
         "alarm/cancel_alarm",
     ],
-)
-
-LTZGLUE_TC_CONFIG = DatasetConfig(
-    name="ltzglue-tc",
-    pretty_name="ltzGLUE-TC",
-    source="EuroEval/ltzglue-tc",
-    task=TEXT_CLASSIFICATION,
-    languages=[LUXEMBOURGISH],
-    labels=["technology", "business", "culture", "animals", "sports"],
 )
