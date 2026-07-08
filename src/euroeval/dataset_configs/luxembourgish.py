@@ -77,6 +77,32 @@ LTZGLUE_TC_CONFIG = DatasetConfig(
     prompt_label_mapping="auto",
 )
 
+LTZGLUE_ID_CONFIG = DatasetConfig(
+    name="ltzglue-id",
+    pretty_name="ltzGLUE-ID",
+    source="EuroEval/ltzglue-id",
+    task=TEXT_CLASSIFICATION,
+    languages=[LUXEMBOURGISH],
+    labels=[
+        "addtoplaylist",
+        "alarm cancel alarm",
+        "alarm set alarm",
+        "alarm show alarms",
+        "bookrestaurant",
+        "playmusic",
+        "ratebook",
+        "reminder set reminder",
+        "searchcreativework",
+        "searchscreeningevent",
+        "weather find",
+    ],
+    prompt_prefix="Folgend si Benotzerufruffen an hir Intentiounen.",
+    prompt_template="Ufruff: {text}\nIntentioun: {label}",
+    instruction_prompt="Ufruff: {text}\n\nIdentifizéiert d'Intentioun vum Benotzer. "
+    "Äntwert nëmme mat engem vun dësen Etiketten: {labels_str}.",
+    prompt_label_mapping="auto",
+)
+
 # Unofficial datasets ###
 
 LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
@@ -95,32 +121,5 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     "Wuert-Reiefolleg), 'agreement' (Subject-Verb oder Determiner-Noun Stëmmung net "
     "korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem "
     "vun dësen Etiketten: {labels_str}.",
-    prompt_label_mapping="auto",
-)
-
-LTZGLUE_ID_CONFIG = DatasetConfig(
-    name="ltzglue-id",
-    pretty_name="ltzGLUE-ID",
-    source="EuroEval/ltzglue-id",
-    task=TEXT_CLASSIFICATION,
-    languages=[LUXEMBOURGISH],
-    unofficial=True,
-    labels=[
-        "addtoplaylist",
-        "alarm cancel alarm",
-        "alarm set alarm",
-        "alarm show alarms",
-        "bookrestaurant",
-        "playmusic",
-        "ratebook",
-        "reminder set reminder",
-        "searchcreativework",
-        "searchscreeningevent",
-        "weather find",
-    ],
-    prompt_prefix="Folgend si Benotzerufruffen an hir Intentiounen.",
-    prompt_template="Ufruff: {text}\nIntentioun: {label}",
-    instruction_prompt="Ufruff: {text}\n\nIdentifizéiert d'Intentioun vum Benotzer. "
-    "Äntwert nëmme mat engem vun dësen Etiketten: {labels_str}.",
     prompt_label_mapping="auto",
 )
