@@ -232,12 +232,13 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ltzglue-la-binary
 ```
 
-### ltzGLUE-LA-multi
+### Unofficial: ltzGLUE-LA-multi
 
-This dataset was published in
-[this paper](https://arxiv.org/abs/2604.17976). Multi-class variant of the linguistic
-acceptability task where models must identify the specific error type in addition to
-detecting incorrectness. Error categories include word order, subject-verb agreement,
+Multi-class variant of the ltzGLUE-LA linguistic acceptability task where models must
+identify the specific error type in addition to detecting incorrectness. This dataset
+is marked as **unofficial** due to poor zero-shot performance (0.00% MCC with
+GPT-4o-mini), suggesting the task may be too difficult or the prompt template needs
+refinement. It is intended for diagnostic purposes only. Error categories include word order, subject-verb agreement,
 case marking, determiner-noun agreement, and other grammatical violations. The data
 includes naturally occurring text from Luxembourgish news outlets (Luxemburger Wort,
 RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu) as well as systematically corrupted
