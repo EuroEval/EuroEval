@@ -23,7 +23,7 @@ body:
       - label: Romance languages (Catalan, French, Italian, Portuguese, Romanian, Spanish)
       - label: Scandinavian languages (Danish, Faroese, Icelandic, Norwegian, Swedish)
       - label: Slavic languages (Belarusian, Bulgarian, Bosnian, Croatian, Czech, Polish, Serbian, Slovak, Slovenian, Ukrainian)
-      - label: West Germanic languages (Dutch, English, German)
+      - label: West Germanic languages (Dutch, English, German, Luxembourgish)
       - label: Albanian
       - label: Greek
       - label: Hungarian
