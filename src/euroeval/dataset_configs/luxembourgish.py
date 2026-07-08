@@ -63,7 +63,7 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-rte",
     task=NLI,
     languages=[LUXEMBOURGISH],
-    labels=["entailment", "neutral", "contradiction"],
+    labels=["entailment", "contradiction"],
 )
 
 # Unofficial datasets ###
@@ -94,5 +94,5 @@ LTZGLUE_TC_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-tc",
     task=TEXT_CLASSIFICATION,
     languages=[LUXEMBOURGISH],
-    labels=["politics", "sports", "culture", "economy", "technology"],
+    labels=["technology", "business", "culture", "animals", "sports"],
 )

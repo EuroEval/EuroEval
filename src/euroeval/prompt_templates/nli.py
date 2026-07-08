@@ -408,13 +408,13 @@ NLI_TEMPLATES: dict["Language", PromptConfig] = {
     ),
     LUXEMBOURGISH: PromptConfig(
         default_prompt_label_mapping=dict(
-            entailment="folgerung", neutral="neutral", contradiction="widdersträit"
+            entailment="folgerung", contradiction="widdersträit"
         ),
         default_prompt_prefix="Folgend si Pueren vun Aussoen an hir logesch Relatioun, "
         "déi {labels_str} ka sinn.",
         default_prompt_template="{text}\nImplikatioun: {label}",
         default_instruction_prompt="{text}\n\nBestëmmt ob déi zweet Aussag aus der "
-        "éischter follegt, hir widersprécht, oder keng logesch Verbindung mat "
-        "hir huet. Äntwert mat {labels_str}, an näischt anescht.",
+        "éischter follegt oder hir widersprécht. Äntwert mat {labels_str}, an näischt "
+        "anescht.",
     ),
 }

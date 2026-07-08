@@ -44,13 +44,18 @@ def main() -> None:
         f"{len(final_test)} test"
     )
 
+    # Create 'text' column combining premise and hypothesis (required by EuroEval)
+    for df in [final_train, final_val, final_test]:
+        df["text"] = df.apply(
+            lambda row: f"Premise: {row['premise']}\nHypothesis: {row['hypothesis']}",
+            axis=1,
+        )
+
     dataset = DatasetDict(
         {
-            "train": Dataset.from_pandas(
-                final_train[["premise", "hypothesis", "label"]]
-            ),
-            "val": Dataset.from_pandas(final_val[["premise", "hypothesis", "label"]]),
-            "test": Dataset.from_pandas(final_test[["premise", "hypothesis", "label"]]),
+            "train": Dataset.from_pandas(final_train[["text", "label"]]),
+            "val": Dataset.from_pandas(final_val[["text", "label"]]),
+            "test": Dataset.from_pandas(final_test[["text", "label"]]),
         }
     )
 
@@ -76,7 +81,7 @@ def _download_split(split: str) -> pd.DataFrame:
     response = requests.get(url, timeout=30)
     response.raise_for_status()
     df = pd.read_csv(io.StringIO(response.text), sep="\t")
-    label_map = {0: "entailment", 1: "contradiction"}
+    label_map = {0: "contradiction", 1: "entailment"}
     df["label"] = df["label"].map(label_map)
     df = df.rename(columns={"sentence1": "premise", "sentence2": "hypothesis"})
     return df[["premise", "hypothesis", "label"]]
