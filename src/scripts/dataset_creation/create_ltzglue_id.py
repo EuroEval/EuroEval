@@ -97,7 +97,15 @@ def _load_split(data: list[dict]) -> pd.DataFrame:
     """
 
     def normalize_label(label: str) -> str:
-        """Normalize label: lowercase, replace / with space, remove special chars."""
+        """Normalize label: lowercase, replace / with space, remove special chars.
+
+        Args:
+            label:
+                Original label string.
+
+        Returns:
+            Normalized label string.
+        """
         return str(label).lower().replace("/", " ").replace("_", " ")
 
     return pd.DataFrame(
