@@ -10,8 +10,8 @@
 
 """Create the MultiWikiQA-lb reading comprehension dataset.
 
-This dataset already exists at alexandrainst/multi-wiki-qa (subset "lb").
-This script documents the dataset structure for EuroEval.
+This is a Luxembourgish subset extracted from alexandrainst/multi-wiki-qa.
+Upload to EuroEval/multi-wiki-qa-lb on Hugging Face.
 """
 
 from datasets import load_dataset
@@ -21,6 +21,7 @@ def main() -> None:
     """Load and verify the MultiWikiQA-lb dataset exists."""
     repo_id = "alexandrainst/multi-wiki-qa"
     subset = "lb"
+    target_id = "EuroEval/multi-wiki-qa-lb"
 
     dataset = load_dataset(repo_id, subset, split="train")
 
@@ -28,7 +29,8 @@ def main() -> None:
     print(f"  Total samples: {len(dataset)}")
     print(f"  Columns: {dataset.column_names}")
     print(f"  Sample: {dataset[0]}")
-    print(f"\nFor EuroEval, use: scandeval -m <model_id> -d multi-wiki-qa-lb")
+    print(f"\nTarget dataset: {target_id}")
+    print(f"For EuroEval, use: scandeval -m <model_id> -d multi-wiki-qa-lb")
 
 
 if __name__ == "__main__":
