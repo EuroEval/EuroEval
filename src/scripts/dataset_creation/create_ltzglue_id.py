@@ -113,9 +113,12 @@ def _make_splits(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataF
     n = len(df)
     n_train = min(1024, int(n * 0.5))
     n_val = min(256, int(n * 0.15))
+    n_test = min(2048, int(n * 0.35))
 
     train, temp = train_test_split(df, train_size=n_train, random_state=42)
     val, test = train_test_split(temp, train_size=n_val / len(temp), random_state=42)
+    if len(test) > n_test:
+        test = test.iloc[:n_test]
 
     for d in [train, val, test]:
         d.reset_index(drop=True, inplace=True)
