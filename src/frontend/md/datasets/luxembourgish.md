@@ -181,7 +181,7 @@ euroeval --model <model-id> --dataset ltzglue-ner
 
 ## Linguistic Acceptability
 
-### ltzGLUE-LA
+### ltzGLUE-LA-binary
 
 This dataset was published in [this paper](https://arxiv.org/abs/2604.17976).
 Luxembourgish sentences must be classified as grammatically correct or incorrect. The
@@ -251,7 +251,7 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset ltzglue-la-binary
 ```
 
-### ltzGLUE-LA (Multi-class)
+### ltzGLUE-LA-multi
 
 Multi-class variant of the ltzGLUE-LA linguistic acceptability task where models must
 identify the specific error type in addition to detecting incorrectness. This dataset is
