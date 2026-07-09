@@ -315,7 +315,12 @@ When evaluating generative models, we use the following setup (see the
   Bestëmmt ob de Saz grammatesch korrekt ass (äntwert 'correct'), oder identifizéiert de Feeler Typ: 'word_order' (falsch Wuert-Reiefolleg), 'agreement' (Subject-Verb oder Determiner-Noun Stëmmung net korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem vun dësen Etiketten: correct, word_order, agreement, morphology, other.
   ```
 
-- Label mapping: (direct mapping to Luxembourgish error type names)
+- Label mapping:
+  - `correct` ➡️ `correct`
+  - `word_order` ➡️ `word_order`
+  - `agreement` ➡️ `agreement`
+  - `morphology` ➡️ `morphology`
+  - `other` ➡️ `other`
 
 This dataset is marked as **unofficial** and is used for diagnostic purposes only.
 
@@ -388,8 +393,8 @@ When evaluating generative models, we use the following setup (see the
   ```
 
 - Label mapping:
-  - `entailment` ➡️ `folgerung`
   - `contradiction` ➡️ `widdersträit`
+  - `entailment` ➡️ `folgerung`
 
 You can evaluate this dataset directly as follows:
 
@@ -520,7 +525,9 @@ When evaluating generative models, we use the following setup (see the
   Bestëmmt ob den Artikel d'Behaaptung an der Iwwerschrëft bestätegt. Äntwert nëmme mat 'yes' oder 'no'.
   ```
 
-- Label mapping: (direct mapping, no translation)
+- Label mapping:
+  - `no` ➡️ `no`
+  - `yes` ➡️ `yes`
 
 You can evaluate this dataset directly as follows:
 
@@ -587,7 +594,12 @@ When evaluating generative models, we use the following setup (see the
   Klassifizéiert d'Thema vum Artikel. Äntwert nëmme mat engem vun dësen Etiketten: technology, business, culture, animals, sports.
   ```
 
-- Label mapping: (direct mapping)
+- Label mapping:
+  - `technology` ➡️ `technology`
+  - `business` ➡️ `business`
+  - `culture` ➡️ `culture`
+  - `animals` ➡️ `animals`
+  - `sports` ➡️ `sports`
 
 You can evaluate this dataset directly as follows:
 
@@ -654,7 +666,18 @@ When evaluating generative models, we use the following setup (see the
   Identifizéiert d'Intentioun vum Benotzer. Äntwert nëmme mat engem vun dësen Etiketten: addtoplaylist, alarm cancel alarm, alarm set alarm, alarm show alarms, bookrestaurant, playmusic, ratebook, reminder set reminder, searchcreativework, searchscreeningevent, weather find.
   ```
 
-- Label mapping: (direct mapping to intent names)
+- Label mapping:
+  - `addtoplaylist` ➡️ `addtoplaylist`
+  - `alarm cancel alarm` ➡️ `alarm cancel alarm`
+  - `alarm set alarm` ➡️ `alarm set alarm`
+  - `alarm show alarms` ➡️ `alarm show alarms`
+  - `bookrestaurant` ➡️ `bookrestaurant`
+  - `playmusic` ➡️ `playmusic`
+  - `ratebook` ➡️ `ratebook`
+  - `reminder set reminder` ➡️ `reminder set reminder`
+  - `searchcreativework` ➡️ `searchcreativework`
+  - `searchscreeningevent` ➡️ `searchscreeningevent`
+  - `weather find` ➡️ `weather find`
 
 You can evaluate this dataset directly as follows:
 
