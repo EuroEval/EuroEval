@@ -25,6 +25,7 @@ from ..languages import (
     ITALIAN,
     LATVIAN,
     LITHUANIAN,
+    LUXEMBOURGISH,
     NORWEGIAN,
     NORWEGIAN_BOKMÅL,
     NORWEGIAN_NYNORSK,
@@ -373,5 +374,15 @@ SENT_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Документ: {text}\nНастрій: {label}",
         default_instruction_prompt="Документ: {text}\n\nКласифікуйте настрій у "
         "документі. Відповідайте {labels_str}, і нічого більше.",
+    ),
+    LUXEMBOURGISH: PromptConfig(
+        default_prompt_label_mapping=dict(
+            positive="positiv", neutral="neutral", negative="negativ"
+        ),
+        default_prompt_prefix="Folgend sinn Dokumenter an hir Sentiment, déi "
+        "{labels_str} kënnen sinn.",
+        default_prompt_template="Dokument: {text}\nSentiment: {label}",
+        default_instruction_prompt="Dokument: {text}\n\nKlassifizéiert d'Sentiment am "
+        "Dokument. Äntwert mat {labels_str}, an näischt anescht.",
     ),
 }

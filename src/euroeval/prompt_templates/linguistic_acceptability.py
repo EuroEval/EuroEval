@@ -24,6 +24,7 @@ from ..languages import (
     ITALIAN,
     LATVIAN,
     LITHUANIAN,
+    LUXEMBOURGISH,
     NORWEGIAN,
     NORWEGIAN_BOKMÅL,
     NORWEGIAN_NYNORSK,
@@ -290,5 +291,12 @@ LA_TEMPLATES: dict["Language", PromptConfig] = {
         default_prompt_template="Речення: {text}\nГраматично правильно: {label}",
         default_instruction_prompt="Речення: {text}\n\nВизначте, чи речення "
         "граматично правильне чи ні. Відповідайте {labels_str}, і нічого більше.",
+    ),
+    LUXEMBOURGISH: PromptConfig(
+        default_prompt_label_mapping=dict(correct="jo", incorrect="nee"),
+        default_prompt_prefix="Folgend sinn Sätz an ob se grammatesch korrekt sinn.",
+        default_prompt_template="Saz: {text}\nGrammatesch korrekt: {label}",
+        default_instruction_prompt="Saz: {text}\n\nBestëmmt ob de Saz grammatesch "
+        "korrekt oder net ass. Äntwert mat {labels_str}, an näischt anescht.",
     ),
 }

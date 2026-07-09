@@ -25,6 +25,7 @@ from ..languages import (
     ITALIAN,
     LATVIAN,
     LITHUANIAN,
+    LUXEMBOURGISH,
     NORWEGIAN,
     NORWEGIAN_BOKMÅL,
     NORWEGIAN_NYNORSK,
@@ -325,6 +326,15 @@ RC_TEMPLATES: dict["Language", PromptConfig] = {
         "максимум 3 словами: {label}",
         default_instruction_prompt="Текст: {text}\n\nВідповідь на наступне питання "
         "про вищезазначений текст максимум 3 словами.\n\nПитання: {question}",
+        default_prompt_label_mapping=dict(),
+    ),
+    LUXEMBOURGISH: PromptConfig(
+        default_prompt_prefix="Folgend sinn Texter mat dozou gehéiereg Froen an "
+        "Äntwerten.",
+        default_prompt_template="Text: {text}\nFro: {question}\nÄntwert mat "
+        "maximal 3 Wierder: {label}",
+        default_instruction_prompt="Text: {text}\n\nÄntwert d'Fro iwwer den Text "
+        "hei uewen mat maximal 3 Wierder.\n\nFro: {question}",
         default_prompt_label_mapping=dict(),
     ),
 }
