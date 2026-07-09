@@ -116,17 +116,3 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     "korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem "
     "vun dësen Etiketten: {labels_str}.",
 )
-
-# Group configs by task ###
-
-SENT_CONFIGS = [LTZGLUE_SA_CONFIG]
-
-LA_CONFIGS = [LTZGLUE_LA_BINARY_CONFIG, LTZGLUE_LA_MULTI_CONFIG]
-
-NER_CONFIGS = [LTZGLUE_NER_CONFIG]
-
-RC_CONFIGS = [MULTI_WIKI_QA_LB_CONFIG]
-
-NLI_CONFIGS = [LTZGLUE_RTE_CONFIG]
-
-TEXT_CLASSIFICATION_CONFIGS = [LTZGLUE_HC_CONFIG, LTZGLUE_TC_CONFIG, LTZGLUE_ID_CONFIG]
