@@ -323,8 +323,6 @@ When evaluating generative models, we use the following setup (see the
   - `morphology` ➡️ `morphology`
   - `other` ➡️ `other`
 
-This dataset is marked as **unofficial** and is used for diagnostic purposes only.
-
 ```bash
 euroeval --model <model-id> --dataset ltzglue-la-multi
 ```
