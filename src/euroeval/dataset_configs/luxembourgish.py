@@ -20,7 +20,6 @@ LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-la",
     task=LA,
     languages=[LUXEMBOURGISH],
-    labels=["correct", "incorrect"],
     prompt_label_mapping=dict(correct="jo", incorrect="nee"),
 )
 
@@ -30,17 +29,6 @@ LTZGLUE_NER_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-ner",
     task=NER,
     languages=[LUXEMBOURGISH],
-    labels=[
-        "o",
-        "b-per",
-        "i-per",
-        "b-loc",
-        "i-loc",
-        "b-org",
-        "i-org",
-        "b-misc",
-        "i-misc",
-    ],
 )
 
 MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
@@ -49,7 +37,6 @@ MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
     source="EuroEval/multi-wiki-qa-lb-mini",
     task=RC,
     languages=[LUXEMBOURGISH],
-    labels=["answer"],
 )
 
 LTZGLUE_HC_CONFIG = DatasetConfig(
@@ -74,7 +61,6 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-rte",
     task=NLI,
     languages=[LUXEMBOURGISH],
-    labels=["entailment", "contradiction"],
 )
 
 LTZGLUE_TC_CONFIG = DatasetConfig(
@@ -127,13 +113,4 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     languages=[LUXEMBOURGISH],
     unofficial=True,
     labels=["correct", "word_order", "agreement", "morphology", "other"],
-    prompt_prefix="Folgend sinn Sätz. Bestëmmt ob se grammatesch korrekt "
-    "sinn, oder identifizéiert de Feeler Typ.",
-    prompt_template="Saz: {text}\nÄntwert: {label}",
-    instruction_prompt="Saz: {text}\n\nBestëmmt ob de Saz grammatesch korrekt ass "
-    "(äntwert 'correct'), oder identifizéiert de Feeler Typ: 'word_order' (falsch "
-    "Wuert-Reiefolleg), 'agreement' (Subject-Verb oder Determiner-Noun Stëmmung net "
-    "korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem "
-    "vun dësen Etiketten: {labels_str}.",
-    prompt_label_mapping="auto",
 )
