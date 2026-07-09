@@ -4,6 +4,9 @@ from ..data_models import DatasetConfig
 from ..languages import LUXEMBOURGISH
 from ..tasks import LA, NER, NLI, RC, SENT, TEXT_CLASSIFICATION
 
+# NOTE: LA task is typically binary (correct/incorrect), but LTZGLUE_LA_MULTI_CONFIG
+# uses it for multi-class error type classification as a special case.
+
 # Official datasets ###
 
 LTZGLUE_SA_CONFIG = DatasetConfig(
@@ -13,14 +16,6 @@ LTZGLUE_SA_CONFIG = DatasetConfig(
     task=SENT,
     languages=[LUXEMBOURGISH],
     labels=["negative", "neutral", "positive"],
-    prompt_prefix="Fir dësen Text ass uginn ob de Sentiment negativ, neutral oder "
-    "positiv ass.",
-    prompt_template="Text: {text}\nSentiment: {label}",
-    instruction_prompt="Text: {text}\n\nBestëmmt de Sentiment vum Text. Äntwert "
-    "nëmme mat 'negativ', 'neutral' oder 'positiv'.",
-    prompt_label_mapping=dict(
-        negative="negativ", neutral="neutral", positive="positiv"
-    ),
 )
 
 LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
@@ -30,6 +25,7 @@ LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
     task=LA,
     languages=[LUXEMBOURGISH],
     labels=["correct", "incorrect"],
+    prompt_label_mapping=dict(correct="jo", incorrect="nee"),
 )
 
 LTZGLUE_NER_CONFIG = DatasetConfig(
@@ -49,23 +45,6 @@ LTZGLUE_NER_CONFIG = DatasetConfig(
         "b-misc",
         "i-misc",
     ],
-    prompt_prefix="Folgend si Sätz a JSON-Wierderbicher mat den benannten Entitéiten, "
-    "déi am Satz virkommen.",
-    prompt_template="Saz: {text}\nBenannt Entitéiten: {label}",
-    instruction_prompt="Saz: {text}\n\nIdentifizéiert déi benannt "
-    "Entitéiten am Saz. Dir sollt dës als JSON-Wierderbuch mat de Schlësselen "
-    "{labels_str} ausginn. D'Wäerter solle Lëschte vun de benannten Entitéite "
-    "vun deem Typ sinn, genee sou wéi se am Saz virkommen.",
-    prompt_label_mapping={
-        "b-per": "persoun",
-        "i-per": "persoun",
-        "b-loc": "plaz",
-        "i-loc": "plaz",
-        "b-org": "organisatioun",
-        "i-org": "organisatioun",
-        "b-misc": "divers",
-        "i-misc": "divers",
-    },
 )
 
 MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
@@ -100,13 +79,6 @@ LTZGLUE_RTE_CONFIG = DatasetConfig(
     task=NLI,
     languages=[LUXEMBOURGISH],
     labels=["entailment", "contradiction"],
-    prompt_prefix="Fir dës Puer ass uginn ob d'Hypothees d'Premisse follegt "
-    "oder widderleet.",
-    prompt_template="Text: {text}\nRelatioun: {label}",
-    instruction_prompt="Text: {text}\n\nBestëmmt ob déi zweet Aussag aus der "
-    "éischter follegt oder hir widdersträit. "
-    "Äntwert nëmme mat 'folgerung' oder 'widdersträit'.",
-    prompt_label_mapping={"entailment": "folgerung", "contradiction": "widdersträit"},
 )
 
 LTZGLUE_TC_CONFIG = DatasetConfig(
@@ -155,7 +127,7 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     name="ltzglue-la-multi",
     pretty_name="ltzGLUE-LA (Multi-class)",
     source="EuroEval/ltzglue-la-multi",
-    task=TEXT_CLASSIFICATION,
+    task=LA,
     languages=[LUXEMBOURGISH],
     unofficial=True,
     labels=["correct", "word_order", "agreement", "morphology", "other"],
