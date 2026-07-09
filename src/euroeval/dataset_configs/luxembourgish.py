@@ -113,4 +113,13 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     languages=[LUXEMBOURGISH],
     unofficial=True,
     labels=["correct", "word_order", "agreement", "morphology", "other"],
+    prompt_prefix="Folgend sinn Sätz. Bestëmmt ob se grammatesch korrekt "
+    "sinn, oder identifizéiert de Feeler Typ.",
+    prompt_template="Saz: {text}\nÄntwert: {label}",
+    instruction_prompt="Saz: {text}\n\nBestëmmt ob de Saz grammatesch korrekt ass "
+    "(äntwert 'correct'), oder identifizéiert de Feeler Typ: 'word_order' (falsch "
+    "Wuert-Reiefolleg), 'agreement' (Subject-Verb oder Determiner-Noun Stëmmung net "
+    "korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem "
+    "vun dësen Etiketten: {labels_str}.",
+    prompt_label_mapping="auto",
 )
