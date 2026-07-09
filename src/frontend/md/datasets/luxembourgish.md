@@ -253,6 +253,8 @@ euroeval --model <model-id> --dataset ltzglue-la-binary
 
 ### ltzGLUE-LA-multi
 
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976).
+
 Multi-class variant of the ltzGLUE-LA linguistic acceptability task where models must
 identify the specific error type in addition to detecting incorrectness. This dataset is
 marked as **unofficial** due to poor zero-shot performance (0.00% MCC with GPT-4o-mini),
@@ -608,6 +610,8 @@ euroeval --model <model-id> --dataset ltzglue-tc
 ```
 
 ### ltzGLUE-ID
+
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976).
 
 Intent detection dataset from the ltzGLUE benchmark, containing Luxembourgish queries
 annotated with intent categories such as weather lookup, restaurant booking, music
