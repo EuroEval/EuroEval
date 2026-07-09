@@ -12,7 +12,6 @@ LTZGLUE_SA_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-sa",
     task=SENT,
     languages=[LUXEMBOURGISH],
-    labels=["negative", "neutral", "positive"],
 )
 
 LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
