@@ -13,7 +13,11 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   now use the native `AutoModelForMultipleChoice` head (with
   `DataCollatorForMultipleChoice`) instead of the previous approach, which reframed each
   choice as an independent binary classification and only combined them into a single
-  prediction across the `num_choices` options at evaluation time.
+  prediction across the `num_choices` options at evaluation time. Note that encoders
+  remain disabled on multiple-choice tasks by default (they are still restricted to
+  generative models, as decided in commit `7c10f14f` because encoders got near-random
+  performance); this change puts the improved machinery in place so the restriction can
+  be revisited in the future.
 - Evaluation hallucination detection task, reporting a hallucination rate
   (hallucinated_tokens/total_tokens). This includes RAGTruth-based datasets for 30
   European languages (Danish, Albanian, Belarusian, Bosnian, Bulgarian, Catalan,

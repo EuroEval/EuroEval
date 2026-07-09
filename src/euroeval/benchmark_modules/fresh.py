@@ -8,16 +8,16 @@ from json import JSONDecodeError
 from transformers.models.auto.configuration_auto import AutoConfig
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.models.electra import (
+    ElectraForMultipleChoice,
     ElectraForQuestionAnswering,
     ElectraForSequenceClassification,
     ElectraForTokenClassification,
-    ElectraForMultipleChoice
 )
 from transformers.models.xlm_roberta import (
+    XLMRobertaForMultipleChoice,
     XLMRobertaForQuestionAnswering,
     XLMRobertaForSequenceClassification,
     XLMRobertaForTokenClassification,
-    XLMRobertaForMultipleChoice
 )
 
 from ..data_models import ModelConfig
@@ -94,6 +94,10 @@ class FreshEncoderModel(HuggingFaceEncoderModel):
             tokeniser=self._tokeniser,
             model_max_length=self.model_max_length,
             raise_errors=benchmark_config.raise_errors,
+            is_multiple_choice=(
+                dataset_config.task.task_group
+                == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+            ),
         )
 
         # We specify `HuggingFaceEncoderModel` here instead of `VLLMModel`, as we want
@@ -253,17 +257,12 @@ def load_model_and_tokeniser(
     real_model_id = fresh_to_real_model_id_mapping[model_id]
 
     match dataset_config.task.task_group:
-        case (
-            TaskGroup.SEQUENCE_CLASSIFICATION
-            | TaskGroup.SPEED
-        ):
+        case TaskGroup.SEQUENCE_CLASSIFICATION | TaskGroup.SPEED:
             model_cls_mapping = dict(
                 fresh_xlm_roberta_base=XLMRobertaForSequenceClassification,
                 fresh_electra_small=ElectraForSequenceClassification,
             )
-        case (
-            TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
-        ):
+        case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
             model_cls_mapping = dict(
                 fresh_xlm_roberta_base=XLMRobertaForMultipleChoice,
                 fresh_electra_small=ElectraForMultipleChoice,
@@ -327,6 +326,9 @@ def load_model_and_tokeniser(
         tokeniser=tokeniser,
         model_max_length=model_max_length,
         raise_errors=benchmark_config.raise_errors,
+        is_multiple_choice=(
+            dataset_config.task.task_group == TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION
+        ),
     )
 
     return model, tokeniser
