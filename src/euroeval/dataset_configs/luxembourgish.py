@@ -20,7 +20,6 @@ LTZGLUE_LA_BINARY_CONFIG = DatasetConfig(
     source="EuroEval/ltzglue-la",
     task=LA,
     languages=[LUXEMBOURGISH],
-    prompt_label_mapping=dict(correct="jo", incorrect="nee"),
 )
 
 LTZGLUE_NER_CONFIG = DatasetConfig(
