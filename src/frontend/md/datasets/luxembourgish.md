@@ -17,7 +17,7 @@ comments, covering various domains including politics, culture, and daily life.
 The original ltzGLUE-SA dataset contains 3,022 / 597 / 926 samples for training,
 validation and testing, respectively, with stratified sampling to maintain label
 balance. Due to limited test data, we use all 926 test samples and cap training at 1,024
-samples.
+samples. The new splits are subsets of the original splits.
 
 Here are a few examples from the training split:
 
@@ -91,7 +91,8 @@ paperjam.lu, today.lu, and wort.lu.
 The original ltzGLUE-NER dataset contains 27,245 / 3,327 / 3,821 samples for training,
 validation and testing, respectively. We apply the standard EuroEval cap of 1,024 / 256
 / 2,048 samples using random sampling (stratification not applicable for sequence
-tagging with multiple token-level labels per sample).
+tagging with multiple token-level labels per sample). The new splits are subsets of the
+original splits.
 
 Here are a few examples from the training split:
 
@@ -192,6 +193,7 @@ corrupted examples with various error types (word order, agreement, case, etc.).
 The original ltzGLUE-LA dataset contains 14,678 / 2,094 / 4,045 samples for training,
 validation and testing, with balanced classes. We apply the standard EuroEval cap of
 1,024 / 256 / 2,048 samples using stratified sampling on the correct/incorrect labels.
+The new splits are subsets of the original splits.
 
 Here are a few examples from the training split:
 
@@ -263,7 +265,8 @@ various error types (word order, agreement, case, etc.).
 
 The original dataset contains 14,678 / 2,094 / 4,045 samples for training, validation
 and testing. We apply the standard EuroEval cap of 1,024 / 256 / 2,048 samples using
-stratified sampling on the error type labels.
+stratified sampling on the error type labels. The new splits are subsets of the original
+splits.
 
 Here are a few examples from the training split:
 
@@ -339,7 +342,8 @@ the hypothesis is entailed by or contradicts the premise (binary classification)
 The original ltzGLUE-RTE dataset contains 1,877 / 197 / 626 samples for training,
 validation and testing, respectively. Due to limited validation and test data, we use
 all available samples (197 validation, 626 test) and cap training at 1,024 samples using
-stratified sampling on the entailment/contradiction labels.
+stratified sampling on the entailment/contradiction labels. The new splits are subsets
+of the original splits.
 
 Here are a few examples from the training split:
 
@@ -413,7 +417,8 @@ using large language models based on the Wikipedia content.
 The dataset is extracted from the
 [alexandrainst/multi-wiki-qa](https://huggingface.co/datasets/alexandrainst/multi-wiki-qa)
 dataset (subset "lb"), containing 5,003 samples. We apply the standard EuroEval cap of
-1,024 / 256 / 2,048 samples for evaluation splits.
+1,024 / 256 / 2,048 samples for evaluation splits. The new splits are subsets of the
+original splits.
 
 Here are a few examples from the training split:
 
@@ -480,7 +485,8 @@ headline correctly represents the article content.
 
 The original ltzGLUE-HC dataset contains 20,716 / 2,960 / 5,919 samples for training,
 validation and testing, respectively. We apply the standard EuroEval cap of 1,024 / 256
-/ 2,048 samples using stratified sampling on the yes/no labels.
+/ 2,048 samples using stratified sampling on the yes/no labels. The new splits are
+subsets of the original splits.
 
 Here are a few examples from the training split:
 
@@ -542,7 +548,8 @@ paperjam.lu, today.lu, and wort.lu, covering politics, economy, sports, and cult
 
 The original dataset contains 9,932 / 1,240 / 1,245 samples for training, validation and
 testing. We cap training at 1,024 samples using stratified sampling on the topic labels,
-and use all available test data (1,245 samples, below the 2,048 target).
+and use all available test data (1,245 samples, below the 2,048 target). The new splits
+are subsets of the original splits.
 
 Here are a few examples from the training split:
 
