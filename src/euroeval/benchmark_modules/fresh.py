@@ -252,14 +252,6 @@ def load_model_and_tokeniser(
     )
     real_model_id = fresh_to_real_model_id_mapping[model_id]
 
-    # TODO (DONE): Port this to the proper MC head alongside `HuggingFaceEncoderModel`. Since
-    # `FreshEncoderModel` inherits prepare_dataset/data_collator/trainer_class/
-    # compute_metrics from that class, the fresh-model delta is small:
-    #   1. Import `XLMRobertaForMultipleChoice` / `ElectraForMultipleChoice`.
-    #   2. Give MC its own `case` below mapping to those classes (keep SEQUENCE/SPEED
-    #      on the sequence-classification classes).
-    #   3. Drop the `{0: "0", 1: "1"}` id2label patch further down (fall through to
-    #      `dataset_config.id2label`).
     match dataset_config.task.task_group:
         case (
             TaskGroup.SEQUENCE_CLASSIFICATION

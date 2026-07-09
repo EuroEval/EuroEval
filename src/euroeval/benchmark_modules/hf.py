@@ -390,24 +390,6 @@ class HuggingFaceEncoderModel(BenchmarkModule):
                 ).map(tokenise, batched=True, load_from_cache_file=False)
 
             case TaskGroup.MULTIPLE_CHOICE_CLASSIFICATION:
-                # TODO: When porting to `AutoModelForMultipleChoice`, replace the
-                # binary-reframe `prepare_examples` with the tutorial-style prep
-                # (https://huggingface.co/docs/transformers/tasks/multiple_choice):
-                # tokenise all (question, choice) pairs flat, then re-nest the
-                # tokeniser output into one row per question
-                # ({k: [v[i:i+num_choices] ...]}), so each row's `input_ids` is a
-                # list over choices (B x C x L after collation). The label becomes a
-                # single gold choice index per question (CHOICE_LETTERS.index(gold))
-                # instead of a per-choice 0/1. Drop the `id`/regroup machinery, don't
-                # pre-pad (let DataCollatorForMultipleChoice pad).
-                #
-                # This case is also where the "ragged" guard belongs (NOT in the
-                # generic data_loading module, which runs for generative models too
-                # that tolerate variable choice counts): the fixed-size re-nest
-                # `v[i:i+num_choices]` requires a uniform choice count across the
-                # dataset. Parse each `text` with `parse_bare_question_and_choices`,
-                # and fail loudly if the counts differ rather than letting the collator
-                # mis-slice / IndexError. (Ideally also audit the MC datasets up front.)
                 dataset = DatasetDict(
                     {
                         split_name: split.map(
@@ -623,13 +605,6 @@ def load_model_and_tokeniser(
     task_group = dataset_config.task.task_group
     ignore_mismatched_sizes = False
 
-    # Special case where there is a mismatch between the labels during training and
-    # testing
-    # TODO (DONE): Remove this special case when porting to `AutoModelForMultipleChoice`. It
-    # only exists to force a 2-label head for the binary-reframe approach. The MC head
-    # outputs one logit per choice (`num_choices` logits) whose argmax maps directly to
-    # the choices in `dataset_config.id2label`, so the natural mapping applies and no
-    # override is needed.
     id2label = dataset_config.id2label
 
     config = load_hf_model_config(

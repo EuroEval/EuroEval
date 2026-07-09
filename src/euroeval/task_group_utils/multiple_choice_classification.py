@@ -36,7 +36,7 @@ def prepare_examples(
     num_choices = None
     for doc, gold_letter in zip(examples["text"], examples["label"]):
         # Recover the bare question and the individual choice texts from the formatted
-        # prompt. 
+        # prompt.
         context_and_question, choices = parse_bare_question_and_choices(doc)
         len_choices = len(choices)
         assert len_choices > 0, "No choices found in the document."
