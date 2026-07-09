@@ -51,7 +51,6 @@ LTZGLUE_HC_CONFIG = DatasetConfig(
     prompt_template="Iwwerschrëft: {text}\nBestätegt: {label}",
     instruction_prompt="Iwwerschrëft: {text}\n\nBestëmmt ob den Artikel d'Behaaptung "
     "an der Iwwerschrëft bestätegt. Äntwert nëmme mat 'yes' oder 'no'.",
-    prompt_label_mapping="auto",
 )
 
 LTZGLUE_RTE_CONFIG = DatasetConfig(
@@ -73,7 +72,6 @@ LTZGLUE_TC_CONFIG = DatasetConfig(
     prompt_template="Artikel: {text}\nThema: {label}",
     instruction_prompt="Artikel: {text}\n\nKlassifizéiert d'Thema vum Artikel. "
     "Äntwert nëmme mat engem vun dësen Etiketten: {labels_str}.",
-    prompt_label_mapping="auto",
 )
 
 LTZGLUE_ID_CONFIG = DatasetConfig(
@@ -99,7 +97,6 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
     prompt_template="Ufruff: {text}\nIntentioun: {label}",
     instruction_prompt="Ufruff: {text}\n\nIdentifizéiert d'Intentioun vum Benotzer. "
     "Äntwert nëmme mat engem vun dësen Etiketten: {labels_str}.",
-    prompt_label_mapping="auto",
 )
 
 # Unofficial datasets ###
@@ -120,5 +117,4 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     "Wuert-Reiefolleg), 'agreement' (Subject-Verb oder Determiner-Noun Stëmmung net "
     "korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem "
     "vun dësen Etiketten: {labels_str}.",
-    prompt_label_mapping="auto",
 )
