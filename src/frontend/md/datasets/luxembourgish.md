@@ -9,7 +9,7 @@ resources compared to other European languages.
 
 ### ltzGLUE-SA
 
-This dataset was published in [this paper](https://arxiv.org/abs/2604.17976) and
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976) and
 contains Luxembourgish texts annotated with sentiment labels (negative, neutral,
 positive). The data is collected from Luxembourgish social media posts and news website
 comments, covering various domains including politics, culture, and daily life.
@@ -82,7 +82,7 @@ euroeval --model <model-id> --dataset ltzglue-sa
 
 ### ltzGLUE-NER
 
-This dataset was published in [this paper](https://arxiv.org/abs/2604.17976) and
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976) and
 contains Luxembourgish news articles annotated with BIO-formatted entity tags for
 person, location, organization, and miscellaneous entities. The articles are sourced
 from major Luxembourgish news outlets including Luxemburger Wort, RTL Lëtzebuerg,
@@ -183,7 +183,7 @@ euroeval --model <model-id> --dataset ltzglue-ner
 
 ### ltzGLUE-LA-binary
 
-This dataset was published in [this paper](https://arxiv.org/abs/2604.17976).
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976).
 Luxembourgish sentences must be classified as grammatically correct or incorrect. The
 dataset includes naturally occurring text from Luxembourgish news outlets (Luxemburger
 Wort, RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu) as well as systematically
@@ -327,7 +327,9 @@ euroeval --model <model-id> --dataset ltzglue-la-multi
 
 ### ltzGLUE-RTE
 
-This dataset was published in [this paper](https://arxiv.org/abs/2604.17976). Given a
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976).
+
+Given a
 premise and hypothesis pair from Luxembourgish text sources, models must determine if
 the hypothesis is entailed by or contradicts the premise (binary classification).
 
@@ -466,7 +468,9 @@ euroeval --model <model-id> --dataset multi-wiki-qa-lb
 
 ### ltzGLUE-HC
 
-This dataset was published in [this paper](https://arxiv.org/abs/2604.17976). Given a
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976).
+
+Given a
 news headline and its article text from Luxembourgish news outlets (Luxemburger Wort,
 RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu), models must predict whether the
 headline correctly represents the article content.
@@ -526,7 +530,7 @@ euroeval --model <model-id> --dataset ltzglue-hc
 
 ### ltzGLUE-TC
 
-This dataset was published in [this paper](https://arxiv.org/abs/2604.17976) and
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976) and
 contains Luxembourgish news articles categorized by topic. The articles are sourced from
 major Luxembourgish news outlets including Luxemburger Wort, RTL Lëtzebuerg,
 paperjam.lu, today.lu, and wort.lu, covering politics, economy, sports, and culture.
