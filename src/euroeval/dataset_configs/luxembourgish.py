@@ -4,9 +4,6 @@ from ..data_models import DatasetConfig
 from ..languages import LUXEMBOURGISH
 from ..tasks import LA, NER, NLI, RC, SENT, TEXT_CLASSIFICATION
 
-# NOTE: LA task is typically binary (correct/incorrect), but LTZGLUE_LA_MULTI_CONFIG
-# uses it for multi-class error type classification as a special case.
-
 # Official datasets ###
 
 LTZGLUE_SA_CONFIG = DatasetConfig(
