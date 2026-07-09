@@ -38,6 +38,14 @@ MULTI_WIKI_QA_LB_CONFIG = DatasetConfig(
     languages=[LUXEMBOURGISH],
 )
 
+LTZGLUE_RTE_CONFIG = DatasetConfig(
+    name="ltzglue-rte",
+    pretty_name="ltzGLUE-RTE",
+    source="EuroEval/ltzglue-rte",
+    task=NLI,
+    languages=[LUXEMBOURGISH],
+)
+
 LTZGLUE_HC_CONFIG = DatasetConfig(
     name="ltzglue-hc",
     pretty_name="ltzGLUE-HC",
@@ -51,14 +59,6 @@ LTZGLUE_HC_CONFIG = DatasetConfig(
     prompt_template="Iwwerschrëft: {text}\nBestätegt: {label}",
     instruction_prompt="Iwwerschrëft: {text}\n\nBestëmmt ob den Artikel d'Behaaptung "
     "an der Iwwerschrëft bestätegt. Äntwert nëmme mat 'yes' oder 'no'.",
-)
-
-LTZGLUE_RTE_CONFIG = DatasetConfig(
-    name="ltzglue-rte",
-    pretty_name="ltzGLUE-RTE",
-    source="EuroEval/ltzglue-rte",
-    task=NLI,
-    languages=[LUXEMBOURGISH],
 )
 
 LTZGLUE_TC_CONFIG = DatasetConfig(
@@ -99,8 +99,6 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
     "Äntwert nëmme mat engem vun dësen Etiketten: {labels_str}.",
 )
 
-# Unofficial datasets ###
-
 LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     name="ltzglue-la-multi",
     pretty_name="ltzGLUE-LA (Multi-class)",
@@ -118,3 +116,17 @@ LTZGLUE_LA_MULTI_CONFIG = DatasetConfig(
     "korrekt), 'morphology' (falsch Wortform), oder 'other'. Äntwert nëmme mat engem "
     "vun dësen Etiketten: {labels_str}.",
 )
+
+# Group configs by task ###
+
+SENT_CONFIGS = [LTZGLUE_SA_CONFIG]
+
+LA_CONFIGS = [LTZGLUE_LA_BINARY_CONFIG, LTZGLUE_LA_MULTI_CONFIG]
+
+NER_CONFIGS = [LTZGLUE_NER_CONFIG]
+
+RC_CONFIGS = [MULTI_WIKI_QA_LB_CONFIG]
+
+NLI_CONFIGS = [LTZGLUE_RTE_CONFIG]
+
+TEXT_CLASSIFICATION_CONFIGS = [LTZGLUE_HC_CONFIG, LTZGLUE_TC_CONFIG, LTZGLUE_ID_CONFIG]
