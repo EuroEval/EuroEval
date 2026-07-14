@@ -161,3 +161,6 @@ PLAN.md
 
 # Generated data files
 data/
+
+# Pi agent
+.pi/
