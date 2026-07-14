@@ -85,6 +85,18 @@ MULTI_IFEVAL_IT_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+VALEU_IT_CONFIG = DatasetConfig(
+    name="valeu-it",
+    pretty_name="VaLEU-it",
+    source="EuroEval/european-values-it",
+    task=EUROPEAN_VALUES,
+    languages=[ITALIAN],
+    train_split=None,
+    val_split=None,
+    bootstrap_samples=False,
+    instruction_prompt="{text}",
+)
+
 
 # Unofficial datasets ###
 
@@ -97,18 +109,6 @@ IFEVAL_IT_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     unofficial=True,
-)
-
-VALEU_IT_CONFIG = DatasetConfig(
-    name="valeu-it",
-    pretty_name="VaLEU-it",
-    source="EuroEval/european-values-it",
-    task=EUROPEAN_VALUES,
-    languages=[ITALIAN],
-    train_split=None,
-    val_split=None,
-    bootstrap_samples=False,
-    instruction_prompt="{text}",
 )
 
 WIKINEURAL_IT_CONFIG = DatasetConfig(

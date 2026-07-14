@@ -107,6 +107,8 @@ VALEU_DA_CONFIG = DatasetConfig(
     bootstrap_samples=False,
 )
 
+# Unofficial datasets ###
+
 RAGTRUTH_DA_CONFIG = DatasetConfig(
     name="ragtruth-da",
     pretty_name="RAGTruth-da",
@@ -116,8 +118,6 @@ RAGTRUTH_DA_CONFIG = DatasetConfig(
     train_split=None,
     unofficial=True,
 )
-
-# Unofficial datasets ###
 
 DALA_CONFIG = DatasetConfig(
     name="dala",
