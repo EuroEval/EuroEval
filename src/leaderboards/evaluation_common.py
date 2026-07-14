@@ -358,9 +358,12 @@ def gpu_total_memory_bytes() -> int | None:
 
     unified = os.environ.get("UNIFIED_MEMORY", "0") == "1"
     if torch.cuda.is_available() and not unified:
-        # Use free memory on the largest GPU, not total capacity.
-        free, _ = torch.cuda.mem_get_info(0)
-        return free
+        total_free: int = 0
+        for device_id in range(torch.cuda.device_count()):
+            free, _ = torch.cuda.mem_get_info(device_id)
+            total_free += free
+        return total_free
+
     # Use available (not total) system RAM for CPU-only or unified memory hosts.
     return int(psutil.virtual_memory().available)
 
