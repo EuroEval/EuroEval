@@ -152,8 +152,10 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
 )
 @click.option(
     "--branch",
-    required=True,
-    help="Branch to do the work on. May not be the default branch (e.g. main).",
+    type=click.STRING | None,
+    default=None,
+    help="Branch to do the work on. May not be the default branch (e.g. main). "
+    "Defaults to 'feat/replace-<old-dataset>-with-<new-dataset>.'",
 )
 @click.option(
     "--include-api/--no-include-api",
@@ -212,7 +214,7 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
 def main(
     old_dataset: str,
     new_dataset: str,
-    branch: str,
+    branch: str | None,
     include_api: bool,
     api_providers: str | None,
     gpu_memory_utilization: float | None,
@@ -223,6 +225,7 @@ def main(
     dry_run: bool,
 ) -> None:
     """Replace an official leaderboard dataset with a new one."""
+    # Validation checks
     if api_providers and not include_api:
         raise click.ClickException(
             "--api-providers requires --include-api; pass both or neither."
@@ -230,6 +233,8 @@ def main(
     old_config, new_config = validate_datasets(
         old_dataset=old_dataset, new_dataset=new_dataset
     )
+    if branch is None:
+        branch = f"feat/replace-{old_dataset}-with-{new_dataset}"
     validate_branch(branch=branch)
 
     target_codes = resolve_languages(old_config=old_config, new_config=new_config)
