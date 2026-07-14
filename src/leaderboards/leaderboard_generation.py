@@ -140,37 +140,46 @@ def generate_leaderboard(
                 re.sub(r"<a href=['\"].*?['\"]>(.*?)</a>", r"\1", col)
                 for col in old_df.columns
             ]
-            if any(col not in old_df.columns for col in comparison_columns):
-                new_records = df.Model.tolist()
-            else:
-                for model_id in set(df.Model.tolist() + old_df.Model.tolist()):
-                    model_is_new = (
-                        model_id in df.Model.values
-                        and model_id not in old_df.Model.values
-                    )
-                    model_is_removed = (
-                        model_id in old_df.Model.values
-                        and model_id not in df.Model.values
-                    )
-                    if model_is_new or model_is_removed:
-                        new_records.append(model_id)
-                        continue
+            # Compute common columns to use for comparison (avoids errors when
+            # schemas differ between old and new CSVs)
+            common_columns = [
+                col for col in comparison_columns if col in old_df.columns
+            ]
+            # Proceed with model-by-model comparison regardless of schema changes.
+            # This avoids false positives where column set differences would
+            # incorrectly mark all models as updated.
+            for model_id in set(df.Model.tolist() + old_df.Model.tolist()):
+                model_is_new = (
+                    model_id in df.Model.values
+                    and model_id not in old_df.Model.values
+                )
+                model_is_removed = (
+                    model_id in old_df.Model.values
+                    and model_id not in df.Model.values
+                )
+                if model_is_new or model_is_removed:
+                    new_records.append(model_id)
+                    continue
 
-                    old_model_row = old_df[comparison_columns].query(
-                        "Model == @model_id"
+                # Use common_columns to avoid errors when schemas differ
+                cols_to_compare = (
+                    common_columns if common_columns else comparison_columns
+                )
+                old_model_row = old_df[cols_to_compare].query(
+                    "Model == @model_id"
+                )
+                new_model_row = df[cols_to_compare].query("Model == @model_id")
+                # Convert to float where possible, keeping NaN for missing scores
+                old_model_results = old_model_row.map(convert_to_float)
+                new_model_results = new_model_row.map(convert_to_float)
+                # Fill NaN with sentinel for comparison (missing = missing is equal)
+                model_has_new_results = not (
+                    old_model_results.fillna(-999).equals(
+                        new_model_results.fillna(-999)
                     )
-                    new_model_row = df[comparison_columns].query("Model == @model_id")
-                    # Convert to float where possible, keeping NaN for missing scores
-                    old_model_results = old_model_row.map(convert_to_float)
-                    new_model_results = new_model_row.map(convert_to_float)
-                    # Fill NaN with sentinel for comparison (missing = missing is equal)
-                    model_has_new_results = not (
-                        old_model_results.fillna(-999).equals(
-                            new_model_results.fillna(-999)
-                        )
-                    )
-                    if model_has_new_results:
-                        new_records.append(model_id)
+                )
+                if model_has_new_results:
+                    new_records.append(model_id)
         else:
             new_records = df.Model.tolist()
 
