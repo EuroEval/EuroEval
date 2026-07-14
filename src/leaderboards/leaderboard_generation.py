@@ -16,7 +16,7 @@ from euroeval.constants import ORTHOGONAL_TASKS
 
 from .constants import NUM_BOOTSTRAPS, OUTPUT_DIR
 from .link_generation import generate_task_link
-from .records import convert_to_float, drop_val_duplicates, get_dataset
+from .records import drop_val_duplicates, get_dataset
 from .result_loading import load_raw_results
 from .score_computation import compute_ranks_bootstrap, compute_standard_ranks_bootstrap
 from .score_extraction import extract_model_metadata, group_results_by_model
@@ -151,7 +151,8 @@ def generate_leaderboard(
                 and not col.endswith(("_version", "_failures", "_scored"))
             ]
             new_columns = set(comparison_columns) - set(old_comparison_columns)
-            schema_changed = bool(new_columns)
+            removed_columns = set(old_comparison_columns) - set(comparison_columns)
+            schema_changed = bool(new_columns) or bool(removed_columns)
             # Compute common columns for score comparison (intersection)
             common_columns = [
                 col for col in comparison_columns if col in old_comparison_columns
@@ -171,9 +172,23 @@ def generate_leaderboard(
                 # Compare on common columns only
                 old_model_row = old_df[common_columns].query("Model == @model_id")
                 new_model_row = df[common_columns].query("Model == @model_id")
-                # Convert to float where possible, keeping NaN for missing scores
-                old_model_results = old_model_row.map(convert_to_float)
-                new_model_results = new_model_row.map(convert_to_float)
+                # Normalise placeholders to NaN for comparison ("-", "N/A", "?", "" all
+                # mean missing). Keep formatted scores like "60.17 ± 1.40" as-is.
+
+                def normalise_score(x: float | str) -> float | str:
+                    if pd.isna(x):
+                        return float("nan")
+                    s = str(x).strip()
+                    if s in {"-", "N/A", "?", ""}:
+                        return float("nan")
+                    return s
+
+                old_model_results = old_model_row.map(normalise_score).reset_index(
+                    drop=True
+                )
+                new_model_results = new_model_row.map(normalise_score).reset_index(
+                    drop=True
+                )
                 # Fill NaN with sentinel for comparison (missing = missing is equal)
                 model_has_changed_scores = not (
                     old_model_results.fillna(-999).equals(
@@ -187,12 +202,19 @@ def generate_leaderboard(
             if new_columns:
                 for model_id in df.Model.tolist():
                     if model_id in old_df.Model.values:
-                        # Check if this model has non-null values in any new column
-                        new_model_row = df[list(new_columns)].query(
-                            "Model == @model_id"
-                        )
+                        # Check if this model has real scores in any new column
+                        new_model_row = df.loc[
+                            df["Model"] == model_id, list(new_columns)
+                        ]
+                        # A real score is any non-placeholder value
+
+                        def is_not_placeholder(x: float | str) -> bool:
+                            if pd.isna(x):
+                                return False
+                            return str(x).strip() not in {"-", "N/A", "?", ""}
+
                         has_new_scores = (
-                            new_model_row.map(convert_to_float).notna().any().any()
+                            new_model_row.map(is_not_placeholder).any().any()
                         )  # type: ignore[attr-defined]
                         if has_new_scores and model_id not in new_records:
                             new_records.append(model_id)
