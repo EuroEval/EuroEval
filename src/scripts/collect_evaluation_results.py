@@ -685,8 +685,8 @@ def deploy_to_vercel() -> bool:
         True if both ``vercel build`` and ``vercel deploy --yes`` exit cleanly.
     """
     for cmd in (
-        ["vercel", "build", "--prod"],
-        ["vercel", "deploy", "--prebuilt", "--prod", "--yes"],
+        ["vercel", "build", "--prod", "--non-interactive"],
+        ["vercel", "deploy", "--prebuilt", "--prod", "--yes", "--non-interactive"],
     ):
         logger.info(f"Running: {' '.join(cmd)}")
         try:
