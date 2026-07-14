@@ -1069,10 +1069,13 @@ euroeval --model <model-id> --dataset ilpost-sum
 
 ### MultiIFEval-it
 
-This dataset was published
-[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-it) and contains
-prompts each with a combination of one or more of 25 different constraints, verified
-programmatically rather than with a judge.
+This dataset is part of the MultiIFEval benchmark, which translates and localises IFEval
+prompts into 305 languages using a structured LLM generation pipeline. For each target
+language, a randomly chosen target-language Wikipedia article is included as grounding
+to reduce hallucination and improve cultural localisation. Instruction IDs are preserved
+for traceability, and kwargs keys are retained (with values localised where
+appropriate), so constraints can still be checked programmatically. Outputs are
+schema-validated; malformed or empty outputs were excluded.
 
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.

@@ -822,68 +822,6 @@ euroeval --model <model-id> --dataset err-news
 
 ## Instruction-following
 
-### Unofficial: MultiIFEval-et
-
-This dataset was published
-[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-et) and contains
-prompts each with a combination of one or more of 25 different constraints, verified
-programmatically rather than with a judge.
-
-We use the dataset as the test split, and do not include other splits, as we only
-evaluate models zero-shot and the size is too small to warrant a validation set.
-
-Here are a few examples from the test split:
-
-```json
-{
-  "text": "Kirjuta vähemalt 300-sõnaline kokkuvõte Vikipeedia leheküljest \"https://et.wikipedia.org/wiki/Oskar_Waldhauer\". Ära kasuta ühtegi koma ning tõsta esile vähemalt 3 pealkirjadega jaotist markdown-vormingus, näiteks *esiletõstetud jaotis 1*, *esiletõstetud jaotis 2*, *esiletõstetud jaotis 3*.",
-  "target_text": {
-    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
-    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
-  }
-}
-```
-
-```json
-{
-  "text": "Ma planeerin reisi Jaapanisse ja soovin, et sa koostaksid mulle minu teekonna jaoks reisiplaani Shakespeare'i stiilis. Sul on keelatud kasutada oma vastuses komasid.",
-  "target_text": {
-    "instruction_id_list": ["punctuation:no_comma"],
-    "kwargs": [{}]
-  }
-}
-```
-
-```json
-{
-  "text": "Koosta CV värskele gümnaasiumilõpetajale, kes otsib oma esimest töökohta. Veendu, et lisad vähemalt 12 nurksulgudes esitatud kohatäidet, nagu näiteks [aadress], [nimi].",
-  "target_text": {
-    "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [{"num_placeholders": 12}]
-  }
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 0
-- No prefix prompt, as only instruction-tuned models are evaluated on this task.
-- No base prompt template, as only instruction-tuned models are evaluated on this task.
-- Instruction-tuned prompt template:
-
-  ```text
-  {text}
-  ```
-
-  I.e., we just use the instruction directly as the prompt.
-
-You can evaluate a model on this dataset as follows:
-
-```bash
-euroeval --model <model-id> --dataset multi-ifeval-et
-```
-
 ### IFEval-et
 
 This dataset is a translation of the English IFEval dataset, which was published in
@@ -896,7 +834,7 @@ We use the original dataset as the test split, and do not include the other spli
 we only evaluate models zero-shot and the size is too small to warrant an even smaller
 validation set.
 
-Here are a few examples from the training split:
+Here are a few examples from the test split:
 
 ```json
 {
@@ -1129,6 +1067,71 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset ifeval-et
+```
+
+### Unofficial: MultiIFEval-et
+
+This dataset is a translated and localised version of IFEval from the MultiIFEval
+benchmark, which covers 305 languages. It was generated using a structured LLM
+generation pipeline with target-language Wikipedia grounding to reduce hallucination
+and improve cultural localisation. Instruction IDs are preserved for traceability, and
+kwargs keys are retained (with values localised where appropriate), so constraints can
+still be checked programmatically. Outputs are schema-validated; malformed or empty
+outputs were excluded.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Kirjuta vähemalt 300-sõnaline kokkuvõte Vikipeedia leheküljest \"https://et.wikipedia.org/wiki/Oskar_Waldhauer\". Ära kasuta ühtegi koma ning tõsta esile vähemalt 3 pealkirjadega jaotist markdown-vormingus, näiteks *esiletõstetud jaotis 1*, *esiletõstetud jaotis 2*, *esiletõstetud jaotis 3*.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
+    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+  }
+}
+```
+
+```json
+{
+  "text": "Ma planeerin reisi Jaapanisse ja soovin, et sa koostaksid mulle minu teekonna jaoks reisiplaani Shakespeare'i stiilis. Sul on keelatud kasutada oma vastuses komasid.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Koosta CV värskele gümnaasiumilõpetajale, kes otsib oma esimest töökohta. Veendu, et lisad vähemalt 12 nurksulgudes esitatud kohatäidet, nagu näiteks [aadress], [nimi].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{"num_placeholders": 12}]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-et
 ```
 
 ## European Values

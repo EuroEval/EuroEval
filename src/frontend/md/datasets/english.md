@@ -1373,10 +1373,13 @@ euroeval --model <model-id> --dataset ifeval
 
 ### Unofficial: MultiIFEval-en
 
-This dataset was published
-[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-en) and contains
-prompts each with a combination of one or more of 25 different constraints, verified
-programmatically rather than with a judge.
+This dataset is a translated and localised version of IFEval from the MultiIFEval
+benchmark, which covers 305 languages. It was generated using a structured LLM
+generation pipeline with target-language Wikipedia grounding to reduce hallucination
+and improve cultural localisation. Instruction IDs are preserved for traceability, and
+kwargs keys are retained (with values localised where appropriate), so constraints can
+still be checked programmatically. Outputs are schema-validated; malformed or empty
+outputs were excluded.
 
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
