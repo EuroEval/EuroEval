@@ -220,37 +220,7 @@ def main(
     force: bool,
     dry_run: bool,
 ) -> None:
-    """Replace an official leaderboard dataset with a new one.
-
-    Args:
-        old_dataset:
-            The official dataset being replaced.
-        new_dataset:
-            The unofficial candidate being promoted.
-        branch:
-            The branch to do the work on; may not be the default branch.
-        include_api:
-            Whether to evaluate API models.
-        api_providers:
-            Optional comma-separated provider filter.
-        gpu_memory_utilization:
-            vLLM GPU memory utilization fraction, or None for the default.
-        skip_eval:
-            When True, only perform the config/doc swap.
-        pr:
-            When True (default), commit, push, and open a pull request after
-            swapping.
-        reviewer:
-            GitHub username to request as reviewer.
-        force:
-            When True, re-run pairs that already have a new-dataset result.
-        dry_run:
-            When True, print the plan and make no changes.
-
-    Raises:
-        click.ClickException:
-            When the dataset pair or branch is invalid, or a git/gh step fails.
-    """
+    """Replace an official leaderboard dataset with a new one."""
     if api_providers and not include_api:
         raise click.ClickException(
             "--api-providers requires --include-api; pass both or neither."
