@@ -86,17 +86,6 @@ IFEVAL_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-MULTI_IFEVAL_EN_CONFIG = DatasetConfig(
-    name="multi-ifeval-en",
-    pretty_name="MultiIFEval-en",
-    source="EuroEval/multi-ifeval-en",
-    task=INSTRUCTION_FOLLOWING,
-    languages=[ENGLISH],
-    train_split=None,
-    val_split=None,
-    unofficial=True,
-)
-
 BFCL_V2_CONFIG = DatasetConfig(
     name="bfcl-v2",
     pretty_name="BFCL-v2",
@@ -119,6 +108,17 @@ VALEU_EN_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_IFEVAL_EN_CONFIG = DatasetConfig(
+    name="multi-ifeval-en",
+    pretty_name="MultiIFEval-en",
+    source="EuroEval/multi-ifeval-en",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ENGLISH],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
 
 XQUAD_EN_CONFIG = DatasetConfig(
     name="xquad-en",

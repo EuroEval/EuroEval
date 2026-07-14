@@ -879,7 +879,7 @@ Here are a few examples from the test split:
 
 ```json
 {
-  "text": "Planuję podróż do Japonii i chciałbym, abyś napisał plan podróży w stylu Shakespeare'\a. Nie wolno ci używać przecinków w odpowiedzi.",
+  "text": "Planuję podróż do Japonii i chciałbym, abyś napisał plan podróży w stylu Shakespeare'a. Nie wolno ci używać przecinków w odpowiedzi.",
   "target_text": {
     "instruction_id_list": ["punctuation:no_comma"],
     "kwargs": [{}]

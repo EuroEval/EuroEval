@@ -79,6 +79,16 @@ VALEU_FI_CONFIG = DatasetConfig(
     instruction_prompt="{text}",
 )
 
+MULTI_IFEVAL_FI_CONFIG = DatasetConfig(
+    name="multi-ifeval-fi",
+    pretty_name="MultiIFEval-fi",
+    source="EuroEval/multi-ifeval-fi",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[FINNISH],
+    train_split=None,
+    val_split=None,
+)
+
 
 # Unofficial datasets ###
 
@@ -117,16 +127,6 @@ WINOGRANDE_FI_CONFIG = DatasetConfig(
     languages=[FINNISH],
     labels=["a", "b"],
     unofficial=True,
-)
-
-MULTI_IFEVAL_FI_CONFIG = DatasetConfig(
-    name="multi-ifeval-fi",
-    pretty_name="MultiIFEval-fi",
-    source="EuroEval/multi-ifeval-fi",
-    task=INSTRUCTION_FOLLOWING,
-    languages=[FINNISH],
-    train_split=None,
-    val_split=None,
 )
 
 IFEVAL_FI_CONFIG = DatasetConfig(
