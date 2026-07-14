@@ -2578,84 +2578,226 @@ You can evaluate this dataset directly as follows:
 euroeval --model <model-id> --dataset zebra-puzzles-hard-nn
 ```
 
-## Instruction Following
+## Instruction-following
 
-### Unofficial: IFEval-nb
+### MultiIFEval-nb
 
-This dataset is the Bokmål split of
-[MultiIFEval](https://huggingface.co/datasets/danish-foundation-models/multi-ifeval),
-an automatically translated version of the English IFEval dataset, which was published
-in [this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains prompts each
-with a combination of one or more of 25 different constraints, verified
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-nb) and contains prompts
+each with a combination of one or more of 25 different constraints, verified
 programmatically rather than with a judge.
 
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
 
 The `number_sentences` constraint carries a `language` keyword argument set to
-`"norwegian"`, so it counts sentences with the Norwegian sentence tokenizer; the
-default English tokenizer over-counts Norwegian abbreviations such as `f.eks.` and
-`bl.a.`. Following MultiIFEval, the `language:response_language` constraint is left
-out for Norwegian, as language detection cannot reliably separate Bokmål from
-Nynorsk.
+`"norwegian"`, so it counts sentences with the Norwegian sentence tokenizer; the default
+English tokenizer over-counts Norwegian abbreviations such as `f.eks.` and `bl.a.`.
+Following MultiIFEval, the `language:response_language` constraint is left out for
+Norwegian, as language detection cannot reliably separate Bokmål from Nynorsk.
 
 Here are a few examples from the test split:
 
 ```json
 {
-    "text": "Jeg planlegger en reise til Japan og jeg vil at du skal skrive en reiseplan for turen min i en stil som minner om William Shakespeare. Du har ikke lov til å bruke komma i svaret ditt.",
-    "target_text": {
-        "instruction_id_list": [
-            "punctuation:no_comma"
-        ],
-        "kwargs": [
-            {}
-        ]
-    }
+  "text": "Jeg planlegger en reise til Japan og jeg vil at du skal skrive en reiseplan for turen min i en stil som minner om William Shakespeare. Du har ikke lov til å bruke komma i svaret ditt.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Skriv en CV for en som nettopp er ferdig med videregående skole og som søker sin første jobb. Sørg for å inkludere minst 12 plassholdere representert med firkantparenteser, slik som [adresse], [navn].",
-    "target_text": {
-        "instruction_id_list": [
-            "detectable_content:number_placeholders"
-        ],
-        "kwargs": [
-            {
-                "num_placeholders": 12
-            }
-        ]
-    }
+  "text": "Skriv en CV for en som nettopp er ferdig med videregående skole og som søker sin første jobb. Sørg for å inkludere minst 12 plassholdere representert med firkantparenteser, slik som [adresse], [navn].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Skriv en mal for en chatbot som tar brukerens posisjon og gir dem værmeldingen. Bruk bokstaven o som et nøkkelord i syntaksen til malen. Bokstaven o må forekomme minst 6 ganger. Svaret ditt skal inneholde færre enn 6 setninger. Uthev minst 2 tekstseksjoner, f.eks. *uthevet seksjon*.",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:letter_frequency",
-            "length_constraints:number_sentences_with_language",
-            "detectable_format:number_highlighted_sections"
-        ],
-        "kwargs": [
-            {
-                "let_relation": "at least",
-                "letter": "o",
-                "let_frequency": 6
-            },
-            {
-                "relation": "less than",
-                "num_sentences": 6,
-                "language": "norwegian"
-            },
-            {
-                "num_highlights": 2
-            }
-        ]
-    }
+  "text": "Skriv en mal for en chatbot som tar brukerens posisjon og gir dem værmeldingen. Bruk bokstaven o som et nøkkelord i syntaksen til malen. Bokstaven o må forekomme minst 6 ganger. Svaret ditt skal inneholde færre enn 6 setninger. Uthev minst 2 tekstseksjoner, f.eks. *uthevet seksjon*.",
+  "target_text": {
+    "instruction_id_list": [
+      "keywords:letter_frequency",
+      "length_constraints:number_sentences_with_language",
+      "detectable_format:number_highlighted_sections"
+    ],
+    "kwargs": [
+      { "let_relation": "at least", "letter": "o", "let_frequency": 6 },
+      { "relation": "less than", "num_sentences": 6, "language": "norwegian" },
+      { "num_highlights": 2 }
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-nb
+```
+
+### MultiIFEval-nn
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-nn) and contains prompts
+each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+As for MultiIFEval-nb, `number_sentences` carries `language: "norwegian"` (Norwegian
+sentence tokenizer), and `language:response_language` is left out.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Eg planlegg ei reise til Japan og eg vil at du skal skrive ein reiseplan for ferda mi i ein stil som minner om Shakespeare. Du har ikkje lov til å bruke komma i svaret ditt.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Skriv ein CV for ein som nettopp er ferdig på vidaregåande skule og som søkjer si første stelle. Pass på å inkludere minst 12 plasshaldarar representert ved firkantparentesar, slik som [adresse], [namn].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+```json
+{
+  "text": "Skriv ein mal for ein pratebot som tek imot lokasjonen til ein brukar og gjev dei vêrvarsel. Bruk bokstaven o som eit nøkkelord i syntaksen til malen. Bokstaven o må førekome minst 6 gonger. Svaret ditt skal innehalde færre enn 6 setningar. Uthev minst 2 tekstseksjonar, til dømes *utheva seksjon*.",
+  "target_text": {
+    "instruction_id_list": [
+      "keywords:letter_frequency",
+      "length_constraints:number_sentences_with_language",
+      "detectable_format:number_highlighted_sections"
+    ],
+    "kwargs": [
+      { "let_relation": "at least", "letter": "o", "let_frequency": 6 },
+      { "relation": "less than", "num_sentences": 6, "language": "norwegian" },
+      { "num_highlights": 2 }
+    ]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-nn
+```
+
+### Unofficial: IFEval-nb
+
+This dataset is the Bokmål split of
+[MultiIFEval](https://huggingface.co/datasets/danish-foundation-models/multi-ifeval), an
+automatically translated version of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains prompts each with a
+combination of one or more of 25 different constraints, verified programmatically rather
+than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+The `number_sentences` constraint carries a `language` keyword argument set to
+`"norwegian"`, so it counts sentences with the Norwegian sentence tokenizer; the default
+English tokenizer over-counts Norwegian abbreviations such as `f.eks.` and `bl.a.`.
+Following MultiIFEval, the `language:response_language` constraint is left out for
+Norwegian, as language detection cannot reliably separate Bokmål from Nynorsk.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Jeg planlegger en reise til Japan og jeg vil at du skal skrive en reiseplan for turen min i en stil som minner om William Shakespeare. Du har ikke lov til å bruke komma i svaret ditt.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Skriv en CV for en som nettopp er ferdig med videregående skole og som søker sin første jobb. Sørg for å inkludere minst 12 plassholdere representert med firkantparenteser, slik som [adresse], [navn].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [
+      {
+        "num_placeholders": 12
+      }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Skriv en mal for en chatbot som tar brukerens posisjon og gir dem værmeldingen. Bruk bokstaven o som et nøkkelord i syntaksen til malen. Bokstaven o må forekomme minst 6 ganger. Svaret ditt skal inneholde færre enn 6 setninger. Uthev minst 2 tekstseksjoner, f.eks. *uthevet seksjon*.",
+  "target_text": {
+    "instruction_id_list": [
+      "keywords:letter_frequency",
+      "length_constraints:number_sentences_with_language",
+      "detectable_format:number_highlighted_sections"
+    ],
+    "kwargs": [
+      {
+        "let_relation": "at least",
+        "letter": "o",
+        "let_frequency": 6
+      },
+      {
+        "relation": "less than",
+        "num_sentences": 6,
+        "language": "norwegian"
+      },
+      {
+        "num_highlights": 2
+      }
+    ]
+  }
 }
 ```
 
@@ -2668,75 +2810,69 @@ euroeval --model <model-id> --dataset ifeval-nb
 ### Unofficial: IFEval-nn
 
 This dataset is the Nynorsk split of
-[MultiIFEval](https://huggingface.co/datasets/danish-foundation-models/multi-ifeval),
-an automatically translated version of the English IFEval dataset, which was published
-in [this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains prompts each
-with a combination of one or more of 25 different constraints, verified
-programmatically rather than with a judge.
+[MultiIFEval](https://huggingface.co/datasets/danish-foundation-models/multi-ifeval), an
+automatically translated version of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains prompts each with a
+combination of one or more of 25 different constraints, verified programmatically rather
+than with a judge.
 
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
 
-As for IFEval-nb, `number_sentences` carries `language: "norwegian"` (Norwegian
-sentence tokenizer), and `language:response_language` is left out.
+As for IFEval-nb, `number_sentences` carries `language: "norwegian"` (Norwegian sentence
+tokenizer), and `language:response_language` is left out.
 
 Here are a few examples from the test split:
 
 ```json
 {
-    "text": "Eg planlegg ei reise til Japan og eg vil at du skal skrive ein reiseplan for ferda mi i ein stil som minner om Shakespeare. Du har ikkje lov til å bruke komma i svaret ditt.",
-    "target_text": {
-        "instruction_id_list": [
-            "punctuation:no_comma"
-        ],
-        "kwargs": [
-            {}
-        ]
-    }
+  "text": "Eg planlegg ei reise til Japan og eg vil at du skal skrive ein reiseplan for ferda mi i ein stil som minner om Shakespeare. Du har ikkje lov til å bruke komma i svaret ditt.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Skriv ein CV for ein som nettopp er ferdig på vidaregåande skule og som søkjer si første stelle. Pass på å inkludere minst 12 plasshaldarar representert ved firkantparentesar, slik som [adresse], [namn].",
-    "target_text": {
-        "instruction_id_list": [
-            "detectable_content:number_placeholders"
-        ],
-        "kwargs": [
-            {
-                "num_placeholders": 12
-            }
-        ]
-    }
+  "text": "Skriv ein CV for ein som nettopp er ferdig på vidaregåande skule og som søkjer si første stelle. Pass på å inkludere minst 12 plasshaldarar representert ved firkantparentesar, slik som [adresse], [namn].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [
+      {
+        "num_placeholders": 12
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Skriv ein mal for ein pratebot som tek imot lokasjonen til ein brukar og gjev dei vêrvarsel. Bruk bokstaven o som eit nøkkelord i syntaksen til malen. Bokstaven o må førekome minst 6 gonger. Svaret ditt skal innehalde færre enn 6 setningar. Uthev minst 2 tekstseksjonar, til dømes *utheva seksjon*.",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:letter_frequency",
-            "length_constraints:number_sentences_with_language",
-            "detectable_format:number_highlighted_sections"
-        ],
-        "kwargs": [
-            {
-                "let_relation": "at least",
-                "letter": "o",
-                "let_frequency": 6
-            },
-            {
-                "relation": "less than",
-                "num_sentences": 6,
-                "language": "norwegian"
-            },
-            {
-                "num_highlights": 2
-            }
-        ]
-    }
+  "text": "Skriv ein mal for ein pratebot som tek imot lokasjonen til ein brukar og gjev dei vêrvarsel. Bruk bokstaven o som eit nøkkelord i syntaksen til malen. Bokstaven o må førekome minst 6 gonger. Svaret ditt skal innehalde færre enn 6 setningar. Uthev minst 2 tekstseksjonar, til dømes *utheva seksjon*.",
+  "target_text": {
+    "instruction_id_list": [
+      "keywords:letter_frequency",
+      "length_constraints:number_sentences_with_language",
+      "detectable_format:number_highlighted_sections"
+    ],
+    "kwargs": [
+      {
+        "let_relation": "at least",
+        "letter": "o",
+        "let_frequency": 6
+      },
+      {
+        "relation": "less than",
+        "num_sentences": 6,
+        "language": "norwegian"
+      },
+      {
+        "num_highlights": 2
+      }
+    ]
+  }
 }
 ```
 
