@@ -98,6 +98,7 @@ MULTI_IFEVAL_ET_CONFIG = DatasetConfig(
     languages=[ESTONIAN],
     train_split=None,
     val_split=None,
+    unofficial=True,
 )
 
 VALEU_ET_CONFIG = DatasetConfig(

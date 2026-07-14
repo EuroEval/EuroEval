@@ -119,16 +119,6 @@ WINOGRANDE_FI_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
-IFEVAL_FI_CONFIG = DatasetConfig(
-    name="ifeval-fi",
-    pretty_name="IFEval-fi",
-    source="EuroEval/ifeval-fi",
-    task=INSTRUCTION_FOLLOWING,
-    languages=[FINNISH],
-    train_split=None,
-    val_split=None,
-)
-
 MULTI_IFEVAL_FI_CONFIG = DatasetConfig(
     name="multi-ifeval-fi",
     pretty_name="MultiIFEval-fi",
@@ -137,6 +127,17 @@ MULTI_IFEVAL_FI_CONFIG = DatasetConfig(
     languages=[FINNISH],
     train_split=None,
     val_split=None,
+)
+
+IFEVAL_FI_CONFIG = DatasetConfig(
+    name="ifeval-fi",
+    pretty_name="IFEval-fi",
+    source="EuroEval/ifeval-fi",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[FINNISH],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
 )
 
 INCLUDE_FI_CONFIG = DatasetConfig(

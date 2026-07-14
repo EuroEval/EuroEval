@@ -73,16 +73,6 @@ WINOGRANDE_CA_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
-IFEVAL_CA_CONFIG = DatasetConfig(
-    name="ifeval-ca",
-    pretty_name="IFEval-ca",
-    source="EuroEval/ifeval-ca",
-    task=INSTRUCTION_FOLLOWING,
-    languages=[CATALAN],
-    train_split=None,
-    val_split=None,
-)
-
 MULTI_IFEVAL_CA_CONFIG = DatasetConfig(
     name="multi-ifeval-ca",
     pretty_name="MultiIFEval-ca",
@@ -95,6 +85,17 @@ MULTI_IFEVAL_CA_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+IFEVAL_CA_CONFIG = DatasetConfig(
+    name="ifeval-ca",
+    pretty_name="IFEval-ca",
+    source="EuroEval/ifeval-ca",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[CATALAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
 
 RAGTRUTH_CA_CONFIG = DatasetConfig(
     name="ragtruth-ca",

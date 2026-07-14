@@ -2,16 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FAROESE
-from ..tasks import (
-    GED,
-    HALLU,
-    INSTRUCTION_FOLLOWING,
-    LA,
-    LOGIC,
-    NER,
-    RC,
-    SENT,
-)
+from ..tasks import GED, HALLU, INSTRUCTION_FOLLOWING, LA, LOGIC, NER, RC, SENT
 
 # Official datasets ###
 

@@ -94,6 +94,7 @@ MULTI_IFEVAL_EN_CONFIG = DatasetConfig(
     languages=[ENGLISH],
     train_split=None,
     val_split=None,
+    unofficial=True,
 )
 
 BFCL_V2_CONFIG = DatasetConfig(
