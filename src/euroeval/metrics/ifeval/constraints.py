@@ -133,7 +133,7 @@ def check_keyword_existence(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to be checked.
         **constraint_kwargs:
-            Keyword arguments containing ``keywords`` – a list of keyword patterns
+            Keyword arguments containing `keywords` – a list of keyword patterns
             (case‑insensitive) to search for.
 
     Returns:
@@ -178,8 +178,8 @@ def check_keyword_frequency(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``keyword``, ``frequency`` and
-            ``relation`` – the keyword pattern (case‑insensitive), the required
+            Keyword arguments containing `keyword`, `frequency` and
+            `relation` – the keyword pattern (case‑insensitive), the required
             frequency, and the comparison operator ("less than" or "at least").
 
     Returns:
@@ -208,7 +208,7 @@ def check_forbidden_words(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``forbidden_words`` – a list of
+            Keyword arguments containing `forbidden_words` – a list of
             words that must not appear (case‑insensitive, whole‑word match).
 
     Returns:
@@ -255,8 +255,8 @@ def check_letter_frequency(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``letter``, ``let_frequency`` and
-            ``let_relation`` – the single character to count (case‑insensitive),
+            Keyword arguments containing `letter`, `let_frequency` and
+            `let_relation` – the single character to count (case‑insensitive),
             the frequency threshold, and the comparison operator ("less than"
             or "at least").
 
@@ -277,49 +277,6 @@ def check_letter_frequency(response: str, **constraint_kwargs) -> bool:
     if let_relation in {"less than", "moins de"}:
         return counts[letter.lower()] < let_frequency
     return counts[letter.lower()] >= let_frequency
-
-
-def _check_number_sentences(
-    response: str,
-    *,
-    num_sentences: int,
-    relation: str,
-    language: "t.Optional[str]" = None,
-) -> bool:
-    """Shared sentence-count check for the number_sentences constraints.
-
-    When ``language`` is given (an NLTK language name such as ``"english"`` or
-    ``"norwegian"``) the sentence count uses the matching Punkt model. This
-    matters because the default English tokenizer over-counts sentences in
-    languages whose abbreviations it does not know — e.g. Norwegian ``f.eks.``
-    and ``bl.a.`` are treated as sentence boundaries. Falls back to the default
-    model if the requested one is unavailable, so a missing resource degrades
-    gracefully rather than raising ``LookupError`` and aborting the eval.
-
-    Args:
-        response:
-            The response string to check.
-        num_sentences:
-            The threshold number of sentences.
-        relation:
-            The comparison relation (a less-than or at-least variant).
-        language:
-            Optional NLTK language name for the sentence tokenizer. If None, the
-            default tokenizer is used.
-
-    Returns:
-        True if the sentence count satisfies the relation, False otherwise.
-    """
-    if language is None:
-        actual = len(nltk.tokenize.sent_tokenize(text=response))
-    else:
-        try:
-            actual = len(nltk.tokenize.sent_tokenize(text=response, language=language))
-        except LookupError:
-            actual = len(nltk.tokenize.sent_tokenize(text=response))
-    if relation in {"less than", "moins de", "færre enn"}:
-        return actual < num_sentences
-    return actual >= num_sentences
 
 
 @register(
@@ -349,49 +306,50 @@ def check_number_sentences(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``num_sentences`` and ``relation``.
+            Keyword arguments containing `num_sentences` and `relation`.
 
     Returns:
         True if the sentence count satisfies the relation, False otherwise.
     """
-    return _check_number_sentences(
-        response,
-        num_sentences=constraint_kwargs["num_sentences"],
-        relation=constraint_kwargs["relation"],
-    )
+    actual = len(nltk.tokenize.sent_tokenize(text=response))
+    if constraint_kwargs["relation"] in {"less than", "moins de", "færre enn"}:
+        return actual < constraint_kwargs["num_sentences"]
+    return actual >= constraint_kwargs["num_sentences"]
 
 
 @register(
     "length_constraints:number_sentences_with_language",
     num_sentences=int,
-    relation=t.Literal["less than", "at least", "færre enn"],
+    relation=t.Literal["less than", "at least"],
     language=str,
 )
 def check_number_sentences_with_language(response: str, **constraint_kwargs) -> bool:
     """Check number of sentences, selecting the sentence tokenizer by language.
 
-    Identical to :func:`check_number_sentences` but takes a required ``language``
-    NLTK name (e.g. ``"norwegian"``) so the count uses the matching Punkt model
+    Identical to :func:`check_number_sentences` but takes a required `language`
+    NLTK name (e.g. `"norwegian"`) so the count uses the matching Punkt model
     instead of the default English one. Used by datasets whose language needs a
     non-default tokenizer; older datasets keep using
-    ``length_constraints:number_sentences`` unchanged.
+    `length_constraints:number_sentences` unchanged.
 
     Args:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``num_sentences``, ``relation`` and
-            ``language``.
+            Keyword arguments containing `num_sentences`, `relation` and
+            `language`.
 
     Returns:
         True if the sentence count satisfies the relation, False otherwise.
     """
-    return _check_number_sentences(
-        response,
-        num_sentences=constraint_kwargs["num_sentences"],
-        relation=constraint_kwargs["relation"],
-        language=constraint_kwargs["language"],
+    actual = len(
+        nltk.tokenize.sent_tokenize(
+            text=response, language=constraint_kwargs["language"]
+        )
     )
+    if constraint_kwargs["relation"] == "less than":
+        return actual < constraint_kwargs["num_sentences"]
+    return actual >= constraint_kwargs["num_sentences"]
 
 
 @register("length_constraints:number_paragraphs", num_paragraphs=int)
@@ -405,7 +363,7 @@ def check_number_paragraphs(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``num_paragraphs`` – the exact number
+            Keyword arguments containing `num_paragraphs` – the exact number
             of paragraphs expected.
 
     Returns:
@@ -452,7 +410,7 @@ def check_number_words(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``num_words`` and ``relation``.
+            Keyword arguments containing `num_words` and `relation`.
 
     Returns:
         True if the word count satisfies the relation, False otherwise.
@@ -498,8 +456,8 @@ def check_nth_paragraph_first_word(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``num_paragraphs``, ``nth_paragraph``,
-            and ``first_word`` – the expected first word of the nth paragraph
+            Keyword arguments containing `num_paragraphs`, `nth_paragraph`,
+            and `first_word` – the expected first word of the nth paragraph
             (case‑insensitive).
 
     Returns:
@@ -550,7 +508,7 @@ def check_number_placeholders(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``num_placeholders`` – the minimum
+            Keyword arguments containing `num_placeholders` – the minimum
             number of placeholder brackets expected.
 
     Returns:
@@ -574,7 +532,7 @@ def check_postscript(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``postscript_marker`` – the postscript
+            Keyword arguments containing `postscript_marker` – the postscript
             label to look for (e.g. "P.S.", "P.P.S").
 
     Returns:
@@ -603,12 +561,12 @@ def check_number_bullet_lists(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``num_bullets`` – the exact number
+            Keyword arguments containing `num_bullets` – the exact number
             of bullet points expected.
 
     Returns:
         True if the response contains exactly num_bullets bullet points, where bullet
-        points are lines starting with ``*`` or ``-``, False otherwise.
+        points are lines starting with `*` or `-`, False otherwise.
     """
     num_bullets: int = constraint_kwargs["num_bullets"]
 
@@ -697,7 +655,7 @@ def check_constrained_response_with_argument(
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``options`` – a list of strings to
+            Keyword arguments containing `options` – a list of strings to
             check for.
 
     Returns:
@@ -718,7 +676,7 @@ def check_number_highlighted_sections(response: str, **constraint_kwargs) -> boo
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``num_highlights`` – the minimum number
+            Keyword arguments containing `num_highlights` – the minimum number
             of highlighted sections expected.
 
     Returns:
@@ -755,7 +713,7 @@ def check_multiple_sections(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``section_spliter`` and ``num_sections``.
+            Keyword arguments containing `section_spliter` and `num_sections`.
 
     Returns:
         True if the response contains at least num_sections sections delimited
@@ -858,7 +816,7 @@ def check_repeat_prompt(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``prompt_to_repeat`` – the exact prompt text
+            Keyword arguments containing `prompt_to_repeat` – the exact prompt text
             the response must begin with (case‑insensitive).
 
     Returns:
@@ -879,7 +837,7 @@ def check_end_phrase(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``end_phrase`` – the exact phrase the
+            Keyword arguments containing `end_phrase` – the exact phrase the
             response must end with (case‑insensitive).
 
     Returns:
@@ -916,8 +874,8 @@ def check_capital_word_frequency(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``capital_frequency`` and
-            ``capital_relation``.
+            Keyword arguments containing `capital_frequency` and
+            `capital_relation`.
 
     Returns:
         True if the count of fully uppercased words satisfies the relation,
@@ -1124,7 +1082,7 @@ def check_response_language(response: str, **constraint_kwargs) -> bool:
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``language`` – the language code of the
+            Keyword arguments containing `language` – the language code of the
             language the response must be in.
 
     Returns:
@@ -1190,7 +1148,7 @@ def check_ethel_or_cedilla_not_present(response: str, **constraint_kwargs) -> bo
         response:
             The response string to check.
         **constraint_kwargs:
-            Keyword arguments containing ``forbidden_char`` – the character that is
+            Keyword arguments containing `forbidden_char` – the character that is
             forbidden in the response (must not be present).
 
     Returns:
