@@ -23,6 +23,8 @@ from pathlib import Path
 
 from euroeval.jsonl_io import parse_jsonl_lines
 
+from .eee_validation import is_eee_record
+
 from .constants import (
     BACKUP_ARCHIVE_ROOT,
     BACKUP_HASH_LEN,
@@ -208,11 +210,12 @@ def _validate_results() -> None:
     1. RESULTS_DIR exists and contains .jsonl files
     2. Sample files (up to 5) contain valid JSON with EEE envelope structure
 
-    This validation is intentionally light: raw results synced from the HF
-    bucket may be missing the "precious" metadata fields
-    (commercially_licensed, open, trained_from_scratch). Those fields are
-    filled in later by ``add_missing_entries`` and enforced when processed
-    results are written out by ``dump_jsonl_records``.
+    Invalid JSON lines are rejected (strict=True), ensuring corrupted files
+    are caught before backup. Raw results synced from the HF bucket may be
+    missing the "precious" metadata fields (commercially_licensed, open,
+    trained_from_scratch). Those fields are filled in later by
+    ``add_missing_entries`` and enforced when processed results are written
+    out by ``dump_jsonl_records``.
 
     Raises:
         FileNotFoundError:
@@ -252,13 +255,13 @@ def _validate_results() -> None:
             content = model_file.read_text(encoding="utf-8")
             lines = content.splitlines()
             records = parse_jsonl_lines(
-                lines=lines, source=str(model_file), strict=False
+                lines=lines, source=str(model_file), strict=True
             )
 
             for record in records:
                 records_checked += 1
                 # Validate EEE envelope structure (required for all records)
-                if not _is_valid_eee_envelope(record):
+                if not is_eee_record(record):
                     model_id = record.get("model_info", {}).get("name", "unknown")
                     logger.error(
                         f"Missing EEE envelope in {model_file.name}, model '{model_id}'"
@@ -284,24 +287,6 @@ def _validate_results() -> None:
     logger.info(
         f"Validated {records_checked:,} records from {len(sampled_files):,} sampled"
         f" files - all have valid JSON and EEE structure"
-    )
-
-
-def _is_valid_eee_envelope(record: dict) -> bool:
-    """Check if a record has the EEE envelope structure.
-
-    Args:
-        record:
-            Record to check.
-
-    Returns:
-        True if the record has the required EEE top-level structures.
-    """
-    return (
-        "schema_version" in record
-        and isinstance(record.get("model_info"), dict)
-        and isinstance(record.get("eval_library"), dict)
-        and isinstance(record.get("evaluation_results"), list)
     )
 
 

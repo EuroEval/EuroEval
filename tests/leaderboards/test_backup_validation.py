@@ -11,7 +11,6 @@ import pytest
 
 from euroeval.jsonl_io import parse_jsonl_lines
 from leaderboards.backup import (
-    _is_valid_eee_envelope,
     _validate_results,
     backup_results,
 )
@@ -59,39 +58,6 @@ def _create_eee_record(
             {"commercially_licensed": False, "open": True, "trained_from_scratch": True}
         )
     return record
-
-
-class TestValidEeeEnvelope:
-    """Tests for _is_valid_eee_envelope helper."""
-
-    def test_valid_envelope(self) -> None:
-        """Valid EEE envelope returns True."""
-        record = _create_eee_record()
-        assert _is_valid_eee_envelope(record) is True
-
-    def test_missing_schema_version(self) -> None:
-        """Missing schema_version returns False."""
-        record = _create_eee_record()
-        del record["schema_version"]
-        assert _is_valid_eee_envelope(record) is False
-
-    def test_missing_model_info(self) -> None:
-        """Missing model_info returns False."""
-        record = _create_eee_record()
-        del record["model_info"]
-        assert _is_valid_eee_envelope(record) is False
-
-    def test_missing_eval_library(self) -> None:
-        """Missing eval_library returns False."""
-        record = _create_eee_record()
-        del record["eval_library"]
-        assert _is_valid_eee_envelope(record) is False
-
-    def test_missing_evaluation_results(self) -> None:
-        """Missing evaluation_results returns False."""
-        record = _create_eee_record()
-        del record["evaluation_results"]
-        assert _is_valid_eee_envelope(record) is False
 
 
 class TestValidateResultsRaw:
@@ -146,31 +112,28 @@ class TestValidateResultsRaw:
             with pytest.raises(FileNotFoundError, match="Results directory not found"):
                 _validate_results()
 
-    def test_invalid_json_skipped_not_fail(self, temp_results_dir: Path) -> None:
-        """Invalid JSON is skipped during validation (strict=False for robustness)."""
+    def test_invalid_json_rejected(self, temp_results_dir: Path) -> None:
+        """Invalid JSON raises ValueError during validation (strict=True)."""
         model_file = temp_results_dir / "invalid.jsonl"
         model_file.write_text("not valid json\n", encoding="utf-8")
 
         with patch("leaderboards.backup.RESULTS_DIR", temp_results_dir):
-            # strict=False means invalid lines are logged but skipped,
-            # so validation passes (no valid records found, but no error)
-            _validate_results()
+            with pytest.raises(ValueError, match="invalid JSON"):
+                _validate_results()
 
-    def test_only_invalid_json_all_files_empty_passes(
+    def test_only_invalid_json_all_files_empty_fails(
         self, temp_results_dir: Path
     ) -> None:
-        """If all files have only invalid JSON and no valid records, passes.
+        """If all files have only invalid JSON, validation raises ValueError.
 
-        The validation allows empty result sets (strict=False). This is safe
-        because the backup is a snapshot of the sync state - if the sync
-        produced no records, that's a separate issue.
+        With strict=True, invalid JSON is rejected rather than silently skipped.
         """
         model_file = temp_results_dir / "invalid.jsonl"
         model_file.write_text("not valid json\n", encoding="utf-8")
 
         with patch("leaderboards.backup.RESULTS_DIR", temp_results_dir):
-            # Should not raise - invalid lines are skipped
-            _validate_results()
+            with pytest.raises(ValueError, match="invalid JSON"):
+                _validate_results()
 
     def test_missing_eee_envelope_fails(self, temp_results_dir: Path) -> None:
         """Missing EEE envelope structure should raise ValueError."""
@@ -229,6 +192,6 @@ class TestBackupResultsIntegration:
             patch("leaderboards.backup.BACKUPS_MAX_BYTES", 1024 * 1024 * 10),
         ):
             # Should not raise - raw results are allowed to miss precious metadata
-            backup_path = backup_results()
+            backup_path = backup_results(source=temp_results_dir)
             assert backup_path is not None
             assert backup_path.exists()
