@@ -224,7 +224,13 @@ def main(
     force: bool,
     dry_run: bool,
 ) -> None:
-    """Replace an official leaderboard dataset with a new one."""
+    """Replace an official leaderboard dataset with a new one.
+
+    Raises:
+        ClickException:
+            If --api-providers is set without --include-api, or if --pr is set without
+            --reviewer.
+    """
     # Validation checks
     if api_providers and not include_api:
         raise click.ClickException(
