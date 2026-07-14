@@ -652,7 +652,7 @@ euroeval --model <model-id> --dataset greek-wikipedia
 
 ## Instruction-following
 
-### IFEVAL-el
+### IFEval-el
 
 This dataset was published [here](https://huggingface.co/datasets/ilsp/ifeval_greek)
 and is a translation of the English IFEval dataset, which was published in [this
