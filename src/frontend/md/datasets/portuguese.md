@@ -926,7 +926,7 @@ You can evaluate a model on this dataset as follows:
 euroeval --model <model-id> --dataset multi-ifeval-pt
 ```
 
-### IFEval-pt
+### Unofficial: IFEval-pt
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2410.15553)
 and is a translation of the English IFEval dataset, which was published in [this

@@ -1290,68 +1290,6 @@ euroeval --model <model-id> --dataset wmt24pp-en-{target_language_code}
 
 ## Instruction-following
 
-### MultiIFEval-en
-
-This dataset was published
-[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-en) and contains
-prompts each with a combination of one or more of 25 different constraints, verified
-programmatically rather than with a judge.
-
-We use the dataset as the test split, and do not include other splits, as we only
-evaluate models zero-shot and the size is too small to warrant a validation set.
-
-Here are a few examples from the test split:
-
-```json
-{
-  "text": "Write a 300+ word summary of the provided text about David Freese's 2011 World Series home run. Do not use any commas in your response and highlight at least 3 sections that have titles in markdown format, for example *highlighted section part 1*, *highlighted section part 2*, *highlighted section part 3*.",
-  "target_text": {
-    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
-    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
-  }
-}
-```
-
-```json
-{
-  "text": "I am planning a trip to London and I would like thee to write an itinerary for my journey in a Shakespearean style. You are not allowed to use any commas in your response.",
-  "target_text": {
-    "instruction_id_list": ["punctuation:no_comma"],
-    "kwargs": [{}]
-  }
-}
-```
-
-```json
-{
-  "text": "Write a resume for a fresh high school graduate who is seeking their first job. Make sure to include at least 12 placeholder represented by square brackets, such as [address], [name].",
-  "target_text": {
-    "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [{"num_placeholders": 12}]
-  }
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 0
-- No prefix prompt, as only instruction-tuned models are evaluated on this task.
-- No base prompt template, as only instruction-tuned models are evaluated on this task.
-- Instruction-tuned prompt template:
-
-  ```text
-  {text}
-  ```
-
-  I.e., we just use the instruction directly as the prompt.
-
-You can evaluate a model on this dataset as follows:
-
-```bash
-euroeval --model <model-id> --dataset multi-ifeval-en
-```
-
 ### IFEval
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2311.07911)
@@ -1431,6 +1369,68 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset ifeval
+```
+
+### Unofficial: MultiIFEval-en
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-en) and contains
+prompts each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Write a 300+ word summary of the provided text about David Freese's 2011 World Series home run. Do not use any commas in your response and highlight at least 3 sections that have titles in markdown format, for example *highlighted section part 1*, *highlighted section part 2*, *highlighted section part 3*.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
+    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+  }
+}
+```
+
+```json
+{
+  "text": "I am planning a trip to London and I would like thee to write an itinerary for my journey in a Shakespearean style. You are not allowed to use any commas in your response.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Write a resume for a fresh high school graduate who is seeking their first job. Make sure to include at least 12 placeholder represented by square brackets, such as [address], [name].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{"num_placeholders": 12}]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-en
 ```
 
 ## European Values

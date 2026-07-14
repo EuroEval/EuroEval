@@ -714,7 +714,7 @@ You can evaluate a model on this dataset as follows:
 euroeval --model <model-id> --dataset multi-ifeval-el
 ```
 
-### IFEval-el
+### Unofficial: IFEval-el
 
 This dataset was published [here](https://huggingface.co/datasets/ilsp/ifeval_greek)
 and is a translation of the English IFEval dataset, which was published in [this
