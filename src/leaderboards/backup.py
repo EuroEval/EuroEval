@@ -23,8 +23,6 @@ from pathlib import Path
 
 from euroeval.jsonl_io import parse_jsonl_lines
 
-from .eee_validation import is_eee_record
-
 from .constants import (
     BACKUP_ARCHIVE_ROOT,
     BACKUP_HASH_LEN,
@@ -34,6 +32,7 @@ from .constants import (
     BACKUPS_MAX_BYTES,
     RESULTS_DIR,
 )
+from .eee_validation import is_eee_record
 
 logger = logging.getLogger(__name__)
 
