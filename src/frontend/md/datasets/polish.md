@@ -30,22 +30,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Stary , bardzo zaniedbany hotel , obsluga czesto nie w humorze nie wykluczajac wlasciciela hotelu . Sniadania malo urozmaicone , powtarzajace sie przez caly tydzien dwa rodzaje byle jakiej wedliny , jednego rodzaju zoltego sera i jajecznicy ze sproszkowanych jajek . Obiadokolacja bardzo pozno 19 . 30 . Dla malych dzieci i zmeczonych narciarzy stanowczo za pozno . Napewno odwiedze Livignio , ale nigdy wiecej hotel Europa .",
-    "label": "negative"
+  "text": "Stary , bardzo zaniedbany hotel , obsluga czesto nie w humorze nie wykluczajac wlasciciela hotelu . Sniadania malo urozmaicone , powtarzajace sie przez caly tydzien dwa rodzaje byle jakiej wedliny , jednego rodzaju zoltego sera i jajecznicy ze sproszkowanych jajek . Obiadokolacja bardzo pozno 19 . 30 . Dla malych dzieci i zmeczonych narciarzy stanowczo za pozno . Napewno odwiedze Livignio , ale nigdy wiecej hotel Europa .",
+  "label": "negative"
 }
 ```
 
 ```json
 {
-    "text": "Arkadiusz Miszuk został powołany na stanowisko prezesa , zaś Dariusz Rutowicz na stanowisko wiceprezesa , giełdowej spółki hotelowej Interferie SA , poinformowała spółka w komunikacie z 16 marca : „ Zarząd spółki Interferie INTERFERIE S . A . w Lubinie , informuje iż Rada Nadzorcza Spółki na posiedzeniu w dniu 16 . 03 . 2012 roku odwołała ze składu Zarządu : 1 ) Pana Adama Milanowskiego , 2 ) Pana Radosława Besztygę . Jednocześnie Zarząd INTERFERIE S . A . w Lubinie , informuje iż w dniu 16 . 03 . 2012 roku Rada Nadzorcza Spółki powołała w skład Zarządu : 1 ) Pana Arkadiusza Miszuka - na stanowisko Prezesa Zarządu , 2 ) Pana Dariusza Rutowicza - na stanowisko Wiceprezesa Zarządu .",
-    "label": "neutral"
+  "text": "Arkadiusz Miszuk został powołany na stanowisko prezesa , zaś Dariusz Rutowicz na stanowisko wiceprezesa , giełdowej spółki hotelowej Interferie SA , poinformowała spółka w komunikacie z 16 marca : „ Zarząd spółki Interferie INTERFERIE S . A . w Lubinie , informuje iż Rada Nadzorcza Spółki na posiedzeniu w dniu 16 . 03 . 2012 roku odwołała ze składu Zarządu : 1 ) Pana Adama Milanowskiego , 2 ) Pana Radosława Besztygę . Jednocześnie Zarząd INTERFERIE S . A . w Lubinie , informuje iż w dniu 16 . 03 . 2012 roku Rada Nadzorcza Spółki powołała w skład Zarządu : 1 ) Pana Arkadiusza Miszuka - na stanowisko Prezesa Zarządu , 2 ) Pana Dariusza Rutowicza - na stanowisko Wiceprezesa Zarządu .",
+  "label": "neutral"
 }
 ```
 
 ```json
 {
-    "text": "Hotel znajduje się w idealnym miejscu dla fanów pieszych wycieczek . Z dala od zgiełku Krupówek - blisko szlaków wychodzących w góry . Pokoje przestronne i czyste . Obsługa bardzo miła . Basen jest aczkolwiek swoim urokiem nie zachwyca . Bardzo bogate i smaczne śniadania . Również jedzenie w restauracji jest naprawdę godne polecenia . Byli śmy gośćmi hotelu już dwa razy za równo jako para jaki i rodzina z dziećmi i za każdym razem byli śmy zadowoleni .",
-    "label": "positive"
+  "text": "Hotel znajduje się w idealnym miejscu dla fanów pieszych wycieczek . Z dala od zgiełku Krupówek - blisko szlaków wychodzących w góry . Pokoje przestronne i czyste . Obsługa bardzo miła . Basen jest aczkolwiek swoim urokiem nie zachwyca . Bardzo bogate i smaczne śniadania . Również jedzenie w restauracji jest naprawdę godne polecenia . Byli śmy gośćmi hotelu już dwa razy za równo jako para jaki i rodzina z dziećmi i za każdym razem byli śmy zadowoleni .",
+  "label": "positive"
 }
 ```
 
@@ -102,8 +102,8 @@ The original dataset uses the train and test splits from the source corpus. The 
 data train split has 13,959 samples and test split has 4,323 samples. The validation
 split is created from the original training split. We use 1,024 / 256 / 2,048 samples
 for our training, validation and test splits, respectively. The train and validation
-    splits are subsets of the original training split, while the test split is a subset
-    of the original test split.
+splits are subsets of the original training split, while the test split is a subset of
+the original test split.
 
 Here are a few examples from the training split:
 
@@ -179,13 +179,13 @@ euroeval --model <model-id> --dataset kpwr-ner
 ### ScaLA-pl
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Polish Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Polish-PDB) by assuming that the
-documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Polish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Polish-PDB)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original full dataset consists of 22,152 samples, from which we use 1,024 / 256 /
 2,048 samples for training, validation and testing, respectively.
@@ -194,22 +194,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Papierową śmierć zafundowaliśmy już kilku osobom.",
-    "label": "correct"
+  "text": "Papierową śmierć zafundowaliśmy już kilku osobom.",
+  "label": "correct"
 }
 ```
 
 ```json
 {
-    "text": "To tylko mały krok; znam doskonale jego rozmiar; jestem świadomy, że polityka nieustanny wysiłek, a kiedy jedno zadanie się kończy, zaraz znajdzie się następne.",
-    "label": "incorrect"
+  "text": "To tylko mały krok; znam doskonale jego rozmiar; jestem świadomy, że polityka nieustanny wysiłek, a kiedy jedno zadanie się kończy, zaraz znajdzie się następne.",
+  "label": "incorrect"
 }
 ```
 
 ```json
 {
-    "text": "Tutaj interesuje mnie etyczny kontekst transferu naukowej wiedzy psychologicznej z laboratorium badacza do sali wykładowej i laboratorium studenckiego - czynniki ułatwiające i utrudniające, ale lokowane na stosunkowo wysokim poziomie ogólności.",
-    "label": "incorrect"
+  "text": "Tutaj interesuje mnie etyczny kontekst transferu naukowej wiedzy psychologicznej z laboratorium badacza do sali wykładowej i laboratorium studenckiego - czynniki ułatwiające i utrudniające, ale lokowane na stosunkowo wysokim poziomie ogólności.",
+  "label": "incorrect"
 }
 ```
 
@@ -494,25 +494,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Proces tłumaczenia kodu źródłowego pisanego przez programistę na zrozumiały dla komputera kod maszynowy to\nOpcje:\na. kompilowanie.\nb. debugowanie.\nc. uruchamianie.\nd. implementowanie.",
-    "label": "a",
-    "subject": "Professional certification"
+  "text": "Proces tłumaczenia kodu źródłowego pisanego przez programistę na zrozumiały dla komputera kod maszynowy to\nOpcje:\na. kompilowanie.\nb. debugowanie.\nc. uruchamianie.\nd. implementowanie.",
+  "label": "a",
+  "subject": "Professional certification"
 }
 ```
 
 ```json
 {
-    "text": "Dane są punkty 𝐾 = (−3, −7) oraz 𝑆 = (5, 3). Punkt 𝑆 jest środkiem odcinka 𝐾𝐿. Wtedy punkt 𝐿 ma współrzędne\nOpcje:\na. (13, 10)\nb. (13, 13)\nc. (1, −2)\nd. (7, −1)",
-    "label": "b",
-    "subject": "Math"
+  "text": "Dane są punkty 𝐾 = (−3, −7) oraz 𝑆 = (5, 3). Punkt 𝑆 jest środkiem odcinka 𝐾𝐿. Wtedy punkt 𝐿 ma współrzędne\nOpcje:\na. (13, 10)\nb. (13, 13)\nc. (1, −2)\nd. (7, −1)",
+  "label": "b",
+  "subject": "Math"
 }
 ```
 
 ```json
 {
-    "text": "Przepisy konstytucji jednego z państw Art. 9. Prezydent […] przewodniczy Radzie Ministrów. Art. 21. Premier kieruje działalnością Rządu. […] Art. 24.1. Parlament uchwala ustawy. Kontroluje działalność Rządu.  Ocenia jego politykę. 2. Parlament składa się ze Zgromadzenia Narodowego i Senatu. 3. Deputowani do Zgromadzenia Narodowego […] są wybierani w wyborach bezpośrednich. 4. Senat […] wybierany jest w wyborach pośrednich. […] Art. 39.1. Inicjatywa ustawodawcza przysługuje zarówno Premierowi, jak i członkom Parlamentu. 2. Rządowe projekty ustaw są rozpatrywane przez Radę Ministrów […] i wnoszone do prezydium jednej z izb. […] Art. 45.1. Każdy rządowy lub parlamentarny projekt ustawy jest rozpatrywany kolejno przez obie izby Parlamentu w celu przyjęcia tekstu w tym samym brzmieniu. […] biblioteka.sejm.gov.pl (tekst uwzględniający zmiany z 23 lipca 2008 r.). Zaznacz nazwę państwa, z którego ustawy zasadniczej pochodzą przytoczone przepisy prawne.\nOpcje:\na. Republika Włoska\nb. Federacja Rosyjska\nc. Republika Francuska\nd. Stany Zjednoczone Ameryki",
-    "label": "c",
-    "subject": "Sociology"
+  "text": "Przepisy konstytucji jednego z państw Art. 9. Prezydent […] przewodniczy Radzie Ministrów. Art. 21. Premier kieruje działalnością Rządu. […] Art. 24.1. Parlament uchwala ustawy. Kontroluje działalność Rządu.  Ocenia jego politykę. 2. Parlament składa się ze Zgromadzenia Narodowego i Senatu. 3. Deputowani do Zgromadzenia Narodowego […] są wybierani w wyborach bezpośrednich. 4. Senat […] wybierany jest w wyborach pośrednich. […] Art. 39.1. Inicjatywa ustawodawcza przysługuje zarówno Premierowi, jak i członkom Parlamentu. 2. Rządowe projekty ustaw są rozpatrywane przez Radę Ministrów […] i wnoszone do prezydium jednej z izb. […] Art. 45.1. Każdy rządowy lub parlamentarny projekt ustawy jest rozpatrywany kolejno przez obie izby Parlamentu w celu przyjęcia tekstu w tym samym brzmieniu. […] biblioteka.sejm.gov.pl (tekst uwzględniający zmiany z 23 lipca 2008 r.). Zaznacz nazwę państwa, z którego ustawy zasadniczej pochodzą przytoczone przepisy prawne.\nOpcje:\na. Republika Włoska\nb. Federacja Rosyjska\nc. Republika Francuska\nd. Stany Zjednoczone Ameryki",
+  "label": "c",
+  "subject": "Sociology"
 }
 ```
 
@@ -552,8 +552,8 @@ euroeval --model <model-id> --dataset include-pl
 ### Winogrande-pl
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -621,13 +621,13 @@ euroeval --model <model-id> --dataset winogrande-pl
 
 ### Unofficial: GoldenSwag-pl
 
-This dataset is a filtered and machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
-ActivityNet as well as how-to articles from WikiHow. The machine translated version was
-published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
-DeepL, and the filtering was published in [this
-paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
-samples.
+This dataset is a filtered and machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video
+descriptions from ActivityNet as well as how-to articles from WikiHow. The machine
+translated version was published in
+[this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and
+the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825),
+which resulted in higher quality samples.
 
 The original full dataset consists of 1530 / 1530 samples for training and validation,
 respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
@@ -701,8 +701,8 @@ euroeval --model <model-id> --dataset goldenswag-pl
 
 ### PSC
 
-The Polish Summaries Corpus (PSC) was published in [this
-paper](https://aclanthology.org/L14-1145/) and is a resource created for automated
+The Polish Summaries Corpus (PSC) was published in
+[this paper](https://aclanthology.org/L14-1145/) and is a resource created for automated
 single-document summarization of Polish. The corpus contains manual summaries of news
 articles, with multiple independently created summaries for single texts to overcome
 annotator bias. It includes both abstract free-word summaries and extraction-based
@@ -771,10 +771,10 @@ euroeval --model <model-id> --dataset psc
 
 ### ValEU-pl
 
-This dataset is the official Polish version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official Polish version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU
@@ -843,4 +843,76 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset valeu-pl
+```
+
+## Instruction-following
+
+### MultiIFEval-pl
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-pl) and contains prompts
+each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Napisz podsumowanie artykułu z Wikipedii \"https://pl.wikipedia.org/wiki/Adam_Mickiewicz\" liczące co najmniej 300 słów. Nie używaj przecinków i wyróżnij co najmniej 3 sekcje z nagłówkami w formacie markdown, na przykład *wyróżniona sekcja część 1*, *wyróżniona sekcja część 2*, *wyróżniona sekcja część 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Planuję podróż do Japonii i chciałbym, abyś napisał plan podróży w stylu Shakespeare'\a. Nie wolno ci używać przecinków w odpowiedzi.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Napisz CV dla osoby, która właśnie ukończyła szkołę średnią i szuka swojej pierwszej pracy. Upewnij się, że zawiera ono co najmniej 12 symboli zastępczych w nawiasach kwadratowych, takich jak [adres], [imię].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-pl
 ```
