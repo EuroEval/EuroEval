@@ -18,11 +18,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   `unofficial` as the published Hugging Face versions are placeholder
   test-split-only snapshots awaiting full regeneration. This was contributed by
   @FrejaThoresen ✨
-- Added support for Luxembourgish! This includes the ltzGLUE benchmark datasets for
-  headline classification, intent detection, linguistic acceptability (binary and
-  multi-class), named entity recognition, textual entailment, sentiment analysis, and
-  topic classification. The MultiWikiQA-lb reading comprehension dataset is also
-  included.
 - Added Norwegian instruction-following datasets `ifeval-nb` (Bokmål) and `ifeval-nn`
   (Nynorsk), integrating the Norwegian splits of
   [MultiIFEval](https://huggingface.co/datasets/danish-foundation-models/multi-ifeval)
@@ -33,7 +28,13 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   are not miscounted as sentence boundaries; the existing
   `length_constraints:number_sentences` constraint is unchanged. Following MultiIFEval,
   the `language:response_language` constraint is left out for Norwegian, as language
-  detection cannot reliably separate Bokmål from Nynorsk.
+  detection cannot reliably separate Bokmål from Nynorsk. This was contributed by
+  @avalyset ✨
+- Added support for Luxembourgish! This includes the ltzGLUE benchmark datasets for
+  headline classification, intent detection, linguistic acceptability (binary and
+  multi-class), named entity recognition, textual entailment, sentiment analysis, and
+  topic classification. The MultiWikiQA-lb reading comprehension dataset is also
+  included.
 
 ### Fixed
 
