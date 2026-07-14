@@ -9,8 +9,8 @@ information about what these constitute.
 ### Sentipolc-16
 
 This dataset was published in [this paper](https://ceur-ws.org/Vol-1749/paper_026.pdf)
-and slightly modified in [this paper](https://aclanthology.org/2022.lrec-1.27).
-It is based on Italian tweets, which were manually annotated by three annotators.
+and slightly modified in [this paper](https://aclanthology.org/2022.lrec-1.27). It is
+based on Italian tweets, which were manually annotated by three annotators.
 
 The original full dataset consists of 1,839 / 324 / 870 samples, and we use a 1,024 /
 256 / 1,024 split for training, validation and testing, respectively. The splits are new
@@ -75,10 +75,10 @@ euroeval --model <model-id> --dataset sentipolc16
 
 ### MultiNERD IT
 
-This dataset was published in [this
-paper](https://aclanthology.org/2022.findings-naacl.60/) and consists of sentences from
-Wikipedia and Wikinews in 10 different languages. It is an extension of the combination
-of [WikiNEuRal](https://www.github.com/Babelscape/wikineural) and
+This dataset was published in
+[this paper](https://aclanthology.org/2022.findings-naacl.60/) and consists of sentences
+from Wikipedia and Wikinews in 10 different languages. It is an extension of the
+combination of [WikiNEuRal](https://www.github.com/Babelscape/wikineural) and
 [NER4EL](https://www.github.com/Babelscape/ner4el). The original test set was created
 from manual annotations, while the training set is based on an automatic annotation
 pipeline.
@@ -174,10 +174,10 @@ euroeval --model <model-id> --dataset multinerd-it
 
 ### Unofficial: WikiNEuRal IT
 
-This dataset was published in [this
-paper](https://aclanthology.org/2021.findings-emnlp.215) and
-consists of sentences from Wikipedia in 9 different languages. The annotations are
-automatic but at the time novel and state-of-the-art methodologies.
+This dataset was published in
+[this paper](https://aclanthology.org/2021.findings-emnlp.215) and consists of sentences
+from Wikipedia in 9 different languages. The annotations are automatic but at the time
+novel and state-of-the-art methodologies.
 
 The Italian part of the original dataset consists of 110,519 sentences, split into
 88,400 / 11,050 / 11,069 for training, validation, and testing respectively. We use
@@ -252,14 +252,14 @@ euroeval --model <model-id> --dataset wikineural-it
 
 ### ScaLA-it
 
-This dataset was published in [this paper](https://aclanthology.org/W13-2308/)
-is automatically created from the [Italian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Italian-ISDT) by assuming that
-the documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a
-word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
-that this does indeed break the grammaticality of the sentence, a set of rules were
-used on the part-of-speech tags of the words in the sentence.
+This dataset was published in [this paper](https://aclanthology.org/W13-2308/) is
+automatically created from the
+[Italian Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Italian-ISDT)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original full dataset consists of 13,121 / 564 / 482 samples for training,
 validation and testing, respectively. We use 512 / 128 / 1,024, sampled from a
@@ -328,13 +328,12 @@ euroeval --model <model-id> --dataset scala-it
 ### SQuAD-it
 
 This dataset is derived from the SQuAD 1.1 dataset and was published in
-[this paper](https://doi.org/10.1007/978-3-030-03840-3_29).
-The questions and answers were obtained through "semi-automatic" translation, using
-DeepL, of the SQuAD dataset to Italian. The dataset consists of 54,159 / 7,609
-question/answer pairs for training and test respectively. We use 1,024 / 256 / 2,048
-samples for training, validation, and testing, respectively. Our training split is a
-subset of the original training split, and our validation and testing splits are subsets
-of the original test split.
+[this paper](https://doi.org/10.1007/978-3-030-03840-3_29). The questions and answers
+were obtained through "semi-automatic" translation, using DeepL, of the SQuAD dataset to
+Italian. The dataset consists of 54,159 / 7,609 question/answer pairs for training and
+test respectively. We use 1,024 / 256 / 2,048 samples for training, validation, and
+testing, respectively. Our training split is a subset of the original training split,
+and our validation and testing splits are subsets of the original test split.
 
 Here are a few examples from the training split:
 
@@ -563,11 +562,11 @@ euroeval --model <model-id> --dataset multi-wiki-qa-it
 
 ### MMLU-it
 
-This dataset is a machine translated version of the English [MMLU
-dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions within 57
-different topics, such as elementary mathematics, US history and law. The translation to
-Italian was done by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[MMLU dataset](https://openreview.net/forum?id=d7KBjmI3GmQ) and features questions
+within 57 different topics, such as elementary mathematics, US history and law. The
+translation to Italian was done by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 269 / 1,410 / 13,200 samples for training,
 validation and testing, respectively. We use a 1,024 / 256 / 2,048 split for training,
@@ -655,25 +654,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Quale dei seguenti processi fisiologici distingue i vegetali dagli animali?\nScelte:\na. Fotosintesi\nb. Assorbimento di sostanze nutritive esogene\nc. Metabolismo anaerobico\nd. Fermentazione",
-    "label": "a",
-    "subject": "Medicine"
+  "text": "Quale dei seguenti processi fisiologici distingue i vegetali dagli animali?\nScelte:\na. Fotosintesi\nb. Assorbimento di sostanze nutritive esogene\nc. Metabolismo anaerobico\nd. Fermentazione",
+  "label": "a",
+  "subject": "Medicine"
 }
 ```
 
 ```json
 {
-    "text": "Kojoj religiji pripada učenje o četirima plemenitim istinama i osmerostrukome putu oslobođenja od patnje?\nScelte:\na. kršćanstvu\nb. budizmu\nc. islamu\nd. židovstvu",
-    "label": "b",
-    "subject": "Philosophy"
+  "text": "Kojoj religiji pripada učenje o četirima plemenitim istinama i osmerostrukome putu oslobođenja od patnje?\nScelte:\na. kršćanstvu\nb. budizmu\nc. islamu\nd. židovstvu",
+  "label": "b",
+  "subject": "Philosophy"
 }
 ```
 
 ```json
 {
-    "text": "Conclusione, interpretazione e adempimento del contratto - Adempimento del contratto   Può il creditore rifiutare l'adempimento parziale di una prestazione pecuniaria divisibile?\nScelte:\na. No, a meno che la prestazione principale sia eseguita con gli interessi e la rivalutazione monetaria\nb. No, se si oppone il coniuge del creditore in regime di comunione legale\nc. Sì, salvo che la legge e gli usi dispongano diversamente\nd. No, mai",
-    "label": "c",
-    "subject": "Professional certification"
+  "text": "Conclusione, interpretazione e adempimento del contratto - Adempimento del contratto   Può il creditore rifiutare l'adempimento parziale di una prestazione pecuniaria divisibile?\nScelte:\na. No, a meno che la prestazione principale sia eseguita con gli interessi e la rivalutazione monetaria\nb. No, se si oppone il coniuge del creditore in regime di comunione legale\nc. Sì, salvo che la legge e gli usi dispongano diversamente\nd. No, mai",
+  "label": "c",
+  "subject": "Professional certification"
 }
 ```
 
@@ -711,35 +710,35 @@ euroeval --model <model-id> --dataset include-it
 ### Unofficial: MultiLoKo-it
 
 This dataset was published in [this paper](https://arxiv.org/abs/2504.10356) and is part
-of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The Italian
-questions are separately sourced and designed to target locally relevant topics for
-Italian-speaking populations.
+of MultiLoKo, a multilingual local knowledge benchmark covering 31 languages. The
+Italian questions are separately sourced and designed to target locally relevant topics
+for Italian-speaking populations.
 
 We use the 'dev' split (250 samples) from this dataset. The dataset contains open-ended
-questions with correct answers in the 'targets' column. We use the first target answer as
-the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives per
-question. We create a 16 / 234 split for training and testing, respectively.
+questions with correct answers in the 'targets' column. We use the first target answer
+as the correct option and use GPT-4.1 to generate 3 plausible but incorrect alternatives
+per question. We create a 16 / 234 split for training and testing, respectively.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Per quale squadra Leonardo Pavoletti ha segnato 24 gol nel campionato di Serie A 2013-2014?\nScelte:\na. Città di Varese SSD a RL\nb. US Sassuolo Calcio\nc. AS Livorno Calcio\nd. Modena FC",
-    "label": "a"
+  "text": "Per quale squadra Leonardo Pavoletti ha segnato 24 gol nel campionato di Serie A 2013-2014?\nScelte:\na. Città di Varese SSD a RL\nb. US Sassuolo Calcio\nc. AS Livorno Calcio\nd. Modena FC",
+  "label": "a"
 }
 ```
 
 ```json
 {
-    "text": "Chi era il presidente dei Giallorossi nel 1932?\nScelte:\na. Francesco Marini Dettina\nb. Renato Sacerdoti\nc. Italo Foschi\nd. Piero Boldrini",
-    "label": "b"
+  "text": "Chi era il presidente dei Giallorossi nel 1932?\nScelte:\na. Francesco Marini Dettina\nb. Renato Sacerdoti\nc. Italo Foschi\nd. Piero Boldrini",
+  "label": "b"
 }
 ```
 
 ```json
 {
-    "text": "Quale è la candidatura di riconoscimento mondiale che Emma Marrone ha ricevuto durante la sua carriera musicale?\nScelte:\na. Grammy Award\nb. MTV Europe Music Award\nc. World Music Award\nd. Brit Award",
-    "label": "c"
+  "text": "Quale è la candidatura di riconoscimento mondiale che Emma Marrone ha ricevuto durante la sua carriera musicale?\nScelte:\na. Grammy Award\nb. MTV Europe Music Award\nc. World Music Award\nd. Brit Award",
+  "label": "c"
 }
 ```
 
@@ -778,11 +777,11 @@ euroeval --model <model-id> --dataset multiloko-it
 
 ### HellaSwag-it
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/). The original dataset was based on both
-video descriptions from ActivityNet as well as how-to articles from WikiHow. The dataset
-was translated by the University of Oregon as part of [this
-paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
+This dataset is a machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/). The original dataset was based
+on both video descriptions from ActivityNet as well as how-to articles from WikiHow. The
+dataset was translated by the University of Oregon as part of
+[this paper](https://aclanthology.org/2023.emnlp-demo.28/), using GPT-3.5-turbo.
 
 The original full dataset consists of 9,193 samples. We use a 1,024 / 256 / 2,048 split
 for training, validation and testing, respectively (so 3,328 samples used in total).
@@ -791,22 +790,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "[header] Come pulire il tappeto stainmaster [title] Aspirare lo sporco. [step] In primo luogo, si può rimuovere molta della sporcizia con un aspirapolvere. Poi, si possono affrontare le macchie rimanenti con sapone e acqua.\nScelte:\na. Quindi, iniziare a spolverare e aspirare. Non usare prodotti chimici aggressivi, come detergenti abrasivi, poiché questi possono causare la formazione di muffe sul tappeto.\nb. [substeps] Fai spolverare la superficie prima di aspirare. Puoi farlo con un panno in microfibra o una spazzola.\nc. [title] Usare sapone e acqua sulla macchia. [step] Mescolare acqua e ¼ di tazza (21 grammi) di sapone liquido in una bottiglia spray e poi spruzzare direttamente questa miscela sulla macchia.\nd. Cerca fango o macchie nere che puoi pulire localmente. [substeps] Se il tuo tappeto stainmaster non è pulito, potrebbe essere necessario pulirlo da un professionista.",
-    "label": "c"
+  "text": "[header] Come pulire il tappeto stainmaster [title] Aspirare lo sporco. [step] In primo luogo, si può rimuovere molta della sporcizia con un aspirapolvere. Poi, si possono affrontare le macchie rimanenti con sapone e acqua.\nScelte:\na. Quindi, iniziare a spolverare e aspirare. Non usare prodotti chimici aggressivi, come detergenti abrasivi, poiché questi possono causare la formazione di muffe sul tappeto.\nb. [substeps] Fai spolverare la superficie prima di aspirare. Puoi farlo con un panno in microfibra o una spazzola.\nc. [title] Usare sapone e acqua sulla macchia. [step] Mescolare acqua e ¼ di tazza (21 grammi) di sapone liquido in una bottiglia spray e poi spruzzare direttamente questa miscela sulla macchia.\nd. Cerca fango o macchie nere che puoi pulire localmente. [substeps] Se il tuo tappeto stainmaster non è pulito, potrebbe essere necessario pulirlo da un professionista.",
+  "label": "c"
 }
 ```
 
 ```json
 {
-    "text": "[header] Come sapere perché un bambino (sotto i 2 anni) sta piangendo [title] Ascolta il pianto forte, quasi un lamento. [step] Questo di solito significa \"ho dolore\" o \"sono malato\". Il bambino farà una pausa, poi urlerà di nuovo e ripeterà il processo.\nScelte:\na. Questo tipo di pianto è di solito solo un segnale di avvertimento della fame. Un bambino piangerà anche leggermente di più se ha fame.\nb. Questo può essere molto sconvolgente da guardare, quindi fai venire un genitore ad aiutare il bambino. [substeps] Solo un genitore può giudicare l'età del loro bambino.\nc. Questo di solito finirà dopo circa tre minuti. [title] Fai attenzione agli occhi chiusi del bambino.\nd. È persistente, penetrante e inequivocabile. Se senti questo pianto, vai immediatamente dal bambino.",
-    "label": "d"
+  "text": "[header] Come sapere perché un bambino (sotto i 2 anni) sta piangendo [title] Ascolta il pianto forte, quasi un lamento. [step] Questo di solito significa \"ho dolore\" o \"sono malato\". Il bambino farà una pausa, poi urlerà di nuovo e ripeterà il processo.\nScelte:\na. Questo tipo di pianto è di solito solo un segnale di avvertimento della fame. Un bambino piangerà anche leggermente di più se ha fame.\nb. Questo può essere molto sconvolgente da guardare, quindi fai venire un genitore ad aiutare il bambino. [substeps] Solo un genitore può giudicare l'età del loro bambino.\nc. Questo di solito finirà dopo circa tre minuti. [title] Fai attenzione agli occhi chiusi del bambino.\nd. È persistente, penetrante e inequivocabile. Se senti questo pianto, vai immediatamente dal bambino.",
+  "label": "d"
 }
 ```
 
 ```json
 {
-    "text": "Una donna mostra come asciugare la superficie del bancone e il lavandino dall'acqua schizzata dal rubinetto con un asciugamano di carta. una donna\nScelte:\na. mostra il suo metodo preparatorio meticoloso per il bancone e il pavimento sui quali applicherà un asciugamano.\nb. sta in cucina accanto al lavandino e parla alla telecamera.\nc. impugna un asciugamano di carta e inizia a pulire una bevanda appoggiata sulla superficie del bancone e del lavandino.\nd. sta di fronte ad un set di utensili sul bancone, prende un asciugacapelli con le sue parti accessorie fissate e sicure con una barra sul lavandino asciutto.",
-    "label": "b"
+  "text": "Una donna mostra come asciugare la superficie del bancone e il lavandino dall'acqua schizzata dal rubinetto con un asciugamano di carta. una donna\nScelte:\na. mostra il suo metodo preparatorio meticoloso per il bancone e il pavimento sui quali applicherà un asciugamano.\nb. sta in cucina accanto al lavandino e parla alla telecamera.\nc. impugna un asciugamano di carta e inizia a pulire una bevanda appoggiata sulla superficie del bancone e del lavandino.\nd. sta di fronte ad un set di utensili sul bancone, prende un asciugacapelli con le sue parti accessorie fissate e sicure con una barra sul lavandino asciutto.",
+  "label": "b"
 }
 ```
 
@@ -853,13 +852,13 @@ euroeval --model <model-id> --dataset hellaswag-it
 
 ### Unofficial: GoldenSwag-it
 
-This dataset is a filtered and machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
-ActivityNet as well as how-to articles from WikiHow. The machine translated version was
-published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
-DeepL, and the filtering was published in [this
-paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
-samples.
+This dataset is a filtered and machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video
+descriptions from ActivityNet as well as how-to articles from WikiHow. The machine
+translated version was published in
+[this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and
+the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825),
+which resulted in higher quality samples.
 
 The original full dataset consists of 1530 / 1530 samples for training and validation,
 respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
@@ -932,8 +931,8 @@ euroeval --model <model-id> --dataset goldenswag-it
 ### Unofficial: Winogrande-it
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -1007,9 +1006,9 @@ This dataset was published in [this paper](https://www.mdpi.com/2078-2489/13/5/2
 consists of news articles from [Il Post](https://www.ilpost.it/). The summaries were
 written by the journalists themselves (the "target" field in the original dataset).
 
-The original dataset consists of 35,201 / 4,400 / 4,400 samples for training,
-validation and testing, respectively. We use 1,024 / 256 / 2,048 samples for training,
-validation, and testing, respectively. All our splits are subsets of the original ones.
+The original dataset consists of 35,201 / 4,400 / 4,400 samples for training, validation
+and testing, respectively. We use 1,024 / 256 / 2,048 samples for training, validation,
+and testing, respectively. All our splits are subsets of the original ones.
 
 Here are a few examples from the training split:
 
@@ -1077,6 +1076,9 @@ for traceability, and kwargs keys are retained (with values localised where
 appropriate), so constraints can still be checked programmatically. Outputs are
 schema-validated; malformed or empty outputs were excluded.
 
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
 
@@ -1086,8 +1088,16 @@ Here are a few examples from the test split:
 {
   "text": "Scrivi un riassunto di oltre 300 parole sulla pagina Wikipedia dell'Altare di Sant'Ambrogio (https://it.wikipedia.org/wiki/Altare_di_Sant%27Ambrogio). Non utilizzare alcuna virgola ed evidenzia almeno 3 sezioni che abbiano titoli in formato markdown, ad esempio *parte della sezione evidenziata 1*, *parte della sezione evidenziata 2*, *parte della sezione evidenziata 3*.",
   "target_text": {
-    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
-    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
   }
 }
 ```
@@ -1107,7 +1117,7 @@ Here are a few examples from the test split:
   "text": "Scrivi un curriculum per un neodiplomato che sta cercando il suo primo lavoro. Assicurati di includere almeno 12 segnaposto rappresentati da parentesi quadre, come [indirizzo], [nome].",
   "target_text": {
     "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [{"num_placeholders": 12}]
+    "kwargs": [{ "num_placeholders": 12 }]
   }
 }
 ```
@@ -1134,12 +1144,11 @@ euroeval --model <model-id> --dataset multi-ifeval-it
 
 ### Unofficial: IFEval-it
 
-This dataset was published
-[here](https://huggingface.co/datasets/mii-llm/ifeval-ita) and is a
-translation of the English IFEval dataset, which was published in [this
-paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
-combination of one or more of 25 different constraints. The data was machine translated
-using Claude Opus.
+This dataset was published [here](https://huggingface.co/datasets/mii-llm/ifeval-ita)
+and is a translation of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each
+with a combination of one or more of 25 different constraints. The data was machine
+translated using Claude Opus.
 
 We use the original dataset as the test split, and do not include the other splits, as
 we only evaluate models zero-shot and the size is too small to warrant an even smaller
@@ -1149,55 +1158,49 @@ Here are a few examples from the test split:
 
 ```json
 {
-    "text": "Indica esattamente 3 nomi per un cane bianco e nero usando punti elenco come:\n* Punto elenco 1",
-    "target_text": {
-        "instruction_id_list": [
-            "detectable_format:number_bullet_lists"
-        ],
-        "kwargs": [
-            {
-                "num_bullets": 3
-            }
-        ]
-    }
+  "text": "Indica esattamente 3 nomi per un cane bianco e nero usando punti elenco come:\n* Punto elenco 1",
+  "target_text": {
+    "instruction_id_list": ["detectable_format:number_bullet_lists"],
+    "kwargs": [
+      {
+        "num_bullets": 3
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Cosa significa per te il termine \"atleta stereotipico\"? Si prega di fornire una risposta in due parti, separate da 3 asterischi '***'. Inoltre, si prega di rispondere senza utilizzare il termine \"atleta stereotipico\" nella risposta.",
-    "target_text": {
-        "instruction_id_list": [
-            "keywords:forbidden_words",
-            "length_constraints:number_paragraphs"
-        ],
-        "kwargs": [
-            {
-                "forbidden_words": [
-                    "atleta"
-                ]
-            },
-            {
-                "num_paragraphs": 2
-            }
-        ]
-    }
+  "text": "Cosa significa per te il termine \"atleta stereotipico\"? Si prega di fornire una risposta in due parti, separate da 3 asterischi '***'. Inoltre, si prega di rispondere senza utilizzare il termine \"atleta stereotipico\" nella risposta.",
+  "target_text": {
+    "instruction_id_list": [
+      "keywords:forbidden_words",
+      "length_constraints:number_paragraphs"
+    ],
+    "kwargs": [
+      {
+        "forbidden_words": ["atleta"]
+      },
+      {
+        "num_paragraphs": 2
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Nella frase \"Non è chiaro quanto di questo denaro venga realmente speso per i bambini\", il tono espresso è positivo o negativo? C'è qualcos'altro in cui posso esserti d'aiuto?",
-    "target_text": {
-        "instruction_id_list": [
-            "startend:end_checker"
-        ],
-        "kwargs": [
-            {
-                "end_phrase": "Is there anything else I can help with?"
-            }
-        ]
-    }
+  "text": "Nella frase \"Non è chiaro quanto di questo denaro venga realmente speso per i bambini\", il tono espresso è positivo o negativo? C'è qualcos'altro in cui posso esserti d'aiuto?",
+  "target_text": {
+    "instruction_id_list": ["startend:end_checker"],
+    "kwargs": [
+      {
+        "end_phrase": "Is there anything else I can help with?"
+      }
+    ]
+  }
 }
 ```
 
@@ -1225,10 +1228,10 @@ euroeval --model <model-id> --dataset ifeval-it
 
 ### ValEU-it
 
-This dataset is the official Italian version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official Italian version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU
@@ -1303,16 +1306,16 @@ euroeval --model <model-id> --dataset valeu-it
 
 ### Unofficial: WiC-ITA
 
-This dataset was published as part of [Evalita 2023](https://www.evalita.it/campaigns/evalita-2023/),
-the 8th evaluation campaign of Natural Language Processing and Speech tools for Italian.
-It is the first Word-in-Context task for Italian. The dataset measures the ability to
-distinguish word meanings/senses in context: given two sentences containing the same
-target word, the task is to determine whether the word carries the same sense in both
-sentences.
+This dataset was published as part of
+[Evalita 2023](https://www.evalita.it/campaigns/evalita-2023/), the 8th evaluation
+campaign of Natural Language Processing and Speech tools for Italian. It is the first
+Word-in-Context task for Italian. The dataset measures the ability to distinguish word
+meanings/senses in context: given two sentences containing the same target word, the
+task is to determine whether the word carries the same sense in both sentences.
 
 The original full dataset consists of 2,805 / 500 / 500 samples for training,
-development and testing, respectively. We use a split of 1,024 / 256 / 1,000 samples
-for training, validation and testing, respectively. The train and validation splits are
+development and testing, respectively. We use a split of 1,024 / 256 / 1,000 samples for
+training, validation and testing, respectively. The train and validation splits are
 sampled from the original training split (stratified on label), and the test split is
 the concatenation of the original development and test splits.
 
@@ -1320,15 +1323,15 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Parola: anno\nContesto 1: \" La comunità montana dell' Appennino cesenate ha davvero motivi di soddisfazione da questa giornata : da anni propone e chiede per il proprio territorio , la realizzazione delle autostrade della telematica .\nContesto 2: Ichem Kaba , direttore del Consiglio islamico italiano , appare soddisfatto della decisione presa dal Palazzo dei Bruzi : \" La comunità musulmana si riuniva da quattro anni in un piccolo vano di via Antonio Monaco .",
-    "label": "same_sense"
+  "text": "Parola: anno\nContesto 1: \" La comunità montana dell' Appennino cesenate ha davvero motivi di soddisfazione da questa giornata : da anni propone e chiede per il proprio territorio , la realizzazione delle autostrade della telematica .\nContesto 2: Ichem Kaba , direttore del Consiglio islamico italiano , appare soddisfatto della decisione presa dal Palazzo dei Bruzi : \" La comunità musulmana si riuniva da quattro anni in un piccolo vano di via Antonio Monaco .",
+  "label": "same_sense"
 }
 ```
 
 ```json
 {
-    "text": "Parola: buono\nContesto 1: Ho 25 anni , continuo a giocare ( meno di un tempo ) , sono quello dei \" pochi giochi ma buoni \" e gli amici ogni tanto mi prendono in giro .\nContesto 2: Anche a questa domanda Paolo risponde : non sia mai , anzi , il peccato , per apparire peccato , attraverso ciò che è buono mi produsse la morte per diventare estremamente peccante ( peccaminoso ) per mezzo del comandamento .",
-    "label": "different_sense"
+  "text": "Parola: buono\nContesto 1: Ho 25 anni , continuo a giocare ( meno di un tempo ) , sono quello dei \" pochi giochi ma buoni \" e gli amici ogni tanto mi prendono in giro .\nContesto 2: Anche a questa domanda Paolo risponde : non sia mai , anzi , il peccato , per apparire peccato , attraverso ciò che è buono mi produsse la morte per diventare estremamente peccante ( peccaminoso ) per mezzo del comandamento .",
+  "label": "different_sense"
 }
 ```
 

@@ -764,8 +764,10 @@ in that language provides contextual grounding to reduce hallucination and impro
 cultural localisation. The pipeline preserves instruction_id_list values for
 traceability to the original English samples, and retains kwargs keys with values
 localised where appropriate, enabling programmatic constraint verification. The dataset
-was published
-[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-hu).
+was published [here](https://huggingface.co/datasets/EuroEval/multi-ifeval-hu).
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
 
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.

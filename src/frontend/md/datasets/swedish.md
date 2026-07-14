@@ -1283,6 +1283,9 @@ for traceability, and kwargs keys are retained (with values localised where
 appropriate), so constraints can still be checked programmatically. Outputs are
 schema-validated; malformed or empty outputs were excluded.
 
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
 
@@ -1292,8 +1295,16 @@ Here are a few examples from the test split:
 {
   "text": "Skriv en sammanfattning på minst 300 ord av Wikipedia-sidan om \"https://sv.wikipedia.org/wiki/Raimund_III_av_Tripoli\". Använd inga kommatecken och markera minst 3 avsnitt som har rubriker i markdown-format, till exempel *markerat avsnitt del 1*, *markerat avsnitt del 2*, *markerat avsnitt del 3*.",
   "target_text": {
-    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
-    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
   }
 }
 ```
@@ -1313,7 +1324,7 @@ Here are a few examples from the test split:
   "text": "Skriv ett CV för en person som precis har gått ut gymnasiet och söker sitt första jobb. Se till att inkludera minst 12 platshållare representerade av hakparenteser, såsom [adress], [namn].",
   "target_text": {
     "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [{"num_placeholders": 12}]
+    "kwargs": [{ "num_placeholders": 12 }]
   }
 }
 ```

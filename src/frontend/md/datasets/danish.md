@@ -1880,11 +1880,14 @@ euroeval --model <model-id> --dataset ifeval-da
 
 This dataset is a translated and localised version of IFEval from the MultiIFEval
 benchmark, which covers 305 languages. It was generated using a structured LLM
-generation pipeline with target-language Wikipedia grounding to reduce hallucination
-and improve cultural localisation. Instruction IDs are preserved for traceability, and
+generation pipeline with target-language Wikipedia grounding to reduce hallucination and
+improve cultural localisation. Instruction IDs are preserved for traceability, and
 kwargs keys are retained (with values localised where appropriate), so constraints can
 still be checked programmatically. Outputs are schema-validated; malformed or empty
 outputs were excluded.
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
 
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
