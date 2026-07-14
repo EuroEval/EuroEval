@@ -86,6 +86,18 @@ MULTI_IFEVAL_DE_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+VALEU_DE_CONFIG = DatasetConfig(
+    name="valeu-de",
+    pretty_name="VaLEU-de",
+    source="EuroEval/european-values-de",
+    task=EUROPEAN_VALUES,
+    languages=[GERMAN],
+    train_split=None,
+    val_split=None,
+    bootstrap_samples=False,
+    instruction_prompt="{text}",
+)
+
 
 # Unofficial datasets ###
 
@@ -98,18 +110,6 @@ IFEVAL_DE_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     unofficial=True,
-)
-
-VALEU_DE_CONFIG = DatasetConfig(
-    name="valeu-de",
-    pretty_name="VaLEU-de",
-    source="EuroEval/european-values-de",
-    task=EUROPEAN_VALUES,
-    languages=[GERMAN],
-    train_split=None,
-    val_split=None,
-    bootstrap_samples=False,
-    instruction_prompt="{text}",
 )
 
 XQUAD_DE_CONFIG = DatasetConfig(

@@ -85,6 +85,18 @@ MULTI_IFEVAL_PT_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+VALEU_PT_CONFIG = DatasetConfig(
+    name="valeu-pt",
+    pretty_name="VaLEU-pt",
+    source="EuroEval/european-values-pt",
+    task=EUROPEAN_VALUES,
+    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
+    train_split=None,
+    val_split=None,
+    bootstrap_samples=False,
+    instruction_prompt="{text}",
+)
+
 
 # Unofficial datasets ###
 
@@ -97,18 +109,6 @@ IFEVAL_PT_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     unofficial=True,
-)
-
-VALEU_PT_CONFIG = DatasetConfig(
-    name="valeu-pt",
-    pretty_name="VaLEU-pt",
-    source="EuroEval/european-values-pt",
-    task=EUROPEAN_VALUES,
-    languages=[PORTUGUESE, EUROPEAN_PORTUGUESE],
-    train_split=None,
-    val_split=None,
-    bootstrap_samples=False,
-    instruction_prompt="{text}",
 )
 
 BOOLQ_PT_CONFIG = DatasetConfig(

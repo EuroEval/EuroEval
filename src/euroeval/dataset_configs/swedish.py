@@ -86,6 +86,18 @@ MULTI_IFEVAL_SV_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+VALEU_SV_CONFIG = DatasetConfig(
+    name="valeu-sv",
+    pretty_name="VaLEU-sv",
+    source="EuroEval/european-values-sv",
+    task=EUROPEAN_VALUES,
+    languages=[SWEDISH],
+    train_split=None,
+    val_split=None,
+    bootstrap_samples=False,
+    instruction_prompt="{text}",
+)
+
 
 # Unofficial datasets ###
 
@@ -98,18 +110,6 @@ IFEVAL_SV_CONFIG = DatasetConfig(
     train_split=None,
     val_split=None,
     unofficial=True,
-)
-
-VALEU_SV_CONFIG = DatasetConfig(
-    name="valeu-sv",
-    pretty_name="VaLEU-sv",
-    source="EuroEval/european-values-sv",
-    task=EUROPEAN_VALUES,
-    languages=[SWEDISH],
-    train_split=None,
-    val_split=None,
-    bootstrap_samples=False,
-    instruction_prompt="{text}",
 )
 
 SCHIBSTED_SV_CONFIG = DatasetConfig(

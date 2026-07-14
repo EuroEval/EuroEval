@@ -2617,17 +2617,17 @@ Here are a few examples from the test split:
 
 ```json
 {
-  "text": "Skriv en mal for en chatbot som tar brukerens posisjon og gir dem værmeldingen. Bruk bokstaven o som et nøkkelord i syntaksen til malen. Bokstaven o må forekomme minst 6 ganger. Svaret ditt skal inneholde færre enn 6 setninger. Uthev minst 2 tekstseksjoner, f.eks. *uthevet seksjon*.",
+  "text": "Skriv et sammendrag på over 300 ord av Wikipedia-siden om \"https://no.wikipedia.org/wiki/Raymond_III_av_Tripoli\". Ikke bruk noen kommaer og uthev minst 3 seksjoner som har titler i markdown-format for eksempel *uthevet seksjonsdel 1*, *uthevet seksjonsdel 2*, *uthevet seksjonsdel 3*.",
   "target_text": {
     "instruction_id_list": [
-      "keywords:letter_frequency",
-      "length_constraints:number_sentences_with_language",
-      "detectable_format:number_highlighted_sections"
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
     ],
     "kwargs": [
-      { "let_relation": "at least", "letter": "o", "let_frequency": 6 },
-      { "relation": "less than", "num_sentences": 6, "language": "norwegian" },
-      { "num_highlights": 2 }
+      {},
+      { "num_highlights": 3 },
+      { "relation": "at least", "num_words": 300 }
     ]
   }
 }
@@ -2690,17 +2690,17 @@ Here are a few examples from the test split:
 
 ```json
 {
-  "text": "Skriv ein mal for ein pratebot som tek imot lokasjonen til ein brukar og gjev dei vêrvarsel. Bruk bokstaven o som eit nøkkelord i syntaksen til malen. Bokstaven o må førekome minst 6 gonger. Svaret ditt skal innehalde færre enn 6 setningar. Uthev minst 2 tekstseksjonar, til dømes *utheva seksjon*.",
+  "text": "Skriv eit samandrag på minst 300 ord av Wikipedia-sida \"https://nn.wikipedia.org/wiki/Raymond_III_av_Tripoli\". Ikkje bruk noko form for komma og uthev minst 3 delar som har titlar i markdown-format, til dømes *utheva del 1*, *utheva del 2*, *utheva del 3*.",
   "target_text": {
     "instruction_id_list": [
-      "keywords:letter_frequency",
-      "length_constraints:number_sentences_with_language",
-      "detectable_format:number_highlighted_sections"
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
     ],
     "kwargs": [
-      { "let_relation": "at least", "letter": "o", "let_frequency": 6 },
-      { "relation": "less than", "num_sentences": 6, "language": "norwegian" },
-      { "num_highlights": 2 }
+      {},
+      { "num_highlights": 3 },
+      { "relation": "at least", "num_words": 300 }
     ]
   }
 }
