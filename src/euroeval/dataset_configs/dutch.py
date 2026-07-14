@@ -7,6 +7,7 @@ from ..tasks import (
     EUROPEAN_VALUES,
     GED,
     HALLU,
+    INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
     LOGIC,
@@ -97,6 +98,16 @@ VALEU_NL_CONFIG = DatasetConfig(
     val_split=None,
     bootstrap_samples=False,
     instruction_prompt="{text}",
+)
+
+MULTI_IFEVAL_NL_CONFIG = DatasetConfig(
+    name="multi-ifeval-nl",
+    pretty_name="MultiIFEval-nl",
+    source="EuroEval/multi-ifeval-nl",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[DUTCH],
+    train_split=None,
+    val_split=None,
 )
 
 MBBQ_NL_CONFIG = DatasetConfig(

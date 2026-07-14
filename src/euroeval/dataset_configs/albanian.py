@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import ALBANIAN
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -61,6 +71,16 @@ WINOGRANDE_SQ_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[ALBANIAN],
     labels=["a", "b"],
+)
+
+MULTI_IFEVAL_SQ_CONFIG = DatasetConfig(
+    name="multi-ifeval-sq",
+    pretty_name="MultiIFEval-sq",
+    source="EuroEval/multi-ifeval-sq",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ALBANIAN],
+    train_split=None,
+    val_split=None,
 )
 
 

@@ -2,7 +2,16 @@
 
 from ..data_models import DatasetConfig
 from ..languages import FAROESE
-from ..tasks import GED, HALLU, LA, LOGIC, NER, RC, SENT
+from ..tasks import (
+    GED,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    LA,
+    LOGIC,
+    NER,
+    RC,
+    SENT,
+)
 
 # Official datasets ###
 
@@ -37,6 +46,16 @@ FOQA_CONFIG = DatasetConfig(
     source="EuroEval/foqa",
     task=RC,
     languages=[FAROESE],
+)
+
+MULTI_IFEVAL_FO_CONFIG = DatasetConfig(
+    name="multi-ifeval-fo",
+    pretty_name="MultiIFEval-fo",
+    source="EuroEval/multi-ifeval-fo",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[FAROESE],
+    train_split=None,
+    val_split=None,
 )
 
 

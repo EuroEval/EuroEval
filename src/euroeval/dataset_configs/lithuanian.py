@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LITHUANIAN
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -61,6 +71,16 @@ WINOGRANDE_LT_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[LITHUANIAN],
     labels=["a", "b"],
+)
+
+MULTI_IFEVAL_LT_CONFIG = DatasetConfig(
+    name="multi-ifeval-lt",
+    pretty_name="MultiIFEval-lt",
+    source="EuroEval/multi-ifeval-lt",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[LITHUANIAN],
+    train_split=None,
+    val_split=None,
 )
 
 # Unofficial datasets ###

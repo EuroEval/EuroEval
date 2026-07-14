@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import HUNGARIAN
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -61,6 +71,16 @@ WINOGRANDE_HU_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[HUNGARIAN],
     labels=["a", "b"],
+)
+
+MULTI_IFEVAL_HU_CONFIG = DatasetConfig(
+    name="multi-ifeval-hu",
+    pretty_name="MultiIFEval-hu",
+    source="EuroEval/multi-ifeval-hu",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[HUNGARIAN],
+    train_split=None,
+    val_split=None,
 )
 
 

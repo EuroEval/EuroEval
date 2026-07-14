@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SERBIAN
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -61,6 +71,16 @@ WINOGRANDE_SR_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[SERBIAN],
     labels=["a", "b"],
+)
+
+MULTI_IFEVAL_SR_CONFIG = DatasetConfig(
+    name="multi-ifeval-sr",
+    pretty_name="MultiIFEval-sr",
+    source="EuroEval/multi-ifeval-sr",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[SERBIAN],
+    train_split=None,
+    val_split=None,
 )
 
 

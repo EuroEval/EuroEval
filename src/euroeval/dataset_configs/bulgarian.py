@@ -2,7 +2,16 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BULGARIAN
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+)
 
 # Official datasets ###
 
@@ -53,6 +62,16 @@ WINOGRANDE_BG_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[BULGARIAN],
     labels=["a", "b"],
+)
+
+MULTI_IFEVAL_BG_CONFIG = DatasetConfig(
+    name="multi-ifeval-bg",
+    pretty_name="MultiIFEval-bg",
+    source="EuroEval/multi-ifeval-bg",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[BULGARIAN],
+    train_split=None,
+    val_split=None,
 )
 
 

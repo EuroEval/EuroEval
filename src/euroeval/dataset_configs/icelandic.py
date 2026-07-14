@@ -7,6 +7,7 @@ from ..tasks import (
     EUROPEAN_VALUES,
     GED,
     HALLU,
+    INSTRUCTION_FOLLOWING,
     KNOW,
     LA,
     LOGIC,
@@ -74,6 +75,16 @@ WINOGRANDE_IS_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[ICELANDIC],
     labels=["a", "b"],
+)
+
+MULTI_IFEVAL_IS_CONFIG = DatasetConfig(
+    name="multi-ifeval-is",
+    pretty_name="MultiIFEval-is",
+    source="EuroEval/multi-ifeval-is",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ICELANDIC],
+    train_split=None,
+    val_split=None,
 )
 
 VALEU_IS_CONFIG = DatasetConfig(

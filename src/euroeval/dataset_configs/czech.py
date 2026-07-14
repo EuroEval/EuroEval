@@ -2,7 +2,17 @@
 
 from ..data_models import DatasetConfig
 from ..languages import CZECH
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -60,6 +70,16 @@ HELLASWAG_CS_CONFIG = DatasetConfig(
     source="EuroEval/hellaswag-cs-mini",
     task=COMMON_SENSE,
     languages=[CZECH],
+)
+
+MULTI_IFEVAL_CS_CONFIG = DatasetConfig(
+    name="multi-ifeval-cs",
+    pretty_name="MultiIFEval-cs",
+    source="EuroEval/multi-ifeval-cs",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[CZECH],
+    train_split=None,
+    val_split=None,
 )
 
 

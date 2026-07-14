@@ -2,7 +2,16 @@
 
 from ..data_models import DatasetConfig
 from ..languages import SLOVAK
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+)
 
 # Official datasets ###
 
@@ -52,6 +61,16 @@ WINOGRANDE_SK_CONFIG = DatasetConfig(
     source="EuroEval/winogrande-sk",
     task=COMMON_SENSE,
     languages=[SLOVAK],
+)
+
+MULTI_IFEVAL_SK_CONFIG = DatasetConfig(
+    name="multi-ifeval-sk",
+    pretty_name="MultiIFEval-sk",
+    source="EuroEval/multi-ifeval-sk",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[SLOVAK],
+    train_split=None,
+    val_split=None,
 )
 
 RAGTRUTH_SK_CONFIG = DatasetConfig(

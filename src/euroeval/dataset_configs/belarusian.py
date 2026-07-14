@@ -2,7 +2,15 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BELARUSIAN
-from ..tasks import COMMON_SENSE, HALLU, LA, NER, RC, SENT
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    LA,
+    NER,
+    RC,
+    SENT,
+)
 
 # Official datasets ###
 
@@ -44,6 +52,16 @@ BE_WSC_CONFIG = DatasetConfig(
     source="EuroEval/be-wsc",
     task=COMMON_SENSE,
     languages=[BELARUSIAN],
+)
+
+MULTI_IFEVAL_BE_CONFIG = DatasetConfig(
+    name="multi-ifeval-be",
+    pretty_name="MultiIFEval-be",
+    source="EuroEval/multi-ifeval-be",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[BELARUSIAN],
+    train_split=None,
+    val_split=None,
 )
 
 RAGTRUTH_BE_CONFIG = DatasetConfig(

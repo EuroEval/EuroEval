@@ -2,7 +2,15 @@
 
 from ..data_models import DatasetConfig
 from ..languages import LUXEMBOURGISH
-from ..tasks import LA, NER, NLI, RC, SENT, TEXT_CLASSIFICATION
+from ..tasks import (
+    INSTRUCTION_FOLLOWING,
+    LA,
+    NER,
+    NLI,
+    RC,
+    SENT,
+    TEXT_CLASSIFICATION,
+)
 
 # Official datasets ###
 
@@ -97,6 +105,16 @@ LTZGLUE_ID_CONFIG = DatasetConfig(
     prompt_template="Ufruff: {text}\nIntentioun: {label}",
     instruction_prompt="Ufruff: {text}\n\nIdentifizéiert d'Intentioun vum Benotzer. "
     "Äntwert nëmme mat engem vun dësen Etiketten: {labels_str}.",
+)
+
+MULTI_IFEVAL_LB_CONFIG = DatasetConfig(
+    name="multi-ifeval-lb",
+    pretty_name="MultiIFEval-lb",
+    source="EuroEval/multi-ifeval-lb",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[LUXEMBOURGISH],
+    train_split=None,
+    val_split=None,
 )
 
 # Unofficial datasets ###

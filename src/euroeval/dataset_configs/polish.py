@@ -2,7 +2,18 @@
 
 from ..data_models import DatasetConfig
 from ..languages import POLISH
-from ..tasks import COMMON_SENSE, EUROPEAN_VALUES, HALLU, KNOW, LA, NER, RC, SENT, SUMM
+from ..tasks import (
+    COMMON_SENSE,
+    EUROPEAN_VALUES,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+    SUMM,
+)
 
 # Official datasets ###
 
@@ -73,6 +84,16 @@ VALEU_PL_CONFIG = DatasetConfig(
     val_split=None,
     bootstrap_samples=False,
     instruction_prompt="{text}",
+)
+
+MULTI_IFEVAL_PL_CONFIG = DatasetConfig(
+    name="multi-ifeval-pl",
+    pretty_name="MultiIFEval-pl",
+    source="EuroEval/multi-ifeval-pl",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[POLISH],
+    train_split=None,
+    val_split=None,
 )
 
 

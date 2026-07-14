@@ -2,7 +2,16 @@
 
 from ..data_models import DatasetConfig
 from ..languages import CROATIAN
-from ..tasks import COMMON_SENSE, HALLU, KNOW, LA, NER, RC, SENT
+from ..tasks import (
+    COMMON_SENSE,
+    HALLU,
+    INSTRUCTION_FOLLOWING,
+    KNOW,
+    LA,
+    NER,
+    RC,
+    SENT,
+)
 
 # Official datasets ###
 
@@ -53,6 +62,16 @@ WINOGRANDE_HR_CONFIG = DatasetConfig(
     task=COMMON_SENSE,
     languages=[CROATIAN],
     labels=["a", "b"],
+)
+
+MULTI_IFEVAL_HR_CONFIG = DatasetConfig(
+    name="multi-ifeval-hr",
+    pretty_name="MultiIFEval-hr",
+    source="EuroEval/multi-ifeval-hr",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[CROATIAN],
+    train_split=None,
+    val_split=None,
 )
 
 
