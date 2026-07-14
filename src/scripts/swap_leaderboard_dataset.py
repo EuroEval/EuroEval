@@ -152,7 +152,7 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
 )
 @click.option(
     "--branch",
-    type=click.STRING | None,
+    type=click.STRING,
     default=None,
     help="Branch to do the work on. May not be the default branch (e.g. main). "
     "Defaults to 'feat/replace-<old-dataset>-with-<new-dataset>.'",
