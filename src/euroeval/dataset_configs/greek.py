@@ -73,10 +73,10 @@ WINOGRANDE_EL_CONFIG = DatasetConfig(
     languages=[GREEK],
 )
 
-MULTI_IFEVAL_EL_CONFIG = DatasetConfig(
-    name="multi-ifeval-el",
-    pretty_name="MultiIFEval-el",
-    source="EuroEval/multi-ifeval-el",
+IFEVAL_EL_CONFIG = DatasetConfig(
+    name="ifeval-el",
+    pretty_name="IFEval-el",
+    source="EuroEval/ifeval-el",
     task=INSTRUCTION_FOLLOWING,
     languages=[GREEK],
     train_split=None,
@@ -86,10 +86,10 @@ MULTI_IFEVAL_EL_CONFIG = DatasetConfig(
 
 # Unofficial datasets ###
 
-IFEVAL_EL_CONFIG = DatasetConfig(
-    name="ifeval-el",
-    pretty_name="IFEval-el",
-    source="EuroEval/ifeval-el",
+MULTI_IFEVAL_EL_CONFIG = DatasetConfig(
+    name="multi-ifeval-el",
+    pretty_name="MultiIFEval-el",
+    source="EuroEval/multi-ifeval-el",
     task=INSTRUCTION_FOLLOWING,
     languages=[GREEK],
     train_split=None,

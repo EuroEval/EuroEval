@@ -86,17 +86,6 @@ IFEVAL_FR_CONFIG = DatasetConfig(
     val_split=None,
 )
 
-MULTI_IFEVAL_FR_CONFIG = DatasetConfig(
-    name="multi-ifeval-fr",
-    pretty_name="MultiIFEval-fr",
-    source="EuroEval/multi-ifeval-fr",
-    task=INSTRUCTION_FOLLOWING,
-    languages=[FRENCH],
-    train_split=None,
-    val_split=None,
-    unofficial=True,
-)
-
 VALEU_FR_CONFIG = DatasetConfig(
     name="valeu-fr",
     pretty_name="VaLEU-fr",
@@ -111,6 +100,17 @@ VALEU_FR_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+MULTI_IFEVAL_FR_CONFIG = DatasetConfig(
+    name="multi-ifeval-fr",
+    pretty_name="MultiIFEval-fr",
+    source="EuroEval/multi-ifeval-fr",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[FRENCH],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
 
 BELEBELE_FR_CONFIG = DatasetConfig(
     name="belebele-fr",

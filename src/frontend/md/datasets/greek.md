@@ -652,69 +652,7 @@ euroeval --model <model-id> --dataset greek-wikipedia
 
 ## Instruction-following
 
-### MultiIFEval-el
-
-This dataset was published
-[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-el) and contains
-prompts each with a combination of one or more of 25 different constraints, verified
-programmatically rather than with a judge.
-
-We use the dataset as the test split, and do not include other splits, as we only
-evaluate models zero-shot and the size is too small to warrant a validation set.
-
-Here are a few examples from the test split:
-
-```json
-{
-  "text": "Γράψτε μια σύνοψη άνω των 300 λέξεων για τη σελίδα της Βικιπαίδειας \"https://el.wikipedia.org/wiki/Σαλβουταμόλη\". Μη χρησιμοποιήσετε καθόλου κόμματα και επισημάνετε τουλάχιστον 3 ενότητες που έχουν τίτλους σε μορφή markdown, για παράδειγμα *επισημασμένο μέρος ενότητας 1*, *επισημασμένο μέρος ενότητας 2*, *επισημασμένο μέρος ενότητας 3*.",
-  "target_text": {
-    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
-    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
-  }
-}
-```
-
-```json
-{
-  "text": "Σχεδιάζω ένα ταξίδι στην Ιαπωνία και θα ήθελα να μου γράψεις ένα δρομολόγιο για το ταξίδι μου σε Σαιξπηρικό ύφος. Δεν επιτρέπεται να χρησιμοποιήσεις καθόλου κόμματα στην απάντησή σου.",
-  "target_text": {
-    "instruction_id_list": ["punctuation:no_comma"],
-    "kwargs": [{}]
-  }
-}
-```
-
-```json
-{
-  "text": "Γράψτε ένα βιογραφικό σημείωμα για έναν απόφοιτο λυκείου χωρίς προϋπηρεσία που αναζητά την πρώτη του εργασία. Βεβαιωθείτε ότι περιλαμβάνετε τουλάχιστον 12 στοιχεία αντικατάστασης (placeholders) σε αγκύλες, όπως [διεύθυνση], [όνομα].",
-  "target_text": {
-    "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [{"num_placeholders": 12}]
-  }
-}
-```
-
-When evaluating generative models, we use the following setup (see the
-[methodology](/methodology) for more information on how these are used):
-
-- Number of few-shot examples: 0
-- No prefix prompt, as only instruction-tuned models are evaluated on this task.
-- No base prompt template, as only instruction-tuned models are evaluated on this task.
-- Instruction-tuned prompt template:
-
-  ```text
-  {text}
-  ```
-
-  I.e., we just use the instruction directly as the prompt.
-
-You can evaluate a model on this dataset as follows:
-
-```bash
-euroeval --model <model-id> --dataset multi-ifeval-el
-```
-
-### Unofficial: IFEval-el
+### IFEVAL-el
 
 This dataset was published [here](https://huggingface.co/datasets/ilsp/ifeval_greek)
 and is a translation of the English IFEval dataset, which was published in [this
@@ -794,4 +732,66 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset ifeval-el
+```
+
+### Unofficial: MultiIFEval-el
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-el) and contains
+prompts each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Γράψτε μια σύνοψη άνω των 300 λέξεων για τη σελίδα της Βικιπαίδειας \"https://el.wikipedia.org/wiki/Σαλβουταμόλη\". Μη χρησιμοποιήσετε καθόλου κόμματα και επισημάνετε τουλάχιστον 3 ενότητες που έχουν τίτλους σε μορφή markdown, για παράδειγμα *επισημασμένο μέρος ενότητας 1*, *επισημασμένο μέρος ενότητας 2*, *επισημασμένο μέρος ενότητας 3*.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
+    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+  }
+}
+```
+
+```json
+{
+  "text": "Σχεδιάζω ένα ταξίδι στην Ιαπωνία και θα ήθελα να μου γράψεις ένα δρομολόγιο για το ταξίδι μου σε Σαιξπηρικό ύφος. Δεν επιτρέπεται να χρησιμοποιήσεις καθόλου κόμματα στην απάντησή σου.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Γράψτε ένα βιογραφικό σημείωμα για έναν απόφοιτο λυκείου χωρίς προϋπηρεσία που αναζητά την πρώτη του εργασία. Βεβαιωθείτε ότι περιλαμβάνετε τουλάχιστον 12 στοιχεία αντικατάστασης (placeholders) σε αγκύλες, όπως [διεύθυνση], [όνομα].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{"num_placeholders": 12}]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-el
 ```

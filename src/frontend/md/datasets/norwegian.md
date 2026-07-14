@@ -2590,12 +2590,6 @@ programmatically rather than with a judge.
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
 
-The `number_sentences` constraint carries a `language` keyword argument set to
-`"norwegian"`, so it counts sentences with the Norwegian sentence tokenizer; the default
-English tokenizer over-counts Norwegian abbreviations such as `f.eks.` and `bl.a.`.
-Following MultiIFEval, the `language:response_language` constraint is left out for
-Norwegian, as language detection cannot reliably separate Bokmål from Nynorsk.
-
 Here are a few examples from the test split:
 
 ```json
@@ -2665,9 +2659,6 @@ programmatically rather than with a judge.
 
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
-
-As for MultiIFEval-nb, `number_sentences` carries `language: "norwegian"` (Norwegian
-sentence tokenizer), and `language:response_language` is left out.
 
 Here are a few examples from the test split:
 
