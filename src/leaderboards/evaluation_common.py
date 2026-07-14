@@ -264,7 +264,8 @@ def model_fits_locally(model_id: str, gpu_bytes: int | None) -> tuple[bool, int 
     needed = estimated_model_bytes(model_id=model_id)
     if needed is None:
         return True, None
-    return int(needed * GPU_FIT_OVERHEAD) <= gpu_bytes, needed
+    needed = int(needed * GPU_FIT_OVERHEAD)
+    return needed <= gpu_bytes, needed
 
 
 def estimated_model_bytes(model_id: str) -> int | None:
