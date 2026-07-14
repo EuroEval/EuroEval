@@ -242,6 +242,13 @@ A huge thank you to all the contributors who have helped make this project a suc
         alt="Contributor avatar for lswiers"
     />
 </a>
+<a href="https://github.com/avalyset">
+    <img
+        src="https://avatars.githubusercontent.com/u/207479962"
+        width=50
+        alt="Contributor avatar for avalyset"
+    />
+</a>
 
 ### Contribute to EuroEval
 
