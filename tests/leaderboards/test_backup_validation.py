@@ -10,10 +10,7 @@ from unittest.mock import patch
 import pytest
 
 from euroeval.jsonl_io import parse_jsonl_lines
-from leaderboards.backup import (
-    _validate_results,
-    backup_results,
-)
+from leaderboards.backup import _validate_results, backup_results
 from leaderboards.eee_validation import validate_eee_record
 
 
@@ -118,7 +115,7 @@ class TestValidateResultsRaw:
         model_file.write_text("not valid json\n", encoding="utf-8")
 
         with patch("leaderboards.backup.RESULTS_DIR", temp_results_dir):
-            with pytest.raises(ValueError, match="invalid JSON"):
+            with pytest.raises(ValueError, match="structural issues"):
                 _validate_results()
 
     def test_only_invalid_json_all_files_empty_fails(
@@ -132,7 +129,7 @@ class TestValidateResultsRaw:
         model_file.write_text("not valid json\n", encoding="utf-8")
 
         with patch("leaderboards.backup.RESULTS_DIR", temp_results_dir):
-            with pytest.raises(ValueError, match="invalid JSON"):
+            with pytest.raises(ValueError, match="structural issues"):
                 _validate_results()
 
     def test_missing_eee_envelope_fails(self, temp_results_dir: Path) -> None:
