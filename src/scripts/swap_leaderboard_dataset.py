@@ -656,18 +656,21 @@ def ranked_model_language_pairs(
             continue
 
         models_in_language = datasets_by_language.get(code, {})
+        # Compute the union of required datasets across all affected categories.
+        # A model must have all datasets that ANY affected category requires,
+        # ensuring it would have a rank score on the most restrictive leaderboard.
+        required: set[str] = set()
         for category in affected:
-            required = {
+            required |= {
                 dataset
                 for task, task_datasets in by_task.items()
                 if task not in ORTHOGONAL_TASKS
                 and category_includes_task(category=category, task=task)
                 for dataset in task_datasets
             }
-            required.discard(new_dataset)
-            required.add(old_dataset)
-            if not required:
-                continue
+        required.discard(new_dataset)
+        required.add(old_dataset)
+        if required:
             for model_id, datasets in models_in_language.items():
                 if required <= datasets:
                     ranked.add((model_id, code))
