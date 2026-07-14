@@ -59,6 +59,11 @@
     "train": 256,
     "val": 64
   },
+  "EuroEval/besls": {
+    "test": 1616,
+    "train": 256,
+    "val": 128
+  },
   "EuroEval/bfcl-v2": {
     "test": 2001,
     "train": 250,
@@ -684,6 +689,11 @@
     "train": 1024,
     "val": 256
   },
+  "EuroEval/multi-wiki-qa-be-mini": {
+    "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
   "EuroEval/multi-wiki-qa-bg-mini": {
     "test": 2048,
     "train": 1024,
@@ -876,6 +886,12 @@
   },
   "EuroEval/sb10k-mini": {
     "test": 1024,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/scala-be": {
+    "full_train": 22408,
+    "test": 2048,
     "train": 1024,
     "val": 256
   },
@@ -1169,6 +1185,11 @@
   },
   "EuroEval/wiki-lingua-nl-mini": {
     "test": 2048,
+    "train": 1024,
+    "val": 256
+  },
+  "EuroEval/wikiann-be-mini": {
+    "test": 1000,
     "train": 1024,
     "val": 256
   },
