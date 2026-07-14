@@ -1375,11 +1375,14 @@ euroeval --model <model-id> --dataset ifeval
 
 This dataset is a translated and localised version of IFEval from the MultiIFEval
 benchmark, which covers 305 languages. It was generated using a structured LLM
-generation pipeline with target-language Wikipedia grounding to reduce hallucination
-and improve cultural localisation. Instruction IDs are preserved for traceability, and
+generation pipeline with target-language Wikipedia grounding to reduce hallucination and
+improve cultural localisation. Instruction IDs are preserved for traceability, and
 kwargs keys are retained (with values localised where appropriate), so constraints can
 still be checked programmatically. Outputs are schema-validated; malformed or empty
 outputs were excluded.
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
 
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
@@ -1390,8 +1393,16 @@ Here are a few examples from the test split:
 {
   "text": "Write a 300+ word summary of the provided text about David Freese's 2011 World Series home run. Do not use any commas in your response and highlight at least 3 sections that have titles in markdown format, for example *highlighted section part 1*, *highlighted section part 2*, *highlighted section part 3*.",
   "target_text": {
-    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
-    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
   }
 }
 ```
@@ -1411,7 +1422,7 @@ Here are a few examples from the test split:
   "text": "Write a resume for a fresh high school graduate who is seeking their first job. Make sure to include at least 12 placeholder represented by square brackets, such as [address], [name].",
   "target_text": {
     "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [{"num_placeholders": 12}]
+    "kwargs": [{ "num_placeholders": 12 }]
   }
 }
 ```

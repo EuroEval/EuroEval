@@ -1134,6 +1134,9 @@ for traceability, and kwargs keys are retained (with values localised where
 appropriate), so constraints can still be checked programmatically. Outputs are
 schema-validated; malformed or empty outputs were excluded.
 
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
 
@@ -1143,8 +1146,16 @@ Here are a few examples from the test split:
 {
   "text": "Schreibe eine Zusammenfassung der Wikipedia-Seite \"https://de.wikipedia.org/wiki/Raimund_III._(Tripolis)\" mit mindestens 300 Wörtern. Verwende dabei keinerlei Kommas und hebe mindestens 3 Abschnitte, die Titel haben, im Markdown-Format hervor, zum Beispiel *hervorgehobener Abschnitt Teil 1*, *hervorgehobener Abschnitt Teil 2*, *hervorgehobener Abschnitt Teil 3*.",
   "target_text": {
-    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
-    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
   }
 }
 ```
@@ -1164,7 +1175,7 @@ Here are a few examples from the test split:
   "text": "Erstellen Sie einen Lebenslauf für einen frischgebackenen Schulabgänger, der sich um seinen ersten Job bewirbt. Achten Sie darauf, mindestens 12 Platzhalter in eckigen Klammern einzufügen, wie zum Beispiel [Name] oder [Adresse].",
   "target_text": {
     "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [{"num_placeholders": 12}]
+    "kwargs": [{ "num_placeholders": 12 }]
   }
 }
 ```

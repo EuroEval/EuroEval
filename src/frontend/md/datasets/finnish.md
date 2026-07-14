@@ -156,11 +156,11 @@ euroeval --model <model-id> --dataset turku-ner-fi
 ### ScaLA-fi
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Finnish Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Finnish-TDT/tree/master) by
-assuming that the documents in the treebank are correct, and corrupting the samples to
-create grammatically incorrect samples. The corruptions were done by either removing a
-word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+and was automatically created from the
+[Finnish Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Finnish-TDT/tree/master)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
 that this does indeed break the grammaticality of the sentence, a set of rules were used
 on the part-of-speech tags of the words in the sentence.
 
@@ -230,16 +230,16 @@ euroeval --model <model-id> --dataset scala-fi
 
 ### TydiQA-fi
 
-This question-answering dataset was published in [this
-paper](https://aclanthology.org/2020.tacl-1.30/). TydiQA is a multilingual dataset
+This question-answering dataset was published in
+[this paper](https://aclanthology.org/2020.tacl-1.30/). TydiQA is a multilingual dataset
 covering 11 typologically diverse languages with 204K question-answer pairs collected
 from native speakers genuinely seeking information. It was designed to evaluate models
 across languages with varied linguistic features and contains questions written directly
 in each language without translation.
 
 The original Finnish TydiQA dataset contains 6,855 training and 782 validation samples
-(we use the [secondary task
-subset](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train)).
+(we use the
+[secondary task subset](https://huggingface.co/datasets/google-research-datasets/tydiqa/viewer/secondary_task?views%5B%5D=secondary_task_train)).
 We created a 1,024 / 256 / 2,048 split, where the samples from the train and validation
 split are sampled from the original train and validation splits, respectively. The test
 set consists of the remaining samples from the original validation split + additional
@@ -252,7 +252,9 @@ Here are a few examples from the training split:
   "question": "Kuka näytteli Dumbledorea Harry Potter elokuvissa?",
   "context": "Dumbledorea esittää kirjasarjasta tehdyssä elokuvasarjassa Richard Harris kahdessa ensimmäisessä elokuvassa. Harrisin kuoltua Michael Gambon esitti hahmoa sarjan lopuissa elokuvissa.",
   "answers": {
-    "text": ["Richard Harris kahdessa ensimmäisessä elokuvassa. Harrisin kuoltua Michael Gambon"],
+    "text": [
+      "Richard Harris kahdessa ensimmäisessä elokuvassa. Harrisin kuoltua Michael Gambon"
+    ],
     "answer_start": [59]
   }
 }
@@ -486,25 +488,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Miten hermoimpulssin aikana tapahtuva K+-kanavien aukeaminen vaikuttaa hermosolun toimintaan?\nVastausvaihtoehdot:\na. Lepojännitteen palautuminen nopeutuu.\nb. Hermosolukalvon sähkönjohtavuus vähenee.\nc. Välittäjäaineen vapautuminen lisääntyy.\nd. Hermoimpulssin kesto pitenee.",
-    "label": "a",
-    "subject": "Medicine"
+  "text": "Miten hermoimpulssin aikana tapahtuva K+-kanavien aukeaminen vaikuttaa hermosolun toimintaan?\nVastausvaihtoehdot:\na. Lepojännitteen palautuminen nopeutuu.\nb. Hermosolukalvon sähkönjohtavuus vähenee.\nc. Välittäjäaineen vapautuminen lisääntyy.\nd. Hermoimpulssin kesto pitenee.",
+  "label": "a",
+  "subject": "Medicine"
 }
 ```
 
 ```json
 {
-    "text": "Mikä vaihtoehdoista ei kuulu hyvin toimivien markkinoiden synnyttämiin hyötyihin?\nVastausvaihtoehdot:\na. Hyvin toimivat markkinat mahdollistavat erikoistumisen.\nb. Hyvin toimivat markkinat takaavat että tulot jakautuvat oikeudenmukaisesti.\nc. Hyvin toimivat markkinat mahdollistavat skaalaetujen hyödyntämisen.\nd. Hyvin toimivat markkinat takaavat että resurssit kohdentuvat sinne missä ne tuottavat parhaiten.",
-    "label": "b",
-    "subject": "Economics"
+  "text": "Mikä vaihtoehdoista ei kuulu hyvin toimivien markkinoiden synnyttämiin hyötyihin?\nVastausvaihtoehdot:\na. Hyvin toimivat markkinat mahdollistavat erikoistumisen.\nb. Hyvin toimivat markkinat takaavat että tulot jakautuvat oikeudenmukaisesti.\nc. Hyvin toimivat markkinat mahdollistavat skaalaetujen hyödyntämisen.\nd. Hyvin toimivat markkinat takaavat että resurssit kohdentuvat sinne missä ne tuottavat parhaiten.",
+  "label": "b",
+  "subject": "Economics"
 }
 ```
 
 ```json
 {
-    "text": "Eräs professori totesi sijoittamisesta Viisas Raha -lehdessä 27.6.2023: ”Hajauttamisen laajuuteen vaikuttavat ennen kaikkea sijoittajan ikä ja riskinkantokyky. Mitä nuorempi henkilö ja pidempi sijoitushorisontti on kyseessä, sitä isommalla painolla voi olla mukana osakemarkkinoilla. Kun ikää tulee lisää, saattavat korkosijoitukset houkutella enemmän.” Mikä seuraavista väittämistä pitää paikkansa?\nVastausvaihtoehdot:\na. Hajauttamisella viitataan usein sanontaan laita kaikki munat samaan koriin. Maailman varakkaimmat henkilöt ovat tehneet juuri näin ja sen avulla luoneet suuria omaisuuksia.\nb. Perinteisten sijoitusperiaatteiden mukaan sijoitussalkun suhteellista riskiä kannattaa kasvattaa sijoittajan iän karttuessa. Selityksenä tähän on se, että palkka ja eläke yleensä nousevat iän myötä.\nc. Korkosijoituksia ovat esimerkiksi määräaikaiset talletukset, rahamarkkinarahastot ja obligaatiot. Riskiä pohtiessa kannattaa huomioida, että jo liikkeeseen lasketun kiinteäkorkoisen obligaation arvo laskee, jos korkotaso nousee.\nd. Riskinkantokyvyllä tarkoitetaan samaa kuin riskihalukkuudella. Mitä korkeampi riski, sitä korkeampi toteutunut tuotto.",
-    "label": "c",
-    "subject": "Economics"
+  "text": "Eräs professori totesi sijoittamisesta Viisas Raha -lehdessä 27.6.2023: ”Hajauttamisen laajuuteen vaikuttavat ennen kaikkea sijoittajan ikä ja riskinkantokyky. Mitä nuorempi henkilö ja pidempi sijoitushorisontti on kyseessä, sitä isommalla painolla voi olla mukana osakemarkkinoilla. Kun ikää tulee lisää, saattavat korkosijoitukset houkutella enemmän.” Mikä seuraavista väittämistä pitää paikkansa?\nVastausvaihtoehdot:\na. Hajauttamisella viitataan usein sanontaan laita kaikki munat samaan koriin. Maailman varakkaimmat henkilöt ovat tehneet juuri näin ja sen avulla luoneet suuria omaisuuksia.\nb. Perinteisten sijoitusperiaatteiden mukaan sijoitussalkun suhteellista riskiä kannattaa kasvattaa sijoittajan iän karttuessa. Selityksenä tähän on se, että palkka ja eläke yleensä nousevat iän myötä.\nc. Korkosijoituksia ovat esimerkiksi määräaikaiset talletukset, rahamarkkinarahastot ja obligaatiot. Riskiä pohtiessa kannattaa huomioida, että jo liikkeeseen lasketun kiinteäkorkoisen obligaation arvo laskee, jos korkotaso nousee.\nd. Riskinkantokyvyllä tarkoitetaan samaa kuin riskihalukkuudella. Mitä korkeampi riski, sitä korkeampi toteutunut tuotto.",
+  "label": "c",
+  "subject": "Economics"
 }
 ```
 
@@ -543,8 +545,8 @@ euroeval --model <model-id> --dataset include-fi
 
 ### HellaSwag-fi
 
-This dataset is a machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/). The
+This dataset is a machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/). The
 [dataset](https://huggingface.co/datasets/Finnish-NLP/hellaswag-fi-google-translate) was
 created by Finnish-NLP using Google Translate. The dataset is designed to be used in
 EuroEval and it therefore already has a 1,024 / 256 / 2,048 split for the train,
@@ -555,21 +557,21 @@ Here are a few examples from the training split:
 ```json
 {
   "text": "[Otsikko ] Tiikkihuonekalujen tahraus [vaihe] Pyyhi lika, pöly ja roskat pois. [vaihe] Voit harjata lian pois kuivalla paperipyyhkeellä tai liinalla. Jos puhdistettavia kohtia on sitkeämpiä, voit hieroa ne puhtaaksi kostealla rievulla.\nVastausvaihtoehdot:\na. [vaihe] Poista tahrat tiikistä pyyhkimällä ne kuivalla talouspaperilla. [vaihe] Noudata samoja puhdistustoimenpiteitä, joita käytit tahran kanssa.\nb. Aja niiden yli puhdistusaineella, kunnes tahra on poissa. [vaihe] Kokeile puupetsin ja öljyn yhdistelmää.\nc. [välivaiheet] Älä käytä puhdistusaineita. Saatat vahingoittaa puuta, mutta vaikeutat varmasti värjäysprosessia.\nd. Poista mahdollisimman paljon likaa levittämällä tahra kevyelle, pörröiselle liinalle tai kädelle ja pyyhkimällä se pois. [vaihe] Käytä hankaamiseen valkaisuainetta ja vettä.",
-  "label": "c",
+  "label": "c"
 }
 ```
 
 ```json
 {
   "text": "Pieni ryhmä ihmisiä nähdään uimassa altaan ympärillä ja johtaa useisiin laukauksiin, joissa uimari heittää pallon verkkoon. Maalivahti torjuu muutaman laukauksen ja vaihtaa sitten toisen joukkuetoverinsa kanssa yleisön hurraten. ihmisiä\nVastausvaihtoehdot:\na. cheer vielä kerran ja palaa uimaan uima-altaan ympärille.\nb. vaihda jatkuvasti pois ja johtaa siihen, että yksi joukkue voittaa ja juhlii kaikki yhdessä vedessä.\nc. Curra ja hyppää vuorotellen ylös ja eteenpäin pelaamalla biljardia.\nd. ensimmäinen video, jossa muut joukkuetoverit sukeltavat altaaseen ja hyppäävät ylös ja alas ponnahduslaudalla.",
-  "label": "b",
+  "label": "b"
 }
 ```
 
 ```json
 {
   "text": "Kahden ihmisen nähdään kävelevän pöytäjalkapallopöydän ympärillä pelaamassa. ihmisiä\nVastausvaihtoehdot:\na. pitäkää kupit ylös ja alakaa pelata peliä ja lyödä toisianne.\nb. Tartu sauvoista ja lyö palloa pöydän ympärillä.\nc. Jatka kävelemistä ja yksi henkilö lyö pallon verkon yli.\nd. siirrä ympäri pöytää heittäen palloa ympäriinsä, kun ihmiset katselevat sivuilla.",
-  "label": "b",
+  "label": "b"
 }
 ```
 
@@ -616,13 +618,13 @@ euroeval --model <model-id> --dataset hellaswag-fi
 
 ### Unofficial: GoldenSwag-fi
 
-This dataset is a filtered and machine translated version of the English [HellaSwag
-dataset](https://aclanthology.org/P19-1472/), featuring both video descriptions from
-ActivityNet as well as how-to articles from WikiHow. The machine translated version was
-published in [this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using
-DeepL, and the filtering was published in [this
-paper](https://doi.org/10.48550/arXiv.2504.07825), which resulted in higher quality
-samples.
+This dataset is a filtered and machine translated version of the English
+[HellaSwag dataset](https://aclanthology.org/P19-1472/), featuring both video
+descriptions from ActivityNet as well as how-to articles from WikiHow. The machine
+translated version was published in
+[this paper](https://doi.org/10.48550/arXiv.2410.08928) and was done using DeepL, and
+the filtering was published in [this paper](https://doi.org/10.48550/arXiv.2504.07825),
+which resulted in higher quality samples.
 
 The original full dataset consists of 1530 / 1530 samples for training and validation,
 respectively. However, they are exactly equal. We use a split of 660 / 256 / 2,048
@@ -695,8 +697,8 @@ euroeval --model <model-id> --dataset goldenswag-fi
 ### Unofficial: Winogrande-fi
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -843,6 +845,9 @@ for traceability, and kwargs keys are retained (with values localised where
 appropriate), so constraints can still be checked programmatically. Outputs are
 schema-validated; malformed or empty outputs were excluded.
 
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
 
@@ -852,8 +857,16 @@ Here are a few examples from the test split:
 {
   "text": "Kirjoita vähintään 300 sanan tiivistelmä Wikipedia-sivusta \"https://fi.wikipedia.org/wiki/Ivar_Hinz\". Älä käytä lainkaan pilkkuja ja korosta vähintään 3 otsikoitua osiota markdown-muodossa, esimerkiksi *korostettu osio osa 1*, *korostettu osio osa 2*, *korostettu osio osa 3*.",
   "target_text": {
-    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
-    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 300, "relation": "at least" }
+    ]
   }
 }
 ```
@@ -873,7 +886,7 @@ Here are a few examples from the test split:
   "text": "Kirjoita ansioluettelo vastavalmistuneelle lukiolaiselle, joka hakee ensimmäistä työpaikkaansa. Varmista, että sisällytät siihen vähintään 12 hakasulkeilla merkittyä paikkamerkkiä, kuten [osoite], [nimi].",
   "target_text": {
     "instruction_id_list": ["detectable_content:number_placeholders"],
-    "kwargs": [{"num_placeholders": 12}]
+    "kwargs": [{ "num_placeholders": 12 }]
   }
 }
 ```
@@ -901,9 +914,9 @@ euroeval --model <model-id> --dataset multi-ifeval-fi
 ### Unofficial: IFEval-fi
 
 This dataset was published [here](https://huggingface.co/datasets/LumiOpen/ifeval_mt)
-and is a translation of the English IFEval dataset, which was published in [this
-paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each with a
-combination of one or more of 25 different constraints. The dataset was machine
+and is a translation of the English IFEval dataset, which was published in
+[this paper](https://doi.org/10.48550/arXiv.2311.07911) and contains 541 prompts, each
+with a combination of one or more of 25 different constraints. The dataset was machine
 translated with DeepL and manually reviewed and corrected by native speakers.
 
 We use the original dataset as the test split, and do not include the other splits, as
@@ -914,71 +927,66 @@ Here are a few examples from the test split:
 
 ```json
 {
-    "text": "Työskentelen markkinointiosastolla ja tarvitsen apuasi. Tarvitsen mallin uuden tuotteen, kannettavan kameran, mainosta varten. Kirjoita mallissa muutama sana isolla alkukirjaimella pääkohtien korostamiseksi. Rajoita isoilla kirjaimilla kirjoitettujen sanojen määrä alle neljään. Vastauksesi tulisi sisältää vähintään kymmenen lausetta.",
-    "target_text": {
-        "instruction_id_list": [
-            "change_case:capital_word_frequency",
-            "length_constraints:number_sentences",
-            "language:response_language"
-        ],
-        "kwargs": [
-            {
-                "capital_frequency": 4,
-                "capital_relation": "less than"
-            },
-            {
-                "num_sentences": 10,
-                "relation": "at least"
-            },
-            {
-                "language": "fi"
-            }
-        ]
-    }
+  "text": "Työskentelen markkinointiosastolla ja tarvitsen apuasi. Tarvitsen mallin uuden tuotteen, kannettavan kameran, mainosta varten. Kirjoita mallissa muutama sana isolla alkukirjaimella pääkohtien korostamiseksi. Rajoita isoilla kirjaimilla kirjoitettujen sanojen määrä alle neljään. Vastauksesi tulisi sisältää vähintään kymmenen lausetta.",
+  "target_text": {
+    "instruction_id_list": [
+      "change_case:capital_word_frequency",
+      "length_constraints:number_sentences",
+      "language:response_language"
+    ],
+    "kwargs": [
+      {
+        "capital_frequency": 4,
+        "capital_relation": "less than"
+      },
+      {
+        "num_sentences": 10,
+        "relation": "at least"
+      },
+      {
+        "language": "fi"
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Luo mainoskopio laajentamalla \"Kulje 100 kilometriä litralla moottoritiellä\" QA:n muotoon oudolla tyylillä. Vastauksesi tulisi sisältää alle 8 lausetta. Älä sisällä vastauksessasi avainsanoja \"kilometrimäärä\" tai \"polttoaine\".",
-    "target_text": {
-        "instruction_id_list": [
-            "length_constraints:number_sentences",
-            "keywords:forbidden_words",
-            "language:response_language"
-        ],
-        "kwargs": [
-            {
-                "num_sentences": 8,
-                "relation": "less than"
-            },
-            {
-                "forbidden_words": [
-                    "kilometrimäärä",
-                    "polttoaine"
-                ],
-            },
-            {
-                "language": "fi"
-            }
-        ]
-    }
+  "text": "Luo mainoskopio laajentamalla \"Kulje 100 kilometriä litralla moottoritiellä\" QA:n muotoon oudolla tyylillä. Vastauksesi tulisi sisältää alle 8 lausetta. Älä sisällä vastauksessasi avainsanoja \"kilometrimäärä\" tai \"polttoaine\".",
+  "target_text": {
+    "instruction_id_list": [
+      "length_constraints:number_sentences",
+      "keywords:forbidden_words",
+      "language:response_language"
+    ],
+    "kwargs": [
+      {
+        "num_sentences": 8,
+        "relation": "less than"
+      },
+      {
+        "forbidden_words": ["kilometrimäärä", "polttoaine"]
+      },
+      {
+        "language": "fi"
+      }
+    ]
+  }
 }
 ```
 
 ```json
 {
-    "text": "Mitkä ovat hyviä ideoita aloittaville yrityksille? Kirjoita suomenkielinen runo tästä. Käytä vastauksessasi vain suomea, muita kieliä ei sallita.",
-    "target_text": {
-        "instruction_id_list": [
-            "language:response_language"
-        ],
-        "kwargs": [
-            {
-                "language": "fi"
-            }
-        ]
-    }
+  "text": "Mitkä ovat hyviä ideoita aloittaville yrityksille? Kirjoita suomenkielinen runo tästä. Käytä vastauksessasi vain suomea, muita kieliä ei sallita.",
+  "target_text": {
+    "instruction_id_list": ["language:response_language"],
+    "kwargs": [
+      {
+        "language": "fi"
+      }
+    ]
+  }
 }
 ```
 
@@ -1006,10 +1014,10 @@ euroeval --model <model-id> --dataset ifeval-fi
 
 ### ValEU-fi
 
-This dataset is the official Finnish version of questions from the [European values
-study](https://europeanvaluesstudy.eu/). The dataset contains multiple-choice
-questions regarding people's values and beliefs across a variety of topics, such as
-politics, religion and society.
+This dataset is the official Finnish version of questions from the
+[European values study](https://europeanvaluesstudy.eu/). The dataset contains
+multiple-choice questions regarding people's values and beliefs across a variety of
+topics, such as politics, religion and society.
 
 The dataset consists of 52 questions from the 2017-2022 wave of the European values
 study, where the questions were chosen based on optimising against agreement within EU

@@ -2590,6 +2590,9 @@ for traceability, and kwargs keys are retained (with values localised where
 appropriate), so constraints can still be checked programmatically. Outputs are
 schema-validated; malformed or empty outputs were excluded.
 
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
+
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
 
@@ -2662,6 +2665,9 @@ to reduce hallucination and improve cultural localisation. Instruction IDs are p
 for traceability, and kwargs keys are retained (with values localised where
 appropriate), so constraints can still be checked programmatically. Outputs are
 schema-validated; malformed or empty outputs were excluded.
+
+This dataset is part of the MultiIFEval benchmark introduced in
+[this draft paper](https://raw.githubusercontent.com/alexandrainst/multi_ifeval/refs/heads/feat/add-paper/paper/acl_latex.tex).
 
 We use the dataset as the test split, and do not include other splits, as we only
 evaluate models zero-shot and the size is too small to warrant a validation set.
