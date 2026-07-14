@@ -112,6 +112,7 @@ def generate_leaderboard(
 
         # Check if anything got updated
         new_records: list[str] = []
+        schema_changed = False
         # Exclude columns that change even when a model's own performance does
         # not, so that adding one new model doesn't flag nearly every existing
         # model as "updated":
@@ -140,48 +141,73 @@ def generate_leaderboard(
                 re.sub(r"<a href=['\"].*?['\"]>(.*?)</a>", r"\1", col)
                 for col in old_df.columns
             ]
-            # Compute common columns to use for comparison (avoids errors when
-            # schemas differ between old and new CSVs)
-            common_columns = [
-                col for col in comparison_columns if col in old_df.columns
+            # Identify new columns (in new df but not in old, excluding rank columns for
+            # schema change detection)
+            old_comparison_columns = [
+                col
+                for col in old_df.columns
+                if col.lower() != "rank"
+                and col not in rank_score_columns
+                and not col.endswith(("_version", "_failures", "_scored"))
             ]
-            # Proceed with model-by-model comparison regardless of schema changes.
-            # This avoids false positives where column set differences would
-            # incorrectly mark all models as updated.
+            new_columns = set(comparison_columns) - set(old_comparison_columns)
+            schema_changed = bool(new_columns)
+            # Compute common columns for score comparison (intersection)
+            common_columns = [
+                col for col in comparison_columns if col in old_comparison_columns
+            ]
+            # Compare models on common columns
             for model_id in set(df.Model.tolist() + old_df.Model.tolist()):
                 model_is_new = (
-                    model_id in df.Model.values
-                    and model_id not in old_df.Model.values
+                    model_id in df.Model.values and model_id not in old_df.Model.values
                 )
                 model_is_removed = (
-                    model_id in old_df.Model.values
-                    and model_id not in df.Model.values
+                    model_id in old_df.Model.values and model_id not in df.Model.values
                 )
                 if model_is_new or model_is_removed:
                     new_records.append(model_id)
                     continue
 
-                # Use common_columns to avoid errors when schemas differ
-                cols_to_compare = (
-                    common_columns if common_columns else comparison_columns
-                )
-                old_model_row = old_df[cols_to_compare].query(
-                    "Model == @model_id"
-                )
-                new_model_row = df[cols_to_compare].query("Model == @model_id")
+                # Compare on common columns only
+                old_model_row = old_df[common_columns].query("Model == @model_id")
+                new_model_row = df[common_columns].query("Model == @model_id")
                 # Convert to float where possible, keeping NaN for missing scores
                 old_model_results = old_model_row.map(convert_to_float)
                 new_model_results = new_model_row.map(convert_to_float)
                 # Fill NaN with sentinel for comparison (missing = missing is equal)
-                model_has_new_results = not (
+                model_has_changed_scores = not (
                     old_model_results.fillna(-999).equals(
                         new_model_results.fillna(-999)
                     )
                 )
-                if model_has_new_results:
+                if model_has_changed_scores:
                     new_records.append(model_id)
+
+            # Additionally, check if any existing model has scores in new columns
+            if new_columns:
+                for model_id in df.Model.tolist():
+                    if model_id in old_df.Model.values:
+                        # Check if this model has non-null values in any new column
+                        new_model_row = df[list(new_columns)].query(
+                            "Model == @model_id"
+                        )
+                        has_new_scores = (
+                            new_model_row.map(convert_to_float).notna().any().any()
+                        )  # type: ignore[attr-defined]
+                        if has_new_scores and model_id not in new_records:
+                            new_records.append(model_id)
         else:
             new_records = df.Model.tolist()
+
+        # Determine if file should be written: schema changed, models added/removed/
+        # modified, or force flag
+        should_write = bool(new_records) or schema_changed or force
+        if should_write and not new_records and schema_changed:
+            # Schema changed but no model scores changed; still a meaningful update
+            logger.info(
+                f"Updated the {category!r} category of the {leaderboard_title} "
+                "leaderboard with schema changes (new/removed columns)."
+            )
 
         # Remove anchor tags from model names
         new_records = [
@@ -189,7 +215,7 @@ def generate_leaderboard(
             for model in new_records
         ]
 
-        if new_records or force:
+        if should_write:
             top_header, second_header = create_leaderboard_headers(
                 df=df, leaderboard_configs=configs
             )
