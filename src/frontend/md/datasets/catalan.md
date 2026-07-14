@@ -539,6 +539,68 @@ euroeval --model <model-id> --dataset dacsa-ca
 
 ## Instruction-following
 
+### MultiIFEval-ca
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-ca) and contains
+prompts each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Escriu un resum de més de 300 paraules de la pàgina de la Viquipèdia \"https://ca.wikipedia.org/wiki/Ramon_III_de_Tr%C3%ADpols\". No utilitzis cap coma i ressalta almenys 3 seccions que tinguin títols en format markdown, per exemple *part de la secció ressaltada 1*, *part de la secció ressaltada 2*, *part de la secció ressaltada 3*.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
+    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+  }
+}
+```
+
+```json
+{
+  "text": "Estic planejant un viatge al Japó i m'agradaria que m'escriguessis un itinerari per a la meva travessia amb un estil shakespearià. No tens permès utilitzar cap coma en la teva resposta.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Escriu un currículum per a un graduat de secundària recent que busca la seva primera feina. Assegura't d'incloure almenys 12 marcadors de posició representats per claudàtors, com ara [adreça] o [nom].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{"num_placeholders": 12}]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-ca
+```
+
 ### IFEval-ca
 
 This dataset was published

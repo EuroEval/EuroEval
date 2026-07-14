@@ -1048,6 +1048,68 @@ euroeval --model <model-id> --dataset orange-sum
 
 ## Instruction-following
 
+### MultiIFEval-fr
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-fr) and contains
+prompts each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Rédigez un résumé de plus de 300 mots de la page Wikipédia \"https://fr.wikipedia.org/wiki/Raymond_III_de_Tripoli\". N'utilisez aucune virgule et mettez en évidence au moins 3 sections possédant des titres au format markdown, par exemple *partie mise en évidence 1*, *partie mise en évidence 2*, *partie mise en évidence 3*.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
+    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+  }
+}
+```
+
+```json
+{
+  "text": "Je prévois un voyage au Japon et j'aimerais que tu rédiges un itinéraire pour mon périple dans un style shakespearien. Tu n'as pas le droit d'utiliser de virgules dans ta réponse.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Rédigez un CV pour un jeune diplômé du baccalauréat qui recherche son premier emploi. Assurez-vous d'inclure au moins 12 espaces réservés représentés par des crochets, tels que [adresse], [nom].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{"num_placeholders": 12}]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-fr
+```
+
 ### IFEval-fr
 
 This dataset was published in [this

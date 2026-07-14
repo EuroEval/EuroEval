@@ -1124,6 +1124,68 @@ euroeval --model <model-id> --dataset mlsum-de
 
 ## Instruction-following
 
+### MultiIFEval-de
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-de) and contains
+prompts each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Schreibe eine Zusammenfassung der Wikipedia-Seite \"https://de.wikipedia.org/wiki/Raimund_III._(Tripolis)\" mit mindestens 300 Wörtern. Verwende dabei keinerlei Kommas und hebe mindestens 3 Abschnitte, die Titel haben, im Markdown-Format hervor, zum Beispiel *hervorgehobener Abschnitt Teil 1*, *hervorgehobener Abschnitt Teil 2*, *hervorgehobener Abschnitt Teil 3*.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
+    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+  }
+}
+```
+
+```json
+{
+  "text": "Ich plane eine Reise nach Japan und möchte, dass du mir einen Reiseplan für meine Reise in einem Shakespeare-Stil schreibst. Es ist dir nicht erlaubt, Kommas in deiner Antwort zu verwenden.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Erstellen Sie einen Lebenslauf für einen frischgebackenen Schulabgänger, der sich um seinen ersten Job bewirbt. Achten Sie darauf, mindestens 12 Platzhalter in eckigen Klammern einzufügen, wie zum Beispiel [Name] oder [Adresse].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{"num_placeholders": 12}]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-de
+```
+
 ### IFEval-de
 
 This dataset was published [here](https://huggingface.co/datasets/jzhang86/de_ifeval)

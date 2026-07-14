@@ -833,6 +833,68 @@ euroeval --model <model-id> --dataset xlsum-fi
 
 ## Instruction-following
 
+### MultiIFEval-fi
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-fi) and contains
+prompts each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Kirjoita vähintään 300 sanan tiivistelmä Wikipedia-sivusta \"https://fi.wikipedia.org/wiki/Ivar_Hinz\". Älä käytä lainkaan pilkkuja ja korosta vähintään 3 otsikoitua osiota markdown-muodossa, esimerkiksi *korostettu osio osa 1*, *korostettu osio osa 2*, *korostettu osio osa 3*.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma", "detectable_format:number_highlighted_sections", "length_constraints:number_words"],
+    "kwargs": [{}, {"num_highlights": 3}, {"num_words": 300, "relation": "at least"}]
+  }
+}
+```
+
+```json
+{
+  "text": "Suunnittelen matkaa Japaniin ja haluaisin sinun kirjoittavan matkasuunnitelman minulle Shakespearen tyyliin. Et saa käyttää vastauksessasi lainkaan pilkkuja.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Kirjoita ansioluettelo vastavalmistuneelle lukiolaiselle, joka hakee ensimmäistä työpaikkaansa. Varmista, että sisällytät siihen vähintään 12 hakasulkeilla merkittyä paikkamerkkiä, kuten [osoite], [nimi].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{"num_placeholders": 12}]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-fi
+```
+
 ### IFEval-fi
 
 This dataset was published [here](https://huggingface.co/datasets/LumiOpen/ifeval_mt)
