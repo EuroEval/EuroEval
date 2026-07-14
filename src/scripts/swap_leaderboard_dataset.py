@@ -153,7 +153,7 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     help="Branch to do the work on. May not be the default branch (e.g. main).",
 )
 @click.option(
-    "--include-api",
+    "--include-api/--no-include-api",
     is_flag=True,
     default=False,
     help="Opt in to evaluating API models. Without it they are skipped, so a "
@@ -174,18 +174,17 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     f"against. When omitted, defaults to {DEFAULT_GPU_MEMORY_UTILIZATION}.",
 )
 @click.option(
-    "--skip-eval",
+    "--skip-eval/--no-skip-eval",
     is_flag=True,
     default=False,
     help="Skip the evaluation phase and only perform the config/doc swap (useful "
     "when the evaluations already ran).",
 )
 @click.option(
-    "--pr",
+    "--pr/--no-pr",
     is_flag=True,
     default=True,
-    help="After swapping, commit and push the branch and open a pull request. "
-    "Default is True; pass --no-pr to skip.",
+    help="After swapping, commit and push the branch and open a pull request. ",
 )
 @click.option(
     "--reviewer",
@@ -194,14 +193,14 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     help="GitHub username to request as reviewer. Default is saattrupdan.",
 )
 @click.option(
-    "--force",
+    "--force/--no-force",
     is_flag=True,
     default=False,
     help="Re-run even (model, language) pairs that already have a new-dataset "
     "result line.",
 )
 @click.option(
-    "--dry-run",
+    "--dry-run/--no-dry-run",
     is_flag=True,
     default=False,
     help="Print the planned evaluations and file edits without running or "
