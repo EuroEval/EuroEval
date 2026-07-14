@@ -1129,7 +1129,7 @@ You can evaluate a model on this dataset as follows:
 euroeval --model <model-id> --dataset multi-ifeval-it
 ```
 
-### IFEval-it
+### Unofficial: IFEval-it
 
 This dataset was published
 [here](https://huggingface.co/datasets/mii-llm/ifeval-ita) and is a
@@ -1172,7 +1172,7 @@ Here are a few examples from the test split:
             {
                 "forbidden_words": [
                     "atleta"
-                ],
+                ]
             },
             {
                 "num_paragraphs": 2

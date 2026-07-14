@@ -1048,7 +1048,7 @@ euroeval --model <model-id> --dataset orange-sum
 
 ## Instruction-following
 
-### MultiIFEval-fr
+### Unofficial: MultiIFEval-fr
 
 This dataset was published
 [here](https://huggingface.co/datasets/EuroEval/multi-ifeval-fr) and contains

@@ -601,7 +601,7 @@ You can evaluate a model on this dataset as follows:
 euroeval --model <model-id> --dataset multi-ifeval-ca
 ```
 
-### IFEval-ca
+### Unofficial: IFEval-ca
 
 This dataset was published
 [here](https://huggingface.co/datasets/projecte-aina/IFEval_ca) and is a

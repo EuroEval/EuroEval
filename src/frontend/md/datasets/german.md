@@ -1186,7 +1186,7 @@ You can evaluate a model on this dataset as follows:
 euroeval --model <model-id> --dataset multi-ifeval-de
 ```
 
-### IFEval-de
+### Unofficial: IFEval-de
 
 This dataset was published [here](https://huggingface.co/datasets/jzhang86/de_ifeval)
 and is a translation of the English IFEval dataset, which was published in

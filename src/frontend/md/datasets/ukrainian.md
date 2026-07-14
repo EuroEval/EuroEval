@@ -654,7 +654,7 @@ You can evaluate a model on this dataset as follows:
 euroeval --model <model-id> --dataset multi-ifeval-uk
 ```
 
-### IFEval-uk
+### Unofficial: IFEval-uk
 
 This dataset was published
 [here](https://huggingface.co/datasets/INSAIT-Institute/ifeval_ukr) and is a
@@ -698,7 +698,7 @@ Here are a few examples from the test split:
             {
                 "forbidden_words": [
                     "heute"
-                ],
+                ]
             }
         ]
     }

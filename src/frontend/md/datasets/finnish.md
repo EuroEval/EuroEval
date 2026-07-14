@@ -895,7 +895,7 @@ You can evaluate a model on this dataset as follows:
 euroeval --model <model-id> --dataset multi-ifeval-fi
 ```
 
-### IFEval-fi
+### Unofficial: IFEval-fi
 
 This dataset was published [here](https://huggingface.co/datasets/LumiOpen/ifeval_mt)
 and is a translation of the English IFEval dataset, which was published in [this

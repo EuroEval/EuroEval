@@ -822,7 +822,7 @@ euroeval --model <model-id> --dataset err-news
 
 ## Instruction-following
 
-### MultiIFEval-et
+### Unofficial: MultiIFEval-et
 
 This dataset was published
 [here](https://huggingface.co/datasets/EuroEval/multi-ifeval-et) and contains
