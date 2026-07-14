@@ -279,6 +279,49 @@ def check_letter_frequency(response: str, **constraint_kwargs) -> bool:
     return counts[letter.lower()] >= let_frequency
 
 
+def _check_number_sentences(
+    response: str,
+    *,
+    num_sentences: int,
+    relation: str,
+    language: "t.Optional[str]" = None,
+) -> bool:
+    """Shared sentence-count check for the number_sentences constraints.
+
+    When ``language`` is given (an NLTK language name such as ``"english"`` or
+    ``"norwegian"``) the sentence count uses the matching Punkt model. This
+    matters because the default English tokenizer over-counts sentences in
+    languages whose abbreviations it does not know — e.g. Norwegian ``f.eks.``
+    and ``bl.a.`` are treated as sentence boundaries. Falls back to the default
+    model if the requested one is unavailable, so a missing resource degrades
+    gracefully rather than raising ``LookupError`` and aborting the eval.
+
+    Args:
+        response:
+            The response string to check.
+        num_sentences:
+            The threshold number of sentences.
+        relation:
+            The comparison relation (a less-than or at-least variant).
+        language:
+            Optional NLTK language name for the sentence tokenizer. If None, the
+            default tokenizer is used.
+
+    Returns:
+        True if the sentence count satisfies the relation, False otherwise.
+    """
+    if language is None:
+        actual = len(nltk.tokenize.sent_tokenize(text=response))
+    else:
+        try:
+            actual = len(nltk.tokenize.sent_tokenize(text=response, language=language))
+        except LookupError:
+            actual = len(nltk.tokenize.sent_tokenize(text=response))
+    if relation in {"less than", "moins de", "færre enn"}:
+        return actual < num_sentences
+    return actual >= num_sentences
+
+
 @register(
     "length_constraints:number_sentences",
     num_sentences=int,
@@ -300,7 +343,7 @@ def check_letter_frequency(response: str, **constraint_kwargs) -> bool:
     relation=t.Literal["less than", "at least"],
 )
 def check_number_sentences(response: str, **constraint_kwargs) -> bool:
-    """Check number of sentences.
+    """Check number of sentences (default sentence tokenizer).
 
     Args:
         response:
@@ -311,13 +354,44 @@ def check_number_sentences(response: str, **constraint_kwargs) -> bool:
     Returns:
         True if the sentence count satisfies the relation, False otherwise.
     """
-    num_sentences: int = constraint_kwargs["num_sentences"]
-    relation: str = constraint_kwargs["relation"]
+    return _check_number_sentences(
+        response,
+        num_sentences=constraint_kwargs["num_sentences"],
+        relation=constraint_kwargs["relation"],
+    )
 
-    actual = len(nltk.tokenize.sent_tokenize(text=response))
-    if relation in {"less than", "moins de"}:
-        return actual < num_sentences
-    return actual >= num_sentences
+
+@register(
+    "length_constraints:number_sentences_with_language",
+    num_sentences=int,
+    relation=t.Literal["less than", "at least", "færre enn"],
+    language=str,
+)
+def check_number_sentences_with_language(response: str, **constraint_kwargs) -> bool:
+    """Check number of sentences, selecting the sentence tokenizer by language.
+
+    Identical to :func:`check_number_sentences` but takes a required ``language``
+    NLTK name (e.g. ``"norwegian"``) so the count uses the matching Punkt model
+    instead of the default English one. Used by datasets whose language needs a
+    non-default tokenizer; older datasets keep using
+    ``length_constraints:number_sentences`` unchanged.
+
+    Args:
+        response:
+            The response string to check.
+        **constraint_kwargs:
+            Keyword arguments containing ``num_sentences``, ``relation`` and
+            ``language``.
+
+    Returns:
+        True if the sentence count satisfies the relation, False otherwise.
+    """
+    return _check_number_sentences(
+        response,
+        num_sentences=constraint_kwargs["num_sentences"],
+        relation=constraint_kwargs["relation"],
+        language=constraint_kwargs["language"],
+    )
 
 
 @register("length_constraints:number_paragraphs", num_paragraphs=int)
