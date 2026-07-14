@@ -15,12 +15,13 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
-import json
 import logging
 import random
 import sys
 import tarfile
 from pathlib import Path
+
+from euroeval.jsonl_io import parse_jsonl_lines
 
 from .constants import (
     BACKUP_ARCHIVE_ROOT,
@@ -29,7 +30,6 @@ from .constants import (
     BACKUP_SUFFIX,
     BACKUPS_DIR,
     BACKUPS_MAX_BYTES,
-    REQUIRED_METADATA_FIELDS,
     RESULTS_DIR,
 )
 
@@ -61,10 +61,13 @@ def restore_from_backup_if_missing(target: Path = RESULTS_DIR) -> bool:
 def backup_results(source: Path = RESULTS_DIR) -> Path | None:
     """Snapshot `source` into BACKUPS_DIR, then prune oldest if over cap.
 
-    Validates that results exist and have required metadata fields before
-    creating the backup. Skips if `source`'s contents are unchanged since the
-    newest existing backup, so repeated runs without changes don't fill the
-    backup directory.
+    Validates that results exist and have valid JSON structure before creating
+    the backup. Note: raw results may be missing the "precious" metadata fields
+    (commercially_licensed, open, trained_from_scratch); those are filled in
+    later by ``add_missing_entries`` and enforced for processed output only.
+
+    Skips if `source`'s contents are unchanged since the newest existing backup,
+    so repeated runs without changes don't fill the backup directory.
 
     Args:
         source:
@@ -199,17 +202,23 @@ def _extract_backup(archive: Path, dest: Path) -> None:
 
 
 def _validate_results() -> None:
-    """Validate that results exist and have required metadata.
+    """Validate that results exist and have valid JSON structure.
 
     Checks that:
     1. RESULTS_DIR exists and contains .jsonl files
-    2. Sample files (up to 5) are checked for required metadata fields
+    2. Sample files (up to 5) contain valid JSON with EEE envelope structure
+
+    This validation is intentionally light: raw results synced from the HF
+    bucket may be missing the "precious" metadata fields
+    (commercially_licensed, open, trained_from_scratch). Those fields are
+    filled in later by ``add_missing_entries`` and enforced when processed
+    results are written out by ``dump_jsonl_records``.
 
     Raises:
         FileNotFoundError:
             If RESULTS_DIR doesn't exist or contains no files.
         ValueError:
-            If any result is missing required metadata fields.
+            If any result is malformed JSON or lacks EEE envelope structure.
     """
     if not RESULTS_DIR.exists():
         raise FileNotFoundError(
@@ -230,7 +239,7 @@ def _validate_results() -> None:
 
     logger.info(
         f"Validating {sample_size} sampled result files (of {len(model_files):,} total)"
-        f" for required metadata fields: {REQUIRED_METADATA_FIELDS}"
+        " for valid JSON and EEE envelope structure"
     )
 
     files_with_issues = 0
@@ -240,32 +249,23 @@ def _validate_results() -> None:
     for model_file in sampled_files:
         file_has_issues = False
         try:
-            with model_file.open("r", encoding="utf-8") as f:
-                for line_num, line in enumerate(f, 1):
-                    if not line.strip():
-                        continue
-                    records_checked += 1
-                    record = json.loads(line)
+            content = model_file.read_text(encoding="utf-8")
+            lines = content.splitlines()
+            records = parse_jsonl_lines(
+                lines=lines, source=str(model_file), strict=False
+            )
 
-                    # Check for required metadata fields
-                    additional = record.get("model_info", {}).get(
-                        "additional_details", {}
+            for record in records:
+                records_checked += 1
+                # Validate EEE envelope structure (required for all records)
+                if not _is_valid_eee_envelope(record):
+                    model_id = record.get("model_info", {}).get("name", "unknown")
+                    logger.error(
+                        f"Missing EEE envelope in {model_file.name}, model '{model_id}'"
                     )
-                    for field in REQUIRED_METADATA_FIELDS:
-                        if field not in additional:
-                            model_id = record.get("model_info", {}).get(
-                                "name", "unknown"
-                            )
-                            logger.error(
-                                f"Missing '{field}' in {model_file.name}, line "
-                                f"{line_num}, model '{model_id}'"
-                            )
-                            file_has_issues = True
-                            records_with_issues += 1
+                    file_has_issues = True
+                    records_with_issues += 1
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in {model_file.name}: {e}")
-            file_has_issues = True
         except Exception as e:
             logger.error(f"Failed to read {model_file.name}: {e}")
             file_has_issues = True
@@ -275,16 +275,33 @@ def _validate_results() -> None:
 
     if files_with_issues > 0:
         msg = (
-            f"{files_with_issues} sampled files have missing metadata. Checked "
+            f"{files_with_issues} sampled files have structural issues. Checked "
             f"{records_checked:,} records, found {records_with_issues:,} with issues. "
-            f"Required: {REQUIRED_METADATA_FIELDS}. Re-run evaluation with "
-            f"metadata collection enabled."
+            "Re-run evaluation to regenerate results."
         )
         raise ValueError(msg)
 
     logger.info(
         f"Validated {records_checked:,} records from {len(sampled_files):,} sampled"
-        f" files - all have required metadata fields"
+        f" files - all have valid JSON and EEE structure"
+    )
+
+
+def _is_valid_eee_envelope(record: dict) -> bool:
+    """Check if a record has the EEE envelope structure.
+
+    Args:
+        record:
+            Record to check.
+
+    Returns:
+        True if the record has the required EEE top-level structures.
+    """
+    return (
+        "schema_version" in record
+        and isinstance(record.get("model_info"), dict)
+        and isinstance(record.get("eval_library"), dict)
+        and isinstance(record.get("evaluation_results"), list)
     )
 
 
