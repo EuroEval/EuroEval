@@ -73,16 +73,6 @@ WINOGRANDE_UK_CONFIG = DatasetConfig(
     labels=["a", "b"],
 )
 
-IFEVAL_UK_CONFIG = DatasetConfig(
-    name="ifeval-uk",
-    pretty_name="IFEval-uk",
-    source="EuroEval/ifeval-uk",
-    task=INSTRUCTION_FOLLOWING,
-    languages=[UKRAINIAN],
-    train_split=None,
-    val_split=None,
-)
-
 MULTI_IFEVAL_UK_CONFIG = DatasetConfig(
     name="multi-ifeval-uk",
     pretty_name="MultiIFEval-uk",
@@ -95,6 +85,17 @@ MULTI_IFEVAL_UK_CONFIG = DatasetConfig(
 
 
 # Unofficial datasets ###
+
+IFEVAL_UK_CONFIG = DatasetConfig(
+    name="ifeval-uk",
+    pretty_name="IFEval-uk",
+    source="EuroEval/ifeval-uk",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[UKRAINIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)
 
 INCLUDE_UK_CONFIG = DatasetConfig(
     name="include-uk",

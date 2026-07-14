@@ -76,16 +76,6 @@ HELLASWAG_DE_CONFIG = DatasetConfig(
     languages=[GERMAN],
 )
 
-IFEVAL_DE_CONFIG = DatasetConfig(
-    name="ifeval-de",
-    pretty_name="IFEval-de",
-    source="EuroEval/ifeval-de",
-    task=INSTRUCTION_FOLLOWING,
-    languages=[GERMAN],
-    train_split=None,
-    val_split=None,
-)
-
 MULTI_IFEVAL_DE_CONFIG = DatasetConfig(
     name="multi-ifeval-de",
     pretty_name="MultiIFEval-de",
@@ -94,6 +84,20 @@ MULTI_IFEVAL_DE_CONFIG = DatasetConfig(
     languages=[GERMAN],
     train_split=None,
     val_split=None,
+)
+
+
+# Unofficial datasets ###
+
+IFEVAL_DE_CONFIG = DatasetConfig(
+    name="ifeval-de",
+    pretty_name="IFEval-de",
+    source="EuroEval/ifeval-de",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[GERMAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
 )
 
 VALEU_DE_CONFIG = DatasetConfig(
@@ -107,9 +111,6 @@ VALEU_DE_CONFIG = DatasetConfig(
     bootstrap_samples=False,
     instruction_prompt="{text}",
 )
-
-
-# Unofficial datasets ###
 
 XQUAD_DE_CONFIG = DatasetConfig(
     name="xquad-de",

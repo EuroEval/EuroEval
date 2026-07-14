@@ -2,14 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import BOSNIAN
-from ..tasks import (
-    HALLU,
-    INSTRUCTION_FOLLOWING,
-    NER,
-    RC,
-    SENT,
-    SUMM,
-)
+from ..tasks import HALLU, INSTRUCTION_FOLLOWING, NER, RC, SENT, SUMM
 
 # Official datasets ###
 

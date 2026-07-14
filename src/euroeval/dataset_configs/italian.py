@@ -75,16 +75,6 @@ HELLASWAG_IT_CONFIG = DatasetConfig(
     languages=[ITALIAN],
 )
 
-IFEVAL_IT_CONFIG = DatasetConfig(
-    name="ifeval-it",
-    pretty_name="IFEval-it",
-    source="EuroEval/ifeval-it",
-    task=INSTRUCTION_FOLLOWING,
-    languages=[ITALIAN],
-    train_split=None,
-    val_split=None,
-)
-
 MULTI_IFEVAL_IT_CONFIG = DatasetConfig(
     name="multi-ifeval-it",
     pretty_name="MultiIFEval-it",
@@ -93,6 +83,20 @@ MULTI_IFEVAL_IT_CONFIG = DatasetConfig(
     languages=[ITALIAN],
     train_split=None,
     val_split=None,
+)
+
+
+# Unofficial datasets ###
+
+IFEVAL_IT_CONFIG = DatasetConfig(
+    name="ifeval-it",
+    pretty_name="IFEval-it",
+    source="EuroEval/ifeval-it",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ITALIAN],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
 )
 
 VALEU_IT_CONFIG = DatasetConfig(
@@ -106,9 +110,6 @@ VALEU_IT_CONFIG = DatasetConfig(
     bootstrap_samples=False,
     instruction_prompt="{text}",
 )
-
-
-# Unofficial datasets ###
 
 WIKINEURAL_IT_CONFIG = DatasetConfig(
     name="wikineural-it",

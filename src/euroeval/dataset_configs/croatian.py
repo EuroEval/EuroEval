@@ -2,16 +2,7 @@
 
 from ..data_models import DatasetConfig
 from ..languages import CROATIAN
-from ..tasks import (
-    COMMON_SENSE,
-    HALLU,
-    INSTRUCTION_FOLLOWING,
-    KNOW,
-    LA,
-    NER,
-    RC,
-    SENT,
-)
+from ..tasks import COMMON_SENSE, HALLU, INSTRUCTION_FOLLOWING, KNOW, LA, NER, RC, SENT
 
 # Official datasets ###
 

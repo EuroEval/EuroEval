@@ -94,6 +94,7 @@ MULTI_IFEVAL_FR_CONFIG = DatasetConfig(
     languages=[FRENCH],
     train_split=None,
     val_split=None,
+    unofficial=True,
 )
 
 VALEU_FR_CONFIG = DatasetConfig(

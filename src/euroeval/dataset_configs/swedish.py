@@ -76,16 +76,6 @@ HELLASWAG_SV_CONFIG = DatasetConfig(
     languages=[SWEDISH],
 )
 
-IFEVAL_SV_CONFIG = DatasetConfig(
-    name="ifeval-sv",
-    pretty_name="IFEval-sv",
-    source="EuroEval/ifeval-sv",
-    task=INSTRUCTION_FOLLOWING,
-    languages=[SWEDISH],
-    train_split=None,
-    val_split=None,
-)
-
 MULTI_IFEVAL_SV_CONFIG = DatasetConfig(
     name="multi-ifeval-sv",
     pretty_name="MultiIFEval-sv",
@@ -94,6 +84,20 @@ MULTI_IFEVAL_SV_CONFIG = DatasetConfig(
     languages=[SWEDISH],
     train_split=None,
     val_split=None,
+)
+
+
+# Unofficial datasets ###
+
+IFEVAL_SV_CONFIG = DatasetConfig(
+    name="ifeval-sv",
+    pretty_name="IFEval-sv",
+    source="EuroEval/ifeval-sv",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[SWEDISH],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
 )
 
 VALEU_SV_CONFIG = DatasetConfig(
@@ -107,9 +111,6 @@ VALEU_SV_CONFIG = DatasetConfig(
     bootstrap_samples=False,
     instruction_prompt="{text}",
 )
-
-
-# Unofficial datasets ###
 
 SCHIBSTED_SV_CONFIG = DatasetConfig(
     name="schibsted-sv",
