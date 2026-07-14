@@ -58,6 +58,7 @@ def run_euroeval(
     trust_remote_code: bool = True,
     clear_model_cache: bool = True,
     gpu_memory_utilization: float | None = None,
+    stream_output: bool = True,
 ) -> tuple[int, str]:
     """Run the euroeval CLI for the given model, languages, and datasets.
 
@@ -87,6 +88,11 @@ def run_euroeval(
             When set, pass ``--gpu-memory-utilization VALUE``. When None,
             omit the flag so the euroeval CLI's default applies. Defaults
             to None.
+        stream_output (optional):
+            When True, stream subprocess output live to stderr and force
+            ``FULL_LOG=1`` for maximum verbosity. When False, suppress
+            terminal output (subprocess writes go to /dev/null) and leave
+            verbosity at the CLI default. Defaults to True.
 
     Returns:
         A ``(returncode, combined_output)`` pair. A returncode of 127
@@ -108,14 +114,21 @@ def run_euroeval(
         cmd += ["--dataset", dataset]
     if gpu_memory_utilization is not None:
         cmd += ["--gpu-memory-utilization", str(gpu_memory_utilization)]
-    logger.info(f"Running: {' '.join(cmd)}")
+    if stream_output:
+        logger.info(f"Running: {' '.join(cmd)}")
+    else:
+        logger.debug(f"Running: {' '.join(cmd)}")
 
     env = os.environ.copy()
-    env["FULL_LOG"] = "1"
+    if stream_output:
+        env["FULL_LOG"] = "1"
     token = resolve_hf_token()
     if token:
         env.setdefault("HF_TOKEN", token)
         env.setdefault("HUGGINGFACE_API_KEY", token)
+
+    # Import here to preserve deferred import pattern for lightweight callers
+    from euroeval.logging_utils import no_terminal_output  # noqa: PLC0415
 
     parent_fd, child_fd = pty.openpty()
     _set_pty_window_size(fd=child_fd)
@@ -139,34 +152,35 @@ def run_euroeval(
     os.close(child_fd)
 
     captured: list[bytes] = []
-    try:
-        while True:
-            ready, _, _ = select.select([parent_fd], [], [], 0.1)
-            if ready:
-                try:
-                    chunk = os.read(parent_fd, 4096)
-                except OSError:
-                    break
-                if not chunk:
-                    break
-                sys.stderr.buffer.write(chunk)
-                sys.stderr.buffer.flush()
-                captured.append(chunk)
-            elif proc.poll() is not None:
-                try:
-                    while True:
+    with no_terminal_output(disable=stream_output):
+        try:
+            while True:
+                ready, _, _ = select.select([parent_fd], [], [], 0.1)
+                if ready:
+                    try:
                         chunk = os.read(parent_fd, 4096)
-                        if not chunk:
-                            break
-                        sys.stderr.buffer.write(chunk)
-                        sys.stderr.buffer.flush()
-                        captured.append(chunk)
-                except OSError:
-                    pass
-                break
-    finally:
-        os.close(parent_fd)
-    proc.wait()
+                    except OSError:
+                        break
+                    if not chunk:
+                        break
+                    sys.stderr.buffer.write(chunk)
+                    sys.stderr.buffer.flush()
+                    captured.append(chunk)
+                elif proc.poll() is not None:
+                    try:
+                        while True:
+                            chunk = os.read(parent_fd, 4096)
+                            if not chunk:
+                                break
+                            sys.stderr.buffer.write(chunk)
+                            sys.stderr.buffer.flush()
+                            captured.append(chunk)
+                    except OSError:
+                        pass
+                    break
+        finally:
+            os.close(parent_fd)
+        proc.wait()
     output = b"".join(captured).decode("utf-8", errors="replace")
     note = _killed_by_signal_note(proc.returncode)
     if note:

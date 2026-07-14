@@ -848,15 +848,21 @@ def execute_jobs(
     evaluated: list[str] = []
     failed: list[str] = []
     for job in tqdm(jobs, desc="Evaluating models", unit="model"):
-        returncode, _ = run_euroeval(
+        returncode, output = run_euroeval(
             model_id=job.model_id,
             languages=job.languages,
             datasets=[dataset],
             evaluate_test_split=job.evaluate_test_split,
             zero_shot=job.zero_shot,
             gpu_memory_utilization=gpu_memory_utilization,
+            stream_output=False,
         )
         if returncode != 0:
+            output_tail = "\n".join(output.splitlines()[-40:])
+            logger.warning(
+                f"{job.model_id}: euroeval exited with code {returncode}:\n"
+                f"{output_tail}"
+            )
             failed.append(f"{job.model_id} (exit {returncode})")
         else:
             evaluated.append(job.model_id)
