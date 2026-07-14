@@ -48,6 +48,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import click
+from huggingface_hub import HfApi
 
 from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
@@ -91,9 +92,11 @@ def sync_results_from_bucket() -> None:
     logger.info("Syncing results from HF bucket %s...", HF_RESULTS_BUCKET)
 
     # Sync bucket files to local RESULTS_DIR
-    subprocess.run(
-        ["hf", "buckets", "sync", HF_RESULTS_BUCKET, str(RESULTS_DIR), "--verbose"],
-        check=True,
+    hf_api = HfApi(token=os.getenv("HF_TOKEN"))
+    hf_api.sync_bucket(
+        source=f"hf://buckets/{HF_RESULTS_BUCKET}",
+        dest=RESULTS_DIR.as_posix(),
+        verbose=True,
     )
 
     # Consolidate all results into NEW_RESULTS_PATH (append mode)
