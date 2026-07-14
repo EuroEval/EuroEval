@@ -48,6 +48,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import click
+from huggingface_hub import HfApi
 
 from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
@@ -91,9 +92,11 @@ def sync_results_from_bucket() -> None:
     logger.info("Syncing results from HF bucket %s...", HF_RESULTS_BUCKET)
 
     # Sync bucket files to local RESULTS_DIR
-    subprocess.run(
-        ["hf", "buckets", "sync", HF_RESULTS_BUCKET, str(RESULTS_DIR), "--verbose"],
-        check=True,
+    hf_api = HfApi(token=os.getenv("HF_TOKEN"))
+    hf_api.sync_bucket(
+        source=f"hf://buckets/{HF_RESULTS_BUCKET}",
+        dest=RESULTS_DIR.as_posix(),
+        verbose=True,
     )
 
     # Consolidate all results into NEW_RESULTS_PATH (append mode)
@@ -149,11 +152,13 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
 )
 @click.option(
     "--branch",
-    required=True,
-    help="Branch to do the work on. May not be the default branch (e.g. main).",
+    type=click.STRING,
+    default=None,
+    help="Branch to do the work on. May not be the default branch (e.g. main). "
+    "Defaults to 'feat/replace-<old-dataset>-with-<new-dataset>.'",
 )
 @click.option(
-    "--include-api",
+    "--include-api/--no-include-api",
     is_flag=True,
     default=False,
     help="Opt in to evaluating API models. Without it they are skipped, so a "
@@ -174,18 +179,17 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     f"against. When omitted, defaults to {DEFAULT_GPU_MEMORY_UTILIZATION}.",
 )
 @click.option(
-    "--skip-eval",
+    "--skip-eval/--no-skip-eval",
     is_flag=True,
     default=False,
     help="Skip the evaluation phase and only perform the config/doc swap (useful "
     "when the evaluations already ran).",
 )
 @click.option(
-    "--pr",
+    "--pr/--no-pr",
     is_flag=True,
     default=True,
-    help="After swapping, commit and push the branch and open a pull request. "
-    "Default is True; pass --no-pr to skip.",
+    help="After swapping, commit and push the branch and open a pull request. ",
 )
 @click.option(
     "--reviewer",
@@ -194,14 +198,14 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
     help="GitHub username to request as reviewer. Default is saattrupdan.",
 )
 @click.option(
-    "--force",
+    "--force/--no-force",
     is_flag=True,
     default=False,
     help="Re-run even (model, language) pairs that already have a new-dataset "
     "result line.",
 )
 @click.option(
-    "--dry-run",
+    "--dry-run/--no-dry-run",
     is_flag=True,
     default=False,
     help="Print the planned evaluations and file edits without running or "
@@ -210,7 +214,7 @@ DOC_UNOFFICIAL_PREFIX = "Unofficial: "
 def main(
     old_dataset: str,
     new_dataset: str,
-    branch: str,
+    branch: str | None,
     include_api: bool,
     api_providers: str | None,
     gpu_memory_utilization: float | None,
@@ -220,37 +224,8 @@ def main(
     force: bool,
     dry_run: bool,
 ) -> None:
-    """Replace an official leaderboard dataset with a new one.
-
-    Args:
-        old_dataset:
-            The official dataset being replaced.
-        new_dataset:
-            The unofficial candidate being promoted.
-        branch:
-            The branch to do the work on; may not be the default branch.
-        include_api:
-            Whether to evaluate API models.
-        api_providers:
-            Optional comma-separated provider filter.
-        gpu_memory_utilization:
-            vLLM GPU memory utilization fraction, or None for the default.
-        skip_eval:
-            When True, only perform the config/doc swap.
-        pr:
-            When True (default), commit, push, and open a pull request after
-            swapping.
-        reviewer:
-            GitHub username to request as reviewer.
-        force:
-            When True, re-run pairs that already have a new-dataset result.
-        dry_run:
-            When True, print the plan and make no changes.
-
-    Raises:
-        click.ClickException:
-            When the dataset pair or branch is invalid, or a git/gh step fails.
-    """
+    """Replace an official leaderboard dataset with a new one."""
+    # Validation checks
     if api_providers and not include_api:
         raise click.ClickException(
             "--api-providers requires --include-api; pass both or neither."
@@ -258,6 +233,8 @@ def main(
     old_config, new_config = validate_datasets(
         old_dataset=old_dataset, new_dataset=new_dataset
     )
+    if branch is None:
+        branch = f"feat/replace-{old_dataset}-with-{new_dataset}"
     validate_branch(branch=branch)
 
     target_codes = resolve_languages(old_config=old_config, new_config=new_config)

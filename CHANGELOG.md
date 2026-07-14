@@ -537,8 +537,6 @@ project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
   the maximum context length of the model, which gave errors with models that had a
   maximum context length of less than 8,192.
 
->>>>>>> main
-
 ## [v16.11.0] - 2026-01-21
 
 ### Added
