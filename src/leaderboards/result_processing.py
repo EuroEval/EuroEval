@@ -52,10 +52,11 @@ def process_results(
         trained_from_scratch_patterns:
             A list of regex patterns for trained-from-scratch models.
     """
-    # Build the metadata cache from the per-model result files.
-    cache = Cache.from_results_dir(RESULTS_DIR)
-
+    # Load raw results first so per-model files in RESULTS_DIR are synced.
     records = load_raw_results()
+
+    # Build the metadata cache from the synced per-model result files.
+    cache = Cache.from_results_dir(RESULTS_DIR)
     num_raw_records = len(records)
 
     records = deduplicate_records(records=records)
