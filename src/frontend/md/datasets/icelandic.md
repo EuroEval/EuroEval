@@ -1643,3 +1643,75 @@ You can evaluate this dataset directly as follows:
 ```bash
 euroeval --model <model-id> --dataset zebra-puzzles-hard-is
 ```
+
+## Instruction-following
+
+### MultiIFEval-is
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-is) and contains prompts
+each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Skrifaðu samantekt á Wikipedia síðunni \"https://is.wikipedia.org/wiki/Íslenska\" með að minnsta kosti 250 orðum. Notaðu engar kommur og áberandi að minnsta kosti 3 kafla sem hafa titla í Markdown sniði, til dæmis *áberandi kafli Hluti 1*, *áberandi kafli Hluti 2*, *áberandi kafli Hluti 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 250, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Ég er að skipuleggja ferð til Íslands og vil að þú skrifir ferðaáætlun fyrir mig í Shakespeare stíl. Þú mátt ekki nota kommur í svari þínu.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Búðu til ferilskrá fyrir nýútskrifaðan nemanda sem sækir um sitt fyrsta starf. Gakktu úr skugga um að þú innifellir að minnsta kosti 12 plásshalda í svigum, eins og [Nafn] eða [Heimilisfang].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-is
+```

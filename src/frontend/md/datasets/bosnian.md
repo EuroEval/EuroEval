@@ -12,32 +12,31 @@ This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2306.0
 The corpus consists of 79 manually selected datasets from over 350 datasets reported in
 the scientific literature based on strict quality criteria.
 
-The original dataset contains a single split with 36,183 Bosnian samples.
-We use 1,024 / 256 / 2,048 samples for our training, validation, and test splits,
-respectively.
-We have employed stratified sampling based on the label column from the original
-dataset to ensure balanced splits.
+The original dataset contains a single split with 36,183 Bosnian samples. We use 1,024 /
+256 / 2,048 samples for our training, validation, and test splits, respectively. We have
+employed stratified sampling based on the label column from the original dataset to
+ensure balanced splits.
 
 Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Jaoo kako cjadko, izasla si s momkom  ju ar filing loved, o maj gash! Awwww. POV RA CA CU",
-    "label": "negative"
+  "text": "Jaoo kako cjadko, izasla si s momkom  ju ar filing loved, o maj gash! Awwww. POV RA CA CU",
+  "label": "negative"
 }
 ```
 
 ```json
 {
-    "text": "@aneldzoko sta se to desava u Neumu?",
-    "label": "neutral"
+  "text": "@aneldzoko sta se to desava u Neumu?",
+  "label": "neutral"
 }
 ```
 
 ```json
 {
-    "text": "Zasto se inspirator zove inspirator kad se s njim usisava?",
-    "label": "neutral"
+  "text": "Zasto se inspirator zove inspirator kad se s njim usisava?",
+  "label": "neutral"
 }
 ```
 
@@ -96,22 +95,57 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "tokens": ["Čehoslovačka", ",", "Francuska", ",", "Mađarska", ",", "Meksiko", ",", "Švicarska", ",", "Urugvaj"],
-    "labels": ["B-LOC", "O", "B-LOC", "O", "B-LOC", "O", "B-LOC", "O", "B-LOC", "O", "B-LOC"],
+  "tokens": [
+    "Čehoslovačka",
+    ",",
+    "Francuska",
+    ",",
+    "Mađarska",
+    ",",
+    "Meksiko",
+    ",",
+    "Švicarska",
+    ",",
+    "Urugvaj"
+  ],
+  "labels": [
+    "B-LOC",
+    "O",
+    "B-LOC",
+    "O",
+    "B-LOC",
+    "O",
+    "B-LOC",
+    "O",
+    "B-LOC",
+    "O",
+    "B-LOC"
+  ]
 }
 ```
 
 ```json
 {
-    "tokens": ["godine", ",", "naselje", "je", "ukinuto", "i", "pripojeno", "naselju", "Bribir", "."],
-    "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O"],
+  "tokens": [
+    "godine",
+    ",",
+    "naselje",
+    "je",
+    "ukinuto",
+    "i",
+    "pripojeno",
+    "naselju",
+    "Bribir",
+    "."
+  ],
+  "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "B-LOC", "O"]
 }
 ```
 
 ```json
 {
-    "tokens": ["Administrativno", "središte", "oblasti", "je", "Tjumenj", "."],
-    "labels": ["O", "O", "O", "O", "B-LOC", "O"],
+  "tokens": ["Administrativno", "središte", "oblasti", "je", "Tjumenj", "."],
+  "labels": ["O", "O", "O", "O", "B-LOC", "O"]
 }
 ```
 
@@ -171,12 +205,12 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "NGC 3803 (također poznat kao PGC 36204) je eliptična galaksija koja je udaljena oko 164 miliona sg od Zemlje i nalazi se u sazviježđu Lav. Najveći prečnik je 0,40 (19 hiljada sg) a najmanji 0,4 uglovnih minuta (19 hiljada sg). Prvo otkriće je napravio R. J. Mitchell 27. marta 1856. godine.\n\nNajbliži NGC/IC objekti \nSljedeći spisak sadrži deset najbližih NGC/IC objekata.\n\nTakođer pogledajte \n Novi opći katalog\n Spisak NGC objekata\n Spisak galaksija\n\nBilješke \n  Prividna magnituda od 15,5 – Apsolutna magnituda: M = m - 5 ((log10 DL) - 1), gdje je m=15,5 i DL=50,4 * 106.\n  0,40 uglovnih minuta – S = A * D * 0,000291 * P, gdje je A=0,40, D=50,4 i P = 3,2616.\n  Bazirano na euklidsku udaljenost.\n\nReference\n\nLiteratura\n\nVanjski linkovi\n\nNGC 3803 \n\n  NGC 3803 na Aladin pregledaču\n\nNGC katalog \n  Interaktivni NGC Online Katalog\n  Astronomska baza podataka SIMBAD\n  NGC katalog na Messier45.com \n  NGC/IC projekt\n  NGC2000 na NASA sajtu\n  NGC na The Night Sky Atlas sajtu\n\nEliptične galaksije\nLav (sazviježđe)\nNGC objekti\nPGC objekti",
-    "question": "Koliki je najmanji kutni promjer NGC 3803 izražen u kutnim minutama?",
-    "answers": {
-        "answer_start": [158],
-        "text": ["0,4"]
-    }
+  "context": "NGC 3803 (također poznat kao PGC 36204) je eliptična galaksija koja je udaljena oko 164 miliona sg od Zemlje i nalazi se u sazviježđu Lav. Najveći prečnik je 0,40 (19 hiljada sg) a najmanji 0,4 uglovnih minuta (19 hiljada sg). Prvo otkriće je napravio R. J. Mitchell 27. marta 1856. godine.\n\nNajbliži NGC/IC objekti \nSljedeći spisak sadrži deset najbližih NGC/IC objekata.\n\nTakođer pogledajte \n Novi opći katalog\n Spisak NGC objekata\n Spisak galaksija\n\nBilješke \n  Prividna magnituda od 15,5 – Apsolutna magnituda: M = m - 5 ((log10 DL) - 1), gdje je m=15,5 i DL=50,4 * 106.\n  0,40 uglovnih minuta – S = A * D * 0,000291 * P, gdje je A=0,40, D=50,4 i P = 3,2616.\n  Bazirano na euklidsku udaljenost.\n\nReference\n\nLiteratura\n\nVanjski linkovi\n\nNGC 3803 \n\n  NGC 3803 na Aladin pregledaču\n\nNGC katalog \n  Interaktivni NGC Online Katalog\n  Astronomska baza podataka SIMBAD\n  NGC katalog na Messier45.com \n  NGC/IC projekt\n  NGC2000 na NASA sajtu\n  NGC na The Night Sky Atlas sajtu\n\nEliptične galaksije\nLav (sazviježđe)\nNGC objekti\nPGC objekti",
+  "question": "Koliki je najmanji kutni promjer NGC 3803 izražen u kutnim minutama?",
+  "answers": {
+    "answer_start": [158],
+    "text": ["0,4"]
+  }
 }
 ```
 
@@ -193,12 +227,12 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "IC 910 (također poznat kao IRAS 13387+2331, MCG 4-32-25 i PGC 48424) je spiralna galaksija koja je udaljena oko 374 miliona sg od Zemlje i nalazi se u sazviježđu Volar. Najveći prečnik je 0,50 (54 hiljade sg) a najmanji 0,4 uglovnih minuta (44 hiljade sg). Prvo otkriće je napravio Stephane Javelle 16. juna 1892. godine.\n\nNajbliži NGC/IC objekti \nSljedeći spisak sadrži deset najbližih NGC/IC objekata.\n\nTakođer pogledajte \n Novi opći katalog\n Spisak IC objekata\n Spisak galaksija\n\nBilješke \n  Prividna magnituda od 14,4 – Apsolutna magnituda: M = m - 5 ((log10 DL) - 1), gdje je m=14,4 i DL=114,6 * 106.\n  0,50 uglovnih minuta – S = A * D * 0,000291 * P, gdje je A=0,50, D=114,6 i P = 3,2616.\n  Bazirano na euklidsku udaljenost.\n\nReference\n\nLiteratura\n\nVanjski linkovi\n\nIC 910 \n\n  IC 910 na Aladin pregledaču\n\nIC katalog \n  Interaktivni NGC Online Katalog\n  Astronomska baza podataka SIMBAD\n  IC katalog na Messier45.com \n  NGC/IC projekt\n  NGC2000 na NASA sajtu\n  IC na The Night Sky Atlas sajtu\n\nIC objekti\nIRAS objekti\nMCG objekti\nPGC objekti\nSpiralne galaksije\nVolar (sazviježđe)",
-    "question": "Kolika je distanca između Zemlje i galaksije IC 910?",
-    "answers": {
-        "answer_start": [108],
-        "text": ["oko 374 miliona sg"]
-    }
+  "context": "IC 910 (također poznat kao IRAS 13387+2331, MCG 4-32-25 i PGC 48424) je spiralna galaksija koja je udaljena oko 374 miliona sg od Zemlje i nalazi se u sazviježđu Volar. Najveći prečnik je 0,50 (54 hiljade sg) a najmanji 0,4 uglovnih minuta (44 hiljade sg). Prvo otkriće je napravio Stephane Javelle 16. juna 1892. godine.\n\nNajbliži NGC/IC objekti \nSljedeći spisak sadrži deset najbližih NGC/IC objekata.\n\nTakođer pogledajte \n Novi opći katalog\n Spisak IC objekata\n Spisak galaksija\n\nBilješke \n  Prividna magnituda od 14,4 – Apsolutna magnituda: M = m - 5 ((log10 DL) - 1), gdje je m=14,4 i DL=114,6 * 106.\n  0,50 uglovnih minuta – S = A * D * 0,000291 * P, gdje je A=0,50, D=114,6 i P = 3,2616.\n  Bazirano na euklidsku udaljenost.\n\nReference\n\nLiteratura\n\nVanjski linkovi\n\nIC 910 \n\n  IC 910 na Aladin pregledaču\n\nIC katalog \n  Interaktivni NGC Online Katalog\n  Astronomska baza podataka SIMBAD\n  IC katalog na Messier45.com \n  NGC/IC projekt\n  NGC2000 na NASA sajtu\n  IC na The Night Sky Atlas sajtu\n\nIC objekti\nIRAS objekti\nMCG objekti\nPGC objekti\nSpiralne galaksije\nVolar (sazviježđe)",
+  "question": "Kolika je distanca između Zemlje i galaksije IC 910?",
+  "answers": {
+    "answer_start": [108],
+    "text": ["oko 374 miliona sg"]
+  }
 }
 ```
 
@@ -240,14 +274,15 @@ euroeval --model <model-id> --dataset multi-wiki-qa-bs
 
 ### LR-Sum-bs
 
-This dataset was published in [this paper](https://aclanthology.org/2023.findings-acl.427/).
-The source data is public domain newswire collected from Voice of America websites,
-and the summaries are human-written.
+This dataset was published in
+[this paper](https://aclanthology.org/2023.findings-acl.427/). The source data is public
+domain newswire collected from Voice of America websites, and the summaries are
+human-written.
 
-The original dataset contains 5,784 / 722 / 723 samples for the training, validation, and
-test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
-validation and test splits, respectively. The train and validation splits are subsets
-of the original splits. For the test split, we use all available test samples and
+The original dataset contains 5,784 / 722 / 723 samples for the training, validation,
+and test splits, respectively. We use 1,024 / 256 / 2,048 samples for our training,
+validation and test splits, respectively. The train and validation splits are subsets of
+the original splits. For the test split, we use all available test samples and
 supplement with additional samples from the training set to reach 2,048 samples in
 total.
 
@@ -255,22 +290,22 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "text": "Komisija 9/11: američki dužnosnici nisu shvaćali razmjere opasnosti od al-Qaide (23/7/04) - 2004-07-23\n\nKomisija koja je istraživala terorističke napade na Sjedinjene Države 2001. godine ocjenjuje da američki dužnosnici nisu shvaćali razmjere opasnosti koju je predstavljala al-Qaidina mreža. Neovisni panel objavio je svoje zaključke na tiskovnoj konferenciji u Washingtonu. Iznoseći osnovne zaključke izvještaja, predsjedatelj komisije Thomas Kean rekao je da američka vlast nije bila dovoljno aktivna u borbi protiv opasnosti koju je predstavljala al-Qaida. Panel je ocijenio da je u svim dijelovima vlasti bilo propusta glede “razumijevanja, određivanja politike, osposobljenosti i rukovođenja”. Vojska je – kako se navodi – ponudila tek ograničene opcije u vezi s napadima na al-Qaidu, a djelovanje obavještajnih službi bilo je otežano krutim budžetom i birokratskim suparništvom. U izvještaju se navodi da nitko ne može znati jesu li postojale neke mjere koje su mogle onemogućiti napade, ali se dodaje da planove al-Qaide nije ni omelo, niti odgodilo ništa što su poduzele vlade predsjednika Clintona i Busha. Komisija je pozvala na formiranje saveznog centra za kontra-terorizam, na čijem bi čelu bio direktor ministarskog ranga s obavezom da nadzire rad svih američkih obavještajnih službi. Predsjedatelj komisije Thomas Kean je ocijenio da su Sjedinjene Države i dalje sučeljene sa – kako je rekao – “jednim od najvećih sigurnosnih izazova u našoj povijesti.” Obrazlažući potrebu stvaranja ministarskog položaja za obavještajni rad, član komisije Lee Hamilton rekao je da su informacije i odgovornost sada razvučeni po brojnim obavještajnim službama. On se također založio za davanje više ovlasti kongresnim tijelima za nadzor obavještajnih službi. Samo nekoliko sati nakon što je komisija objavila svoje nalaze, predsjednik Bush je rekao da je suglasan sa zaključkom da su teroristi 2001. iskoristili duboke institucionalne propuste u obrani zemlje: “Preporuke komisije podudarne su sa strategijom koju moja administracija slijedi u nadilaženju propusta i u borbi do pobjede nad terorizmom.” Predsjednik Bush se još nije službeno obvezao na provedbu bilo koje od komisijinih preporuka, ali je rekao da će one biti pažljivo razmotrene. U izvješću komisije navodi se da nisu pronađeni nikakvi dokazi da je bivši irački predsjednik Saddam Hussein ikada “operativno surađivao” s al-Qaidom. Obavještajni podaci ukazuju na “prijateljske kontakte” Iraka s al-Qaidom prije 11.rujna 2001.godine, ali komisija nije pronašla nikakve dokaze da su Bagdad i al-Qaida surađivali u planiranju i izvršenju napada na Sjedinjene Države. Što se Irana tiče, komisija nije pronašla dokaze da je Teheran bio upoznat s napadima na New York i Washington. No, kako se dodaje, to pitanje treba dalje istraživati. Također se navodi da su iranske vlasti omogućile al-Qaidinim članovima da putuju preko Irana bez da im se u pasoše ubilježi kad su ušli i izašli iz te zemlje.",
-    "target_text": "Izvješće komisije navodi se da nisu pronađeni nikakvi dokazi da je Saddam Hussein ikada “operativno surađivao” s al-Qaidom"
+  "text": "Komisija 9/11: američki dužnosnici nisu shvaćali razmjere opasnosti od al-Qaide (23/7/04) - 2004-07-23\n\nKomisija koja je istraživala terorističke napade na Sjedinjene Države 2001. godine ocjenjuje da američki dužnosnici nisu shvaćali razmjere opasnosti koju je predstavljala al-Qaidina mreža. Neovisni panel objavio je svoje zaključke na tiskovnoj konferenciji u Washingtonu. Iznoseći osnovne zaključke izvještaja, predsjedatelj komisije Thomas Kean rekao je da američka vlast nije bila dovoljno aktivna u borbi protiv opasnosti koju je predstavljala al-Qaida. Panel je ocijenio da je u svim dijelovima vlasti bilo propusta glede “razumijevanja, određivanja politike, osposobljenosti i rukovođenja”. Vojska je – kako se navodi – ponudila tek ograničene opcije u vezi s napadima na al-Qaidu, a djelovanje obavještajnih službi bilo je otežano krutim budžetom i birokratskim suparništvom. U izvještaju se navodi da nitko ne može znati jesu li postojale neke mjere koje su mogle onemogućiti napade, ali se dodaje da planove al-Qaide nije ni omelo, niti odgodilo ništa što su poduzele vlade predsjednika Clintona i Busha. Komisija je pozvala na formiranje saveznog centra za kontra-terorizam, na čijem bi čelu bio direktor ministarskog ranga s obavezom da nadzire rad svih američkih obavještajnih službi. Predsjedatelj komisije Thomas Kean je ocijenio da su Sjedinjene Države i dalje sučeljene sa – kako je rekao – “jednim od najvećih sigurnosnih izazova u našoj povijesti.” Obrazlažući potrebu stvaranja ministarskog položaja za obavještajni rad, član komisije Lee Hamilton rekao je da su informacije i odgovornost sada razvučeni po brojnim obavještajnim službama. On se također založio za davanje više ovlasti kongresnim tijelima za nadzor obavještajnih službi. Samo nekoliko sati nakon što je komisija objavila svoje nalaze, predsjednik Bush je rekao da je suglasan sa zaključkom da su teroristi 2001. iskoristili duboke institucionalne propuste u obrani zemlje: “Preporuke komisije podudarne su sa strategijom koju moja administracija slijedi u nadilaženju propusta i u borbi do pobjede nad terorizmom.” Predsjednik Bush se još nije službeno obvezao na provedbu bilo koje od komisijinih preporuka, ali je rekao da će one biti pažljivo razmotrene. U izvješću komisije navodi se da nisu pronađeni nikakvi dokazi da je bivši irački predsjednik Saddam Hussein ikada “operativno surađivao” s al-Qaidom. Obavještajni podaci ukazuju na “prijateljske kontakte” Iraka s al-Qaidom prije 11.rujna 2001.godine, ali komisija nije pronašla nikakve dokaze da su Bagdad i al-Qaida surađivali u planiranju i izvršenju napada na Sjedinjene Države. Što se Irana tiče, komisija nije pronašla dokaze da je Teheran bio upoznat s napadima na New York i Washington. No, kako se dodaje, to pitanje treba dalje istraživati. Također se navodi da su iranske vlasti omogućile al-Qaidinim članovima da putuju preko Irana bez da im se u pasoše ubilježi kad su ušli i izašli iz te zemlje.",
+  "target_text": "Izvješće komisije navodi se da nisu pronađeni nikakvi dokazi da je Saddam Hussein ikada “operativno surađivao” s al-Qaidom"
 }
 ```
 
 ```json
 {
-    "text": "Vlada prihvaća odluku Žalbenog vijeća Haškog suda u predmetu Bobetko (29/11/02) - 2002-11-29\n\nVijest da je Žalbeno vijeće Haškog suda odbilo oba podneska hrvatske Vlade u vezi s optužniom protiv generala Janka Bobetka u hrvatskoj pravnoj i političkoj javnosti – ako je suditi po prvim reakcijama – nikoga nije posebno iznenadila. Odvjetnik Goran Mikuličić, pravni savjetnik hrvatske Vlade u odnosima s Haškim sudom, ovako je prokomentirao vijest o odbijanju hrvatskih podnesaka u Haagu. “Naša Vlada prihvaća odluku. Vlada ne polemizira s odlukom i ne komentira odluku jer to je odluka nadležnog suda s kojim nema dalje nikakve pravne rasprave”. Mikuličić je objasnio koji su daljnji koraci Vlade nakon ovakvih vijesti iz Haaga. “Daljnji postupak Vlade će biti objaveštavanje tajništva Haškog tribunala o nalazu liječničkih ekperata koje je angažirao Županijski sud u Zagrebu. Oni su utvrdili da general Bobetko nije sposoban aktivno sudjelovati u postupku, zbog svog lošeg zdravstvenog stanja, i Vlada će posegnuti za odredbama pravila 59., i izvjestiti tajništvo o nemogućnosti udovoljenja zahtjevu zbog objektivnih okolnosti. Osim pravne donosimo i političke reakcije na odluku Žalbenog vijeća u slučaju Bobetko. SDP-ovac Mato Arlović, koji je i predsjednik saborskog Odbora za ustav i poslovnik, kaže da je vladajuća koalicija bila spremna i na povoljnu i na nepovoljnu odluku Žalbenog vijeća Haškog suda. “U tom poledu mislim da je najveća vrijetnost da je haški sud, raspravljajući o prigovorima Republike Hrvatske priznao Hrvatskoj da se može koristiti pravom koje ovi dokumenti daju i da raspravljajući o našim navodima i našim argumentima donio odluku. Drugo je pitanje što mi nismo imali dostatne dokaze da svoja stajališta i potvrdimo i da ih Haški sud prihvati.” Iako je Vlada za pravne korake koje je poduzela oko optužnice protiv generala Bobetka imala potporu ne samo stranaka vladajuće koalicije nego i opozicije, oporbene stranke danas izražavaju negodovanje zbog načina na koji je Vlada branila interese haških optuženika, svojih državljana. Predsjednik Hrvatskog bloka, Ivić Pašalić, smatra da je Račanova Vlada od samog početka svog mandata povela pogrešnu politiku prema Haškom sudu. Problem, po njemu, potječe od saborske deklaracije koju je vladajuća koalicija izglasala još u svibnju 2000., a u kojoj je priznala nadležnost haškog suda za akcije “Bljesak” i “Oluja”. “Prema tome riječ je o promašenoj strategiji sadašnje Vlade koja je jednostavno kulminirala dolaskom nekoliko optužnica u kojima se Vlada ponašala različito. U slučaju generala Gotovine nije napravila ništa nego je dala žalbu Carli del Ponte koja ju je ekspresno vratila natrag, a u slučaju optužnice protiv generala Bobetka, pritisnuta reakcijama u parlamentu i javnosti pokušali su nešto napraviti, ali očito pravno i politički loše”. Pašalić, međutim, ne spominje ustavni zakon o suradnji s Haškim sudom koji obvezuje hrvatske vlasti na suradnju sa sudom, a kojeg je 1996. donijela Hrvatska demokratska zajednica, stranka kojoj je i sam tada pripadao.",
-    "target_text": "Odbijanje hrvatskih podnesaka nikoga nije posebno iznenadilo u pravnim i političkim krugovima"
+  "text": "Vlada prihvaća odluku Žalbenog vijeća Haškog suda u predmetu Bobetko (29/11/02) - 2002-11-29\n\nVijest da je Žalbeno vijeće Haškog suda odbilo oba podneska hrvatske Vlade u vezi s optužniom protiv generala Janka Bobetka u hrvatskoj pravnoj i političkoj javnosti – ako je suditi po prvim reakcijama – nikoga nije posebno iznenadila. Odvjetnik Goran Mikuličić, pravni savjetnik hrvatske Vlade u odnosima s Haškim sudom, ovako je prokomentirao vijest o odbijanju hrvatskih podnesaka u Haagu. “Naša Vlada prihvaća odluku. Vlada ne polemizira s odlukom i ne komentira odluku jer to je odluka nadležnog suda s kojim nema dalje nikakve pravne rasprave”. Mikuličić je objasnio koji su daljnji koraci Vlade nakon ovakvih vijesti iz Haaga. “Daljnji postupak Vlade će biti objaveštavanje tajništva Haškog tribunala o nalazu liječničkih ekperata koje je angažirao Županijski sud u Zagrebu. Oni su utvrdili da general Bobetko nije sposoban aktivno sudjelovati u postupku, zbog svog lošeg zdravstvenog stanja, i Vlada će posegnuti za odredbama pravila 59., i izvjestiti tajništvo o nemogućnosti udovoljenja zahtjevu zbog objektivnih okolnosti. Osim pravne donosimo i političke reakcije na odluku Žalbenog vijeća u slučaju Bobetko. SDP-ovac Mato Arlović, koji je i predsjednik saborskog Odbora za ustav i poslovnik, kaže da je vladajuća koalicija bila spremna i na povoljnu i na nepovoljnu odluku Žalbenog vijeća Haškog suda. “U tom poledu mislim da je najveća vrijetnost da je haški sud, raspravljajući o prigovorima Republike Hrvatske priznao Hrvatskoj da se može koristiti pravom koje ovi dokumenti daju i da raspravljajući o našim navodima i našim argumentima donio odluku. Drugo je pitanje što mi nismo imali dostatne dokaze da svoja stajališta i potvrdimo i da ih Haški sud prihvati.” Iako je Vlada za pravne korake koje je poduzela oko optužnice protiv generala Bobetka imala potporu ne samo stranaka vladajuće koalicije nego i opozicije, oporbene stranke danas izražavaju negodovanje zbog načina na koji je Vlada branila interese haških optuženika, svojih državljana. Predsjednik Hrvatskog bloka, Ivić Pašalić, smatra da je Račanova Vlada od samog početka svog mandata povela pogrešnu politiku prema Haškom sudu. Problem, po njemu, potječe od saborske deklaracije koju je vladajuća koalicija izglasala još u svibnju 2000., a u kojoj je priznala nadležnost haškog suda za akcije “Bljesak” i “Oluja”. “Prema tome riječ je o promašenoj strategiji sadašnje Vlade koja je jednostavno kulminirala dolaskom nekoliko optužnica u kojima se Vlada ponašala različito. U slučaju generala Gotovine nije napravila ništa nego je dala žalbu Carli del Ponte koja ju je ekspresno vratila natrag, a u slučaju optužnice protiv generala Bobetka, pritisnuta reakcijama u parlamentu i javnosti pokušali su nešto napraviti, ali očito pravno i politički loše”. Pašalić, međutim, ne spominje ustavni zakon o suradnji s Haškim sudom koji obvezuje hrvatske vlasti na suradnju sa sudom, a kojeg je 1996. donijela Hrvatska demokratska zajednica, stranka kojoj je i sam tada pripadao.",
+  "target_text": "Odbijanje hrvatskih podnesaka nikoga nije posebno iznenadilo u pravnim i političkim krugovima"
 }
 ```
 
 ```json
 {
-    "text": "Lječnici udvostručavaju napore na promoviranju vakcinacije kao najbolje zaštite protiv H1N1\n\nZemlje zapadne hemisfere su odpočeledistribuirati H1N1 vakcine u okviru obimnog programa imunizacije protiv virusnepandemije svinjske gripe. Roditelji i neki profesionalci su zabrinuti okosigirnosti vakcine, dok neki doktori dovode u sumnju sposobnosti bolnica da senose sa težim slučajevima. Veliki broj ljudi u Sjedinjenim Državamadolazi u klinike za vakcinaciju. Michelle Lowrey ima troje djece itrudna je sa četvrtim: \"Ja imam sve razloge da budemovdje.\" Trudne žene su izložene većem rizikukomplikacija ukoliko se zaraze virusom H1N1. I do sada je najmanje 86 američkedjece umrlo od novog virusa. Katherine Blake brine za svog sina: \"On je u visoko rizičnoj grupi.Kao dijete je imao otvorenu operaciju srca, i jako me je strah da se nezarazi.\" Američki centar za kontrolu bolestije izvjestio da se novi virus prehlade raširio kroz veći dio zemlje. I poredtoga, neki Amerikanci kažu da neće primiti vakcinu. Mi živimo u Sacramentu. Ima nekihslučajeva svinjske gripe, ali ne mnogo, tako da nas to, zaista, nije pogodilo,kaže jedan čovjek na ulici Washingtona. Neke brine koliko je vakcinasigurna, jer je tako brzo proizvedena, i zato što sadrži konzervanse za kojeneki roditelji tvrde da mogu uzrokovati autizam. Dr. Anne Schuchat iz AmeričkogCentra za kontrolu bolesti kaže da je vakcina sigurna i može se dobiti i bezkonzervansa: \"Mi nismo zanemarili sigurnostu proizvodnji ovih vakcina, ili testiranju i nadgledanju ovih vakcina. I veomaje važno da se ovaj proces obavi pažljivo i sigurno.\" Zdravstveni zvaničnici i lječniciudvostručavaju napore na promoviranju vakcinacije kao najbolje zaštite protivH1N1 virusa. Dr. Peter Holbrooke iz Medicinskogcentra za zaštitu djece u Washingtonu kaže da ljudi griješe kada misle da jeova groznica slična običnoj prehladi: \"Veoma je važno da se dobro razmislio vakcini i bolesti koju ona spriječava. To nije blaga, nego značajnabolest.\" Dr. Holbrooke kaže da čak i umjerenislučajevi izazivaju ozbiljnu bolest i teži slučajevi mogu ubrzano pogoršatistanje. Doktora Arthura Kellermanna saMedicinskog fakulteta Emory brine gdje smjestiti pacijente koji trebajuintenzivnu njegu: \"Mi trebamo pripremiti našekapacitete za intenzivnu njegu i naš zdravstveni sistem za mogućnost donošenjateških odluka - ko može dobiti intenzivnu njegu, a ko ne može.\" Ukoliko H1N1 se virus nastavirazvijati onim tempom kakvim je krenuo nakon što se pojavio u martu, bolestdostiže vrhunac i počinje da opada za otprilike sedam sedmica. Ako je to tako,moglo bi biti da je ona već na vrhuncu u Sjedinjenim Državama, smatra dr.Holbrooke: \"Ali treba shvatiti da veomalako može usljediti drugi val tokom zime.\" Svi se specijalisti slažu u tome daje izbijanje nove groznice nepredvidljivo. I nema dovoljno vakcine H1N1, čak niu Sjedinjenim Državama. Što se tiče zemalja u razvoju, izSvjetske zdravstvene organizacije kažu da bi za njih medjunarodne donacijevakcine trebale početi stizati za nekoliko sedmica.",
-    "target_text": "Zemlje zapadne hemisfere su odpočele distribuirati H1N1 vakcine u okviru obimnog programa imunizacije protiv virusne pandemije svinjske"
+  "text": "Lječnici udvostručavaju napore na promoviranju vakcinacije kao najbolje zaštite protiv H1N1\n\nZemlje zapadne hemisfere su odpočeledistribuirati H1N1 vakcine u okviru obimnog programa imunizacije protiv virusnepandemije svinjske gripe. Roditelji i neki profesionalci su zabrinuti okosigirnosti vakcine, dok neki doktori dovode u sumnju sposobnosti bolnica da senose sa težim slučajevima. Veliki broj ljudi u Sjedinjenim Državamadolazi u klinike za vakcinaciju. Michelle Lowrey ima troje djece itrudna je sa četvrtim: \"Ja imam sve razloge da budemovdje.\" Trudne žene su izložene većem rizikukomplikacija ukoliko se zaraze virusom H1N1. I do sada je najmanje 86 američkedjece umrlo od novog virusa. Katherine Blake brine za svog sina: \"On je u visoko rizičnoj grupi.Kao dijete je imao otvorenu operaciju srca, i jako me je strah da se nezarazi.\" Američki centar za kontrolu bolestije izvjestio da se novi virus prehlade raširio kroz veći dio zemlje. I poredtoga, neki Amerikanci kažu da neće primiti vakcinu. Mi živimo u Sacramentu. Ima nekihslučajeva svinjske gripe, ali ne mnogo, tako da nas to, zaista, nije pogodilo,kaže jedan čovjek na ulici Washingtona. Neke brine koliko je vakcinasigurna, jer je tako brzo proizvedena, i zato što sadrži konzervanse za kojeneki roditelji tvrde da mogu uzrokovati autizam. Dr. Anne Schuchat iz AmeričkogCentra za kontrolu bolesti kaže da je vakcina sigurna i može se dobiti i bezkonzervansa: \"Mi nismo zanemarili sigurnostu proizvodnji ovih vakcina, ili testiranju i nadgledanju ovih vakcina. I veomaje važno da se ovaj proces obavi pažljivo i sigurno.\" Zdravstveni zvaničnici i lječniciudvostručavaju napore na promoviranju vakcinacije kao najbolje zaštite protivH1N1 virusa. Dr. Peter Holbrooke iz Medicinskogcentra za zaštitu djece u Washingtonu kaže da ljudi griješe kada misle da jeova groznica slična običnoj prehladi: \"Veoma je važno da se dobro razmislio vakcini i bolesti koju ona spriječava. To nije blaga, nego značajnabolest.\" Dr. Holbrooke kaže da čak i umjerenislučajevi izazivaju ozbiljnu bolest i teži slučajevi mogu ubrzano pogoršatistanje. Doktora Arthura Kellermanna saMedicinskog fakulteta Emory brine gdje smjestiti pacijente koji trebajuintenzivnu njegu: \"Mi trebamo pripremiti našekapacitete za intenzivnu njegu i naš zdravstveni sistem za mogućnost donošenjateških odluka - ko može dobiti intenzivnu njegu, a ko ne može.\" Ukoliko H1N1 se virus nastavirazvijati onim tempom kakvim je krenuo nakon što se pojavio u martu, bolestdostiže vrhunac i počinje da opada za otprilike sedam sedmica. Ako je to tako,moglo bi biti da je ona već na vrhuncu u Sjedinjenim Državama, smatra dr.Holbrooke: \"Ali treba shvatiti da veomalako može usljediti drugi val tokom zime.\" Svi se specijalisti slažu u tome daje izbijanje nove groznice nepredvidljivo. I nema dovoljno vakcine H1N1, čak niu Sjedinjenim Državama. Što se tiče zemalja u razvoju, izSvjetske zdravstvene organizacije kažu da bi za njih medjunarodne donacijevakcine trebale početi stizati za nekoliko sedmica.",
+  "target_text": "Zemlje zapadne hemisfere su odpočele distribuirati H1N1 vakcine u okviru obimnog programa imunizacije protiv virusne pandemije svinjske"
 }
 ```
 
@@ -303,4 +338,76 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset lr-sum-bs
+```
+
+## Instruction-following
+
+### MultiIFEval-bs
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-bs) and contains prompts
+each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Napišite sažetak Wikipedia stranice \"https://bs.wikipedia.org/wiki/Bosanski_jezik\" sa najmanje 200 riječi. Nemojte koristiti nijednu zarez i istaknite najmanje 3 sekcije koje imaju naslove u Markdown formatu, na primjer *istaknuta sekcija Dio 1*, *istaknuta sekcija Dio 2*, *istaknuta sekcija Dio 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 200, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Planiram putovanje u Bosnu i Hercegovinu i želim da mi napišeš plan putovanja u Shakespeareovom stilu. Nije ti dozvoljeno koristiti zareze u svom odgovoru.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Napravite CV za svježe diplomiranog studenta koji se prijavljuje za svoj prvi posao. Obavezno uključite najmanje 12 mjesta držača u uglatim zagradama, kao što su [Ime] ili [Adresa].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-bs
 ```

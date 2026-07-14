@@ -13,8 +13,8 @@ This dataset was published
 was scraped from [atsiliepimai.lt](https://atsiliepimai.lt/) and contains reviews
 similar to trustpilot reviews.
 
-The original dataset consists of 1,796 samples. We use 512 / 256 / 1,028
-samples for our training, validation and test splits, respectively.
+The original dataset consists of 1,796 samples. We use 512 / 256 / 1,028 samples for our
+training, validation and test splits, respectively.
 
 The original dataset contains rating values from 1 to 5. The raw distribution is:
 
@@ -98,11 +98,11 @@ euroeval --model <model-id> --dataset atsiliepimai
 
 ### Unofficial: Lithuanian Emotions
 
-This dataset is a combination of machine translated versions of the [GoEmotions
-dataset](https://doi.org/10.48550/arXiv.2005.00547) and the [Kaggle emotions
-dataset](https://www.kaggle.com/datasets/nelgiriyewithana/emotions). GoEmotions consists
-of English Reddit comments and the Kaggle dataset contains English Twitter messages.
-Both datasets have been machine translated to Lithuanian.
+This dataset is a combination of machine translated versions of the
+[GoEmotions dataset](https://doi.org/10.48550/arXiv.2005.00547) and the
+[Kaggle emotions dataset](https://www.kaggle.com/datasets/nelgiriyewithana/emotions).
+GoEmotions consists of English Reddit comments and the Kaggle dataset contains English
+Twitter messages. Both datasets have been machine translated to Lithuanian.
 
 The original dataset contains 377k / 47.1k / 5.43k / 41.7k samples for the combined
 training, combined validation, Lithuanian GoEmotions test, and Lithuanian Twitter
@@ -254,13 +254,13 @@ euroeval --model <model-id> --dataset wikiann-lt
 ### ScaLA-lt
 
 This dataset was published in [this paper](https://aclanthology.org/2023.nodalida-1.20/)
-and was automatically created from the [Lithuanian Universal Dependencies
-treebank](https://github.com/UniversalDependencies/UD_Lithuanian-ALKSNIS) by assuming
-that the documents in the treebank are correct, and corrupting the samples to create
-grammatically incorrect samples. The corruptions were done by either removing a word
-from a sentence, or by swapping two neighbouring words in a sentence. To ensure that
-this does indeed break the grammaticality of the sentence, a set of rules were used on
-the part-of-speech tags of the words in the sentence.
+and was automatically created from the
+[Lithuanian Universal Dependencies treebank](https://github.com/UniversalDependencies/UD_Lithuanian-ALKSNIS)
+by assuming that the documents in the treebank are correct, and corrupting the samples
+to create grammatically incorrect samples. The corruptions were done by either removing
+a word from a sentence, or by swapping two neighbouring words in a sentence. To ensure
+that this does indeed break the grammaticality of the sentence, a set of rules were used
+on the part-of-speech tags of the words in the sentence.
 
 The original full dataset consists of 1,024 / 256 / 2,048 samples for training,
 validation and testing, respectively (so 3,328 samples used in total). These splits are
@@ -339,25 +339,25 @@ Here are a few examples from the training split:
 
 ```json
 {
-    "context": "Gadas Elmalė (; ; g. 1971\xa0m. balandžio 19 d.)\xa0– Maroko ir Prancūzijos komikas ir aktorius. Jo naujausias spektaklis vadinasi „Sans tambour“ (pažodž. „be būgno“, kas yra žodžių žaismas tarp prancūzų kalbos žodžių tabou ('tabū') ir tambour ('būgnas')). Jis vaidino daugelyje filmų, įskaitant „Coco“, „Hors de prix“, „La doublure“ ir „Midnight in Paris“.\n\nAnkstyvasis gyvenimas ir šeima \nG. Elmalė gimė Kasablankoje, Maroke. Jis turi sefardų žydų kraujo. Augo mišrių kultūrų apsuptyje, kur buvo kalbama arabiškai, hebrajiškai ir prancūziškai. Tėvo vardas Davidas, motinos\xa0– Reginė (mergautinė pavardė Aymard). Turi brolį Arié, kuris yra aktorius ir dainininkas, ir seserį Judith, kuri yra artistė ir režisierio padėjėja.\n\nKarjera \n\nG. Elmalė lankė Kasablankos licėjų. Vėliau jis ketverius metus studijavo politologiją Monrealyje, o kiek vėliau persikėlė į Paryžių, kur jis studijavo dramą. Pirmą savo vaidmenį teatre G. Elmalė atliko monospektaklyje „Décalages“ 1997\xa0m. Šis spektaklis buvo autobiografinis. Pirmosios G. Elmalė sąsajos su kinu buvo Merzak Allouache filme „Salut cousin“. Vėliau jis vaidino filmuose „L’homme est une femme comme les autres“ ir „Train de vie“. G. Elmalė šlovė augo su antro monospektaklio „La vie normale“ pasisekimu ir su filmu „La vérité si je mens 2“ (2000\xa0m.), kuriame jis atliko vaidmenį Dov.\n\nAsmeninis gyvenimas \nG. Elmalė gyveno su prancūze artiste Anne Brochet nuo 1998\xa0m. iki 2002\xa0m. Jie susilaukė sūnaus Noé. Nuo 2009\xa0m. iki 2010\xa0m. jo antroji pusė buvo prancūzė žurnalistė Marie Drucker. Nuo 2011\xa0m. aktorius gyvena su Charlotte Casiraghi. Judviejų sūnus Raphaël gimė 2013\xa0m. gruodžio 17 d.\n\nIšnašos \n\nPrancūzijos aktoriai\nMaroko asmenybės",
-    "question": "Su kuo gyveno G. Elmalė nuo 2011 metų?",
-    "answers": {"answer_start": [1559], "text": ["Charlotte Casiraghi"]}
+  "context": "Gadas Elmalė (; ; g. 1971\xa0m. balandžio 19 d.)\xa0– Maroko ir Prancūzijos komikas ir aktorius. Jo naujausias spektaklis vadinasi „Sans tambour“ (pažodž. „be būgno“, kas yra žodžių žaismas tarp prancūzų kalbos žodžių tabou ('tabū') ir tambour ('būgnas')). Jis vaidino daugelyje filmų, įskaitant „Coco“, „Hors de prix“, „La doublure“ ir „Midnight in Paris“.\n\nAnkstyvasis gyvenimas ir šeima \nG. Elmalė gimė Kasablankoje, Maroke. Jis turi sefardų žydų kraujo. Augo mišrių kultūrų apsuptyje, kur buvo kalbama arabiškai, hebrajiškai ir prancūziškai. Tėvo vardas Davidas, motinos\xa0– Reginė (mergautinė pavardė Aymard). Turi brolį Arié, kuris yra aktorius ir dainininkas, ir seserį Judith, kuri yra artistė ir režisierio padėjėja.\n\nKarjera \n\nG. Elmalė lankė Kasablankos licėjų. Vėliau jis ketverius metus studijavo politologiją Monrealyje, o kiek vėliau persikėlė į Paryžių, kur jis studijavo dramą. Pirmą savo vaidmenį teatre G. Elmalė atliko monospektaklyje „Décalages“ 1997\xa0m. Šis spektaklis buvo autobiografinis. Pirmosios G. Elmalė sąsajos su kinu buvo Merzak Allouache filme „Salut cousin“. Vėliau jis vaidino filmuose „L’homme est une femme comme les autres“ ir „Train de vie“. G. Elmalė šlovė augo su antro monospektaklio „La vie normale“ pasisekimu ir su filmu „La vérité si je mens 2“ (2000\xa0m.), kuriame jis atliko vaidmenį Dov.\n\nAsmeninis gyvenimas \nG. Elmalė gyveno su prancūze artiste Anne Brochet nuo 1998\xa0m. iki 2002\xa0m. Jie susilaukė sūnaus Noé. Nuo 2009\xa0m. iki 2010\xa0m. jo antroji pusė buvo prancūzė žurnalistė Marie Drucker. Nuo 2011\xa0m. aktorius gyvena su Charlotte Casiraghi. Judviejų sūnus Raphaël gimė 2013\xa0m. gruodžio 17 d.\n\nIšnašos \n\nPrancūzijos aktoriai\nMaroko asmenybės",
+  "question": "Su kuo gyveno G. Elmalė nuo 2011 metų?",
+  "answers": { "answer_start": [1559], "text": ["Charlotte Casiraghi"] }
 }
 ```
 
 ```json
 {
-    "context": "Bus kraujo () – 2007 m. JAV epinės dramos filmas, kurio scenarijaus autorius ir režisierius Paul Thomas Anderson. Filmas dalinai remiasi Upton Sinclair romano „Oil!“ motyvais. Pasakojama apie auksakasį, kuris XIX a. pab. – XX a. pr Pietų Kalifornijoje kilusio naftos bumo metu nusprendė užsiimti naftos gavyba ir taip pralobti iš šio verslo.\n\nSiužetas \n\n1902-ieji. Aukso ieškotojas Danielis Pleinvju (akt. Day-Lewis) atranda naftos klodą ir įkuria nedidelę naftos gavybos įmonę. Vieno nelaimingo atsitikimo metu žuvus jo darbininkui, Pleinvju įsivaikina jo sūnų. Berniukas, vardu H.V., tampa jo formaliu verslo „partneriu“.\n\nPo devynerių metu Pleinvju sutinka Polą Sandėjų (akt. Dano), kuris jam prasitaria apie naftos klodą, esantį po jo žeme. Pleinvju mėgina nupirkti sklypą už nusiderėtą kainą, bet Polo brolis dvynys Elis, žinodamas apie jo ketinimus, primygtinai pareikalauja $5 000, už kuriuos būtų pastatyta vietinė bažnyčia, kurios pastoriumi taptų Elis. Tačiau Pleinvju įtikina Elio tėvą sudaryti sandorį už nusiderėtą kainą. Vėliau avarijos metu įvykęs sprogimas pažeidžia H.V. klausą.\n\nVieną dieną, Pleinvju aplanko vyriškis, teigiantis esąs jo pusiau brolis Henris. Pleinvju jį priima, nors jo istorijoje ir randa spragų. Vėliau berniukas pabando nužudyti Henrį padegdamas jo antklodę. Pasipiktinęs sūnaus poelgiu, Pleinvju išsiunčia berniuką į mokyklą San Franciske. Įmonės „Standard Oil“ atstovas pasisiūlo nupirkti Pleinvju žemę, bet Pleinvju sudaro sutartį su „Union Oil“ ir nutiesia vamzdyną į Kalifornijos pakrantę. Pleinvju kyla įtarimas dėl Henrio ir šiam papasakojus tikrąją istoriją, Pleinvju jį nužudo ir užkasa lavoną.\n\n1927-ieji. H.V. jau suaugęs ir vedęs. Jis susitinka su tėvu, kuris ne tik, kad tapo turtingu, bet ir įniko į alkoholį, ir paprašo jo nutraukti judviejų sutartį, kad jis galėtų įsteigti savo verslą. Pleinvju išjuokia jo kurtumą ir papasakoja jam apie jo kilmę, ir H.V. išvyksta.\n\nElis aplanko Pleinvju ir pasiūlo jam dar kartą įsigyti dalį jo žemės, kuri priklausė ponui Bendžiui. Pleinvju atskleidžia, kad jis jau seniausiai išgavo visą naftą iš jo nuosavybės per aplinkinius naftos gręžinius. Elis vis tiek paprašo sumokėti, bet Pleinvju įniršta ir užmuša jį boulingo kėgliu.\n\nApdovanojimai \n Oskarų apdovanojimai: geriausias aktorius (Daniel Day-Lewis), geriausia kinematografija (Robert Elswit)\n BAFTA: geriausias pirmo plano aktorius (Daniel Day-Lewis)\n Auksiniai gaubliai: geriausias draminio filmo aktorius (Daniel Day-Lewis)\n Ekrano aktorių gildijos apdovanojimai: geriausias aktorius (Daniel Day-Lewis)\n\nIšnašos \n\n2007 filmai\nJAV filmai\nDramos\nEpiniai filmai",
-    "question": "Kokią kompaniją įsteigė Danielis Pleinvju?",
-    "answers": {"answer_start": [448], "text": ["nedidelę naftos gavybos įmonę"]}
+  "context": "Bus kraujo () – 2007 m. JAV epinės dramos filmas, kurio scenarijaus autorius ir režisierius Paul Thomas Anderson. Filmas dalinai remiasi Upton Sinclair romano „Oil!“ motyvais. Pasakojama apie auksakasį, kuris XIX a. pab. – XX a. pr Pietų Kalifornijoje kilusio naftos bumo metu nusprendė užsiimti naftos gavyba ir taip pralobti iš šio verslo.\n\nSiužetas \n\n1902-ieji. Aukso ieškotojas Danielis Pleinvju (akt. Day-Lewis) atranda naftos klodą ir įkuria nedidelę naftos gavybos įmonę. Vieno nelaimingo atsitikimo metu žuvus jo darbininkui, Pleinvju įsivaikina jo sūnų. Berniukas, vardu H.V., tampa jo formaliu verslo „partneriu“.\n\nPo devynerių metu Pleinvju sutinka Polą Sandėjų (akt. Dano), kuris jam prasitaria apie naftos klodą, esantį po jo žeme. Pleinvju mėgina nupirkti sklypą už nusiderėtą kainą, bet Polo brolis dvynys Elis, žinodamas apie jo ketinimus, primygtinai pareikalauja $5 000, už kuriuos būtų pastatyta vietinė bažnyčia, kurios pastoriumi taptų Elis. Tačiau Pleinvju įtikina Elio tėvą sudaryti sandorį už nusiderėtą kainą. Vėliau avarijos metu įvykęs sprogimas pažeidžia H.V. klausą.\n\nVieną dieną, Pleinvju aplanko vyriškis, teigiantis esąs jo pusiau brolis Henris. Pleinvju jį priima, nors jo istorijoje ir randa spragų. Vėliau berniukas pabando nužudyti Henrį padegdamas jo antklodę. Pasipiktinęs sūnaus poelgiu, Pleinvju išsiunčia berniuką į mokyklą San Franciske. Įmonės „Standard Oil“ atstovas pasisiūlo nupirkti Pleinvju žemę, bet Pleinvju sudaro sutartį su „Union Oil“ ir nutiesia vamzdyną į Kalifornijos pakrantę. Pleinvju kyla įtarimas dėl Henrio ir šiam papasakojus tikrąją istoriją, Pleinvju jį nužudo ir užkasa lavoną.\n\n1927-ieji. H.V. jau suaugęs ir vedęs. Jis susitinka su tėvu, kuris ne tik, kad tapo turtingu, bet ir įniko į alkoholį, ir paprašo jo nutraukti judviejų sutartį, kad jis galėtų įsteigti savo verslą. Pleinvju išjuokia jo kurtumą ir papasakoja jam apie jo kilmę, ir H.V. išvyksta.\n\nElis aplanko Pleinvju ir pasiūlo jam dar kartą įsigyti dalį jo žemės, kuri priklausė ponui Bendžiui. Pleinvju atskleidžia, kad jis jau seniausiai išgavo visą naftą iš jo nuosavybės per aplinkinius naftos gręžinius. Elis vis tiek paprašo sumokėti, bet Pleinvju įniršta ir užmuša jį boulingo kėgliu.\n\nApdovanojimai \n Oskarų apdovanojimai: geriausias aktorius (Daniel Day-Lewis), geriausia kinematografija (Robert Elswit)\n BAFTA: geriausias pirmo plano aktorius (Daniel Day-Lewis)\n Auksiniai gaubliai: geriausias draminio filmo aktorius (Daniel Day-Lewis)\n Ekrano aktorių gildijos apdovanojimai: geriausias aktorius (Daniel Day-Lewis)\n\nIšnašos \n\n2007 filmai\nJAV filmai\nDramos\nEpiniai filmai",
+  "question": "Kokią kompaniją įsteigė Danielis Pleinvju?",
+  "answers": { "answer_start": [448], "text": ["nedidelę naftos gavybos įmonę"] }
 }
 ```
 
 ```json
 {
-    "context": "Ero ežeras (, arabanų k. Kati Thanda)\xa0– ežeras centrinėje Australijoje, Pietų Australijos valstijoje, didžiausias visame žemyne.\n\nEro ežeras yra žemiausiame Australijos taške\xa0– jo dugnas yra 15\xa0m žemiau jūros lygio. Dvi ežero dalys\xa0– šiaurinis Ero ežeras ir pietinis Ero ežeras\xa0– kartu užima apie 9 600\xa0km² plotą. Šiuos ežerus jungia 15\xa0km ilgio Godjero sąsiauris. Paviršiaus altitudė\xa0– 9,5 metro. Ero ežero baseino plotas apie 1,3 mln. km².\n\nPavadinimą ežerui davė Edvardas Eras (Edward Eyre), kuris 1839\xa0m. išvyko iš Adelaidės norėdamas tapti pirmuoju europiečiu, kirtusiu Australiją iš pietų į šiaurę. Įveikęs Flinderso kalnagūbrį jis susidūrė su neįveikiama sūrių ežerų juosta ir buvo priverstas grįžti atgal. Po keleto metų Eras dar kartą išvyko į kelionę ir pasiekė ežerą, kuris buvo pavadintas jo vardu. Aborigenai arabanai ežerą vadino Kati Thanda.\n\nUpėms pripildžius Ero ežerą, jo pakrantėse įsikuria didžiulė pelikanų kolonija ir susuka dešimtis tūkstančių lizdų. Tam, kad čia patektų, šie paukščiai įveikia didžiulius atstumus skrisdami virš kaitrios dykumos. Vandens srautui nutrūkus, didelėje kaitroje ežeras greitai garuoja ir tampa dar sūresnis.\n\nDidžiąją metų dalį Ero ežeras\xa0– uždruskėjusi pelkė, vandens prisipildo tik vasarą. Ilgą laiką tyrinėtojai manė, kad Ero ežeras\xa0– didžiulis gėlo vandens ežeras. Šiandien jau aišku, kad Ero ežeras gali būti didžiulėmis gėlo vandens platybėmis\xa0– tačiau vos kartą per aštuonerius ar dešimt metų. Šis ciklas jau kartojasi apie 20 tūkstančių metų. Smarkūs lietūs dvi vasaras iš eilės\xa0– retas įvykis šiame regione: pirmųjų metų lietus susigeria į žemę, antraisiais metais žemė sugeria mažiau vandens, jis atiteka į Ero ežerą iš kalnų ir jį pripildo.\n\nAplink ežerą įsteigtas Ero ežero nacionalinis parkas.\n\nŠaltiniai\n\nNuorodos \n Ero ežeras: Pelikanų rojus  \n Ero ežeras: Jachtklubas \n \nAustralijos ežerai\nPietų Australija",
-    "question": "Koks vandens kelias sujungia šiaurinę ir pietinę Ero ežero dalis?",
-    "answers": {"answer_start": [346], "text": ["Godjero sąsiauris"]}
+  "context": "Ero ežeras (, arabanų k. Kati Thanda)\xa0– ežeras centrinėje Australijoje, Pietų Australijos valstijoje, didžiausias visame žemyne.\n\nEro ežeras yra žemiausiame Australijos taške\xa0– jo dugnas yra 15\xa0m žemiau jūros lygio. Dvi ežero dalys\xa0– šiaurinis Ero ežeras ir pietinis Ero ežeras\xa0– kartu užima apie 9 600\xa0km² plotą. Šiuos ežerus jungia 15\xa0km ilgio Godjero sąsiauris. Paviršiaus altitudė\xa0– 9,5 metro. Ero ežero baseino plotas apie 1,3 mln. km².\n\nPavadinimą ežerui davė Edvardas Eras (Edward Eyre), kuris 1839\xa0m. išvyko iš Adelaidės norėdamas tapti pirmuoju europiečiu, kirtusiu Australiją iš pietų į šiaurę. Įveikęs Flinderso kalnagūbrį jis susidūrė su neįveikiama sūrių ežerų juosta ir buvo priverstas grįžti atgal. Po keleto metų Eras dar kartą išvyko į kelionę ir pasiekė ežerą, kuris buvo pavadintas jo vardu. Aborigenai arabanai ežerą vadino Kati Thanda.\n\nUpėms pripildžius Ero ežerą, jo pakrantėse įsikuria didžiulė pelikanų kolonija ir susuka dešimtis tūkstančių lizdų. Tam, kad čia patektų, šie paukščiai įveikia didžiulius atstumus skrisdami virš kaitrios dykumos. Vandens srautui nutrūkus, didelėje kaitroje ežeras greitai garuoja ir tampa dar sūresnis.\n\nDidžiąją metų dalį Ero ežeras\xa0– uždruskėjusi pelkė, vandens prisipildo tik vasarą. Ilgą laiką tyrinėtojai manė, kad Ero ežeras\xa0– didžiulis gėlo vandens ežeras. Šiandien jau aišku, kad Ero ežeras gali būti didžiulėmis gėlo vandens platybėmis\xa0– tačiau vos kartą per aštuonerius ar dešimt metų. Šis ciklas jau kartojasi apie 20 tūkstančių metų. Smarkūs lietūs dvi vasaras iš eilės\xa0– retas įvykis šiame regione: pirmųjų metų lietus susigeria į žemę, antraisiais metais žemė sugeria mažiau vandens, jis atiteka į Ero ežerą iš kalnų ir jį pripildo.\n\nAplink ežerą įsteigtas Ero ežero nacionalinis parkas.\n\nŠaltiniai\n\nNuorodos \n Ero ežeras: Pelikanų rojus  \n Ero ežeras: Jachtklubas \n \nAustralijos ežerai\nPietų Australija",
+  "question": "Koks vandens kelias sujungia šiaurinę ir pietinę Ero ežero dalis?",
+  "answers": { "answer_start": [346], "text": ["Godjero sąsiauris"] }
 }
 ```
 
@@ -485,25 +485,25 @@ Here are a few examples from the dataset:
 
 ```json
 {
-    "text": "Kur, kopdami į aukščiausias kalnų viršūnes, pereitumėte daugiausia vertikaliųjų1 geografinių zonų?\nPasirinkimai:\na. Anduose Ekvadore\nb. Alpėse Vokietijoje\nc. Skandinavijos kalnuose Norvegijoje\nd. Karpatuose Slovakijoje",
-    "label": "a",
-    "subject": "Earth science"
+  "text": "Kur, kopdami į aukščiausias kalnų viršūnes, pereitumėte daugiausia vertikaliųjų1 geografinių zonų?\nPasirinkimai:\na. Anduose Ekvadore\nb. Alpėse Vokietijoje\nc. Skandinavijos kalnuose Norvegijoje\nd. Karpatuose Slovakijoje",
+  "label": "a",
+  "subject": "Earth science"
 }
 ```
 
 ```json
 {
-    "text": "Kuriame Eurazijos regione būna šalčiausios žiemos?\nPasirinkimai:\na. Šiaurės Europoje\nb. Rytų Sibire\nc. Vakarų Azijoje\nd. Rytų Europoje",
-    "label": "b",
-    "subject": "Earth science"
+  "text": "Kuriame Eurazijos regione būna šalčiausios žiemos?\nPasirinkimai:\na. Šiaurės Europoje\nb. Rytų Sibire\nc. Vakarų Azijoje\nd. Rytų Europoje",
+  "label": "b",
+  "subject": "Earth science"
 }
 ```
 
 ```json
 {
-    "text": "Kokios yra įstatymų numatytos atsakomybės?\nPasirinkimai:\na. Pastaba, papeikimas, atleidimas iš darbo.\nb. Moralinė, religinė, ekonominė.\nc. Administracinė, drausminė, baudžiamoji, materialinė.\nd. Nematerialinė, socialinė.",
-    "label": "c",
-    "subject": "Professional certification"
+  "text": "Kokios yra įstatymų numatytos atsakomybės?\nPasirinkimai:\na. Pastaba, papeikimas, atleidimas iš darbo.\nb. Moralinė, religinė, ekonominė.\nc. Administracinė, drausminė, baudžiamoji, materialinė.\nd. Nematerialinė, socialinė.",
+  "label": "c",
+  "subject": "Professional certification"
 }
 ```
 
@@ -543,8 +543,8 @@ euroeval --model <model-id> --dataset include-lt
 ### Winogrande-lt
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2506.19468)
-and is a translated and filtered version of the English [Winogrande
-dataset](https://doi.org/10.1145/3474381).
+and is a translated and filtered version of the English
+[Winogrande dataset](https://doi.org/10.1145/3474381).
 
 The original full dataset consists of 47 / 1,210 samples for training and testing, and
 we use 128 of the test samples for validation, resulting in a 47 / 128 / 1,085 split for
@@ -614,8 +614,8 @@ euroeval --model <model-id> --dataset winogrande-lt
 
 ### Lrytas
 
-This dataset contains news articles and their corresponding summaries from the Lithuanian
-public media news portal [Lrytas.lt](https://www.lrytas.lt/).
+This dataset contains news articles and their corresponding summaries from the
+Lithuanian public media news portal [Lrytas.lt](https://www.lrytas.lt/).
 
 Samples were collected using the
 [lrytas_scraper](https://github.com/alexandrainst/lrytas). We use 1,024 / 256 / 2,048
@@ -673,4 +673,76 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset lrytas
+```
+
+## Instruction-following
+
+### MultiIFEval-lt
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-lt) and contains prompts
+each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Parašykite santrauką apie Vikipedijos puslapį \"https://lt.wikipedia.org/wiki/Lietuvių_kalba\" su bent 250 žodžių. Nenaudokite kablelių ir paryškinkite bent 3 skyrius, kurie turi pavadinimus, Markdown formatu, pavyzdžiui, *paryškintas skyrius 1 dalis*, *paryškintas skyrius 2 dalis*, *paryškintas skyrius 3 dalis*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 250, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Planuoju kelionę į Lietuvą ir noriu, kad parašytumėte man kelionės planą Šekspyro stiliumi. Jums neleidžiama naudoti kablelių savo atsakyme.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Sukurkite CV neseniai baigusiam mokyklą, kuris kreipiasi dėl savo pirmojo darbo. Įsitikinkite, kad įtraukiate bent 12 vietos rezervavimo ženklų laužtiniuose skliaustuose, pavyzdžiui, [Vardas] arba [Adresas].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-lt
 ```

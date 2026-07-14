@@ -9,8 +9,8 @@ resources compared to other European languages.
 
 ### ltzGLUE-SA
 
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976) and
-contains Luxembourgish texts annotated with sentiment labels (negative, neutral,
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976)
+and contains Luxembourgish texts annotated with sentiment labels (negative, neutral,
 positive). The data is collected from Luxembourgish social media posts and news website
 comments, covering various domains including politics, culture, and daily life.
 
@@ -82,8 +82,8 @@ euroeval --model <model-id> --dataset ltzglue-sa
 
 ### ltzGLUE-NER
 
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976) and
-contains Luxembourgish news articles annotated with BIO-formatted entity tags for
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976)
+and contains Luxembourgish news articles annotated with BIO-formatted entity tags for
 person, location, organization, and miscellaneous entities. The articles are sourced
 from major Luxembourgish news outlets including Luxemburger Wort, RTL Lëtzebuerg,
 paperjam.lu, today.lu, and wort.lu.
@@ -258,10 +258,10 @@ euroeval --model <model-id> --dataset ltzglue-la-binary
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976).
 
 Multi-class variant of the ltzGLUE-LA linguistic acceptability task where models must
-identify the specific error type in addition to detecting incorrectness. The data includes
-naturally occurring text from Luxembourgish news outlets (Luxemburger Wort, RTL Lëtzebuerg,
-paperjam.lu, today.lu, and wort.lu) as well as systematically corrupted examples with
-various error types (word order, agreement, case, etc.).
+identify the specific error type in addition to detecting incorrectness. The data
+includes naturally occurring text from Luxembourgish news outlets (Luxemburger Wort, RTL
+Lëtzebuerg, paperjam.lu, today.lu, and wort.lu) as well as systematically corrupted
+examples with various error types (word order, agreement, case, etc.).
 
 The original dataset contains 14,678 / 2,094 / 4,045 samples for training, validation
 and testing. We apply the standard EuroEval cap of 1,024 / 256 / 2,048 samples using
@@ -333,9 +333,9 @@ euroeval --model <model-id> --dataset ltzglue-la-multi
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976).
 
-Given a
-premise and hypothesis pair from Luxembourgish text sources, models must determine if
-the hypothesis is entailed by or contradicts the premise (binary classification).
+Given a premise and hypothesis pair from Luxembourgish text sources, models must
+determine if the hypothesis is entailed by or contradicts the premise (binary
+classification).
 
 The original ltzGLUE-RTE dataset contains 1,877 / 197 / 626 samples for training,
 validation and testing, respectively. Due to limited validation and test data, we use
@@ -476,10 +476,9 @@ euroeval --model <model-id> --dataset multi-wiki-qa-lb
 
 This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976).
 
-Given a
-news headline and its article text from Luxembourgish news outlets (Luxemburger Wort,
-RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu), models must predict whether the
-headline correctly represents the article content.
+Given a news headline and its article text from Luxembourgish news outlets (Luxemburger
+Wort, RTL Lëtzebuerg, paperjam.lu, today.lu, and wort.lu), models must predict whether
+the headline correctly represents the article content.
 
 The original ltzGLUE-HC dataset contains 20,716 / 2,960 / 5,919 samples for training,
 validation and testing, respectively. We apply the standard EuroEval cap of 1,024 / 256
@@ -539,9 +538,9 @@ euroeval --model <model-id> --dataset ltzglue-hc
 
 ### ltzGLUE-TC
 
-This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976) and
-contains Luxembourgish news articles categorized by topic. The articles are sourced from
-major Luxembourgish news outlets including Luxemburger Wort, RTL Lëtzebuerg,
+This dataset was published in [this paper](https://doi.org/10.48550/arXiv.2604.17976)
+and contains Luxembourgish news articles categorized by topic. The articles are sourced
+from major Luxembourgish news outlets including Luxemburger Wort, RTL Lëtzebuerg,
 paperjam.lu, today.lu, and wort.lu, covering politics, economy, sports, and culture.
 
 The original dataset contains 9,932 / 1,240 / 1,245 samples for training, validation and
@@ -688,4 +687,76 @@ You can evaluate this dataset directly as follows:
 
 ```bash
 euroeval --model <model-id> --dataset ltzglue-id
+```
+
+## Instruction-following
+
+### MultiIFEval-lb
+
+This dataset was published
+[here](https://huggingface.co/datasets/EuroEval/multi-ifeval-lb) and contains prompts
+each with a combination of one or more of 25 different constraints, verified
+programmatically rather than with a judge.
+
+We use the dataset as the test split, and do not include other splits, as we only
+evaluate models zero-shot and the size is too small to warrant a validation set.
+
+Here are a few examples from the test split:
+
+```json
+{
+  "text": "Schreift eng Zesummefaassung vun der Wikipedia Säit \"https://lb.wikipedia.org/wiki/Lëtzebuergesch\" mat op d'mannst 200 Wierder. Benotzt keng Kommaen a markéiert op d'mannst 3 Sektiounen déi Titelen hunn am Markdown Format, zum Beispill *markéiert Sektioun Deel 1*, *markéiert Sektioun Deel 2*, *markéiert Sektioun Deel 3*.",
+  "target_text": {
+    "instruction_id_list": [
+      "punctuation:no_comma",
+      "detectable_format:number_highlighted_sections",
+      "length_constraints:number_words"
+    ],
+    "kwargs": [
+      {},
+      { "num_highlights": 3 },
+      { "num_words": 200, "relation": "at least" }
+    ]
+  }
+}
+```
+
+```json
+{
+  "text": "Ech plangen eng Rees op Lëtzebuerg a wëll dDir mir e Reesplan am Shakespeare-Stil schreift. Dir dirft keng Kommaen an Ärer Äntwert benotzen.",
+  "target_text": {
+    "instruction_id_list": ["punctuation:no_comma"],
+    "kwargs": [{}]
+  }
+}
+```
+
+```json
+{
+  "text": "Maacht e CV fir e frësche Student deen sech fir säin éischte Job bewierft. Stellt sécher datt Dir op d'mannst 12 Plazhalter a quadratesche Klameren abaut, wéi zum Beispill [Numm] oder [Adress].",
+  "target_text": {
+    "instruction_id_list": ["detectable_content:number_placeholders"],
+    "kwargs": [{ "num_placeholders": 12 }]
+  }
+}
+```
+
+When evaluating generative models, we use the following setup (see the
+[methodology](/methodology) for more information on how these are used):
+
+- Number of few-shot examples: 0
+- No prefix prompt, as only instruction-tuned models are evaluated on this task.
+- No base prompt template, as only instruction-tuned models are evaluated on this task.
+- Instruction-tuned prompt template:
+
+  ```text
+  {text}
+  ```
+
+  I.e., we just use the instruction directly as the prompt.
+
+You can evaluate a model on this dataset as follows:
+
+```bash
+euroeval --model <model-id> --dataset multi-ifeval-lb
 ```
