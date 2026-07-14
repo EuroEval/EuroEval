@@ -86,6 +86,16 @@ IFEVAL_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+MULTI_IFEVAL_EN_CONFIG = DatasetConfig(
+    name="multi-ifeval-en",
+    pretty_name="MultiIFEval-en",
+    source="EuroEval/multi-ifeval-en",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ENGLISH],
+    train_split=None,
+    val_split=None,
+)
+
 BFCL_V2_CONFIG = DatasetConfig(
     name="bfcl-v2",
     pretty_name="BFCL-v2",

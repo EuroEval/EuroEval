@@ -83,6 +83,16 @@ IFEVAL_CA_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+MULTI_IFEVAL_CA_CONFIG = DatasetConfig(
+    name="multi-ifeval-ca",
+    pretty_name="MultiIFEval-ca",
+    source="EuroEval/multi-ifeval-ca",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[CATALAN],
+    train_split=None,
+    val_split=None,
+)
+
 RAGTRUTH_CA_CONFIG = DatasetConfig(
     name="ragtruth-ca",
     pretty_name="RAGTruth-ca",

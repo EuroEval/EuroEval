@@ -270,3 +270,14 @@ ZEBRA_PUZZLE_HARD_DA_CONFIG = DatasetConfig(
     languages=[DANISH],
     unofficial=True,
 )
+
+MULTI_IFEVAL_DA_CONFIG = DatasetConfig(
+    name="multi-ifeval-da",
+    pretty_name="MultiIFEval-da",
+    source="EuroEval/multi-ifeval-da",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[DANISH],
+    train_split=None,
+    val_split=None,
+    unofficial=True,
+)

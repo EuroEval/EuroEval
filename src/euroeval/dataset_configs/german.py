@@ -86,6 +86,16 @@ IFEVAL_DE_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+MULTI_IFEVAL_DE_CONFIG = DatasetConfig(
+    name="multi-ifeval-de",
+    pretty_name="MultiIFEval-de",
+    source="EuroEval/multi-ifeval-de",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[GERMAN],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_DE_CONFIG = DatasetConfig(
     name="valeu-de",
     pretty_name="VaLEU-de",

@@ -129,6 +129,16 @@ IFEVAL_FI_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+MULTI_IFEVAL_FI_CONFIG = DatasetConfig(
+    name="multi-ifeval-fi",
+    pretty_name="MultiIFEval-fi",
+    source="EuroEval/multi-ifeval-fi",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[FINNISH],
+    train_split=None,
+    val_split=None,
+)
+
 INCLUDE_FI_CONFIG = DatasetConfig(
     name="include-fi",
     pretty_name="INCLUDE-fi",

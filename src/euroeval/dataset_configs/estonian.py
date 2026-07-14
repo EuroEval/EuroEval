@@ -90,6 +90,16 @@ IFEVAL_ET_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+MULTI_IFEVAL_ET_CONFIG = DatasetConfig(
+    name="multi-ifeval-et",
+    pretty_name="MultiIFEval-et",
+    source="EuroEval/multi-ifeval-et",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[ESTONIAN],
+    train_split=None,
+    val_split=None,
+)
+
 VALEU_ET_CONFIG = DatasetConfig(
     name="valeu-et",
     pretty_name="VaLEU-et",

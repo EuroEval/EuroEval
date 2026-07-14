@@ -83,6 +83,16 @@ IFEVAL_UK_CONFIG = DatasetConfig(
     val_split=None,
 )
 
+MULTI_IFEVAL_UK_CONFIG = DatasetConfig(
+    name="multi-ifeval-uk",
+    pretty_name="MultiIFEval-uk",
+    source="EuroEval/multi-ifeval-uk",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[UKRAINIAN],
+    train_split=None,
+    val_split=None,
+)
+
 
 # Unofficial datasets ###
 

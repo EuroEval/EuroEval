@@ -140,6 +140,26 @@ IFEVAL_NN_CONFIG = DatasetConfig(
     unofficial=True,
 )
 
+MULTI_IFEVAL_NB_CONFIG = DatasetConfig(
+    name="multi-ifeval-nb",
+    pretty_name="MultiIFEval-nb",
+    source="EuroEval/multi-ifeval-nb",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[NORWEGIAN_BOKMÅL, NORWEGIAN],
+    train_split=None,
+    val_split=None,
+)
+
+MULTI_IFEVAL_NN_CONFIG = DatasetConfig(
+    name="multi-ifeval-nn",
+    pretty_name="MultiIFEval-nn",
+    source="EuroEval/multi-ifeval-nn",
+    task=INSTRUCTION_FOLLOWING,
+    languages=[NORWEGIAN_NYNORSK, NORWEGIAN],
+    train_split=None,
+    val_split=None,
+)
+
 NO_COLA_CONFIG = DatasetConfig(
     name="no-cola",
     pretty_name="NoCoLA",
