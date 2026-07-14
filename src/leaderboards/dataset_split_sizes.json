@@ -49,6 +49,11 @@
     "train": 512,
     "val": 256
   },
+  "EuroEval/be-wsc": {
+    "test": 720,
+    "train": 128,
+    "val": 64
+  },
   "EuroEval/belebele-da-mini": {
     "test": 580,
     "train": 256,

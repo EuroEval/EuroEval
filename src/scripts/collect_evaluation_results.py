@@ -231,6 +231,35 @@ def check_required_env_vars() -> None:
         sys.exit(1)
 
 
+def _extract_model_id(data: dict, line_number: int) -> str:
+    """Extract the model ID from a result record.
+
+    Args:
+        data:
+            The parsed result record.
+        line_number:
+            The line number in the source JSONL file.
+
+    Returns:
+        The model ID.
+
+    Raises:
+        ValueError:
+            If the record has no model ID.
+    """
+    model_id = data.get("model")
+    if isinstance(model_id, str) and model_id:
+        return model_id
+
+    model_info = data.get("model_info")
+    if isinstance(model_info, dict):
+        model_id = model_info.get("name") or model_info.get("id")
+        if isinstance(model_id, str) and model_id:
+            return model_id
+
+    raise ValueError(f"Result line {line_number} is missing a model ID.")
+
+
 def _model_id_to_filename(model_id: str) -> str:
     """Convert a model ID to a safe filename.
 
@@ -506,12 +535,12 @@ def upload_results_to_hf(new_results_path: Path) -> bool:
     new_lines = new_results_path.read_text(encoding="utf-8").splitlines()
     logger.info(f"Processing {len(new_lines):,} new result lines...")
 
-    for line in new_lines:
+    for line_number, line in enumerate(new_lines, start=1):
         if not line.strip():
             continue
         try:
             data = json.loads(line)
-            model_id = data.get("model", "unknown")
+            model_id = _extract_model_id(data=data, line_number=line_number)
             filename = _model_id_to_filename(model_id)
             model_file = RESULTS_DIR / filename
             # Append if not already present
