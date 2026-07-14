@@ -49,6 +49,7 @@ from pathlib import Path
 
 import click
 from huggingface_hub import HfApi
+from tqdm.auto import tqdm
 
 from euroeval.constants import ORTHOGONAL_TASKS
 from euroeval.data_models import DatasetConfig
@@ -459,7 +460,7 @@ def run_evaluations(
         language_codes=target_codes,
         datasets_by_language=corpus.datasets_by_language,
     )
-    logger.info(f"Found {len(ranked)} ranked (model, language) pair(s).")
+    logger.debug(f"Found {len(ranked)} ranked (model, language) pair(s).")
 
     ranked_api = sorted({m for m, _ in ranked if m in corpus.api_model_ids})
     present_providers = {
@@ -472,13 +473,8 @@ def run_evaluations(
         api_providers_arg=api_providers_arg,
         present_providers=present_providers,
     )
-    if ranked_api and not include_api:
-        logger.info(
-            f"Excluding {len(ranked_api)} ranked API model(s); pass --include-api "
-            "to evaluate them."
-        )
 
-    jobs = build_eval_jobs(
+    jobs, skipped_api, skipped_existing = build_eval_jobs(
         ranked=ranked,
         old_dataset=old_dataset,
         new_dataset=new_dataset,
@@ -487,9 +483,11 @@ def run_evaluations(
         selected_providers=selected_providers,
         force=force,
     )
-    logger.info(f"Planned {len(jobs)} evaluation(s) before the size check.")
-    jobs = apply_size_filter(jobs=jobs, gpu_memory_utilization=gpu_memory_utilization)
-    logger.info(f"{len(jobs)} evaluation(s) survive the size check.")
+    logger.debug(f"Planned {len(jobs)} evaluation(s) before the size check.")
+    jobs, skipped_too_large = apply_size_filter(
+        jobs=jobs, gpu_memory_utilization=gpu_memory_utilization
+    )
+    logger.debug(f"{len(jobs)} evaluation(s) survive the size check.")
 
     if dry_run:
         for job in jobs:
@@ -502,8 +500,15 @@ def run_evaluations(
             )
         return
 
-    execute_jobs(
+    evaluated, failed = execute_jobs(
         jobs=jobs, dataset=new_dataset, gpu_memory_utilization=gpu_memory_utilization
+    )
+    _log_summary(
+        evaluated=evaluated,
+        failed=failed,
+        skipped_api=skipped_api,
+        skipped_existing=skipped_existing,
+        skipped_too_large=skipped_too_large,
     )
 
 
@@ -677,7 +682,7 @@ def build_eval_jobs(
     include_api: bool,
     selected_providers: set[str],
     force: bool,
-) -> list[Job]:
+) -> tuple[list[Job], list[str], int]:
     """Turn ranked pairs into evaluation jobs, mirroring each model's setup.
 
     Args:
@@ -698,21 +703,26 @@ def build_eval_jobs(
             When True, keep pairs already holding a new-dataset result.
 
     Returns:
-        One :class:`Job` per model, its languages grouped, so identical
-        split/prompting settings run together.
+        Tuple of jobs to run, sorted unique list of API model ids skipped, and
+        count of (model, language) pairs skipped due to existing results.
     """
     # Group languages per model when the mirrored settings match, so one
     # euroeval call covers them.
     by_model: dict[tuple[str, bool, bool, bool], list[str]] = defaultdict(list)
+    skipped_api_set: set[str] = set()
+    skipped_existing_count: int = 0
     for model_id, code in sorted(ranked):
         is_api = model_id in corpus.api_model_ids
         if is_api:
             if not include_api:
+                skipped_api_set.add(model_id)
                 continue
             provider = provider_for_model_id(model_id=model_id)
             if provider is not None and provider.name not in selected_providers:
+                skipped_api_set.add(model_id)
                 continue
         if not force and (model_id, new_dataset, code) in corpus.observations:
+            skipped_existing_count += 1
             continue
         config = corpus.eval_configs.get((model_id, old_dataset, code))
         evaluate_test_split, zero_shot = mirror_eval_config(
@@ -731,7 +741,7 @@ def build_eval_jobs(
                 zero_shot=zero_shot,
             )
         )
-    return jobs
+    return jobs, sorted(skipped_api_set), skipped_existing_count
 
 
 def mirror_eval_config(config: _ObsConfig | None, is_api: bool) -> tuple[bool, bool]:
@@ -761,7 +771,7 @@ def mirror_eval_config(config: _ObsConfig | None, is_api: bool) -> tuple[bool, b
 
 def apply_size_filter(
     jobs: list[Job], gpu_memory_utilization: float | None
-) -> list[Job]:
+) -> tuple[list[Job], list[str]]:
     """Drop open-weight jobs whose model can't fit the local GPU budget.
 
     Budgets against ``gpu_memory_utilization * total GPU memory`` (matching
@@ -776,25 +786,27 @@ def apply_size_filter(
             The utilization fraction, or None for the default.
 
     Returns:
-        The jobs that should still run.
+        Tuple of jobs that should still run and sorted unique list of model ids
+        dropped for exceeding the GPU budget.
     """
     gpu_bytes = gpu_total_memory_bytes()
     if gpu_bytes is None:
-        logger.info("Local memory budget unknown; skipping the size pre-check.")
-        return jobs
+        logger.debug("Local memory budget unknown; skipping the size pre-check.")
+        return jobs, []
     utilization = (
         gpu_memory_utilization
         if gpu_memory_utilization is not None
         else DEFAULT_GPU_MEMORY_UTILIZATION
     )
     usable_bytes = int(gpu_bytes * utilization)
-    logger.info(
+    logger.debug(
         f"Local memory budget: {gpu_bytes / (1024**3):.1f} GiB total, "
         f"{usable_bytes / (1024**3):.1f} GiB usable at "
         f"gpu_memory_utilization={utilization}."
     )
     sized: dict[str, bool] = {}
     kept: list[Job] = []
+    too_large: list[str] = []
     for job in jobs:
         if job.is_api:
             kept.append(job)
@@ -805,19 +817,20 @@ def apply_size_filter(
             )
             sized[job.model_id] = fits
             if not fits and needed is not None:
-                logger.info(
+                logger.debug(
                     f"{job.model_id}: skipping -- needs "
                     f"~{needed / (1024**3):.1f} GiB, exceeds the usable "
                     f"{usable_bytes / (1024**3):.1f} GiB budget."
                 )
+                too_large.append(job.model_id)
         if sized[job.model_id]:
             kept.append(job)
-    return kept
+    return kept, sorted(too_large)
 
 
 def execute_jobs(
     jobs: list[Job], dataset: str, gpu_memory_utilization: float | None
-) -> None:
+) -> tuple[list[str], list[str]]:
     """Run each evaluation in sequence via the shared euroeval runner.
 
     Args:
@@ -827,15 +840,14 @@ def execute_jobs(
             The new dataset id to evaluate on.
         gpu_memory_utilization:
             The utilization fraction to pass to euroeval, or None.
+
+    Returns:
+        Tuple of model ids evaluated successfully and model ids that failed
+        (with exit code descriptions).
     """
-    for index, job in enumerate(jobs, start=1):
-        split = "test" if job.evaluate_test_split else "val"
-        shots = "zero-shot" if job.zero_shot else "few-shot"
-        logger.info(
-            f"[{index}/{len(jobs)}] euroeval --model {job.model_id} "
-            f"--dataset {dataset} --language {' --language '.join(job.languages)} "
-            f"({split}, {shots})"
-        )
+    evaluated: list[str] = []
+    failed: list[str] = []
+    for job in tqdm(jobs, desc="Evaluating models", unit="model"):
         returncode, _ = run_euroeval(
             model_id=job.model_id,
             languages=job.languages,
@@ -845,10 +857,55 @@ def execute_jobs(
             gpu_memory_utilization=gpu_memory_utilization,
         )
         if returncode != 0:
-            logger.warning(
-                f"{job.model_id} / {dataset}: euroeval exited with code "
-                f"{returncode}; continuing."
-            )
+            failed.append(f"{job.model_id} (exit {returncode})")
+        else:
+            evaluated.append(job.model_id)
+    return evaluated, failed
+
+
+def _log_summary(
+    evaluated: list[str],
+    failed: list[str],
+    skipped_api: list[str],
+    skipped_existing: int,
+    skipped_too_large: list[str],
+) -> None:
+    """Log a one-shot status summary after evaluation completes.
+
+    Args:
+        evaluated:
+            List of model ids evaluated successfully.
+        failed:
+            List of model ids that failed (with exit code descriptions).
+        skipped_api:
+            Sorted list of API model ids skipped.
+        skipped_existing:
+            Count of (model, language) pairs skipped due to existing results.
+        skipped_too_large:
+            Sorted list of model ids dropped for exceeding GPU budget.
+    """
+    total_skipped = len(skipped_api) + skipped_existing + len(skipped_too_large)
+    logger.info(
+        f"Evaluation summary: {len(evaluated)} evaluated, {len(failed)} failed, "
+        f"{total_skipped} skipped."
+    )
+    if failed:
+        logger.info(f"  Failed ({len(failed)}): {', '.join(failed)}.")
+    if skipped_api:
+        logger.info(
+            f"  Skipped {len(skipped_api)} API model(s) "
+            f"(pass --include-api to evaluate): {', '.join(skipped_api)}."
+        )
+    if skipped_existing:
+        logger.info(
+            f"  Skipped {skipped_existing} (model, language) pair(s) "
+            "already holding a result."
+        )
+    if skipped_too_large:
+        logger.info(
+            f"  Skipped {len(skipped_too_large)} model(s) "
+            f"too large for the local GPU budget: {', '.join(skipped_too_large)}."
+        )
 
 
 @dataclass(frozen=True)
