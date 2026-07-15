@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from unittest.mock import MagicMock, patch
 
 from leaderboards.score_extraction import _is_better_metadata, extract_model_metadata
 
@@ -539,3 +540,150 @@ class TestExtractModelMetadata:
             metadata[model_full_key]["model_url"]
             == "https://huggingface.co/ollama/model-full"
         )
+
+
+class TestMissingMetadataInference:
+    """Tests for inference of missing metadata fields.
+
+    These tests verify that when all records for a model have missing metadata
+    (e.g. Qwen/Qwen3.6-27B-FP8 with all fields None), safe positive values are
+    inferred from HF model info and trained-from-scratch patterns.
+    """
+
+    @patch("leaderboards.score_extraction.HfApi")
+    @patch("leaderboards.link_generation.HfApi")
+    def test_qwen_model_with_all_fields_missing(
+        self, mock_link_gen_hf_api: MagicMock, mock_score_ext_hf_api: MagicMock
+    ) -> None:
+        """Regression test: Qwen/Qwen3.6-27B-FP8 (val) with all metadata missing.
+
+        When all records have None/missing commercially_licensed, open, and
+        trained_from_scratch fields, the fallback inference should infer:
+        - commercial=True (apache-2.0 license)
+        - open=True (HF Hub URL)
+        - trained_from_scratch=True (Qwen/.* pattern)
+        """
+        # Setup mock for HF API in both modules
+        for mock_hf_api_class in [mock_link_gen_hf_api, mock_score_ext_hf_api]:
+            mock_api = MagicMock()
+            mock_hf_api_class.return_value = mock_api
+
+            # Mock model_info to return apache-2.0 license
+            mock_model_info = MagicMock()
+            mock_model_info.tags = [
+                "transformers",
+                "safetensors",
+                "qwen3_5",
+                "license:apache-2.0",
+                "endpoints_compatible",
+                "fp8",
+            ]
+            mock_api.model_info.return_value = mock_model_info
+
+        # Record with ALL metadata fields missing (simulating the observed issue)
+        record_qwen_val = {
+            "model_info": {
+                "name": "Qwen/Qwen3.6-27B-FP8 (val)",
+                "additional_details": {
+                    "dataset": "mmlu",
+                    # Explicitly NO commercially_licensed, open, trained_from_scratch
+                    # Also no explicit model_url - should be generated
+                    "generative_type": "reasoning",  # This one is present
+                    "merge": "false",
+                },
+            },
+            "eval_library": {"version": "17.6.0"},
+        }
+
+        metadata = extract_model_metadata(results=[record_qwen_val])
+        model_key = "Qwen/Qwen3.6-27B-FP8 (val)"
+
+        # Verify inferred metadata
+        assert metadata[model_key]["commercial"] is True
+        assert metadata[model_key]["open"] is True
+        assert metadata[model_key]["trained_from_scratch"] is True
+        assert metadata[model_key]["merge"] is False
+        assert metadata[model_key]["generative_type"] == "reasoning"
+
+        # Verify model URL is HF Hub URL
+        assert metadata[model_key]["model_url"] is not None
+        assert metadata[model_key]["model_url"].startswith("https://hf.co/Qwen/")
+
+    @patch("leaderboards.score_extraction.HfApi")
+    def test_explicit_false_not_overwritten_by_inferred_true(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Regression test: explicit False values should not be overwritten.
+
+        When a record has explicit False for a field, inference should not
+        overwrite it with True even if the HF model info suggests True.
+        """
+        # Setup mock for HF API (only needed for license inference, not URL gen)
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        mock_model_info = MagicMock()
+        mock_model_info.tags = ["license:apache-2.0"]
+        mock_api.model_info.return_value = mock_model_info
+
+        # Record with explicit False for commercial and explicit HF model_url
+        # Providing URL explicitly bypasses URL generation (no link_generation.HfApi needed)
+        record_explicit_false = {
+            "model_info": {
+                "name": "Qwen/Qwen-Explicit-False",
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "commercially_licensed": False,  # Explicit False
+                    "open": False,  # Explicit False
+                    "trained_from_scratch": False,  # Explicit False
+                    "model_url": "https://hf.co/Qwen/Qwen-Explicit-False",
+                },
+            },
+            "eval_library": {"version": "17.6.0"},
+        }
+
+        metadata = extract_model_metadata(results=[record_explicit_false])
+        model_key = "Qwen/Qwen-Explicit-False"
+
+        # Explicit False should be preserved, not overwritten by inference
+        assert metadata[model_key]["commercial"] is False
+        assert metadata[model_key]["open"] is False
+        assert metadata[model_key]["trained_from_scratch"] is False
+
+    @patch("leaderboards.score_extraction.HfApi")
+    def test_non_permissive_license_does_not_infer_commercial(
+        self, mock_hf_api_class: MagicMock
+    ) -> None:
+        """Non-permissive licenses should not infer commercial=True.
+
+        When a model is on HF but has a non-permissive or unknown license,
+        commercial should remain None (defaulting to False later).
+        """
+        # Setup mock for HF API (only needed for license inference, not URL gen)
+        mock_api = MagicMock()
+        mock_hf_api_class.return_value = mock_api
+        mock_model_info = MagicMock()
+        mock_model_info.tags = ["license:llama-3"]  # Not in permissive list
+        mock_api.model_info.return_value = mock_model_info
+
+        # Record with missing commercial field but explicit HF URL
+        record_unknown_license = {
+            "model_info": {
+                "name": "meta-llama/Llama-3-Unknown",
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "model_url": "https://hf.co/meta-llama/Llama-3-Unknown",
+                    # No commercially_licensed field
+                },
+            },
+            "eval_library": {"version": "17.6.0"},
+        }
+
+        metadata = extract_model_metadata(results=[record_unknown_license])
+        model_key = "meta-llama/Llama-3-Unknown"
+
+        # commercial should NOT be inferred to True for non-permissive license
+        # It defaults to False in standard_keys_defaults after inference
+        assert metadata[model_key]["commercial"] is False
+        # But inferred open and trained_from_scratch should still work
+        assert metadata[model_key]["open"] is True
+        assert metadata[model_key]["trained_from_scratch"] is True
