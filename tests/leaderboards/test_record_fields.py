@@ -228,3 +228,44 @@ def test_deduplicate_false_counts_as_rich_metadata() -> None:
     assert additional.get("open") is False
     assert additional.get("merge") is False
     assert additional.get("trained_from_scratch") is False
+
+
+def test_deduplicate_equal_richness_preserves_first_record() -> None:
+    """Regression test: same version/richness keeps first record, not later-wins.
+
+    Before the fix, when two records had equal version and richness, the later
+    one in input order won. This allowed a later duplicate with True to replace
+    an earlier record with explicit legitimate False metadata.
+    """
+    # First record with explicit False values
+    first_false = _record(version="17.6.0")
+    first_false["model_info"]["additional_details"].update(
+        {
+            "commercially_licensed": False,
+            "open": False,
+            "merge": False,
+            "trained_from_scratch": False,
+        }
+    )
+
+    # Second record with True values (same richness score)
+    second_true = _record(version="17.6.0")
+    second_true["model_info"]["additional_details"].update(
+        {
+            "commercially_licensed": True,
+            "open": True,
+            "merge": True,
+            "trained_from_scratch": True,
+        }
+    )
+
+    # Second record comes last
+    deduped = deduplicate_records(records=[first_false, second_true])
+
+    assert len(deduped) == 1
+    additional = deduped[0]["model_info"]["additional_details"]
+    # First record's False values should be preserved
+    assert additional.get("commercially_licensed") is False
+    assert additional.get("open") is False
+    assert additional.get("merge") is False
+    assert additional.get("trained_from_scratch") is False
