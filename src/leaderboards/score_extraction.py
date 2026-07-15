@@ -232,9 +232,10 @@ def extract_model_metadata(
         merge_raw = additional.get("merge", "false")
         # Track which metadata fields are explicitly present (not None/empty) vs missing
         generative_type = additional.get("generative_type", None)
-        generative_type_present = "generative_type" in additional and additional[
-            "generative_type"
-        ] is not None
+        generative_type_present = (
+            "generative_type" in additional
+            and additional["generative_type"] is not None
+        )
         commercially_licensed = additional.get("commercially_licensed", False)
         commercial_present = (
             "commercially_licensed" in additional
@@ -408,7 +409,9 @@ def extract_model_metadata(
 
     # Ensure every model has all standard metadata keys with defaults.
     # This prevents KeyError/AssertionError in generate_dataframe() which
-    # expects these columns to exist for all models.
+    # expects these columns to exist for all models. Note that the record
+    # loop above already generates fallback URLs when appropriate, so the
+    # final fill just uses None for model_url.
     standard_keys_defaults: dict[str, t.Any] = {
         "parameters": math.nan,
         "vocabulary_size": math.nan,
@@ -423,12 +426,7 @@ def extract_model_metadata(
     for model_id, metadata in metadata_dict.items():
         for key, default_value in standard_keys_defaults.items():
             if key not in metadata:
-                # For model_url, try to generate a fallback if missing
-                if key == "model_url":
-                    fallback_url = generate_model_url(model_id=model_id)
-                    metadata[key] = fallback_url if fallback_url else default_value
-                else:
-                    metadata[key] = default_value
+                metadata[key] = default_value
 
     logger.info("Extracted model metadata.")
     return metadata_dict

@@ -366,10 +366,7 @@ class TestExtractModelMetadata:
         # Record without explicit model_url (fallback will be generated)
         # Use ollama/ prefix so generate_ollama_url can generate URL without API calls
         record_no_url = self._record(
-            name="ollama/test-model",
-            additional_details={
-                "commercially_licensed": True,
-            },
+            name="ollama/test-model", additional_details={"commercially_licensed": True}
         )
 
         metadata = extract_model_metadata(results=[record_no_url])
@@ -384,22 +381,21 @@ class TestExtractModelMetadata:
         # First record with explicit URL. Use ollama/ prefix to avoid API calls
         record_with_url = self._record(
             name="ollama/model-explicit-url",
-            additional_details={
-                "model_url": "https://explicit.example.com/model",
-            },
+            additional_details={"model_url": "https://explicit.example.com/model"},
         )
 
         # Second record without URL (would generate fallback if first wasn't present)
         record_no_url = self._record(
-            name="ollama/model-explicit-url",
-            additional_details={},
+            name="ollama/model-explicit-url", additional_details={}
         )
 
         metadata = extract_model_metadata(results=[record_with_url, record_no_url])
         model_key = "ollama/model-explicit-url"
 
         # Explicit URL should be preserved (not overwritten by generated fallback)
-        assert metadata[model_key].get("model_url") == "https://explicit.example.com/model"
+        assert (
+            metadata[model_key].get("model_url") == "https://explicit.example.com/model"
+        )
 
     def test_explicit_model_url_replaces_fallback(self) -> None:
         """Regression test: explicit URL should replace generated fallback.
@@ -412,24 +408,22 @@ class TestExtractModelMetadata:
         # Use ollama/ prefix so generate_ollama_url can generate URL without API calls
         record_no_url = self._record(
             name="ollama/model-fallback-first",
-            additional_details={
-                "commercially_licensed": True,
-            },
+            additional_details={"commercially_licensed": True},
         )
 
         # Second record with explicit URL
         record_with_url = self._record(
             name="ollama/model-fallback-first",
-            additional_details={
-                "model_url": "https://explicit.example.com/model",
-            },
+            additional_details={"model_url": "https://explicit.example.com/model"},
         )
 
         metadata = extract_model_metadata(results=[record_no_url, record_with_url])
         model_key = "ollama/model-fallback-first"
 
         # Explicit URL should replace the generated fallback
-        assert metadata[model_key].get("model_url") == "https://explicit.example.com/model"
+        assert (
+            metadata[model_key].get("model_url") == "https://explicit.example.com/model"
+        )
 
     def test_generated_fallback_preserved_when_no_explicit_url(self) -> None:
         """Regression test: generated fallback kept if no explicit URL arrives.
@@ -440,16 +434,11 @@ class TestExtractModelMetadata:
         # Two records without explicit URLs for the same model
         record_no_url_1 = self._record(
             name="ollama/model-multiple-fallbacks",
-            additional_details={
-                "commercially_licensed": True,
-            },
+            additional_details={"commercially_licensed": True},
         )
 
         record_no_url_2 = self._record(
-            name="ollama/model-multiple-fallbacks",
-            additional_details={
-                "open": True,
-            },
+            name="ollama/model-multiple-fallbacks", additional_details={"open": True}
         )
 
         metadata = extract_model_metadata(results=[record_no_url_1, record_no_url_2])
@@ -490,7 +479,7 @@ class TestExtractModelMetadata:
             name="ollama/model-missing-generative-type",
             additional_details={
                 # No generative_type field
-                "commercially_licensed": False,  # Explicit False should be preserved
+                "commercially_licensed": False  # Explicit False should be preserved
             },
         )
 
@@ -546,4 +535,7 @@ class TestExtractModelMetadata:
         assert metadata[model_full_key]["parameters"] == 7_000_000_000.0
         assert metadata[model_full_key]["vocabulary_size"] == 32_000.0
         assert metadata[model_full_key]["context"] == 4_096.0
-        assert metadata[model_full_key]["model_url"] == "https://huggingface.co/ollama/model-full"
+        assert (
+            metadata[model_full_key]["model_url"]
+            == "https://huggingface.co/ollama/model-full"
+        )
