@@ -9,6 +9,7 @@ import typing as t
 import warnings
 from collections import defaultdict
 
+import httpx
 from huggingface_hub import HfApi
 from huggingface_hub.errors import (
     GatedRepoError,
@@ -206,6 +207,8 @@ def _infer_missing_metadata(metadata_dict: dict[str, dict[str, t.Any]]) -> None:
                     HFValidationError,
                     RequestException,
                     OSError,
+                    httpx.HTTPError,
+                    httpx.TransportError,
                 ):
                     hf_license_cache[hf_model_id] = None
 
