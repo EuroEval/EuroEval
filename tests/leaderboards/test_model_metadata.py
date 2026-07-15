@@ -14,6 +14,7 @@ import httpx
 from huggingface_hub.errors import GatedRepoError, RepositoryNotFoundError
 
 from leaderboards.cache import Cache
+from leaderboards.constants import TRAINED_FROM_SCRATCH_PATTERNS
 from leaderboards.model_metadata import (
     is_commercially_licensed,
     is_merge,
@@ -229,6 +230,58 @@ class TestTrainedFromScratchPatterns:
 
         # Should match the pattern and return True without prompting
         assert result is True
+
+    def test_pre_existing_curated_patterns_still_match(self) -> None:
+        """Regression test: pre-existing curated patterns must be preserved.
+
+        This ensures that curated metadata patterns (e.g. Qwen, Google, Meta)
+        were not accidentally removed. The reviewer objected only to newly
+        invented inference rules, not to deleting existing curated patterns.
+        """
+        cache = Cache()
+
+        # Test a pre-existing curated family (Qwen)
+        record_qwen = _record(model_name="Qwen/Qwen3.6-27B-FP8")
+        result_qwen = is_trained_from_scratch(
+            record=record_qwen,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+        assert result_qwen is True, "Qwen models should match curated patterns"
+
+        # Test GLM explicit patterns
+        record_glm_zai = _record(model_name="zai-org/GLM-Edge-1.5B")
+        result_glm_zai = is_trained_from_scratch(
+            record=record_glm_zai,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+        assert result_glm_zai is True, "zai-org/GLM should match explicit pattern"
+
+        record_glm_gadfly = _record(model_name="GadflyII/GLM-4-9B-Base")
+        result_glm_gadfly = is_trained_from_scratch(
+            record=record_glm_gadfly,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+        assert result_glm_gadfly is True, "GadflyII/GLM should match explicit pattern"
+
+        # Test other pre-existing curated families
+        record_google = _record(model_name="google/gemma-2b")
+        result_google = is_trained_from_scratch(
+            record=record_google,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+        assert result_google is True, "google models should match curated patterns"
+
+        record_meta = _record(model_name="meta-llama/Llama-3.2-1B")
+        result_meta = is_trained_from_scratch(
+            record=record_meta,
+            trained_from_scratch_patterns=TRAINED_FROM_SCRATCH_PATTERNS,
+            cache=cache,
+        )
+        assert result_meta is True, "meta-llama models should match curated patterns"
 
 
 class TestCommercialLicenceInference:

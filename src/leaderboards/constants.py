@@ -475,6 +475,10 @@ BANNED_MODEL_PATTERNS: list[re.Pattern[str]] = [
     re.compile("^utter-project/EuroVLM-9B-Preview$"),  # Temporary ban
 ]
 TRAINED_FROM_SCRATCH_PATTERNS: list[re.Pattern[str]] = [
+    # Explicit GLM-family models approved for trained_from_scratch inference
+    re.compile(r"zai-org/GLM.*"),
+    re.compile(r"GadflyII/GLM.*"),
+    # Pre-existing curated patterns (author/organisation-level matches)
     re.compile(r"Qwen/.*"),
     re.compile(r"google/.*"),
     re.compile(r"mistralai/.*"),
