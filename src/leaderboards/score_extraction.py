@@ -10,8 +10,13 @@ import warnings
 from collections import defaultdict
 
 from huggingface_hub import HfApi
-from huggingface_hub.errors import HFValidationError
+from huggingface_hub.errors import (
+    GatedRepoError,
+    HFValidationError,
+    LocalTokenNotFoundError,
+)
 from huggingface_hub.hf_api import RepositoryNotFoundError
+from requests.exceptions import RequestException
 
 from euroeval.logging_utils import log_once
 
@@ -194,7 +199,14 @@ def _infer_missing_metadata(metadata_dict: dict[str, dict[str, t.Any]]) -> None:
                     hf_license_cache[hf_model_id] = (
                         licence in _PERMISSIVE_LICENSES if licence else None
                     )
-                except (RepositoryNotFoundError, HFValidationError):
+                except (
+                    GatedRepoError,
+                    LocalTokenNotFoundError,
+                    RepositoryNotFoundError,
+                    HFValidationError,
+                    RequestException,
+                    OSError,
+                ):
                     hf_license_cache[hf_model_id] = None
 
             if hf_license_cache.get(hf_model_id) is True:

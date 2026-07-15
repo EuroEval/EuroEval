@@ -626,7 +626,8 @@ class TestMissingMetadataInference:
         mock_api.model_info.return_value = mock_model_info
 
         # Record with explicit False for commercial and explicit HF model_url
-        # Providing URL explicitly bypasses URL generation (no link_generation.HfApi needed)
+        # Providing URL explicitly bypasses URL generation
+        # (no link_generation.HfApi needed)
         record_explicit_false = {
             "model_info": {
                 "name": "Qwen/Qwen-Explicit-False",
@@ -687,3 +688,45 @@ class TestMissingMetadataInference:
         # But inferred open and trained_from_scratch should still work
         assert metadata[model_key]["open"] is True
         assert metadata[model_key]["trained_from_scratch"] is True
+
+    @patch("leaderboards.score_extraction.HfApi")
+    def test_hf_licence_lookup_is_cached(self, mock_hf_api_class: MagicMock) -> None:
+        """HF licence lookup should be cached for duplicate records."""
+        # Mock model_info to return a permissive license
+        mock_api = MagicMock()
+        mock_model_info = MagicMock()
+        mock_model_info.tags = ["license:apache-2.0"]
+        mock_api.model_info.return_value = mock_model_info
+        mock_hf_api_class.return_value = mock_api
+
+        # Two records for the same model ID
+        record1 = {
+            "model_info": {
+                "name": "Qwen/Qwen-Cached",
+                "additional_details": {
+                    "dataset": "mmlu",
+                    "model_url": "https://hf.co/Qwen/Qwen-Cached",
+                    # No commercially_licensed field
+                },
+            },
+            "eval_library": {"version": "17.6.0"},
+        }
+        record2 = {
+            "model_info": {
+                "name": "Qwen/Qwen-Cached",
+                "additional_details": {
+                    "dataset": "belebele",
+                    "model_url": "https://hf.co/Qwen/Qwen-Cached",
+                    # No commercially_licensed field
+                },
+            },
+            "eval_library": {"version": "17.6.0"},
+        }
+
+        metadata = extract_model_metadata(results=[record1, record2])
+        model_key = "Qwen/Qwen-Cached"
+
+        # commercial should be inferred to True from permissive license
+        assert metadata[model_key]["commercial"] is True
+        # model_info should be called only once due to caching
+        assert mock_api.model_info.call_count == 1
